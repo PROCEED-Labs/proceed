@@ -23,13 +23,13 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
       <div
         style={{ position: 'relative' }}
         onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         ref={(r) => {
           r && connect(r);
         }}
       >
         <Overlay
           show={hovered && !textEditing}
+          onHide={() => setHovered(false)}
           controls={[{ key: 'edit', icon: <EditOutlined onClick={() => setTextEditing(true)} /> }]}
         >
           <EditableText

@@ -60,30 +60,32 @@ const Input: UserComponent<InputProps> = ({
       >
         {labelPosition !== 'none' && (
           <div
-            style={{ marginRight: labelPosition === 'left' ? '8px' : 0, position: 'relative' }}
+            style={{ marginRight: labelPosition === 'left' ? '8px' : 0 }}
             onMouseEnter={() => setLabelHovered(true)}
-            onMouseLeave={() => setLabelHovered(false)}
           >
-            <Overlay
-              show={labelHovered && !textEditing}
-              controls={[
-                {
-                  key: 'edit',
-                  icon: <EditOutlined onClick={() => setTextEditing(true)} />,
-                },
-              ]}
-            >
-              <EditableText
-                style={{ whiteSpace: 'nowrap' }}
-                value={label}
-                active={textEditing}
-                onStopEditing={() => setTextEditing(false)}
-                tagName="label"
-                htmlFor={inputId}
-                onClick={(e) => e.preventDefault()}
-                onChange={(newText) => setProp((props: InputProps) => (props.label = newText))}
-              />
-            </Overlay>
+            <span style={{ padding: '5px 0', position: 'relative' }}>
+              <Overlay
+                show={labelHovered && !textEditing}
+                onHide={() => setLabelHovered(false)}
+                controls={[
+                  {
+                    key: 'edit',
+                    icon: <EditOutlined onClick={() => setTextEditing(true)} />,
+                  },
+                ]}
+              >
+                <EditableText
+                  style={{ whiteSpace: 'nowrap' }}
+                  value={label}
+                  active={textEditing}
+                  onStopEditing={() => setTextEditing(false)}
+                  tagName="label"
+                  htmlFor={inputId}
+                  onClick={(e) => e.preventDefault()}
+                  onChange={(newText) => setProp((props: InputProps) => (props.label = newText))}
+                />
+              </Overlay>
+            </span>
           </div>
         )}
 

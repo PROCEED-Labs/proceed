@@ -50,10 +50,10 @@ const TableCell: React.FC<
       className: 'user-task-form-table-cell',
       onContextMenu: handleContextMenu,
       onMouseEnter: () => setHovered(true),
-      onMouseLeave: () => setHovered(false),
     },
     <Overlay
       show={!textEditing && hovered}
+      onHide={() => setHovered(false)}
       controls={[
         {
           icon: <EditOutlined onClick={() => setTextEditing(true)} />,

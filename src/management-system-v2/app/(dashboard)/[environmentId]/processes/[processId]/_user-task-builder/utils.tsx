@@ -296,29 +296,13 @@ export const Setting: React.FC<{
 const getIframe = () =>
   document.getElementById('user-task-builder-iframe') as HTMLIFrameElement | undefined;
 
-type ContextMenuTriggers = 'click' | 'contextMenu';
-
 type ContextMenuProps = React.PropsWithChildren<{
   onClose?: () => void;
   menu: MenuProps['items'];
-  externalPosition?: { top: number; left: number };
-  triggers?: ContextMenuTriggers[];
 }>;
 
-export const ContextMenu: React.FC<ContextMenuProps> = ({
-  children,
-  menu,
-  onClose,
-  externalPosition,
-  triggers = ['contextMenu'],
-}) => {
+export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClose }) => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>();
-
-  const touchedElRef = useRef(false);
-
-  useEffect(() => {
-    if (externalPosition) touchedElRef.current = true;
-  }, [externalPosition]);
 
   const id = useId();
   const blockDragging = useBuilderStateStore((state) => state.blockDragging);
@@ -326,16 +310,16 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   const position = useMemo(() => {
     const iframe = getIframe();
-    if (!iframe || !(externalPosition || menuPosition)) return;
+    if (!iframe || !menuPosition) return;
 
-    const pos = { ...(externalPosition || menuPosition)! };
+    const pos = { ...menuPosition };
 
     const { top, left } = iframe.getBoundingClientRect();
     pos.top += top + 5;
     pos.left += left + 5;
 
     return pos;
-  }, [externalPosition, menuPosition]);
+  }, [menuPosition]);
 
   const open = !!position;
   useEffect(() => {
@@ -351,42 +335,32 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   useEffect(() => {
     if (position) {
       const handleClick = () => {
-        if (!touchedElRef.current) {
-          setMenuPosition(undefined);
-          onClose?.();
-        }
-        touchedElRef.current = false;
+        setMenuPosition(undefined);
+        onClose?.();
       };
 
       const handleContextMenu = (e: MouseEvent) => {
-        if (touchedElRef.current) {
-          e.stopPropagation();
-        } else {
-          setMenuPosition(undefined);
-          onClose?.();
-        }
-        touchedElRef.current = false;
+        setMenuPosition(undefined);
+        onClose?.();
       };
 
       window.addEventListener('click', handleClick);
       window.addEventListener('contextmenu', handleContextMenu);
 
       getIframe()?.contentWindow?.addEventListener('click', handleClick);
-      getIframe()?.contentWindow?.addEventListener('contextmenu', handleContextMenu);
+      getIframe()?.contentWindow?.addEventListener('contextmenu', handleContextMenu, {
+        capture: true,
+      });
       return () => {
         window.removeEventListener('click', handleClick);
         window.removeEventListener('contextmenu', handleContextMenu);
         getIframe()?.contentWindow?.removeEventListener('click', handleClick);
-        getIframe()?.contentWindow?.removeEventListener('contextmenu', handleContextMenu);
+        getIframe()?.contentWindow?.removeEventListener('contextmenu', handleContextMenu, {
+          capture: true,
+        });
       };
     }
   }, [position, onClose]);
-
-  const handleOpen: MouseEventHandler = (e) => {
-    setMenuPosition({ left: e.clientX, top: e.clientY });
-    touchedElRef.current = true;
-    e.preventDefault();
-  };
 
   return (
     <>
@@ -406,15 +380,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           document.body,
         )}
       <div
-        onContextMenu={triggers.includes('contextMenu') ? handleOpen : undefined}
-        onClick={
-          triggers.includes('click')
-            ? (e) => {
-                handleOpen(e);
-                e.stopPropagation();
-              }
-            : undefined
-        }
+        onContextMenu={(e) => {
+          setMenuPosition({ left: e.clientX, top: e.clientY });
+          e.stopPropagation();
+          e.preventDefault();
+        }}
       >
         {children}
       </div>
@@ -424,16 +394,28 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
 type OverlayProps = React.PropsWithChildren<{
   show: boolean;
+  onHide: () => void;
   controls: { icon: ReactNode; key: string }[];
 }>;
 
-export const Overlay: React.FC<OverlayProps> = ({ show, controls, children }) => {
+export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, children }) => {
   const { active } = useDndContext();
+
+  useEffect(() => {
+    if (show) {
+      window.addEventListener('mouseMove', onHide);
+      getIframe()?.contentWindow?.addEventListener('mousemove', onHide);
+      return () => {
+        window.removeEventListener('mousemove', onHide);
+        getIframe()?.contentWindow?.removeEventListener('mousemove', onHide);
+      };
+    }
+  }, [show]);
 
   return (
     <>
       {show && !active && (
-        <div className="overlay-mask">
+        <div className="overlay-mask" onMouseMove={(e) => e.stopPropagation()}>
           {controls.map(({ icon, key }) => (
             <span style={{ margin: '0 3px' }} key={key}>
               {icon}

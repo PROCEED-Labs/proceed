@@ -72,13 +72,10 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
         onClick={onChange}
         onChange={onChange}
       />
-      <span
-        style={{ position: 'relative', width: '100%' }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-      >
+      <span style={{ position: 'relative', width: '100%' }} onMouseEnter={() => setHovered(true)}>
         <Overlay
           show={hovered && !textEditing}
+          onHide={() => setHovered(false)}
           controls={[
             {
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,

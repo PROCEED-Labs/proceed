@@ -1,6 +1,6 @@
 import { useNode, UserComponent, useEditor } from '@craftjs/core';
 
-import { Button, Divider, MenuProps, Space } from 'antd';
+import { Divider, MenuProps, Space } from 'antd';
 import { SettingOutlined, EditOutlined } from '@ant-design/icons';
 import {
   TbColumnInsertLeft,
@@ -12,7 +12,7 @@ import {
 } from 'react-icons/tb';
 
 import EditableText from '../_utils/EditableText';
-import { ContextMenu, Overlay } from '../utils';
+import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from '../utils';
 import React, { MouseEventHandler, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -46,7 +46,7 @@ const TableCell: React.FC<
   return React.createElement(
     type,
     {
-      style: { ...style },
+      style,
       className: 'user-task-form-table-cell',
       onContextMenu: handleContextMenu,
       onMouseEnter: () => setHovered(true),
@@ -76,7 +76,7 @@ const TableCell: React.FC<
   );
 };
 
-const MenuOptions = {
+const menuOptions = {
   'remove-row': { label: 'Delete Row', icon: <TbRowRemove size={20} /> },
   'remove-col': { label: 'Delete Column', icon: <TbColumnRemove size={20} /> },
   'add-row-above': { label: 'Add Row Above', icon: <TbRowInsertTop size={20} /> },
@@ -85,40 +85,10 @@ const MenuOptions = {
   'add-col-right': { label: 'Add Column After', icon: <TbColumnInsertRight size={20} /> },
 } as const;
 
-function toMenuItem(
-  action: ContextMenuAction,
-  onClick: () => void,
-  onHovered: (action: ContextMenuAction | undefined) => void,
-): NonNullable<MenuProps['items']>[number] {
-  return {
-    key: action,
-    label: MenuOptions[action].label,
-    onClick,
-    onMouseEnter: onHovered ? () => onHovered(action) : undefined,
-    onMouseLeave: onHovered ? () => onHovered(undefined) : undefined,
-  };
-}
+type ContextMenuAction = keyof typeof menuOptions;
+const toMenuItem = MenuItemFactoryFactory(menuOptions);
 
-type SidebarButtonProps = {
-  action: ContextMenuAction;
-  disabled?: boolean;
-  onClick: () => void;
-  onHovered: (action: ContextMenuAction | undefined) => void;
-};
-
-const SidebarButton: React.FC<SidebarButtonProps> = ({ action, disabled, onClick, onHovered }) => {
-  return (
-    <Button
-      disabled={disabled}
-      onClick={onClick}
-      icon={MenuOptions[action].icon}
-      onMouseEnter={() => onHovered(action)}
-      onMouseLeave={() => onHovered(undefined)}
-    />
-  );
-};
-
-type ContextMenuAction = keyof typeof MenuOptions;
+const SidebarButton = SidebarButtonFactory(menuOptions);
 
 type TableRowProps = {
   tableRowData: Required<TableProps>['tableData'][number];

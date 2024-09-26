@@ -1,6 +1,5 @@
 import { Editor, Frame } from '@craftjs/core';
 import React, {
-  Fragment,
   MouseEventHandler,
   ReactElement,
   ReactNode,
@@ -11,7 +10,7 @@ import React, {
   useState,
 } from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { Menu, MenuProps } from 'antd';
+import { Button, Menu, MenuProps } from 'antd';
 
 import * as Elements from './elements';
 import { createPortal } from 'react-dom';
@@ -443,3 +442,61 @@ export const Overlay: React.FC<OverlayProps> = ({ show, controls, children }) =>
     </>
   );
 };
+
+type Option = { label: string; icon: ReactNode };
+
+type SidebarButtonProps<T extends string> = {
+  action: T;
+  options: Record<T, Option>;
+  disabled?: boolean;
+  onClick: () => void;
+  onHovered: (action: T | undefined) => void;
+};
+
+function SidebarButton<T extends string>({
+  action,
+  options,
+  disabled,
+  onClick,
+  onHovered,
+}: SidebarButtonProps<T>) {
+  return (
+    <Button
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      icon={options[action].icon}
+      onMouseEnter={() => onHovered(action)}
+      onMouseLeave={() => onHovered(undefined)}
+    />
+  );
+}
+
+export function SidebarButtonFactory<T extends string>(options: Record<T, Option>) {
+  return (args: Omit<SidebarButtonProps<T>, 'options'>) => SidebarButton<T>({ ...args, options });
+}
+
+function MenuItemFactory<T extends string>(
+  options: Record<T, Option>,
+  action: T,
+  onClick: () => void,
+  onHovered: (action: T | undefined) => void,
+): NonNullable<MenuProps['items']>[number] {
+  return {
+    key: action,
+    label: options[action].label,
+    onClick,
+    onMouseEnter: () => onHovered(action),
+    onMouseLeave: () => onHovered(undefined),
+  };
+}
+
+// found here: https://stackoverflow.com/a/55344772
+type Tail<T extends any[]> = T extends [infer A, ...infer R] ? R : never;
+
+export function MenuItemFactoryFactory<T extends string>(options: Record<T, Option>) {
+  return (...args: Tail<Parameters<typeof MenuItemFactory<T>>>) =>
+    MenuItemFactory<T>(options, ...args);
+}

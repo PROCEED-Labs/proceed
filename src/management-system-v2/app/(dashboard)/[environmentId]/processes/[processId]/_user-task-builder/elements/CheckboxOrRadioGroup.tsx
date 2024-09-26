@@ -1,13 +1,23 @@
 import { Fragment, useId, useState } from 'react';
 
-import { Input, MenuProps, Select, Tooltip } from 'antd';
+import { Divider, Input, MenuProps, Select, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
+import { TbRowInsertTop, TbRowInsertBottom, TbRowRemove } from 'react-icons/tb';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
 import EditableText from '../_utils/EditableText';
-import { Setting, ContextMenu } from '../utils';
+import {
+  Setting,
+  ContextMenu,
+  Overlay,
+  SidebarButtonFactory,
+  MenuItemFactoryFactory,
+} from '../utils';
 import { WithRequired } from '@/lib/typescript-utils';
+
+import { SettingOutlined, EditOutlined } from '@ant-design/icons';
+import { createPortal } from 'react-dom';
 
 const defaultText = 'Double-Click Me To Edit';
 
@@ -31,6 +41,7 @@ type CheckBoxOrRadioButtonProps = WithRequired<
   checked?: boolean;
   onChange: () => void;
   onLabelChange: (newLabel: string) => void;
+  onContextMenu?: (top: number, left: number) => void;
 };
 
 const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
@@ -41,8 +52,11 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   checked,
   onChange,
   onLabelChange,
+  onContextMenu,
 }) => {
   const id = useId();
+  const [hovered, setHovered] = useState(false);
+  const [textEditing, setTextEditing] = useState(false);
 
   return (
     <>
@@ -55,21 +69,52 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
         onClick={onChange}
         onChange={onChange}
       />
-      <EditableText
-        value={label}
-        tagName="label"
-        htmlFor={id}
-        onChange={onLabelChange}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      />
+      <span
+        style={{ position: 'relative', width: '100%' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <Overlay
+          show={hovered && !textEditing}
+          controls={[
+            {
+              icon: <EditOutlined onClick={() => setTextEditing(true)} />,
+              key: 'edit',
+            },
+            {
+              icon: <SettingOutlined onClick={(e) => onContextMenu?.(e.clientY, e.clientX)} />,
+              key: 'setting',
+            },
+          ]}
+        >
+          <EditableText
+            value={label}
+            tagName="label"
+            htmlFor={id}
+            externalActive={textEditing}
+            onStopEditing={() => setTextEditing(false)}
+            onChange={onLabelChange}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          />
+        </Overlay>
+      </span>
     </>
   );
 };
 
-type ContextAction = 'add-above' | 'add-below' | 'remove' | undefined;
+const menuOptions = {
+  'add-above': { label: 'Above', icon: <TbRowInsertTop size={20} /> },
+  'add-below': { label: 'Below', icon: <TbRowInsertBottom size={20} /> },
+  remove: { label: 'Remove', icon: <TbRowRemove size={20} /> },
+} as const;
+
+type ContextAction = keyof typeof menuOptions;
+
+const SidebarButton = SidebarButtonFactory(menuOptions);
+const toMenuItem = MenuItemFactoryFactory(menuOptions);
 
 const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   type,
@@ -80,6 +125,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     editingEnabled: state.options.enabled,
   }));
 
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ top: number; left: number }>();
   const [contextMenuTarget, setContextMenuTarget] = useState<number>();
   const [hoveredContextAction, setContextAction] = useState<ContextAction>();
   const [currentValue, setCurrentValue] = useState('');
@@ -147,6 +193,12 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     });
   };
 
+  const valueTooltip = (
+    <Tooltip title={type === 'checkbox' ? checkboxValueHint : radioValueHint}>
+      <InfoCircleOutlined />
+    </Tooltip>
+  );
+
   const contextMenu: MenuProps['items'] =
     contextMenuTarget !== undefined
       ? [
@@ -154,29 +206,15 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
             key: 'add',
             label: 'Add',
             children: [
-              {
-                key: 'above',
-                label: 'Above',
-                onClick: () => handleAddButton(contextMenuTarget),
-                onMouseEnter: () => setContextAction('add-above'),
-                onMouseLeave: () => setContextAction(undefined),
-              },
-              {
-                key: 'below',
-                label: 'Below',
-                onClick: () => handleAddButton(contextMenuTarget + 1),
-                onMouseEnter: () => setContextAction('add-below'),
-                onMouseLeave: () => setContextAction(undefined),
-              },
+              toMenuItem('add-above', () => handleAddButton(contextMenuTarget), setContextAction),
+              toMenuItem(
+                'add-below',
+                () => handleAddButton(contextMenuTarget + 1),
+                setContextAction,
+              ),
             ],
           },
-          {
-            key: 'remove',
-            label: 'Remove',
-            onClick: () => handleRemoveButton(contextMenuTarget),
-            onMouseEnter: () => setContextAction('remove'),
-            onMouseLeave: () => setContextAction(undefined),
-          },
+          toMenuItem('remove', () => handleRemoveButton(contextMenuTarget), setContextAction),
           {
             key: 'value',
             label: (
@@ -190,11 +228,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
               >
                 <Input
                   addonBefore="Value"
-                  addonAfter={
-                    <Tooltip title={type === 'checkbox' ? checkboxValueHint : radioValueHint}>
-                      <InfoCircleOutlined />
-                    </Tooltip>
-                  }
+                  addonAfter={valueTooltip}
                   style={{ width: '250px' }}
                   value={currentValue}
                   onChange={(e) => setCurrentValue(e.target.value)}
@@ -225,6 +259,8 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
             setContextAction(undefined);
             setCurrentValue('');
           }}
+          triggers={[]}
+          externalPosition={contextMenuPosition}
         >
           {data.map(({ label, value, checked }, index) => (
             <Fragment key={index}>
@@ -248,9 +284,11 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                       ? 'rgba(255,0,0,0.33)'
                       : undefined,
                 }}
-                onContextMenu={() => {
+                onContextMenu={(e) => {
                   setCurrentValue(value);
                   setContextMenuTarget(index);
+                  setContextMenuPosition({ top: e.clientY, left: e.clientX });
+                  e.preventDefault();
                 }}
               >
                 <CheckboxOrRadioButton
@@ -261,6 +299,11 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                   checked={checked}
                   onChange={() => handleClick(index)}
                   onLabelChange={(newLabel) => handleLabelEdit(index, newLabel)}
+                  onContextMenu={(top, left) => {
+                    setCurrentValue(value);
+                    setContextMenuTarget(index);
+                    setContextMenuPosition({ top, left });
+                  }}
                 />
               </div>
               {index === contextMenuTarget && hoveredContextAction === 'add-below' && (
@@ -277,6 +320,50 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
               )}
             </Fragment>
           ))}
+          {contextMenuTarget !== undefined &&
+            createPortal(
+              <>
+                <Divider>{type === 'checkbox' ? 'Checkbox' : 'Radio'} Settings</Divider>
+                <Space style={{ width: '100%' }} direction="vertical" align="center">
+                  <Space.Compact>
+                    <SidebarButton
+                      action="add-above"
+                      onClick={() => {
+                        handleAddButton(contextMenuTarget);
+                        setContextMenuTarget(contextMenuTarget + 1);
+                      }}
+                      onHovered={setContextAction}
+                    />
+                    <SidebarButton
+                      action="add-below"
+                      onClick={() => handleAddButton(contextMenuTarget + 1)}
+                      onHovered={setContextAction}
+                    />
+                    <SidebarButton
+                      action="remove"
+                      disabled={data.length < 2}
+                      onClick={() => handleRemoveButton(contextMenuTarget)}
+                      onHovered={setContextAction}
+                    />
+                  </Space.Compact>
+                  <Space.Compact>
+                    <Setting
+                      label="Value"
+                      control={
+                        <Input
+                          addonAfter={valueTooltip}
+                          value={currentValue}
+                          onChange={(e) => setCurrentValue(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onBlur={() => handleValueChange(contextMenuTarget, currentValue)}
+                        />
+                      }
+                    />
+                  </Space.Compact>
+                </Space>
+              </>,
+              document.getElementById('sub-element-settings-toolbar')!,
+            )}
         </ContextMenu>
       </div>
     </div>

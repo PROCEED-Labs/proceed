@@ -17,8 +17,8 @@ import React, { MouseEventHandler, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const defaultHeaderContent =
-  '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me To Edit</strong></b>';
-const defaultContent = 'Double Click Me To Edit';
+  '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Header Cell</strong></b>';
+const defaultContent = 'Table Cell';
 
 type TableProps = {
   tableData?: string[][];
@@ -29,7 +29,7 @@ const TableCell: React.FC<
     type: 'th' | 'td';
     content: string;
     style?: React.CSSProperties;
-    onContextMenu?: (position: { top: number; left: number }) => void;
+    onContextMenu?: () => void;
     onChange?: (newContent: string) => void;
   }>
 > = ({ type, content, style = {}, onChange = () => {}, onContextMenu }) => {
@@ -38,7 +38,7 @@ const TableCell: React.FC<
 
   const handleContextMenu: MouseEventHandler | undefined = onContextMenu
     ? (e) => {
-        onContextMenu({ top: e.clientY, left: e.clientX });
+        onContextMenu();
         e.preventDefault();
       }
     : undefined;
@@ -66,7 +66,7 @@ const TableCell: React.FC<
       ]}
     >
       <EditableText
-        externalActive={textEditing}
+        active={textEditing}
         value={content}
         tagName="span"
         onChange={onChange}
@@ -95,11 +95,7 @@ type TableRowProps = {
   rowIndex: number;
   cellStyle?: React.CSSProperties;
   onUpdateContent: (newContent: string, rowIndex: number, colIndex: number) => void;
-  onCellContextMenu: (
-    rowIndex: number,
-    colIndex: number,
-    position: { top: number; left: number },
-  ) => void;
+  onCellContextMenu: (rowIndex: number, colIndex: number) => void;
   contextMenuTargetCell?: { row: number; col: number };
   hoveredContextMenuAction?: ContextMenuAction;
 };
@@ -152,7 +148,7 @@ const TableRow: React.FC<TableRowProps> = ({
                       : undefined,
                   ...cellStyle,
                 }}
-                onContextMenu={(position) => onCellContextMenu(rowIndex, colIndex, position)}
+                onContextMenu={() => onCellContextMenu(rowIndex, colIndex)}
                 onChange={(newContent) => onUpdateContent(newContent, rowIndex, colIndex)}
               />
             }
@@ -199,7 +195,6 @@ const Table: UserComponent<TableProps> = ({
     return { isSelected: !!parent && parent.events.selected };
   });
 
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ top: number; left: number }>();
   const [contextMenuTargetCell, setContextMenuTargetCell] =
     useState<TableRowProps['contextMenuTargetCell']>();
   const [hoveredContextMenuAction, setHoveredContextMenuAction] = useState<ContextMenuAction>();
@@ -305,10 +300,7 @@ const Table: UserComponent<TableProps> = ({
       onClose={() => {
         setContextMenuTargetCell(undefined);
         setHoveredContextMenuAction(undefined);
-        setContextMenuPosition(undefined);
       }}
-      externalPosition={contextMenuPosition}
-      triggers={[]}
     >
       <table
         className="user-task-form-table"
@@ -321,9 +313,8 @@ const Table: UserComponent<TableProps> = ({
             rowIndex={0}
             tableRowData={tableData[0]}
             onUpdateContent={handleCellEdit}
-            onCellContextMenu={(row, col, position) => {
+            onCellContextMenu={(row, col) => {
               setContextMenuTargetCell({ row, col });
-              setContextMenuPosition(position);
             }}
             contextMenuTargetCell={contextMenuTargetCell}
             hoveredContextMenuAction={hoveredContextMenuAction}
@@ -336,9 +327,8 @@ const Table: UserComponent<TableProps> = ({
               rowIndex={index + 1}
               tableRowData={tableData[index + 1]}
               onUpdateContent={handleCellEdit}
-              onCellContextMenu={(row, col, position) => {
+              onCellContextMenu={(row, col) => {
                 setContextMenuTargetCell({ row, col });
-                setContextMenuPosition(position);
               }}
               contextMenuTargetCell={contextMenuTargetCell}
               hoveredContextMenuAction={hoveredContextMenuAction}

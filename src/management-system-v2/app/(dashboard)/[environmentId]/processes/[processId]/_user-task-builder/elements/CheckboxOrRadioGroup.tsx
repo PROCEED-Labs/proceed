@@ -19,8 +19,6 @@ import { WithRequired } from '@/lib/typescript-utils';
 import { SettingOutlined, EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 
-const defaultText = 'Double-Click Me To Edit';
-
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
 const radioValueHint =
@@ -29,7 +27,7 @@ const radioValueHint =
 type CheckBoxOrRadioGroupProps = {
   type: 'checkbox' | 'radio';
   variable?: string;
-  data?: { label: string; value: string; checked?: boolean }[];
+  data: { label: string; value: string; checked?: boolean }[];
 };
 
 type CheckBoxOrRadioButtonProps = WithRequired<
@@ -41,7 +39,12 @@ type CheckBoxOrRadioButtonProps = WithRequired<
   checked?: boolean;
   onChange: () => void;
   onLabelChange: (newLabel: string) => void;
-  onContextMenu?: (top: number, left: number) => void;
+  onContextMenu?: () => void;
+};
+
+const getNewElementLabel = (type: CheckBoxOrRadioButtonProps['type']) => {
+  if (type === 'checkbox') return 'New Checkbox';
+  else return 'New Radio Button';
 };
 
 const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
@@ -82,7 +85,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               key: 'edit',
             },
             {
-              icon: <SettingOutlined onClick={(e) => onContextMenu?.(e.clientY, e.clientX)} />,
+              icon: <SettingOutlined onClick={() => onContextMenu?.()} />,
               key: 'setting',
             },
           ]}
@@ -91,7 +94,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
             value={label}
             tagName="label"
             htmlFor={id}
-            externalActive={textEditing}
+            active={textEditing}
             onStopEditing={() => setTextEditing(false)}
             onChange={onLabelChange}
             onClick={(e) => {
@@ -119,13 +122,12 @@ const toMenuItem = MenuItemFactoryFactory(menuOptions);
 const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   type,
   variable = 'test',
-  data = [{ label: defaultText, value: '', checked: false }],
+  data,
 }) => {
   const { query, editingEnabled } = useEditor((state) => ({
     editingEnabled: state.options.enabled,
   }));
 
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ top: number; left: number }>();
   const [contextMenuTarget, setContextMenuTarget] = useState<number>();
   const [hoveredContextAction, setContextAction] = useState<ContextAction>();
   const [currentValue, setCurrentValue] = useState('');
@@ -180,7 +182,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = [
         ...data.slice(0, index),
-        { label: defaultText, value: '', checked: false },
+        { label: getNewElementLabel(type), value: '', checked: false },
         ...data.slice(index),
       ];
     });
@@ -246,22 +248,20 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
       : [];
 
   return (
-    <div
-      ref={(r) => {
-        r && connect(r);
+    <ContextMenu
+      menu={contextMenu}
+      onClose={() => {
+        setContextMenuTarget(undefined);
+        setContextAction(undefined);
+        setCurrentValue('');
       }}
     >
-      <div className="user-task-form-input-group">
-        <ContextMenu
-          menu={contextMenu}
-          onClose={() => {
-            setContextMenuTarget(undefined);
-            setContextAction(undefined);
-            setCurrentValue('');
-          }}
-          triggers={[]}
-          externalPosition={contextMenuPosition}
-        >
+      <div
+        ref={(r) => {
+          r && connect(r);
+        }}
+      >
+        <div className="user-task-form-input-group">
           {data.map(({ label, value, checked }, index) => (
             <Fragment key={index}>
               {index === contextMenuTarget && hoveredContextAction === 'add-above' && (
@@ -269,7 +269,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                   <CheckboxOrRadioButton
                     type={type}
                     variable={variable}
-                    label={defaultText}
+                    label={getNewElementLabel(type)}
                     value={value}
                     onChange={() => {}}
                     onLabelChange={() => {}}
@@ -287,7 +287,6 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                 onContextMenu={(e) => {
                   setCurrentValue(value);
                   setContextMenuTarget(index);
-                  setContextMenuPosition({ top: e.clientY, left: e.clientX });
                   e.preventDefault();
                 }}
               >
@@ -299,10 +298,9 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                   checked={checked}
                   onChange={() => handleClick(index)}
                   onLabelChange={(newLabel) => handleLabelEdit(index, newLabel)}
-                  onContextMenu={(top, left) => {
+                  onContextMenu={() => {
                     setCurrentValue(value);
                     setContextMenuTarget(index);
-                    setContextMenuPosition({ top, left });
                   }}
                 />
               </div>
@@ -311,7 +309,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                   <CheckboxOrRadioButton
                     type={type}
                     variable={variable}
-                    label={defaultText}
+                    label={getNewElementLabel(type)}
                     value={value}
                     onChange={() => {}}
                     onLabelChange={() => {}}
@@ -364,9 +362,9 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
               </>,
               document.getElementById('sub-element-settings-toolbar')!,
             )}
-        </ContextMenu>
+        </div>
       </div>
-    </div>
+    </ContextMenu>
   );
 };
 
@@ -414,7 +412,7 @@ CheckBoxOrRadioGroup.craft = {
   },
   props: {
     variable: 'test',
-    data: [{ label: defaultText, value: '', checked: false }],
+    data: [{ label: 'New Element', value: '', checked: false }],
   },
 };
 

@@ -400,11 +400,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               position: 'absolute',
               ...position,
             }}
-            items={menu}
+            items={menu?.length ? menu : [{ key: 'empty-menu', label: 'No Settings available' }]}
           />,
           document.body,
         )}
-      <span
+      <div
         onContextMenu={triggers.includes('contextMenu') ? handleOpen : undefined}
         onClick={
           triggers.includes('click')
@@ -416,7 +416,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         }
       >
         {children}
-      </span>
+      </div>
     </>
   );
 };

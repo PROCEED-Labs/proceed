@@ -15,6 +15,7 @@ import { Button, Menu, MenuProps } from 'antd';
 import * as Elements from './elements';
 import { createPortal } from 'react-dom';
 import useBuilderStateStore from './use-builder-state-store';
+import { useDndContext } from '@dnd-kit/core';
 
 const styles = `
 body {
@@ -427,9 +428,11 @@ type OverlayProps = React.PropsWithChildren<{
 }>;
 
 export const Overlay: React.FC<OverlayProps> = ({ show, controls, children }) => {
+  const { active } = useDndContext();
+
   return (
     <>
-      {show && (
+      {show && !active && (
         <div className="overlay-mask">
           {controls.map(({ icon, key }) => (
             <span style={{ margin: '0 3px' }} key={key}>

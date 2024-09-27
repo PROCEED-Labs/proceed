@@ -32,7 +32,7 @@ interface ProcessInfo {
  *
  */
 export function getDefaultProcessMetaInfo() {
-  const date = new Date().toUTCString();
+  const date = new Date();
   return {
     id: '',
     environmentId: '',
@@ -40,13 +40,13 @@ export function getDefaultProcessMetaInfo() {
     originalId: '',
     name: 'Default Process',
     description: '',
-    owner: '',
+    creatorId: '',
     processIds: [],
-    variables: [],
-    departments: [],
+    //variables: [],
+    //departments: [],
     inEditingBy: [],
     createdOn: date,
-    lastEdited: date,
+    lastEditedOn: date,
     sharedAs: 'protected',
     shareTimestamp: 0,
     allowIframeTimestamp: 0,

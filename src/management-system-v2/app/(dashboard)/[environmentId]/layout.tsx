@@ -2,7 +2,7 @@ import { PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
-import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
 import { MenuProps } from 'antd';
 import {
   FileOutlined,
@@ -12,7 +12,7 @@ import {
   ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/legacy/iam/environments';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
@@ -22,6 +22,7 @@ import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import { env } from '@/lib/env-vars';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
 
 const DashboardLayout = async ({
@@ -32,13 +33,11 @@ const DashboardLayout = async ({
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
+  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
+  const orgEnvironments = await asyncMap(userOrgEnvs, (envId) => getEnvironmentById(envId));
 
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+  userEnvironments.push(...orgEnvironments);
 
   const userRules = systemAdmin
     ? (adminRules as RemoveReadOnly<typeof adminRules>)
@@ -202,7 +201,7 @@ const DashboardLayout = async ({
   }
 
   let logo;
-  if (activeEnvironment.isOrganization && organizationHasLogo(activeEnvironment.spaceId))
+  if (activeEnvironment.isOrganization && (await organizationHasLogo(activeEnvironment.spaceId)))
     logo = `/api/private/${activeEnvironment.spaceId}/logo`;
 
   return (
@@ -210,7 +209,7 @@ const DashboardLayout = async ({
       <SetAbility
         rules={userRules}
         environmentId={activeEnvironment.spaceId}
-        treeMap={getSpaceFolderTree(activeEnvironment.spaceId)}
+        treeMap={await getSpaceFolderTree(activeEnvironment.spaceId)}
       />
       <Layout
         loggedIn={!!userId}

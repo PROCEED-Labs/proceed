@@ -59,7 +59,7 @@ export function SystemAdminCreation({
   if (!usersPicked)
     return (
       <UserList
-        users={data}
+        users={data.users}
         selectedRowActions={(selection) => (
           <Button type="text" onClick={() => setUsersPicked(selection)} icon={<PlusOutlined />} />
         )}

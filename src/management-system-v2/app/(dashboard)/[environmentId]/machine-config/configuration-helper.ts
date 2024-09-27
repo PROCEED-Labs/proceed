@@ -31,7 +31,7 @@ export function defaultParameter(
 }
 
 export function defaultConfiguration(name?: string, description?: string): AbstractConfig {
-  const date = new Date().toUTCString();
+  const date = new Date();
   const config = {
     id: v4(),
     type: 'config',
@@ -42,7 +42,7 @@ export function defaultConfiguration(name?: string, description?: string): Abstr
     departments: [],
     inEditingBy: [],
     createdOn: date,
-    lastEdited: date,
+    lastEdited: '',
     sharedAs: 'protected',
     shareTimestamp: 0,
     allowIframeTimestamp: 0,
@@ -50,7 +50,7 @@ export function defaultConfiguration(name?: string, description?: string): Abstr
     folderId: '',
     createdBy: '',
     lastEditedBy: '',
-    lastEditedOn: '',
+    lastEditedOn: date,
   } as AbstractConfig;
 
   if (description) {

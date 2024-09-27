@@ -460,7 +460,7 @@ export async function copyParentConfig(
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
 
     const newId = v4();
-    const date = new Date().toUTCString();
+    const date = new Date();
     const copy = {
       ...(JSON.parse(JSON.stringify(originalConfig)) as typeof originalConfig),
       id: newId,
@@ -483,7 +483,7 @@ export async function copyParentConfig(
 
     // if no folder ID is given, set ID to root folder's
     if (!copy.folderId) {
-      copy.folderId = getRootFolder(environmentId).id;
+      copy.folderId = (await getRootFolder(environmentId)).id;
     }
 
     const folderData = foldersMetaObject.folders[copy.folderId];
@@ -516,7 +516,7 @@ export async function addParentConfig(
 ) {
   try {
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
-    const date = new Date().toUTCString();
+    const date = new Date();
     const metadata: ParentConfig = {
       ...({
         id: v4(),
@@ -525,12 +525,11 @@ export async function addParentConfig(
         variables: [],
         createdBy: environmentId,
         lastEditedBy: environmentId,
-        lastEditedOn: date,
         metadata: {},
         departments: [],
         inEditingBy: [],
         createdOn: date,
-        lastEdited: date,
+        lastEditedOn: date,
         sharedAs: 'protected',
         shareTimestamp: 0,
         allowIframeTimestamp: 0,
@@ -544,7 +543,7 @@ export async function addParentConfig(
       ...(base ? base : {}),
     };
 
-    metadata.folderId = getRootFolder(environmentId).id;
+    metadata.folderId = (await getRootFolder(environmentId)).id;
     metadata.environmentId = environmentId;
 
     const folderData = foldersMetaObject.folders[metadata.folderId];

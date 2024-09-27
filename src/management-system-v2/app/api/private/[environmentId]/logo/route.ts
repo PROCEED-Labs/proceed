@@ -13,13 +13,13 @@ export async function GET(
   _: NextRequest,
   { params: { environmentId } }: { params: { environmentId: string } },
 ) {
-  const organization = getEnvironmentById(environmentId);
+  const organization = await getEnvironmentById(environmentId);
   if (!organization)
     return new NextResponse(null, {
       status: 404,
       statusText: 'Space with this id does not exist.',
     });
-  if (!organization.organization)
+  if (!organization.isOrganization)
     return new NextResponse(null, {
       status: 405,
       statusText: "Personal spaces don't support logos",
@@ -38,7 +38,7 @@ export async function GET(
     });
   }
 
-  const imageBuffer = getOrganizationLogo(decodeURIComponent(environmentId));
+  const imageBuffer = await getOrganizationLogo(decodeURIComponent(environmentId));
 
   if (!imageBuffer)
     return new NextResponse(null, {

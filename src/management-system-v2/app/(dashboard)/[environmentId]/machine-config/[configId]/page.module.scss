@@ -14,10 +14,10 @@
 
     .SiderActions {
       display: flex;
-      justify-content: end;
-      padding: 10px 15px;
+      justify-content: flex-start;
+      padding: 10px 10px;
       .CustomBoxButton {
-        margin-left: 10px;
+        margin-right: 10px;
         z-index: 2;
       }
     }

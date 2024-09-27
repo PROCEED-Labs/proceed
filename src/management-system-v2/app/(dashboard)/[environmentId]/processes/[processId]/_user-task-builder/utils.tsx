@@ -1,5 +1,5 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { ReactElement, useId } from 'react';
+import React, { CSSProperties, ReactElement, useId } from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
@@ -7,13 +7,16 @@ import * as Elements from './elements';
 const styles = `
 body {
   font-size: 16px;
+  line-height: 1.5;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
 }
 
 .user-task-form-column {
   flex: 1 0 0;
   box-sizing: border-box;
   height: fit-content;
-  border: 2px solid lightgrey;
+  border: 2px solid rgba(0,0,0,0);
+  padding: 0 10px;
 }
 
 @media only screen and (max-width: 600px) {
@@ -26,13 +29,14 @@ body {
   box-sizing: border-box;
   width: 100%;
   padding: 5px;
-  margin: 10px 0;
+  margin: 5px 0;
   display: flex;
   flex-wrap: wrap;
 }
 
 .user-task-form-container {
   min-height: 100%;
+  border-radius: 8px;
 }
 
 .user-task-form-input {
@@ -46,9 +50,14 @@ body {
   font-size: 1rem;
 }
 
+.user-task-form-input label span {
+  white-space: nowrap !important;
+}
+
 .user-task-form-input input {
   box-sizing: border-box;
   width: 100%;
+  height: fit-content;
   border: 1px solid #d9d9d9;
   padding: 4px 11px;
   font-size: 0.875em;
@@ -87,13 +96,13 @@ body {
 .user-task-form-input-group input[type="radio"] {
   width: 16px;
   height: 16px;
-  margin: 3px;
+  margin: 3px 3px 6px 0;
 }
 
 .user-task-form-input-group input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  margin: 3px;
+  margin: 3px 3px 6px 0;
 }
 
 .user-task-form-image {
@@ -180,8 +189,7 @@ export const iframeDocument = `
 
       .frame-content > div {
         box-sizing: border-box;
-        padding: 0 10px;
-        border: 2px solid #d3d3d3 !important;
+        padding: 0 10px;    
       }
 
       .user-task-form-container svg {
@@ -238,13 +246,17 @@ export const defaultForm = `
 }
 `;
 
-export const Setting: React.FC<{ label: string; control: ReactElement }> = ({ label, control }) => {
+export const Setting: React.FC<{
+  label: string;
+  control: ReactElement;
+  style?: React.CSSProperties;
+}> = ({ label, control, style = {} }) => {
   const id = useId();
 
-  const clonedControl = React.cloneElement(control, { id, style: { flexShrink: 1 } });
+  const clonedControl = React.cloneElement(control, { id });
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', margin: '5px' }}>
+    <div style={{ margin: '5px', ...style }}>
       <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
         {label}:
       </label>

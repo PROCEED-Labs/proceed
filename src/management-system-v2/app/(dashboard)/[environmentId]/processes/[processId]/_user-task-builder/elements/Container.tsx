@@ -6,7 +6,7 @@ import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
 import { useDroppable } from '@dnd-kit/core';
 
-import { ContextMenu, Setting } from '../utils';
+import { ContextMenu, Setting } from './utils';
 
 export type ContainerProps = React.PropsWithChildren & {
   padding?: string | number;

@@ -5,7 +5,7 @@ import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
-import { ContextMenu, Overlay, Setting } from '../utils';
+import { ContextMenu, Overlay, Setting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useBuilderStateStore from '../use-builder-state-store';
 

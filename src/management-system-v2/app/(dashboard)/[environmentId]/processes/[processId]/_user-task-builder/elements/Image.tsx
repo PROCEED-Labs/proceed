@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
-import { ContextMenu, Setting } from '../utils';
+import { ContextMenu, Setting } from './utils';
 import ImageUpload from '@/components/image-upload';
 
 type ImageProps = {

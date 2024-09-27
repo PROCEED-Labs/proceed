@@ -14,7 +14,7 @@ import {
 import cn from 'classnames';
 
 import EditableText from '../_utils/EditableText';
-import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from '../utils';
+import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from './utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 

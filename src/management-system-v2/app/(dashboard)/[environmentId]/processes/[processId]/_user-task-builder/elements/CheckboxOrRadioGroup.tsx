@@ -15,7 +15,7 @@ import {
   Overlay,
   SidebarButtonFactory,
   MenuItemFactoryFactory,
-} from '../utils';
+} from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 
 import { SettingOutlined, EditOutlined } from '@ant-design/icons';

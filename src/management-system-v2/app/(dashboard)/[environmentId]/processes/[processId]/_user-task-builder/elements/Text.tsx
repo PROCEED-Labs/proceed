@@ -3,7 +3,7 @@ import { useNode, UserComponent } from '@craftjs/core';
 import { EditOutlined } from '@ant-design/icons';
 
 import EditableText from '../_utils/EditableText';
-import { ContextMenu, Overlay } from '../utils';
+import { ContextMenu, Overlay } from './utils';
 import { useState } from 'react';
 
 type TextProps = {

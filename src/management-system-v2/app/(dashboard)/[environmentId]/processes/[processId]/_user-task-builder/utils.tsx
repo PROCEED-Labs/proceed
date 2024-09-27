@@ -244,6 +244,19 @@ export const iframeDocument = `
         background-color: rgba(0,0,0,0.5);
       }
 
+      .overlay-control-icon {
+        margin: 0 3px;
+      }
+
+      .overlay-control-icon > span {
+        display: block;
+        height: 16px;
+      }
+
+      .overlay-control-icon svg {
+        height: fit-content;
+      }
+
       ${styles}
     </style>
   </head>
@@ -417,9 +430,9 @@ export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, childr
       {show && !active && (
         <div className="overlay-mask" onMouseMove={(e) => e.stopPropagation()}>
           {controls.map(({ icon, key }) => (
-            <span style={{ margin: '0 3px' }} key={key}>
+            <div className="overlay-control-icon" key={key}>
               {icon}
-            </span>
+            </div>
           ))}
         </div>
       )}

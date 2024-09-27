@@ -184,7 +184,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
               }
             }
           >
-            {currentKeyRef.current[0].toUpperCase() + currentKeyRef.current.slice(1) /*TODO */}
+            {currentKeyRef.current}
           </Paragraph>
           {editable && (
             <Space.Compact size="small">

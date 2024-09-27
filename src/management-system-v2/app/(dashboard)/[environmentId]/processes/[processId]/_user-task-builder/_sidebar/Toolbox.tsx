@@ -72,10 +72,16 @@ const Toolbox = () => {
         <Input />
       </CreationButton>
       <CreationButton title="Radio" icon={<MdRadioButtonChecked />}>
-        <CheckBoxOrRadioGroup type="radio" data={[{ label: 'New Radio Button', value: '' }]} />
+        <CheckBoxOrRadioGroup
+          type="radio"
+          data={[{ label: 'New Radio Button', value: '', checked: false }]}
+        />
       </CreationButton>
       <CreationButton title="Checkbox" icon={<MdCheckBox />}>
-        <CheckBoxOrRadioGroup type="checkbox" data={[{ label: 'New Checkbox', value: '' }]} />
+        <CheckBoxOrRadioGroup
+          type="checkbox"
+          data={[{ label: 'New Checkbox', value: '', checked: false }]}
+        />
       </CreationButton>
       <CreationButton title="Table" icon={<LuTable />}>
         <Table />

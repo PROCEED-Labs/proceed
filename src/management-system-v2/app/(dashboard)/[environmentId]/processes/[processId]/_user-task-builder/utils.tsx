@@ -257,6 +257,18 @@ export const iframeDocument = `
         height: fit-content;
       }
 
+      .target-sub-element {
+        background-color: rgba(255,255,0,0.33);
+      }
+
+      .sub-element-add-preview {
+        background-color: rgba(0,255,0,0.33);
+      }
+
+      .sub-element-remove-preview {
+        background-color: rgba(255,0,0,0.33);
+      }
+
       ${styles}
     </style>
   </head>
@@ -416,7 +428,7 @@ export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, childr
 
   useEffect(() => {
     if (show) {
-      window.addEventListener('mouseMove', onHide);
+      window.addEventListener('mousemove', onHide);
       getIframe()?.contentWindow?.addEventListener('mousemove', onHide);
       return () => {
         window.removeEventListener('mousemove', onHide);

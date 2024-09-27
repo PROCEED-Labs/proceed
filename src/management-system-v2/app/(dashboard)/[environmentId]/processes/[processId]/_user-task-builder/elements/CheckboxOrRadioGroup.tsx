@@ -1,8 +1,10 @@
-import { Fragment, useEffect, useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 
 import { Divider, Input, MenuProps, Select, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { TbRowInsertTop, TbRowInsertBottom, TbRowRemove } from 'react-icons/tb';
+
+import cn from 'classnames';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
@@ -27,7 +29,7 @@ const radioValueHint =
 type CheckBoxOrRadioGroupProps = {
   type: 'checkbox' | 'radio';
   variable?: string;
-  data: { label: string; value: string; checked?: boolean }[];
+  data: { label: string; value: string; checked: boolean }[];
 };
 
 type CheckBoxOrRadioButtonProps = WithRequired<
@@ -36,7 +38,7 @@ type CheckBoxOrRadioButtonProps = WithRequired<
 > & {
   label: string;
   value: string;
-  checked?: boolean;
+  checked: boolean;
   onChange: () => void;
   onLabelChange: (newLabel: string) => void;
   onEdit?: () => void;
@@ -111,7 +113,7 @@ const menuOptions = {
   remove: { label: 'Remove', icon: <TbRowRemove size={20} /> },
 } as const;
 
-type ContextAction = keyof typeof menuOptions;
+type EditAction = keyof typeof menuOptions;
 
 const SidebarButton = SidebarButtonFactory(menuOptions);
 const toMenuItem = MenuItemFactoryFactory(menuOptions);
@@ -126,7 +128,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   }));
 
   const [editTarget, setEditTarget] = useState<number>();
-  const [hoveredContextAction, setContextAction] = useState<ContextAction>();
+  const [hoveredAction, setHoveredAction] = useState<EditAction>();
   const [currentValue, setCurrentValue] = useState('');
 
   const {
@@ -144,7 +146,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   useEffect(() => {
     if (!isSelected) {
       setEditTarget(undefined);
-      setContextAction(undefined);
+      setHoveredAction(undefined);
       setCurrentValue('');
     }
   }, [isSelected]);
@@ -216,11 +218,11 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
             key: 'add',
             label: 'Add',
             children: [
-              toMenuItem('add-above', () => handleAddButton(editTarget), setContextAction),
-              toMenuItem('add-below', () => handleAddButton(editTarget + 1), setContextAction),
+              toMenuItem('add-above', () => handleAddButton(editTarget), setHoveredAction),
+              toMenuItem('add-below', () => handleAddButton(editTarget + 1), setHoveredAction),
             ],
           },
-          toMenuItem('remove', () => handleRemoveButton(editTarget), setContextAction),
+          toMenuItem('remove', () => handleRemoveButton(editTarget), setHoveredAction),
           {
             key: 'value',
             label: (
@@ -251,12 +253,40 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
         ]
       : [];
 
+  const dataWithPreviews = useMemo(() => {
+    type DataOrPreview = (typeof data)[number] & {
+      isAddPreview?: boolean;
+      isRemovePreview?: boolean;
+      isEditTarget?: boolean;
+    };
+    const dataCopy: DataOrPreview[] = data.map((entry, index) => {
+      return {
+        ...entry,
+        isEditTarget: editTarget === index,
+        isRemovePreview: editTarget === index && hoveredAction === 'remove',
+      };
+    });
+
+    if (editTarget !== undefined) {
+      const addPreview = {
+        label: getNewElementLabel(type),
+        value: '',
+        isAddPreview: true,
+        checked: false,
+      };
+      if (hoveredAction === 'add-above') dataCopy.splice(editTarget, 0, addPreview);
+      else if (hoveredAction === 'add-below') dataCopy.splice(editTarget + 1, 0, addPreview);
+    }
+
+    return dataCopy;
+  }, [data, editTarget, hoveredAction]);
+
   return (
     <ContextMenu
       menu={contextMenu}
       onClose={() => {
         setEditTarget(undefined);
-        setContextAction(undefined);
+        setHoveredAction(undefined);
         setCurrentValue('');
       }}
     >
@@ -266,33 +296,20 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
         }}
       >
         <div className="user-task-form-input-group">
-          {data.map(({ label, value, checked }, index) => (
-            <Fragment key={index}>
-              {index === editTarget && hoveredContextAction === 'add-above' && (
-                <span style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}>
-                  <CheckboxOrRadioButton
-                    type={type}
-                    variable={variable}
-                    label={getNewElementLabel(type)}
-                    value={value}
-                    onChange={() => {}}
-                    onLabelChange={() => {}}
-                  />
-                </span>
-              )}
+          {dataWithPreviews.map(
+            ({ label, value, checked, isAddPreview, isRemovePreview, isEditTarget }, index) => (
               <div
-                className="user-task-form-input-group-member"
-                style={{
-                  backgroundColor:
-                    editTarget === index && hoveredContextAction === 'remove'
-                      ? 'rgba(255,0,0,0.33)'
-                      : undefined,
-                }}
+                className={cn('user-task-form-input-group-member', {
+                  'target-sub-element': isEditTarget && !isRemovePreview,
+                  'sub-element-add-preview': isAddPreview,
+                  'sub-element-remove-preview': isRemovePreview,
+                })}
                 onContextMenu={(e) => {
                   setCurrentValue(value);
                   setEditTarget(index);
                   e.preventDefault();
                 }}
+                key={index}
               >
                 <CheckboxOrRadioButton
                   type={type}
@@ -308,20 +325,8 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                   }}
                 />
               </div>
-              {index === editTarget && hoveredContextAction === 'add-below' && (
-                <span style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}>
-                  <CheckboxOrRadioButton
-                    type={type}
-                    variable={variable}
-                    label={getNewElementLabel(type)}
-                    value={value}
-                    onChange={() => {}}
-                    onLabelChange={() => {}}
-                  />
-                </span>
-              )}
-            </Fragment>
-          ))}
+            ),
+          )}
           {editTarget !== undefined &&
             createPortal(
               <>
@@ -334,18 +339,23 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                         handleAddButton(editTarget);
                         setEditTarget(editTarget + 1);
                       }}
-                      onHovered={setContextAction}
+                      onHovered={setHoveredAction}
                     />
                     <SidebarButton
                       action="add-below"
                       onClick={() => handleAddButton(editTarget + 1)}
-                      onHovered={setContextAction}
+                      onHovered={setHoveredAction}
                     />
                     <SidebarButton
                       action="remove"
                       disabled={data.length < 2}
-                      onClick={() => handleRemoveButton(editTarget)}
-                      onHovered={setContextAction}
+                      onClick={() => {
+                        handleRemoveButton(editTarget);
+                        setEditTarget(undefined);
+                        setCurrentValue('');
+                        setHoveredAction(undefined);
+                      }}
+                      onHovered={setHoveredAction}
                     />
                   </Space.Compact>
                   <Space.Compact>

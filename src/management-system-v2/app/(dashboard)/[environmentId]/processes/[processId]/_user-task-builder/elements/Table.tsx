@@ -11,9 +11,11 @@ import {
   TbRowRemove,
 } from 'react-icons/tb';
 
+import cn from 'classnames';
+
 import EditableText from '../_utils/EditableText';
 import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from '../utils';
-import React, { MouseEventHandler, useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const defaultHeaderContent =
@@ -24,15 +26,28 @@ type TableProps = {
   tableData?: string[][];
 };
 
+type CellDataWithPreviews = {
+  content: string;
+  isEditTarget?: boolean;
+  isRemovePreview?: boolean;
+  isAddPreview?: boolean;
+};
+
 const TableCell: React.FC<
   React.PropsWithChildren<{
     type: 'th' | 'td';
-    content: string;
+    data: CellDataWithPreviews;
     style?: React.CSSProperties;
     onEdit?: () => void;
     onChange?: (newContent: string) => void;
   }>
-> = ({ type, content, style = {}, onChange = () => {}, onEdit }) => {
+> = ({
+  type,
+  data: { content, isEditTarget, isRemovePreview, isAddPreview },
+  style = {},
+  onChange = () => {},
+  onEdit,
+}) => {
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
@@ -40,7 +55,11 @@ const TableCell: React.FC<
     type,
     {
       style,
-      className: 'user-task-form-table-cell',
+      className: cn('user-task-form-table-cell', {
+        'target-sub-element': isEditTarget && !isRemovePreview,
+        'sub-element-add-preview': isAddPreview,
+        'sub-element-remove-preview': isRemovePreview,
+      }),
       onContextMenu: onEdit,
       onMouseEnter: () => setHovered(true),
     },
@@ -84,86 +103,31 @@ const toMenuItem = MenuItemFactoryFactory(menuOptions);
 const SidebarButton = SidebarButtonFactory(menuOptions);
 
 type TableRowProps = {
-  tableRowData: Required<TableProps>['tableData'][number];
+  tableRowData: CellDataWithPreviews[];
   rowIndex: number;
-  cellStyle?: React.CSSProperties;
   onUpdateContent: (newContent: string, rowIndex: number, colIndex: number) => void;
   onEditCell: (rowIndex: number, colIndex: number) => void;
-  targetCell?: { row: number; col: number };
-  cellAction?: CellAction;
 };
 
 const TableRow: React.FC<TableRowProps> = ({
   tableRowData,
   rowIndex,
-  cellStyle = {},
   onUpdateContent,
   onEditCell,
-  targetCell,
-  cellAction,
 }) => {
-  let targetRow = -1;
-  let targetCol = -1;
-  if (targetCell) {
-    ({ row: targetRow, col: targetCol } = targetCell);
-  }
-
   return (
     <>
-      {cellAction === 'add-row-above' && targetRow === rowIndex && (
-        <TableRow
-          tableRowData={tableRowData.map(() => defaultContent)}
-          rowIndex={-2}
-          cellStyle={{ backgroundColor: 'rgba(0,255,0,0.33)' }}
-          onEditCell={() => {}}
-          onUpdateContent={() => {}}
-        />
-      )}
       <tr>
         {tableRowData.map((col, colIndex) => (
-          <React.Fragment key={`table-cell-${rowIndex}-${colIndex}`}>
-            {cellAction === 'add-col-left' && targetCol === colIndex && (
-              <TableCell
-                type={rowIndex ? 'td' : 'th'}
-                content={rowIndex ? defaultContent : defaultHeaderContent}
-                style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}
-              />
-            )}
-            {
-              <TableCell
-                type={rowIndex ? 'td' : 'th'}
-                content={col}
-                style={{
-                  backgroundColor:
-                    (cellAction === 'remove-row' && targetRow === rowIndex) ||
-                    (cellAction === 'remove-col' && targetCol === colIndex)
-                      ? 'rgba(255,0,0,0.33)'
-                      : undefined,
-                  ...cellStyle,
-                }}
-                onEdit={() => onEditCell(rowIndex, colIndex)}
-                onChange={(newContent) => onUpdateContent(newContent, rowIndex, colIndex)}
-              />
-            }
-            {cellAction === 'add-col-right' && targetCol === colIndex && (
-              <TableCell
-                type={rowIndex ? 'td' : 'th'}
-                content={rowIndex ? defaultContent : defaultHeaderContent}
-                style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}
-              />
-            )}
-          </React.Fragment>
+          <TableCell
+            type={rowIndex ? 'td' : 'th'}
+            data={col}
+            onEdit={() => onEditCell(rowIndex, colIndex)}
+            onChange={(newContent) => onUpdateContent(newContent, rowIndex, colIndex)}
+            key={`table-cell-${rowIndex}-${colIndex}`}
+          />
         ))}
       </tr>
-      {cellAction === 'add-row-below' && targetRow === rowIndex && (
-        <TableRow
-          tableRowData={tableRowData.map(() => defaultContent)}
-          rowIndex={-2}
-          cellStyle={{ backgroundColor: 'rgba(0,255,0,0.33)' }}
-          onEditCell={() => {}}
-          onUpdateContent={() => {}}
-        />
-      )}
     </>
   );
 };
@@ -188,7 +152,7 @@ const Table: UserComponent<TableProps> = ({
     return { isSelected: !!parent && parent.events.selected };
   });
 
-  const [targetCell, setTargetCell] = useState<TableRowProps['targetCell']>();
+  const [targetCell, setTargetCell] = useState<{ row: number; col: number }>();
   const [hoveredAction, setHoveredAction] = useState<CellAction>();
 
   useEffect(() => {
@@ -289,6 +253,62 @@ const Table: UserComponent<TableProps> = ({
     }
   }
 
+  const tableDataWithPreviews = useMemo(() => {
+    const dataCopy = tableData.map((row, rowIndex) => {
+      const rowCopy: CellDataWithPreviews[] = row.map((content, colIndex) => {
+        if (targetCell) {
+          return {
+            content,
+            isEditTarget: targetCell.row === rowIndex && targetCell.col === colIndex,
+            isRemovePreview:
+              (hoveredAction === 'remove-row' && targetCell.row === rowIndex) ||
+              (hoveredAction === 'remove-col' && targetCell.col === colIndex),
+          };
+        }
+        return { content };
+      });
+
+      if (targetCell) {
+        if (hoveredAction === 'add-col-left') {
+          rowCopy.splice(targetCell.col, 0, {
+            content: rowIndex ? defaultContent : defaultHeaderContent,
+            isAddPreview: true,
+          });
+        } else if (hoveredAction === 'add-col-right') {
+          rowCopy.splice(targetCell.col + 1, 0, {
+            content: rowIndex ? defaultContent : defaultHeaderContent,
+            isAddPreview: true,
+          });
+        }
+      }
+
+      return rowCopy;
+    });
+    if (targetCell) {
+      if (hoveredAction === 'add-row-above') {
+        dataCopy.splice(
+          targetCell.row,
+          0,
+          tableData[0].map(() => ({
+            content: defaultContent,
+            isAddPreview: true,
+          })),
+        );
+      } else if (hoveredAction === 'add-row-below') {
+        dataCopy.splice(
+          targetCell.row + 1,
+          0,
+          tableData[0].map(() => ({
+            content: defaultContent,
+            isAddPreview: true,
+          })),
+        );
+      }
+    }
+
+    return dataCopy;
+  }, [tableData, targetCell, hoveredAction]);
+
   return (
     <ContextMenu
       menu={contextMenu}
@@ -306,27 +326,23 @@ const Table: UserComponent<TableProps> = ({
         <thead>
           <TableRow
             rowIndex={0}
-            tableRowData={tableData[0]}
+            tableRowData={tableDataWithPreviews[0]}
             onUpdateContent={handleCellEdit}
             onEditCell={(row, col) => {
               setTargetCell({ row, col });
             }}
-            targetCell={targetCell}
-            cellAction={hoveredAction}
           />
         </thead>
         <tbody>
-          {[...Array(tableData.length - 1).keys()].map((index) => (
+          {[...Array(tableDataWithPreviews.length - 1).keys()].map((index) => (
             <TableRow
               key={`row-${index}`}
               rowIndex={index + 1}
-              tableRowData={tableData[index + 1]}
+              tableRowData={tableDataWithPreviews[index + 1]}
               onUpdateContent={handleCellEdit}
               onEditCell={(row, col) => {
                 setTargetCell({ row, col });
               }}
-              targetCell={targetCell}
-              cellAction={hoveredAction}
             />
           ))}
         </tbody>

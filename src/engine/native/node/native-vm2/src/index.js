@@ -1,6 +1,8 @@
 const NativeModule = require('@proceed/native-module');
 const childProcess = require('node:child_process');
-const Fastify = require('fastify');
+// NOTE: native code directly calling universal code, I think the IPC communication should be done
+// by hand in this part
+const { network } = require('@proceed/system');
 
 /**
  * @class
@@ -8,7 +10,6 @@ const Fastify = require('fastify');
 class ScriptExecutor extends NativeModule {
   /**
    * @param {{
-   * processCommunicationPort?: number
    * logChildProcessOutput?: boolean
    * }} [options={}]
    * */
@@ -32,23 +33,24 @@ class ScriptExecutor extends NativeModule {
     this.childProcesses = new Map();
 
     this.options = options;
-    this.options.processCommunicationPort = options.processCommunicationPort ?? 33040;
-    this.#setupRouter();
   }
 
   #setupRouter() {
-    this.fastify = Fastify({
-      logger: false,
-    });
+    if (this.routerIsSetup) return;
+    this.routerIsSetup = true;
 
-    this.fastify.post(
-      '/:processId/:processInstanceId/result',
-      {
-        preHandler: this.#fastifyAuthMiddleware.bind(this),
-      },
-      (req, res) => {
+    network.post(
+      '/scriptexecution/:processId/:processInstanceId/result',
+      {},
+      async function (req) {
+        const middlewareError = this.#requestMiddleware(req);
+        if (middlewareError) return middlewareError;
+
         if (req.headers['content-type'] !== 'application/json')
-          return res.code(400).send('You have to send a JSON body that includes a result key.');
+          return {
+            response: { error: 'You have to send a JSON body that includes a result key.' },
+            statusCode: 400,
+          };
 
         let result = req?.body.result;
 
@@ -68,25 +70,17 @@ class ScriptExecutor extends NativeModule {
 
         req.process.result = result;
 
-        return res.code(200).send();
-      },
+        return { statusCode: 200, response: {} };
+      }.bind(this),
     );
 
-    this.fastify.post(
-      '/:processId/:processInstanceId/call',
-      {
-        schema: {
-          body: {
-            type: 'object',
-            properties: {
-              functionName: { type: 'string' },
-              args: { type: 'array' },
-            },
-          },
-        },
-        preHandler: this.#fastifyAuthMiddleware.bind(this),
-      },
-      async (req, res) => {
+    network.post(
+      '/scriptexecution/:processId/:processInstanceId/call',
+      {},
+      async function (req) {
+        const middlewareError = this.#requestMiddleware(req);
+        if (middlewareError) return middlewareError;
+
         const { functionName, args } = req.body;
 
         try {
@@ -94,35 +88,32 @@ class ScriptExecutor extends NativeModule {
           for (const segment of functionName.split('.')) {
             target = target[segment];
 
-            if (typeof target === 'undefined') return res.code(404).send('Function not found');
+            if (typeof target === 'undefined')
+              return { response: { error: 'Function not found' }, statusCode: 404 };
           }
 
           if (typeof target === 'function' || typeof target === 'object')
-            return res.code(200).send({ result: await target(...args) });
-          else return res.code(200).send({ result: target });
+            return { response: { result: await target(...args) } };
+          else return { response: { result: target } };
         } catch (e) {
-          return res.code(500).send(`Error: ${e.message}`);
+          return { response: { error: `Error: ${e.message}` }, statusCode: 500 };
         }
-      },
+      }.bind(this),
     );
-
-    this.fastify.listen({ port: this.options.processCommunicationPort });
   }
 
-  #fastifyAuthMiddleware(req, res, done) {
+  #requestMiddleware(req) {
     const { processId, processInstanceId } = req.params;
     const process = this.#getProcess(processId, processInstanceId);
-    if (!process) return res.code(404).send();
+    if (!process) return { statusCode: 404, response: {} };
 
     const auth = req.headers.authorization;
-    if (!auth?.startsWith('Bearer ')) return res.code(401).send();
+    if (!auth?.startsWith('Bearer ')) return { statusCode: 401, response: {} };
     const token = auth.substring('Bearer '.length);
     // NOTE: a simple comparison may be vulnerable to a timing attack
-    if (token !== process.token) return res.code(401).send();
+    if (token !== process.token) return { statusCode: 401, response: {} };
 
     req.process = process;
-
-    done();
   }
 
   /**
@@ -166,6 +157,9 @@ class ScriptExecutor extends NativeModule {
    * @param {Object} scriptString
    */
   execute(processId, processInstanceId, tokenId, scriptString, dependencies) {
+    // TODO: find a better way to initialize the router
+    this.#setupRouter();
+
     // TODO: maybe just warn
     if (this.#getProcess(processId, processInstanceId))
       throw new Error('This process is already executing a script');
@@ -173,7 +167,7 @@ class ScriptExecutor extends NativeModule {
     try {
       const token = crypto.randomUUID();
 
-      // TODO: make this an absolute path
+      // TODO: don't hard code port
       const scriptTask = childProcess.spawn(`node`, [
         require.resolve('./childProcess.js'),
         processId,
@@ -181,7 +175,7 @@ class ScriptExecutor extends NativeModule {
         tokenId,
         scriptString,
         token,
-        `http://localhost:${this.options.processCommunicationPort}`,
+        `http://localhost:33029`,
       ]);
 
       const processEntry = {
@@ -249,7 +243,6 @@ class ScriptExecutor extends NativeModule {
 
   destroy() {
     this.#deleteAllProcess();
-    return this.fastify.close();
   }
 }
 

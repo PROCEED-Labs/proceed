@@ -60,3 +60,5 @@ gha-creds-*.json
 # Turborepo
 .turbo
 @types
+FeatureFlags.d.ts
+FeatureFlags.d.ts.map

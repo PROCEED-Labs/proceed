@@ -320,6 +320,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                 )}
               </Space.Compact> */}
             </Space>
+
             <Space>
               {editable && (
                 <AddButton
@@ -329,39 +330,43 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                 />
               )}
             </Space>
+
             <Space>
               <Radio.Group
                 value={editable ? 'edit' : 'view'}
                 onChange={(e) => onChangeEditable(e.target.value === 'edit')}
               >
                 <Radio.Button value="view">
-                  View{' '}
+                  View
                   <EyeOutlined
                     style={{
-                      margin: '0 0 0 6px',
+                      margin: '0 0 0 8px',
                     }}
                   />
                 </Radio.Button>
+
                 <Radio.Button value="edit">
-                  Edit{' '}
+                  Edit
                   <EditOutlined
                     style={{
-                      margin: '0 0 0 6px',
+                      margin: '0 0 0 8px',
                     }}
                   />
                 </Radio.Button>
               </Radio.Group>
+
               <Button onClick={exportCurrentConfig}>
-                Export{' '}
+                Export
                 <ExportOutlined
                   style={{
-                    margin: '0 0 0 16px',
+                    margin: '0 0 0 12px',
                   }}
                 />
               </Button>
             </Space>
           </Flex>
         </Header>
+
         <Content
           style={{
             margin: '24px 16px 0',
@@ -387,6 +392,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           )}
         </Content>
       </Layout>
+
       <MachineConfigModal
         open={!!createConfigType}
         title={machineConfigModalTitle}

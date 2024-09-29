@@ -34,7 +34,7 @@ export default async function ChangeEmailPage({ searchParams }: { searchParams: 
         </Card>
       </Content>
     );
-  if (session.user.guest) redirect('/');
+  if (session.user.isGuest) redirect('/');
   const previousEmail = session.user.email;
 
   const verificationToken = getVerificationToken({

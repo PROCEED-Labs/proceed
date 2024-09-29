@@ -10,7 +10,7 @@ import { updateRole } from '@/lib/data/roles';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
   const { message } = App.useApp();

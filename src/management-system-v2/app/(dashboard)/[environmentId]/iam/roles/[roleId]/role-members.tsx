@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Role } from '@/lib/data/role-schema';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { useEnvironment } from '@/components/auth-can';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const AddUserModal: FC<{
   role: Role;

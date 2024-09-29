@@ -14,7 +14,7 @@ import { AiOutlineClose, AiOutlineDelete } from 'react-icons/ai';
 import SelectionActions from '@/components/selection-actions';
 import ElementList from '@/components/item-list-view';
 import styles from '@/components/item-list-view.module.scss';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<

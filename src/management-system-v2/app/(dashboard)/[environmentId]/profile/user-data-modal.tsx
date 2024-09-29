@@ -7,7 +7,7 @@ import { User, AuthenticatedUserData, AuthenticatedUserDataSchema } from '@/lib/
 import { useRouter } from 'next/navigation';
 import useParseZodErrors from '@/lib/useParseZodErrors';
 import { useSession } from 'next-auth/react';
-import { UserError, wrapServerCall } from '@/lib/user-error';
+import { UserError, wrapServerCall } from '@/lib/wrap-server-call';
 
 type modalInputField = {
   userDataField: keyof AuthenticatedUserData;

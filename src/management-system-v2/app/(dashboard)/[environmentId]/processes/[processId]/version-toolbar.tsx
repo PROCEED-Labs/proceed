@@ -8,7 +8,7 @@ import { AuthCan, useEnvironment } from '@/components/auth-can';
 import ConfirmationButton from '@/components/confirmation-button';
 import { copyProcesses, setVersionAsLatest } from '@/lib/data/processes';
 import { spaceURL } from '@/lib/utils';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type VersionToolbarProps = { processId: string };
 

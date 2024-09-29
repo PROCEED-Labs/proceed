@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { addRole as serverAddRoles } from '@/lib/data/roles';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type PostRoleKeys = 'name' | 'description' | 'expiration';
 

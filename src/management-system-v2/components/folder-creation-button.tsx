@@ -9,7 +9,7 @@ import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema
 import { createFolder as serverCreateFolder } from '@/lib/data/folders';
 import FolderModal from './folder-modal';
 import useParseZodErrors from '@/lib/useParseZodErrors';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type FolderCreationButtonProps = ButtonProps & {
   wrapperElement?: ReactNode;

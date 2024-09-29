@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { updateUser } from './data/users';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { wrapServerCall } from './user-error';
+import { wrapServerCall } from './wrap-server-call';
 
 type FavouritesStore = {
   favourites: string[];

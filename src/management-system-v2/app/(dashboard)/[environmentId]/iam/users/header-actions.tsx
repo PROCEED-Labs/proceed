@@ -2,7 +2,7 @@
 
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { Button, Form, App, Input, Modal, Space, Grid } from 'antd';
 import { useRouter } from 'next/navigation';

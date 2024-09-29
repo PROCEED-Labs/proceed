@@ -29,7 +29,7 @@ import cn from 'classnames';
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
 import { spaceURL } from '@/lib/utils';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 

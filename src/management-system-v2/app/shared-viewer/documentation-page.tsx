@@ -39,7 +39,7 @@ import {
 } from './documentation-page-utils';
 import { getAllUserWorkspaces } from '@/lib/sharing/process-sharing';
 import { Environment } from '@/lib/data/environment-schema';
-import { wrapServerCall } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 /**
  * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server

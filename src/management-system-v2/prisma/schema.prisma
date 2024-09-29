@@ -84,7 +84,7 @@ model ProcessArtifacts {
   processId     String
   deletable     Boolean? @default(false)
   deletedOn     DateTime @default(now())
-  refCounter    Int      @default(0)
+  refCounter    Int      @default(1)
 }
 
 model Space {

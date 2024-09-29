@@ -36,7 +36,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const handleImageUpload = async (image: Blob, uploadedFileName: string, imageExists: boolean) => {
     try {
-      alert(image.size);
       let response;
       if (imageExists && endpoints.putEndpoint) {
         // Update existing image
@@ -73,7 +72,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   return (
     <Space>
       <Upload
-        accept=".jpeg,.jpg,.png,.webp"
+        accept=".jpeg,.jpg,.png,.webp,.svg"
         showUploadList={false}
         beforeUpload={() => false}
         onChange={async ({ fileList }) => {

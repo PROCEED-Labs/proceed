@@ -10,6 +10,7 @@ const ALLOWED_CONTENT_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
+  'image/svg+xml',
   'text/html',
   'application/pdf',
 ];
@@ -37,6 +38,16 @@ const generateProcessFilePath = (
   mimeType?: string,
 ): string => {
   const artifactType = getFileCategory(fileName, mimeType);
+
+  if (artifactType === 'images' || artifactType === 'others') {
+    return `artifacts/${artifactType}/${fileName}`;
+  }
+
+  if (artifactType === 'bpmns') {
+    return `processes/${processId}/${fileName}`;
+  }
+
+  // user-tasks,scripts
   return `processes/${processId}/${artifactType}/${fileName}`;
 };
 
@@ -149,7 +160,7 @@ export async function saveOrganisationLogo(
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
   const newFileName = getNewFileName(fileName);
-  const filePath = `spaces/${organisationId}/logo/${newFileName}`;
+  const filePath = `artifacts/images/${newFileName}`;
 
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
 

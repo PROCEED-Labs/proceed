@@ -132,7 +132,6 @@ const SpaceSettings = ({
                         imageExists={organization.hasLogo}
                         onReload={() => {
                           setOrganizationLogo(`${logoUrl}?${Date.now()}`);
-                          message.success('Logo updated');
                           router.refresh();
                         }}
                         onImageUpdate={(name) => {

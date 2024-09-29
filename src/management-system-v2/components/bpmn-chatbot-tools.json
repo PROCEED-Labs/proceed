@@ -1,9 +1,9 @@
 [
   {
     "name": "append_element",
-    "description": "Create a BPMN element and connect it to an already existing element. The element can either be a task, event or gateway. This automatically places the element and creates a connection from the given source element.",
-    "input_schema": {
+    "parameters": {
       "type": "object",
+      "description": "Create a BPMN element and connect it to an already existing element. The element can either be a task, event or gateway. This automatically places the element and creates a connection from the given source element.",
       "properties": {
         "bpmn_type": {
           "type": "string",
@@ -19,7 +19,7 @@
         },
         "label": {
           "type": "string",
-          "description": "The label of the connection which is automatically created. This is optional."
+          "description": "The label of the connection which is automatically created."
         }
       },
       "required": ["bpmn_type", "name", "source_element_id_or_name"]
@@ -27,9 +27,9 @@
   },
   {
     "name": "create_connection",
-    "description": "Create a connection between two elements. Only needed if the connection has not been created yet.",
-    "input_schema": {
+    "parameters": {
       "type": "object",
+      "description": "Create a connection between two elements. Only needed if the connection has not been created yet.",
       "properties": {
         "source_element_id_or_name": {
           "type": "string",
@@ -49,9 +49,9 @@
   },
   {
     "name": "remove_elements",
-    "description": "Remove BPMN elements. Removing an element with exactly one incomming and one outgoing connection merges the two connections into one. If the deleted element has more than one incomming or outgoing connection all associated connections will be removed. Connections are also considered elements and can be seperately removed too by including their id here.",
-    "input_schema": {
+    "parameters": {
       "type": "object",
+      "description": "Remove BPMN elements. Removing an element with exactly one incomming and one outgoing connection merges the two connections into one. If the deleted element has more than one incomming or outgoing connection all associated connections will be removed. Connections are also considered elements and can be seperately removed too by including their id here.",
       "properties": {
         "element_ids": {
           "type": "array",

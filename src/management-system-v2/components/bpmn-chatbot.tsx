@@ -31,9 +31,9 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   function onPrompt({ prompt }: FieldType) {
     setWaitForResponse(true);
     getProcessXml().then((process) => {
-      fetchClaude(prompt, process)
+      fetchChatbot(prompt, process)
         .then((res) => {
-          processResponse(res.content);
+          processResponse(res);
           setLastPrompts(
             lastPrompts.concat({
               userPrompt: prompt,
@@ -112,26 +112,24 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   function processResponse(response: any[]) {
     const created: { name: string; shape: Shape }[] = [];
     response.forEach((res) => {
-      if (res.type == 'tool_use') {
-        if (res.name == 'create_connection') {
-          create_connection(
-            res.input.source_element_id_or_name,
-            res.input.target_element_id_or_name,
-            created,
-            res.input.label,
-          );
-        } else if (res.name == 'remove_elements') {
-          remove_elements(res.input.element_ids);
-        } else if (res.name == 'append_element') {
-          const shape = append_shape(
-            res.input.bpmn_type,
-            res.input.name,
-            res.input.source_element_id_or_name,
-            created,
-            res.input.label,
-          );
-          created.push({ name: res.input.name, shape: shape });
-        }
+      if (res.name == 'create_connection') {
+        create_connection(
+          res.args.source_element_id_or_name,
+          res.args.target_element_id_or_name,
+          created,
+          res.args.label,
+        );
+      } else if (res.name == 'remove_elements') {
+        remove_elements(res.args.element_ids);
+      } else if (res.name == 'append_element') {
+        const shape = append_shape(
+          res.args.bpmn_type,
+          res.args.name,
+          res.args.source_element_id_or_name,
+          created,
+          res.args.label,
+        );
+        created.push({ name: res.args.name, shape: shape });
       }
     });
   }
@@ -153,7 +151,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   }
 
   //prompting an external service for the chatbot
-  function fetchClaude(userPrompt: string, process: string): Promise<any> {
+  function fetchChatbot(userPrompt: string, process: string): Promise<any> {
     return fetch('http://localhost:2000/', {
       method: 'POST',
       headers: {

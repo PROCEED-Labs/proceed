@@ -9,7 +9,7 @@ import Canvas from 'diagram-js/lib/core/Canvas';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as ToastEditorType } from '@toast-ui/editor';
 
-import { Button, Tooltip, Typography, Space, Grid, App } from 'antd';
+import { Button, Tooltip, Typography, Space, Grid } from 'antd';
 
 import { PrinterOutlined } from '@ant-design/icons';
 

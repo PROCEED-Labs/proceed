@@ -4,10 +4,9 @@ import { FC, useTransition } from 'react';
 import { Button, Form, Input, Modal, App, ModalProps } from 'antd';
 import { updateUser } from '@/lib/data/users';
 import { User, AuthenticatedUserData, AuthenticatedUserDataSchema } from '@/lib/data/user-schema';
-import { useRouter } from 'next/navigation';
 import useParseZodErrors from '@/lib/useParseZodErrors';
 import { useSession } from 'next-auth/react';
-import { UserError, wrapServerCall } from '@/lib/wrap-server-call';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type modalInputField = {
   userDataField: keyof AuthenticatedUserData;
@@ -32,8 +31,7 @@ const AuthenticatedUserDataModal: FC<{
   const session = useSession();
   const [form] = Form.useForm();
   const [loading, startTransition] = useTransition();
-  const { message } = App.useApp();
-  const router = useRouter();
+  const app = App.useApp();
 
   const [formatErrors, parseInput, resetErrors] = useParseZodErrors(
     AuthenticatedUserDataSchema.partial(),
@@ -53,10 +51,11 @@ const AuthenticatedUserDataModal: FC<{
       await wrapServerCall({
         fn: () => updateUser(values as AuthenticatedUserData),
         onSuccess: () => {
-          message.success({ content: 'Profile updated' });
+          app.message.success({ content: 'Profile updated' });
           session.update();
           close();
         },
+        app,
       });
     });
   };

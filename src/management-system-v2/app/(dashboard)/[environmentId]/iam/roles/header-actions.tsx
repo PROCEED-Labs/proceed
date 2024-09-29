@@ -1,7 +1,7 @@
 'use client';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Modal, DatePicker } from 'antd';
+import { Button, Form, Input, Modal, DatePicker, App } from 'antd';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
@@ -16,6 +16,8 @@ const CreateRoleModal: FC<{
   close: () => void;
 }> = ({ modalOpen, close }) => {
   const [form] = Form.useForm();
+  const app = App.useApp();
+
   type ErrorsObject = { [field in PostRoleKeys]?: ReactNode[] };
   const [formatError, setFormatError] = useState<ErrorsObject>({});
   const environment = useEnvironment();
@@ -52,6 +54,7 @@ const CreateRoleModal: FC<{
           environmentId: environment.spaceId,
         }),
       onSuccess: false,
+      app,
     });
   };
 

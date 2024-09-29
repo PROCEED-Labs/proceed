@@ -12,7 +12,7 @@ const AddUsersModal: FC<{
   modalOpen: boolean;
   close: () => void;
 }> = ({ modalOpen, close }) => {
-  const { message: messageApi } = App.useApp();
+  const app = App.useApp();
   const router = useRouter();
   const environment = useEnvironment();
 
@@ -47,9 +47,10 @@ const AddUsersModal: FC<{
         await wrapServerCall({
           fn: () => inviteUsersToEnvironment(environment.spaceId, values.users),
           onSuccess: () => {
-            messageApi.success({ content: 'User Added' });
+            app.message.success({ content: 'User Added' });
             router.refresh();
           },
+          app,
         });
         close();
       } catch (_) {}

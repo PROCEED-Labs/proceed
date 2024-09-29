@@ -14,7 +14,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
-  const { message: messageApi } = App.useApp();
+  const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
   const [deletingUser, startTransition] = useTransition();
@@ -30,6 +30,7 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
       await wrapServerCall({
         fn: () => removeUsersFromEnvironment(environment.spaceId, ids),
         onSuccess: router.refresh,
+        app,
       });
     });
   }

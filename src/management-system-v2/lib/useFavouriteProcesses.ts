@@ -3,6 +3,7 @@ import { updateUser } from './data/users';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { wrapServerCall } from './wrap-server-call';
+import { isUserErrorResponse } from './user-error';
 
 type FavouritesStore = {
   favourites: string[];
@@ -32,13 +33,16 @@ const useFavouritesStore = create<FavouritesStore>()(
           newFavourites = [...oldFavourites, id];
         }
       });
-      wrapServerCall({
-        fn: () => updateUser({ favourites: newFavourites }),
-        onSuccess: () =>
-          set((state) => {
-            state.favourites = newFavourites;
-          }),
-      });
+
+      updateUser({ favourites: newFavourites })
+        .then((res) => {
+          if (!isUserErrorResponse(res))
+            set((state) => {
+              state.favourites = newFavourites;
+            });
+          else throw res.error;
+        })
+        .catch(console.error);
     },
     removeIfPresent: (id) => {
       const ids = Array.isArray(id) ? id : [id];

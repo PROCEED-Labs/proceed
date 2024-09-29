@@ -25,7 +25,7 @@ export type FilteredEnvironment = ReplaceKeysWithHighlighted<
 const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[] }> = ({
   organizationEnvironments,
 }) => {
-  const { message } = App.useApp();
+  const app = App.useApp();
   const router = useRouter();
 
   const { searchQuery, filteredData, setSearchQuery } = useFuzySearch({
@@ -48,8 +48,9 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
       onSuccess: () => {
         setSelectedRows([]);
         router.refresh();
-        message.success(`Environment${environmentIds.length > 1 ? 's' : ''} deleted`);
+        app.message.success(`Environment${environmentIds.length > 1 ? 's' : ''} deleted`);
       },
+      app,
     });
   }
 

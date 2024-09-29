@@ -13,7 +13,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
-  const { message } = App.useApp();
+  const app = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
   const router = useRouter();
@@ -45,8 +45,9 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
       fn: () => updateRole(environment.spaceId, role.id, values),
       onSuccess: () => {
         router.refresh();
-        message.open({ type: 'success', content: 'Role updated' });
+        app.message.open({ type: 'success', content: 'Role updated' });
       },
+      app,
     });
   }
 

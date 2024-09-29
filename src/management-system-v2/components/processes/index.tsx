@@ -95,7 +95,7 @@ const Processes = ({
       ...processes,
     ];
 
-  const { message } = App.useApp();
+  const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
@@ -219,10 +219,11 @@ const Processes = ({
             updateFolderModal!.id,
           ),
         onSuccess: () => {
-          message.open({ type: 'success', content: 'Folder updated' });
+          app.message.open({ type: 'success', content: 'Folder updated' });
           setUpdateFolderModal(undefined);
           router.refresh();
         },
+        app,
       });
     });
   };
@@ -251,7 +252,7 @@ const Processes = ({
       (folderResult && 'error' in folderResult) ||
       (processesResult && 'error' in processesResult)
     ) {
-      return message.open({
+      return app.message.open({
         type: 'error',
         content: 'Something went wrong',
       });
@@ -281,6 +282,7 @@ const Processes = ({
       await wrapServerCall({
         fn: () => moveIntoFolder(items, folderId),
         onSuccess: router.refresh,
+        app,
       });
     });
   };

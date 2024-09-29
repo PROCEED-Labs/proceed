@@ -1,6 +1,6 @@
 'use client';
 
-import { Tooltip, Space } from 'antd';
+import { Tooltip, Space, App } from 'antd';
 import { FormOutlined, PlusOutlined } from '@ant-design/icons';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessCreationButton from '@/components/process-creation-button';
@@ -16,6 +16,8 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
   const router = useRouter();
   const query = useSearchParams();
   const environment = useEnvironment();
+  const app = App.useApp();
+
   // This component should only be rendered when a version is selected
   const selectedVersionId = query.get('version') as string;
 
@@ -64,6 +66,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
               fn: () =>
                 setVersionAsLatest(processId, Number(selectedVersionId), environment.spaceId),
               onSuccess: () => router.push(spaceURL(environment, `/processes/${processId}`)),
+              app,
             })
           }
           modalProps={{

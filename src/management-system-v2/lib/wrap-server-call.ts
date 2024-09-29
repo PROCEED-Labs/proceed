@@ -1,6 +1,7 @@
 import { notification, message } from 'antd';
 import { ReactNode } from 'react';
 import { userError, UserError, isUserErrorResponse, isUserError } from './user-error';
+import { useAppProps } from 'antd/es/app/context';
 
 /**
  * Wraps a server call function to provide success and error handling with optional display mechanisms.
@@ -38,6 +39,16 @@ export async function wrapServerCall<Return>(args: {
    * when `onError` is either undefined or a string
    * */
   errorDisplay?: 'message' | 'notification';
+  /**
+   * Ant Design app hook.
+   * This needs to be passed in if you expect the wrapper to display a message on it's own.
+   *
+   * @example
+   * import { App } from 'antd';
+   * const app = App.useApp();
+   * wrapServerCall({...args, app});
+   * */
+  app?: useAppProps;
 }) {
   try {
     const response = await args.fn();

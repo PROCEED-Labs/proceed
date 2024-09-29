@@ -3,7 +3,7 @@
 import { FC, useState, useTransition } from 'react';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import UserList, { UserListProps } from '@/components/user-list';
-import { Button, Modal, Tooltip } from 'antd';
+import { App, Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
 import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,7 @@ const AddUserModal: FC<{
   const [loading, startTransition] = useTransition();
   const router = useRouter();
   const environment = useEnvironment();
+  const app = App.useApp();
 
   type AddUserParams = Parameters<NonNullable<UserListProps['selectedRowActions']>>;
 
@@ -38,6 +39,7 @@ const AddUserModal: FC<{
             })),
           ),
         onSuccess: router.refresh,
+        app,
       });
     });
   };
@@ -94,6 +96,7 @@ const RoleMembers: FC<{
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const environment = useEnvironment();
+  const app = App.useApp();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
     clearIds();
@@ -110,6 +113,7 @@ const RoleMembers: FC<{
           })),
         ),
       onSuccess: router.refresh,
+      app,
     });
 
     setLoading(false);

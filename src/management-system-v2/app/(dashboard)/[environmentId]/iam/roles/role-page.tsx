@@ -8,7 +8,7 @@ import {
   AppstoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Space, Button, Table, Breakpoint, Grid, FloatButton, Tooltip } from 'antd';
+import { Space, Button, Table, Breakpoint, Grid, FloatButton, Tooltip, App } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -34,6 +34,8 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
 const RolesPage = ({ roles }: { roles: Role[] }) => {
+  const app = App.useApp();
+
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();
   const environment = useEnvironment();
@@ -74,6 +76,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
         setSelectedRows([]);
         router.refresh();
       },
+      app,
     });
   }
 

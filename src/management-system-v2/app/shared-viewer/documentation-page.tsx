@@ -9,7 +9,7 @@ import Canvas from 'diagram-js/lib/core/Canvas';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as ToastEditorType } from '@toast-ui/editor';
 
-import { Button, message, Tooltip, Typography, Space, Grid, Avatar, Modal } from 'antd';
+import { Button, message, Tooltip, Typography, Space, Grid, Avatar, Modal, App } from 'antd';
 
 import { PrinterOutlined, LaptopOutlined } from '@ant-design/icons';
 
@@ -71,6 +71,7 @@ const BPMNSharedViewer = ({
   const session = useSession();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const app = App.useApp();
 
   const breakpoint = Grid.useBreakpoint();
 
@@ -238,6 +239,7 @@ const BPMNSharedViewer = ({
           );
         }
       },
+      app,
     });
   };
 

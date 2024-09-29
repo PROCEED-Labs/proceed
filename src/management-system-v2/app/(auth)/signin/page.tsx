@@ -6,7 +6,7 @@ import SignIn from './signin';
 // take in search query
 const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
   const { session } = await getCurrentUser();
-  const isGuest = session?.user.guest;
+  const isGuest = session?.user.isGuest;
 
   if (session?.user && !isGuest) {
     const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/processes`;

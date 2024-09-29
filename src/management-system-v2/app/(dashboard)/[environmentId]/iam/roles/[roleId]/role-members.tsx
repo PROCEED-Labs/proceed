@@ -27,8 +27,6 @@ const AddUserModal: FC<{
 
   const addUsers = (users: AddUserParams[2], clearIds?: AddUserParams[1]) => {
     startTransition(async () => {
-      clearIds?.();
-
       await wrapServerCall({
         fn: () =>
           addRoleMappings(
@@ -38,7 +36,10 @@ const AddUserModal: FC<{
               roleId: role.id,
             })),
           ),
-        onSuccess: router.refresh,
+        onSuccess: () => {
+          if (clearIds) clearIds();
+          router.refresh();
+        },
         app,
       });
     });
@@ -60,19 +61,18 @@ const AddUserModal: FC<{
         /* ---- */
         users={usersNotInRole}
         loading={loading}
-        columns={(clearSelected, hoveredId, selectedRowKeys) => [
+        columns={(clearSelected, _, selectedRowKeys) => [
           {
             dataIndex: 'id',
             render: (id, user) => (
               <Tooltip placement="top" title="Add to role">
                 <Button
                   icon={<PlusOutlined />}
-                  type="text"
+                  type="primary"
                   onClick={() => addUsers([user], clearSelected)}
-                  style={{
-                    opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
-                  }}
-                />
+                >
+                  Add to role
+                </Button>
               </Tooltip>
             ),
           },
@@ -99,8 +99,6 @@ const RoleMembers: FC<{
   const app = App.useApp();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
-    clearIds();
-
     setLoading(true);
 
     await wrapServerCall({
@@ -112,7 +110,10 @@ const RoleMembers: FC<{
             userId: userId,
           })),
         ),
-      onSuccess: router.refresh,
+      onSuccess: () => {
+        router.refresh();
+        clearIds();
+      },
       app,
     });
 

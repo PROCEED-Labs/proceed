@@ -4,10 +4,6 @@
   top: 0;
   bottom: 0;
 
-  .Icon {
-    margin: 15px -10px;
-  }
-
   .LogoContainer {
     display: flex;
     justify-content: center;
@@ -16,6 +12,7 @@
     background: #fff;
     border-bottom: 1px solid #eee;
     transition: all 0.2s;
+    padding: 12px;
 
     &.collapsed {
       justify-content: flex-start;
@@ -24,11 +21,12 @@
   }
 
   .Logo {
-    margin: -5px 20px 20px;
     transition: all 0.2s;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
 
     &.collapsed {
-      margin: -5px 10px 20px;
       width: 60px;
     }
   }

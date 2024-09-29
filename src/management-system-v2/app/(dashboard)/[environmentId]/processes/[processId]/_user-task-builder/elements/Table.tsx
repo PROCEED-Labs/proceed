@@ -155,8 +155,8 @@ const TableRow: React.FC<{
 
 const Table: UserComponent<TableProps> = ({
   tableData = [
-    ['Double Click Me', 'Double Click Me'],
-    ['Double Click Me', 'Double Click Me'],
+    ['Double Click Me To Edit', 'Double Click Me To Edit'],
+    ['Double Click Me To Edit', 'Double Click Me To Edit'],
   ],
 }) => {
   const { query, editingEnabled } = useEditor((state) => ({
@@ -178,7 +178,7 @@ const Table: UserComponent<TableProps> = ({
     setProp((props: TableProps) => {
       props.tableData = [
         ...tableData.slice(0, index),
-        Array.from({ length: tableData[0].length }, () => 'Double Click Me'),
+        Array.from({ length: tableData[0].length }, () => 'Double Click Me To Edit'),
         ...tableData.slice(index),
       ];
     });
@@ -195,7 +195,7 @@ const Table: UserComponent<TableProps> = ({
     setProp((props: TableProps) => {
       props.tableData = tableData.map((row) => [
         ...row.slice(0, index),
-        'Double Click Me',
+        'Double Click Me To Edit',
         ...row.slice(index),
       ]);
     });
@@ -275,10 +275,10 @@ Table.craft = {
     tableData: [
       [
         // setting the th elements font weight to normal and giving lexical this as the default to enable changing the font weight in the editor
-        '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me</strong></b>',
-        '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me</strong></b>',
+        '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me To Edit</strong></b>',
+        '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me To Edit</strong></b>',
       ],
-      ['Double Click Me', 'Double Click Me'],
+      ['Double Click Me To Edit', 'Double Click Me To Edit'],
     ],
   },
 };

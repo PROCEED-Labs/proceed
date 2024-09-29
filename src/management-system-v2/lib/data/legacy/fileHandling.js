@@ -99,6 +99,11 @@ function getImagesDir(id) {
 }
 
 /**
+ * Directory for organization logos
+ */
+const organizationLogosDir = path.join(getAppDataPath(), 'OrganizationLogos');
+
+/**
  * Find the user task directory for the given process
  *
  * @param {String} id
@@ -559,7 +564,7 @@ async function getProcessInfo(bpmn, process) {
     departments: process.departments || [],
     variables: process.variables || [],
     createdOn: process.createdOn || currentDate,
-    lastEdited: process.lastEdited || currentDate,
+    lastEditedOn: process.lastEditedOn || currentDate,
     type: process.type || (process.isProject ? 'project' : 'process'),
     processIds,
     versions: [],
@@ -580,4 +585,46 @@ async function getProcessInfo(bpmn, process) {
     };
   }
   return newProcess;
+}
+
+/**
+ * Saves a logo for an organization
+ *
+ * @param {String} organizationId the id of the organization
+ * @param {Buffer} image an image
+ */
+export function saveLogo(organizationId, image) {
+  fse.ensureDirSync(organizationLogosDir);
+
+  fse.writeFileSync(path.join(organizationLogosDir, `${organizationId}`), image);
+}
+
+/**
+ * Returns the logo for an organization
+ *
+ * @param {String} organizationId the id of the organization
+ */
+export function hasLogo(organizationId) {
+  const imagePath = path.join(organizationLogosDir, `${organizationId}`);
+  return fse.existsSync(imagePath);
+}
+
+/**
+ * Returns the logo for an organization
+ *
+ * @param {String} organizationId the id of the organization
+ */
+export function getLogo(organizationId) {
+  const imagePath = path.join(organizationLogosDir, `${organizationId}`);
+  return fse.readFileSync(imagePath);
+}
+
+/**
+ * Deletes organizations logo
+ *
+ * @param {String} organizationId the id of the organization
+ */
+export function deleteLogo(organizationId) {
+  const imagePath = path.join(organizationLogosDir, `${organizationId}`);
+  fse.removeSync(imagePath);
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { Tooltip, Button, Space, Select, SelectProps, App } from 'antd';
+import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
@@ -65,11 +65,13 @@ const ModelerToolbar = ({
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
-  const selectedElement = useMemo(() => {
-    if (modeler) {
-      return selectedElementId ? modeler.getElement(selectedElementId) : modeler.getCurrentRoot();
-    }
-  }, [modeler, selectedElementId, subprocessId]);
+  const selectedElement = modeler
+    ? selectedElementId
+      ? modeler.getElement(selectedElementId)
+      : modeler.getCurrentRoot()
+    : undefined;
+  // Force rerender when the BPMN changes.
+  useModelerStateStore((state) => state.changeCounter);
 
   useEffect(() => {
     if (modeler && (showProcessExportModal || showUserTaskEditor)) {
@@ -183,13 +185,17 @@ const ModelerToolbar = ({
 
   const handleOpenDocumentation = async () => {
     // the timestamp does not matter here since it is overridden by the user being an owner of the process
-    const url = await generateSharedViewerUrl(
-      { processId, timestamp: 0 },
-      selectedVersionId || undefined,
-    );
+    try {
+      const url = await generateSharedViewerUrl(
+        { processId, timestamp: 0 },
+        selectedVersionId || undefined,
+      );
 
-    // open the documentation page in a new tab (unless it is already open in which case just show the tab)
-    window.open(url, `${processId}-${selectedVersionId}-tab`);
+      // open the documentation page in a new tab (unless it is already open in which case just show the tab)
+      window.open(url, `${processId}-${selectedVersionId}-tab`);
+    } catch (err) {
+      message.error('Failed to open the documentation page.');
+    }
   };
 
   const filterOption: SelectProps['filterOption'] = (input, option) =>

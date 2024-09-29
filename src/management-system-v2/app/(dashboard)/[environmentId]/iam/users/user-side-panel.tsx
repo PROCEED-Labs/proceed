@@ -1,15 +1,66 @@
 'use client';
 
-import { Dispatch, FC, PropsWithChildren, SetStateAction, useRef, useState } from 'react';
-import { Avatar, Drawer, Grid, Typography } from 'antd';
+import { Dispatch, FC, PropsWithChildren, SetStateAction, useRef } from 'react';
+import { Drawer, Grid, Typography } from 'antd';
 import CollapsibleCard from '@/components/collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import { ListUser } from '@/components/user-list';
-import UserSiderContent from './user-sider-content';
+import { Role } from '@/lib/data/role-schema';
+import SpaceLink from '@/components/space-link';
+import UserAvatar from '@/components/user-avatar';
+
+const UserSiderContent: FC<{ user: (ListUser & { roles?: Role[] }) | null }> = ({ user }) => {
+  if (!user) return <Typography.Text>Select an element.</Typography.Text>;
+  return (
+    <>
+      <UserAvatar
+        user={{ ...user, firstName: user.firstName.value, lastName: user.lastName.value }}
+        avatarProps={{
+          size: 60,
+          style: {
+            marginBottom: '1rem',
+          },
+        }}
+      />
+
+      <Typography.Title>First Name</Typography.Title>
+      <Typography.Text>{user.firstName.value}</Typography.Text>
+
+      <Typography.Title>Last Name</Typography.Title>
+      <Typography.Text>{user.lastName.value}</Typography.Text>
+
+      <Typography.Title>Username</Typography.Title>
+      <Typography.Text>{user.username.value}</Typography.Text>
+
+      <Typography.Title>Email</Typography.Title>
+      <Typography.Text>{user.email.value}</Typography.Text>
+
+      {user.roles && user.roles.length > 0 && (
+        <>
+          <Typography.Title>Roles</Typography.Title>
+          {user.roles.map((role) => (
+            <SpaceLink
+              href={`/iam/roles/${role.id}`}
+              style={{
+                display: 'block',
+                maxWidth: '100%',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {role.name}
+            </SpaceLink>
+          ))}
+        </>
+      )}
+    </>
+  );
+};
 
 type UserSidePanelProps = PropsWithChildren<{
-  user: ListUser | null;
+  user: (ListUser & { roles?: Role[] }) | null;
   setShowMobileUserSider: Dispatch<SetStateAction<boolean>>;
   showMobileUserSider: boolean;
 }>;
@@ -65,8 +116,8 @@ const UserSidePanel: FC<UserSidePanelProps> = ({
                 useUserPreferences.getState().preferences['user-page-side-panel'].width;
 
               if (resizeCard) {
-                if (sidePanelOpen) resizeCard(30);
-                else resizeCard(sidepanelWidth);
+                if (sidePanelOpen) resizeCard({ width: 30, minWidth: 30 });
+                else resizeCard({ width: sidepanelWidth, minWidth: 300 });
               }
 
               setUserPreferences({

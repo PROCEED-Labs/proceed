@@ -1,4 +1,4 @@
-import { PackRule, packRules, unpackRules } from '@casl/ability/extra';
+import { PackRule, unpackRules } from '@casl/ability/extra';
 import {
   AbilityRule,
   CaslAbility,
@@ -77,17 +77,9 @@ export default class Ability {
 }
 
 export class UnauthorizedError extends Error {
+  static prefix = '401' as const;
   constructor(message?: string) {
-    super(message ?? 'Unauthorized');
+    super(`${UnauthorizedError.prefix}: ${message || 'Unauthorized'}`);
     this.name = 'UnauthorizedError';
   }
 }
-
-export const adminRules = Object.freeze(
-  packRules([
-    {
-      subject: 'All',
-      action: 'admin',
-    },
-  ] as AbilityRule[]),
-);

@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -25,24 +25,24 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   initialData,
 }: MachineConfigModalProps<T>) => {
   const [form] = Form.useForm();
+  const formRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
 
   useEffect(() => {
-    if (initialData) {
+    if (initialData && formRef.current) {
       // form.resetFields is not working, because initialData has not been
       // updated in the internal form store, eventhough the prop has.
       form.setFieldsValue(initialData);
     }
   }, [form, initialData]);
 
-  const items: CollapseProps['items'] =
-    (initialData?.length ?? 0) > 1
-      ? initialData?.map((data, index) => ({
-          label: data.name,
-          children: <MachineConfigInputs index={index} />,
-        }))
-      : undefined;
+  const items: CollapseProps['items'] = initialData?.length
+    ? initialData?.map((data, index) => ({
+        label: data.name,
+        children: <MachineConfigInputs index={index} />,
+      }))
+    : undefined;
 
   const onOk = async () => {
     try {
@@ -68,7 +68,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         // Unkown server error or was not sent from server (e.g. network error)
         message.open({
           type: 'error',
-          content: 'Someting went wrong while submitting the data',
+          content: 'Something went wrong while submitting the data',
         });
       }
       setSubmitting(false);
@@ -96,6 +96,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
     >
       <Form
         form={form}
+        ref={formRef}
         layout="vertical"
         name="machine_config_form"
         initialValues={initialData}
@@ -123,16 +124,19 @@ const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
     <>
       <Form.Item
         name={[index, 'name']}
-        label="Machine Configuration Name"
-        rules={[{ required: true, message: 'Please fill out the Machine Configuration Name' }]}
+        label="Configuration Name"
+        rules={[{ required: true, message: 'Please fill out the Configuration Name' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
-        label="Machine Configuration Description"
+        label="Configuration Description"
         rules={[
-          { required: false, message: 'Please fill out the Machine Configuration Description' },
+          {
+            required: false,
+            message: 'Please fill out the Configuration Description',
+          },
         ]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />

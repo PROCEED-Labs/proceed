@@ -4,10 +4,11 @@ import { InputNumber } from 'antd';
 
 import { useEffect, useRef, useState } from 'react';
 
-import { fallbackImage, ImageUpload } from '../../image-selection-section';
+import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import { Setting } from '../utils';
+import ImageUpload from '@/components/image-upload';
 
 type ImageProps = {
   src?: string;
@@ -34,8 +35,11 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   });
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
-  const params = useParams();
+  const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
+
+  const baseUrl = `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
+  console.log(src);
 
   return (
     <div
@@ -58,19 +62,18 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
       />
       {editingEnabled && isHovered && (
         <ImageUpload
-          reloadParam={reloadParam || 0}
-          imageFileName={src ? src.split('/').pop() : undefined}
+          imageExists={!!src}
           onReload={() => setProp((props: ImageProps) => (props.reloadParam = Date.now()))}
           onImageUpdate={(imageFileName) => {
             setProp((props: ImageProps) => {
-              const newFilename =
-                imageFileName &&
-                `/api/private/${environment.spaceId}/processes/${
-                  params.processId as string
-                }/images/${imageFileName}`;
-              props.src = newFilename;
+              props.src = imageFileName && `${baseUrl}/${imageFileName}`;
               props.width = undefined;
             });
+          }}
+          endpoints={{
+            postEndpoint: baseUrl,
+            putEndpoint: src,
+            deleteEndpoint: src,
           }}
         />
       )}

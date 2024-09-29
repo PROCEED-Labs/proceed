@@ -4,9 +4,10 @@ import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
-import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
-import Ability, { adminRules } from '@/lib/ability/abilityHelper';
+import { getSystemAdminByUserId } from '@/lib/data/DTOs';
+import Ability from '@/lib/ability/abilityHelper';
 import {
+  adminRules,
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
@@ -14,7 +15,7 @@ import {
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
   const userId = session?.user.id || '';
-  const systemAdmin = getSystemAdminByUserId(userId);
+  const systemAdmin = await getSystemAdminByUserId(userId);
 
   return { session, userId, systemAdmin };
 });
@@ -44,6 +45,7 @@ export const getCurrentEnvironment = cache(
 
     const isOrganization = activeSpace !== userId;
 
+    // TODO: account for bought resources
     if (systemAdmin) {
       let rules;
       if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
@@ -55,7 +57,7 @@ export const getCurrentEnvironment = cache(
       };
     }
 
-    if (!userId || !isMember(decodeURIComponent(activeSpace), userId)) {
+    if (!userId || !isMember(decodeURIComponent(spaceIdParam), userId)) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
           throw new Error('User does not have access to this environment');

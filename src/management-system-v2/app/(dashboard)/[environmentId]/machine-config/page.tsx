@@ -4,11 +4,12 @@ import { ComponentProps } from 'react';
 import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
-import { getMachineConfigs } from '@/lib/data/legacy/machine-config';
-import MachineConfigList from './machine-config-list';
-import { MachineConfigMetadata } from '@/lib/data/machine-config-schema';
+import { getParentConfigurations } from '@/lib/data/legacy/machine-config';
+import ParentConfigList from './parent-config-list';
+import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
 import { env } from '@/lib/env-vars';
-export type ListItem = MachineConfigMetadata;
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
+export type ListItem = ParentConfigMetadata;
 
 const MachineConfigPage = async ({
   params,
@@ -20,20 +21,20 @@ const MachineConfigPage = async ({
   }
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  const folderContents = (await getMachineConfigs()) satisfies ListItem[];
+
+  if (!ability.can('view', 'MachineConfig')) return <UnauthorizedFallback />;
+
+  const folderContents = (await getParentConfigurations(
+    activeEnvironment.spaceId,
+    ability,
+  )) satisfies ListItem[];
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
 
   return (
     <>
-      <Content title={<Space></Space>}>
+      <Content title={<Space>Tech Data Sets</Space>}>
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-          <MachineConfigList
-            params={{
-              environmentId: params.environmentId,
-            }}
-            data={folderContents}
-          />
-          {/* <Processes processes={folderContents} favourites={favs as string[]} folder={folder} /> */}
+          <ParentConfigList data={folderContents} />
         </Space>
       </Content>
     </>

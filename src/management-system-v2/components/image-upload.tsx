@@ -72,7 +72,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   return (
     <Space>
       <Upload
-        accept=".jpeg,.jpg,.png,.webp"
+        accept=".jpeg,.jpg,.png,.webp,.svg"
         showUploadList={false}
         beforeUpload={() => false}
         onChange={async ({ fileList }) => {

@@ -20,7 +20,9 @@ const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
   html: 'user-tasks',
   htm: 'user-tasks',
   pdf: 'others',
+  docx: 'others',
   js: 'script-tasks',
+  ts: 'script-tasks',
   bpmn: 'bpmns',
 };
 
@@ -53,11 +55,6 @@ export function getFileCategory(fileName: string, mimeType?: string): ArtifactTy
   }
 
   return 'others';
-}
-
-export function getFilePath(fileName: string, processId: string, mimeType?: string): string {
-  const artifactType = getFileCategory(fileName, mimeType);
-  return `processes/${processId}/${artifactType}/${fileName}`;
 }
 
 export function getNewFileName(fileName: string): string {

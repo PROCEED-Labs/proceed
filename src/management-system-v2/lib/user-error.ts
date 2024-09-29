@@ -61,6 +61,7 @@ export async function wrapServerCall<Return>(args: {
    * If the server call succeeds:
    *
    * - undefined: the wrapper displays a default success message
+   * - false: display no message on success
    * - string: the wrapper displays the string as a success message
    * - function: the wrapper calls the function with the return of the server call
    * */
@@ -74,6 +75,7 @@ export async function wrapServerCall<Return>(args: {
    * If the server call fails or an error happens:
    *
    * - undefined: in the case that the server call returns a user error, the wrapper displays the
+   * - false: display no message on error
    *   user error's message. If there is no error message or a error was thrown, the wrapper displays
    *   a default message
    * - string: the wrapper displays the string as an error message

@@ -13,6 +13,7 @@ import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data';
+import { Prisma } from '@prisma/client';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -138,9 +139,11 @@ export async function deleteUser(userId: string) {
 export async function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
   const user = await getUserById(userId, { throwIfNotFound: true });
   const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user?.isGuest;
-
-  let updatedUser;
+  let updatedUser: Prisma.UserUpdateInput;
   if (isGoingToBeGuest) {
+    if (inputUser.username || inputUser.lastName || inputUser.firstName || inputUser.email) {
+      throw new Error('Guest users cannot update their user data');
+    }
     updatedUser = { isGuest: true };
   } else {
     const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);

@@ -16,8 +16,11 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data';
 import { v4 } from 'uuid';
 import { UserErrorType, userError } from '@/lib/user-error';
+<<<<<<< HEAD
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { deleteProcessArtifact } from '../file-manager-facade';
+=======
+>>>>>>> origin/main
 
 /** Returns all processes for a user */
 export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
@@ -344,17 +347,24 @@ export async function updateProcessMetaData(
 export async function removeProcess(processDefinitionsId: string) {
   const process = await db.process.findUnique({
     where: { id: processDefinitionsId },
+<<<<<<< HEAD
     include: { processArtifacts: true },
+=======
+    include: { folder: true },
+>>>>>>> origin/main
   });
 
   if (!process) {
     return;
   }
+<<<<<<< HEAD
   await Promise.all(
     process.processArtifacts.map((artifact) =>
       deleteProcessArtifact(processDefinitionsId, artifact.filePath, true),
     ),
   );
+=======
+>>>>>>> origin/main
 
   // Remove from database
   await db.process.delete({ where: { id: processDefinitionsId } });

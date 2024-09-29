@@ -186,6 +186,7 @@ export const CheckBoxOrRadioGroupSettings = () => {
         label="Variable"
         control={
           <Select
+            style={{ display: 'block' }}
             options={[
               { value: 'var1', label: 'Var1' },
               { value: 'var2', label: 'Var2' },

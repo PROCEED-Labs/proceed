@@ -3,10 +3,7 @@
 import jwt from 'jsonwebtoken';
 import { updateProcessShareInfo } from '../data/processes';
 import { headers } from 'next/headers';
-import { Environment } from '../data/environment-schema';
-import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
 import { env } from '@/lib/env-vars';
-import { asyncMap } from '../helpers/javascriptHelpers';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -65,15 +62,4 @@ export async function generateSharedViewerUrl(
   }
 
   return url;
-}
-
-export async function getAllUserWorkspaces(userId: string) {
-  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
-  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironments = await asyncMap(userOrgEnvs, (environmentId) =>
-    getEnvironmentById(environmentId),
-  );
-
-  userEnvironments.push(...orgEnvironments);
-  return userEnvironments;
 }

@@ -74,7 +74,6 @@ model Process {
   creatorId            String
   //TODO: Departments and Variables add here if needed in future
   processArtifacts     ProcessArtifacts[]
-
 }
 
 model ProcessArtifacts {
@@ -85,6 +84,7 @@ model ProcessArtifacts {
   processId     String
   deletable     Boolean? @default(false)
   deletedOn     DateTime @default(now())
+  refCounter    Int      @default(1)
 }
 
 model Space {

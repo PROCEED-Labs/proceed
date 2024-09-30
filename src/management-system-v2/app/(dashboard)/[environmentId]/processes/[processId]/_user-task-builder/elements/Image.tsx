@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import { Setting } from '../utils';
 import ImageUpload from '@/components/image-upload';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
 type ImageProps = {
   src?: string;
@@ -75,6 +76,8 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
             putEndpoint: src,
             deleteEndpoint: src,
           }}
+          // TODO: clarify in meeting with Janis
+          metadata={{ entityType: EntityType.USERTASK, entityId: '' }}
         />
       )}
       {/* Allows resizing  */}

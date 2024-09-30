@@ -39,7 +39,7 @@ if [ "$DB_EXISTS" == "1" ]; then
 else
   # Create a new database for the branch if it doesn't exist
   echo "Creating a new database for branch: $BRANCH_NAME_SAFE"
-  docker exec -it "$CONTAINER_NAME" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE DATABASE $DB_NAME;"
+  docker exec "$CONTAINER_NAME" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE DATABASE $DB_NAME;"
 
   if [ $? -ne 0 ]; then
     echo "Failed to create database: $DB_NAME"

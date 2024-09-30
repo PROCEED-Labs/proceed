@@ -65,6 +65,7 @@ CREATE TABLE "ProcessArtifacts" (
     "processId" TEXT NOT NULL,
     "deletable" BOOLEAN DEFAULT false,
     "deletedOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "refCounter" INTEGER NOT NULL DEFAULT 1,
 
     CONSTRAINT "ProcessArtifacts_pkey" PRIMARY KEY ("id")
 );

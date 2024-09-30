@@ -169,6 +169,8 @@ const Processes = ({
     () => {
       if (canDeleteSelected) {
         setOpenDeleteModal(true);
+        /* Clear copy selection */
+        setCopySelection([]);
       }
     },
     { dependencies: [canDeleteSelected] },

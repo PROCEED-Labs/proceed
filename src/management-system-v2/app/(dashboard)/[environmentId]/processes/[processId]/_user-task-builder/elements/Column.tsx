@@ -4,7 +4,10 @@ import { useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
 import useBuilderStateStore from '../use-builder-state-store';
-import DragPreviewContext from '../_utils/drag-preview-context';
+
+import { createContext } from 'react';
+
+export const DragPreviewContext = createContext(false);
 
 /**
  * This component wraps every editor element provides drag handling and some styling

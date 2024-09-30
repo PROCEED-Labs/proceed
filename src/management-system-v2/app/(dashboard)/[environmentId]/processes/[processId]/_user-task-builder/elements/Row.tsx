@@ -1,7 +1,7 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import { useDroppable } from '@dnd-kit/core';
 import { useContext } from 'react';
-import DragPreviewContext from '../_utils/drag-preview-context';
+import { DragPreviewContext } from './Column';
 
 /**
  * This component encapsulates column component

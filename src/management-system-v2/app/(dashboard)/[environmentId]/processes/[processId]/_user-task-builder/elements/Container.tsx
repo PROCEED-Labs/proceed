@@ -7,7 +7,7 @@ import { UserComponent, useEditor, useNode } from '@craftjs/core';
 import { useDroppable } from '@dnd-kit/core';
 
 import { Setting } from '../utils';
-import DragPreviewContext from '../_utils/drag-preview-context';
+import { DragPreviewContext } from './Column';
 
 export type ContainerProps = React.PropsWithChildren & {
   padding?: string | number;

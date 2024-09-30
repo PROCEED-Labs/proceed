@@ -1,4 +1,5 @@
 const system = require('@proceed/system');
+/** @type{import('@proceed/system/src/ipc/ipc.ts').default} */
 const IPC = require('@proceed/system/src/ipc/ipc.ts').default;
 const { config, logging } = require('@proceed/machine');
 const { information: machineInformation } = require('@proceed/machine');
@@ -25,7 +26,7 @@ const logger = logging.getLogger(configObject);
 
 module.exports = {
   /**
-   * Initializes the universal part of the PROCEED engine. Dependending on the
+   * Initializes the universal part of the PROCEED engine. Depending on the
    * options, the discovery and networking can delay the opening of the
    * communication channels to a later point using the `silentMode` key.
    * @param {object} options The options for the engine start up

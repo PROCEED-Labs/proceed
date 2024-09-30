@@ -10,7 +10,7 @@ import { v4 } from 'uuid';
 
 export function defaultParameter(
   key: string,
-  val: string,
+  val?: string,
   language?: Localization,
   unit?: string,
 ): Parameter {
@@ -20,7 +20,7 @@ export function defaultParameter(
     content: [
       {
         displayName: key[0].toUpperCase() + key.slice(1),
-        value: val,
+        value: val ?? '',
         language: language ?? 'en',
         unit: unit ?? '',
       },
@@ -31,7 +31,7 @@ export function defaultParameter(
 }
 
 export function defaultConfiguration(name?: string, description?: string): AbstractConfig {
-  const date = new Date().toUTCString();
+  const date = new Date();
   const config = {
     id: v4(),
     type: 'config',
@@ -42,7 +42,7 @@ export function defaultConfiguration(name?: string, description?: string): Abstr
     departments: [],
     inEditingBy: [],
     createdOn: date,
-    lastEdited: date,
+    lastEdited: '',
     sharedAs: 'protected',
     shareTimestamp: 0,
     allowIframeTimestamp: 0,
@@ -50,7 +50,7 @@ export function defaultConfiguration(name?: string, description?: string): Abstr
     folderId: '',
     createdBy: '',
     lastEditedBy: '',
-    lastEditedOn: '',
+    lastEditedOn: date,
   } as AbstractConfig;
 
   if (description) {

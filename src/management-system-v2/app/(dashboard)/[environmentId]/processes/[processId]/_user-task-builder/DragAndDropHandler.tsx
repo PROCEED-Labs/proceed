@@ -52,7 +52,6 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 100, tolerance: 10 } }),
-    useSensor(KeyboardSensor),
   );
 
   /**

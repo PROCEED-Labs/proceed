@@ -12,8 +12,8 @@ export const RoleInputSchema = z.object({
   description: z.string().nullish().optional(),
   note: z.string().nullish().optional(),
   permissions: z.object(perms as Permissions).partial(),
-  expiration: z.string().nullish().optional(),
-  default: z.boolean().optional(),
+  expiration: z.date().nullish().optional(),
+  default: z.boolean().optional().nullable(),
   parentId: z.string().optional(),
 });
 
@@ -21,14 +21,13 @@ export type RoleInput = z.infer<typeof RoleInputSchema>;
 
 export type Role = RoleInput & {
   id: string;
-  // TODO fix members type
   members: {
     userId: string;
-    username: string;
-    firstName: string;
-    lastName: string;
-    email: string;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
   }[];
-  createdOn: string;
-  lastEdited: string;
+  createdOn: Date;
+  lastEditedOn: Date;
 };

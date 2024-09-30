@@ -268,7 +268,7 @@ export function computeRulesForUser({
   roles?: Role[];
   purchasedResources?: ResourceType[];
 }) {
-  if (!space.organization) {
+  if (!space.isOrganization) {
     if (userId !== space.id) throw new Error("Personal environment doesn't belong to user");
 
     const personalEnvironmentRules = [
@@ -320,7 +320,7 @@ export function computeRulesForUser({
         action: actions,
         conditions: {
           conditions: {
-            $: { $not_expired_value: role.expiration ?? null },
+            $: { $not_expired_value: role.expiration?.toISOString() ?? null },
             ...(role.parentId && FolderScopedResources.includes(resource as any)
               ? { $1: { $property_has_to_be_child_of: role.parentId } }
               : {}),

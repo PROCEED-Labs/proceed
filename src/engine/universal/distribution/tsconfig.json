@@ -1,5 +1,6 @@
 {
   "extends": "../../../../tsconfig.json",
+  "exclude": ["../../../../FeatureFlags.js"],
   "compilerOptions": {
     "declarationDir": "./@types",
     "emitDeclarationOnly": true,

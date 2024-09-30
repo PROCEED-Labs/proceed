@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Proceed system framework.",
   "main": "./src/module.js",
-  "types": "./@types/universal/system/src/module.d.ts",
+  "types": "./@types/system/src/module.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {

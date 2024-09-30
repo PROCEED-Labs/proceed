@@ -1,9 +1,10 @@
 {
   "extends": "../../../../tsconfig.json",
   "include": ["./src"],
-  "exclude": ["../../../../FeatureFlags.js", "./@types/**/*"],
+  "exclude": ["../../../../FeatureFlags.js", "./@types", "**/node_modules"],
   "compilerOptions": {
     "declarationDir": "./@types",
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "rootDir": "."
   }
 }

@@ -1469,13 +1469,13 @@ test.describe('Selecting Processes', () => {
     });
   });
 
+  function getNumberOfVisibleRows(page) {
+    return page.locator('tbody tr.ant-table-row').count(); /* There is also a measurement row */
+  }
+
   test('Selecting Processes with click', async ({ processListPage }) => {
     const { page } = processListPage;
     const inputSearch = await page.locator('.ant-input-affix-wrapper');
-
-    const getNumberOfVisibleRows = async () => {
-      return await page.locator('tbody tr').count();
-    };
 
     const processIDs = processListPage.getDefinitionIds();
 
@@ -1506,9 +1506,9 @@ test.describe('Selecting Processes', () => {
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
-    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows(page)) + 1}`);
 
     /* Deselect all visible */
     await page.getByLabel('Select all').uncheck();
@@ -1544,9 +1544,9 @@ test.describe('Selecting Processes', () => {
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
-    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows(page)) + 1}`);
 
     /* ____________________________________ */
     /* Selection persists after folder change (? TODO:) */
@@ -1556,16 +1556,13 @@ test.describe('Selecting Processes', () => {
   }) => {
     const { page } = processListPage;
     const processIDs = processListPage.getDefinitionIds();
-    const getNumberOfVisibleRows = async () => {
-      return await page.locator('tbody tr').count();
-    };
 
     /* Select all with ctrl + a */
     await page.getByRole('main').press('Control+a');
 
     /* Check if all visible selected */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
 
     /* Check if displayed note show correct number */

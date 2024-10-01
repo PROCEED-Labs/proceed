@@ -1,5 +1,5 @@
 import { Node, ROOT_NODE, QueryMethods, WithoutPrivateActions, Element } from '@craftjs/core';
-import { pointerWithin, ClientRect, getClientRect } from '@dnd-kit/core';
+import { pointerWithin, ClientRect } from '@dnd-kit/core';
 import { Active, DroppableContainer, RectMap } from '@dnd-kit/core/dist/store';
 import { Coordinates } from '@dnd-kit/utilities';
 import { RefObject } from 'react';
@@ -15,55 +15,239 @@ type CollisionFuncType = {
   active: Active | null;
 };
 
-let nodeRectCache: Map<string, ClientRect> | null = null;
-
-export const clearNodeRectCache = () => {
-  nodeRectCache = null;
+const droppableRectCache = new Map<string, ClientRect>();
+export const clearDroppableRectCache = () => {
+  droppableRectCache.clear();
 };
 
-function getColumnRect(node: Node) {
-  if (!node.dom) return;
-  const rect = getClientRect(node.dom);
+type TransformedRectMap = Map<string, ClientRect>;
 
-  return rect;
-}
+/**
+ * Calculates the amount by which this column might shrink when the dragged element is removed from the document (the column might be the dragged element in which case its height is set to 0)
+ * Inserts the transformed bounding client rect into the given rect map
+ * Recursively calls the transform function on its child if the child is a container element
+ *
+ * @param column
+ * @param query the craft query object which we need to get other nodes from the state
+ * @param draggedNodeId
+ * @param topOffset the amount by which the column will be shifted upwards due to elements above shrinking
+ * @param rectMap the map that will contain the transformed bounding client rects of all elements in the end
+ * @returns the amount by which the column shrinks
+ */
+function getTransformedColumnRect(
+  column: Node,
+  query: CraftQuery,
+  draggedNodeId: string,
+  topOffset: number,
+  rectMap: TransformedRectMap,
+) {
+  if (!column?.dom) return;
+  const rect = column.dom.getBoundingClientRect();
 
-function getRowRect(query: CraftQuery, node: Node) {
-  if (!node.dom) return;
-  const rect = getClientRect(node.dom);
+  let shrinkAmount = 0;
+  if (column.id === draggedNodeId) shrinkAmount = rect.height;
+  else {
+    const child = query.node(column.data.nodes[0]).get();
+    if (child && child.data.name === 'Container') {
+      const childShrinkAmount = getTransformedContainerRect(
+        child,
+        query,
+        draggedNodeId,
+        topOffset,
+        rectMap,
+      );
 
-  // treat rows as if they extend to their parents (container) border horizontally
-  if (node.data.parent) {
-    const parentContainer = query.node(node.data.parent!).get();
-    const parentContainerRect = parentContainer.dom?.getBoundingClientRect();
-    if (parentContainerRect) {
-      rect.left = parentContainerRect.left;
-      rect.right = parentContainerRect.right;
-      rect.width = parentContainerRect.width;
+      if (childShrinkAmount === undefined) return;
+      shrinkAmount = childShrinkAmount;
     }
   }
 
-  return rect;
+  rectMap.set(column.id, {
+    ...rect,
+    top: rect.top - topOffset,
+    bottom: rect.bottom - (topOffset + shrinkAmount),
+    height: rect.height - shrinkAmount,
+    left: rect.left,
+    right: rect.right,
+    width: rect.width,
+  });
+
+  return shrinkAmount;
 }
 
-function getContainerRect(query: CraftQuery, node: Node) {
-  if (!node.dom) return;
-  const rect = getClientRect(node.dom);
+/**
+ * Calculates the amount by which this container might shrink when the dragged element (which might be contained in the container) is removed from the document
+ * Inserts the transformed bounding client rect into the given rect map
+ * Recursively calls the transform function on its child if the child is a container element
+ *
+ * @param container
+ * @param query the craft query object which we need to get other nodes from the state
+ * @param draggedNodeId
+ * @param topOffset the amount by which the container will be shifted upwards due to elements above shrinking
+ * @param rectMap the map that will contain the transformed bounding client rects of all elements in the end
+ * @returns the amount by which the container shrinks
+ */
+function getTransformedContainerRect(
+  container: Node,
+  query: CraftQuery,
+  draggedNodeId: string,
+  topOffset: number,
+  rectMap: TransformedRectMap,
+) {
+  if (!container?.dom) return;
 
-  if (node.id !== ROOT_NODE) {
+  // we need to accumulate the amount by which the contained rows shrink
+  let shrinkAmount = 0;
+  for (const childRowId of container.data.nodes) {
+    const childShrinkAmount = getTransformedRowRect(
+      childRowId,
+      query,
+      draggedNodeId,
+      topOffset + shrinkAmount,
+      rectMap,
+    );
+
+    if (childShrinkAmount === undefined) return;
+    shrinkAmount += childShrinkAmount;
+  }
+
+  const rect = container.dom.getBoundingClientRect();
+  if (container.id === ROOT_NODE) rectMap.set(container.id, rect);
+  else {
+    rectMap.set(container.id, {
+      top: rect.top - topOffset,
+      bottom: rect.bottom - (topOffset + shrinkAmount),
+      height: rect.height - shrinkAmount,
+      left: rect.left,
+      right: rect.right,
+      width: rect.width,
+    });
+  }
+
+  return shrinkAmount;
+}
+
+/**
+ * Calculates the amount by which this row might shrink when the dragged element (which might be contained in the row) is removed from the document
+ * Inserts the transformed bounding client rect into the given rect map
+ * Recursively calls the transform function on its child if the child is a container element
+ *
+ * @param rowId
+ * @param query the craft query object which we need to get other nodes from the state
+ * @param draggedNodeId
+ * @param topOffset the amount by which the row will be shifted upwards due to elements above shrinking
+ * @param rectMap the map that will contain the transformed bounding client rects of all elements in the end
+ * @returns the amount by which the row shrinks
+ */
+function getTransformedRowRect(
+  rowId: string,
+  query: CraftQuery,
+  draggedNodeId: string,
+  topOffset: number,
+  rectMap: TransformedRectMap,
+) {
+  const row = query.node(rowId).get();
+  if (!row?.dom) return;
+
+  let currentFlexRowStart = -1;
+  const flexRows: { child: Node; rect: ClientRect }[][] = [];
+  // we need to accumulate the shrinking in each flex row in case we have wrapping inside the row (e.g. in mobile view where the elements are displayed below each other)
+  for (const childId of row.data.nodes) {
+    const child = query.node(childId).get();
+    if (!child?.dom) return;
+    const childRect = child.dom.getBoundingClientRect();
+    if (childRect.top !== currentFlexRowStart) {
+      flexRows.push([{ child, rect: childRect }]);
+      currentFlexRowStart = childRect.top;
+    } else flexRows[flexRows.length - 1].push({ child, rect: childRect });
+  }
+
+  let shrinkAmount = 0;
+  for (const flexRow of flexRows) {
+    let highestChild: Node | undefined = undefined;
+    let highestChildHeight = 0;
+    let secondHighestChildHeight = 0;
+    const childShrinkAmounts: { [childId: string]: number } = {};
+    for (const { child, rect } of flexRow) {
+      const childShrinkAmount = getTransformedColumnRect(
+        child,
+        query,
+        draggedNodeId,
+        topOffset + shrinkAmount,
+        rectMap,
+      );
+      if (childShrinkAmount === undefined) return;
+      childShrinkAmounts[child.id] = childShrinkAmount;
+      if (rect.height >= highestChildHeight) {
+        secondHighestChildHeight = highestChildHeight;
+        highestChild = child;
+        highestChildHeight = rect.height;
+      }
+    }
+
+    if (highestChild) {
+      shrinkAmount += Math.min(
+        childShrinkAmounts[highestChild.id]!,
+        highestChildHeight - secondHighestChildHeight,
+      );
+    }
+  }
+
+  const rect = row.dom.getBoundingClientRect();
+  rectMap.set(row.id, {
+    ...rect,
+    top: rect.top - topOffset,
+    bottom: rect.bottom - (topOffset + shrinkAmount),
+    height: rect.height - shrinkAmount,
+    left: rect.left,
+    right: rect.right,
+    width: rect.width,
+  });
+
+  return shrinkAmount;
+}
+
+/**
+ * This will adjust the rects of some elements to handle some edge cases
+ *
+ * @param nodeId
+ * @param query the craft query object we use to get the nodes from crafts inner state
+ * @param rect the rect to adapt
+ * @param rectMap the rects of all elements
+ * @returns the rect which potentially changed bounds
+ */
+function adaptNodeRect(
+  nodeId: string,
+  query: CraftQuery,
+  rect: ClientRect,
+  rectMap: TransformedRectMap,
+) {
+  const node = query.node(nodeId).get();
+  if (!node) return rect;
+
+  if (node.data.name === 'Container') {
     // if the node is a container we want to ensure that it is targeted instead of its parent container and row when an item is dragged inside
     if (node.data.parent) {
       const parentColumn = query.node(node.data.parent).get();
-      const parentColumnRect = parentColumn.dom?.getBoundingClientRect();
-      const parentRow = query.node(parentColumn.data.parent!).get();
-      const parentRowRect = parentRow.dom?.getBoundingClientRect();
+      const parentColumnRect = rectMap.get(parentColumn.id);
+      const parentRowRect = rectMap.get(parentColumn.data.parent!);
 
       if (parentRowRect && parentColumnRect) {
         rect.top = parentRowRect.top;
         rect.bottom = parentRowRect.bottom;
         rect.height = parentRowRect.height;
-        rect.left = parentColumnRect.left;
-        rect.right = parentColumnRect.right;
+        rect.left = parentColumnRect.left - 3;
+        rect.right = parentColumnRect.right + 3;
+      }
+    }
+  } else if (node.data.name === 'Row') {
+    // treat rows as if they extend to their parents (container) border horizontally
+    if (node.data.parent) {
+      const parentContainerRect = rectMap.get(node.data.parent);
+      if (parentContainerRect) {
+        rect.left = parentContainerRect.left;
+        rect.right = parentContainerRect.right;
+        rect.width = parentContainerRect.width;
       }
     }
   }
@@ -71,180 +255,27 @@ function getContainerRect(query: CraftQuery, node: Node) {
   return rect;
 }
 
-/**
- *  Returns the bounds of a node transformed to the requirements of our drag and drop logic
- *
- * @param query craft js query methods
- * @param node the node for which we try to get bounds
- * @returns the bounds of the node
- */
-function getNodeRect(query: CraftQuery, node: Node) {
-  // fallback for when we cannot get bounds for some reason (missing dom element in craft for example)
-  let rect: ClientRect = { top: 0, bottom: 0, left: 0, right: 0, height: 0, width: 0 };
-  if (node.data.name === 'Column') rect = getColumnRect(node) || rect;
-  if (node.data.name === 'Row') rect = getRowRect(query, node) || rect;
-  if (node.data.name === 'Container') rect = getContainerRect(query, node) || rect;
+function getDroppableRects(query: CraftQuery, draggedNode: Node | null) {
+  if (!droppableRectCache.size) {
+    clearDroppableRectCache();
 
-  return rect;
-}
+    const rects: TransformedRectMap = new Map();
+    const res = getTransformedContainerRect(
+      query.node(ROOT_NODE).get(),
+      query,
+      draggedNode ? draggedNode.id : '',
+      0,
+      rects,
+    );
+    if (res === undefined) return null;
 
-function getDroppableRects(query: CraftQuery, droppableIds: string[], draggedNode: Node | null) {
-  if (droppableIds.some((id) => !nodeRectCache?.has(id))) {
-    clearNodeRectCache();
-    const droppableRects = new Map<string, ClientRect>();
-    for (const id of droppableIds) {
-      // writing our own bounding box calculation that uses the correct offsets when moving elements and caching it so the values are only recomputed when necessary
-      const dropNodeId = id.toString();
-      const dropNode = query.node(dropNodeId).get();
-      let dropNodeDom = dropNode?.dom;
-      // we need to wait until the node is available throught craft js and the dom element is available as well
-      if (!dropNodeDom) return null;
-
-      if (draggedNode) {
-        // block elements inside the dragged element from becoming drop targets
-        if (isNested(query, draggedNode.id, dropNode)) continue;
-      }
-
-      let rect = getNodeRect(query, dropNode);
-
-      if (!rect) return null;
-
-      // when we are dragging an element calculate the bounding boxes as they would be without the dragged element
-      if (draggedNode) {
-        if (!draggedNode) return null;
-        const draggedNodeRect = draggedNode.dom?.getBoundingClientRect();
-
-        if (draggedNodeRect) {
-          let offset = getTargetOffsetAfterMove(
-            query,
-            draggedNode.id,
-            dropNodeId,
-            draggedNodeRect,
-            rect,
-          );
-
-          rect = {
-            ...rect,
-            height: rect.height - offset.bottom,
-            top: rect.top - offset.top,
-            bottom: rect.bottom - offset.bottom,
-          };
-        }
-      }
-      droppableRects.set(dropNodeId, rect);
-      nodeRectCache = droppableRects;
+    for (const [id, rect] of rects.entries()) {
+      droppableRectCache.set(id, adaptNodeRect(id, query, rect, rects));
     }
   }
 
-  return nodeRectCache;
+  return droppableRectCache;
 }
-
-function isNested(query: CraftQuery, potentialContainerId: string, potentiallyNested: Node) {
-  let ancestor = potentiallyNested;
-  while (ancestor.data.parent) {
-    if (ancestor.data.parent === potentialContainerId) {
-      return true;
-    }
-    ancestor = query.node(ancestor.data.parent).get();
-  }
-}
-
-/**
- * This function is used to calculate the most likely changes to a target elements bounding box if the dragged element would be removed from its current position
- */
-const getTargetOffsetAfterMove = (
-  query: CraftQuery,
-  draggedNodeId: string,
-  targetNodeId: string,
-  draggedNodeRect: ClientRect,
-  targetNodeRect: ClientRect,
-) => {
-  const offset = { top: 0, bottom: 0 };
-
-  // the root node should be unaffected by the node being moved
-  if (targetNodeId === ROOT_NODE) return offset;
-
-  // if the target element ends above the current position of the dragged element it should not be affected by the element being removed from its current position
-  if (targetNodeRect.bottom <= draggedNodeRect.top) return offset;
-
-  const draggedNode = query.node(draggedNodeId).get();
-  const targetNode = query.node(targetNodeId).get();
-
-  // get the ancestry path from the element to the root
-  let ancestors = [];
-  let curr: Node | undefined = draggedNode;
-  while (curr) {
-    ancestors.push(curr);
-
-    if (curr.data.parent) {
-      curr = query.node(curr.data.parent).get();
-    } else curr = undefined;
-  }
-
-  if (targetNode.data.parent) curr = query.node(targetNode.data.parent).get();
-  let shrinkNodeIndex = 0;
-  while (curr) {
-    const indexInAncestors = ancestors.findIndex((ancestor) => ancestor.id === curr!.id);
-    if (indexInAncestors > -1) {
-      // we want the first container of the dragged node that also is a sibling of the target node since that should be the one affecting the target node on shrink
-      // this might be the target node itself if it contains the dragged node
-      shrinkNodeIndex = indexInAncestors - 1;
-      break;
-    }
-
-    if (curr.data.parent) {
-      curr = query.node(curr.data.parent).get();
-    } else curr = undefined;
-  }
-
-  // we calculate the amount the previously found node will shrink when the dragged node is being removed
-  let shrinkAmount = 0;
-  for (let i = 0; i < shrinkNodeIndex; ++i) {
-    const shrinkNode = ancestors[i];
-
-    // find the sibling of the node that might shrink that has the biggest height
-    let highestSiblingHeight = 0;
-    const shrinkNodeParent = query.node(shrinkNode.data.parent!).get();
-    shrinkNodeParent.data.nodes
-      .map((id) => query.node(id).get())
-      .forEach((sibling) => {
-        if (sibling.id !== shrinkNode.id) {
-          if (sibling.dom) {
-            const { height, top: sTop } = sibling.dom.getBoundingClientRect();
-            if (sTop === draggedNodeRect.top && highestSiblingHeight < height)
-              highestSiblingHeight = height;
-          }
-        }
-      });
-
-    if (!shrinkNode.dom) return offset;
-
-    // if one of the siblings is higher than the node then removing/shrinking the node is inconsequential for nodes that follow vertically or for any containing elements
-    if (shrinkNode.dom.getBoundingClientRect().height < highestSiblingHeight) return offset;
-
-    if (shrinkNode.id === draggedNode.id)
-      // for the content of the node containing our dragged node we can shrink to the size of the largest sibling
-      shrinkAmount = draggedNodeRect.height - highestSiblingHeight;
-    // for all nodes containing the dragged node we can only shrink as mush as we did in the contained or less if there is a sibling with less of a height difference
-    else
-      shrinkAmount = Math.min(
-        shrinkAmount,
-        shrinkNode.dom.getBoundingClientRect().height - highestSiblingHeight,
-      );
-
-    if (!shrinkAmount) break;
-  }
-
-  // if we are looking at a container that wraps the element the offset only affects the bottom border
-  offset.bottom = shrinkAmount;
-
-  if (targetNodeRect.top > draggedNodeRect.top) {
-    // otherwise the offset also affects the elements upper border
-    offset.top = shrinkAmount;
-  }
-
-  return offset;
-};
 
 function getCustomPointerCoordinates(
   pointerCoordinates: Coordinates,
@@ -278,11 +309,7 @@ export const customCollisionFactory =
       draggedNode = query.node(active.id.toString()).get();
     }
 
-    const droppableRects = getDroppableRects(
-      query,
-      droppableContainers.map(({ id }) => id.toString()),
-      draggedNode,
-    );
+    const droppableRects = getDroppableRects(query, draggedNode);
     if (!droppableRects) return [];
 
     const { x: pointerX, y: pointerY } = getCustomPointerCoordinates(
@@ -315,8 +342,7 @@ export const getNewPositionFactory =
       let index = 0;
 
       targetNode.data.nodes.forEach((childId, i) => {
-        const childNode = query.node(childId).get();
-        const childNodeRect = childNode.dom?.getBoundingClientRect();
+        const childNodeRect = droppableRectCache.get(childId)!;
 
         if (childNodeRect && comp(childNodeRect)) index = i + 1;
       });
@@ -450,14 +476,14 @@ export function moveElement(
     if (currentParentRow.data.nodes.length === 1) actionHandler.delete(currentParentRow.id);
     // invalidate the cache
     // TODO: do this in some smarter way (currently the recomputation seems to occasionally run before the changes are applied when done without the timeout)
-    setTimeout(clearNodeRectCache, 50);
+    setTimeout(clearDroppableRectCache, 50);
   } else {
     if (newIndex !== currentIndex) {
       // reposition inside the same row
       actionHandler.move(dragNode.id, currentParentRow.id, newIndex);
       // invalidate the cache
       // TODO: do this in some smarter way (currently the recomputation seems to occasionally run before the changes are applied when done without the timeout)
-      setTimeout(clearNodeRectCache, 50);
+      setTimeout(clearDroppableRectCache, 50);
     }
   }
 }

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import {
   customCollisionFactory,
   getNewPositionFactory,
-  clearNodeRectCache,
+  clearDroppableRectCache,
   addNewElement,
   moveElement,
 } from './dnd-helpers';
@@ -84,7 +84,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
         },
       }}
       onDragStart={(event) => {
-        clearNodeRectCache();
+        clearDroppableRectCache();
         needNewHistoryBundle.current = true;
         setActive(event.active.id.toString());
         const isCreating = /^create-.*-button$/.test(event.active.id.toString());

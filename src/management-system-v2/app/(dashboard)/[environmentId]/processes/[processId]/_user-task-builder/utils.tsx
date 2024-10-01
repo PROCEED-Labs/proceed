@@ -193,6 +193,10 @@ export const iframeDocument = `
         padding: 0 10px;    
       }
 
+      .user-task-form-column {
+        position: relative;
+      }
+
       .user-task-form-container svg {
         height: 50px;
       }

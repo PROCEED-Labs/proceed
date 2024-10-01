@@ -21,7 +21,6 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
   return (
     <ContextMenu menu={[]}>
       <div
-        style={{ position: 'relative' }}
         onMouseEnter={() => setHovered(true)}
         ref={(r) => {
           r && connect(r);

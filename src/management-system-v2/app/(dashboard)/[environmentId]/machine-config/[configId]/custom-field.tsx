@@ -107,10 +107,12 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
   };
 
   const cardStyle = {
-    background: token.colorFillAlter,
+    // background: token.colorFillAlter,
+    background: 'rgba(0,0,0,0)',
     borderRadius: token.borderRadiusLG,
-    border: 'solid 1px #d9d9d9',
+    border: 'solid #d9d9d9',
     margin: '10px 0 0 0',
+    borderWidth: '0 0 0 5px',
   };
 
   const [parametersList, paramIdToName] = useMemo(() => {
@@ -168,78 +170,84 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
     router.refresh();
   };
 
+  /**pattern:
+   *  row: meta/param-key
+   *  row: entries
+   *  row: linked params
+   *  row: nested params*/
   return (
-    <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
-      <Col span={3} className="gutter-row">
-        <div style={{ display: 'flex', alignItems: 'baseline' }}>
-          <Paragraph
-            editable={
-              editable && {
-                icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
-                tooltip: 'Edit Parameter Key',
-                onCancel: restoreKey,
-                onChange: (newValue) => (currentKeyRef.current = newValue),
-                onEnd: saveKey,
-                enterIcon: <CheckOutlined />,
+    <>
+      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
+        <Col span={24} className="gutter-row">
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            <Paragraph
+              strong
+              editable={
+                editable && {
+                  icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
+                  tooltip: 'Edit Parameter Key',
+                  onCancel: restoreKey,
+                  onChange: (newValue) => (currentKeyRef.current = newValue),
+                  onEnd: saveKey,
+                  enterIcon: <CheckOutlined />,
+                }
               }
-            }
-          >
-            {currentKeyRef.current[0].toUpperCase() + currentKeyRef.current.slice(1) /*TODO */}
-          </Paragraph>
-          {editable && (
-            <Space.Compact size="small">
-              <Tooltip title="Delete">
-                <Button
-                  /* disabled={!editable} */
-                  icon={<DeleteOutlined />}
-                  type="text"
-                  onClick={() => setDeleteFieldOpen(true)}
-                />
-              </Tooltip>
-            </Space.Compact>
-          )}
-        </div>
-      </Col>
+            >
+              {currentKeyRef.current}
+            </Paragraph>
+            {editable && (
+              <Space.Compact size="small">
+                <Tooltip title="Delete">
+                  <Button
+                    icon={<DeleteOutlined />}
+                    type="text"
+                    onClick={() => setDeleteFieldOpen(true)}
+                  />
+                </Tooltip>
+              </Space.Compact>
+            )}
+          </div>
+        </Col>
+      </Row>
 
-      <Col span={21} className="gutter-row">
-        <Param
-          editingEnabled={editable}
-          field={parameter}
-          label={keyId[0].toUpperCase() + keyId.slice(1)}
-        />
+      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
+        <Col span={23} offset={1} className="gutter-row">
+          <Param editingEnabled={editable} field={parameter} label={keyId} />
 
-        {(editable || (parameter.linkedParameters && parameter.linkedParameters.length > 0)) && (
-          <Card style={cardStyle} size="small">
-            <Row gutter={[24, 24]} align="middle">
-              <Col span={4} className="gutter-row">
-                Linked Parameters
-              </Col>
+          {(editable || (parameter.linkedParameters && parameter.linkedParameters.length > 0)) && (
+            <Space direction="vertical" style={{ margin: '10px 0 0 0', display: 'flex' }}>
+              <Row gutter={[24, 24]} align="middle">
+                <Col span={24} className="gutter-row">
+                  <Text italic>Linked Parameters</Text>
+                </Col>
+              </Row>
 
-              <Col span={20} className="gutter-row">
-                {editable && (
-                  <Space>
-                    <Select
-                      mode="multiple"
-                      allowClear
-                      tagRender={linkedParametersTagRender}
-                      style={{ minWidth: 250 }}
-                      placeholder="Select to Add"
-                      value={parameter.linkedParameters}
-                      onChange={(idList: string[]) => linkedParametersChange(idList, parameter)}
-                      options={parametersList}
-                    />
-                  </Space>
-                )}
-
-                {!editable &&
-                  parameter.linkedParameters.map((paramId: string) => (
-                    <Space key={paramId}>
-                      <Tag color="purple">{paramIdToName[paramId]}</Tag>
+              <Row gutter={[24, 24]} align="middle">
+                <Col span={23} offset={1} className="gutter-row">
+                  {editable && (
+                    <Space>
+                      <Select
+                        mode="multiple"
+                        allowClear
+                        tagRender={linkedParametersTagRender}
+                        style={{ minWidth: 250 }}
+                        placeholder="Select to Add"
+                        value={parameter.linkedParameters}
+                        onChange={(idList: string[]) => linkedParametersChange(idList, parameter)}
+                        options={parametersList}
+                      />
                     </Space>
-                  ))}
-              </Col>
+                  )}
 
-              {/* <Col span={1} className="gutter-row">
+                  {!editable &&
+                    parameter.linkedParameters.map((paramId: string) => (
+                      <Space key={paramId}>
+                        <Tag color="purple">{paramIdToName[paramId]}</Tag>
+                      </Space>
+                    ))}
+                </Col>
+
+                {/* <Col span={1} className="gutter-row">
                     <Tooltip title="Delete">
                       <Button
                         size="small"
@@ -249,47 +257,48 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
                       />
                     </Tooltip>
                   </Col> */}
-            </Row>
-          </Card>
-        )}
+              </Row>
+            </Space>
+          )}
 
-        {(editable || (parameter.parameters && Object.keys(parameter.parameters).length > 0)) && (
-          <Card style={cardStyle} size="small">
-            <Row gutter={[24, 24]} align="middle">
-              <Col span={4} className="gutter-row">
-                Nested Parameters
-              </Col>
-              <Col span={20} className="gutter-row">
-                {parameter.parameters &&
-                  Object.entries(parameter.parameters).map(([subFieldKey, subField]) => (
-                    <CustomField
-                      parentConfig={parentConfig}
-                      key={subFieldKey}
-                      keyId={subFieldKey}
-                      parameter={subField}
-                      editable={editable}
-                    />
-                  ))}
-                {editable && (
-                  <Space>
-                    <AddButton label="Add Parameter" onClick={() => setCreateFieldOpen(true)} />
-                  </Space>
-                )}
-              </Col>
-              {/* <Col span={1} className="gutter-row">
-                    <Tooltip title="Delete">
-                      <Button
-                        size="small"
-                        disabled={!editable}
-                        icon={<DeleteOutlined />}
-                        type="text"
-                      />
-                    </Tooltip>
-                  </Col> */}
-            </Row>
-          </Card>
-        )}
-      </Col>
+          {(editable || (parameter.parameters && Object.keys(parameter.parameters).length > 0)) && (
+            <Space direction="vertical" style={{ margin: '10px 0 0 0', display: 'flex' }}>
+              <Row gutter={[24, 24]} align="middle">
+                <Col span={24} className="gutter-row">
+                  <Text italic>Nested Parameters</Text>
+                </Col>
+              </Row>
+              <Card style={cardStyle} size="small">
+                <Row gutter={[24, 24]} align="middle">
+                  <Col span={24} offset={0} className="gutter-row">
+                    {parameter.parameters &&
+                      Object.entries(parameter.parameters).map(([subFieldKey, subField]) => (
+                        <CustomField
+                          parentConfig={parentConfig}
+                          key={subFieldKey}
+                          keyId={subFieldKey}
+                          parameter={subField}
+                          editable={editable}
+                        />
+                      ))}
+
+                    {editable && (
+                      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+                        <Col span={21} className="gutter-row">
+                          <AddButton
+                            label="Add Parameter"
+                            onClick={() => setCreateFieldOpen(true)}
+                          />
+                        </Col>
+                      </Row>
+                    )}
+                  </Col>
+                </Row>
+              </Card>
+            </Space>
+          )}
+        </Col>
+      </Row>
 
       <CreateParameterModal
         title="Create Parameter"
@@ -310,7 +319,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
           <Text italic>{parameter.id}</Text>
         </Paragraph>
       </Modal>
-    </Row>
+    </>
   );
 };
 

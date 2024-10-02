@@ -61,6 +61,7 @@ const Content: React.FC<MachineDataViewProps> = ({
   return (
     <>
       {(idVisible || editable) && contentType === 'metadata' && (
+        // Row: ID
         <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
           <Col span={3} className="gutter-row">
             Internal ID
@@ -69,6 +70,7 @@ const Content: React.FC<MachineDataViewProps> = ({
             <Input value={configId} disabled prefix={<KeyOutlined />} />
           </Col>
           {editable && (
+            // TODO tooltip logic
             <Col span={1}>
               <Tooltip title="Hide Internal ID">
                 <Button
@@ -77,7 +79,7 @@ const Content: React.FC<MachineDataViewProps> = ({
                   onClick={() => {
                     setIdVisible(!idVisible);
                   }}
-                  icon={idVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                  icon={idVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
                   type="text"
                 />
               </Tooltip>
@@ -85,7 +87,9 @@ const Content: React.FC<MachineDataViewProps> = ({
           )}
         </Row>
       )}
+
       {Object.entries(data).map(([key, val]) => (
+        // Rows: Metadata, Parameter, Nested Parameters, Linked Parameter
         <CustomField
           parentConfig={parentConfig}
           key={key}
@@ -94,9 +98,10 @@ const Content: React.FC<MachineDataViewProps> = ({
           editable={editable}
         />
       ))}
+
       {editable && (
+        // Row: Add Meta/Parameter
         <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-          {/* <Col span={3} className="gutter-row" /> */}
           <Col span={21} className="gutter-row">
             <AddButton label={addButtonTitle} onClick={() => setCreateFieldOpen(true)} />
           </Col>

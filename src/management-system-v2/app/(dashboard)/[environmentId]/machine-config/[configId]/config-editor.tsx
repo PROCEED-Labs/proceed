@@ -387,6 +387,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             }}
             items={collapseItems}
           />
+
           {selectedConfig.type === 'config' && (
             <MachineConfigurations parentConfig={parentConfig} editingEnabled={editable} />
           )}

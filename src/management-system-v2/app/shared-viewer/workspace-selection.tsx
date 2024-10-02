@@ -57,17 +57,17 @@ const WorkspaceSelection: React.FC<WorkspaceSelectionProps> = ({ processData, ve
       message.success('Diagram has been successfully copied to your workspace');
       if (copiedProcesses.length === 1) {
         router.push(
-          `${workspace.organization ? workspace.id : ''}/processes/${copiedProcesses[0].id}`,
+          `${workspace.isOrganization ? workspace.id : ''}/processes/${copiedProcesses[0].id}`,
         );
       }
     }
   };
 
   const userWorkspaces = workspaces.map((workspace, index) => ({
-    label: workspace.organization ? workspace.name : 'My Space',
+    label: workspace.isOrganization ? workspace.name : 'My Space',
     key: `${workspace.id}-${index}`,
     logo:
-      workspace.organization && workspace.logoUrl ? (
+      workspace.isOrganization && workspace.logoUrl ? (
         <Avatar size={'large'} src={workspace.logoUrl} />
       ) : (
         <Avatar size={50} icon={<LaptopOutlined style={{ color: 'black' }} />} />

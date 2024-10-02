@@ -10,6 +10,7 @@ import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
+import { getProcess, removeProcess, init as initProcesses } from './_process';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
@@ -84,9 +85,8 @@ export function init() {
   }
 }
 init();
-import { getProcess, removeProcess, init as initProcesses } from './_process';
 
-export function getRootFolder(environmentId: string, ability?: Ability) {
+export async function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
   if (!rootFolderId) throw new Error(`MS Error: environment ${environmentId} has no root folder`);
 
@@ -99,15 +99,14 @@ export function getRootFolder(environmentId: string, ability?: Ability) {
   return rootFolderData.folder;
 }
 
-// NOTE: this doesn't check the permissions for the children
-export function getFolderById(folderId: string, ability?: Ability) {
+export async function getFolderById(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
     throw new UnauthorizedError();
 
-  return folderData.folder;
+  return folderData.folder as Folder;
 }
 
 export function getFolders(spaceId?: string) {
@@ -119,7 +118,7 @@ export function getFolders(spaceId?: string) {
   return selection.map((folder) => folder!.folder);
 }
 
-export function getFolderChildren(folderId: string, ability?: Ability) {
+export async function getFolderChildren(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
@@ -130,7 +129,7 @@ export function getFolderChildren(folderId: string, ability?: Ability) {
 }
 
 export async function getFolderContents(folderId: string, ability?: Ability) {
-  const folderChildren = getFolderChildren(folderId, ability);
+  const folderChildren = await getFolderChildren(folderId, ability);
   const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
 
   await initProcesses();
@@ -140,12 +139,12 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
       const child = folderChildren[i];
 
       if (child.type !== 'folder') {
-        const process = await getProcess(child.id);
+        const process = (await getProcess(child.id)) as Process;
         // NOTE: this check should probably done inside inside getprocess
         if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
         folderContent.push(process);
       } else {
-        folderContent.push({ ...getFolderById(child.id, ability), type: 'folder' });
+        folderContent.push({ ...(await getFolderById(child.id, ability)), type: 'folder' });
       }
     } catch (e) {}
   }
@@ -153,7 +152,7 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
   return folderContent;
 }
 
-export function createFolder(folderInput: FolderInput, ability?: Ability) {
+export async function createFolder(folderInput: FolderInput, ability?: Ability) {
   const folder = FolderSchema.parse(folderInput);
   if (!folder.id) folder.id = v4();
 
@@ -170,7 +169,7 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
     if (parentFolderData.folder.environmentId !== folder.environmentId)
       throw new Error('Parent folder is in a different environment');
 
-    parentFolderData.folder.lastEdited = new Date().toISOString();
+    parentFolderData.folder.lastEditedOn = new Date();
     store.update('folders', parentFolderData.folder.id, parentFolderData.folder);
   } else {
     if (foldersMetaObject.rootFolders[folder.environmentId])
@@ -180,8 +179,8 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
   // Store
   const newFolder = {
     ...folder,
-    createdOn: new Date().toISOString(),
-    lastEdited: new Date().toISOString(),
+    createdOn: new Date(),
+    lastEditedOn: new Date(),
   } as Folder;
 
   foldersMetaObject.folders[folder.id] = { folder: newFolder, children: [] };
@@ -195,7 +194,7 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
 }
 
 /** Deletes a folder and every child recursively */
-export function deleteFolder(folderId: string, ability?: Ability) {
+export async function deleteFolder(folderId: string, ability?: Ability) {
   // NOTE: maybe the ability should do this recursive check
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
@@ -209,7 +208,7 @@ export function deleteFolder(folderId: string, ability?: Ability) {
 
     parent.children.splice(folderIndex, 1);
 
-    parent.folder.lastEdited = new Date().toISOString();
+    parent.folder.lastEditedOn = new Date();
     store.update('folders', parent.folder.id, parent.folder);
   }
 
@@ -242,7 +241,7 @@ function _deleteFolder(
   store.remove('folders', folderData.folder.id);
 }
 
-export function updateFolderMetaData(
+export async function updateFolderMetaData(
   folderId: string,
   newMetaDataInput: Partial<FolderUserInput>,
   ability?: Ability,
@@ -263,14 +262,14 @@ export function updateFolderMetaData(
   const newFolder: Folder = {
     ...folderData.folder,
     ...newMetaData,
-    lastEdited: new Date().toISOString(),
+    lastEditedOn: new Date(),
   };
 
   folderData.folder = newFolder;
   store.update('folders', folderId, newFolder);
 }
 
-function isInSubtree(rootId: string, nodeId: string) {
+async function isInSubtree(rootId: string, nodeId: string) {
   const folderData = foldersMetaObject.folders[rootId];
   if (!folderData) throw new Error('RootId not found');
 
@@ -279,13 +278,13 @@ function isInSubtree(rootId: string, nodeId: string) {
   if (rootId === nodeId) return true;
 
   for (const child of folderData.children) {
-    if (child.type === 'folder') if (isInSubtree(child.id, nodeId)) return true;
+    if (child.type === 'folder') if (await isInSubtree(child.id, nodeId)) return true;
   }
 
   return false;
 }
 
-export function moveFolder(folderId: string, newParentId: string, ability?: Ability) {
+export async function moveFolder(folderId: string, newParentId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
@@ -318,16 +317,17 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
     throw new Error('Permission denied');
 
   // Folder cannot be movet to it's sub tree
-  if (isInSubtree(folderId, newParentId)) throw new Error('Folder cannot be moved to its children');
+  if (await isInSubtree(folderId, newParentId))
+    throw new Error('Folder cannot be moved to its children');
 
   // Store
   oldParentData.children.splice(folderIndex, 1);
-  oldParentData.folder.lastEdited = new Date().toISOString();
+  oldParentData.folder.lastEditedOn = new Date();
   store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
   folderData.folder.parentId = newParentId;
   newParentData.children.push({ type: 'folder', id: folderData.folder.id });
-  newParentData.folder.lastEdited = new Date().toISOString();
+  newParentData.folder.lastEditedOn = new Date();
   store.update('folders', newParentData.folder.id, newParentData.folder);
 
   store.update('folders', folderId, folderData.folder);

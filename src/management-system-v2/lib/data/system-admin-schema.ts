@@ -12,7 +12,7 @@ export type SystemAdminCreationInput = z.infer<typeof SystemAdminCreationInputSc
 
 export const SystemAdminSchema = SystemAdminCreationInputSchema.extend({
   id: z.string(),
-  createdOn: z.string().datetime(),
-  lastEdited: z.string().datetime(),
+  createdOn: z.date(),
+  lastEditedOn: z.date(),
 });
 export type SystemAdmin = z.infer<typeof SystemAdminSchema>;

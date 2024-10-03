@@ -31,7 +31,7 @@ class ScriptExecutor extends System {
 
     function middleware(req) {
       const { processId, processInstanceId } = req.params;
-      const process = this.#getProcess(processId, processInstanceId);
+      const process = this.getProcess(processId, processInstanceId);
       if (!process) return { statusCode: 404, response: {} };
 
       const auth = req.headers.authorization;
@@ -115,7 +115,7 @@ class ScriptExecutor extends System {
    */
   execute(processId, processInstanceId, tokenId, scriptString, dependencies) {
     // NOTE: maybe just warn
-    if (this.#getProcess(processId, processInstanceId))
+    if (this.getProcess(processId, processInstanceId))
       throw new Error('This process is already executing a script');
 
     try {
@@ -123,7 +123,7 @@ class ScriptExecutor extends System {
         token: crypto.randomUUID(),
         dependencies,
       };
-      this.#setProcess(processId, processInstanceId, processEntry);
+      this.setProcess(processId, processInstanceId, processEntry);
 
       const subprocessLaunchReqId = generateUniqueTaskID();
 
@@ -147,7 +147,7 @@ class ScriptExecutor extends System {
           if (!response || typeof response !== 'object' || !('type' in response))
             rej(new Error('Invalid response from sub process module: ' + JSON.stringify(response)));
 
-          const processEntry = this.#getProcess(processId, processInstanceId);
+          const processEntry = this.getProcess(processId, processInstanceId);
           if (!processEntry)
             rej(
               new Error(
@@ -184,7 +184,7 @@ class ScriptExecutor extends System {
       return;
     }
 
-    const scriptTask = this.#getProcess(processId, processInstanceId);
+    const scriptTask = this.getProcess(processId, processInstanceId);
     // NOTE: maybe give a warning?
     if (!scriptTask) return;
 
@@ -207,7 +207,7 @@ class ScriptExecutor extends System {
    * @param {string} processInstanceId
    * @param {typeof this.childProcesses} processInstanceId
    */
-  #setProcess(processId, processInstanceId, processEntry) {
+  setProcess(processId, processInstanceId, processEntry) {
     return this.childProcesses.set(JSON.stringify([processId, processInstanceId]), processEntry);
   }
 
@@ -215,7 +215,7 @@ class ScriptExecutor extends System {
    * @param {string} processId
    * @param {string} processInstanceId
    */
-  #getProcess(processId, processInstanceId) {
+  getProcess(processId, processInstanceId) {
     return this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
   }
 }

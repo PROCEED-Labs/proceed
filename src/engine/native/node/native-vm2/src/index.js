@@ -67,7 +67,7 @@ class SubprocesScriptExecution extends NativeModule {
     sendToUniversal,
   ) {
     // NOTE: maybe just warn
-    if (this.#getProcess(processId, processInstanceId))
+    if (this.getProcess(processId, processInstanceId))
       throw new Error('This process is already executing a script');
 
     let processEntry;
@@ -91,7 +91,7 @@ class SubprocesScriptExecution extends NativeModule {
         stderr: '',
       };
 
-      this.#setProcess(processId, processInstanceId, processEntry);
+      this.setProcess(processId, processInstanceId, processEntry);
 
       scriptTask.stdout.on('data', (data) => {
         if (this.options.logChildProcessOutput) console.log(`stdout: ${data}`);
@@ -132,20 +132,20 @@ class SubprocesScriptExecution extends NativeModule {
 
     // required by the neo engine
     if (processId === '*' && processInstanceId === '*') {
-      for (const scriptTask of this.#getAllProcesses()) {
+      for (const scriptTask of this.getAllProcesses()) {
         if (!scriptTask.process.kill())
           throw new Error(`Failed to kill subprocess ${process.process.pid}`);
       }
     }
 
-    const scriptTask = this.#getProcess(processId, processInstanceId);
+    const scriptTask = this.getProcess(processId, processInstanceId);
 
     // NOTE: maybe give a warning?
     if (!scriptTask) return;
 
     if (!scriptTask.process.kill())
       throw new Error(`Failed to kill subprocess ${process.process.pid}`);
-    this.#deleteProcess(processId, processInstanceId);
+    this.deleteProcess(processId, processInstanceId);
   }
 
   destroy() {
@@ -161,7 +161,7 @@ class SubprocesScriptExecution extends NativeModule {
    * @param {string} processInstanceId
    * @param {typeof this.childProcesses} processInstanceId
    */
-  #setProcess(processId, processInstanceId, processEntry) {
+  setProcess(processId, processInstanceId, processEntry) {
     return this.childProcesses.set(JSON.stringify([processId, processInstanceId]), processEntry);
   }
 
@@ -169,11 +169,11 @@ class SubprocesScriptExecution extends NativeModule {
    * @param {string} processId
    * @param {string} processInstanceId
    */
-  #getProcess(processId, processInstanceId) {
+  getProcess(processId, processInstanceId) {
     return this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
   }
 
-  #getAllProcesses() {
+  getAllProcesses() {
     return this.childProcesses.values();
   }
 
@@ -181,11 +181,11 @@ class SubprocesScriptExecution extends NativeModule {
    * @param {string} processId
    * @param {string} processInstanceId
    */
-  #deleteProcess(processId, processInstanceId) {
+  deleteProcess(processId, processInstanceId) {
     return this.childProcesses.delete(JSON.stringify([processId, processInstanceId]));
   }
 
-  #deleteAllProcess() {
+  deleteAllProcess() {
     this.childProcesses.clear();
   }
 }

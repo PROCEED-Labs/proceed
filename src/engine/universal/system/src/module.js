@@ -85,10 +85,14 @@ const system = {
 
   timer: new Timer(),
 
-  scriptExecution: new ScriptExecutor({ network }),
-
   setIPC(ipc) {
     setIPC(ipc, environment);
+  },
+
+  setupScriptExecutor(port) {
+    const scriptExecutor = new ScriptExecutor({ network });
+    scriptExecutor.setupRouter(port);
+    return scriptExecutor;
   },
 };
 

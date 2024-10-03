@@ -141,7 +141,8 @@ class Native {
         noIPC.receive(taskID, args);
       };
 
-      return this._engine.init(options, noIPC);
+      this._engine.init(options, noIPC);
+      await this._engine.setupSubProcessScriptExecution();
     }
     return undefined;
   }

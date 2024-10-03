@@ -64,11 +64,15 @@ module.exports = {
     if (enableInterruptedInstanceRecovery) {
       await management.restoreInterruptedInstances();
     }
-    const machinePort = await config.readConfig('machine.port');
-    system.scriptExecution.setupRouter(machinePort);
   },
 
   provideScriptExecutor(scriptExecutor) {
+    management.provideScriptExecutor(scriptExecutor);
+  },
+
+  async setupSubProcessScriptExecution() {
+    const machinePort = await config.readConfig('machine.port');
+    const scriptExecutor = system.setupScriptExecutor(machinePort);
     management.provideScriptExecutor(scriptExecutor);
   },
 

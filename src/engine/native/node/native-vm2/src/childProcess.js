@@ -19,7 +19,7 @@ async function callToExecutor(endpoint, body) {
   try {
     // TODO: don't hardcode address and port
     const response = await fetch(
-      `${processCommunicationAdress}/scriptexecution/${processId}/${processInstanceId}/${endpoint}`,
+      `${processCommunicationAdress}/${processId}/${processInstanceId}/${endpoint}`,
       {
         method: 'POST',
         body: JSON.stringify(body),

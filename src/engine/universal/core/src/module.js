@@ -64,6 +64,8 @@ module.exports = {
     if (enableInterruptedInstanceRecovery) {
       await management.restoreInterruptedInstances();
     }
+    const machinePort = await config.readConfig('machine.port');
+    system.scriptExecution.setupRouter(machinePort);
   },
 
   provideScriptExecutor(scriptExecutor) {

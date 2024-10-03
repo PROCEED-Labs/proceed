@@ -67,5 +67,7 @@ module.exports = {
         });
       },
     });
+
+    NeoEngine.provideScriptExecutor(system.scriptExecution);
   },
 };

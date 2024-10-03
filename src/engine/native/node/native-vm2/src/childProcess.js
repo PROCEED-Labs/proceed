@@ -33,9 +33,15 @@ async function callToExecutor(endpoint, body) {
     if (!response.ok) throw new Error(`${endpoint}: Response not ok`);
 
     const contentType = response.headers.get('content-type');
-    if (!contentType) return;
-    else if (contentType.includes('application/json')) return await response.json();
-    else return await response.text();
+
+    if (!contentType) {
+      return;
+    } else if (contentType.includes('application/json')) {
+      const json = await response.json();
+      return 'result' in json ? json.result : json;
+    } else {
+      return await response.text();
+    }
   } catch (e) {
     // TODO: log error
     console.error(e);

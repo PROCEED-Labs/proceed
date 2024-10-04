@@ -33,6 +33,7 @@ const Input: UserComponent<InputProps> = ({
   const [labelHovered, setLabelHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
   const [editingDefault, setEditingDefault] = useState(false);
+
   const blockDragging = useBuilderStateStore((state) => state.blockDragging);
   const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
   useEffect(() => {

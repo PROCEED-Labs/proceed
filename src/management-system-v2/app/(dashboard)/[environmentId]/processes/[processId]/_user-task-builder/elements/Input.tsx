@@ -1,20 +1,23 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { Select } from 'antd';
+import { EditOutlined } from '@ant-design/icons';
+
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
-import { Setting } from '../utils';
+import { ContextMenu, Overlay, Setting } from './utils';
 import EditableText from '../_utils/EditableText';
+import useBuilderStateStore from '../use-builder-state-store';
 
 type InputProps = {
-  label: string;
+  label?: string;
   type?: 'text' | 'number' | 'email';
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
 };
 
 const Input: UserComponent<InputProps> = ({
-  label,
+  label = '',
   type = 'text',
   defaultValue = '',
   labelPosition = 'top',
@@ -25,55 +28,82 @@ const Input: UserComponent<InputProps> = ({
   } = useNode();
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
-  const [defaultEditable, setDefaultEditable] = useState(false);
-
   const inputId = useId();
 
-  return (
-    <div
-      ref={(r) => {
-        r && connect(r);
-      }}
-      className="user-task-form-input"
-      style={{
-        display: 'flex',
-        flexDirection: labelPosition === 'top' ? 'column' : 'row',
-        alignItems: labelPosition === 'left' ? 'baseline' : undefined,
-      }}
-    >
-      {labelPosition !== 'none' && (
-        <div style={{ marginRight: labelPosition === 'left' ? '8px' : 0 }}>
-          <EditableText
-            style={{ whiteSpace: 'nowrap' }}
-            value={label}
-            tagName="label"
-            htmlFor={inputId}
-            onClick={(e) => e.preventDefault()}
-            onChange={(newText) => setProp((props: InputProps) => (props.label = newText))}
-          />
-        </div>
-      )}
+  const [labelHovered, setLabelHovered] = useState(false);
+  const [textEditing, setTextEditing] = useState(false);
+  const [editingDefault, setEditingDefault] = useState(false);
 
-      <input
-        id={inputId}
-        type={type}
-        value={defaultValue}
-        onMouseDownCapture={(e) => defaultEditable && e.stopPropagation()}
-        onDoubleClick={(e) => {
-          if (!editingEnabled) return;
-          e.currentTarget.focus();
-          setDefaultEditable(true);
+  const blockDragging = useBuilderStateStore((state) => state.blockDragging);
+  const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
+  useEffect(() => {
+    if (editingDefault) {
+      blockDragging(inputId);
+
+      return () => {
+        unblockDragging(inputId);
+      };
+    }
+  }, [inputId, editingDefault]);
+
+  return (
+    <ContextMenu menu={[]}>
+      <div
+        ref={(r) => {
+          r && connect(r);
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.currentTarget.blur();
-            setDefaultEditable(false);
-          }
+        className="user-task-form-input"
+        style={{
+          display: 'flex',
+          flexDirection: labelPosition === 'top' ? 'column' : 'row',
+          alignItems: labelPosition === 'left' ? 'baseline' : undefined,
         }}
-        onBlur={() => setDefaultEditable(false)}
-        onChange={(e) => setProp((props: InputProps) => (props.defaultValue = e.target.value))}
-      />
-    </div>
+      >
+        {labelPosition !== 'none' && (
+          <div
+            style={{ marginRight: labelPosition === 'left' ? '8px' : 0, position: 'relative' }}
+            onMouseEnter={() => setLabelHovered(true)}
+          >
+            <Overlay
+              show={labelHovered && !textEditing}
+              onHide={() => setLabelHovered(false)}
+              controls={[
+                {
+                  key: 'edit',
+                  icon: <EditOutlined onClick={() => setTextEditing(true)} />,
+                },
+              ]}
+            >
+              <EditableText
+                style={{ whiteSpace: 'nowrap' }}
+                value={label}
+                active={textEditing}
+                onStopEditing={() => setTextEditing(false)}
+                tagName="label"
+                htmlFor={inputId}
+                onClick={(e) => e.preventDefault()}
+                onChange={(newText) => setProp((props: InputProps) => (props.label = newText))}
+              />
+            </Overlay>
+          </div>
+        )}
+
+        <input
+          id={inputId}
+          type={type}
+          value={defaultValue}
+          onClick={() => {
+            if (!editingEnabled) return;
+            setEditingDefault(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur();
+          }}
+          onBlur={() => setEditingDefault(false)}
+          onChange={(e) => setProp((props: InputProps) => (props.defaultValue = e.target.value))}
+        />
+      </div>
+    </ContextMenu>
   );
 };
 
@@ -143,7 +173,7 @@ Input.craft = {
   },
   props: {
     type: 'text',
-    label: 'Double-Click Me',
+    label: 'New Input',
     defaultValue: '',
     labelPosition: 'top',
   },

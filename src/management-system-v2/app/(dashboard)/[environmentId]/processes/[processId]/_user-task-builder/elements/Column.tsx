@@ -23,7 +23,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
     isSelected: node.events.selected,
   }));
 
-  const isTextEditing = useBuilderStateStore((state) => state.isTextEditing);
+  const dragBlockers = useBuilderStateStore((state) => state.dragBlockers);
 
   const ref = useRef<HTMLDivElement>();
   const frame = useFrame();
@@ -35,7 +35,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
     isDragging,
   } = useDraggable({
     id: nodeId,
-    disabled: fixed || isTextEditing,
+    disabled: fixed || !!dragBlockers.length,
   });
 
   return (

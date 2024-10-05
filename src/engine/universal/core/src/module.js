@@ -70,6 +70,12 @@ module.exports = {
     management.provideScriptExecutor(scriptExecutor);
   },
 
+  async setupSubProcessScriptExecution() {
+    const machinePort = await config.readConfig('machine.port');
+    const scriptExecutor = system.setupScriptExecutor(machinePort);
+    management.provideScriptExecutor(scriptExecutor);
+  },
+
   /**
    * Deactivates the silentMode by opening all networking and discovery
    * communication channels.

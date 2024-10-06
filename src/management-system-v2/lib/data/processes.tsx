@@ -27,11 +27,8 @@ import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
-import {
-  getProcessUserTaskJSON as _getProcessUserTaskJSON,
-  getProcessImage as _getProcessImage,
-  saveProcessUserTask as _saveProcessUserTask,
-} from './legacy/_process';
+import { getProcessImage as _getProcessImage } from './legacy/_process';
+import { checkIfUserTaskExists } from './db/process';
 
 // Declare variables to hold the process module functions
 let removeProcess: TProcessModule['removeProcess'];
@@ -44,6 +41,8 @@ let addProcessVersion: TProcessModule['addProcessVersion'];
 let updateProcessMetaData: TProcessModule['updateProcessMetaData'];
 
 let _getProcessBpmn: TProcessModule['getProcessBpmn'];
+let _saveProcessUserTask: TProcessModule['saveProcessUserTask'];
+let _getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
 
 const loadModules = async () => {
   const moduleImport = await (enableUseDB ? import('./db/process') : import('./legacy/_process'));
@@ -57,6 +56,8 @@ const loadModules = async () => {
     addProcessVersion,
     updateProcessMetaData,
     getProcessBpmn: _getProcessBpmn,
+    saveProcessUserTask: _saveProcessUserTask,
+    getProcessUserTaskJSON: _getProcessUserTaskJSON,
   } = moduleImport);
 };
 
@@ -424,6 +425,23 @@ export const getProcessUserTaskData = async (
   }
 };
 
+export const getProcessUserTaskFileMetaData = async (
+  processDefinitionsId: string,
+  userTaskId: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(processDefinitionsId, 'view', spaceId);
+  if (error) return error;
+  try {
+    return await checkIfUserTaskExists(processDefinitionsId, userTaskId);
+  } catch (error) {
+    return userError(
+      'Unable to get the requested User Task metadata.',
+      UserErrorType.NotFoundError,
+    );
+  }
+};
+
 export const saveProcessUserTask = async (
   definitionId: string,
   taskFileName: string,
@@ -439,7 +457,6 @@ export const saveProcessUserTask = async (
       'Illegal attempt to overwrite a user task version!',
       UserErrorType.ConstraintError,
     );
-
   await _saveProcessUserTask!(definitionId, taskFileName, json);
 };
 

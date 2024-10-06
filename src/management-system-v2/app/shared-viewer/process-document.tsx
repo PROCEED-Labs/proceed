@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -15,6 +15,8 @@ import { ActiveSettings } from './settings-modal';
 import TableOfContents, { ElementInfo } from './table-of-content';
 
 import { useEnvironment } from '@/components/auth-can';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
 
 export type VersionInfo = {
   id?: number;
@@ -45,10 +47,13 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   const query = useSearchParams();
   const shareToken = query.get('token');
 
+  const { download: getImage } = useFileManager(EntityType.PROCESS);
+  const [processPages, setProcessPages] = useState<React.JSX.Element[]>([]);
+
   /**
    * Transforms the hierarchical information about a process' elements into markup
    */
-  function getContent(hierarchyElement: ElementInfo, pages: React.JSX.Element[]) {
+  async function getContent(hierarchyElement: ElementInfo, currentPages: React.JSX.Element[]) {
     // hide the element if there is no information and the respective option is selected
     if (
       settings.hideEmpty &&
@@ -58,6 +63,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       !hierarchyElement.image &&
       !hierarchyElement.children?.length
     ) {
+      setProcessPages(currentPages);
       return;
     }
 
@@ -78,13 +84,16 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       ({ milestones, meta, description } = importedProcess);
     }
 
-    const imageURL =
-      image &&
-      `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${
-        processData.id
-      }/images/${image}?shareToken=${shareToken}`;
+    const { fileUrl: newImageUrl } = await getImage(processData.id, image, shareToken);
 
-    pages.push(
+    let imageURL =
+      image &&
+      (newImageUrl ??
+        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${
+          processData.id
+        }/images/${image}?shareToken=${shareToken}`);
+
+    currentPages.push(
       <div
         key={`element_${hierarchyElement.id}_page`}
         className={cn(styles.ElementPage, { [styles.ContainerPage]: isContainer })}
@@ -207,13 +216,14 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       (settings.nestedSubprocesses || !hierarchyElement.nestedSubprocess) &&
       (settings.importedProcesses || !hierarchyElement.importedProcess)
     ) {
-      hierarchyElement.children?.forEach((child) => getContent(child, pages));
+      hierarchyElement.children?.forEach((child) => getContent(child, currentPages));
     }
   }
 
   // transform the document data into the respective pages of the document
-  const processPages: React.JSX.Element[] = [];
-  processHierarchy && getContent(processHierarchy, processPages);
+  useEffect(() => {
+    processHierarchy && getContent(processHierarchy, processPages);
+  }, [processHierarchy]);
 
   return (
     <>

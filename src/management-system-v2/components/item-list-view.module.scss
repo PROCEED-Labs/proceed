@@ -14,11 +14,21 @@
   max-width: 20dvw;
 }
 
-.HoverableTableCell:not(th) {
-  opacity: 0;
-  transition: opacity 0.2s ease !important;
+.HoverableTableCell {
+  // border: 1px solid black;
+  width: 100%;
+
+  &:not(th) {
+    opacity: 0;
+    transition: opacity 0.2s ease !important;
+  }
 }
 
-tr:has(.HoverableTableCell):hover .HoverableTableCell {
+tr:hover .HoverableTableCell {
   opacity: 1;
+}
+
+.ActionButton {
+  margin-left: 8px;
+  // background-color: red;
 }

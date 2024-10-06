@@ -12,6 +12,8 @@ import {
 } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
+  CopyOutlined,
+  EditOutlined,
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
@@ -54,7 +56,7 @@ import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 
-export function canDeleteItems(
+export function canDoActionOnResource(
   items: ProcessListProcess[],
   action: Parameters<Ability['can']>[0],
   ability: Ability,
@@ -115,10 +117,14 @@ const Processes = ({
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
   const canDeleteSelected =
-    !!selectedRowElements.length && canDeleteItems(selectedRowElements, 'delete', ability);
+    !!selectedRowElements.length && canDoActionOnResource(selectedRowElements, 'delete', ability);
+  const canCreateProcess = ability.can('create', 'Process');
+  const canEditSelected = canDoActionOnResource(selectedRowElements, 'update', ability);
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
+  const { open: metaPanelisOpened, width: metaPanelWidth } =
+    useUserPreferences.use['process-meta-data']();
 
   const [openExportModal, setOpenExportModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
@@ -368,29 +374,59 @@ const Processes = ({
                     )}
 
                     <SelectionActions count={selectedRowKeys.length}>
-                      <Tooltip placement="top" title={'Export'}>
-                        <ExportOutlined
-                          className={styles.Icon}
-                          onClick={() => {
-                            setOpenExportModal(true);
-                          }}
-                        />
-                      </Tooltip>
-
-                      {canDeleteSelected && (
-                        <Tooltip placement="top" title={'Delete'}>
-                          <ConfirmationButton
-                            title="Delete Processes"
-                            externalOpen={openDeleteModal}
-                            onExternalClose={() => setOpenDeleteModal(false)}
-                            description="Are you sure you want to delete the selected processes?"
-                            onConfirm={() => deleteItems(selectedRowElements)}
-                            buttonProps={{
-                              icon: <DeleteOutlined />,
-                              type: 'text',
+                      {/* Copy */}
+                      {canCreateProcess && (
+                        <Tooltip placement="top" title={'Copy'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<CopyOutlined className={styles.Icon} />}
+                            onClick={() => {
+                              setCopySelection(selectedRowElements);
+                              setOpenCopyModal(true);
                             }}
                           />
                         </Tooltip>
+                      )}
+                      {/* Export */}
+                      <Tooltip placement="top" title={'Export'}>
+                        <Button
+                          type="text"
+                          onClick={() => {
+                            setOpenExportModal(true);
+                          }}
+                          icon={<ExportOutlined className={styles.Icon} />}
+                        ></Button>
+                      </Tooltip>
+                      {/* Edit (only if one selected) */}
+                      {selectedRowKeys.length === 1 && canEditSelected && (
+                        <Tooltip placement="top" title={'Edit'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<EditOutlined className={styles.Icon} />}
+                            onClick={() => {
+                              editItem(selectedRowElements[0]);
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                      {/* Delete */}
+                      {canDeleteSelected && (
+                        // <Tooltip placement="top" title={'Delete'}>
+                        <ConfirmationButton
+                          tooltip="Delete"
+                          title="Delete Processes"
+                          externalOpen={openDeleteModal}
+                          onExternalClose={() => setOpenDeleteModal(false)}
+                          description="Are you sure you want to delete the selected processes?"
+                          onConfirm={() => deleteItems(selectedRowElements)}
+                          buttonProps={{
+                            icon: <DeleteOutlined className={styles.Icon} />,
+                            type: 'text',
+                          }}
+                        />
+                        // </Tooltip>
                       )}
                     </SelectionActions>
                   </span>
@@ -480,21 +516,31 @@ const Processes = ({
                     setShowMobileMetaData={setShowMobileMetaData}
                   />
                 ) : (
-                  <ProcessList
-                    data={filteredData}
-                    folder={folder}
-                    selection={selectedRowKeys}
-                    setSelectionElements={setSelectedRowElements}
-                    selectedElements={selectedRowElements}
-                    // TODO: Replace with server component loading state
-                    //isLoading={isLoading}
-                    onExportProcess={(id) => {
-                      setSelectedRowElements([id]);
-                      setOpenExportModal(true);
+                  <div
+                    style={{
+                      maxWidth: breakpoint.xl
+                        ? metaPanelisOpened
+                          ? `calc(87vw - ${metaPanelWidth}px)`
+                          : '85.5vw'
+                        : '100%',
                     }}
-                    setShowMobileMetaData={setShowMobileMetaData}
-                    processActions={processActions}
-                  />
+                  >
+                    <ProcessList
+                      data={filteredData}
+                      folder={folder}
+                      selection={selectedRowKeys}
+                      setSelectionElements={setSelectedRowElements}
+                      selectedElements={selectedRowElements}
+                      // TODO: Replace with server component loading state
+                      //isLoading={isLoading}
+                      onExportProcess={(id) => {
+                        setSelectedRowElements([id]);
+                        setOpenExportModal(true);
+                      }}
+                      setShowMobileMetaData={setShowMobileMetaData}
+                      processActions={processActions}
+                    />
+                  </div>
                 )}
               </Spin>
             </DraggableContext>

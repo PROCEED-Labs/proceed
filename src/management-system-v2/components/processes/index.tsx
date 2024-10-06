@@ -325,10 +325,9 @@ const Processes = ({
                             mode: 'inline',
                           }}
                           type="primary"
+                          onClick={() => setOpenCreateProcessModal(true)}
                         >
-                          <Button onClick={() => setOpenCreateProcessModal(true)}>
-                            Create Process
-                          </Button>
+                          Create Process
                         </Dropdown.Button>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}

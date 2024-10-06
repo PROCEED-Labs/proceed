@@ -10,9 +10,14 @@ import {
   resources,
 } from '@/lib/ability/caslAbility';
 import { adminPermissions, permissionNumberToIdentifiers } from './permissionHelpers';
-import { globalOrganizationRules, globalUserRules } from './globalRules';
-import { Role } from '../data/role-schema';
+import {
+  AllowedResourcesForAdmins,
+  globalOrganizationRules,
+  globalPersonalSpaceRules,
+} from './globalRules';
 import { Environment } from '../data/environment-schema';
+import { Role } from '../data/role-schema';
+import { env } from '../env-vars';
 
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
 
@@ -94,7 +99,7 @@ function rulesForRoles(ability: CaslAbility, userId: string) {
     },
   });
 
-  if (ability.cannot('admin', 'All')) {
+  if (AllowedResourcesForAdmins.some((resource) => !ability.can('admin', resource))) {
     rules.push({
       inverted: true,
       subject: 'Role',
@@ -240,7 +245,7 @@ function rulesForAlteringShares(ability: CaslAbility) {
 const disallowOutsideOfEnvRule = (environmentId: string) =>
   ({
     inverted: true,
-    subject: 'All',
+    subject: [...resources],
     action: [...resourceAction],
     conditions: {
       conditions: {
@@ -256,31 +261,39 @@ export function computeRulesForUser({
   userId,
   space,
   roles,
+  purchasedResources,
 }: {
   userId: string;
   space: Environment;
-  roles: Role[];
+  roles?: Role[];
+  purchasedResources?: ResourceType[];
 }) {
-  if (!space.organization) {
+  if (!space.isOrganization) {
     if (userId !== space.id) throw new Error("Personal environment doesn't belong to user");
 
     const personalEnvironmentRules = [
       {
-        subject: 'All',
+        // NOTE: using AllowedResourcesForAdmins makes it so that personal spaces will not be able
+        // to have any of the buyable resources
+        subject: AllowedResourcesForAdmins,
         action: 'admin',
       },
       disallowOutsideOfEnvRule(space.id),
     ] as AbilityRule[];
 
-    return { rules: packRules(personalEnvironmentRules.concat(globalUserRules)) };
+    return { rules: packRules(personalEnvironmentRules.concat(globalPersonalSpaceRules)) };
   }
+
+  const AllowedResourcesForOrganization = AllowedResourcesForAdmins.concat(
+    purchasedResources ?? [],
+  );
 
   let firstExpiration: null | Date = null;
 
   const translatedRules: AbilityRule[] = [];
 
   // basic role mappings
-  for (const role of roles) {
+  for (const role of roles ?? []) {
     if (!role.permissions) {
       continue;
     }
@@ -292,10 +305,7 @@ export function computeRulesForUser({
       firstExpiration = new Date(role.expiration);
 
     let viewActionOnFolderScopedResource = false;
-    for (const resource of resources) {
-      if (!(resource in role.permissions)) continue;
-
-      const actionsNumber = role.permissions[resource]!;
+    for (const [resource, actionsNumber] of Object.entries(role.permissions)) {
       const actions = permissionNumberToIdentifiers(actionsNumber);
 
       if (!viewActionOnFolderScopedResource && FolderScopedResources.includes(resource as any)) {
@@ -305,11 +315,12 @@ export function computeRulesForUser({
       }
 
       translatedRules.push({
-        subject: resource,
+        subject:
+          resource === 'All' ? [...AllowedResourcesForOrganization] : (resource as ResourceType),
         action: actions,
         conditions: {
           conditions: {
-            $: { $not_expired_value: role.expiration ?? null },
+            $: { $not_expired_value: role.expiration?.toISOString() ?? null },
             ...(role.parentId && FolderScopedResources.includes(resource as any)
               ? { $1: { $property_has_to_be_child_of: role.parentId } }
               : {}),

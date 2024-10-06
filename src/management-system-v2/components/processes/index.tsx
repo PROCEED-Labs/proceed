@@ -1,7 +1,15 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useEffect, useRef, useState, useTransition } from 'react';
+import {
+  ComponentProps,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
   ExportOutlined,
@@ -86,9 +94,9 @@ const Processes = ({
         parentId: null,
         type: 'folder',
         id: folder.parentId,
-        createdOn: '',
+        createdOn: null,
         createdBy: '',
-        lastEdited: '',
+        lastEditedOn: null,
         environmentId: '',
       },
       ...processes,
@@ -106,7 +114,8 @@ const Processes = ({
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
-  const canDeleteSelected = canDeleteItems(selectedRowElements, 'delete', ability);
+  const canDeleteSelected =
+    !!selectedRowElements.length && canDeleteItems(selectedRowElements, 'delete', ability);
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
@@ -115,6 +124,7 @@ const Processes = ({
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
+
   const [showMobileMetaData, setShowMobileMetaData] = useState(false);
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
   const [updateFolderModal, setUpdateFolderModal] = useState<Folder | undefined>(undefined);
@@ -152,7 +162,18 @@ const Processes = ({
   });
 
   useAddControlCallback('process-list', 'esc', () => setSelectedRowElements([]));
-  useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
+  useAddControlCallback(
+    'process-list',
+    'del',
+    () => {
+      if (canDeleteSelected) {
+        setOpenDeleteModal(true);
+        /* Clear copy selection */
+        setCopySelection([]);
+      }
+    },
+    { dependencies: [canDeleteSelected] },
+  );
   useAddControlCallback(
     'process-list',
     'copy',
@@ -162,9 +183,16 @@ const Processes = ({
     { dependencies: [selectedRowElements] },
   );
 
-  useAddControlCallback('process-list', 'paste', () => {
-    setOpenCopyModal(true);
-  });
+  useAddControlCallback(
+    'process-list',
+    'paste',
+    () => {
+      if (copySelection.length) {
+        setOpenCopyModal(true);
+      }
+    },
+    { dependencies: [copySelection] },
+  );
   useAddControlCallback(
     'process-list',
     'export',
@@ -398,11 +426,21 @@ const Processes = ({
                   >
                     <Card
                       style={{
-                        width: 'fit-content',
                         cursor: 'move',
                       }}
                     >
-                      {icon} {item?.name}
+                      <span
+                        style={{
+                          width: 'fit-content',
+                          display: 'block',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          maxWidth: '40ch',
+                        }}
+                      >
+                        {icon} {item?.name}
+                      </span>
                     </Card>
                   </Badge>
                 );

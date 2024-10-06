@@ -16,6 +16,7 @@ export let roleMetaObjects: Record<string, Role> =
   global.roleMetaObjects || (global.roleMetaObjects = {});
 
 let inited = false;
+
 /**
  * initializes the roles meta information objects
  */
@@ -35,20 +36,20 @@ export function init() {
 init();
 
 /** Returns all roles in form of an array */
-export function getRoles(environmentId?: string, ability?: Ability) {
+export async function getRoles(environmentId?: string, ability?: Ability) {
   const roles = environmentId
     ? Object.values(roleMetaObjects).filter((role) => role.environmentId === environmentId)
     : Object.values(roleMetaObjects);
 
-  return ability ? ability.filter('view', 'Process', roles) : roles;
+  return ability ? ability.filter('view', 'Role', roles) : roles;
 }
 
 /**
- * Returns all roles in form of an array
+ * Returns a role by name
  *
  * @throws {UnauthorizedError}
  */
-export function getRoleByName(environmentId: string, name: string, ability?: Ability) {
+export async function getRoleByName(environmentId: string, name: string, ability?: Ability) {
   for (const role of Object.values(roleMetaObjects)) {
     if (role.name === name && role.environmentId === environmentId) {
       if (ability && !ability.can('view', toCaslResource('Role', role)))
@@ -66,13 +67,14 @@ export function getRoleByName(environmentId: string, name: string, ability?: Abi
  *
  * @throws {UnauthorizedError}
  */
-export function getRoleById(roleId: string, ability?: Ability) {
+export async function getRoleById(roleId: string, ability?: Ability) {
   const role = roleMetaObjects[roleId];
-  if (!ability) return role;
+
+  if (!ability) return role as Role;
 
   if (role && !ability.can('view', toCaslResource('Role', role))) throw new UnauthorizedError();
 
-  return role;
+  return role as Role;
 }
 
 /**
@@ -81,7 +83,7 @@ export function getRoleById(roleId: string, ability?: Ability) {
  * @throws {UnauthorizedError}
  * @throws {Error}
  */
-export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
+export async function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
   const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
 
   if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation)))
@@ -99,8 +101,8 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
   );
   if (index > -1) throw new Error('Role already exists');
 
-  const createdOn = new Date().toUTCString();
-  const lastEdited = createdOn;
+  const createdOn = new Date();
+  const lastEditedOn = createdOn;
   const id = v4();
 
   const role = {
@@ -114,7 +116,7 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
     id,
     default: roleRepresentation.default,
     createdOn,
-    lastEdited,
+    lastEditedOn,
   };
 
   // check if there is an id collision
@@ -137,7 +139,7 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
  * @throws {UnauthorizedError}
  * @throws {Error}
  */
-export function updateRole(
+export async function updateRole(
   roleId: string,
   roleRepresentationInput: Partial<RoleInput>,
   ability: Ability,
@@ -159,9 +161,8 @@ export function updateRole(
     throw new UnauthorizedError();
 
   // merge and save at local cache
-  // @ts-ignore
-  mergeIntoObject(roleMetaObjects[roleId], roleRepresentation, true);
-  roleMetaObjects[roleId].lastEdited = new Date().toUTCString();
+  mergeIntoObject(roleMetaObjects[roleId], roleRepresentation, true, null, null);
+  roleMetaObjects[roleId].lastEditedOn = new Date();
 
   Object.keys(roleMetaObjects[roleId].permissions).forEach((key) => {
     if (roleMetaObjects[roleId].permissions[key as ResourceType] === 0)

@@ -1,7 +1,20 @@
-import { Col, Row, Typography, Card, Space, Select, theme, Tag, SelectProps } from 'antd';
-import { EditOutlined, CheckOutlined } from '@ant-design/icons';
+import {
+  Col,
+  Row,
+  Typography,
+  Card,
+  Space,
+  Select,
+  theme,
+  Tag,
+  SelectProps,
+  Modal,
+  Tooltip,
+  Button,
+} from 'antd';
+import { EditOutlined, CheckOutlined, DeleteOutlined } from '@ant-design/icons';
 
-const { Paragraph } = Typography;
+const { Paragraph, Text } = Typography;
 
 import { Parameter, ParentConfig } from '@/lib/data/machine-config-schema';
 import Param from './parameter';
@@ -12,6 +25,7 @@ import CreateParameterModal, { CreateParameterModalReturnType } from './create-p
 
 import {
   addParameter as backendAddParameter,
+  removeParameter,
   updateParameter,
 } from '@/lib/data/legacy/machine-config';
 import { useRouter } from 'next/navigation';
@@ -48,6 +62,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
   const { token } = theme.useToken();
 
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
+  const [deleteFieldOpen, setDeleteFieldOpen] = useState<boolean>(false);
 
   // TODO: check if this actually works when given the newest data after refresh
   const currentKeyRef = useRef(keyId);
@@ -60,6 +75,13 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
   const saveKey = async () => {
     if (!currentKeyRef.current) return;
     await updateParameter(parameter.id!, { key: currentKeyRef.current });
+    router.refresh();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (parameter.id) await removeParameter(parameter.id);
+
+    setCreateFieldOpen(false);
     router.refresh();
   };
 
@@ -149,33 +171,50 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
   return (
     <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
       <Col span={3} className="gutter-row">
-        <Paragraph
-          editable={
-            editable && {
-              icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
-              tooltip: 'Edit Parameter Key',
-              onCancel: restoreKey,
-              onChange: (newValue) => (currentKeyRef.current = newValue),
-              onEnd: saveKey,
-              enterIcon: <CheckOutlined />,
+        <div style={{ display: 'flex', alignItems: 'baseline' }}>
+          <Paragraph
+            editable={
+              editable && {
+                icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
+                tooltip: 'Edit Parameter Key',
+                onCancel: restoreKey,
+                onChange: (newValue) => (currentKeyRef.current = newValue),
+                onEnd: saveKey,
+                enterIcon: <CheckOutlined />,
+              }
             }
-          }
-        >
-          {currentKeyRef.current[0].toUpperCase() + currentKeyRef.current.slice(1) /*TODO */}
-        </Paragraph>
+          >
+            {currentKeyRef.current[0].toUpperCase() + currentKeyRef.current.slice(1) /*TODO */}
+          </Paragraph>
+          {editable && (
+            <Space.Compact size="small">
+              <Tooltip title="Delete">
+                <Button
+                  /* disabled={!editable} */
+                  icon={<DeleteOutlined />}
+                  type="text"
+                  onClick={() => setDeleteFieldOpen(true)}
+                />
+              </Tooltip>
+            </Space.Compact>
+          )}
+        </div>
       </Col>
+
       <Col span={21} className="gutter-row">
         <Param
           editingEnabled={editable}
           field={parameter}
           label={keyId[0].toUpperCase() + keyId.slice(1)}
         />
+
         {(editable || (parameter.linkedParameters && parameter.linkedParameters.length > 0)) && (
           <Card style={cardStyle} size="small">
             <Row gutter={[24, 24]} align="middle">
               <Col span={4} className="gutter-row">
                 Linked Parameters
               </Col>
+
               <Col span={20} className="gutter-row">
                 {editable && (
                   <Space>
@@ -191,6 +230,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
                     />
                   </Space>
                 )}
+
                 {!editable &&
                   parameter.linkedParameters.map((paramId: string) => (
                     <Space key={paramId}>
@@ -198,6 +238,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
                     </Space>
                   ))}
               </Col>
+
               {/* <Col span={1} className="gutter-row">
                     <Tooltip title="Delete">
                       <Button
@@ -211,6 +252,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
             </Row>
           </Card>
         )}
+
         {(editable || (parameter.parameters && Object.keys(parameter.parameters).length > 0)) && (
           <Card style={cardStyle} size="small">
             <Row gutter={[24, 24]} align="middle">
@@ -248,6 +290,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
           </Card>
         )}
       </Col>
+
       <CreateParameterModal
         title="Create Parameter"
         open={createFieldOpen}
@@ -256,6 +299,17 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
         okText="Create"
         showKey
       />
+      <Modal
+        open={deleteFieldOpen}
+        title={'Deleting '}
+        onOk={handleDeleteConfirm}
+        onCancel={() => setDeleteFieldOpen(false)}
+      >
+        <Paragraph>
+          Are you sure you want to delete the parameter <Text strong>{keyId}</Text> with ID{' '}
+          <Text italic>{parameter.id}</Text>
+        </Paragraph>
+      </Modal>
     </Row>
   );
 };

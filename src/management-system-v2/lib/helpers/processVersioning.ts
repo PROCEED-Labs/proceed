@@ -12,16 +12,30 @@ import {
 import { asyncForEach } from './javascriptHelpers';
 import {
   deleteProcessUserTask,
-  getProcessBpmn,
   getProcessUserTasksJSON,
-  getProcessVersionBpmn,
   saveProcessUserTask,
-  updateProcess,
 } from '../data/legacy/_process';
 import { getUserTaskJSON } from '../data/legacy/fileHandling';
 import { Process } from '../data/process-schema';
+import { enableUseDB } from 'FeatureFlags';
+import { TProcessModule } from '../data/module-import-types-temp';
 
 const { diff } = require('bpmn-js-differ');
+
+// remove later after legacy code is removed
+let getProcessVersionBpmn: TProcessModule['getProcessVersionBpmn'];
+let updateProcess: TProcessModule['updateProcess'];
+let getProcessBpmn: TProcessModule['getProcessBpmn'];
+
+const loadModules = async () => {
+  const moduleImport = await (enableUseDB
+    ? import('@/lib/data/db/process')
+    : import('@/lib/data/legacy/_process'));
+
+  ({ getProcessVersionBpmn, updateProcess, getProcessBpmn } = moduleImport);
+};
+
+loadModules().catch(console.error);
 
 // TODO: This used to be a helper file in the old management system. It used
 // client-side local data from the Vue store and a lot of data sent to the
@@ -193,8 +207,8 @@ export async function selectAsLatestVersion(processId: string, version: number) 
   // make sure that the user task data is also rolled back
   const processDataMapping = await getProcessUserTasksJSON(processId);
 
-  const editableBpmn = await getProcessBpmn(processId);
-  const versionBpmn = await getProcessVersionBpmn(processId, version);
+  const editableBpmn = (await getProcessBpmn(processId)) as string;
+  const versionBpmn = (await getProcessVersionBpmn(processId, version)) as string;
   const fileNamesinEditableVersion = await getUsedFileNames(editableBpmn);
 
   const { bpmn: convertedBpmn, changedFileNames } = await convertToEditableBpmn(versionBpmn);

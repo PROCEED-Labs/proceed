@@ -1,17 +1,6 @@
 'use client';
 
-import { generateDateString } from '@/lib/utils';
-import { Divider } from 'antd';
-import React, {
-  FC,
-  Key,
-  useEffect,
-  useRef,
-  useState,
-  useImperativeHandle,
-  forwardRef,
-} from 'react';
-import Viewer from './bpmn-viewer';
+import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { ProcessListProcess } from './processes';

@@ -33,6 +33,7 @@ type ShareModalProps = {
   onExport: () => void;
   onExportMobile: (type: ProcessExportOptions['type']) => void;
 };
+type SharedAsType = 'public' | 'protected';
 
 const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
   const { processId } = useParams();
@@ -41,7 +42,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const modeler = useModelerStateStore((state) => state.modeler);
   const breakpoint = Grid.useBreakpoint();
-  const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
+  const [sharedAs, setSharedAs] = useState<SharedAsType>('public');
   const [isSharing, setIsSharing] = useState(false);
   const [shareToken, setShareToken] = useState('');
   const [shareTimestamp, setShareTimestamp] = useState(0);
@@ -55,7 +56,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       console.log('Failed to fetch process');
     } else {
       const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
-      setSharedAs(sharedAs);
+      setSharedAs(sharedAs as SharedAsType);
       setShareToken(shareToken);
       setShareTimestamp(shareTimestamp);
       setAllowIframeTimestamp(allowIframeTimestamp);
@@ -67,7 +68,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       .then((res) => {
         if ('error' in res) {
         } else {
-          setProcessData(res);
+          setProcessData(res as any);
         }
       })
       .catch((error) => {
@@ -103,16 +104,23 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    let timestamp = shareTimestamp ? shareTimestamp : Date.now();
-    const link = await generateSharedViewerUrl({ processId, timestamp });
-    await updateProcessGuestAccessRights(
-      processId,
-      {
-        sharedAs: sharedAs,
-        shareTimestamp: timestamp,
-      },
-      environment.spaceId,
-    );
+    let link: string;
+    try {
+      let timestamp = shareTimestamp ? shareTimestamp : Date.now();
+
+      link = await generateSharedViewerUrl({ processId, timestamp });
+      await updateProcessGuestAccessRights(
+        processId,
+        {
+          sharedAs: sharedAs,
+          shareTimestamp: timestamp,
+        },
+        environment.spaceId,
+      );
+    } catch (err) {
+      message.error('Failed to generate the sharing url for the process.');
+      return;
+    }
 
     const shareObject = {
       title: `${processData?.name} | PROCEED`,
@@ -265,7 +273,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionOnClick: actionClickOptions[0],
       subOption: (
         <ModelerShareModalOptionPublicLink
-          sharedAs={sharedAs}
+          sharedAs={sharedAs as SharedAsType}
           shareTimestamp={shareTimestamp}
           refresh={checkIfProcessShared}
         />
@@ -283,7 +291,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionOnClick: actionClickOptions[1],
       subOption: (
         <ModelerShareModalOptionEmdedInWeb
-          sharedAs={sharedAs}
+          sharedAs={sharedAs as SharedAsType}
           allowIframeTimestamp={allowIframeTimestamp}
           refresh={checkIfProcessShared}
         />

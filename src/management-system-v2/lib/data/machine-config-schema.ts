@@ -50,10 +50,10 @@ const StoredAbstractConfigServerInputSchema = StoredAbstractConfigInputSchema.ex
 export type StoredAbstractConfigServerInput = z.infer<typeof StoredAbstractConfigServerInputSchema>;
 
 export type Metadata = {
-  createdOn: string;
+  createdOn: Date;
   createdBy: string;
   lastEditedBy: string;
-  lastEditedOn: string;
+  lastEditedOn: Date;
 };
 
 export type ParameterContent = z.infer<typeof ParameterContentZod>;

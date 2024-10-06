@@ -35,10 +35,6 @@
     }
   }
 
-  .Icon {
-    margin: 15px -10px;
-  }
-
   .LogoContainer {
     display: flex;
     justify-content: center;
@@ -51,6 +47,13 @@
     &.collapsed {
       justify-content: flex-start;
       padding-left: 20px;
+    }
+
+    .Icon {
+      transition: all 0.2s;
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;
     }
   }
 

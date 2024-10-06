@@ -37,13 +37,12 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
     }
   }, [form, initialData]);
 
-  const items: CollapseProps['items'] =
-    (initialData?.length ?? 0) > 1
-      ? initialData?.map((data, index) => ({
-          label: data.name,
-          children: <MachineConfigInputs index={index} />,
-        }))
-      : undefined;
+  const items: CollapseProps['items'] = initialData?.length
+    ? initialData?.map((data, index) => ({
+        label: data.name,
+        children: <MachineConfigInputs index={index} />,
+      }))
+    : undefined;
 
   const onOk = async () => {
     try {
@@ -133,7 +132,12 @@ const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
       <Form.Item
         name={[index, 'description']}
         label="Configuration Description"
-        rules={[{ required: false, message: 'Please fill out the Configuration Description' }]}
+        rules={[
+          {
+            required: false,
+            message: 'Please fill out the Configuration Description',
+          },
+        ]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>

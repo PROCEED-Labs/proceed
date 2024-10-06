@@ -1,14 +1,16 @@
 'use client';
 
 import styles from './content.module.scss';
-import { FC, PropsWithChildren, ReactNode, useState } from 'react';
-import { Layout as AntLayout, Grid, Button, Image, Drawer, Tooltip, Avatar } from 'antd';
+import { FC, PropsWithChildren, ReactNode } from 'react';
+import { Layout as AntLayout, Grid, Button } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import cn from 'classnames';
 import HeaderActions from './header-actions';
 import { useLayoutMobileDrawer } from '@/app/(dashboard)/[environmentId]/layout-client';
 import SpaceLink from './space-link';
 import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
+import { useEnvironment } from './auth-can';
+import Image from 'next/image';
 
 type ContentProps = PropsWithChildren<{
   /** Top left title in the header (or custom node). */
@@ -43,6 +45,8 @@ const Content: FC<ContentProps> = ({
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
+  const space = useEnvironment();
+
   return (
     <AntLayout className={cn(styles.Main, wrapperClass)}>
       {noHeader ? null : (
@@ -52,17 +56,15 @@ const Content: FC<ContentProps> = ({
         >
           {/* Add icon into header for xs screens*/}
           {breakpoint.xs ? (
-            <div className={styles.LogoContainer}>
-              <SpaceLink href={`/processes`}>
-                <Image
-                  src={'/proceed-icon.png'}
-                  alt="PROCEED Logo"
-                  className={styles.Icon}
-                  width={breakpoint.xs ? 70 : 160}
-                  height={breakpoint.xs ? 30 : 63}
-                />
-              </SpaceLink>
-            </div>
+            <SpaceLink href={`/processes`} className={styles.LogoContainer}>
+              <Image
+                src={space.customLogo ?? '/proceed-icon.png'}
+                alt="PROCEED Logo"
+                className={styles.Icon}
+                width={breakpoint.xs ? 70 : 160}
+                height={breakpoint.xs ? 30 : 63}
+              />
+            </SpaceLink>
           ) : null}
 
           {headerLeft || <div className={styles.Title}>{title}</div>}

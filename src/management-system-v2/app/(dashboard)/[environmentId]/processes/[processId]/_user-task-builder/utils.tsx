@@ -1,5 +1,5 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { ReactElement, useId } from 'react';
+import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
@@ -7,13 +7,16 @@ import * as Elements from './elements';
 const styles = `
 body {
   font-size: 16px;
+  line-height: 1.5;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
 }
 
 .user-task-form-column {
   flex: 1 0 0;
   box-sizing: border-box;
   height: fit-content;
-  border: 2px solid lightgrey;
+  border: 2px solid rgba(0,0,0,0);
+  padding: 0 10px;
 }
 
 @media only screen and (max-width: 600px) {
@@ -26,13 +29,14 @@ body {
   box-sizing: border-box;
   width: 100%;
   padding: 5px;
-  margin: 10px 0;
+  margin: 5px 0;
   display: flex;
   flex-wrap: wrap;
 }
 
 .user-task-form-container {
   min-height: 100%;
+  border-radius: 8px;
 }
 
 .user-task-form-input {
@@ -46,9 +50,14 @@ body {
   font-size: 1rem;
 }
 
+.user-task-form-input label span {
+  white-space: nowrap !important;
+}
+
 .user-task-form-input input {
   box-sizing: border-box;
   width: 100%;
+  height: fit-content;
   border: 1px solid #d9d9d9;
   padding: 4px 11px;
   font-size: 0.875em;
@@ -68,6 +77,7 @@ body {
   padding: 0.75rem 0.5rem;
   border: 1px solid lightgrey;
   position: relative;
+  font-weight: normal;
 }
 
 .user-task-form-input-group {
@@ -79,7 +89,7 @@ body {
   cursor: pointer;
 }
 
-.user-task-form-input-group > span {
+.user-task-form-input-group-member {
   display: flex;
   align-items: center;
 }
@@ -87,13 +97,13 @@ body {
 .user-task-form-input-group input[type="radio"] {
   width: 16px;
   height: 16px;
-  margin: 3px;
+  margin: 3px 3px 6px 0;
 }
 
 .user-task-form-input-group input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  margin: 3px;
+  margin: 3px 3px 6px 0;
 }
 
 .user-task-form-image {
@@ -180,8 +190,11 @@ export const iframeDocument = `
 
       .frame-content > div {
         box-sizing: border-box;
-        padding: 0 10px;
-        border: 2px solid #d3d3d3 !important;
+        padding: 0 10px;    
+      }
+
+      .user-task-form-column {
+        position: relative;
       }
 
       .user-task-form-container svg {
@@ -206,7 +219,46 @@ export const iframeDocument = `
         margin: 0 10px;
         cursor: pointer;
         color: white;
-      } 
+      }
+
+      .overlay-mask {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        color: white;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        background-color: rgba(0,0,0,0.5);
+      }
+
+      .overlay-control-icon {
+        margin: 0 3px;
+      }
+
+      .overlay-control-icon > span {
+        display: block;
+        height: 16px;
+      }
+
+      .overlay-control-icon svg {
+        height: fit-content;
+      }
+
+      .target-sub-element {
+        background-color: rgba(255,255,0,0.33);
+      }
+
+      .sub-element-add-preview {
+        background-color: rgba(0,255,0,0.33);
+      }
+
+      .sub-element-remove-preview {
+        background-color: rgba(255,0,0,0.33);
+      }
 
       ${styles}
     </style>
@@ -237,18 +289,3 @@ export const defaultForm = `
   }
 }
 `;
-
-export const Setting: React.FC<{ label: string; control: ReactElement }> = ({ label, control }) => {
-  const id = useId();
-
-  const clonedControl = React.cloneElement(control, { id, style: { flexShrink: 1 } });
-
-  return (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', margin: '5px' }}>
-      <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
-        {label}:
-      </label>
-      {clonedControl}
-    </div>
-  );
-};

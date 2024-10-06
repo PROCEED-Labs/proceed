@@ -8,8 +8,8 @@ import useModelerStateStore from './use-modeler-state-store';
 import { debounce, spaceURL } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { updateProcess } from '@/lib/data/processes';
-import { App } from 'antd';
+import { getProcessUserTaskFileMetaData, updateProcess } from '@/lib/data/processes';
+import { App, message } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
@@ -225,19 +225,50 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
 
   const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
     const metaData = getMetaDataFromElement(element.businessObject);
+    if (element.type === 'bpmn:UserTask') {
+      getProcessUserTaskFileMetaData(
+        process.id,
+        element.businessObject.fileName,
+        environment.spaceId,
+      ).then((res) => {
+        if (res && !('error' in res)) {
+          if (res.fileName) {
+            updateFileDeletableStatus(res.fileName, true);
+          }
+        } else {
+          console.error(res?.error.message);
+          return;
+        }
+      });
+    }
     if (!metaData.overviewImage) {
       return;
+    } else {
+      updateFileDeletableStatus(metaData.overviewImage, true);
     }
-    updateFileDeletableStatus(metaData.overviewImage, true);
   }, []);
 
   const onShapeRemoveUndo = useCallback<Required<BPMNCanvasProps>['onShapeRemoveUndo']>(
     (element) => {
+      if (element.$type === 'bpmn:UserTask') {
+        getProcessUserTaskFileMetaData(process.id, element.fileName, environment.spaceId).then(
+          (res) => {
+            if (res && !('error' in res)) {
+              if (res.fileName) {
+                updateFileDeletableStatus(res.fileName, false);
+              }
+            } else {
+              console.error(res?.error.message);
+              return;
+            }
+          },
+        );
+      }
+
       const metaData = getMetaDataFromElement(element);
       if (!metaData.overviewImage) {
         return;
-      }
-      updateFileDeletableStatus(metaData.overviewImage, false);
+      } else updateFileDeletableStatus(metaData.overviewImage, false);
     },
     [],
   );

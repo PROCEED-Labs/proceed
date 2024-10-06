@@ -6,7 +6,6 @@ export enum EntityType {
   PROCESS = 'PROCESS',
   ORGANIZATION = 'ORGANISATION',
   MACHINE = 'MACHINE',
-  USERTASK = 'USER-TASK',
 }
 
 const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
@@ -20,6 +19,7 @@ const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
   html: 'user-tasks',
   htm: 'user-tasks',
   pdf: 'others',
+  json: 'user-tasks',
   docx: 'others',
   js: 'script-tasks',
   ts: 'script-tasks',
@@ -34,6 +34,7 @@ const MIME_TYPE_CATEGORIES: Record<string, ArtifactType> = {
   'image/bmp': 'images',
   'image/webp': 'images',
   'text/html': 'user-tasks',
+  'application/json': 'user-tasks',
   'application/pdf': 'others',
   'application/xml': 'bpmns',
 };

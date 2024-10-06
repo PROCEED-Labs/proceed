@@ -10,6 +10,8 @@ import { useEnvironment } from '@/components/auth-can';
 import { ContextMenu, Setting } from './utils';
 import ImageUpload from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
 
 type ImageProps = {
   src?: string;
@@ -36,11 +38,18 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   });
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
+  const { fileUrl: imageUrl, download: getImageUrl } = useFileManager(EntityType.PROCESS);
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 
   const baseUrl = `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
   console.log(src);
+
+  useEffect(() => {
+    if (enableUseFileManager && src) {
+      getImageUrl(params.processId as string, src);
+    }
+  }, [src]);
 
   return (
     <ContextMenu menu={[]}>
@@ -60,7 +69,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
         <img
           ref={imageRef}
           style={{ width: width && `${width}%` }}
-          src={src ? `${src}?${reloadParam}` : fallbackImage}
+          src={src ? (enableUseFileManager ? imageUrl! : `${src}?${reloadParam}`) : fallbackImage}
         />
         {editingEnabled && isHovered && (
           <ImageUpload
@@ -68,7 +77,9 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
             onReload={() => setProp((props: ImageProps) => (props.reloadParam = Date.now()))}
             onImageUpdate={(imageFileName) => {
               setProp((props: ImageProps) => {
-                props.src = imageFileName && `${baseUrl}/${imageFileName}`;
+                props.src =
+                  imageFileName &&
+                  (enableUseFileManager ? imageFileName : `${baseUrl}/${imageFileName}`);
                 props.width = undefined;
               });
             }}
@@ -77,6 +88,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
               putEndpoint: src,
               deleteEndpoint: src,
             }}
+            metadata={{ entityType: EntityType.PROCESS, entityId: params.processId, fileName: src }}
           />
         )}
         {/* Allows resizing  */}

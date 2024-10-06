@@ -77,13 +77,15 @@ model Process {
 }
 
 model ProcessArtifacts {
-  id            String  @id @default(uuid())
-  filePath      String  @unique
-  fileName      String  @unique
-  process       Process @relation(fields: [processId], references: [id])
-  processId     String
-  deletable     Boolean? @default(false)
-  deletedOn     DateTime @default(now())
+  id                  String  @id @default(uuid())
+  filePath            String  @unique
+  fileName            String  @unique
+  process             Process @relation(fields: [processId], references: [id])
+  processId           String
+  deletable           Boolean? @default(false)
+  deletedOn           DateTime @default(now())
+  artifactType        String   //user-task, script, image ...
+  businessObjectId    String?   //id of the referencing businessObj
 }
 
 model Space {

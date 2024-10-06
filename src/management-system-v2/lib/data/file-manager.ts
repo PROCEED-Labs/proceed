@@ -60,6 +60,7 @@ export const saveFile = async (
   filePath: string,
   mimeType: string,
   fileContent?: Buffer | Uint8Array | Blob | string,
+  usePresignedUrl: boolean = true,
 ): Promise<{ presignedUrl: string | null; status: boolean }> => {
   let presignedUrl: string | null = null;
   let status = false;
@@ -68,18 +69,33 @@ export const saveFile = async (
     if (DEPLOYMENT_ENV === 'cloud') {
       ensureBucketExists();
       const file = bucket.file(filePath);
-      [presignedUrl] = await file.getSignedUrl({
-        version: 'v4',
-        action: 'write',
-        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-        contentType: mimeType,
-        extensionHeaders: { 'x-goog-content-length-range': `0,${MAX_CONTENT_LENGTH}` },
-      });
+
+      if (usePresignedUrl) {
+        // Generate a presigned URL for file upload
+        [presignedUrl] = await file.getSignedUrl({
+          version: 'v4',
+          action: 'write',
+          expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+          contentType: mimeType,
+          extensionHeaders: { 'x-goog-content-length-range': `0,${MAX_CONTENT_LENGTH}` },
+        });
+      } else {
+        // Directly upload file content to the GCP bucket
+        if (!fileContent) throw new Error('File content is required to upload');
+        const contentToUpload =
+          typeof fileContent === 'string' ? Buffer.from(fileContent, 'base64') : fileContent;
+        await file.save(contentToUpload, {
+          metadata: { contentType: mimeType },
+          resumable: false,
+        });
+      }
     } else {
+      // Handle local file saving (local deployment)
       if (!fileContent) throw new Error('File is required to upload');
       const decodedContent = Buffer.from(fileContent as string, 'base64');
       await saveLocalFile(filePath, decodedContent);
     }
+
     status = true;
   } catch (error: any) {
     throw new Error(`Failed to save file: ${error.message}`);
@@ -88,18 +104,26 @@ export const saveFile = async (
   return { presignedUrl, status };
 };
 
-export const retrieveFile = async (filePath: string): Promise<string | Buffer> => {
+export const retrieveFile = async (
+  filePath: string,
+  usePresignedUrl: boolean = true,
+): Promise<string | Buffer> => {
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
       ensureBucketExists();
 
       const file = bucket.file(filePath);
-      const [url] = await file.getSignedUrl({
-        version: 'v4',
-        action: 'read',
-        expires: Date.now() + 60 * 60 * 1000, // 1 hour
-      });
-      return url;
+      if (usePresignedUrl) {
+        const [url] = await file.getSignedUrl({
+          version: 'v4',
+          action: 'read',
+          expires: Date.now() + 60 * 60 * 1000, // 1 hour
+        });
+        return url;
+      } else {
+        const [fileContent] = await file.download();
+        return fileContent;
+      }
     } else {
       if (cache.has(filePath)) return cache.get(filePath)!;
 

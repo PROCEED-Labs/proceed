@@ -1,6 +1,11 @@
 'use server';
 
-import { getFileCategory, getNewFileName, EntityType } from '../helpers/fileManagerHelpers';
+import {
+  getFileCategory,
+  getNewFileName,
+  EntityType,
+  ArtifactType,
+} from '../helpers/fileManagerHelpers';
 import { contentTypeNotAllowed } from './content-upload-error';
 import { deleteFile, retrieveFile, saveFile } from './file-manager';
 import db from '@/lib/data';
@@ -19,9 +24,15 @@ const isContentTypeAllowed = (mimeType: string) => {
   return ALLOWED_CONTENT_TYPES.includes(mimeType);
 };
 
-const saveArtifactToDB = async (fileName: string, filePath: string, processId: string) => {
+const saveArtifactToDB = async (
+  fileName: string,
+  filePath: string,
+  processId: string,
+  artifactType: ArtifactType,
+  businessObjectId?: string,
+) => {
   return db.processArtifacts.create({
-    data: { fileName, filePath, processId },
+    data: { fileName, filePath, processId, artifactType, businessObjectId },
   });
 };
 
@@ -64,7 +75,7 @@ export async function saveEnityFile(
 
   switch (entityType) {
     case EntityType.PROCESS:
-      return saveProcessArtifact(entityId, mimeType, fileName, fileContent);
+      return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
     case EntityType.ORGANIZATION:
       return saveOrganisationLogo(fileName, entityId, mimeType, fileContent);
     case EntityType.MACHINE:
@@ -111,18 +122,41 @@ export async function deleteEntityFile(
 // Functionality for handling process artifact files
 export async function saveProcessArtifact(
   processId: string,
-  mimeType: string,
   fileName: string,
+  mimeType: string,
+  fileContent?: Buffer | Uint8Array | Blob,
+  businessObjectId?: string,
+) {
+  const newFileName = getNewFileName(fileName);
+  const artifactType = getFileCategory(fileName);
+  const filePath = generateProcessFilePath(newFileName, processId, mimeType);
+
+  const usePresignedUrl = ['images', 'others'].includes(artifactType);
+
+  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent, usePresignedUrl);
+
+  if (status) {
+    await saveArtifactToDB(newFileName, filePath, processId, artifactType, businessObjectId);
+  } else {
+    await deleteFile(filePath);
+    return { presignedUrl: null, fileName: null };
+  }
+
+  return { presignedUrl, fileName: newFileName };
+}
+
+export async function replaceProcessArtifact(
+  filePath: string,
+  fileName: string,
+  mimeType: string,
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
   const newFileName = getNewFileName(fileName);
-  const filePath = generateProcessFilePath(newFileName, processId, mimeType);
+  const artifactType = getFileCategory(fileName);
 
-  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
+  const usePresignedUrl = ['images', 'others'].includes(artifactType);
 
-  if (status) {
-    await saveArtifactToDB(newFileName, filePath, processId);
-  }
+  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent, usePresignedUrl);
 
   return { presignedUrl, fileName: newFileName };
 }
@@ -131,9 +165,10 @@ export async function retrieveProcessArtifact(
   processId: string,
   fileNameOrPath: string,
   isFilePath = false,
+  usePresignedUrl: boolean = true,
 ) {
   const filePath = isFilePath ? fileNameOrPath : generateProcessFilePath(fileNameOrPath, processId);
-  return retrieveFile(filePath);
+  return retrieveFile(filePath, usePresignedUrl);
 }
 
 export async function deleteProcessArtifact(
@@ -209,6 +244,7 @@ export async function deleteOrganisationLogo(organisationId: string): Promise<bo
 
 // Update file status in the database
 export async function updateFileDeletableStatus(fileName: string, status: boolean) {
+  console.log(fileName);
   return db.processArtifacts.update({
     where: { fileName },
     data: {

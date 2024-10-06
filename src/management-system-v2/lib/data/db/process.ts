@@ -17,7 +17,12 @@ import db from '@/lib/data';
 import { v4 } from 'uuid';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { deleteProcessArtifact } from '../file-manager-facade';
+import {
+  deleteProcessArtifact,
+  replaceProcessArtifact,
+  retrieveProcessArtifact,
+  saveProcessArtifact,
+} from '../file-manager-facade';
 
 /** Returns all processes for a user */
 export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
@@ -474,8 +479,25 @@ export async function getProcessUserTasks(processDefinitionsId: string) {
 }
 
 /** Returns the form data for a specific user task in a process */
-export async function getProcessUserTaskJSON(processDefinitionsId: string, taskFileName: string) {
-  // TODO
+export async function getProcessUserTaskJSON(processDefinitionsId: string, userTaskName: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskName);
+
+    if (res) {
+      const jsonAsBuffer = (await retrieveProcessArtifact(
+        processDefinitionsId,
+        res.filePath,
+        true,
+        true,
+      )) as Buffer;
+      return jsonAsBuffer.toString('utf8');
+    }
+  } catch (err) {
+    logger.debug(`Error getting data of user task. Reason:\n${err}`);
+    throw new Error('Unable to get data for user task!');
+  }
 }
 
 /** Return object mapping from user tasks fileNames to their form data */
@@ -483,12 +505,44 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string) {
   return userError('Not Implemented in db', UserErrorType.NotFoundError);
 }
 
+export async function checkIfUserTaskExists(processDefinitionsId: string, userTaskId: string) {
+  return db.processArtifacts.findFirst({
+    where: {
+      processId: processDefinitionsId,
+      businessObjectId: userTaskId,
+      artifactType: 'user-tasks',
+    },
+  });
+}
+
 export async function saveProcessUserTask(
   processDefinitionsId: string,
-  userTaskFileName: string,
+  userTaskId: string,
   json: string,
 ) {
-  // TODO
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    const base64String = btoa(json);
+    const content = Uint8Array.from(atob(base64String), (c) => c.charCodeAt(0));
+
+    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
+    if (res?.filePath) {
+      await replaceProcessArtifact(res.filePath, res.fileName, 'application/json', content);
+    } else {
+      const { fileName } = await saveProcessArtifact(
+        processDefinitionsId,
+        `${userTaskId}.json`,
+        'application/json',
+        content,
+        userTaskId,
+      );
+      return fileName;
+    }
+  } catch (err) {
+    logger.debug(`Error storing user task data. Reason:\n${err}`);
+    throw new Error('Failed to store the user task data');
+  }
 }
 
 /** Removes a stored user task from disk */
@@ -496,7 +550,15 @@ export async function deleteProcessUserTask(
   processDefinitionsId: string,
   userTaskFileName: string,
 ) {
-  // TODO
+  checkIfProcessExists(processDefinitionsId);
+  try {
+    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskFileName);
+    if (res) {
+      return await deleteProcessArtifact(processDefinitionsId, res.filePath, true);
+    }
+  } catch (err) {
+    logger.debug(`Error removing user task data. Reason:\n${err}`);
+  }
 }
 
 export async function getProcessImage(processDefinitionsId: string, imageFileName: string) {
@@ -526,20 +588,20 @@ export async function deleteProcessImage(processDefinitionsId: string, imageFile
 }
 
 /** Stores the id of the socket wanting to block the process from being deleted inside the process object */
-export function blockProcess(socketId: string, processDefinitionsId: string) {
+export async function blockProcess(socketId: string, processDefinitionsId: string) {
   // TODO
 }
 
 /** Removes the id of the socket wanting to unblock the process from the process object */
-export function unblockProcess(socketId: string, processDefinitionsId: string) {
+export async function unblockProcess(socketId: string, processDefinitionsId: string) {
   // TODO
 }
 
-export function blockTask(socketId: string, processDefinitionsId: string, taskId: string) {
+export async function blockTask(socketId: string, processDefinitionsId: string, taskId: string) {
   // TODO
 }
 
-export function unblockTask(socketId: string, processDefinitionsId: string, taskId: string) {
+export async function unblockTask(socketId: string, processDefinitionsId: string, taskId: string) {
   // TODO
 }
 

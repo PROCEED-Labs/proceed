@@ -46,7 +46,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
     (enableUseFileManager ? imageUrlfm : `${baseUrl}/${imageFileName}?${reloadParam}`);
 
   useEffect(() => {
-    if (imageFileName) {
+    if (enableUseFileManager && imageFileName) {
       getImageURL(processId as string, imageFileName);
     }
   }, [imageFileName]);

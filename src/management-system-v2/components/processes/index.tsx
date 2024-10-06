@@ -586,6 +586,7 @@ const Processes = ({
         open={openCreateFolderModal}
         close={() => setOpenCreateFolderModal(false)}
       />
+      <AddUserControls name={'process-list'} />
     </>
   );
 };

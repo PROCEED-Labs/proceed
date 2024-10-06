@@ -379,7 +379,8 @@ test('create a new folder and remove it with context menu', async ({ processList
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
-  await folderLocator.scrollIntoViewIfNeeded();
+  // await folderLocator.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window!.scrollTo(0, 0));
   folderLocator.click({ button: 'right' });
   const menuLocator = page.getByRole('menuitem', { name: 'delete Delete' });
   await menuLocator.click();

@@ -106,6 +106,7 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     addType: 'parameters' | 'metadata',
   ) => {
     const { key, displayName, value, language, unit } = valuesFromModal;
+    // TODO fix this
     const newParameter = defaultParameter(key || displayName, value, language, unit);
     let type: StoredParameter['parentType'] =
       rightClickedType === 'config' ? 'parent-config' : rightClickedType;

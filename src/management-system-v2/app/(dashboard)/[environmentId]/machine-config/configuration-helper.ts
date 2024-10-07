@@ -19,7 +19,7 @@ export function defaultParameter(
     type: 'https://schema.org/' + key,
     content: [
       {
-        displayName: key[0].toUpperCase() + key.slice(1),
+        displayName: key,
         value: val ?? '',
         language: language ?? 'en',
         unit: unit ?? '',
@@ -54,6 +54,7 @@ export function defaultConfiguration(name?: string, description?: string): Abstr
   } as AbstractConfig;
 
   if (description) {
+    // TODO add key
     config.metadata['description'] = defaultParameter('description', description);
   }
 

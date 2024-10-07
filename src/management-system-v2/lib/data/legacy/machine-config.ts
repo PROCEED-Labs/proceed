@@ -199,7 +199,7 @@ function nestedParametersFromStorage(parameterIds: string[]) {
   parameterIds.forEach((id) => {
     const storedParameter = storedData.parameters[id];
     // TODO remove
-    if (true || (storedParameter && storedParameter.key)) {
+    if (false || (storedParameter && storedParameter.key)) {
       parameters[storedParameter.key] = {
         ...storedParameter,
         parameters: nestedParametersFromStorage(storedParameter.parameters),

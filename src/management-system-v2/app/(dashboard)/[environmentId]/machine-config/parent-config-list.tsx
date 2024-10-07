@@ -232,6 +232,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
         {
           name: valueFromModal.name,
           metadata: {
+            // TODO add key
             description: defaultParameter('description', valueFromModal.description ?? ''),
           },
         },

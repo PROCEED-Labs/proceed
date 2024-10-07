@@ -123,9 +123,11 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
 
   const { token } = theme.useToken();
   const panelStyle = {
-    marginBottom: 16,
+    marginBottom: 32,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
+    boxShadow:
+      '2px 2px 6px -4px rgba(0, 0, 0, 0.12), 4px 4px 16px 0px rgba(0, 0, 0, 0.08), 6px 6px 28px 8px rgba(0, 0, 0, 0.05)',
     //border: 'none',
   };
 
@@ -199,8 +201,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
         />
       ),
       /* extra: <Tooltip editable={editable} options={['copy', 'edit']} actions={...}/>, */ ///TODO
-      style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
+      style: { ...panelStyle, border: '1px solid #87e8de', background: 'rgba(255, 255, 255, 0.9)' }, //cyan-3
     });
+
     if (selectedConfig.type === 'config') {
       const currentConfig = selectedConfig as ParentConfig;
       if (currentConfig.targetConfig) {
@@ -210,7 +213,11 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           label: title,
           children: <TargetConfiguration parentConfig={parentConfig} editingEnabled={editable} />,
           /* extra:  <Tooltip editable={editable} options={['copy', 'edit', 'delete']} actions={...}/> */ //TODO
-          style: { ...panelStyle, border: '1px solid #91caff' }, //blue-3
+          style: {
+            ...panelStyle,
+            border: '1px solid #91caff',
+            background: '#f0f4f9',
+          }, //blue-3
         });
       }
     } else if (

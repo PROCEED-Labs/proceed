@@ -142,7 +142,7 @@ const ParameterInputs = ({ index, showKey }: CreateParameterInputsProps) => {
       <Form.Item
         name={[index, 'displayName']}
         label="Display Name"
-        rules={[{ required: true, message: 'Please fill out the Display Name' }]}
+        rules={[{ required: showKey, message: 'Please fill out the Display Name' }]}
       >
         <Input />
       </Form.Item>

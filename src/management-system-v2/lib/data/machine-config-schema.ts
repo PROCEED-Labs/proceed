@@ -16,6 +16,7 @@ const ParameterZod = z.object({
   content: z.array(ParameterContentZod),
   linkedParameters: z.array(z.string()),
   parameters: z.record(z.string(), z.any()),
+  key: z.string(),
 });
 
 export const AbstractConfigInputSchema = z.object({
@@ -27,7 +28,6 @@ export const AbstractConfigInputSchema = z.object({
 
 export const StoredParameterZod = ParameterZod.extend({
   parameters: z.array(z.string()),
-  key: z.string(),
   parentId: z.string(),
   // TODO: change parent-config type to config
   parentType: z.enum(['parameter', 'machine-config', 'target-config', 'parent-config']),

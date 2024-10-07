@@ -27,11 +27,12 @@ const Param: React.FC<MachineDataViewProps> = ({ editingEnabled: editable, field
   const [openCreateParameterModal, setOpenCreateParameterModal] = useState<boolean>(false);
 
   const addContent = async (values: CreateParameterModalReturnType[]) => {
+    const valuesFromModal = values[0];
     const newCon: ParameterContent = {
-      value: values[0].value ?? '',
-      displayName: values[0].displayName,
-      language: values[0].language ?? 'en',
-      unit: values[0].unit ?? '',
+      displayName: valuesFromModal.displayName ?? 'new ' + field.key + '-entry',
+      value: valuesFromModal.value ?? '',
+      language: valuesFromModal.language ?? 'en',
+      unit: valuesFromModal.unit ?? '',
     };
 
     await updateParameter(field.id!, { content: [...field.content, ...[newCon]] });

@@ -4,19 +4,16 @@ import { MachineConfig, ParameterContent, ParentConfig } from '@/lib/data/machin
 import { useRouter } from 'next/navigation';
 
 import { CaretRightOutlined } from '@ant-design/icons';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Collapse, theme, Modal, Form, Input, MenuProps } from 'antd';
 import ActionButtons from './action-buttons';
 import Content from './config-content';
 import {
-  addParameter,
   copyConfig,
   removeMachineConfig,
   updateMachineConfig,
-  updateParameter,
   updateParentConfig,
 } from '@/lib/data/legacy/machine-config';
-import { defaultParameter } from '../configuration-helper';
 
 const CopyMachineConfigModal: React.FC<{
   open: boolean;
@@ -79,12 +76,16 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
   const router = useRouter();
 
   const [configToCopy, setConfigToCopy] = useState('');
+  const machineIds = useRef<string[]>([]);
 
   const { token } = theme.useToken();
   const panelStyle = {
-    marginBottom: 20,
-    background: token.colorFillAlter,
+    marginBottom: 32,
+    // background: token.colorFillAlter,
+    background: '#e8e9f7',
     borderRadius: token.borderRadiusLG,
+    boxShadow:
+      '2px 2px 6px -4px rgba(0, 0, 0, 0.12), 4px 4px 16px 0px rgba(0, 0, 0, 0.08), 6px 6px 28px 8px rgba(0, 0, 0, 0.05)',
     //border: 'none',
   };
 
@@ -130,7 +131,12 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
               parentConfig={parentConfig}
             />,
           ],
-          style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
+          style: {
+            ...panelStyle,
+            border: '1px solid #87e8de',
+            background: 'rgba(255,255,255,0.9)',
+            boxShadow: 'none',
+          }, //cyan-3
         });
       }
       if (editingEnabled || (config.parameters && Object.keys(config.parameters).length > 0)) {
@@ -147,7 +153,12 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
               parentConfig={parentConfig}
             />,
           ],
-          style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3
+          style: {
+            ...panelStyle,
+            border: '1px solid #b7eb8f',
+            background: 'rgba(255,255,255,0.9)',
+            boxShadow: 'none',
+          }, //green-3
         });
       }
       return contentItems;
@@ -192,6 +203,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
 
         style: { ...panelStyle, border: '1px solid #adc6ff' }, //geekblue-3
       });
+      machineIds.current.push(machineConfig.id);
     }
     return list;
   }, [parentConfig, editingEnabled, panelStyle]);
@@ -205,6 +217,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
           background: 'none',
         }}
         items={items}
+        defaultActiveKey={machineIds.current}
       />
       <CopyMachineConfigModal
         open={!!configToCopy}

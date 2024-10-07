@@ -87,6 +87,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
 
   const addParameter = async (values: CreateParameterModalReturnType[]) => {
     const valuesFromModal = values[0];
+    // TODO add key
     const newParameter = defaultParameter(
       valuesFromModal.displayName,
       valuesFromModal.value,
@@ -112,7 +113,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
     borderRadius: token.borderRadiusLG,
     border: 'solid #d9d9d9',
     margin: '10px 0 0 0',
-    borderWidth: '0 0 0 5px',
+    borderWidth: '0 0 0 3px',
   };
 
   const [parametersList, paramIdToName] = useMemo(() => {

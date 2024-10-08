@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { KeyOutlined, EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import { Button, Input, Col, Row, Tooltip } from 'antd';
+import { Button, Input, Col, Row, Tooltip, Space } from 'antd';
 import { defaultParameter } from '../configuration-helper';
 import AddButton from './add-button';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
@@ -89,16 +89,18 @@ const Content: React.FC<MachineDataViewProps> = ({
         </Row>
       )}
 
-      {Object.entries(data).map(([key, val]) => (
-        // Rows: Metadata, Parameter, Nested Parameters, Linked Parameter
-        <CustomField
-          parentConfig={parentConfig}
-          key={key}
-          keyId={key}
-          parameter={val}
-          editable={editable}
-        />
-      ))}
+      <Space direction="vertical" style={{ display: 'flex' }}>
+        {Object.entries(data).map(([key, val]) => (
+          // Rows: Metadata, Parameter, Nested Parameters, Linked Parameter
+          <CustomField
+            parentConfig={parentConfig}
+            key={key}
+            keyId={key}
+            parameter={val}
+            editable={editable}
+          />
+        ))}
+      </Space>
 
       {editable && (
         // Row: Add Meta/Parameter

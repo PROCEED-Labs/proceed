@@ -178,10 +178,15 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
    *  row: nested params*/
   return (
     <>
-      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
+      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '0rem 0 0 0', width: '100%' }}>
         <Col span={24} className="gutter-row">
-          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-            <Paragraph
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+            }}
+          >
+            <Text
               strong
               editable={
                 editable && {
@@ -195,7 +200,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
               }
             >
               {currentKeyRef.current}
-            </Paragraph>
+            </Text>
             {editable && (
               <Space.Compact size="small">
                 <Tooltip title="Delete">
@@ -211,8 +216,8 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
         </Col>
       </Row>
 
-      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
-        <Col span={23} offset={1} className="gutter-row">
+      <Row gutter={[24, 24]} /* align="middle" */ style={{ width: '100%' }}>
+        <Col span={24} offset={0} className="gutter-row">
           <Param editingEnabled={editable} field={parameter} label={keyId} />
 
           {(editable || (parameter.linkedParameters && parameter.linkedParameters.length > 0)) && (
@@ -224,7 +229,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
               </Row>
 
               <Row gutter={[24, 24]} align="middle">
-                <Col span={23} offset={1} className="gutter-row">
+                <Col span={24} offset={0} className="gutter-row">
                   {editable && (
                     <Space>
                       <Select
@@ -263,7 +268,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
           )}
 
           {(editable || (parameter.parameters && Object.keys(parameter.parameters).length > 0)) && (
-            <Space direction="vertical" style={{ margin: '10px 0 0 0', display: 'flex' }}>
+            <Space direction="vertical" style={{ display: 'flex' }}>
               <Row gutter={[24, 24]} align="middle">
                 <Col span={24} className="gutter-row">
                   <Text italic>Nested Parameters</Text>
@@ -272,16 +277,18 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
               <Card style={cardStyle} size="small">
                 <Row gutter={[24, 24]} align="middle">
                   <Col span={24} offset={0} className="gutter-row">
-                    {parameter.parameters &&
-                      Object.entries(parameter.parameters).map(([subFieldKey, subField]) => (
-                        <CustomField
-                          parentConfig={parentConfig}
-                          key={subFieldKey}
-                          keyId={subFieldKey}
-                          parameter={subField}
-                          editable={editable}
-                        />
-                      ))}
+                    <Space direction="vertical" style={{ display: 'flex' }}>
+                      {parameter.parameters &&
+                        Object.entries(parameter.parameters).map(([subFieldKey, subField]) => (
+                          <CustomField
+                            parentConfig={parentConfig}
+                            key={subFieldKey}
+                            keyId={subFieldKey}
+                            parameter={subField}
+                            editable={editable}
+                          />
+                        ))}
+                    </Space>
 
                     {editable && (
                       <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>

@@ -39,8 +39,9 @@ const Content: React.FC<MachineDataViewProps> = ({
     const valuesFromModal = values[0];
     // TODO add key
     const newParameter = defaultParameter(
-      valuesFromModal.displayName,
+      valuesFromModal.key ?? '',
       valuesFromModal.value,
+      valuesFromModal.displayName,
       valuesFromModal.language,
       valuesFromModal.unit,
     );

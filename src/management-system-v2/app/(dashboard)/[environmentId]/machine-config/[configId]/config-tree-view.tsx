@@ -107,7 +107,7 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
   ) => {
     const { key, displayName, value, language, unit } = valuesFromModal;
     // TODO fix this
-    const newParameter = defaultParameter(key || displayName, value, language, unit);
+    const newParameter = defaultParameter(key ?? displayName, value, displayName, language, unit);
     let type: StoredParameter['parentType'] =
       rightClickedType === 'config' ? 'parent-config' : rightClickedType;
     await backendAddParameter(rightClickedId, type, addType, key || displayName, newParameter);

@@ -89,8 +89,9 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
     const valuesFromModal = values[0];
     // TODO add key
     const newParameter = defaultParameter(
-      valuesFromModal.displayName,
+      valuesFromModal.key ?? '',
       valuesFromModal.value,
+      valuesFromModal.displayName,
       valuesFromModal.language,
       valuesFromModal.unit,
     );

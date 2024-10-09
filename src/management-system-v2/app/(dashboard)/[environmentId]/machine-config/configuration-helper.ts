@@ -11,15 +11,16 @@ import { v4 } from 'uuid';
 export function defaultParameter(
   key: string,
   val?: string,
+  disName?: string,
   language?: Localization,
   unit?: string,
 ): Parameter {
   return {
     id: v4(),
-    type: 'https://schema.org/' + key,
+    type: 'https://schema.org/' + disName,
     content: [
       {
-        displayName: key,
+        displayName: disName ?? key,
         value: val ?? '',
         language: language ?? 'en',
         unit: unit ?? '',
@@ -27,6 +28,7 @@ export function defaultParameter(
     ],
     linkedParameters: [],
     parameters: {},
+    key: key,
   };
 }
 

@@ -36,8 +36,8 @@ done
 # Get the current branch name
 BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 
-# Replace hyphens with underscores in the branch name
-BRANCH_NAME_SAFE=$(echo "$BRANCH_NAME" | tr '-' '_')
+# Replace hyphens & slash with underscores in the branch name
+BRANCH_NAME_SAFE=$(echo "$BRANCH_NAME" | tr '-' '_' | tr '/' '_')
 
 # Determine which database to use
 if [ "$USE_DEFAULT_DB" = true ]; then

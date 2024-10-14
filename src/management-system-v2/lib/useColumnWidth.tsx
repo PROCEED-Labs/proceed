@@ -2,9 +2,10 @@ import { TableColumnsType, TableProps, Tooltip } from 'antd';
 import { MouseEvent, ReactNode, use, useCallback, useEffect, useRef, useState } from 'react';
 import { useUserPreferences } from './user-preferences';
 import ReactDOMServer from 'react-dom/server';
+import { AnyObject } from 'antd/es/_util/type';
 
-export const useColumnWidth = (
-  columns: NonNullable<TableProps['columns']>,
+export const useColumnWidth = <T extends AnyObject>(
+  columns: NonNullable<TableProps<T>['columns']>,
   preferenceKey: string,
   notResizeabel: string[] = [],
 ) => {

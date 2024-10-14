@@ -45,10 +45,7 @@ export async function readImage(request: NextRequest) {
     }
   }
   // Proceed with processing if the size limit is not exceeded
-  const imageBuffer = Buffer.concat(
-    chunks.map((chunk) => Buffer.from(chunk)),
-    totalLength,
-  );
+  const imageBuffer = Buffer.concat(chunks, totalLength);
 
   const fileType = await fileTypeFromBuffer(imageBuffer);
 

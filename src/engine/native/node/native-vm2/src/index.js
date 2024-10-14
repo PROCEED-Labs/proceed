@@ -83,7 +83,7 @@ class SubprocesScriptExecution extends NativeModule {
         engineScriptExecutionEndpoint,
       ]);
 
-      processEntry = {
+      const processEntry = {
         process: scriptTask,
         sendToUniversal,
         token,
@@ -110,6 +110,7 @@ class SubprocesScriptExecution extends NativeModule {
             code,
           },
         ]);
+        this.deleteProcess(processId, processInstanceId);
       });
     } catch (e) {
       // TODO: use proper logger
@@ -128,24 +129,18 @@ class SubprocesScriptExecution extends NativeModule {
    * @param {string} processInstanceId
    */
   stopSubprocess(processId, processInstanceId) {
-    // NOTE: mabybe the onClose function from a process should remove them from the map
+    let toStop;
 
-    // required by the neo engine
-    if (processId === '*' && processInstanceId === '*') {
-      for (const scriptTask of this.getAllProcesses()) {
-        if (!scriptTask.process.kill())
-          throw new Error(`Failed to kill subprocess ${process.process.pid}`);
-      }
-    }
-
-    const scriptTask = this.getProcess(processId, processInstanceId);
+    if (processId === '*' && processInstanceId === '*') toStop = this.getAllProcesses();
+    else toStop = [this.getProcess(processId, processInstanceId)];
 
     // NOTE: maybe give a warning?
-    if (!scriptTask) return;
+    if (!toStop) return;
 
-    if (!scriptTask.process.kill())
-      throw new Error(`Failed to kill subprocess ${process.process.pid}`);
-    this.deleteProcess(processId, processInstanceId);
+    for (const scriptTask of this.getAllProcesses()) {
+      if (!scriptTask.process.kill())
+        throw new Error(`Failed to kill subprocess ${process.process.pid}`);
+    }
   }
 
   destroy() {

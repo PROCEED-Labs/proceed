@@ -156,6 +156,7 @@ class ScriptExecutor extends System {
             );
 
           if (response.type === 'process-finished') {
+            this.deleteProcess(processId, processInstanceId);
             if (response.code === 0) res(processEntry.result);
             else rej(processEntry.result);
           }
@@ -217,6 +218,14 @@ class ScriptExecutor extends System {
    */
   getProcess(processId, processInstanceId) {
     return this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
+  }
+
+  /**
+   * @param {string} processId
+   * @param {string} processInstanceId
+   */
+  deleteProcess(processId, processInstanceId) {
+    return this.childProcesses.delete(JSON.stringify([processId, processInstanceId]));
   }
 }
 

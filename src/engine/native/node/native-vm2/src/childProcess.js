@@ -17,7 +17,6 @@ if (
 
 async function callToExecutor(endpoint, body) {
   try {
-    // TODO: don't hardcode address and port
     const response = await fetch(
       `${processCommunicationAdress}/${processId}/${processInstanceId}/${endpoint}`,
       {
@@ -43,7 +42,6 @@ async function callToExecutor(endpoint, body) {
       return await response.text();
     }
   } catch (e) {
-    // TODO: log error
     console.error(e);
 
     if (endpoint === 'result') process.exit(1);

@@ -25,8 +25,8 @@ export type VersionedObjectMetadata<T> = Prettify<
     // }[];
     //departments: string[];
     inEditingBy?: {
-      id: string;
-      task?: string;
+      userId: string;
+      timestamp: number;
     }[];
     createdOn: Date;
     lastEditedOn: Date;

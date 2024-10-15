@@ -1,7 +1,18 @@
+// @ts-check
 const NativeModule = require('@proceed/native-module');
 const childProcess = require('node:child_process');
 
 // TODO: implement queue
+
+/**
+ * @typedef {{
+ *      process: import('node:child_process').ChildProcess,
+ *      token: string,
+ *      stdout: string,
+ *      stderr: string,
+ *      sendToUniversal:  (error: any, response: any) => void
+ *    }} ChildProcessEntry
+ */
 
 /**
  * @class
@@ -22,25 +33,28 @@ class SubprocesScriptExecution extends NativeModule {
 
     /** @type{Map<
      *  string,
-     *  {
-     *    process: import('node:child_process').ChildProcess,
-     *    token: string,
-     *    stdout: string,
-     *    stderr: string,
-     *    sendToUniversal:  (error: any, response: any) => void
-     *  }
+     *  Map<string,
+     *    ChildProcessEntry
+     *  >
      * >} */
     this.childProcesses = new Map();
 
     this.options = options;
   }
 
+  /**
+   * @param {string} command
+   * @param {any[]} args
+   * @param { (error: any, response: any) => void} send
+   * */
   executeCommand(command, args, send) {
     switch (command) {
       case 'launch-child-process':
+        // @ts-ignore
         this.launchSubProcess(...args, send);
         break;
       case 'stop-child-process':
+        // @ts-ignore
         this.stopSubprocess(...args);
         break;
       default:
@@ -51,15 +65,18 @@ class SubprocesScriptExecution extends NativeModule {
   /**
    * @param {string} processId
    * @param {string} processInstanceId
+   * @param {string} scriptIdentifier
    * @param {string} tokenId
    * @param {string} scriptString
-   * @param {token} token Token for communicating with universal part
+   * @param {string} token Token for communicating with universal part
+   * @param {string}  engineScriptExecutionEndpoint engine endpoint
    * @param { (error: any, response: any) => void} sendToUniversal
    *
    */
   launchSubProcess(
     processId,
     processInstanceId,
+    scriptIdentifier,
     tokenId,
     scriptString,
     token,
@@ -67,23 +84,28 @@ class SubprocesScriptExecution extends NativeModule {
     sendToUniversal,
   ) {
     // NOTE: maybe just warn
-    if (this.getProcess(processId, processInstanceId))
+    if (this.getProcess(processId, processInstanceId, scriptIdentifier))
       throw new Error('This process is already executing a script');
 
     let processEntry;
     try {
       // TODO: don't hard code port
-      const scriptTask = childProcess.spawn(`node`, [
-        require.resolve('./childProcess.js'),
-        processId,
-        processInstanceId,
-        tokenId,
-        scriptString,
-        token,
-        engineScriptExecutionEndpoint,
-      ]);
+      const scriptTask = childProcess.spawn(
+        `node`,
+        [
+          require.resolve('./childProcess.js'),
+          processId,
+          processInstanceId,
+          scriptIdentifier,
+          tokenId,
+          scriptString,
+          token,
+          engineScriptExecutionEndpoint,
+        ],
+        {},
+      );
 
-      const processEntry = {
+      processEntry = {
         process: scriptTask,
         sendToUniversal,
         token,
@@ -91,7 +113,7 @@ class SubprocesScriptExecution extends NativeModule {
         stderr: '',
       };
 
-      this.setProcess(processId, processInstanceId, processEntry);
+      this.setProcess(processId, processInstanceId, scriptIdentifier, processEntry);
 
       scriptTask.stdout.on('data', (data) => {
         if (this.options.logChildProcessOutput) console.log(`stdout: ${data}`);
@@ -127,19 +149,24 @@ class SubprocesScriptExecution extends NativeModule {
   /**
    * @param {string} processId
    * @param {string} processInstanceId
+   * @param {string} [scriptIdentifier]
    */
-  stopSubprocess(processId, processInstanceId) {
+  stopSubprocess(processId, processInstanceId, scriptIdentifier) {
+    /** @type {Iterable<ChildProcessEntry>} */
     let toStop;
 
     if (processId === '*' && processInstanceId === '*') toStop = this.getAllProcesses();
-    else toStop = [this.getProcess(processId, processInstanceId)];
+    // @ts-ignore
+    else if (!scriptIdentifier) toStop = this.getProcess(processId, processInstanceId);
+    // @ts-ignore
+    else toStop = [this.getProcess(processId, processInstanceId, scriptIdentifier)];
 
     // NOTE: maybe give a warning?
     if (!toStop) return;
 
-    for (const scriptTask of this.getAllProcesses()) {
+    for (const scriptTask of toStop) {
       if (!scriptTask.process.kill())
-        throw new Error(`Failed to kill subprocess ${process.process.pid}`);
+        throw new Error(`Failed to kill subprocess ${scriptTask.process.pid}`);
     }
   }
 
@@ -154,22 +181,37 @@ class SubprocesScriptExecution extends NativeModule {
   /**
    * @param {string} processId
    * @param {string} processInstanceId
-   * @param {typeof this.childProcesses} processInstanceId
+   * @param {string} scriptIdentifier
+   * @param {ChildProcessEntry} processEntry
    */
-  setProcess(processId, processInstanceId, processEntry) {
-    return this.childProcesses.set(JSON.stringify([processId, processInstanceId]), processEntry);
+  setProcess(processId, processInstanceId, scriptIdentifier, processEntry) {
+    const processIdentifier = JSON.stringify([processId, processInstanceId]);
+    let processInstanceScripts = this.childProcesses.get(processIdentifier);
+
+    if (!processInstanceScripts) {
+      processInstanceScripts = new Map();
+      this.childProcesses.set(processIdentifier, processInstanceScripts);
+    }
+
+    return processInstanceScripts.set(scriptIdentifier, processEntry);
   }
 
   /**
    * @param {string} processId
    * @param {string} processInstanceId
+   * @param {string} [scriptIdentifier]
    */
-  getProcess(processId, processInstanceId) {
-    return this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
+  getProcess(processId, processInstanceId, scriptIdentifier) {
+    const processScripts = this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
+
+    if (scriptIdentifier) return processScripts?.get(scriptIdentifier);
+    else return processScripts?.values();
   }
 
   getAllProcesses() {
-    return this.childProcesses.values();
+    return Array.from(this.childProcesses.values())
+      .map((scriptInstances) => Array.from(scriptInstances.values()))
+      .flat();
   }
 
   /**

@@ -1,5 +1,14 @@
+// @ts-check
 const { System } = require('./system');
 const { generateUniqueTaskID } = require('./utils');
+
+/**
+ * @typedef {{
+ *    token: string,
+ *    result?: Object
+ *    dependencies?: Object
+ *  }} ChildProcessEntry
+ */
 
 /**
  * @class
@@ -14,40 +23,39 @@ class ScriptExecutor extends System {
     super();
     /** @type{Map<
      *  string,
-     *  {
-     *    token: string,
-     *    result?: Object
-     *    dependencies?: Object
-     *  }
+     *  Map<string, ChildProcessEntry>
      * >} */
     this.childProcesses = new Map();
 
     this.options = options;
   }
 
+  /** @param {any} req  */
+  routerMiddleware(req) {
+    const { processId, processInstanceId, scriptIdentifier } = req.params;
+    const process = this.getProcess(processId, processInstanceId, scriptIdentifier);
+    if (!process) return { statusCode: 404, response: {} };
+
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) return { statusCode: 401, response: {} };
+    const token = auth.substring('Bearer '.length);
+    // NOTE: a simple comparison may be vulnerable to a timing attack
+
+    //@ts-ignore
+    if (token !== process.token) return { statusCode: 401, response: {} };
+
+    req.process = process;
+  }
+
   /** @param {number} port */
   setupRouter(port) {
     this.httpPort = port;
 
-    function middleware(req) {
-      const { processId, processInstanceId } = req.params;
-      const process = this.getProcess(processId, processInstanceId);
-      if (!process) return { statusCode: 404, response: {} };
-
-      const auth = req.headers.authorization;
-      if (!auth?.startsWith('Bearer ')) return { statusCode: 401, response: {} };
-      const token = auth.substring('Bearer '.length);
-      // NOTE: a simple comparison may be vulnerable to a timing attack
-      if (token !== process.token) return { statusCode: 401, response: {} };
-
-      req.process = process;
-    }
-
     this.options.network.post(
-      '/scriptexecution/:processId/:processInstanceId/result',
+      '/scriptexecution/:processId/:processInstanceId/:scriptIdentifier/result',
       {},
       async function (req) {
-        const middlewareError = middleware.bind(this)(req);
+        const middlewareError = this.routerMiddleware.bind(this)(req);
         if (middlewareError) return middlewareError;
 
         if (req.headers['content-type'] !== 'application/json')
@@ -79,10 +87,10 @@ class ScriptExecutor extends System {
     );
 
     this.options.network.post(
-      '/scriptexecution/:processId/:processInstanceId/call',
+      '/scriptexecution/:processId/:processInstanceId/:scriptIdentifier/call',
       {},
       async function (req) {
-        const middlewareError = middleware.bind(this)(req);
+        const middlewareError = this.routerMiddleware.bind(this)(req);
         if (middlewareError) return middlewareError;
 
         const { functionName, args } = req.body;
@@ -119,11 +127,12 @@ class ScriptExecutor extends System {
       throw new Error('This process is already executing a script');
 
     try {
+      const scriptIdentifier = crypto.randomUUID();
       const processEntry = {
         token: crypto.randomUUID(),
         dependencies,
       };
-      this.setProcess(processId, processInstanceId, processEntry);
+      this.setProcess(processId, processInstanceId, scriptIdentifier, processEntry);
 
       const subprocessLaunchReqId = generateUniqueTaskID();
 
@@ -132,6 +141,7 @@ class ScriptExecutor extends System {
         [
           processId,
           processInstanceId,
+          scriptIdentifier,
           tokenId,
           scriptString,
           processEntry.token,
@@ -157,6 +167,7 @@ class ScriptExecutor extends System {
 
           if (response.type === 'process-finished') {
             this.deleteProcess(processId, processInstanceId);
+
             if (response.code === 0) res(processEntry.result);
             else rej(processEntry.result);
           }
@@ -206,18 +217,31 @@ class ScriptExecutor extends System {
   /**
    * @param {string} processId
    * @param {string} processInstanceId
-   * @param {typeof this.childProcesses} processInstanceId
+   * @param {string} scriptIdentifier
+   * @param {ChildProcessEntry} processEntry
    */
-  setProcess(processId, processInstanceId, processEntry) {
-    return this.childProcesses.set(JSON.stringify([processId, processInstanceId]), processEntry);
+  setProcess(processId, processInstanceId, scriptIdentifier, processEntry) {
+    const processIdentifier = JSON.stringify([processId, processInstanceId]);
+    let processInstanceScripts = this.childProcesses.get(processIdentifier);
+
+    if (!processInstanceScripts) {
+      processInstanceScripts = new Map();
+      this.childProcesses.set(processIdentifier, processInstanceScripts);
+    }
+
+    return processInstanceScripts.set(scriptIdentifier, processEntry);
   }
 
   /**
    * @param {string} processId
    * @param {string} processInstanceId
+   * @param {string} [scriptIdentifier]
    */
-  getProcess(processId, processInstanceId) {
-    return this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
+  getProcess(processId, processInstanceId, scriptIdentifier) {
+    const processScripts = this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
+
+    if (scriptIdentifier) return processScripts?.get(scriptIdentifier);
+    else return processScripts?.values();
   }
 
   /**

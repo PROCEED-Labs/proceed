@@ -1,11 +1,21 @@
 const ivm = require('isolated-vm');
 
-const [processId, processInstanceId, tokenId, scriptString, token, processCommunicationAdress] =
-  process.argv.slice(2);
+const [
+  processId,
+  processInstanceId,
+  scriptIdentifier,
+  tokenId,
+  scriptString,
+  token,
+  processCommunicationAdress,
+] = process.argv.slice(2);
+
+console.log('args ->', process.argv);
 
 if (
   !processId ||
   !processInstanceId ||
+  !scriptIdentifier ||
   !tokenId ||
   !scriptString ||
   !token ||
@@ -18,7 +28,7 @@ if (
 async function callToExecutor(endpoint, body) {
   try {
     const response = await fetch(
-      `${processCommunicationAdress}/${processId}/${processInstanceId}/${endpoint}`,
+      `${processCommunicationAdress}/${processId}/${processInstanceId}/${scriptIdentifier}/${endpoint}`,
       {
         method: 'POST',
         body: JSON.stringify(body),

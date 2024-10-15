@@ -4,13 +4,10 @@ import {
   pointerWithin,
   useSensor,
   useSensors,
-  KeyboardSensor,
   PointerSensor,
   DragOverlay,
   ClientRect,
-  Collision,
   getClientRect,
-  UniqueIdentifier,
 } from '@dnd-kit/core';
 import { Active, DroppableContainer, RectMap } from '@dnd-kit/core/dist/store';
 import { Coordinates } from '@dnd-kit/utilities';
@@ -50,10 +47,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
 
   const pointerPosition = useRef({ x: 0, y: 0 });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 100, tolerance: 10 } }),
-    useSensor(KeyboardSensor),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
 
   /**
    * This function is used to calculate the most likely changes to a target elements bounding box if the dragged element would be removed from its current position

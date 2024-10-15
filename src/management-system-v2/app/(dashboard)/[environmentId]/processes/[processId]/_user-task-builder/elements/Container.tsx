@@ -6,7 +6,7 @@ import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
 import { useDroppable } from '@dnd-kit/core';
 
-import { Setting } from '../utils';
+import { ContextMenu, Setting } from './utils';
 
 export type ContainerProps = React.PropsWithChildren & {
   padding?: string | number;
@@ -46,11 +46,13 @@ const Container: UserComponent<ContainerProps> = ({
       className="user-task-form-container"
       style={{ padding, background, border: `${borderThickness}px solid ${borderColor}` }}
     >
-      {children ? (
-        <>{children}</>
-      ) : (
-        <Empty style={{ textAlign: 'center', height: '100%' }} description="Drop elements here" />
-      )}
+      <ContextMenu menu={[]}>
+        {children ? (
+          <>{children}</>
+        ) : (
+          <Empty style={{ textAlign: 'center', height: '100%' }} description="Drop elements here" />
+        )}
+      </ContextMenu>
     </div>
   );
 };
@@ -90,6 +92,7 @@ export const ContainerSettings = () => {
       />
       <Setting
         label="Background Color"
+        style={{ display: 'flex', alignItems: 'center' }}
         control={
           <ColorPicker
             value={background}
@@ -120,6 +123,7 @@ export const ContainerSettings = () => {
       />
       <Setting
         label="Border Color"
+        style={{ display: 'flex', alignItems: 'center' }}
         control={
           <ColorPicker
             value={borderColor}
@@ -146,7 +150,7 @@ Container.craft = {
   props: {
     padding: 0,
     background: '#fff',
-    borderThickness: 2,
+    borderThickness: 1,
     borderColor: '#d3d3d3',
   },
 };

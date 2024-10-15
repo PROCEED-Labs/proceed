@@ -69,7 +69,7 @@ const Layout: FC<
       (item) => !(item && 'type' in item && item.type === 'divider'),
     );
 
-    if (userData && !userData.guest) {
+    if (userData && !userData.isGuest) {
       layoutMenuItems = [
         {
           label: 'Profile',
@@ -110,8 +110,8 @@ const Layout: FC<
 
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
-      <SpaceContext.Provider value={{ ...activeSpace, customLogo }}>
-        {userData && !userData.guest ? (
+      <SpaceContext.Provider value={activeSpace}>
+        {userData && !userData.isGuest ? (
           <AuthenticatedUserDataModal
             modalOpen={!userData.username || !userData.lastName || !userData.firstName}
             userData={userData}

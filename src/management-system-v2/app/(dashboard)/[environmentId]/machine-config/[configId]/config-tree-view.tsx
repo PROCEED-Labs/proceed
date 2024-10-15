@@ -227,6 +227,7 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
           onExpand={(keys: React.Key[]) => onExpandedChange(keys.map((key) => key.toString()))}
         />
       </Dropdown>
+
       <Modal
         open={openModal === 'delete'}
         title={'Deleting ' + selectionName}
@@ -234,16 +235,18 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
         onCancel={closeModal}
       >
         <p>
-          Are you sure you want to delete the configuration {selectionName} with id{' '}
-          {rightClickedNode.id}?
+          Are you sure you want to delete the configuration <b>{selectionName}</b> with ID{' '}
+          <em>{rightClickedNode.id}</em>
         </p>
       </Modal>
+
       <MachineConfigModal
         open={openModal === 'machine-config' || openModal === 'target-config'}
         title={`Creating ${openModal === 'target-config' ? 'target' : 'machine'} configuration`}
         onCancel={closeModal}
         onSubmit={handleCreateMachineOk}
       />
+
       <CreateParameterModal
         title="Create Metadata"
         open={openModal === 'metadata'}
@@ -252,6 +255,7 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
         okText="Create"
         showKey
       />
+
       <CreateParameterModal
         title="Create Parameter"
         open={openModal === 'parameter'}

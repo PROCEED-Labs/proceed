@@ -26,46 +26,55 @@ export let accountsMetaObject: { [Id: string]: OauthAccount } =
   // @ts-ignore
   global.accountsMetaObject || (global.accountsMetaObject = {});
 
-export function getUsers() {
-  return Object.values(usersMetaObject);
+export function getUsers(page: number = 1, pageSize: number = 10) {
+  const allUsers = Object.values(usersMetaObject);
+  const totalUsers = allUsers.length;
+  const totalPages = Math.ceil(totalUsers / pageSize);
+
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedUsers = allUsers.slice(startIndex, endIndex);
+
+  return {
+    users: paginatedUsers,
+    pagination: {
+      currentPage: page,
+      pageSize: pageSize,
+      totalUsers: totalUsers,
+      totalPages: totalPages,
+    },
+  };
 }
 
-export function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
+export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
   const user = usersMetaObject[id];
-
-  if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
-
-  return user;
-}
-
-export function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = Object.values(usersMetaObject).find((user) => !user.guest && email === user.email);
-
   if (!user && opts?.throwIfNotFound) throw new Error('User not found');
+  return user as User;
+}
 
+export async function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
+  const user = Object.values(usersMetaObject).find((user) => !user.isGuest && email === user.email);
+  if (!user && opts?.throwIfNotFound) throw new Error('User not found');
   return user;
 }
 
-export function getUserByUsername(username: string, opts?: { throwIfNotFound?: boolean }) {
+export async function getUserByUsername(username: string, opts?: { throwIfNotFound?: boolean }) {
   const user = Object.values(usersMetaObject).find(
-    (user) => !user.guest && user.username && user.username === username,
+    (user) => !user.isGuest && user.username === username,
   );
-
   if (!user && opts?.throwIfNotFound) throw new Error('User not found');
-
   return user;
 }
 
-export function addUser(inputUser: OptionalKeys<User, 'id'>) {
+export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
   const user = UserSchema.parse(inputUser);
 
-  if (!user.guest) {
-    if (user.username && getUserByUsername(user.username))
-      throw new Error('User with this username already exists');
-
-    if (user.email && getUserByEmail(user.email))
-      throw new Error('User with this email already exists');
-  }
+  if (
+    !user.isGuest &&
+    ((user.username && (await getUserByUsername(user.username))) ||
+      (await getUserByEmail(user.email!)))
+  )
+    throw new Error('User with this email or username already exists');
 
   if (!user.id) user.id = v4();
 
@@ -73,7 +82,7 @@ export function addUser(inputUser: OptionalKeys<User, 'id'>) {
 
   addEnvironment({
     ownerId: user.id,
-    organization: false,
+    isOrganization: false,
   });
 
   usersMetaObject[user.id as string] = user as User;
@@ -81,7 +90,7 @@ export function addUser(inputUser: OptionalKeys<User, 'id'>) {
 
   // TODO: change this to a more efficient query when the
   // persistence layer is implemented
-  if (!user.guest && getSystemAdmins().length === 0)
+  if ((await getSystemAdmins()).length === 0)
     addSystemAdmin({
       role: 'admin',
       userId: user.id,
@@ -99,19 +108,18 @@ export class UserHasToDeleteOrganizationsError extends Error {
     this.conflictingOrgs = conflictingOrgs;
   }
 }
-export function deleteUser(userId: string) {
-  const user = usersMetaObject[userId];
 
+export async function deleteUser(userId: string) {
+  const user = usersMetaObject[userId];
   if (!user) throw new Error("User doesn't exist");
 
-  const userOrganizations = getUserOrganizationEnvironments(userId);
-
+  const userOrganizations = await getUserOrganizationEnvironments(userId);
   const orgsWithNoNextAdmin: string[] = [];
   for (const environmentId of userOrganizations) {
-    const userRoles = getRoleMappingByUserId(userId, environmentId);
+    const userRoles = await getRoleMappingByUserId(userId, environmentId);
     if (!userRoles.find((role) => role.roleName === '@admin')) continue;
 
-    const adminRole = getRoles(environmentId).find((role) => role.name === '@admin');
+    const adminRole = (await getRoles(environmentId)).find((role) => role.name === '@admin');
     if (!adminRole)
       throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
 
@@ -126,29 +134,27 @@ export function deleteUser(userId: string) {
   }
 
   deleteEnvironment(userId);
-
   delete usersMetaObject[userId];
   store.remove('users', userId);
 
   return user;
 }
 
-export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
-  const user = getUserById(userId, { throwIfNotFound: true });
-
-  const isGoingToBeGuest = inputUser.guest !== undefined ? inputUser.guest : user.guest;
+export async function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
+  const user = await getUserById(userId, { throwIfNotFound: true });
+  const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user?.isGuest;
 
   let updatedUser: User;
   if (isGoingToBeGuest) {
     updatedUser = {
-      id: user.id,
-      guest: true,
+      id: user!.id,
+      isGuest: true,
     };
   } else {
     const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
 
     if (newUserData.email) {
-      const existingUser = getUserByEmail(newUserData.email);
+      const existingUser = await getUserByEmail(newUserData.email);
 
       if (existingUser && existingUser.id !== userId)
         throw new Error('User with this email or username already exists');
@@ -158,42 +164,41 @@ export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>
 
     // TODO: change this to a more efficient query when the
     // persistence layer is implemented
-    if (!inputUser.guest && getSystemAdmins().length === 0)
+    if (!inputUser.isGuest && (await getSystemAdmins()).length === 0)
       addSystemAdmin({
         role: 'admin',
-        userId: user.id,
+        userId: user!.id,
       });
   }
 
-  usersMetaObject[user.id] = updatedUser;
+  usersMetaObject[user!.id] = updatedUser;
   store.update('users', userId, updatedUser);
 
   return user;
 }
 
-export function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
+export async function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
   const newAccount = OauthAccountSchema.parse(accountInput);
 
-  const user = getUserById(newAccount.userId);
+  const user = await getUserById(newAccount.userId);
   if (!user) throw new Error('User not found');
-  if (user.guest) throw new Error('Guest users cannot have oauth accounts');
+  if (user.isGuest) throw new Error('Guest users cannot have oauth accounts');
 
   const id = v4();
-  if (accountsMetaObject[id]) throw new Error('Account already exists');
-
   const account = { ...newAccount, id };
+
   store.add('accounts', account);
   accountsMetaObject[id] = account;
 }
 
-export function deleteOauthAccount(id: string) {
+export async function deleteOauthAccount(id: string) {
   if (!accountsMetaObject[id]) throw new Error('Account not found');
 
   store.remove('accounts', id);
   delete accountsMetaObject[id];
 }
 
-export function getOauthAccountByProviderId(provider: string, providerAccountId: string) {
+export async function getOauthAccountByProviderId(provider: string, providerAccountId: string) {
   for (const account of Object.values(accountsMetaObject)) {
     if (account.provider === provider && account.providerAccountId === providerAccountId)
       return account;
@@ -201,16 +206,15 @@ export function getOauthAccountByProviderId(provider: string, providerAccountId:
 }
 
 let inited = false;
+
 /**
- * initializes the environments meta information objects
+ * Initializes the environments meta information objects.
  */
 export function init() {
   if (!firstInit || inited) return;
   inited = true;
 
   const storedUsers = store.get('users');
-
-  // set roles store cache for quick access
   storedUsers.forEach((user: User) => (usersMetaObject[user.id] = user));
 
   const storedAccounts = store.get('accounts');

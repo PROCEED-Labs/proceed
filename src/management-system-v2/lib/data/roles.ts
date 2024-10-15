@@ -1,19 +1,31 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import {
-  deleteRole,
-  addRole as _addRole,
-  updateRole as _updateRole,
-  getRoles as _getRoles,
-} from './legacy/iam/roles';
 import { redirect } from 'next/navigation';
 import { UserErrorType, userError } from '../user-error';
-
 import { RedirectType } from 'next/dist/client/components/redirect';
-import { UnauthorizedError } from '../ability/abilityHelper';
+import Ability, { UnauthorizedError } from '../ability/abilityHelper';
+import { enableUseDB } from 'FeatureFlags';
+import { TRolesModule } from './module-import-types-temp';
+
+let deleteRole: TRolesModule['deleteRole'];
+let _addRole: TRolesModule['addRole'];
+let _updateRole: TRolesModule['updateRole'];
+let _getRoles: TRolesModule['getRoles'];
+
+const loadModules = async () => {
+  const moduleImport = await (enableUseDB
+    ? import('./db/iam/roles')
+    : import('./legacy/iam/roles'));
+
+  ({ deleteRole, addRole: _addRole, updateRole: _updateRole } = moduleImport);
+};
+
+loadModules().catch(console.error);
 
 export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
+  await loadModules();
+
   const { ability } = await getCurrentEnvironment(envitonmentId);
 
   try {
@@ -28,13 +40,15 @@ export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
 }
 
 export async function addRole(environmentId: string, role: Parameters<typeof _addRole>[0]) {
+  await loadModules();
+
   const { activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   let newRoleId;
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    const newRole = _addRole({ ...role, environmentId: activeEnvironment.spaceId }, ability);
+    const newRole = await _addRole({ ...role, environmentId: activeEnvironment.spaceId }, ability);
     newRoleId = newRole.id;
   } catch (e) {
     if (e instanceof UnauthorizedError)
@@ -50,6 +64,7 @@ export async function updateRole(
   roleId: string,
   updatedRole: Omit<Parameters<typeof _updateRole>[1], 'environmentId'>,
 ) {
+  await loadModules();
   try {
     const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
     _updateRole(roleId, { ...updatedRole, environmentId: activeEnvironment.spaceId }, ability);
@@ -61,10 +76,12 @@ export async function updateRole(
 }
 
 export async function getRoles(environmentId: string) {
+  await loadModules();
+
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    return _getRoles(environmentId, ability);
+    return await _getRoles(environmentId, ability);
   } catch (_) {
     return userError("Something wen't wrong");
   }

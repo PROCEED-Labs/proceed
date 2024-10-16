@@ -457,6 +457,33 @@ export const schema = {
       ],
     },
     {
+      name: 'Performer',
+      superClass: ['bpmn:Artifact'],
+    },
+    {
+      name: 'HumanPerformer',
+      superClass: ['Performer'],
+    },
+    {
+      name: 'MachinePerformer',
+      superClass: ['Performer'],
+    },
+    {
+      name: 'PerformerAssociation',
+      extends: ['bpmn:Association'],
+    },
+    {
+      name: 'PerformableNode',
+      extends: ['bpmn:Activity', 'bpmn:Event'],
+      properties: [
+        {
+          name: 'Performers',
+          type: 'PerformerAssociation',
+          isMany: true,
+        },
+      ],
+    },
+    {
       name: 'placeholder',
       extends: ['bpmn:Task'],
       properties: [

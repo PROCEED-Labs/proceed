@@ -19,6 +19,8 @@ import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
+import ResourceExtension from '@/lib/modeler-extensions/Resources';
+
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
 // immediately loaded when the initial script first executes (not after
@@ -186,6 +188,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         moddleExtensions: {
           proceed: schema,
         },
+        additionalModules: [ResourceExtension],
       });
 
       if (type === 'modeler') {
@@ -217,7 +220,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           m.destroy();
         });
       };
-    }, [Modeler, NavigatedViewer, type]);
+    }, [Modeler, Viewer, NavigatedViewer, type]);
 
     useEffect(() => {
       // Store handlers so we can remove them later.
@@ -269,7 +272,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         }
 
         // Import the new bpmn.
-        await m.importXML(bpmn.bpmn);
+        const res = await m.importXML(bpmn.bpmn);
+        console.log(res.warnings);
         if (m !== modeler.current) {
           // The modeler was reset in the meantime.
           return;

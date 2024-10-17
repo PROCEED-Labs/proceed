@@ -139,12 +139,12 @@ export class ProcessListPage {
     const modal = await openModal(this.page, () =>
       page.getByRole('button', { name: 'Create Process' }).click(),
     );
-    await modal
-      .getByRole('textbox', { name: '* Process Name :' })
-      .fill(processName ?? 'My Process');
+    await modal.getByRole('textbox', { name: 'Process Name' }).fill(processName ?? 'My Process');
     await modal.getByLabel('Process Description').fill(description ?? 'Process Description');
     await modal.getByRole('button', { name: 'Create' }).click();
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
+    // IMPORTANT: URL can change while old page is still visible.
+    await page.locator('.bjs-container').waitFor({ state: 'visible' });
 
     const id = page.url().split('processes/').pop();
     this.processDefinitionIds.push(id);

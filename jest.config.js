@@ -5,6 +5,7 @@ const ignorePaths = [
   '<rootDir>/.yarn-cache',
   '<rootDir>/src/management-system',
   '<rootDir>/src/management-system-v2/.next/',
+  '@types',
 ];
 
 let projects = [

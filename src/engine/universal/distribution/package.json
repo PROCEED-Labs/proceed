@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "description": "PROCEED distribution module",
   "main": "src/module.js",
+  "types": "./@types/src/module.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {
     "@proceed/system": "^1.0.0",
     "@proceed/machine": "^1.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   }
 }

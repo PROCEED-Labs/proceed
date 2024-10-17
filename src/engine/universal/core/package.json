@@ -2,10 +2,13 @@
   "name": "@proceed/core",
   "version": "1.0.0",
   "main": "./src/module.js",
+  "types": "./@types/src/module.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "scripts": {
-    "start": "echo 'Do not start the engine module directly!\nInstead do yarn dev.'"
+    "start": "echo 'Do not start the engine module directly!\nInstead do yarn dev.'",
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "@proceed/capabilities": "^1.0.0",

@@ -110,6 +110,9 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   const newDefinitionID = page.url().split('/processes/').pop();
   expect(newDefinitionID).not.toEqual(definitionId);
 
+  // Not only wait for URL change, but also new content to be loaded.
+  await page.getByText('New Process').waitFor({ state: 'visible' });
+
   // Create subprocess and navigate
   await processModelerPage.createSubprocess();
   const openSubprocessButton = page.locator('.bjs-drilldown');

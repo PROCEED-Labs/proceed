@@ -72,6 +72,21 @@ export const defaultMachineConfiguration = (name: string, description: string): 
   };
 };
 
+export const customMachineConfiguration = (
+  name: string,
+  description: string,
+  targetCon: TargetConfig,
+): MachineConfig => {
+  const config: MachineConfig = {
+    ...defaultConfiguration(name, description),
+    type: 'machine-config',
+    parameters: targetCon.parameters,
+    metadata: targetCon.metadata,
+  };
+  config.metadata['description'] = defaultParameter('description', description);
+  return config;
+};
+
 export const defaultTargetConfiguration = (name: string, description: string): TargetConfig => {
   return {
     ...defaultConfiguration(name, description),

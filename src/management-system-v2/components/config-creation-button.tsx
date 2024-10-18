@@ -3,65 +3,58 @@
 import React, { ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
-import MachineConfigModal from './machine-config-modal'; //TODO
+import MachineConfigModal from './config-modal'; //TODO
 import { addParentConfig } from '@/lib/data/legacy/machine-config'; //TODO
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { defaultConfiguration } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { defaultParentConfiguration } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
-type MachineConfigCreationButtonProps = ButtonProps & {
+type ConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
   wrapperElement?: ReactNode;
 };
 
 /**
  *
- * Button to create MachineConfigs including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
+ * Button to create Configs including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
  */
-const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = ({
+const ConfigCreationButton: React.FC<ConfigCreationButtonProps> = ({
   wrapperElement,
   customAction,
   ...props
 }) => {
-  const [isMachineConfigModalOpen, setIsMachineConfigModalOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const router = useRouter();
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
-  const spaceId = useEnvironment().spaceId;
 
-  const createNewMachineConfig = async (
+  const createNewConfig = async (
     values: { name: string; description: string }[], //TODO - I don't REALLY know why this is an array
   ) => {
-    const machineConfig = await (customAction?.(values[0]) ??
+    const config = await (customAction?.(values[0]) ??
       addParentConfig(
-        {
-          ...defaultConfiguration(values[0].name, values[0].description),
-          type: 'config',
-          folderId,
-          targetConfig: undefined,
-          machineConfigs: [],
-        },
+        defaultParentConfiguration(values[0].name, values[0].description, folderId),
         environment.spaceId,
       ).then((res) => (Array.isArray(res) ? res[0] : res)));
-    if (machineConfig && 'error' in machineConfig) {
-      return machineConfig;
+    if (config && 'error' in config) {
+      return config;
     }
-    if (machineConfig && 'id' in machineConfig) {
-      router.push(spaceURL(environment, `/machine-config/${machineConfig.id}`)); //TODO
+    if (config && 'id' in config) {
+      router.push(spaceURL(environment, `/machine-config/${config.id}`)); //TODO
     } else {
       router.refresh();
     }
-    setIsMachineConfigModalOpen(false);
+    setIsConfigModalOpen(false);
   };
 
   useAddControlCallback(
     'machine-config-list',
     'controlenter',
     () => {
-      if (!isMachineConfigModalOpen) {
-        setIsMachineConfigModalOpen(true);
+      if (!isConfigModalOpen) {
+        setIsConfigModalOpen(true);
       }
     },
     {
@@ -75,7 +68,7 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
       {wrapperElement ? (
         <div
           onClick={() => {
-            setIsMachineConfigModalOpen(true);
+            setIsConfigModalOpen(true);
           }}
         >
           {wrapperElement}
@@ -84,19 +77,19 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
         <Button
           {...props}
           onClick={() => {
-            setIsMachineConfigModalOpen(true);
+            setIsConfigModalOpen(true);
           }}
         ></Button>
       )}
       <MachineConfigModal
-        open={isMachineConfigModalOpen}
+        open={isConfigModalOpen}
         title="Create Configuration"
         okText="Create"
-        onCancel={() => setIsMachineConfigModalOpen(false)}
-        onSubmit={createNewMachineConfig}
+        onCancel={() => setIsConfigModalOpen(false)}
+        onSubmit={createNewConfig}
       />
     </>
   );
 };
 
-export default MachineConfigCreationButton;
+export default ConfigCreationButton;

@@ -566,7 +566,6 @@ export async function addParentConfig(
     return metadata;
   } catch (e: unknown) {
     const error = e as Error;
-    // console.log(error.message);
     return userError(error.message ?? "Couldn't create Machine Config");
   }
 }

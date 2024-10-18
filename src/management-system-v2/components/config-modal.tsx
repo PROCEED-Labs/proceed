@@ -7,7 +7,7 @@ import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'an
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 
-type MachineConfigModalProps<T extends { name: string; description: string }> = {
+type ConfigModalProps<T extends { name: string; description: string }> = {
   open: boolean;
   title: string;
   okText?: string;
@@ -16,14 +16,14 @@ type MachineConfigModalProps<T extends { name: string; description: string }> = 
   initialData?: T[];
 };
 
-const MachineConfigModal = <T extends { name: string; description: string }>({
+const ConfigModal = <T extends { name: string; description: string }>({
   open,
   title,
   okText,
   onCancel,
   onSubmit,
   initialData,
-}: MachineConfigModalProps<T>) => {
+}: ConfigModalProps<T>) => {
   const [form] = Form.useForm();
   const formRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,7 +40,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   const items: CollapseProps['items'] = initialData?.length
     ? initialData?.map((data, index) => ({
         label: data.name,
-        children: <MachineConfigInputs index={index} />,
+        children: <ConfigInputs index={index} />,
       }))
     : undefined;
 
@@ -98,7 +98,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         form={form}
         ref={formRef}
         layout="vertical"
-        name="machine_config_form"
+        name="config_form"
         initialValues={initialData}
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
@@ -106,7 +106,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <MachineConfigInputs index={0} />
+          <ConfigInputs index={0} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -115,11 +115,11 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   );
 };
 
-type MachineConfigInputsProps = {
+type ConfigModalInputsProps = {
   index: number;
 };
 
-const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
+const ConfigInputs = ({ index }: ConfigModalInputsProps) => {
   return (
     <>
       <Form.Item
@@ -145,4 +145,4 @@ const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
   );
 };
 
-export default MachineConfigModal;
+export default ConfigModal;

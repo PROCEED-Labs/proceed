@@ -17,7 +17,7 @@ import {
   findConfig,
   findParameter,
 } from '../configuration-helper';
-import MachineConfigModal from '@/components/machine-config-modal';
+import ConfigModal from '@/components/config-modal';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 
 import {
@@ -106,8 +106,7 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     addType: 'parameters' | 'metadata',
   ) => {
     const { key, displayName, value, language, unit } = valuesFromModal;
-    // TODO fix this
-    const newParameter = defaultParameter(key ?? displayName, value, displayName, language, unit);
+    const newParameter = defaultParameter(key ?? '', value, displayName, language, unit);
     let type: StoredParameter['parentType'] =
       rightClickedType === 'config' ? 'parent-config' : rightClickedType;
     await backendAddParameter(rightClickedId, type, addType, key || displayName, newParameter);
@@ -241,7 +240,7 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
         </p>
       </Modal>
 
-      <MachineConfigModal
+      <ConfigModal
         open={openModal === 'machine-config' || openModal === 'target-config'}
         title={`Creating ${openModal === 'target-config' ? 'target' : 'machine'} configuration`}
         onCancel={closeModal}

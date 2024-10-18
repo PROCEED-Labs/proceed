@@ -42,7 +42,7 @@ import Title from 'antd/es/typography/Title';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import AddButton from './add-button';
-import MachineConfigModal from '@/components/machine-config-modal';
+import ConfigModal from '@/components/config-modal';
 import {
   addMachineConfig,
   addTargetConfig,
@@ -244,7 +244,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     return panels;
   }, [editable, selectedConfig]);
 
-  const machineConfigModalTitle =
+  const configModalTitle =
     createConfigType === 'target' ? 'Create Target Tech Data Set' : 'Create Machine Tech Data Set';
 
   return (
@@ -401,9 +401,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
         </Content>
       </Layout>
 
-      <MachineConfigModal
+      <ConfigModal
         open={!!createConfigType}
-        title={machineConfigModalTitle}
+        title={configModalTitle}
         onCancel={() => setCreateConfigType('')}
         onSubmit={handleCreateConfig}
       />

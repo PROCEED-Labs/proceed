@@ -10,9 +10,10 @@ import { updateRole } from '@/lib/data/roles';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
-  const { message } = App.useApp();
+  const app = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
   const router = useRouter();
@@ -40,14 +41,14 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
       delete values.expirationDayJs;
     }
 
-    try {
-      const result = await updateRole(environment.spaceId, role.id, values);
-      if (result && 'error' in result) throw new Error();
-      router.refresh();
-      message.open({ type: 'success', content: 'Role updated' });
-    } catch (_) {
-      message.open({ type: 'error', content: 'Something went wrong' });
-    }
+    await wrapServerCall({
+      fn: () => updateRole(environment.spaceId, role.id, values),
+      onSuccess: () => {
+        router.refresh();
+        app.message.open({ type: 'success', content: 'Role updated' });
+      },
+      app,
+    });
   }
 
   return (

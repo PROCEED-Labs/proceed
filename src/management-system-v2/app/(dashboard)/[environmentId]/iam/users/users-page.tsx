@@ -11,10 +11,11 @@ import { useRouter } from 'next/navigation';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
 import { useEnvironment } from '@/components/auth-can';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 import { Role } from '@/lib/data/role-schema';
 
 const UsersPage: FC<{ users: (AuthenticatedUser & { roles?: Role[] })[] }> = ({ users }) => {
-  const { message: messageApi } = App.useApp();
+  const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
   const [deletingUser, startTransition] = useTransition();
@@ -24,15 +25,16 @@ const UsersPage: FC<{ users: (AuthenticatedUser & { roles?: Role[] })[] }> = ({ 
   const environment = useEnvironment();
 
   async function removeUsers(ids: string[], unsetIds: () => void) {
-    startTransition(async () => {
-      const result = await removeUsersFromEnvironment(environment.spaceId, ids);
-
-      if (result && 'error' in result)
-        messageApi.open({ type: 'error', content: 'Something went wrong' });
-
-      unsetIds();
-      router.refresh();
-    });
+    startTransition(() =>
+      wrapServerCall({
+        fn: () => removeUsersFromEnvironment(environment.spaceId, ids),
+        onSuccess: () => {
+          router.refresh();
+          unsetIds();
+        },
+        app,
+      }),
+    );
   }
 
   return (

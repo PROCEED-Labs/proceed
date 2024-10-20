@@ -35,3 +35,17 @@ export const userError = (
 ) => {
   return { error: { message, type } as UserError };
 };
+
+export function isUserError(value: any): value is UserError {
+  return (
+    value &&
+    typeof value === 'object' &&
+    'message' in value &&
+    'type' in value &&
+    typeof value.type === 'string'
+  );
+}
+
+export function isUserErrorResponse(value: any): value is { error: UserError } {
+  return value && typeof value === 'object' && 'error' in value && isUserError(value.error);
+}

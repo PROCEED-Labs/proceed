@@ -8,7 +8,7 @@ import {
   AppstoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Space, Button, Table, App, Breakpoint, Grid, FloatButton, Tooltip } from 'antd';
+import { Space, Button, Table, Breakpoint, Grid, FloatButton, Tooltip, App } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -34,6 +34,7 @@ function getMembersRepresentation(members: Role['members']) {
 
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
+import { wrapServerCall } from '@/lib/wrap-server-call';
 import SelectionActions from '@/components/selection-actions';
 import { spaceURL, userRepresentation } from '@/lib/utils';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
@@ -42,7 +43,7 @@ type ModifiedRole = Role & { members: AuthenticatedUser[] };
 export type FilteredRole = ReplaceKeysWithHighlighted<ModifiedRole, 'name'>;
 
 const RolesPage = ({ roles }: { roles: ModifiedRole[] }) => {
-  const { message: messageApi } = App.useApp();
+  const app = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();
   const environment = useEnvironment();
@@ -76,16 +77,15 @@ const RolesPage = ({ roles }: { roles: ModifiedRole[] }) => {
   );
 
   async function deleteRoles(roleIds: string[]) {
-    try {
-      const result = await serverDeleteRoles(environment.spaceId, roleIds);
-      if (result && 'error' in result) throw new Error();
-
-      setSelectedRowKeys([]);
-      setSelectedRows([]);
-      router.refresh();
-    } catch (e) {
-      messageApi.error({ content: 'Something went wrong' });
-    }
+    await wrapServerCall({
+      fn: () => serverDeleteRoles(environment.spaceId, roleIds),
+      onSuccess: () => {
+        setSelectedRowKeys([]);
+        setSelectedRows([]);
+        router.refresh();
+      },
+      app,
+    });
   }
 
   const columns = [

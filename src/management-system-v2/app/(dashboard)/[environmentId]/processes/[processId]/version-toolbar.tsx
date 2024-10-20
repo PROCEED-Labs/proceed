@@ -1,6 +1,6 @@
 'use client';
 
-import { Tooltip, Space } from 'antd';
+import { Tooltip, Space, App } from 'antd';
 import { FormOutlined, PlusOutlined } from '@ant-design/icons';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessCreationButton from '@/components/process-creation-button';
@@ -8,6 +8,7 @@ import { AuthCan, useEnvironment } from '@/components/auth-can';
 import ConfirmationButton from '@/components/confirmation-button';
 import { copyProcesses, setVersionAsLatest } from '@/lib/data/processes';
 import { spaceURL } from '@/lib/utils';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type VersionToolbarProps = { processId: string };
 
@@ -15,6 +16,8 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
   const router = useRouter();
   const query = useSearchParams();
   const environment = useEnvironment();
+  const app = App.useApp();
+
   // This component should only be rendered when a version is selected
   const selectedVersionId = query.get('version') as string;
 
@@ -58,10 +61,14 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
           title="Are you sure you want to continue editing with this Version?"
           description="Any changes that are not stored in another version are irrecoverably lost!"
           tooltip="Set as latest Version and enable editing"
-          onConfirm={async () => {
-            await setVersionAsLatest(processId, Number(selectedVersionId), environment.spaceId);
-            router.push(spaceURL(environment, `/processes/${processId}`));
-          }}
+          onConfirm={() =>
+            wrapServerCall({
+              fn: () =>
+                setVersionAsLatest(processId, Number(selectedVersionId), environment.spaceId),
+              onSuccess: () => router.push(spaceURL(environment, `/processes/${processId}`)),
+              app,
+            })
+          }
           modalProps={{
             okText: 'Set as latest Version',
             okButtonProps: {

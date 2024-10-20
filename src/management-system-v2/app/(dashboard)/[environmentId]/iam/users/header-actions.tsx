@@ -2,6 +2,7 @@
 
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 import { getRoles } from '@/lib/data/roles';
 import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
@@ -26,7 +27,7 @@ const AddUsersModal: FC<{
   modalOpen: boolean;
   close: () => void;
 }> = ({ modalOpen, close }) => {
-  const { message: messageApi } = App.useApp();
+  const app = App.useApp();
   const router = useRouter();
   const environment = useEnvironment();
   const [form] = Form.useForm();
@@ -60,16 +61,17 @@ const AddUsersModal: FC<{
       try {
         const roleIds = selectedRoles.map((role) => role.value as string);
 
-        const result = inviteUsersToEnvironment(environment.spaceId, users, roleIds);
-
-        if (result && 'error' in result) throw new Error();
-
-        messageApi.success({ content: `User${users.length > 1 ? 's' : ''} invited` });
-        closeModal();
-        router.refresh();
-      } catch (e) {
-        messageApi.error({ content: 'An error ocurred' });
-      }
+        await wrapServerCall({
+          fn: () => inviteUsersToEnvironment(environment.spaceId, users, roleIds),
+          onSuccess: () => {
+            app.message.success({ content: `User${users.length > 1 ? 's' : ''} invited` });
+            router.refresh();
+            closeModal();
+          },
+          app,
+        });
+        close();
+      } catch (_) {}
     });
   };
 

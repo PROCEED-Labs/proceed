@@ -216,7 +216,7 @@ export class ProcessListPage {
 
         /* Rendereing potential placeholder element can take longer */
         /* -> ensure new rows are rendered */
-        await this.goto();
+        await page.locator('tr[data-row-key=' + visibleIds[0] + ']').waitFor({ state: 'hidden' });
       }
     }
   }

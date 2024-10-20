@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, ReactNode, useState, useTransition } from 'react';
+import { ComponentProps, FC, ReactNode, useState, useTransition } from 'react';
 import { App, Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import { useParams, useRouter } from 'next/navigation';
@@ -10,18 +10,15 @@ import { createFolder as serverCreateFolder } from '@/lib/data/folders';
 import FolderModal from './folder-modal';
 import useParseZodErrors from '@/lib/useParseZodErrors';
 
-type FolderCreationButtonProps = ButtonProps & {
-  wrapperElement?: ReactNode;
-};
-
-const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, ...props }) => {
+export const FolderCreationModal: FC<
+  Partial<ComponentProps<typeof FolderModal>> & { open: boolean; close: () => void }
+> = (props) => {
   const { message } = App.useApp();
   const router = useRouter();
   const spaceId = useEnvironment().spaceId;
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
   const [isLoading, startTransition] = useTransition();
   const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
-  const [modalOpen, setModalOpen] = useState(false);
 
   const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
@@ -34,12 +31,35 @@ const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, .
 
         router.refresh();
         message.open({ type: 'success', content: 'Folder Created' });
-        setModalOpen(false);
+        props.close();
       } catch (e) {
         message.open({ type: 'error', content: 'Something went wrong' });
       }
     });
   };
+
+  return (
+    <FolderModal
+      {...props}
+      open={props.open}
+      close={props.close}
+      spaceId={spaceId}
+      parentId={folderId}
+      onSubmit={createFolder}
+      modalProps={{
+        title: 'Create Folder',
+        okButtonProps: { loading: isLoading },
+      }}
+    />
+  );
+};
+
+const FolderCreationButton: FC<
+  ButtonProps & {
+    wrapperElement?: ReactNode;
+  }
+> = ({ wrapperElement, ...props }) => {
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <>
@@ -51,17 +71,7 @@ const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, .
         </Button>
       )}
 
-      <FolderModal
-        open={modalOpen}
-        close={() => setModalOpen(false)}
-        spaceId={spaceId}
-        parentId={folderId}
-        onSubmit={createFolder}
-        modalProps={{
-          title: 'Create Folder',
-          okButtonProps: { loading: isLoading },
-        }}
-      />
+      <FolderCreationModal open={modalOpen} close={() => setModalOpen(false)} />
     </>
   );
 };

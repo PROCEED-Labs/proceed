@@ -4,7 +4,7 @@ import styles from './page.module.scss';
 import Modeler from './modeler';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
-import { getProcess, getProcesses } from '@/lib/data/DTOs';
+import { getProcess, getProcesses, getUserById } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
 
 type ProcessProps = {
@@ -35,6 +35,18 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
     ? process.versions.find((version: { version: number }) => version.version === selectedVersionId)
     : undefined;
 
+  const inEditing = {
+    ...(process.inEditingBy as any)?.find(
+      (e: any) => e.userId !== userId && e.lastPing + 15000 > Date.now(),
+    ),
+  };
+
+  // Get name of user who is editing
+  if (inEditing) {
+    const user = await getUserById(inEditing.userId, { throwIfNotFound: false });
+    inEditing.name = Object.hasOwn(user, 'username') ? (user as any).username : '';
+  }
+
   // Since the user is able to minimize and close the page, everyting is in a
   // client component from here.
   return (
@@ -45,6 +57,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
           process={{ ...process, bpmn: selectedVersionBpmn as string }}
           versions={process.versions}
           versionName={selectedVersion?.name}
+          inEditing={inEditing}
         />
       </Wrapper>
       <AddUserControls name={'modeler'} />

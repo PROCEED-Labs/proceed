@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 
 import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider, Tooltip } from 'antd';
-import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { useEnvironment } from './auth-can';
 import { exportProcesses } from '@/lib/process-export';
@@ -107,9 +106,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     setSelectedType(preselectedExportType);
   }, [preselectedExportType]);
 
-  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(
-    ['metaData'].concat(pdfOptions),
-  );
+  const [selectedOptions, setSelectedOptions] = useState<string[]>(['metaData'].concat(pdfOptions));
 
   const [isExporting, setIsExporting] = useState(false);
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
@@ -120,7 +117,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     setSelectedType(value);
   };
 
-  const handleOptionSelectionChange = (checkedValues: CheckboxValueType[]) => {
+  const handleOptionSelectionChange = (checkedValues: string[]) => {
     setSelectedOptions(checkedValues);
   };
 

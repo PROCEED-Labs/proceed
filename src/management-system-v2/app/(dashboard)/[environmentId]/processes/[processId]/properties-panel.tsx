@@ -135,7 +135,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         oldAttributes,
       );
     } else {
-      setProceedElement(selectedElement.businessObject, name, value ? value : null, attributes);
+      setProceedElement(selectedElement.businessObject, name, value ? value : null, attributes, {});
     }
     modeling.updateProperties(selectedElement as any, {
       extensionElements: selectedElement.businessObject.extensionElements,

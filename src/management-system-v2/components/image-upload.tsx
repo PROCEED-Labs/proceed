@@ -1,11 +1,13 @@
 import React from 'react';
-
 import { Button, Space, Upload } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
+import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
-const ImageUpload: React.FC<{
+interface ImageUploadProps {
   imageExists?: boolean;
   onImageUpdate: (imageFileName?: string) => void;
   onUploadFail?: () => void;
@@ -15,56 +17,79 @@ const ImageUpload: React.FC<{
     deleteEndpoint?: string;
     putEndpoint?: string;
   };
-}> = ({ imageExists, onImageUpdate, onUploadFail, onReload, endpoints }) => {
+  config: {
+    entityType: EntityType;
+    entityId: string;
+    useDefaultRemoveFunction: boolean;
+    fileName?: string;
+    businessObjectId?: string;
+  };
+}
+
+const ImageUpload: React.FC<ImageUploadProps> = ({
+  imageExists,
+  onImageUpdate,
+  onUploadFail,
+  onReload,
+  endpoints,
+  config,
+}) => {
+  const { upload, remove, replace } = useFileManager(config.entityType, config.businessObjectId);
+
+  const handleImageUpload = async (image: Blob, uploadedFileName: string, imageExists: boolean) => {
+    try {
+      let response;
+      if (imageExists && endpoints.putEndpoint) {
+        // Update existing image
+        response = enableUseFileManager
+          ? await replace(image, config.entityId, config.fileName!, uploadedFileName)
+          : await fetch(endpoints.putEndpoint, {
+              method: 'PUT',
+              body: image,
+            });
+      } else {
+        // Add new image
+        response = enableUseFileManager
+          ? await upload(image, config.entityId, uploadedFileName)
+          : await fetch(endpoints.postEndpoint, {
+              method: 'POST',
+              body: image,
+            });
+      }
+
+      if (!response.ok) {
+        onUploadFail?.();
+      } else {
+        const newImageFileName =
+          response instanceof Response ? await response.text() : response.fileName;
+        onImageUpdate(newImageFileName);
+        onReload?.();
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      onUploadFail?.();
+    }
+  };
+
   return (
     <Space>
       <Upload
-        style={{ color: 'white' }}
+        accept=".jpeg,.jpg,.png,.webp,.svg"
         showUploadList={false}
-        beforeUpload={() => false} // needed for custom upload of file
+        beforeUpload={() => false}
         onChange={async ({ fileList }) => {
-          const uploadFile = fileList.pop(); // get latest uploaded file
+          const uploadFile = fileList.pop(); // Get the last uploaded file
           if (!uploadFile || !uploadFile.originFileObj) return;
+          try {
+            const image =
+              uploadFile.originFileObj.size > 2000000
+                ? await scaleDownImage(uploadFile.originFileObj, 1500)
+                : uploadFile.originFileObj;
 
-          // scale down image to max length of 1500px if file size is over 2mb
-          const image =
-            uploadFile.originFileObj.size > 2000000
-              ? await scaleDownImage(uploadFile.originFileObj, 1500)
-              : uploadFile.originFileObj;
-
-          if (imageExists && endpoints.putEndpoint) {
-            // Update existing image
-            try {
-              const response = await fetch(endpoints.putEndpoint, {
-                method: 'PUT',
-                body: image,
-              });
-
-              if (!response.ok) {
-                onUploadFail?.();
-              } else {
-                onReload?.();
-              }
-            } catch (err) {
-              onUploadFail?.();
-            }
-          } else {
-            // Add new Image
-            try {
-              const response = await fetch(endpoints.postEndpoint, {
-                method: 'POST',
-                body: image,
-              });
-
-              if (!response.ok) {
-                onUploadFail?.();
-              } else {
-                const newImageFileName = await response.text();
-                onImageUpdate(newImageFileName);
-              }
-            } catch (err) {
-              onUploadFail?.();
-            }
+            await handleImageUpload(image, uploadFile.name, Boolean(imageExists));
+          } catch (error) {
+            console.error('Image scaling/upload failed:', error);
+            onUploadFail?.();
           }
         }}
       >
@@ -76,10 +101,21 @@ const ImageUpload: React.FC<{
       {imageExists && endpoints.deleteEndpoint && (
         <Button
           onClick={async () => {
-            await fetch(endpoints.deleteEndpoint as string, {
-              method: 'DELETE',
-            });
-            onImageUpdate();
+            try {
+              if (enableUseFileManager) {
+                config.useDefaultRemoveFunction
+                  ? await remove(config.entityId, config.fileName!)
+                  : null;
+              } else {
+                await fetch(endpoints.deleteEndpoint as string, {
+                  method: 'DELETE',
+                });
+              }
+              onImageUpdate();
+            } catch (error) {
+              console.error('Delete failed:', error);
+              onUploadFail?.();
+            }
           }}
           type="default"
           ghost

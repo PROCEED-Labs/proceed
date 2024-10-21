@@ -65,7 +65,6 @@ const BPMNSharedViewer = ({
   availableImports,
 }: BPMNSharedViewerProps) => {
   const router = useRouter();
-
   const breakpoint = Grid.useBreakpoint();
 
   const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(

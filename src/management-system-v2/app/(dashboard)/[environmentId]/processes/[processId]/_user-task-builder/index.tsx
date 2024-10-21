@@ -4,7 +4,7 @@ import styles from './index.module.scss';
 
 import { Modal, Grid, Row as AntRow, Col } from 'antd';
 
-import { Editor, Frame, useEditor, EditorStore } from '@craftjs/core';
+import { Editor, Frame, useEditor, EditorStore, NodeData } from '@craftjs/core';
 
 import IFrame from 'react-frame-component';
 
@@ -25,6 +25,9 @@ import { generateUserTaskFileName, getUserTaskImplementationString } from '@proc
 import { useEnvironment } from '@/components/auth-can';
 
 import EditorDnDHandler from './DragAndDropHandler';
+import { DiffResult, deepEquals } from '@/lib/helpers/javascriptHelpers';
+import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/file-manager-facade';
+import { useSession } from 'next-auth/react';
 
 type BuilderProps = {
   processId: string;
@@ -35,7 +38,7 @@ type BuilderProps = {
 type BuilderModalProps = BuilderProps & {
   onSave: () => void;
   hasUnsavedChanges: boolean;
-  onInit: () => void;
+  onInit: (filename: string) => void;
 };
 
 const EditorModal: React.FC<BuilderModalProps> = ({
@@ -88,7 +91,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
         actions.deserialize(importData);
         actions.history.clear();
-        onInit();
+        onInit(filename);
       });
     }
   }, [processId, open, filename, environment]);
@@ -147,7 +150,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
           <AntRow className={styles.EditorBody}>
             {!isMobile && (
               <Col style={{ height: '100%', overflow: 'auto' }} span={4}>
-                <Sidebar />
+                <Sidebar businessObjectId={filename!} />
               </Col>
             )}
             <Col
@@ -182,8 +185,25 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
   const isMobile = breakpoint.xs;
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const businessObjectId = useRef<string>();
+  const { spaceId } = useEnvironment();
+  const { data, status } = useSession({ required: true });
+  const prevState = useRef({});
 
   const [modalApi, modalElement] = Modal.useModal();
+
+  function updateImageReference(action: 'add' | 'delete', src: string) {
+    const isDeleteAction = action === 'delete';
+    console.log(businessObjectId);
+    updateImageRefCounter(
+      // spaceId,
+      // data?.user.id!,
+      src,
+      isDeleteAction,
+      processId,
+      businessObjectId.current,
+    );
+  }
 
   const handleClose = () => {
     if (!hasUnsavedChanges) {
@@ -213,7 +233,52 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
             removeHoverOnMouseleave: true,
           })
         }
-        onNodesChange={() => {
+        onNodesChange={(query) => {
+          const current = JSON.parse(query.serialize());
+
+          if (Object.keys(prevState.current).length !== 0) {
+            const result = deepEquals(prevState.current, current, '', true) as null | DiffResult;
+
+            if (result) {
+              const { valueA, valueB, path } = result;
+              const valueAHasSrc = valueA?.hasOwnProperty('src');
+              const valueBHasSrc = valueB?.hasOwnProperty('src');
+
+              // Handle image deletion
+              if (valueAHasSrc && !valueBHasSrc) {
+                console.log('image deleted');
+                updateImageReference('delete', valueA.src);
+              }
+
+              // Handle image addition
+              if (!valueAHasSrc && valueBHasSrc) {
+                console.log('image added');
+                updateImageReference('add', valueB.src);
+              }
+
+              // Handle image replacement
+              if (path?.includes('props.src')) {
+                console.log('image replaced');
+                updateImageReference('add', valueB.src);
+                updateImageReference('delete', valueA.src);
+              }
+
+              // Handle deleted and added image nodes
+              if (!path) {
+                [result.valueA, result.valueB].forEach((value, isAdding) => {
+                  for (const key in value) {
+                    const node = value[key];
+                    if (node?.displayName === 'Image' && node.props?.hasOwnProperty('src')) {
+                      console.log(`Image Node ${isAdding ? 'added' : 'deleted'}`, node.props);
+                      updateImageReference(isAdding ? 'add' : 'delete', node.props.src);
+                    }
+                  }
+                });
+              }
+            }
+          }
+
+          prevState.current = current;
           setHasUnsavedChanges(true);
         }}
       >
@@ -222,7 +287,8 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
           open={open}
           hasUnsavedChanges={hasUnsavedChanges}
           onClose={handleClose}
-          onInit={() => {
+          onInit={(fileName: string) => {
+            businessObjectId.current = fileName;
             setHasUnsavedChanges(false);
           }}
           onSave={() => setHasUnsavedChanges(false)}

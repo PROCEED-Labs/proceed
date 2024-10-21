@@ -81,7 +81,7 @@
     "@babel/plugin-proposal-class-properties": "^7.5.0",
     "@babel/preset-env": "^7.5.2",
     "@open-wc/webpack-import-meta-loader": "0.4.7",
-    "@playwright/test": "^1.30.0",
+    "@playwright/test": "1.48.1",
     "@types/jest": "^29.5.1",
     "@userfrosting/merge-package-dependencies": "^1.2.0",
     "@vue/cli-plugin-typescript": "5.0.8",

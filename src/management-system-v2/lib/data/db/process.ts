@@ -13,7 +13,7 @@ import {
 } from '../process-schema';
 import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { v4 } from 'uuid';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';

@@ -5,7 +5,6 @@ import fse from 'fs-extra';
 import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
-import { ContentTypeNotAllowed } from './content-upload-error';
 
 // Constants
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10 MB

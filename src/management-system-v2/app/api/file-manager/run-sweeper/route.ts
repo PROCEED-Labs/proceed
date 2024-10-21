@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { deleteProcessArtifact } from '@/lib/data/file-manager-facade';
 
 export async function GET(request: NextRequest) {

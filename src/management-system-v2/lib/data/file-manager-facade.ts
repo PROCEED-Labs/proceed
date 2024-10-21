@@ -8,8 +8,8 @@ import {
   ArtifactType,
 } from '../helpers/fileManagerHelpers';
 import { contentTypeNotAllowed } from './content-upload-error';
-import { deleteFile, retrieveFile, saveFile } from './file-manager';
-import db from '@/lib/data';
+import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
+import db from '@/lib/data/db';
 import Ability from '../ability/abilityHelper';
 import { stat } from 'fs';
 import { getAbilityForUser } from '../authorization/authorization';

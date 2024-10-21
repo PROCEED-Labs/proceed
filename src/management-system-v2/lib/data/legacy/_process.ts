@@ -29,8 +29,6 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { enableUseDB } from 'FeatureFlags';
-import db from '@/lib/data';
 
 let firstInit = false;
 // @ts-ignore
@@ -251,22 +249,6 @@ export async function updateProcessMetaData(
 
 /** Removes an existing process */
 export async function removeProcess(processDefinitionsId: string) {
-  if (enableUseDB) {
-    const process = await db.process.findUnique({
-      where: { id: processDefinitionsId },
-      include: { folder: true },
-    });
-
-    if (!process) {
-      return;
-    }
-
-    // Remove from database
-    await db.process.delete({ where: { id: processDefinitionsId } });
-
-    eventHandler.dispatch('processRemoved', { processDefinitionsId });
-  }
-
   const process = processMetaObjects[processDefinitionsId];
 
   if (!process) {

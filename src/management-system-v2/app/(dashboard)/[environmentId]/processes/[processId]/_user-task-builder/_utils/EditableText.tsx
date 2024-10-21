@@ -97,7 +97,7 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
       ) : (
         React.createElement(tagName, {
           dangerouslySetInnerHTML: { __html: value },
-          onClick: (e: MouseEvent) => !e.ctrlKey && e.preventDefault(),
+          onClick: (e: MouseEvent) => !(e.ctrlKey || e.metaKey) && e.preventDefault(),
           ...props,
         })
       )}

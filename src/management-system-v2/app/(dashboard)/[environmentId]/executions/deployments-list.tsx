@@ -1,7 +1,7 @@
 'use client';
 
 import styles from '@/components/item-list-view.module.scss';
-import { Button, Grid, TableColumnsType, Tooltip } from 'antd';
+import { Button, Grid, TableColumnsType, TableProps, Tooltip } from 'antd';
 import { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 
 import ElementList from '@/components/item-list-view';
@@ -12,7 +12,13 @@ import { DeployedProcessInfo } from '@/lib/engines/deployment';
 type InputItem = DeployedProcessInfo & { name: string };
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
-const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[] }) => {
+const DeploymentsList = ({
+  processes,
+  tableProps,
+}: {
+  processes: DeployedProcessListProcess[];
+  tableProps?: TableProps;
+}) => {
   const breakpoint = Grid.useBreakpoint();
 
   const columns: TableColumnsType<DeployedProcessListProcess> = [
@@ -42,7 +48,11 @@ const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[
       dataIndex: 'description',
       key: 'Versions',
       render: (_, { versions }) => (
-        <Tooltip title={versions.map((v) => v.definitionName).join(', ')}>
+        <Tooltip
+          title={
+            versions.length > 1 && versions.map((v) => v.versionName || v.definitionName).join(', ')
+          }
+        >
           <span>{versions.length}</span>
         </Tooltip>
       ),
@@ -53,7 +63,7 @@ const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[
       title: 'Running Instances',
       dataIndex: 'runningInstances',
       key: 'Running Instances',
-      render: (_, record) => <span>{record.runningInstances}</span>,
+      render: (_, record) => <span>{record.instances.length}</span>,
       sorter: (a, b) => (a < b ? -1 : 1),
       responsive: ['md'],
     },
@@ -61,6 +71,8 @@ const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[
       title: 'Ended Instances',
       dataIndex: 'endedInstances',
       key: 'Ended Instances',
+      // TODO: remove ts-ignore
+      // @ts-ignore
       render: (_, record) => <span>{record.endedInstances}</span>,
       sorter: (a, b) => (a < b ? -1 : 1),
       responsive: ['md'],
@@ -95,10 +107,13 @@ const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[
         }
         selectableColumns={{
           setColumnTitles: (cols) => {
+            let newCols: string[];
             if (typeof cols === 'function') {
-              cols = cols(selectedColumns.map((col: any) => col.name) as string[]);
+              newCols = cols(selectedColumns.map((col: any) => col.name) as string[]);
+            } else {
+              newCols = cols;
             }
-            setSelectedColumns(columns.filter((column) => cols.includes(column.key as string)));
+            setSelectedColumns(columns.filter((column) => newCols.includes(column.key as string)));
           },
           selectedColumnTitles: selectedColumns.map((c) => c.title) as string[],
           allColumnTitles: ['Versions', 'Running Instances', 'Ended Instances'],
@@ -114,6 +129,7 @@ const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[
             },
           },
         }}
+        tableProps={tableProps}
       ></ElementList>
     </>
   );

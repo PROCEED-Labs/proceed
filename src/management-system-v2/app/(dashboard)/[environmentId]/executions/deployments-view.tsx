@@ -8,9 +8,10 @@ import useFuzySearch from '@/lib/useFuzySearch';
 import DeploymentsList from './deployments-list';
 import { Folder } from '@/lib/data/folder-schema';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
+import { useQuery } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
 import { processHasChangesSinceLastVersion } from '@/lib/data/processes';
-import { deployProcess } from '@/lib/engines/deployment';
+import { DeployedProcessInfo, deployProcess, getDeployments } from '@/lib/engines/deployment';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -24,19 +25,29 @@ const DeploymentsView = ({
   favourites: any;
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
+  const { message } = App.useApp();
   const space = useEnvironment();
 
-  const deployedProcesses = processes
-    .filter((process) => process.type !== 'folder')
-    .map((process) => {
-      return {
-        id: process.id,
-        name: process.name,
-        versions: 4,
-        runningInstances: 4,
-        endedInstances: 2,
-      };
-    });
+  const { data: deployedProcesses, isLoading } = useQuery({
+    queryFn: async () => {
+      const res = await getDeployments();
+
+      for (const deployment of res) {
+        let latestVesrionIdx = deployment.versions.length - 1;
+        for (let i = deployment.versions.length - 2; i >= 0; i--) {
+          if (deployment.versions[i].version > deployment.versions[latestVesrionIdx].version)
+            latestVesrionIdx = i;
+        }
+        const latestVersion = deployment.versions[latestVesrionIdx];
+
+        // @ts-ignore
+        deployment.name = latestVersion.versionName || latestVersion.definitionName;
+      }
+
+      return res as (DeployedProcessInfo & { name: string })[];
+    },
+    queryKey: ['processDeployments', space.spaceId],
+  });
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: deployedProcesses ?? [],
@@ -93,7 +104,10 @@ const DeploymentsView = ({
         }}
       />
 
-      <DeploymentsList processes={filteredData}></DeploymentsList>
+      <DeploymentsList
+        processes={filteredData}
+        tableProps={{ loading: isLoading }}
+      ></DeploymentsList>
 
       <DeploymentsModal
         open={modalIsOpen}

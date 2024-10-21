@@ -7,6 +7,15 @@ function generateRequestUrl(machine: Machine, endpoint: string) {
   return new URL(endpoint, url).toString();
 }
 
+export function getDeploymentFromMachine(machine: Machine, entries?: string) {
+  return fetch(generateRequestUrl(machine, `/process`), {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+}
+
 export function deployProcess(machine: Machine, bpmn: string) {
   return fetch(generateRequestUrl(machine, '/process'), {
     method: 'POST',

@@ -186,3 +186,39 @@ export async function deployProcess(
     await dynamicDeployment(definitionId, version, processesExportData, forceMachine);
   }
 }
+type ImportInformation = { definitionId: string; processId: string; version: number };
+type VersionDependencies = { html: string[]; images: string[]; imports: ImportInformation[] };
+type VersionInfo = {
+  bpmn: string;
+  deploymentDate: number;
+  definitionName: string;
+  deploymentMethod: string;
+  needs: VersionDependencies;
+  version: number;
+  versionName: string;
+  versionDescription: string;
+};
+export type DeployedProcessInfo = {
+  definitionId: string;
+  versions: VersionInfo[];
+  // TODO: refine instances type
+  instances: any[];
+};
+export async function getDeployments() {
+  const machines = (await getMachines()).filter((m) => m.status === 'CONNECTED');
+
+  const deployments = await Promise.allSettled(
+    machines.map(async (machine) => {
+      const result = await endpoints.getDeploymentFromMachine(
+        machine,
+        'definitionId,versions,instances(processInstanceId,processVersion,instanceState,globalStartTime)',
+      );
+      return await result.json();
+    }),
+  );
+
+  return deployments
+    .filter((result) => result.status === 'fulfilled')
+    .map((result) => (result.status === 'fulfilled' ? result.value : null))
+    .flat(1) as DeployedProcessInfo[];
+}

@@ -1,13 +1,16 @@
 'use client';
 
-import { Button } from 'antd';
-import { useState } from 'react';
+import { App, Button } from 'antd';
+import { useState, useTransition } from 'react';
 import DeploymentsModal from './deployments-modal';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
 import DeploymentsList from './deployments-list';
 import { Folder } from '@/lib/data/folder-schema';
-import { ProcessMetadata } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
+import { useEnvironment } from '@/components/auth-can';
+import { processHasChangesSinceLastVersion } from '@/lib/data/processes';
+import { deployProcess } from '@/lib/engines/deployment';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -21,6 +24,7 @@ const DeploymentsView = ({
   favourites: any;
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
+  const space = useEnvironment();
 
   const deployedProcesses = processes
     .filter((process) => process.type !== 'folder')
@@ -40,6 +44,33 @@ const DeploymentsView = ({
     highlightedKeys: ['name'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+
+  const [checkingProcessVersion, startCheckingProcessVersion] = useTransition();
+  function checkProcessVersion(process: Pick<Process, 'id' | 'versions'>) {
+    startCheckingProcessVersion(async () => {
+      try {
+        const processChangedSinceLastVersion = await processHasChangesSinceLastVersion(
+          process.id,
+          space.spaceId,
+        );
+        if (typeof processChangedSinceLastVersion === 'object')
+          throw processChangedSinceLastVersion;
+
+        if (processChangedSinceLastVersion) {
+          alert('Process has changed since last version');
+        }
+
+        const v = process.versions
+          .map((v) => v.version)
+          .sort()
+          .at(-1);
+
+        deployProcess(process.id, v as number, space.spaceId, 'dynamic');
+      } catch (e) {
+        message.error("Something wen't wrong");
+      }
+    });
+  }
 
   return (
     <div>
@@ -70,7 +101,11 @@ const DeploymentsView = ({
         processes={processes}
         folder={folder}
         favourites={favourites}
-        selectProcess={(id: string) => {}}
+        selectProcess={(process) => {
+          if (process.type === 'folder') return;
+          // console.log(process);
+          checkProcessVersion(process);
+        }}
       ></DeploymentsModal>
     </div>
   );

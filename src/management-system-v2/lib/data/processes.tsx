@@ -345,6 +345,36 @@ export const copyProcesses = async (
   return copiedProcesses;
 };
 
+// TODO: fix: this function doesn't work yet
+export const processHasChangesSinceLastVersion = async (processId: string, spaceId: string) => {
+  const error = await checkValidity(processId, 'view', spaceId);
+  if (error) return error;
+
+  console.log('step 1');
+
+  const process = await _getProcess(processId, true);
+  if (!process) return userError('Process not found', UserErrorType.NotFoundError);
+
+  console.log('step 2');
+  const bpmnObj = await toBpmnObject(process.bpmn!);
+  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
+
+  console.log('step 3 version:', versionBasedOn);
+  const versionedBpmn = await toBpmnXml(bpmnObj);
+  console.log('step 3.5', versionedBpmn);
+
+  // if the new version has no changes to the version it is based on don't create a new version and return the previous version
+  const basedOnBPMN =
+    versionBasedOn !== undefined
+      ? await getLocalVersionBpmn(process as Process, versionBasedOn)
+      : undefined;
+  console.log('step 4', basedOnBPMN);
+
+  const versionsAreEqual = basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN));
+  console.log('step 4', versionsAreEqual);
+  return !versionsAreEqual;
+};
+
 export const createVersion = async (
   versionName: string,
   versionDescription: string,

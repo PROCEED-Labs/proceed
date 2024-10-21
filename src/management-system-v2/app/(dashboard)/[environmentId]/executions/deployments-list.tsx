@@ -1,20 +1,15 @@
 'use client';
 
 import styles from '@/components/item-list-view.module.scss';
-import { Button, Grid, TableColumnsType } from 'antd';
+import { Button, Grid, TableColumnsType, Tooltip } from 'antd';
 import { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 
 import ElementList from '@/components/item-list-view';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useState } from 'react';
+import { DeployedProcessInfo } from '@/lib/engines/deployment';
 
-type InputItem = {
-  id: string;
-  name: string;
-  versions: number;
-  runningInstances: number;
-  endedInstances: number;
-};
+type InputItem = DeployedProcessInfo & { name: string };
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
 const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[] }) => {
@@ -46,7 +41,11 @@ const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[
       title: 'Versions',
       dataIndex: 'description',
       key: 'Versions',
-      render: (_, record) => <span>{record.versions}</span>,
+      render: (_, { versions }) => (
+        <Tooltip title={versions.map((v) => v.definitionName).join(', ')}>
+          <span>{versions.length}</span>
+        </Tooltip>
+      ),
       sorter: (a, b) => (a < b ? -1 : 1),
       responsive: ['sm'],
     },

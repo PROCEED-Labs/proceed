@@ -23,6 +23,8 @@ import {
   retrieveProcessArtifact,
   saveProcessArtifact,
 } from '../file-manager-facade';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { Prisma } from '@prisma/client';
 
 /** Returns all processes for a user */
 export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
@@ -349,16 +351,14 @@ export async function updateProcessMetaData(
 export async function removeProcess(processDefinitionsId: string) {
   const process = await db.process.findUnique({
     where: { id: processDefinitionsId },
-    include: { processArtifacts: true },
+    include: { artifactReferences: true },
   });
 
   if (!process) {
     return;
   }
   await Promise.all(
-    process.processArtifacts.map((artifact) =>
-      deleteProcessArtifact(processDefinitionsId, artifact.filePath, true),
-    ),
+    process.artifactReferences.map((ref) => db.artifactReference.delete({ where: { id: ref.id } })),
   );
 
   // Remove from database
@@ -397,6 +397,17 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
   }
   const id = v4();
   // save the new version in the directory of the process
+  const res = await saveProcessArtifact(
+    processDefinitionsId,
+    `${versionInformation.name}.bpmn`,
+    'application/xml',
+    Buffer.from(bpmn),
+  );
+
+  if (!res.fileName) {
+    throw new Error('Error saving version bpmn');
+  }
+
   try {
     await db.version.create({
       data: {
@@ -406,7 +417,7 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
         description: versionInformation.description ?? '',
         versionBasedOn: versionInformation.versionBasedOn,
         process: { connect: { id: processDefinitionsId } },
-        bpmn: bpmn,
+        bpmn: res.fileName,
         createdOn: new Date(),
         lastEditedOn: new Date(),
       },
@@ -441,7 +452,11 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
   const versn = await db.version.findUnique({
     where: { version: version },
   });
-  return versn?.bpmn;
+
+  return (
+    (await retrieveProcessArtifact(processDefinitionsId, versn?.bpmn!, false, false)) as Buffer
+  ).toString('utf8');
+  //return versn?.bpmn;
 }
 
 /** Removes information from the meta data that would not be correct after a restart */
@@ -502,17 +517,76 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, userT
 
 /** Return object mapping from user tasks fileNames to their form data */
 export async function getProcessUserTasksJSON(processDefinitionsId: string) {
-  return userError('Not Implemented in db', UserErrorType.NotFoundError);
+  try {
+    const res = await db.processArtifact.findMany({
+      where: {
+        references: {
+          some: {
+            processId: processDefinitionsId,
+          },
+        },
+        artifactType: 'user-tasks',
+      },
+      select: {
+        filePath: true,
+        references: {
+          select: {
+            businessObjectId: true,
+          },
+        },
+      },
+    });
+    if (res) {
+      let userTaskJsons: Record<string, string> = {};
+      res.forEach(async (task) => {
+        const jsonAsBuffer = (await retrieveProcessArtifact(
+          processDefinitionsId,
+          task.filePath,
+          true,
+          true,
+        )) as Buffer;
+        userTaskJsons[task.references[0].businessObjectId!] = jsonAsBuffer.toString('utf8');
+      });
+      return userTaskJsons;
+    }
+  } catch (error) {
+    logger.debug(`Error getting data of user task. Reason:\n${error}`);
+    throw new Error('Unable to get data for user task!');
+  }
 }
 
 export async function checkIfUserTaskExists(processDefinitionsId: string, userTaskId: string) {
-  return db.processArtifacts.findFirst({
-    where: {
-      processId: processDefinitionsId,
-      businessObjectId: userTaskId,
-      artifactType: 'user-tasks',
-    },
-  });
+  try {
+    const artifact = await db.processArtifact.findFirst({
+      where: {
+        artifactType: 'user-tasks',
+        references: {
+          some: {
+            processId: processDefinitionsId,
+            businessObjectId: userTaskId,
+          },
+        },
+      },
+      include: {
+        references: {
+          where: {
+            processId: processDefinitionsId,
+            businessObjectId: userTaskId,
+          },
+          select: {
+            id: true,
+            processId: true,
+            businessObjectId: true,
+          },
+        },
+      },
+    });
+
+    return artifact;
+  } catch (error) {
+    console.error('Error checking if user task exists:', error);
+    throw new Error('Failed to check if user task exists.');
+  }
 }
 
 export async function saveProcessUserTask(
@@ -536,6 +610,7 @@ export async function saveProcessUserTask(
         'application/json',
         content,
         userTaskId,
+        false,
       );
       return fileName;
     }
@@ -554,7 +629,7 @@ export async function deleteProcessUserTask(
   try {
     const res = await checkIfUserTaskExists(processDefinitionsId, userTaskFileName);
     if (res) {
-      return await deleteProcessArtifact(processDefinitionsId, res.filePath, true);
+      return await deleteProcessArtifact(res.filePath, true, userTaskFileName);
     }
   } catch (err) {
     logger.debug(`Error removing user task data. Reason:\n${err}`);

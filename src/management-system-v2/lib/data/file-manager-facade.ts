@@ -1,5 +1,6 @@
 'use server';
 
+import { Prisma } from '@prisma/client';
 import {
   getFileCategory,
   getNewFileName,
@@ -9,6 +10,9 @@ import {
 import { contentTypeNotAllowed } from './content-upload-error';
 import { deleteFile, retrieveFile, saveFile } from './file-manager';
 import db from '@/lib/data';
+import Ability from '../ability/abilityHelper';
+import { stat } from 'fs';
+import { getAbilityForUser } from '../authorization/authorization';
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
@@ -31,14 +35,19 @@ const saveArtifactToDB = async (
   artifactType: ArtifactType,
   businessObjectId?: string,
 ) => {
-  return db.processArtifacts.create({
-    data: { fileName, filePath, processId, artifactType, businessObjectId },
+  return db.processArtifact.create({
+    data: {
+      fileName,
+      filePath,
+      artifactType,
+      references: { create: { processId: processId, businessObjectId: businessObjectId } },
+    },
   });
 };
 
-const removeArtifactFromDB = async (filePath: string, processId: string) => {
-  return db.processArtifacts.delete({
-    where: { filePath, processId },
+const removeArtifactFromDB = async (filePath: string) => {
+  return db.processArtifact.delete({
+    where: { filePath },
   });
 };
 
@@ -57,10 +66,15 @@ const generateProcessFilePath = (
   if (artifactType === 'bpmns') {
     return `processes/${processId}/${fileName}`;
   }
-
   // user-tasks,scripts
   return `processes/${processId}/${artifactType}/${fileName}`;
 };
+
+export async function getProcessArtifactMetaData(fileNameOrPath: string, isFilePath: boolean) {
+  return await db.processArtifact.findUnique({
+    where: isFilePath ? { filePath: fileNameOrPath } : { fileName: fileNameOrPath },
+  });
+}
 
 export async function saveEnityFile(
   entityType: EntityType,
@@ -68,6 +82,7 @@ export async function saveEnityFile(
   mimeType: string,
   fileName: string,
   fileContent?: Buffer | Uint8Array | Blob,
+  businessObjectId?: string,
 ) {
   if (!isContentTypeAllowed(mimeType)) {
     return contentTypeNotAllowed(`Content type '${mimeType}' is not allowed`);
@@ -75,7 +90,7 @@ export async function saveEnityFile(
 
   switch (entityType) {
     case EntityType.PROCESS:
-      return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
+      return saveProcessArtifact(entityId, fileName, mimeType, fileContent, businessObjectId);
     case EntityType.ORGANIZATION:
       return saveOrganisationLogo(fileName, entityId, mimeType, fileContent);
     case EntityType.MACHINE:
@@ -109,7 +124,7 @@ export async function deleteEntityFile(
 ): Promise<boolean> {
   switch (entityType) {
     case EntityType.PROCESS:
-      return deleteProcessArtifact(entityId, fileName!);
+      return deleteProcessArtifact(fileName!);
     case EntityType.ORGANIZATION:
       return deleteOrganisationLogo(entityId);
     case EntityType.MACHINE:
@@ -126,8 +141,9 @@ export async function saveProcessArtifact(
   mimeType: string,
   fileContent?: Buffer | Uint8Array | Blob,
   businessObjectId?: string,
+  generateNewFileNameFlag: boolean = true,
 ) {
-  const newFileName = getNewFileName(fileName);
+  const newFileName = generateNewFileNameFlag ? getNewFileName(fileName) : fileName;
   const artifactType = getFileCategory(fileName);
   const filePath = generateProcessFilePath(newFileName, processId, mimeType);
 
@@ -172,18 +188,30 @@ export async function retrieveProcessArtifact(
 }
 
 export async function deleteProcessArtifact(
-  processId: string,
   fileNameOrPath: string,
   isFilePath = false,
+  businessObjectId?: string,
 ) {
-  const filePath = isFilePath ? fileNameOrPath : generateProcessFilePath(fileNameOrPath, processId);
-  const isDeleted = await deleteFile(filePath);
-
-  if (isDeleted) {
-    await removeArtifactFromDB(filePath, processId);
+  const artifact = await getProcessArtifactMetaData(fileNameOrPath, isFilePath);
+  if (!artifact) {
+    throw new Error(`${fileNameOrPath} not found`);
   }
 
-  return isDeleted;
+  if (artifact.refCounter == 0) {
+    const isDeleted = await deleteFile(artifact.filePath);
+    if (isDeleted) {
+      await removeArtifactFromDB(artifact.filePath);
+    }
+    return isDeleted;
+  } else {
+    await db.artifactReference.deleteMany({
+      where: {
+        OR: [{ processArtifactId: artifact.id }],
+      },
+    });
+
+    return true;
+  }
 }
 
 // Functionality for handling organization logo files
@@ -242,14 +270,110 @@ export async function deleteOrganisationLogo(organisationId: string): Promise<bo
   return false;
 }
 
-// Update file status in the database
-export async function updateFileDeletableStatus(fileName: string, status: boolean) {
-  console.log(fileName);
-  return db.processArtifacts.update({
-    where: { fileName },
-    data: {
-      deletable: status,
-      deletedOn: new Date(),
+export async function updateFileDeletableStatus(
+  //spaceId: string,
+  //userId: string,
+  fileName: string,
+  status: boolean,
+  processId: string,
+  businessObjectId?: string,
+) {
+  // if (!userId) {
+  //   throw new Error(`user is undefined ${userId}`);
+  // }
+
+  // if (!fileName) {
+  //   return;
+  // }
+
+  // const ability = await getAbilityForUser(userId, spaceId);
+  //TODO ability check
+
+  return await updateFileRefCounter(fileName, status, processId, businessObjectId);
+}
+
+async function checkIfArtifactRefAlreadyExists(
+  processArtifactId: string,
+  processId: string,
+  businessObjectId: string,
+) {
+  const res = await db.artifactReference.findUnique({
+    where: {
+      processArtifactId_businessObjectId_processId: {
+        processArtifactId,
+        businessObjectId,
+        processId,
+      },
     },
   });
+  return res ? true : false;
+}
+
+// Update file status in the database
+export async function updateFileRefCounter(
+  fileName: string,
+  status: boolean,
+  processId: string,
+  businessObjectId: string | null = null,
+) {
+  const artifact = await db.processArtifact.findUnique({
+    where: { fileName },
+  });
+
+  if (!artifact) {
+    throw new Error(`ProcessArtifact with fileName "${fileName}" not found.`);
+  }
+
+  // if (!artifact) throw new Error('File not found');
+
+  // let updateData: Prisma.ProcessArtifactUpdateInput = {};
+
+  // // If refCounter >= 1, deletable must remain false
+  // if (artifact.refCounter > 1) {
+  //   updateData = {
+  //     deletable: false,
+  //     refCounter: status ? { decrement: 1 } : { increment: 1 },
+  //   };
+  // } else if (artifact.refCounter <= 1) {
+  //   // If refCounter < 1, allow deletable to change based on the provided status
+  //   updateData = {
+  //     deletable: status,
+  //     deletedOn: new Date(),
+  //     refCounter: status ? { decrement: 1 } : { increment: 1 },
+  //   };
+  // }
+
+  if (!status) {
+    if (await checkIfArtifactRefAlreadyExists(artifact.id, processId, businessObjectId ?? '')) {
+      return;
+    }
+    try {
+      await db.artifactReference.create({
+        data: { processArtifactId: artifact.id, processId, businessObjectId },
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new Error('ArtifactReference already exists.');
+      }
+      throw error;
+    }
+  } else {
+    await db.artifactReference.deleteMany({
+      where: {
+        processArtifactId: artifact.id,
+      },
+    });
+  }
+
+  //Handled by db triggers
+
+  // const refCounter = await db.artifactReference.count({
+  //   where: { processArtifactId: artifact.id },
+  // });
+  // await db.processArtifact.update({
+  //   data: { refCounter: refCounter },
+  //   where: {
+  //     id: artifact.id,
+  //   },
+  // });
 }

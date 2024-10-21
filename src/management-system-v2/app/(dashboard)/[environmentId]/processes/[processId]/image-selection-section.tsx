@@ -77,9 +77,10 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
                 deleteEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
                 putEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
               }}
-              metadata={{
+              config={{
                 entityType: EntityType.PROCESS,
                 entityId: processId as string,
+                useDefaultRemoveFunction: true,
                 fileName: imageFileName,
               }}
             />

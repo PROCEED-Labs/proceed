@@ -24,6 +24,7 @@ const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
   js: 'script-tasks',
   ts: 'script-tasks',
   bpmn: 'bpmns',
+  xml: 'bpmns',
 };
 
 const MIME_TYPE_CATEGORIES: Record<string, ArtifactType> = {

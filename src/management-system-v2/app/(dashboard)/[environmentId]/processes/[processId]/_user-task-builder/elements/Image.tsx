@@ -12,14 +12,16 @@ import ImageUpload from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { enableUseFileManager } from 'FeatureFlags';
+import { updateFileDeletableStatus } from '@/lib/data/file-manager-facade';
 
 type ImageProps = {
+  businessObjectId: string;
   src?: string;
   reloadParam?: number;
   width?: number;
 };
 
-const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
+const Image: UserComponent<ImageProps> = ({ src, reloadParam, width, businessObjectId }) => {
   const { query } = useEditor();
 
   const [showResize, setShowResize] = useState(false);
@@ -38,12 +40,26 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   });
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
-  const { fileUrl: imageUrl, download: getImageUrl } = useFileManager(EntityType.PROCESS);
+  const { fileUrl: imageUrl, download: getImageUrl, remove } = useFileManager(EntityType.PROCESS);
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 
   const baseUrl = `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
-  console.log(src);
+
+  const currentSrcRef = useRef(src);
+
+  // useEffect(() => {
+  //   if (src !== currentSrcRef.current) {
+  //     if (currentSrcRef.current) {
+  //       console.log('decrease', currentSrcRef.current);
+  //     }
+  //     currentSrcRef.current = src;
+  //   }
+
+  //   if (currentSrcRef.current && src === currentSrcRef.current) {
+  //     console.log('increase', currentSrcRef.current);
+  //   }
+  // }, [src]);
 
   useEffect(() => {
     if (enableUseFileManager && src) {
@@ -74,7 +90,9 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
         {editingEnabled && isHovered && (
           <ImageUpload
             imageExists={!!src}
-            onReload={() => setProp((props: ImageProps) => (props.reloadParam = Date.now()))}
+            onReload={() => {
+              setProp((props: ImageProps) => (props.reloadParam = Date.now()));
+            }}
             onImageUpdate={(imageFileName) => {
               setProp((props: ImageProps) => {
                 props.src =
@@ -88,7 +106,13 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
               putEndpoint: src,
               deleteEndpoint: src,
             }}
-            metadata={{ entityType: EntityType.PROCESS, entityId: params.processId, fileName: src }}
+            config={{
+              entityType: EntityType.PROCESS,
+              entityId: params.processId,
+              useDefaultRemoveFunction: false,
+              fileName: src,
+              businessObjectId: businessObjectId,
+            }}
           />
         )}
         {/* Allows resizing  */}
@@ -228,6 +252,7 @@ Image.craft = {
     settings: ImageSettings,
   },
   props: {
+    businessObjectId: undefined,
     src: undefined,
     reloadParam: 0,
     width: undefined,
@@ -237,9 +262,11 @@ Image.craft = {
     onDelete: async (node: Node) => {
       const src = node.data.props.src as undefined | string;
       if (src) {
-        await fetch(src, {
-          method: 'DELETE',
-        });
+        enableUseFileManager
+          ? null
+          : await fetch(src, {
+              method: 'DELETE',
+            });
       }
     },
   },

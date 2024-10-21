@@ -433,7 +433,9 @@ export const getProcessUserTaskFileMetaData = async (
   const error = await checkValidity(processDefinitionsId, 'view', spaceId);
   if (error) return error;
   try {
-    return await checkIfUserTaskExists(processDefinitionsId, userTaskId);
+    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
+    console.log(res);
+    return res;
   } catch (error) {
     return userError(
       'Unable to get the requested User Task metadata.',

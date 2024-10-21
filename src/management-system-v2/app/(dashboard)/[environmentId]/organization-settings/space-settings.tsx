@@ -147,9 +147,10 @@ const SpaceSettings = ({
                           deleteEndpoint: logoUrl,
                           putEndpoint: logoUrl,
                         }}
-                        metadata={{
+                        config={{
                           entityType: EntityType.ORGANIZATION,
                           entityId: organization.id,
+                          useDefaultRemoveFunction: true,
                           fileName: '',
                         }}
                       />

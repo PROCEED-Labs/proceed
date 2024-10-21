@@ -14,9 +14,10 @@ import {
   deleteProcessUserTask,
   getProcessUserTasksJSON,
   saveProcessUserTask,
-} from '../data/legacy/_process';
+  getProcessUserTaskJSON as getUserTaskJSON,
+} from '../data/db/process'; //from '../data/legacy/_process';
 
-import { getUserTaskJSON } from '../data/legacy/fileHandling';
+//import { getUserTaskJSON } from '../data/legacy/fileHandling';
 import { Process } from '../data/process-schema';
 import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from '../data/module-import-types-temp';
@@ -127,7 +128,7 @@ export async function versionUserTasks(
 
     // only version user tasks that use html
     if (fileName && implementation === getUserTaskImplementationString()) {
-      const userTaskData = getUserTaskJSON(processInfo.id, fileName);
+      const userTaskData = await getUserTaskJSON(processInfo.id, fileName);
 
       let versionFileName = `${fileName}-${newVersion}`;
 
@@ -146,7 +147,7 @@ export async function versionUserTasks(
         const basedOnVersionFileInfo = basedOnVersionDataMapping[userTaskId];
 
         if (basedOnVersionFileInfo && basedOnVersionFileInfo.fileName) {
-          const basedOnVersionUserTaskData = getUserTaskJSON(
+          const basedOnVersionUserTaskData = await getUserTaskJSON(
             processInfo.id,
             basedOnVersionFileInfo.fileName,
           );
@@ -169,7 +170,7 @@ export async function versionUserTasks(
 
       // store the user task version if it didn't exist before
       if (!dryRun && !userTaskDataAlreadyExisting) {
-        saveProcessUserTask(processInfo.id, versionFileName, userTaskData);
+        saveProcessUserTask(processInfo.id, versionFileName, userTaskData!);
       }
     }
   }
@@ -221,7 +222,7 @@ export async function selectAsLatestVersion(processId: string, version: number) 
 
   // Store UserTasks from this version as UserTasks from latest version
   await asyncForEach(Object.entries(changedFileNames), async ([oldName, newName]) => {
-    await saveProcessUserTask(processId, newName, processDataMapping[oldName]);
+    await saveProcessUserTask(processId, newName, processDataMapping![oldName]);
   });
 
   // Store bpmn from this version as latest version

@@ -7,18 +7,16 @@ export async function GET(request: NextRequest) {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const deletableFiles = await db.processArtifacts.findMany({
+    const deletableFiles = await db.processArtifact.findMany({
       where: {
         deletable: true,
         deletedOn: { lte: oneWeekAgo },
       },
-      select: { filePath: true, processId: true },
+      select: { filePath: true },
     });
 
     if (deletableFiles.length > 0) {
-      await Promise.all(
-        deletableFiles.map((file) => deleteProcessArtifact(file.processId, file.filePath, true)),
-      );
+      await Promise.all(deletableFiles.map((file) => deleteProcessArtifact(file.filePath, true)));
     }
 
     return NextResponse.json(

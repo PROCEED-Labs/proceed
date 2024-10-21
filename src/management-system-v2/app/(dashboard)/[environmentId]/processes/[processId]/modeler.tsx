@@ -18,6 +18,8 @@ import ModelerZoombar from './modeler-zoombar';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { updateFileDeletableStatus } from '@/lib/data/file-manager-facade';
+import { useSession } from 'next-auth/react';
+import { Coming_Soon } from 'next/font/google';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -28,6 +30,7 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
+  const { data, status } = useSession({ required: true });
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
@@ -226,49 +229,30 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
     const metaData = getMetaDataFromElement(element.businessObject);
     if (element.type === 'bpmn:UserTask') {
-      getProcessUserTaskFileMetaData(
+      updateFileDeletableStatus(
+        `${element.businessObject.fileName}.json`,
+        true,
         process.id,
-        element.businessObject.fileName,
-        environment.spaceId,
-      ).then((res) => {
-        if (res && !('error' in res)) {
-          if (res.fileName) {
-            updateFileDeletableStatus(res.fileName, true);
-          }
-        } else {
-          console.error(res?.error.message);
-          return;
-        }
-      });
+        element.fileName,
+      );
     }
     if (!metaData.overviewImage) {
       return;
     } else {
-      updateFileDeletableStatus(metaData.overviewImage, true);
+      updateFileDeletableStatus(metaData.overviewImage, true, process.id);
     }
   }, []);
 
   const onShapeRemoveUndo = useCallback<Required<BPMNCanvasProps>['onShapeRemoveUndo']>(
     (element) => {
       if (element.$type === 'bpmn:UserTask') {
-        getProcessUserTaskFileMetaData(process.id, element.fileName, environment.spaceId).then(
-          (res) => {
-            if (res && !('error' in res)) {
-              if (res.fileName) {
-                updateFileDeletableStatus(res.fileName, false);
-              }
-            } else {
-              console.error(res?.error.message);
-              return;
-            }
-          },
-        );
+        updateFileDeletableStatus(`${element.fileName}.json`, false, process.id, element.fileName);
       }
 
       const metaData = getMetaDataFromElement(element);
       if (!metaData.overviewImage) {
         return;
-      } else updateFileDeletableStatus(metaData.overviewImage, false);
+      } else updateFileDeletableStatus(metaData.overviewImage, false, process.id);
     },
     [],
   );

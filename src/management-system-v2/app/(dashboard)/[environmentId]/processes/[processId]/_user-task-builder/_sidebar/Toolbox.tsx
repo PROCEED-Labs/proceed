@@ -59,7 +59,11 @@ const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }
   );
 };
 
-const Toolbox = () => {
+interface ToolboxProps {
+  businessObjectId: string; // Adjust the type as needed (e.g., string, number)
+}
+
+const Toolbox: React.FC<ToolboxProps> = ({ businessObjectId }) => {
   return (
     <div className={styles.Toolbox}>
       <CreationButton title="Header" icon={<MdTitle />}>
@@ -90,7 +94,7 @@ const Toolbox = () => {
         <Element is={Container} padding={20} canvas />
       </CreationButton>
       <CreationButton title="Image" icon={<LuImage />}>
-        <Image />
+        <Image businessObjectId={businessObjectId} />
       </CreationButton>
     </div>
   );

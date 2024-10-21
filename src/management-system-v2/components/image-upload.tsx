@@ -17,10 +17,12 @@ interface ImageUploadProps {
     deleteEndpoint?: string;
     putEndpoint?: string;
   };
-  metadata: {
+  config: {
     entityType: EntityType;
     entityId: string;
+    useDefaultRemoveFunction: boolean;
     fileName?: string;
+    businessObjectId?: string;
   };
 }
 
@@ -30,9 +32,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   onUploadFail,
   onReload,
   endpoints,
-  metadata,
+  config,
 }) => {
-  const { upload, remove, replace } = useFileManager(metadata.entityType);
+  const { upload, remove, replace } = useFileManager(config.entityType, config.businessObjectId);
 
   const handleImageUpload = async (image: Blob, uploadedFileName: string, imageExists: boolean) => {
     try {
@@ -40,7 +42,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       if (imageExists && endpoints.putEndpoint) {
         // Update existing image
         response = enableUseFileManager
-          ? await replace(image, metadata.entityId, metadata.fileName!)
+          ? await replace(image, config.entityId, config.fileName!, uploadedFileName)
           : await fetch(endpoints.putEndpoint, {
               method: 'PUT',
               body: image,
@@ -48,7 +50,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       } else {
         // Add new image
         response = enableUseFileManager
-          ? await upload(image, metadata.entityId, uploadedFileName)
+          ? await upload(image, config.entityId, uploadedFileName)
           : await fetch(endpoints.postEndpoint, {
               method: 'POST',
               body: image,
@@ -101,7 +103,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           onClick={async () => {
             try {
               if (enableUseFileManager) {
-                await remove(metadata.entityId, metadata.fileName!);
+                config.useDefaultRemoveFunction
+                  ? await remove(config.entityId, config.fileName!)
+                  : null;
               } else {
                 await fetch(endpoints.deleteEndpoint as string, {
                   method: 'DELETE',

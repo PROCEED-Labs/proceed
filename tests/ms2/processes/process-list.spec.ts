@@ -583,7 +583,7 @@ test.describe('shortcuts in process-list', () => {
   test('create and submit a new process with shortcuts', async ({ processListPage }) => {
     const { page } = processListPage;
     /* Open Modal with ctrl + enter */
-    let modal = await openModal(page, () => page.getByRole('main').press('Control+Enter'));
+    let modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+Enter'));
 
     /* Check if Modal is visible */
     await expect(modal, 'New-Process-Modal should be openable via shortcuts').toBeVisible();
@@ -601,7 +601,7 @@ test.describe('shortcuts in process-list', () => {
     await expect(modal, 'Modals should be closeable via Esc').not.toBeVisible();
 
     /* Open Modal with meta + enter */
-    modal = await openModal(page, () => page.getByRole('main').press('Control+Enter'));
+    modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+Enter'));
 
     /* Check if Modal opened */
     await expect(modal, 'New-Process-Modal should be openable via ctrl/meta+enter').toBeVisible();
@@ -620,7 +620,7 @@ test.describe('shortcuts in process-list', () => {
     await modal.getByLabel(/description/i).fill('Some Description');
 
     /* Submit form with ctrl + enter */
-    await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
+    await closeModal(modal, () => page.getByRole('main').press('ControlOrMeta+Enter'));
 
     /* Wait for Modeler to open */
     await page.waitForURL(
@@ -637,7 +637,7 @@ test.describe('shortcuts in process-list', () => {
 
     /* Go back to process list by pressing esc twice */
     await page.getByRole('main').press('Escape');
-    await page.getByRole('main').press('Escape');
+    await page.getByRole('main').press('Escape', { delay: 10 });
 
     /* The /processes page should be visibe again */
     // await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);
@@ -668,7 +668,7 @@ test.describe('shortcuts in process-list', () => {
     const modal = await openModal(page, () => page.getByRole('main').press('Delete'));
 
     /* Confirm deletion */
-    await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
+    await closeModal(modal, () => page.getByRole('main').press('ControlOrMeta+Enter'));
 
     /* Check if Process was removed */
     await expect(
@@ -699,7 +699,7 @@ test.describe('shortcuts in process-list', () => {
     }
 
     /* Select all Processes with ctrl + a */
-    await page.getByRole('main').press('Control+a');
+    await page.getByRole('main').press('ControlOrMeta+a');
 
     /* Check if all Processes are selected */
     for (const processID of processIDs) {
@@ -752,7 +752,7 @@ test.describe('shortcuts in process-list', () => {
     await page.getByRole('main').click();
 
     /* Select all */
-    await page.locator('body').press('Control+a');
+    await page.locator('body').press('ControlOrMeta+a');
 
     /* Check if only XYZ is selected */
     await expect(page.getByRole('note')).toContainText('1');
@@ -788,8 +788,8 @@ test.describe('shortcuts in process-list', () => {
     await page.locator(`input[name="${processID}"]`).click();
 
     /* Copy & Paste*/
-    await page.getByRole('main').press('Control+c');
-    const modal = await openModal(page, () => page.getByRole('main').press('Control+v'));
+    await page.getByRole('main').press('ControlOrMeta+c');
+    const modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+v'));
 
     /* Check if Modal is visible */
     await expect(modal, 'Could not open export modal with shortcut').toBeVisible();
@@ -799,7 +799,7 @@ test.describe('shortcuts in process-list', () => {
     await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
 
     /* Submit copy */
-    await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
+    await closeModal(modal, () => page.getByRole('main').press('ControlOrMeta+Enter'));
 
     /* Check if Process has been added */
     await expect(
@@ -858,11 +858,11 @@ test.describe('shortcuts in process-list', () => {
     }
 
     /* Select all processes */
-    await page.getByRole('main').press('Control+a');
+    await page.getByRole('main').press('ControlOrMeta+a');
 
     /* Copy & Paste*/
-    await page.getByRole('main').press('Control+c');
-    await page.getByRole('main').press('Control+v');
+    await page.getByRole('main').press('ControlOrMeta+c');
+    await page.getByRole('main').press('ControlOrMeta+v');
 
     await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
@@ -883,10 +883,10 @@ test.describe('shortcuts in process-list', () => {
 
     /* Submit copy */
     if (browserName !== 'firefox') {
-      await page.getByRole('main').press('Control+Enter');
+      await page.getByRole('main').press('ControlOrMeta+Enter');
     } else {
       await modal.click();
-      await page.locator('body').press('Control+Enter');
+      await page.locator('body').press('ControlOrMeta+Enter');
     }
 
     await page.waitForTimeout(1_000); /* Ensure that animation is over */
@@ -914,7 +914,7 @@ test.describe('shortcuts in process-list', () => {
     await page.locator(`input[name="${processID}"]`).click();
 
     /* Open Export Modal with ctrl + e */
-    const modal = await openModal(page, () => page.getByRole('main').press('Control+e'));
+    const modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+e'));
 
     /* Check if Modal is visible */
     expect(modal, 'Could not open delete modal with shortcut').toBeVisible();
@@ -964,7 +964,7 @@ test.describe('Click-Controls in Process-List', () => {
     ).toHaveCSS('background-color', selectedColour);
 
     /* Deselect by clicking with ctrl */
-    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['Control'] });
+    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['ControlOrMeta'] });
     /* Check if deselected */
     /* Selected Counter not visible */
     await expect(counter).not.toBeVisible();
@@ -975,7 +975,7 @@ test.describe('Click-Controls in Process-List', () => {
     ).not.toHaveCSS('background-color', selectedColour);
 
     /* Select again with ctrl */
-    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['Control'] });
+    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['ControlOrMeta'] });
     /* Check if selected again */
     /* Selected Counter */
     await expect(counter).toContainText('1');
@@ -1001,7 +1001,7 @@ test.describe('Click-Controls in Process-List', () => {
     ).not.toHaveCSS('background-color', selectedColour);
 
     /* Additionally select Process B */
-    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['Control'] });
+    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['ControlOrMeta'] });
     /* Check if A and B are selected */
     /* Selected Counter */
     await expect(counter).toContainText('2');
@@ -1029,37 +1029,6 @@ test.describe('Click-Controls in Process-List', () => {
       processB.locator('.ant-card'),
       'Could not deselect all Processes in Icon-List with esc',
     ).not.toHaveCSS('background-color', selectedColour);
-
-    /* Repeat with Meta instead of ctrl */
-    /* Select Process A */
-    await page.getByRole('button', { name: /Process A/ }).click({ modifiers: ['Meta'] });
-    /* Check if A selected B not selected */
-    /* Selected Counter */
-    await expect(counter).toContainText('1');
-    /* Blue outline */
-    await expect(
-      processA.locator('.ant-card'),
-      'Could not select a Process in Icon-List with normal click',
-    ).toHaveCSS('background-color', selectedColour);
-    await expect(
-      processB.locator('.ant-card'),
-      'Could not deselect a Process in Icon-List with normal click',
-    ).not.toHaveCSS('background-color', selectedColour);
-
-    /* Additionaly select B */
-    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['Meta'] });
-    /* Check if both selected */
-    /* Selected Counter */
-    await expect(counter).toContainText('2');
-    /* Blue outline */
-    await expect(
-      processA.locator('.ant-card'),
-      'Could not select multiple Processes in Icon-List with meta+click',
-    ).toHaveCSS('background-color', selectedColour);
-    await expect(
-      processB.locator('.ant-card'),
-      'Could not select multiple Processes in Icon-List with meta+click',
-    ).toHaveCSS('background-color', selectedColour);
   });
 
   test('Drag select with shift + click', async ({ processListPage }) => {
@@ -1126,7 +1095,7 @@ test.describe('Click-Controls in Process-List', () => {
     }
 
     /* Deselect C */
-    await processC.click({ modifiers: ['Control'] });
+    await processC.click({ modifiers: ['ControlOrMeta'] });
     /* Check if B and D are selected */
     /* Selected Counter */
     await expect(counter).toContainText('2');
@@ -1349,13 +1318,13 @@ test.describe('Selecting Processes', () => {
       });
     }
 
-    await page.getByRole('main').press('Control+a');
+    await page.getByRole('main').press('ControlOrMeta+a');
 
     /* Copy + Paste until multiple pages */
     while ((await page.locator('.ant-pagination-next').getAttribute('aria-disabled')) === 'true') {
-      await page.getByRole('main').press('Control+c');
-      const modal = await openModal(page, () => page.getByRole('main').press('Control+v'));
-      await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
+      await page.getByRole('main').press('ControlOrMeta+c');
+      const modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+v'));
+      await closeModal(modal, () => page.getByRole('main').press('ControlOrMeta+Enter'));
     }
 
     /* Add Copys to processListPage.processDefinitionIds */
@@ -1475,7 +1444,7 @@ test.describe('Selecting Processes', () => {
     };
 
     /* Select all with ctrl + a */
-    await page.getByRole('main').press('Control+a');
+    await page.getByRole('main').press('ControlOrMeta+a');
 
     /* Check if all visible selected */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(

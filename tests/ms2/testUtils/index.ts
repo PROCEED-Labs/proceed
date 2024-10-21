@@ -71,7 +71,13 @@ export async function openModal(page: Page, triggerFunction: () => Promise<void>
     .nth(alreadyOpenCount)
     .waitFor({ state: 'visible' });
 
-  return page.locator(`div[aria-modal="true"]:visible`).nth(alreadyOpenCount);
+  const modal = await page.locator(`div[aria-modal="true"]:visible`).nth(alreadyOpenCount);
+
+  /* Focus modal if browser is firefox */
+  const browserName = await modal.evaluate(() => navigator.userAgent);
+  if (browserName.includes('Firefox') /* || browserName.includes('WebKit') */) modal.focus();
+
+  return modal;
 }
 
 /**
@@ -81,6 +87,10 @@ export async function openModal(page: Page, triggerFunction: () => Promise<void>
  * @param triggerFunction the function that triggers the modal to close
  */
 export async function closeModal(modal: Locator, triggerFunction: () => Promise<void>) {
+  /* Focus modal if browser is firefox */
+  const browserName = await modal.evaluate(() => navigator.userAgent);
+  if (browserName.includes('Firefox') /* || browserName.includes('WebKit') */) modal.focus();
+
   await triggerFunction();
   await modal.waitFor({ state: 'hidden' });
 }

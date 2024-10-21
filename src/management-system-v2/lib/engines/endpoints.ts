@@ -1,5 +1,3 @@
-// TODO: generate open api docs and dont hardcode all here
-
 import { Machine } from './machines';
 
 function generateRequestUrl(machine: Machine, endpoint: string) {

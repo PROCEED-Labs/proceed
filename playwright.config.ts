@@ -6,8 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 // require('dotenv').config();
 
-// const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
-const baseURL = 'https://pr-289---ms-server-staging-c4f6qdpj7q-ew.a.run.app';
+const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 
 /**
  * See https://playwright.dev/docs/test-configuration.

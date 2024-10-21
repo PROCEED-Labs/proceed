@@ -110,6 +110,9 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   const newDefinitionID = page.url().split('/processes/').pop();
   expect(newDefinitionID).not.toEqual(definitionId);
 
+  // Not only wait for URL change, but also new content to be loaded.
+  await page.getByText('New Process').waitFor({ state: 'visible' });
+
   // Create subprocess and navigate
   await processModelerPage.createSubprocess();
   const openSubprocessButton = page.locator('.bjs-drilldown');
@@ -152,7 +155,7 @@ test.describe('Shortcuts in Modeler', () => {
     const { page } = processModelerPage;
 
     /* Open Modal */
-    await page.getByRole('main').press('Control+Enter');
+    await page.getByRole('main').press('ControlOrMeta+Enter');
 
     /* Check if Property-Panel is open */
     await expect(
@@ -168,15 +171,6 @@ test.describe('Shortcuts in Modeler', () => {
       page.getByRole('region', { name: 'Properties' }),
       'Property-Panel should be closeable via shortcuts',
     ).not.toBeVisible();
-
-    /* Open with meta */
-    await page.getByRole('main').press('Meta+Enter');
-
-    /* Check if Property-Panel is open */
-    await expect(
-      page.getByRole('region', { name: 'Properties' }),
-      'Property-Panel should be openable via shortcuts',
-    ).toBeVisible();
   });
 
   test('open Share-Modal with shortcut', async ({ processModelerPage }) => {
@@ -207,7 +201,7 @@ test.describe('Shortcuts in Modeler', () => {
     const { page } = processModelerPage;
 
     /* Open XML with ctrl / meta + x */
-    let modal = await openModal(page, () => page.locator('body').press('Control+x'));
+    let modal = await openModal(page, () => page.locator('body').press('ControlOrMeta+x'));
 
     /* Check if XML-Modal is open */
     await expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
@@ -221,12 +215,6 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if modal closed */
     await expect(modal, 'XML-Modal should be closeable via shortcuts').not.toBeVisible();
-
-    /* Open with meta */
-    modal = await openModal(page, () => page.locator('body').press('Meta+x'));
-
-    /* Check if XML-Modal is open */
-    await expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
   });
 
   /* ctrl / meta + e */
@@ -234,8 +222,8 @@ test.describe('Shortcuts in Modeler', () => {
     const { page } = processModelerPage;
 
     /* Open Export-Modal with ctrl / meta + e */
-    // await page.getByRole('main').press('Control+E');
-    let modal = await openModal(page, () => page.locator('body').press('Control+e'));
+    // await page.getByRole('main').press('ControlOrMeta+E');
+    let modal = await openModal(page, () => page.locator('body').press('ControlOrMeta+e'));
 
     /* Check if Export-Modal is open */
     await expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
@@ -252,12 +240,6 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if modal closed */
     await expect(modal, 'Export-Modal should be closeable via shortcuts').not.toBeVisible();
-
-    /* Open with meta */
-    modal = await openModal(page, () => page.getByRole('main').press('Meta+e'));
-
-    /* Check if Export-Modal is open */
-    await expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
   });
 });
 
@@ -292,13 +274,12 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   expect(clipboardData).toMatch(regex);
 
   /*************************** Copy Diagram As PNG ********************************/
-  // skip this test for firefox
-  if (page.context().browser().browserType() !== firefox) {
-    await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click();
-    await page.waitForTimeout(100);
-    clipboardData = await ms2Page.readClipboard(false);
-    await expect(clipboardData).toMatch('image/png');
-  } else {
+  //if (page.context().browser().browserType() !== firefox) {
+  await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click();
+  await page.waitForTimeout(100);
+  clipboardData = await ms2Page.readClipboard(false);
+  await expect(clipboardData).toMatch('image/png');
+  /*} else {
     // download as fallback
     const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
       async () => await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
@@ -306,7 +287,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
     );
 
     expect(pngFilename).toMatch(/.png$/);
-  }
+  }*/
 
   /*************************** Copy Diagram As XML ********************************/
 

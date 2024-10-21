@@ -18,11 +18,11 @@ interface ImageUploadProps {
     putEndpoint?: string;
   };
   config: {
-    entityType: EntityType;
-    entityId: string;
-    useDefaultRemoveFunction: boolean;
+    entityType: EntityType; // to decide where to save the file
+    entityId: string; // needed for folder hierarchy
+    useDefaultRemoveFunction: boolean; //set true if delete should be automatically handled by file maanger
     fileName?: string;
-    businessObjectId?: string;
+    businessObjectId?: string; // to track artifacts referenced by this
   };
 }
 

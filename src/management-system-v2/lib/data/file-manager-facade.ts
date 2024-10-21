@@ -10,9 +10,6 @@ import {
 import { contentTypeNotAllowed } from './content-upload-error';
 import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
-import Ability from '../ability/abilityHelper';
-import { stat } from 'fs';
-import { getAbilityForUser } from '../authorization/authorization';
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
@@ -324,25 +321,6 @@ export async function updateFileRefCounter(
     throw new Error(`ProcessArtifact with fileName "${fileName}" not found.`);
   }
 
-  // if (!artifact) throw new Error('File not found');
-
-  // let updateData: Prisma.ProcessArtifactUpdateInput = {};
-
-  // // If refCounter >= 1, deletable must remain false
-  // if (artifact.refCounter > 1) {
-  //   updateData = {
-  //     deletable: false,
-  //     refCounter: status ? { decrement: 1 } : { increment: 1 },
-  //   };
-  // } else if (artifact.refCounter <= 1) {
-  //   // If refCounter < 1, allow deletable to change based on the provided status
-  //   updateData = {
-  //     deletable: status,
-  //     deletedOn: new Date(),
-  //     refCounter: status ? { decrement: 1 } : { increment: 1 },
-  //   };
-  // }
-
   if (!status) {
     if (await checkIfArtifactRefAlreadyExists(artifact.id, processId, businessObjectId ?? '')) {
       return;
@@ -365,15 +343,5 @@ export async function updateFileRefCounter(
     });
   }
 
-  //Handled by db triggers
-
-  // const refCounter = await db.artifactReference.count({
-  //   where: { processArtifactId: artifact.id },
-  // });
-  // await db.processArtifact.update({
-  //   data: { refCounter: refCounter },
-  //   where: {
-  //     id: artifact.id,
-  //   },
-  // });
+  // refCounter handled by db triggers
 }

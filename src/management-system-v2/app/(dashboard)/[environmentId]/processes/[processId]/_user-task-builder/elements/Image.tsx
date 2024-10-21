@@ -12,7 +12,6 @@ import ImageUpload from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { enableUseFileManager } from 'FeatureFlags';
-import { updateFileDeletableStatus } from '@/lib/data/file-manager-facade';
 
 type ImageProps = {
   businessObjectId: string;
@@ -45,21 +44,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width, businessObj
   const environment = useEnvironment();
 
   const baseUrl = `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
-
-  const currentSrcRef = useRef(src);
-
-  // useEffect(() => {
-  //   if (src !== currentSrcRef.current) {
-  //     if (currentSrcRef.current) {
-  //       console.log('decrease', currentSrcRef.current);
-  //     }
-  //     currentSrcRef.current = src;
-  //   }
-
-  //   if (currentSrcRef.current && src === currentSrcRef.current) {
-  //     console.log('increase', currentSrcRef.current);
-  //   }
-  // }, [src]);
+  console.log(src);
 
   useEffect(() => {
     if (enableUseFileManager && src) {

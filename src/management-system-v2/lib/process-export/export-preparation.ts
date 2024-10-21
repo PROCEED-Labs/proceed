@@ -402,7 +402,7 @@ export async function prepareExport(
         const json = await getProcessUserTaskData(definitionId, filename, spaceId);
 
         if (typeof json !== 'string') {
-          throw json.error;
+          throw json!.error;
         }
 
         const html = toHtml(json);

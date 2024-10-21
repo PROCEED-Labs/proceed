@@ -15,7 +15,7 @@ const baseURL = 'https://pr-289---ms-server-staging-c4f6qdpj7q-ew.a.run.app';
 export default defineConfig({
   testDir: './tests',
   /* Maximum time one test can run for. */
-  timeout: 60 * 10000,
+  timeout: 60 * 1000,
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.

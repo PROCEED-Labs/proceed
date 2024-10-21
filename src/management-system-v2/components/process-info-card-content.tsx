@@ -5,6 +5,7 @@ import React, { FC, Suspense } from 'react';
 import Viewer from './bpmn-viewer';
 import { ProcessListProcess } from './processes';
 import { useUserPreferences } from '@/lib/user-preferences';
+import ProceedLoadingIndicator from './loading-proceed';
 
 type MetaDataContentType = {
   selectedElement?: ProcessListProcess;
@@ -29,9 +30,10 @@ const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
             <>
               <Suspense
                 fallback={
-                  <Spin size="large" tip="Loading Preview">
-                    <div style={{ padding: 50 }} />
-                  </Spin>
+                  // <Spin size="large" tip="Loading Preview">
+                  //   <div style={{ padding: 50 }} />
+                  // </Spin>
+                  <ProceedLoadingIndicator /* small={true} scale="50%" */ />
                 }
               >
                 <Viewer definitionId={selectedElement.id} reduceLogo={true} fitOnResize />

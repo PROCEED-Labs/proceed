@@ -29,7 +29,11 @@ const DeploymentsView = ({
   const { message } = App.useApp();
   const space = useEnvironment();
 
-  const { data: deployedProcesses, isLoading } = useDeployments();
+  const {
+    data: deployedProcesses,
+    isLoading,
+    refetch: refetchDeployedProcesses,
+  } = useDeployments();
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: deployedProcesses ?? [],
@@ -58,12 +62,15 @@ const DeploymentsView = ({
           .sort()
           .at(-1);
 
-        deployProcess(process.id, v as number, space.spaceId, 'dynamic');
+        await deployProcess(process.id, v as number, space.spaceId, 'dynamic');
+        refetchDeployedProcesses();
       } catch (e) {
         message.error("Something wen't wrong");
       }
     });
   }
+
+  const loading = isLoading || checkingProcessVersion;
 
   return (
     <div>
@@ -86,10 +93,7 @@ const DeploymentsView = ({
         }}
       />
 
-      <DeploymentsList
-        processes={filteredData}
-        tableProps={{ loading: isLoading }}
-      ></DeploymentsList>
+      <DeploymentsList processes={filteredData} tableProps={{ loading }}></DeploymentsList>
 
       <DeploymentsModal
         open={modalIsOpen}

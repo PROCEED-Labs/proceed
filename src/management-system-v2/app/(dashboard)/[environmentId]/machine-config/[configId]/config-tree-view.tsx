@@ -12,8 +12,10 @@ import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useMemo, useState } from 'react';
 import {
+  customMachineConfiguration,
   defaultMachineConfiguration,
   defaultParameter,
+  defaultTargetConfiguration,
   findConfig,
   findParameter,
 } from '../configuration-helper';
@@ -82,23 +84,30 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     values: {
       name: string;
       description: string;
+      copyTarget: boolean;
     }[],
   ) => {
     if (openModal !== 'target-config' && openModal !== 'machine-config') return;
-    const { name, description } = values[0];
-    const newConfig = {
-      ...defaultMachineConfiguration(name, description),
-      type: openModal,
-      environmentId: parentConfig.environmentId,
-    };
+    const { name, description, copyTarget } = values[0];
 
-    if (openModal === 'machine-config')
-      await addMachineConfig(parentConfig.id, newConfig as MachineConfig);
-    else if (openModal === 'target-config')
-      await addTargetConfig(parentConfig.id, newConfig as TargetConfig);
+    if (openModal === 'target-config') {
+      const newConfig = defaultTargetConfiguration(parentConfig.environmentId, name, description);
+      await addTargetConfig(parentConfig.id, newConfig);
+    } else if (copyTarget && parentConfig.targetConfig) {
+      const newConfig = customMachineConfiguration(
+        parentConfig.environmentId,
+        name,
+        description,
+        parentConfig.targetConfig,
+      );
+      await addMachineConfig(parentConfig.id, newConfig, true);
+    } else {
+      const newConfig = defaultMachineConfiguration(parentConfig.environmentId, name, description);
+      await addMachineConfig(parentConfig.id, newConfig);
+    }
 
-    router.refresh();
     closeModal();
+    router.refresh();
   };
 
   const addParameter = async (
@@ -245,6 +254,8 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
         title={`Creating ${openModal === 'target-config' ? 'target' : 'machine'} configuration`}
         onCancel={closeModal}
         onSubmit={handleCreateMachineOk}
+        configType={openModal === 'machine-config' ? 'machine' : undefined}
+        targetConfigExists={!!parentConfig.targetConfig}
       />
 
       <CreateParameterModal

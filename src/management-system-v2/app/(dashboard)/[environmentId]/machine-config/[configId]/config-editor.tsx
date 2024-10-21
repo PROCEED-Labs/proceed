@@ -164,19 +164,29 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
       copyTarget: boolean;
     }[],
   ) => {
-    console.log('VALUES: ', values[0]);
     const { name, description, copyTarget } = values[0];
     if (createConfigType === 'target') {
-      await addTargetConfig(parentConfig.id, defaultTargetConfiguration(name, description));
+      await addTargetConfig(
+        parentConfig.id,
+        defaultTargetConfiguration(parentConfig.environmentId, name, description),
+      );
     } else {
       if (copyTarget && parentConfig.targetConfig) {
         await addMachineConfig(
           parentConfig.id,
-          customMachineConfiguration(name, description, parentConfig.targetConfig),
+          customMachineConfiguration(
+            parentConfig.environmentId,
+            name,
+            description,
+            parentConfig.targetConfig,
+          ),
           true,
         );
       } else {
-        await addMachineConfig(parentConfig.id, defaultMachineConfiguration(name, description));
+        await addMachineConfig(
+          parentConfig.id,
+          defaultMachineConfiguration(parentConfig.environmentId, name, description),
+        );
       }
     }
     setCreateConfigType('');

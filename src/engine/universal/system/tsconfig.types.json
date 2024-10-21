@@ -4,7 +4,6 @@
   "exclude": ["./@types/system/src/module.d.ts"],
   "compilerOptions": {
     "declarationDir": "./@types",
-    "emitDeclarationOnly": true,
-    "rootDir": ".."
+    "emitDeclarationOnly": true
   }
 }

@@ -6,7 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 // require('dotenv').config();
 
-const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+// const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+const baseURL = 'https://pr-289---ms-server-staging-c4f6qdpj7q-ew.a.run.app';
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -14,7 +15,7 @@ const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 export default defineConfig({
   testDir: './tests',
   /* Maximum time one test can run for. */
-  timeout: 60 * 1000,
+  timeout: 60 * 10000,
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.

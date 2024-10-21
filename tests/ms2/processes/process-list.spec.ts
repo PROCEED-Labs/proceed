@@ -830,12 +830,12 @@ test.describe('shortcuts in process-list', () => {
     await expect(modalTitle2, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
 
     /* Submit copy */
-    // if (browserName !== 'firefox') {
-    await closeModal(modal2, () => page.getByRole('main').press('Meta+Enter'));
-    // } else {
-    //   await modal2.click();
-    //   await closeModal(modal2, () => page.getByRole('main').press('Meta+Enter'));
-    // }
+    if (browserName !== 'firefox') {
+      await closeModal(modal2, () => page.getByRole('main').press('Meta+Enter'));
+    } else {
+      await modal2.click();
+      await closeModal(modal2, () => page.getByRole('main').press('Meta+Enter'));
+    }
 
     /* Check if Process has been added */
     await expect(page.locator('tbody>tr.ant-table-row')).toHaveCount(3);
@@ -886,12 +886,12 @@ test.describe('shortcuts in process-list', () => {
     ).toBe(2);
 
     /* Submit copy */
-    // if (browserName !== 'firefox') {
-    await page.getByRole('main').press('Control+Enter');
-    // } else {
-    //   await modal.click();
-    //   await page.locator('body').press('Control+Enter');
-    // }
+    if (browserName !== 'firefox') {
+      await page.getByRole('main').press('Control+Enter');
+    } else {
+      await modal.click();
+      await page.locator('body').press('Control+Enter');
+    }
 
     await page.waitForTimeout(1_000); /* Ensure that animation is over */
 

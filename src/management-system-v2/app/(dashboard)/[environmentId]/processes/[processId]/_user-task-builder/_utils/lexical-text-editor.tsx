@@ -1,11 +1,4 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  forwardRef,
-  useImperativeHandle,
-} from 'react';
+import React, { useEffect, useMemo, useState, forwardRef, useImperativeHandle, useId } from 'react';
 
 import { createPortal } from 'react-dom';
 
@@ -116,13 +109,19 @@ const LexicalTextEditor = forwardRef<TextEditorRef, EditorProps>(
   ({ value, disabled, ...contentEditableProps }, ref) => {
     const setIsTextEditing = useBuilderStateStore((state) => state.setIsTextEditing);
 
+    const id = useId();
+    const blockDragging = useBuilderStateStore((state) => state.blockDragging);
+    const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
+
     useEffect(() => {
       // signal that we started editing text on mount
       setIsTextEditing(true);
+      blockDragging(id);
 
       return () => {
         // signal the end of text editing on unmount
         setIsTextEditing(false);
+        unblockDragging(id);
       };
     }, []);
 

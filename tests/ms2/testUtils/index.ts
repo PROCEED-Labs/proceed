@@ -98,7 +98,7 @@ export async function waitForHydration(page: Page) {
   await page
     .locator('.ant-dropdown:not(.ant-dropdown-hidden)')
     .and(page.locator('.ant-dropdown:not(.ant-slide-up)'))
-    .getByRole('menuitem', { name: 'Profile Settings' })
+    .getByRole('link', { name: 'Profile Settings' })
     .waitFor({ state: 'visible' });
   // move the mouse away from the button to close the menu and go into a "clean" state for further testing
   await page.mouse.move(0, 0);

@@ -46,7 +46,11 @@ export function useSearchParamState(
     } else {
       searchParams.delete(paramName);
     }
-    const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+
+    const paramsString = searchParams.toString();
+    const newUrl = paramsString
+      ? `${window.location.pathname}?${paramsString}`
+      : window.location.pathname;
 
     // Replace the current URL without adding to the browser history.
     window.history.replaceState(

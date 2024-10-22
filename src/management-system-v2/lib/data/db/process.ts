@@ -16,6 +16,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data';
 import { v4 } from 'uuid';
 import { UserErrorType, userError } from '@/lib/user-error';
+import { Prisma } from '@prisma/client';
 
 /** Returns all processes for a user */
 export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
@@ -315,14 +316,14 @@ export async function moveProcess({
  * parsing the bpmn unnecessarily */
 export async function updateProcessMetaData(
   processDefinitionsId: string,
-  metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
+  metaChanges: Prisma.ProcessUpdateInput,
 ) {
   checkIfProcessExists(processDefinitionsId);
   try {
     const updatedProcess = await db.process.update({
       where: { id: processDefinitionsId },
       data: {
-        ...(metaChanges as any),
+        ...metaChanges,
         lastEditedOn: new Date().toISOString(),
       },
     });

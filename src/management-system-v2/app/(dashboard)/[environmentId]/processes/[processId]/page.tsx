@@ -44,7 +44,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   // Get name of user who is editing
   if (inEditing) {
     const user = await getUserById(inEditing.userId, { throwIfNotFound: false });
-    inEditing.name = Object.hasOwn(user, 'username') ? (user as any).username : '';
+    inEditing.name = user ? Object.hasOwn(user, 'username') ? (user as any).username : '' : '';
   }
 
   // Since the user is able to minimize and close the page, everyting is in a

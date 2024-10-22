@@ -82,7 +82,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
 
   const [configToCopy, setConfigToCopy] = useState('');
   const [editingMachineName, setEditingMachineName] = useState('');
-  const editButtonClicked = useRef(false);
+  const editIcon = useRef<HTMLElement | null>(null);
 
   const { token } = theme.useToken();
   const panelStyle = {
@@ -170,9 +170,11 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
         label: (
           <div
             onClick={(e) => {
-              if (editingMachineName === machineConfig.id || editButtonClicked.current) {
+              if (
+                editingMachineName === machineConfig.id ||
+                editIcon.current?.contains(e.target as Node)
+              ) {
                 e.stopPropagation();
-                editButtonClicked.current = false;
               }
             }}
             onKeyDown={(e) => {
@@ -186,8 +188,10 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
                   editingEnabled && {
                     icon: (
                       <EditOutlined
-                        onClick={() => (editButtonClicked.current = true)}
-                        style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }}
+                        onClick={(e) => {
+                          editIcon.current = e.target as HTMLElement;
+                        }}
+                        style={{ color: 'rgba(0, 0, 0, 0.88)', padding: '0 10px' }}
                       />
                     ),
                     tooltip: 'Edit Machine Config Name',
@@ -207,7 +211,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
                     },
                   }
                 }
-                style={{ display: 'inline-flex' }}
+                style={{ display: 'inline-flex', margin: '0 10px' }}
               >
                 {machineConfig.name}
               </Text>

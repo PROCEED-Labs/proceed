@@ -3,11 +3,12 @@
 import styles from '@/components/item-list-view.module.scss';
 import { Button, Grid, TableColumnsType, TableProps, Tooltip } from 'antd';
 import { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
-
 import ElementList from '@/components/item-list-view';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
+import SpaceLink from '@/components/space-link';
+import processListStyles from '@/components/process-icon-list.module.scss';
 
 type InputItem = DeployedProcessInfo & { name: string };
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
@@ -27,19 +28,29 @@ const DeploymentsList = ({
       dataIndex: 'name',
       key: 'Name',
       ellipsis: true,
-      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (
-        <div
-          className={
-            breakpoint.xs
-              ? styles.MobileTitleTruncation
-              : breakpoint.xl
-                ? styles.TitleTruncation
-                : styles.TabletTitleTruncation
-          }
+        <SpaceLink
+          href={`/executions/${record.definitionId}`}
+          style={{
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
+            display: 'block',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
         >
-          {record.name.highlighted}
-        </div>
+          <div
+            className={
+              breakpoint.xs
+                ? processListStyles.MobileTitleTruncation
+                : breakpoint.xl
+                  ? processListStyles.TitleTruncation
+                  : processListStyles.TabletTitleTruncation
+            }
+          >
+            {record.name.highlighted}
+          </div>
+        </SpaceLink>
       ),
       responsive: ['xs', 'sm'],
     },

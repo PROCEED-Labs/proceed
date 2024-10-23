@@ -22,6 +22,7 @@ import AddButton from './add-button';
 import { defaultParameter, findParameter, getAllParameters } from '../configuration-helper';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
+import styles from './page.module.scss';
 
 import {
   addParameter as backendAddParameter,
@@ -217,7 +218,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
       </Row>
 
       <Row gutter={[24, 24]} /* align="middle" */ style={{ width: '100%' }}>
-        <Col span={24} offset={0} className="gutter-row">
+        <Col span={24} offset={0} className="gutter-row" style={{ paddingRight: '0' }}>
           <Param editingEnabled={editable} field={parameter} label={keyId} />
 
           {(editable || (parameter.linkedParameters && parameter.linkedParameters.length > 0)) && (
@@ -274,9 +275,9 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
                   <Text italic>Nested Parameters</Text>
                 </Col>
               </Row>
-              <Card style={cardStyle} size="small">
-                <Row gutter={[24, 24]} align="middle">
-                  <Col span={24} offset={0} className="gutter-row">
+              <Card size="small" className={styles.NestingCard} style={cardStyle}>
+                <Row gutter={[24, 24]} align="middle" style={{ paddingRight: '0' }}>
+                  <Col span={24} offset={0} className="gutter-row" style={{ paddingRight: '0' }}>
                     <Space direction="vertical" style={{ display: 'flex' }}>
                       {parameter.parameters &&
                         Object.entries(parameter.parameters).map(([subFieldKey, subField]) => (

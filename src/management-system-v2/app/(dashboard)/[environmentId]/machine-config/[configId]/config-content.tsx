@@ -71,9 +71,8 @@ const Content: React.FC<MachineDataViewProps> = ({
             <Input value={configId} disabled prefix={<KeyOutlined />} />
           </Col>
           {editable && (
-            // TODO tooltip logic
             <Col span={1}>
-              <Tooltip title="Hide Internal ID">
+              <Tooltip title={idVisible ? 'Hide Internal ID' : 'Show Internal ID'}>
                 <Button
                   size="small"
                   disabled={!editable}

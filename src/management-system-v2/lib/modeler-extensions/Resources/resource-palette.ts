@@ -2,6 +2,7 @@ import PaletteProvider, {
   PaletteEntriesCallback,
 } from 'diagram-js/lib/features/palette/PaletteProvider';
 
+import { black } from 'bpmn-js/lib/draw/BpmnRenderUtil';
 import ElementFactory from 'bpmn-js/lib/features/modeling/ElementFactory';
 import Palette from 'diagram-js/lib/features/palette/Palette';
 import Create from 'diagram-js/lib/features/create/Create';
@@ -38,10 +39,12 @@ export default class CustomPaletteProvider implements PaletteProvider {
       group: string,
       className: string,
       title?: string,
-      options?: (event: Event, autoActivate: boolean) => void,
+      machineType?: string,
     ) {
       function createListener(event: Event) {
-        const shape = elementFactory.createShape(assign({ type: type }, options));
+        const shape = elementFactory.createShape(assign({ type: type, width: 50, height: 50 }));
+
+        shape.businessObject.machineType = machineType;
 
         create.start(event, shape);
       }
@@ -63,14 +66,15 @@ export default class CustomPaletteProvider implements PaletteProvider {
         'create.human-resource': createAction(
           'proceed:HumanPerformer',
           'perfomer',
-          'bpmn-icon-user',
+          'proceed-user-icon',
           'Human Performer',
         ),
         'create.machine-resource': createAction(
           'proceed:MachinePerformer',
           'perfomer',
-          'bpmn-icon-service',
+          'proceed-robot-icon',
           'Machine Performer',
+          'Robot',
         ),
       };
     };

@@ -8,10 +8,14 @@ import BpmnRenderer from 'bpmn-js/lib/draw/BpmnRenderer';
 import TextRenderer from 'bpmn-js/lib/draw/TextRenderer';
 
 import { is, isAny } from 'bpmn-js/lib/util/ModelUtil';
+
 import { black, getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
 import PathMap from 'bpmn-js/lib/draw/PathMap';
 
 import { append as svgAppend, create as svgCreate } from 'tiny-svg';
+import { transform } from '@babel/core';
+
+import iconPaths from './iconPaths';
 
 const HIGH_PRIORITY = 1500;
 
@@ -23,7 +27,14 @@ export default class ResourceRenderer extends BaseRenderer {
 
   // this tells bpmn-js which modules need to be passed to the constructor (the order must be the
   // same as in the constructor!!)
-  static $inject: string[] = ['eventBus', 'pathMap', 'styles', 'bpmnRenderer', 'config'];
+  static $inject: string[] = [
+    'eventBus',
+    'pathMap',
+    'styles',
+    'bpmnRenderer',
+    'config',
+    'directEditing',
+  ];
 
   constructor(
     eventBus: EventBus,
@@ -31,8 +42,13 @@ export default class ResourceRenderer extends BaseRenderer {
     styles: any,
     bpmnRenderer: BpmnRenderer,
     config: any,
+    directEditing: any,
   ) {
     super(eventBus, HIGH_PRIORITY);
+
+    eventBus.on('element.dblclick', 200000, () => {
+      console.log('Test');
+    });
 
     this.pathMap = pathMap;
     this.styles = styles;
@@ -47,56 +63,28 @@ export default class ResourceRenderer extends BaseRenderer {
   }
 
   drawShape(parentGfx: SVGElement, shape: Shape, attrs = {}): SVGElement {
-    const pathDataUser1 = this.pathMap.getScaledPath('TASK_TYPE_USER_1', {
-      xScaleFactor: 1,
-      yScaleFactor: 1,
-      containerWidth: shape.width,
-      containerHeight: shape.height,
-      abspos: {
-        x: shape.width / 2,
-        y: shape.height / 2,
-      },
-    });
+    const draw = (path: string) => {
+      return this.drawPath(parentGfx, path, {
+        fill: getFillColor(shape, this.config && this.config.defaultFillColor, attrs.fill),
+        stroke: getStrokeColor(shape, this.config && this.config.defaultStrokeColor, attrs.stroke),
+        strokeWidth: 0.035,
+        transform: `translate(${shape.width / 2}, ${shape.height / 2}) scale(${shape.height})`,
+      });
+    };
+    if (is(shape, 'proceed:MachinePerformer')) {
+      switch (shape.businessObject.machineType) {
+        case 'Robot':
+          return draw(iconPaths.robot);
+        case 'Screen':
+          return draw(iconPaths.screen);
+        case 'Laptop':
+          return draw(iconPaths.laptop);
+        case 'Server':
+          return draw(iconPaths.server);
+      }
+    }
 
-    this.drawPath(parentGfx, pathDataUser1, {
-      fill: getFillColor(shape, this.config && this.config.defaultFillColor, attrs.fill),
-      stroke: getStrokeColor(shape, this.config && this.config.defaultStrokeColor, attrs.stroke),
-      strokeWidth: 0.5,
-    });
-
-    const pathDataUser2 = this.pathMap.getScaledPath('TASK_TYPE_USER_2', {
-      xScaleFactor: 1,
-      yScaleFactor: 1,
-      containerWidth: shape.width,
-      containerHeight: shape.height,
-      abspos: {
-        x: shape.width / 2,
-        y: shape.height / 2,
-      },
-    });
-
-    this.drawPath(parentGfx, pathDataUser2, {
-      fill: getFillColor(shape, this.config && this.config.defaultFillColor, attrs.fill),
-      stroke: getStrokeColor(shape, this.config && this.config.defaultStrokeColor, attrs.stroke),
-      strokeWidth: 0.5,
-    });
-
-    const pathDataUser3 = this.pathMap.getScaledPath('TASK_TYPE_USER_3', {
-      xScaleFactor: 1,
-      yScaleFactor: 1,
-      containerWidth: shape.width,
-      containerHeight: shape.height,
-      abspos: {
-        x: shape.width / 2,
-        y: shape.height / 2,
-      },
-    });
-
-    return this.drawPath(parentGfx, pathDataUser3, {
-      fill: getFillColor(shape, this.config && this.config.defaultFillColor, black),
-      stroke: getStrokeColor(shape, this.config && this.config.defaultStrokeColor, attrs.stroke),
-      strokeWidth: 0.5,
-    });
+    return draw(iconPaths.person);
   }
 
   lineStyle(attrs = {}) {

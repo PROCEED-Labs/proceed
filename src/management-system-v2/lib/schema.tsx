@@ -459,6 +459,13 @@ export const schema = {
     {
       name: 'Performer',
       superClass: ['bpmn:Artifact'],
+      properties: [
+        {
+          name: 'name',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
     },
     {
       name: 'HumanPerformer',
@@ -467,6 +474,13 @@ export const schema = {
     {
       name: 'MachinePerformer',
       superClass: ['Performer'],
+      properties: [
+        {
+          name: 'machineType',
+          isAttr: true,
+          type: 'MachinePerformerType',
+        },
+      ],
     },
     {
       name: 'PerformerAssociation',
@@ -1223,7 +1237,25 @@ export const schema = {
   xml: {
     tagAlias: 'lowerCase',
   },
-  emumerations: [],
+  emumerations: [
+    {
+      name: 'MachinePerformerTypes',
+      literalValues: [
+        {
+          name: 'Screen',
+        },
+        {
+          name: 'Laptop',
+        },
+        {
+          name: 'Robot',
+        },
+        {
+          name: 'Server',
+        },
+      ],
+    },
+  ],
   associations: [],
 };
 

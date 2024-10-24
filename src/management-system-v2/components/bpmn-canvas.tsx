@@ -272,8 +272,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         }
 
         // Import the new bpmn.
-        const res = await m.importXML(bpmn.bpmn);
-        console.log(res.warnings);
+        await m.importXML(bpmn.bpmn);
+
         if (m !== modeler.current) {
           // The modeler was reset in the meantime.
           return;

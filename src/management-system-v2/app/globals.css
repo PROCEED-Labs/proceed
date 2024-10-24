@@ -132,3 +132,33 @@
     display: none !important;
   }
 }
+
+.proceed-robot-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'A';
+  width: 1em;
+}
+
+.proceed-screen-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'B';
+  width: 1em;
+}
+
+.proceed-user-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'C';
+  width: 1em;
+}
+
+.proceed-laptop-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'E';
+  width: 1em;
+}
+
+.proceed-server-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'D';
+  width: 1em;
+}

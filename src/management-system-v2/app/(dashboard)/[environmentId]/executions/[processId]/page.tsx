@@ -143,7 +143,11 @@ function ProcessDeploymentView({ selectedProcess }: { selectedProcess: DeployedP
           >
             <ToolbarGroup>
               <Select
-                value={selectedInstanceId}
+                value={
+                  selectedInstanceId && selectedInstance
+                    ? selectedInstance.processInstanceId
+                    : undefined
+                }
                 onSelect={(value) => selectNewBpmn('instance', value)}
                 options={instances.map((instance) => ({
                   value: instance.processInstanceId,

@@ -428,7 +428,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       <AddUserControls name={'machineconfig-list'} />
       <MachineConfigModal
         open={openEditModal}
-        title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
+        title={`Edit Machine Config${selectedRowKeys.length > 1 ? 'urations' : ''}`}
         onCancel={() => setOpenEditModal(false)}
         initialData={
           editingItem

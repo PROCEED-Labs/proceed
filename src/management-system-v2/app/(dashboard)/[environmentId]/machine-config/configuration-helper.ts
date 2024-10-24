@@ -30,12 +30,16 @@ export function defaultParameter(
   };
 }
 
-export function defaultConfiguration(name?: string, description?: string): AbstractConfig {
+export function defaultConfiguration(
+  environmentId: string,
+  name?: string,
+  description?: string,
+): AbstractConfig {
   const date = new Date();
   const config = {
     id: v4(),
     type: 'config',
-    environmentId: '',
+    environmentId: environmentId,
     metadata: {},
     name: name || 'Default Configuration',
     variables: [],
@@ -64,17 +68,41 @@ export const generateUniqueId = (): string => {
   return '_' + Math.random().toString(36).substr(2, 9);
 };
 
-export const defaultMachineConfiguration = (name: string, description: string): MachineConfig => {
+export const defaultMachineConfiguration = (
+  environmentId: string,
+  name: string,
+  description: string,
+): MachineConfig => {
   return {
-    ...defaultConfiguration(name, description),
+    ...defaultConfiguration(environmentId, name, description),
     type: 'machine-config',
     parameters: {},
   };
 };
 
-export const defaultTargetConfiguration = (name: string, description: string): TargetConfig => {
+export const customMachineConfiguration = (
+  environmentId: string,
+  name: string,
+  description: string,
+  targetCon: TargetConfig,
+): MachineConfig => {
+  const config: MachineConfig = {
+    ...defaultConfiguration(environmentId, name, description),
+    type: 'machine-config',
+    parameters: targetCon.parameters,
+    metadata: targetCon.metadata,
+  };
+  config.metadata['description'] = defaultParameter('description', description);
+  return config;
+};
+
+export const defaultTargetConfiguration = (
+  environmentId: string,
+  name: string,
+  description: string,
+): TargetConfig => {
   return {
-    ...defaultConfiguration(name, description),
+    ...defaultConfiguration(environmentId, name, description),
     type: 'target-config',
     parameters: {},
   };

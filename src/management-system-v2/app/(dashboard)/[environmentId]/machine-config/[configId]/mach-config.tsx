@@ -3,9 +3,9 @@
 import { MachineConfig, ParameterContent, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter } from 'next/navigation';
 
-import { CaretRightOutlined } from '@ant-design/icons';
-import { useMemo, useState } from 'react';
-import { Collapse, theme, Modal, Form, Input, MenuProps } from 'antd';
+import { CaretRightOutlined, EditOutlined, CheckOutlined } from '@ant-design/icons';
+import { useMemo, useRef, useState } from 'react';
+import { Collapse, theme, Modal, Form, Input, Typography } from 'antd';
 import ActionButtons from './action-buttons';
 import Content from './config-content';
 import {
@@ -17,6 +17,8 @@ import {
   updateParentConfig,
 } from '@/lib/data/legacy/machine-config';
 import { defaultParameter } from '../configuration-helper';
+
+const { Text } = Typography;
 
 const CopyMachineConfigModal: React.FC<{
   open: boolean;
@@ -79,6 +81,8 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
   const router = useRouter();
 
   const [configToCopy, setConfigToCopy] = useState('');
+  const [editingMachineName, setEditingMachineName] = useState('');
+  const editIcon = useRef<HTMLElement | null>(null);
 
   const { token } = theme.useToken();
   const panelStyle = {
@@ -163,7 +167,57 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
       }
       list.push({
         key: machineConfig.id,
-        label: `Machine Tech Data Set: ${machineConfig.name}`,
+        label: (
+          <div
+            onClick={(e) => {
+              if (
+                editingMachineName === machineConfig.id ||
+                editIcon.current?.contains(e.target as Node)
+              ) {
+                e.stopPropagation();
+              }
+            }}
+            onKeyDown={(e) => {
+              if (editingMachineName === machineConfig.id && e.key === 'Enter') e.stopPropagation();
+            }}
+          >
+            <Text>
+              Machine Tech Data Set:{' '}
+              <Text
+                editable={
+                  editingEnabled && {
+                    icon: (
+                      <EditOutlined
+                        onClick={(e) => {
+                          editIcon.current = e.target as HTMLElement;
+                        }}
+                        style={{ color: 'rgba(0, 0, 0, 0.88)', padding: '0 10px' }}
+                      />
+                    ),
+                    tooltip: 'Edit Machine Config Name',
+                    enterIcon: <CheckOutlined />,
+                    onChange: (newValue) => {
+                      if (newValue) {
+                        updateMachineConfig(machineConfig.id, { name: newValue });
+                        setEditingMachineName('');
+                        router.refresh();
+                      }
+                    },
+                    onStart: () => {
+                      setEditingMachineName(machineConfig.id);
+                    },
+                    onEnd: () => {
+                      setEditingMachineName('');
+                    },
+                  }
+                }
+                style={{ display: 'inline-flex', margin: '0 10px' }}
+              >
+                {machineConfig.name}
+              </Text>
+            </Text>
+          </div>
+        ),
         children: [
           <Collapse
             bordered={false}

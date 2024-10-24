@@ -4,15 +4,18 @@
 import { Button, Result, Select, Spin, Tooltip, Space, Dropdown, Typography } from 'antd';
 import useDeployments from '../deployments-hook';
 import Content from '@/components/content';
-import BPMNCanvas from '@/components/bpmn-canvas';
+import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
+import { MdColorLens } from 'react-icons/md';
+import { ColorOptions, applyColors, colorOptions } from './instance-coloring';
+import { RemoveReadOnly } from '@/lib/typescript-utils';
 
 function getVersionInstances(process: DeployedProcessInfo, version?: number) {
   const instances = process.instances.map((instance, idx) => {
@@ -54,7 +57,9 @@ export default function ProcessDeploymentView({
   const { data: deployedProcesses, isLoading, isError } = useDeployments();
   const [selectedVersion, setSelectedVersion] = useState<VersionInfo | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
+  const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
 
+  const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
   // TODO: better loading animation
@@ -99,9 +104,9 @@ export default function ProcessDeploymentView({
   if (selectedInstance)
     selectedBpmn = selectedProcess.versions.find(
       (v) => v.version === +selectedInstance.processVersion,
-    )!.bpmn;
-  else if (selectedVersion) selectedBpmn = selectedVersion.bpmn;
-  else selectedBpmn = getLatestVersion(selectedProcess).bpmn;
+    )!;
+  else if (selectedVersion) selectedBpmn = selectedVersion;
+  else selectedBpmn = getLatestVersion(selectedProcess);
 
   return (
     <Content compact wrapperClass={contentStyles.Content}>
@@ -167,6 +172,23 @@ export default function ProcessDeploymentView({
                   </Button>
                 </Dropdown>
               </Tooltip>
+
+              <Tooltip title="TODO: color title">
+                <Dropdown
+                  menu={{
+                    items: colorOptions as RemoveReadOnly<typeof colorOptions>,
+                    selectable: true,
+                    onSelect: (item) => {
+                      if (!selectedInstance || !canvasRef.current) return;
+                      applyColors(canvasRef.current, selectedInstance, item.key as ColorOptions);
+                      setSelectedColoring(item.key as ColorOptions);
+                    },
+                    selectedKeys: [selectedColoring],
+                  }}
+                >
+                  <Button icon={<MdColorLens />} />
+                </Dropdown>
+              </Tooltip>
             </ToolbarGroup>
 
             <Space style={{ alignItems: 'start' }}>
@@ -191,7 +213,7 @@ export default function ProcessDeploymentView({
         </Toolbar>
 
         <div style={{ zIndex: '100', height: '100%' }}>
-          <BPMNCanvas bpmn={{ bpmn: selectedBpmn }} type="navigatedviewer" />
+          <BPMNCanvas bpmn={selectedBpmn} type="navigatedviewer" ref={canvasRef} />
         </div>
       </div>
     </Content>

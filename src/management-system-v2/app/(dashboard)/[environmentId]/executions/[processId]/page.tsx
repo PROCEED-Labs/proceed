@@ -14,7 +14,7 @@ import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/mode
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
 import { MdColorLens } from 'react-icons/md';
-import { ColorOptions, applyColors, colorOptions } from './instance-coloring';
+import { ColorOptions, applyColors, colorOptions, flushPreviousStyling } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 
 function getVersionInstances(process: DeployedProcessInfo, version?: number) {
@@ -49,18 +49,8 @@ function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
   return instances[firstInstance];
 }
 
-export default function ProcessDeploymentView({
-  params: { processId },
-}: {
-  params: { processId: string };
-}) {
+export default function Page({ params: { processId } }: { params: { processId: string } }) {
   const { data: deployedProcesses, isLoading, isError } = useDeployments();
-  const [selectedVersion, setSelectedVersion] = useState<VersionInfo | undefined>();
-  const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
-  const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
-
-  const canvasRef = useRef<BPMNCanvasRef>(null);
-  const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
   // TODO: better loading animation
   if (isLoading)
@@ -86,13 +76,39 @@ export default function ProcessDeploymentView({
       </Content>
     );
 
-  function onVersionChange(versionNumber: number) {
-    const version = selectedProcess!.versions.find((v) => v.version === versionNumber);
-    setSelectedVersion(version);
+  return <ProcessDeploymentView selectedProcess={selectedProcess} />;
+}
 
-    const instances = getVersionInstances(selectedProcess!, version ? version.version : undefined);
-    const youngestInstance = getYoungestInstance(instances);
-    setSelectedInstanceId(youngestInstance?.processInstanceId);
+function ProcessDeploymentView({ selectedProcess }: { selectedProcess: DeployedProcessInfo }) {
+  const [selectedVersion, setSelectedVersion] = useState<VersionInfo | undefined>();
+  const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
+  const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
+
+  const canvasRef = useRef<BPMNCanvasRef>(null);
+  const [infoPanelOpen, setInfoPanelOpen] = useState(false);
+
+  function selectNewBpmn(type: 'version' | 'instance', identifier: number | string) {
+    if (type == 'instance') {
+      setSelectedInstanceId(identifier as string);
+    } else if (type == 'version') {
+      const version = selectedProcess!.versions.find((v) => v.version === identifier);
+      setSelectedVersion(version);
+
+      const instances = getVersionInstances(
+        selectedProcess!,
+        version ? version.version : undefined,
+      );
+      const youngestInstance = getYoungestInstance(instances);
+      setSelectedInstanceId(youngestInstance?.processInstanceId);
+    }
+
+    flushPreviousStyling();
+    setSelectedColoring('processColors');
+  }
+
+  function applyColoring(type: ColorOptions) {
+    if (!selectedInstance || !canvasRef.current) return;
+    applyColors(canvasRef.current, selectedInstance, type);
   }
 
   const instances = getVersionInstances(selectedProcess, selectedVersion?.version);
@@ -128,7 +144,7 @@ export default function ProcessDeploymentView({
             <ToolbarGroup>
               <Select
                 value={selectedInstanceId}
-                onSelect={(value) => setSelectedInstanceId(value)}
+                onSelect={(value) => selectNewBpmn('instance', value)}
                 options={instances.map((instance) => ({
                   value: instance.processInstanceId,
                   label: instance.label,
@@ -161,7 +177,7 @@ export default function ProcessDeploymentView({
                       })),
                     ],
                     selectable: true,
-                    onSelect: (item) => onVersionChange(+item.key),
+                    onSelect: (item) => selectNewBpmn('version', +item.key),
                     selectedKeys: selectedVersion ? [`${selectedVersion.version}`] : [],
                   }}
                 >
@@ -179,9 +195,8 @@ export default function ProcessDeploymentView({
                     items: colorOptions as RemoveReadOnly<typeof colorOptions>,
                     selectable: true,
                     onSelect: (item) => {
-                      if (!selectedInstance || !canvasRef.current) return;
-                      applyColors(canvasRef.current, selectedInstance, item.key as ColorOptions);
                       setSelectedColoring(item.key as ColorOptions);
+                      applyColoring(item.key as ColorOptions);
                     },
                     selectedKeys: [selectedColoring],
                   }}
@@ -219,3 +234,4 @@ export default function ProcessDeploymentView({
     </Content>
   );
 }
+let old;

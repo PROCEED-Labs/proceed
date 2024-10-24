@@ -26,7 +26,11 @@ export type ColorOptions = (typeof colorOptions)[number]['key'];
 // NOTE: this would break if some of these functions are used somewhere else
 let appliedStyling: { elementId: string; color: string }[] = [];
 
-export async function applyColors(
+export function flushPreviousStyling() {
+  appliedStyling = [];
+}
+
+export function applyColors(
   bpmnViewer: BPMNCanvasRef,
   instance: InstanceInfo,
   colors: ColorOptions,

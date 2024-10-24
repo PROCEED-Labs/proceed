@@ -199,7 +199,7 @@ function nestedParametersFromStorage(parameterIds: string[]) {
   parameterIds.forEach((id) => {
     const storedParameter = storedData.parameters[id];
     // TODO remove
-    if (true || (storedParameter && storedParameter.key)) {
+    if (false || (storedParameter && storedParameter.key)) {
       parameters[storedParameter.key] = {
         ...storedParameter,
         parameters: nestedParametersFromStorage(storedParameter.parameters),
@@ -566,7 +566,6 @@ export async function addParentConfig(
     return metadata;
   } catch (e: unknown) {
     const error = e as Error;
-    // console.log(error.message);
     return userError(error.message ?? "Couldn't create Machine Config");
   }
 }

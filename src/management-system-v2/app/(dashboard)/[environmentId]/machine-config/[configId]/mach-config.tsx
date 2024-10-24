@@ -187,6 +187,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
           />,
         ],
         extra: (
+          // TODO stop propagation to collapse component on click
           <ActionButtons
             editable={editingEnabled}
             options={['copy', 'delete']}

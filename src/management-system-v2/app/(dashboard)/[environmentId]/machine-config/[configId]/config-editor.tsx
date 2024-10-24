@@ -46,10 +46,12 @@ import ConfigModal from '@/components/config-modal';
 import {
   addMachineConfig,
   addTargetConfig,
+  removeTargetConfig,
   updateMachineConfig,
   updateParentConfig,
   updateTargetConfig,
 } from '@/lib/data/legacy/machine-config';
+import ActionButtons from './action-buttons';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;
@@ -171,6 +173,11 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     router.refresh();
   };
 
+  const handleDelete = async (id: string) => {
+    if (id) await removeTargetConfig(id);
+    router.refresh();
+  };
+
   const exportCurrentConfig = () => {
     const blob = new Blob([JSON.stringify([selectedConfig], null, 2)], {
       type: 'application/json',
@@ -200,7 +207,6 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           editingEnabled={editable}
         />
       ),
-      /* extra: <Tooltip editable={editable} options={['copy', 'edit']} actions={...}/>, */ ///TODO
       style: { ...panelStyle, border: '1px solid #87e8de', background: 'rgba(255, 255, 255, 0.9)' }, //cyan-3
     });
 
@@ -212,7 +218,14 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           key: '2',
           label: title,
           children: <TargetConfiguration parentConfig={parentConfig} editingEnabled={editable} />,
-          /* extra:  <Tooltip editable={editable} options={['copy', 'edit', 'delete']} actions={...}/> */ //TODO
+          extra: (
+            // TODO stop propagation to collapse component on click
+            <ActionButtons
+              editable={editable}
+              options={['delete']}
+              actions={{ delete: () => handleDelete(currentConfig.targetConfig?.id ?? '') }}
+            />
+          ),
           style: {
             ...panelStyle,
             border: '1px solid #91caff',

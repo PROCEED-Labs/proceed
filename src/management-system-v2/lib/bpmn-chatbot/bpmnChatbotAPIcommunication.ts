@@ -3,7 +3,11 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { tools } from './bpmn-chatbot-tools';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+if (!process.env.GEMINI_API_KEY) {
+  throw Error('Environment variable GEMINI_API_KEY not set.');
+}
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function sendToAPI(userPrompt: string, processXml: string) {
   const model = genAI.getGenerativeModel({

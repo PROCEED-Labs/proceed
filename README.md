@@ -83,6 +83,12 @@ yarn dev-engine-web
 
 **Management System:**
 
+Before using the BPMN chat bot you need to create an API key and add it as an environment variable. If you are not interesting in using the chat bot ignore the following steps.
+
+1. Go to https://ai.google.dev.
+2. Log in and generate an API key.
+3. Copy the API key and create an enviroment variable named GEMINI_API_KEY and paste the copied API key as value.
+
 ```
 // NextJS frontend
 yarn dev-ms

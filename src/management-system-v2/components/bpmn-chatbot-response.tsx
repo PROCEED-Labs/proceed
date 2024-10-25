@@ -1,3 +1,4 @@
+import { FunctionCall } from '@google/generative-ai';
 import { Modal } from 'antd';
 import Title from 'antd/es/typography/Title';
 import React from 'react';
@@ -11,7 +12,7 @@ type ChatbotResponseModalProps = {
 export type ChatbotInteraction = {
   userPrompt: string;
   bpmnProcess: string;
-  chatbotResponse: any[];
+  chatbotResponse: FunctionCall[] | undefined;
 };
 
 const ChatbotResponseModal: React.FC<ChatbotResponseModalProps> = ({

@@ -5,10 +5,7 @@ import { getNewShapePosition } from 'bpmn-js/lib/features/auto-place/BpmnAutoPla
 import { Element, Shape } from 'bpmn-js/lib/model/Types';
 import { MessageOutlined } from '@ant-design/icons';
 import ChatbotResponseModal, { ChatbotInteraction } from './bpmn-chatbot-response';
-
-/*For chatbots that have features like tool use or function calling.
-Defines the modeler functionality through JSON Scheme (see: https://json-schema.org/).*/
-import tools from './bpmn-chatbot-tools.json';
+import { sendToAPI } from '@/lib/bpmn-chatbot/bpmnChatbotAPIcommunication';
 
 type ChatbotDialogProps = {
   show: boolean;
@@ -31,15 +28,17 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   function onPrompt({ prompt }: FieldType) {
     setWaitForResponse(true);
     getProcessXml().then((process) => {
-      fetchChatbot(prompt, process)
+      sendToAPI(prompt, process)
         .then((res) => {
-          processResponse(res);
+          if (res) {
+            processResponse(res);
+          }
           setLastPrompts(
             lastPrompts.concat({
               userPrompt: prompt,
               bpmnProcess: process,
-              chatbotResponse: res.content,
-            }),
+              chatbotResponse: res,
+            })
           );
         })
         .finally(() => setWaitForResponse(false));
@@ -52,7 +51,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
     new_element_name: string,
     source_element_id_or_name: string,
     created: { name: string; shape: Shape }[],
-    label: string,
+    label: string
   ): Shape {
     let source = modeler?.getElement(source_element_id_or_name) as Shape;
     if (!source) {
@@ -66,7 +65,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
       source,
       shape,
       { type: 'bpmn:SequenceFlow' },
-      root!,
+      root!
     );
     modeling.updateLabel(connection, label);
     modeling.updateLabel(shape, new_element_name);
@@ -76,7 +75,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
     source_element_id_or_name: string,
     target_element_id_or_name: string,
     created: { name: string; shape: Shape }[],
-    label?: string,
+    label?: string
   ): void {
     let source = modeler?.getElement(source_element_id_or_name) as Shape;
     if (!source) {
@@ -90,7 +89,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
       source,
       target,
       { type: 'bpmn:SequenceFlow' },
-      root!,
+      root!
     );
     if (label) {
       modeling.updateLabel(connection, label);
@@ -117,7 +116,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
           res.args.source_element_id_or_name,
           res.args.target_element_id_or_name,
           created,
-          res.args.label,
+          res.args.label
         );
       } else if (res.name == 'remove_elements') {
         remove_elements(res.args.element_ids);
@@ -127,7 +126,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
           res.args.name,
           res.args.source_element_id_or_name,
           created,
-          res.args.label,
+          res.args.label
         );
         created.push({ name: res.args.name, shape: shape });
       }
@@ -148,17 +147,6 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
         return '<process></process>';
       }
     });
-  }
-
-  //prompting an external service for the chatbot
-  function fetchChatbot(userPrompt: string, process: string): Promise<any> {
-    return fetch('http://localhost:2000/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userPrompt: userPrompt, process: process, tools: tools }),
-    }).then((res) => res.json());
   }
 
   return (
@@ -215,5 +203,4 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
     </>
   );
 };
-
 export default ChatbotDialog;

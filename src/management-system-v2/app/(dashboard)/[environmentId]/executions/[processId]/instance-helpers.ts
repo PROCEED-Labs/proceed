@@ -1,3 +1,18 @@
+export type ElementStatus =
+  | 'PAUSED'
+  | 'DEPLOYMENT_WAITING'
+  | 'READY'
+  | 'RUNNING'
+  | 'COMPLETED'
+  | 'FORWARDED'
+  | 'ENDED'
+  | 'ABORTED'
+  | 'ERROR-SEMANTIC'
+  | 'ERROR-TECHNICAL'
+  | 'ERROR-INTERRUPTED'
+  | 'ERROR-CONSTRAINT-UNFULFILLED'
+  | 'STOPPED';
+
 export function statusToType(status: string) {
   switch (status) {
     case 'PAUSED':

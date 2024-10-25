@@ -16,6 +16,7 @@ import { useSearchParamState } from '@/lib/use-search-param-state';
 import { MdColorLens } from 'react-icons/md';
 import { ColorOptions, applyColors, colorOptions, flushPreviousStyling } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 function getVersionInstances(process: DeployedProcessInfo, version?: number) {
   const instances = process.instances.map((instance, idx) => {
@@ -83,6 +84,7 @@ function ProcessDeploymentView({ selectedProcess }: { selectedProcess: DeployedP
   const [selectedVersion, setSelectedVersion] = useState<VersionInfo | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
+  const [selectedElement, setSelectedElement] = useState<ElementLike | undefined>();
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
@@ -223,6 +225,7 @@ function ProcessDeploymentView({ selectedProcess }: { selectedProcess: DeployedP
               <div style={{ height: '0' }}>
                 <InstanceInfoPanel
                   instance={selectedInstance}
+                  selectedElement={selectedElement}
                   open={infoPanelOpen}
                   close={() => setInfoPanelOpen(false)}
                 />
@@ -232,7 +235,23 @@ function ProcessDeploymentView({ selectedProcess }: { selectedProcess: DeployedP
         </Toolbar>
 
         <div style={{ zIndex: '100', height: '100%' }}>
-          <BPMNCanvas bpmn={selectedBpmn} type="navigatedviewer" ref={canvasRef} />
+          <BPMNCanvas
+            bpmn={selectedBpmn}
+            type="navigatedviewer"
+            ref={canvasRef}
+            onSelectionChange={(_, newSelection) => {
+              const element = newSelection.at(-1);
+
+              if (
+                element?.type === 'bpmn:Process' || // allow the user to close the ActivityCard by clicking on the open space
+                element?.id.includes('_plane') ||
+                element?.type === 'bpmn:SequenceFlow'
+              )
+                return;
+
+              setSelectedElement(element ?? canvasRef.current?.getCurrentRoot());
+            }}
+          />
         </div>
       </div>
     </Content>

@@ -251,7 +251,7 @@ function ProcessDeploymentView({
               const element = newSelection.at(-1);
 
               if (
-                element?.type === 'bpmn:Process' || // allow the user to close the ActivityCard by clicking on the open space
+                element?.type === 'bpmn:Process' ||
                 element?.id.includes('_plane') ||
                 element?.type === 'bpmn:SequenceFlow'
               )

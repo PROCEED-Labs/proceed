@@ -179,6 +179,7 @@ export async function deployProcess(
     ],
     spaceId,
   );
+  console.log('processesExportData', processesExportData);
 
   if (method === 'static') {
     await staticDeployment(definitionId, version, processesExportData, forceMachine);
@@ -221,41 +222,32 @@ export type InstanceInfo = {
     previousFlowElementId: string;
     intermediateVariablesState: null;
     localExecutionTime: number;
+    currentFlowNodeProgress?: { value: number; manual: boolean };
+    milestones: any[];
+    priority?: number;
+    costsRealSetByOwner?: string;
   }[];
   variables: {};
-  log: (
-    | {
-        flowElementId: string;
-        tokenId: string;
-        executionState: string;
-        startTime: number;
-        endTime: number;
-        machine: {
-          id: string;
-          name: string;
-          ip: string;
-          port: number;
-        };
-        progress?: undefined;
-      }
-    | {
-        flowElementId: string;
-        tokenId: string;
-        executionState: string;
-        startTime: number;
-        endTime: number;
-        progress: {
-          value: number;
-          manual: boolean;
-        };
-        machine: {
-          id: string;
-          name: string;
-          ip: string;
-          port: number;
-        };
-      }
-  )[];
+  log: {
+    flowElementId: string;
+    tokenId: string;
+    executionState: string;
+    startTime: number;
+    endTime: number;
+    progress?: {
+      value: number;
+      manual: boolean;
+    };
+    machine: {
+      id: string;
+      name: string;
+      ip: string;
+      port: number;
+    };
+    executionWasInterrupted?: true;
+    priority?: number;
+    costsRealSetByOwner?: string;
+  }[];
   adaptationLog: any[];
   processVersion: string;
   userTasks: any[];

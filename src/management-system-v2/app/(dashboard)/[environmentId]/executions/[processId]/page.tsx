@@ -80,7 +80,11 @@ export default function Page({ params: { processId } }: { params: { processId: s
   return <ProcessDeploymentView selectedProcess={selectedProcess} />;
 }
 
-function ProcessDeploymentView({ selectedProcess }: { selectedProcess: DeployedProcessInfo }) {
+function ProcessDeploymentView({
+  selectedProcess,
+}: {
+  selectedProcess: DeployedProcessInfo & { name: string };
+}) {
   const [selectedVersion, setSelectedVersion] = useState<VersionInfo | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
@@ -224,8 +228,12 @@ function ProcessDeploymentView({ selectedProcess }: { selectedProcess: DeployedP
 
               <div style={{ height: '0' }}>
                 <InstanceInfoPanel
-                  instance={selectedInstance}
-                  selectedElement={selectedElement}
+                  info={{
+                    instance: selectedInstance,
+                    element: selectedElement!,
+                    process: selectedProcess,
+                    version: selectedVersion!,
+                  }}
                   open={infoPanelOpen}
                   close={() => setInfoPanelOpen(false)}
                 />

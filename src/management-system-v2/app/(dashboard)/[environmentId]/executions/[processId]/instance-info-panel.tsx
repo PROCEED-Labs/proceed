@@ -1,126 +1,230 @@
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
-import { InstanceInfo } from '@/lib/engines/deployment';
-import { Alert, Drawer, Grid, Tabs } from 'antd';
+import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
+import { Alert, Checkbox, Drawer, Grid, Image, Progress, ProgressProps, Tabs } from 'antd';
 import React from 'react';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { statusToType } from './instance-helpers';
+import { getMetaDataFromElement } from '@proceed/bpmn-helper';
+import { generateRequestUrl } from '@/lib/engines/endpoints';
+
+type RelevantInfo = {
+  instance?: InstanceInfo;
+  process: DeployedProcessInfo & { name: string };
+  element: ElementLike;
+  version: VersionInfo;
+};
 
 function DisplayTable({ data }: { data: { title: ReactNode; children: ReactNode }[] }) {
   // TODO: make this responsive
   return (
-    <>
+    <table style={{ borderSpacing: '0 .5rem', borderCollapse: 'separate' }}>
       {data.map((item, idx) => (
-        <div key={idx} style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-          <span style={{ width: '20%' }}>{item.title}</span>
-          <span>{item.children}</span>
-        </div>
+        <tr key={idx}>
+          <td style={{ paddingRight: '1rem' }}>{item.title}</td>
+          <td>{item.children}</td>
+        </tr>
       ))}
-    </>
+    </table>
   );
 }
 
-function Status({ instance, element }: { instance: InstanceInfo; element: ElementLike }) {
-  const isRootElement = element && element.type === 'bpmn:Process';
+function Status({ info }: { info: RelevantInfo }) {
+  const statusEntries: { title: ReactNode; children: ReactNode }[] = [];
 
-  let status = '';
-  if (isRootElement && instance) {
-    status = instance.instanceState[0];
-  } else if (element && instance) {
-    const elementInfo = instance.log.find((l) => l.flowElementId == element.id);
+  const isRootElement = info.element && info.element.type === 'bpmn:Process';
+  const metaData = getMetaDataFromElement(info.element.businessObject);
+  const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
+  const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
+
+  // Element image
+  if (metaData.overviewImage)
+    statusEntries.push({
+      title: 'Image',
+      children: (
+        <div
+          style={{
+            width: '75%',
+            display: 'flex',
+            justifyContent: 'center',
+            margin: 'auto',
+            marginTop: '1rem',
+          }}
+        >
+          <Image
+            src={generateRequestUrl(
+              { id: '', ip: 'localhost', port: 33029 },
+              `/resources/process/${info.process.definitionId}/images/${metaData.overviewImage}`,
+            )}
+          />
+        </div>
+      ),
+    });
+
+  // Element status
+  let status = undefined;
+  if (isRootElement && info.instance) {
+    status = info.instance.instanceState[0];
+  } else if (info.element && info.instance) {
+    const elementInfo = info.instance.log.find((l) => l.flowElementId == info.element.id);
     if (elementInfo) {
       status = elementInfo.executionState;
     } else {
-      const tokenInfo = instance.tokens.find((l) => l.currentFlowElementId == element.id);
+      const tokenInfo = info.instance.tokens.find((l) => l.currentFlowElementId == info.element.id);
       status = tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
     }
   }
-  const statusType = statusToType(status);
+  const statusType = status && statusToType(status);
+
+  statusEntries.push({
+    title: 'Current state:',
+    children: status && statusType && <Alert type={statusType} message={status} showIcon />,
+  });
 
   // from ./src/management-system/src/frontend/components/deployments/activityInfo/ActivityStatusInformation.vue
-
-  // TODO: image
-
-  // TODO: current state
-
   // TODO: Editable state?
 
-  // TODO: !rootElement External: boolean state
-  // return (
-  //   this.selectedElement &&
-  //   this.selectedElement.businessObject &&
-  //   this.selectedElement.businessObject.external
-  // );
+  // Is External
+  if (!isRootElement) {
+    statusEntries.push({
+      title: 'External:',
+      children: (
+        <Checkbox
+          disabled
+          value={info.element.businessObject && info.element.businessObject.external}
+        />
+      ),
+    });
+  }
 
-  // TODO: Editable progress
+  // Progress
+  // TODO: editable progress
+  // see src/management-system/src/frontend/components/deployments/activityInfo/ProgressSetter.vue
+  if (info.instance && !isRootElement) {
+    let progress:
+      | { value: number; manual: boolean; milestoneCalculatedProgress?: number }
+      | undefined = undefined;
+    if (token && token.currentFlowNodeProgress) {
+      let milestoneCalculatedProgress = 0;
+      if (token.milestones && Object.keys(token.milestones).length > 0) {
+        const milestoneProgressValues = Object.values(token.milestones);
+        milestoneCalculatedProgress =
+          milestoneProgressValues.reduce((acc, milestoneVal) => acc + milestoneVal) /
+          milestoneProgressValues.length;
+      }
 
-  // TODO: User task
+      progress = {
+        ...token.currentFlowNodeProgress,
+        milestoneCalculatedProgress,
+      };
+    } else if (logInfo?.progress) {
+      progress = logInfo.progress;
+    }
 
-  // TODO: Planned cost
+    if (progress) {
+      let progressStatus: ProgressProps['status'] = 'normal';
+      if (statusType === 'success') progressStatus = 'success';
+      else if (statusType === 'error') progressStatus = 'exception';
 
-  // TODO: real cost
+      statusEntries.push({
+        title: 'Progress',
+        children: <Progress percent={progress.value} status={progressStatus} />,
+      });
+    }
+  }
 
-  // TODO: Documentation
+  // User task
+  // TODO: editable priority
+  if (info.element.type === 'bpmn:UserTask') {
+    let priority: number | undefined = undefined;
 
-  return (
-    <DisplayTable
-      data={[{ title: 'Status', children: <Alert type={statusType} message={status} /> }]}
-    />
-  );
+    if (info.instance) {
+      if (token) priority = token.priority;
+      else if (logInfo) priority = logInfo.priority;
+    } else {
+      priority = metaData['defaultPriority'];
+    }
+
+    statusEntries.push({
+      title: 'Priority:',
+      children: priority,
+    });
+  }
+
+  // Planned costs
+  // TODO: Costs currency
+  statusEntries.push({ title: 'Planned Costs:', children: metaData['costsPlanned'] });
+
+  // Real Costs
+  // TODO: Set real costs
+  if (info.instance && !isRootElement) {
+    let costs: string | undefined = undefined;
+    if (token) costs = token.costsRealSetByOwner;
+    else if (logInfo) costs = logInfo.costsRealSetByOwner;
+
+    statusEntries.push({ title: 'Real Costs:', children: costs });
+  }
+
+  // Documentation
+  statusEntries.push({
+    title: 'Documentation:',
+    children: info.element.businessObject?.documentation?.[0]?.text,
+  });
+
+  // TODO: Activity time calculation
+
+  return <DisplayTable data={statusEntries} />;
 }
 
 export default function InstanceInfoPanel({
   open,
   close,
-  instance,
-  selectedElement,
+  info,
 }: {
   close: () => void;
   open: boolean;
-  instance?: InstanceInfo;
-  selectedElement?: ElementLike;
+  info: RelevantInfo;
 }) {
   const resizableElementRef = useRef<ResizableElementRefType>(null);
   const breakpoints = Grid.useBreakpoint();
 
-  const title = selectedElement?.businessObject?.name || selectedElement?.id || 'How to PROCEED?';
+  const title = info.element?.businessObject?.name || info.element?.id || 'How to PROCEED?';
 
   if (breakpoints.xl && !open) return null;
 
-  const tabs =
-    instance && selectedElement ? (
-      <Tabs
-        defaultActiveKey="1"
-        items={[
-          {
-            key: 'Status',
-            label: 'Status',
-            children: <Status instance={instance} element={selectedElement} />,
-          },
-          {
-            key: 'Advanced',
-            label: 'Advanced',
-            children: 'How to proceed',
-          },
-          {
-            key: 'Timing',
-            label: 'Timing',
-            children: 'How to proceed',
-          },
-          {
-            key: 'Assignments',
-            label: 'Assignments',
-            children: 'How to proceed',
-          },
-          {
-            key: 'Resources',
-            label: 'Resources',
-            children: 'How to proceed',
-          },
-        ]}
-      />
-    ) : null;
+  const tabs = info.element ? (
+    <Tabs
+      defaultActiveKey="1"
+      items={[
+        {
+          key: 'Status',
+          label: 'Status',
+          children: <Status info={info} />,
+        },
+        {
+          key: 'Advanced',
+          label: 'Advanced',
+          children: 'How to proceed',
+        },
+        {
+          key: 'Timing',
+          label: 'Timing',
+          children: 'How to proceed',
+        },
+        {
+          key: 'Assignments',
+          label: 'Assignments',
+          children: 'How to proceed',
+        },
+        {
+          key: 'Resources',
+          label: 'Resources',
+          children: 'How to proceed',
+        },
+      ]}
+    />
+  ) : null;
 
   if (breakpoints.xl)
     return (

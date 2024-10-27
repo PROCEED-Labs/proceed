@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
-import { Setting } from '../utils';
+import { ContextMenu, Setting } from './utils';
 import ImageUpload from '@/components/image-upload';
 
 type ImageProps = {
@@ -42,105 +42,110 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   console.log(src);
 
   return (
-    <div
-      className="user-task-form-image"
-      ref={(r) => {
-        r && connect(r);
-      }}
-      onMouseMove={(e) => {
-        if (!editingEnabled) return;
-        const resizeBorder = e.currentTarget.getBoundingClientRect().bottom - 4;
-        if (src && e.clientY > resizeBorder && !showResize) {
-          setShowResize(true);
-        }
-      }}
-    >
-      <img
-        ref={imageRef}
-        style={{ width: width && `${width}%` }}
-        src={src ? `${src}?${reloadParam}` : fallbackImage}
-      />
-      {editingEnabled && isHovered && (
-        <ImageUpload
-          imageExists={!!src}
-          onReload={() => setProp((props: ImageProps) => (props.reloadParam = Date.now()))}
-          onImageUpdate={(imageFileName) => {
-            setProp((props: ImageProps) => {
-              props.src = imageFileName && `${baseUrl}/${imageFileName}`;
-              props.width = undefined;
-            });
-          }}
-          endpoints={{
-            postEndpoint: baseUrl,
-            putEndpoint: src,
-            deleteEndpoint: src,
-          }}
+    <ContextMenu menu={[]}>
+      <div
+        className="user-task-form-image"
+        ref={(r) => {
+          r && connect(r);
+        }}
+        onMouseMove={(e) => {
+          if (!editingEnabled) return;
+          const resizeBorder = e.currentTarget.getBoundingClientRect().bottom - 4;
+          if (src && e.clientY > resizeBorder && !showResize) {
+            setShowResize(true);
+          }
+        }}
+      >
+        <img
+          ref={imageRef}
+          style={{ width: width && `${width}%` }}
+          src={src ? `${src}?${reloadParam}` : fallbackImage}
         />
-      )}
-      {/* Allows resizing  */}
-      {/* TODO: maybe use some react library for this */}
-      {showResize && (
-        <div
-          style={{
-            width: '100%',
-            height: '8px',
-            bottom: -4,
-            cursor: 'ns-resize',
-            opacity: 0,
-          }}
-          onMouseLeave={() => {
-            if (!isResizing) {
-              setShowResize(false);
-            }
-          }}
-          onMouseDownCapture={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-
-            setIsResizing(true);
-
-            const handleMove = (e: MouseEvent) => {
-              if (imageRef.current && imageRef.current.parentElement) {
-                const posY = e.clientY;
-                const { width: imageContainerWidth } =
-                  imageRef.current.parentElement.getBoundingClientRect();
-                const {
-                  top: imageTop,
-                  bottom: imageBottom,
-                  height: imageHeight,
-                  width: imageWidth,
-                } = imageRef.current.getBoundingClientRect();
-
-                if (posY <= imageTop || (posY > imageBottom && imageContainerWidth === imageWidth))
-                  return;
-
-                const newHeigth = imageHeight + (posY - imageBottom);
-                const aspect = imageWidth / imageHeight;
-                const newWidth = Math.min(aspect * newHeigth, imageContainerWidth);
-                const newPercent = (100 * newWidth) / imageContainerWidth;
-                if (newPercent !== width)
-                  setProp((props: ImageProps) => (props.width = newPercent));
+        {editingEnabled && isHovered && (
+          <ImageUpload
+            imageExists={!!src}
+            onReload={() => setProp((props: ImageProps) => (props.reloadParam = Date.now()))}
+            onImageUpdate={(imageFileName) => {
+              setProp((props: ImageProps) => {
+                props.src = imageFileName && `${baseUrl}/${imageFileName}`;
+                props.width = undefined;
+              });
+            }}
+            endpoints={{
+              postEndpoint: baseUrl,
+              putEndpoint: src,
+              deleteEndpoint: src,
+            }}
+          />
+        )}
+        {/* Allows resizing  */}
+        {/* TODO: maybe use some react library for this */}
+        {showResize && (
+          <div
+            style={{
+              width: '100%',
+              height: '8px',
+              bottom: -4,
+              cursor: 'ns-resize',
+              opacity: 0,
+            }}
+            onMouseLeave={() => {
+              if (!isResizing) {
+                setShowResize(false);
               }
-            };
+            }}
+            onMouseDownCapture={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
 
-            const { body } = e.currentTarget.ownerDocument;
+              setIsResizing(true);
 
-            const handleEnd = () => {
-              body.removeEventListener('mousemove', handleMove);
-              body.removeEventListener('mouseup', handleEnd);
-              body.removeEventListener('mouseleave', handleEnd);
-              setShowResize(false);
-              setIsResizing(false);
-              // setCanDrag(true);
-            };
+              const handleMove = (e: MouseEvent) => {
+                if (imageRef.current && imageRef.current.parentElement) {
+                  const posY = e.clientY;
+                  const { width: imageContainerWidth } =
+                    imageRef.current.parentElement.getBoundingClientRect();
+                  const {
+                    top: imageTop,
+                    bottom: imageBottom,
+                    height: imageHeight,
+                    width: imageWidth,
+                  } = imageRef.current.getBoundingClientRect();
 
-            body.addEventListener('mousemove', handleMove);
-            body.addEventListener('mouseup', handleEnd);
-            body.addEventListener('mouseleave', handleEnd);
-          }}
-        ></div>
-      )}
-    </div>
+                  if (
+                    posY <= imageTop ||
+                    (posY > imageBottom && imageContainerWidth === imageWidth)
+                  )
+                    return;
+
+                  const newHeigth = imageHeight + (posY - imageBottom);
+                  const aspect = imageWidth / imageHeight;
+                  const newWidth = Math.min(aspect * newHeigth, imageContainerWidth);
+                  const newPercent = (100 * newWidth) / imageContainerWidth;
+                  if (newPercent !== width)
+                    setProp((props: ImageProps) => (props.width = newPercent));
+                }
+              };
+
+              const { body } = e.currentTarget.ownerDocument;
+
+              const handleEnd = () => {
+                body.removeEventListener('mousemove', handleMove);
+                body.removeEventListener('mouseup', handleEnd);
+                body.removeEventListener('mouseleave', handleEnd);
+                setShowResize(false);
+                setIsResizing(false);
+                // setCanDrag(true);
+              };
+
+              body.addEventListener('mousemove', handleMove);
+              body.addEventListener('mouseup', handleEnd);
+              body.addEventListener('mouseleave', handleEnd);
+            }}
+          ></div>
+        )}
+      </div>
+    </ContextMenu>
   );
 };
 

@@ -19,7 +19,14 @@ import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
-import ResourceExtension from '@/lib/modeler-extensions/Resources';
+import {
+  ResourceRulesModule,
+  ResourceReplaceModule,
+  ResourceRendererModule,
+  ResourceLabelEditingModule,
+  ResourcePaletteProviderModule,
+  ResourceContextPadProviderModule,
+} from '@/lib/modeler-extensions/Resources';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -183,12 +190,24 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       const ModelerOrViewer =
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
+      const additionalModules: any[] = [ResourceRendererModule];
+
+      if (type === 'modeler') {
+        additionalModules.push(
+          ResourceContextPadProviderModule,
+          ResourcePaletteProviderModule,
+          ResourceLabelEditingModule,
+          ResourceReplaceModule,
+          ResourceRulesModule,
+        );
+      }
+
       modeler.current = new ModelerOrViewer({
         container: canvas.current!,
         moddleExtensions: {
           proceed: schema,
         },
-        additionalModules: [ResourceExtension],
+        additionalModules,
       });
 
       if (type === 'modeler') {

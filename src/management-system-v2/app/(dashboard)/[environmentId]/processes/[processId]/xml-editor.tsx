@@ -231,8 +231,8 @@ const XmlEditor: FC<XmlEditorProps> = ({
           Cancel
         </Button>,
         ((!canSave || saveState === 'error') && saveButton['disabled']) ||
-          (saveState === 'warning' && saveButton['warning']) ||
-          saveButton['normal'],
+        (saveState === 'warning' && saveButton['warning']) ||
+        saveButton['normal'],
       ]}
     >
       <Editor

@@ -45,7 +45,6 @@ export default class CustomPaletteProvider implements PaletteProvider {
         const shape = elementFactory.createShape(assign({ type: type, width: 50, height: 50 }));
 
         shape.businessObject.machineType = machineType;
-
         create.start(event, shape);
       }
 
@@ -60,7 +59,7 @@ export default class CustomPaletteProvider implements PaletteProvider {
       };
     }
 
-    return function (entries) {
+    return function(entries) {
       return {
         ...entries,
         'create.human-resource': createAction(

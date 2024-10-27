@@ -27,14 +27,7 @@ export default class ResourceRenderer extends BaseRenderer {
 
   // this tells bpmn-js which modules need to be passed to the constructor (the order must be the
   // same as in the constructor!!)
-  static $inject: string[] = [
-    'eventBus',
-    'pathMap',
-    'styles',
-    'bpmnRenderer',
-    'config',
-    'directEditing',
-  ];
+  static $inject: string[] = ['eventBus', 'pathMap', 'styles', 'bpmnRenderer', 'config'];
 
   constructor(
     eventBus: EventBus,
@@ -42,13 +35,8 @@ export default class ResourceRenderer extends BaseRenderer {
     styles: any,
     bpmnRenderer: BpmnRenderer,
     config: any,
-    directEditing: any,
   ) {
     super(eventBus, HIGH_PRIORITY);
-
-    eventBus.on('element.dblclick', 200000, () => {
-      console.log('Test');
-    });
 
     this.pathMap = pathMap;
     this.styles = styles;
@@ -81,6 +69,8 @@ export default class ResourceRenderer extends BaseRenderer {
           return draw(iconPaths.laptop);
         case 'Server':
           return draw(iconPaths.server);
+        default:
+          throw new Error('Cannot draw unknown performer type');
       }
     }
 

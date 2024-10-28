@@ -1,6 +1,7 @@
 import { test, expect } from './processes.fixtures';
 import { openModal, closeModal, waitForHydration } from '../testUtils';
 import { asyncMap } from 'proceed-management-system/src/shared-frontend-backend/helpers/javascriptHelpers';
+import { Page } from '@playwright/test';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
@@ -1314,7 +1315,16 @@ test.describe('Favourites', () => {
 });
 
 test.describe('Selecting Processes', () => {
+  test.slow(); // triples test time (see https://playwright.dev/docs/test-timeouts)
+
+  /* When copying many processes, not all of them will be added to processListPage.definitionsIDs, hence, we track the number of added processes */
+  let numberOfProcesses = 0;
+  const getNumberOfSelectedProcesses = async (page: Page) => {
+    return Number.parseInt(await page.getByRole('note').textContent());
+  };
+
   test.beforeEach(async ({ processListPage }) => {
+    numberOfProcesses = 0;
     const { page } = processListPage;
     /* TODO: The number of processes necessary to cause second page depends on viewport height */
     /* Create 10 processes + XYZ Process ( =11) */
@@ -1323,14 +1333,19 @@ test.describe('Selecting Processes', () => {
         processName: `Process ${i}`,
         returnToProcessList: true,
       });
+      numberOfProcesses++;
     }
 
     /* Copy + Paste until multiple pages */
     while ((await page.locator('.ant-pagination-next').getAttribute('aria-disabled')) === 'true') {
       await page.getByRole('main').press('ControlOrMeta+a');
+      const adding = await getNumberOfSelectedProcesses(page);
+
       await page.getByRole('main').press('ControlOrMeta+c');
       const modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+v'));
       await closeModal(modal, () => page.getByRole('main').press('ControlOrMeta+Enter'));
+
+      numberOfProcesses += adding;
     }
 
     /* Add Copys to processListPage.processDefinitionIds */
@@ -1356,18 +1371,18 @@ test.describe('Selecting Processes', () => {
       processName: 'XYZ',
       returnToProcessList: true,
     });
+    numberOfProcesses++;
   });
+
+  const getNumberOfVisibleRows = async (page: Page) => {
+    return await page.locator('tbody>tr:not(.ant-table-measure-row)').count(); // Ignore measurement row
+  };
 
   test('Selecting Processes with click', async ({ processListPage }) => {
     const { page } = processListPage;
     const inputSearch = await page.locator('.ant-input-affix-wrapper');
 
-    const getNumberOfVisibleRows = async () => {
-      return await page.locator('tbody tr').count();
-    };
-
     const processIDs = processListPage.getDefinitionIds();
-
     /* ____________________________________ */
     /* Selection persists after page change */
     /* Select the first process*/
@@ -1395,9 +1410,9 @@ test.describe('Selecting Processes', () => {
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
-    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows(page)) + 1}`);
 
     /* Deselect all visible */
     await page.getByLabel('Select all').uncheck();
@@ -1433,9 +1448,9 @@ test.describe('Selecting Processes', () => {
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
-    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows(page)) + 1}`);
 
     /* ____________________________________ */
     /* Selection persists after folder change (? TODO:) */
@@ -1444,20 +1459,16 @@ test.describe('Selecting Processes', () => {
     processListPage,
   }) => {
     const { page } = processListPage;
-    const processIDs = processListPage.getDefinitionIds();
-    const getNumberOfVisibleRows = async () => {
-      return await page.locator('tbody tr').count();
-    };
 
     /* Select all with ctrl + a */
     await page.getByRole('main').press('ControlOrMeta+a');
 
     /* Check if all visible selected */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
 
     /* Check if displayed note show correct number */
-    await expect(await page.getByRole('note')).toContainText(`${processIDs.length}`);
+    await expect(await page.getByRole('note')).toContainText(`${numberOfProcesses}`);
   });
 });

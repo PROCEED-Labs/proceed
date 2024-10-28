@@ -59,9 +59,13 @@ export default class CustomPaletteProvider implements PaletteProvider {
       };
     }
 
-    return function(entries) {
+    return function (entries) {
       return {
         ...entries,
+        'flow-separator': {
+          group: 'activity',
+          separator: true,
+        },
         'create.human-resource': createAction(
           'proceed:HumanPerformer',
           'perfomer',

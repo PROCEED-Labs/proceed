@@ -500,10 +500,11 @@ test('sorting process list columns', async ({ processListPage }) => {
   }
 
   async function getColumnValues(col: number) {
-    const tableRows = await page.locator('tbody tr').all();
+    const tableRows = await page.locator('tbody>tr:not(.ant-table-measure-row)').all();
     const rowNames: { text: string; ariaLabel: string }[] = [];
     for (const row of tableRows) {
       const icon = row.locator('td').nth(2).locator('span').first();
+
       const ariaLabel = await icon.evaluate((el) => el.getAttribute('aria-label'));
 
       const text = await row.locator('td').nth(col).textContent();
@@ -803,7 +804,9 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if Process has been added */
     await expect(
-      page.locator('tbody>tr'),
+      page.locator(
+        'tbody>tr:not(.ant-table-measure-row)',
+      ) /* Ant-Design added a measure row -> ignore */,
       'Could not find copied process in Process-List',
     ).toHaveCount(2);
     /* Check with name */
@@ -834,7 +837,9 @@ test.describe('shortcuts in process-list', () => {
     }
 
     /* Check if Process has been added */
-    await expect(page.locator('tbody>tr')).toHaveCount(3);
+    await expect(page.locator('tbody>tr:not(.ant-table-measure-row)')).toHaveCount(
+      3,
+    ); /* Ignore measurement row */
     /* Check with name */
     await expect(page.locator('tbody')).toContainText(processName + ' - Meta');
   });
@@ -892,7 +897,9 @@ test.describe('shortcuts in process-list', () => {
     await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if Processes have been added */
-    await expect(page.locator('tbody>tr')).toHaveCount(4);
+    await expect(page.locator('tbody>tr:not(.ant-table-measure-row)')).toHaveCount(
+      4,
+    ); /* Ignore measurement row */
 
     /* Check with names */
     for (const name of names) {
@@ -1318,10 +1325,9 @@ test.describe('Selecting Processes', () => {
       });
     }
 
-    await page.getByRole('main').press('ControlOrMeta+a');
-
     /* Copy + Paste until multiple pages */
     while ((await page.locator('.ant-pagination-next').getAttribute('aria-disabled')) === 'true') {
+      await page.getByRole('main').press('ControlOrMeta+a');
       await page.getByRole('main').press('ControlOrMeta+c');
       const modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+v'));
       await closeModal(modal, () => page.getByRole('main').press('ControlOrMeta+Enter'));

@@ -7,7 +7,7 @@ import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
@@ -108,13 +108,9 @@ function ProcessDeploymentView({
       setSelectedInstanceId(youngestInstance?.processInstanceId);
     }
 
+    // This is necessary, because bpmn-js throws an error if you try to remove a marker
+    // from an element that doesn't exist
     flushPreviousStyling();
-    setSelectedColoring('processColors');
-  }
-
-  function applyColoring(type: ColorOptions) {
-    if (!selectedInstance || !canvasRef.current) return;
-    applyColors(canvasRef.current, selectedInstance, type);
   }
 
   const instances = getVersionInstances(selectedProcess, selectedVersion?.version);
@@ -129,6 +125,24 @@ function ProcessDeploymentView({
     )!;
   else if (selectedVersion) selectedBpmn = selectedVersion;
   else selectedBpmn = getLatestVersion(selectedProcess);
+
+  // When selected coloring changes, this function will change
+  // That in turn will trigger the useEffect inside the BPMNCanvas
+  // If a new instance is selected, the same useEffect will be triggered,
+  // only this time because of the bpmn change
+  // NOTE: selectedColoring is not part of the dependencies to avoid re-rendering
+  // the component on a case where it isn't necessary
+  const applyColoring = useCallback(
+    (coloring?: ColorOptions | ElementLike) => {
+      if (!selectedInstance || !canvasRef.current) return;
+      applyColors(
+        canvasRef.current,
+        selectedInstance,
+        typeof coloring === 'string' ? coloring : selectedColoring,
+      );
+    },
+    [selectedInstance, canvasRef],
+  );
 
   return (
     <Content compact wrapperClass={contentStyles.Content}>
@@ -259,10 +273,10 @@ function ProcessDeploymentView({
 
               setSelectedElement(element ?? canvasRef.current?.getCurrentRoot());
             }}
+            onRootChange={applyColoring}
           />
         </div>
       </div>
     </Content>
   );
 }
-let old;

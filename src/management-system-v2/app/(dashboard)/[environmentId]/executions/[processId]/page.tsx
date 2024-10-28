@@ -213,7 +213,7 @@ function ProcessDeploymentView({
                 </Dropdown>
               </Tooltip>
 
-              <Tooltip title="TODO: color title">
+              <Tooltip title="Coloring">
                 <Dropdown
                   menu={{
                     items: colorOptions as RemoveReadOnly<typeof colorOptions>,

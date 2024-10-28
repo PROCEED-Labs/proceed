@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const deletableFiles = await db.processArtifact.findMany({
+    const deletableFiles = await db.artifact.findMany({
       where: {
         deletable: true,
         deletedOn: { lte: oneWeekAgo },

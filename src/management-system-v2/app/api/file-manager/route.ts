@@ -108,7 +108,6 @@ export async function PUT(request: NextRequest) {
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId');
   const fileName = searchParams.get('fileName');
-  const businessObjectId = searchParams.get('businessObjectId') ?? undefined;
   if (!entityId || !environmentId || !entityType || !fileName) {
     return new NextResponse(null, {
       status: 400,
@@ -160,6 +159,7 @@ export async function PUT(request: NextRequest) {
   );
 
   const fileType = await fileTypeFromBuffer(buffer);
+  console.log(fileType);
   if (!fileType) {
     return new NextResponse(null, {
       status: 415,
@@ -182,7 +182,6 @@ export async function PUT(request: NextRequest) {
       fileType.mime,
       fileName,
       buffer,
-      businessObjectId,
     );
 
     if ('error' in res) throw new Error(res.error.message);

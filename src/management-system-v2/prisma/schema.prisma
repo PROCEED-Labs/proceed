@@ -83,7 +83,7 @@ model Process {
   @@map("process")
 }
 
-model ProcessArtifact {
+model Artifact {
   id               String                   @id @default(uuid())
   filePath         String                   @unique
   fileName         String                   @unique
@@ -93,19 +93,17 @@ model ProcessArtifact {
   references       ArtifactReference[]      // Relation to track references
   refCounter       Int                      @default(0)
 
-  @@map("process_artifact")
+  @@map("artifact")
 }
 
 model ArtifactReference {
   id                String            @id @default(uuid())
-  processArtifact   ProcessArtifact  @relation(fields: [processArtifactId], references: [id], onDelete: Cascade)
-  processArtifactId String
-  businessObjectId  String?           
+  artifact          Artifact  @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  artifactId        String
   process           Process?          @relation(fields: [processId], references: [id], onDelete: Cascade)
   processId         String?          
   createdAt         DateTime          @default(now())
-  
-  @@unique([processArtifactId, businessObjectId, processId])
+  @@unique([artifactId, processId])
   @@map("artifact_reference")
 }
 

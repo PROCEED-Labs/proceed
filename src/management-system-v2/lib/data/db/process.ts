@@ -498,7 +498,7 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, userT
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskName);
+    const res = await db.artifact.findUnique({ where: { fileName: `${userTaskName}.json` } });
 
     if (res) {
       const jsonAsBuffer = (await retrieveProcessArtifact(
@@ -518,7 +518,7 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, userT
 /** Return object mapping from user tasks fileNames to their form data */
 export async function getProcessUserTasksJSON(processDefinitionsId: string) {
   try {
-    const res = await db.processArtifact.findMany({
+    const res = await db.artifact.findMany({
       where: {
         references: {
           some: {
@@ -529,24 +529,26 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string) {
       },
       select: {
         filePath: true,
-        references: {
-          select: {
-            businessObjectId: true,
-          },
-        },
+        fileName: true,
       },
     });
+    console.dir(res, { depth: 3 });
+
     if (res) {
       let userTaskJsons: Record<string, string> = {};
-      res.forEach(async (task) => {
-        const jsonAsBuffer = (await retrieveProcessArtifact(
-          processDefinitionsId,
-          task.filePath,
-          true,
-          true,
-        )) as Buffer;
-        userTaskJsons[task.references[0].businessObjectId!] = jsonAsBuffer.toString('utf8');
-      });
+      await Promise.all(
+        res.map(async (task) => {
+          const jsonAsBuffer = (await retrieveProcessArtifact(
+            processDefinitionsId,
+            task.filePath,
+            true,
+            true,
+          )) as Buffer;
+          const taskId = task.fileName.split('.').shift();
+          userTaskJsons[taskId!] = jsonAsBuffer.toString('utf8');
+        }),
+      );
+      console.log(userTaskJsons);
       return userTaskJsons;
     }
   } catch (error) {
@@ -557,31 +559,29 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string) {
 
 export async function checkIfUserTaskExists(processDefinitionsId: string, userTaskId: string) {
   try {
-    const artifact = await db.processArtifact.findFirst({
-      where: {
-        artifactType: 'user-tasks',
-        references: {
-          some: {
-            processId: processDefinitionsId,
-            businessObjectId: userTaskId,
-          },
-        },
-      },
-      include: {
-        references: {
-          where: {
-            processId: processDefinitionsId,
-            businessObjectId: userTaskId,
-          },
-          select: {
-            id: true,
-            processId: true,
-            businessObjectId: true,
-          },
-        },
-      },
-    });
-
+    // const artifact = await db.artifact.findFirst({
+    //   where: {
+    //     artifactType: 'user-tasks',
+    //     fileName: `${userTaskId}.json`,
+    //     references: {
+    //       some: {
+    //         processId: processDefinitionsId,
+    //       },
+    //     },
+    //   },
+    //   include: {
+    //     references: {
+    //       where: {
+    //         processId: processDefinitionsId,
+    //       },
+    //       select: {
+    //         id: true,
+    //         processId: true,
+    //       },
+    //     },
+    //   },
+    // });
+    const artifact = await db.artifact.findUnique({ where: { fileName: `${userTaskId}.json` } });
     return artifact;
   } catch (error) {
     console.error('Error checking if user task exists:', error);
@@ -595,7 +595,6 @@ export async function saveProcessUserTask(
   json: string,
 ) {
   checkIfProcessExists(processDefinitionsId);
-
   try {
     const base64String = btoa(json);
     const content = Uint8Array.from(atob(base64String), (c) => c.charCodeAt(0));
@@ -609,7 +608,6 @@ export async function saveProcessUserTask(
         `${userTaskId}.json`,
         'application/json',
         content,
-        userTaskId,
         false,
       );
       return fileName;
@@ -629,7 +627,8 @@ export async function deleteProcessUserTask(
   try {
     const res = await checkIfUserTaskExists(processDefinitionsId, userTaskFileName);
     if (res) {
-      return await deleteProcessArtifact(res.filePath, true, userTaskFileName);
+      console.log('user task exists', userTaskFileName);
+      return await deleteProcessArtifact(res.filePath, true);
     }
   } catch (err) {
     logger.debug(`Error removing user task data. Reason:\n${err}`);

@@ -17,7 +17,11 @@ import styles from './modeler.module.scss';
 import ModelerZoombar from './modeler-zoombar';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { updateFileDeletableStatus } from '@/lib/data/file-manager-facade';
+import {
+  revertSoftDeleteProcessUserTask,
+  softDeleteProcessUserTask,
+  updateFileDeletableStatus,
+} from '@/lib/data/file-manager-facade';
 import { useSession } from 'next-auth/react';
 import { Coming_Soon } from 'next/font/google';
 
@@ -228,13 +232,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
 
   const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
     const metaData = getMetaDataFromElement(element.businessObject);
-    if (element.type === 'bpmn:UserTask') {
-      updateFileDeletableStatus(
-        `${element.businessObject.fileName}.json`,
-        true,
-        process.id,
-        element.fileName,
-      );
+    if (element.type === 'bpmn:UserTask' && element.businessObject.fileName) {
+      softDeleteProcessUserTask(process.id, element.businessObject.fileName);
     }
     if (!metaData.overviewImage) {
       return;
@@ -245,8 +244,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
 
   const onShapeRemoveUndo = useCallback<Required<BPMNCanvasProps>['onShapeRemoveUndo']>(
     (element) => {
-      if (element.$type === 'bpmn:UserTask') {
-        updateFileDeletableStatus(`${element.fileName}.json`, false, process.id, element.fileName);
+      if (element.$type === 'bpmn:UserTask' && element.fileName) {
+        revertSoftDeleteProcessUserTask(process.id, element.fileName);
       }
 
       const metaData = getMetaDataFromElement(element);

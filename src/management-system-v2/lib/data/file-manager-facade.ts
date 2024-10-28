@@ -10,6 +10,8 @@ import {
 import { contentTypeNotAllowed } from './content-upload-error';
 import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
+import { getProcessUserTaskJSON } from './db/process';
+import { asyncMap, findKey } from '../helpers/javascriptHelpers';
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
@@ -30,20 +32,19 @@ const saveArtifactToDB = async (
   filePath: string,
   processId: string,
   artifactType: ArtifactType,
-  businessObjectId?: string,
 ) => {
-  return db.processArtifact.create({
+  return db.artifact.create({
     data: {
       fileName,
       filePath,
       artifactType,
-      references: { create: { processId: processId, businessObjectId: businessObjectId } },
+      references: { create: { processId: processId } },
     },
   });
 };
 
 const removeArtifactFromDB = async (filePath: string) => {
-  return db.processArtifact.delete({
+  return db.artifact.delete({
     where: { filePath },
   });
 };
@@ -67,8 +68,8 @@ const generateProcessFilePath = (
   return `processes/${processId}/${artifactType}/${fileName}`;
 };
 
-export async function getProcessArtifactMetaData(fileNameOrPath: string, isFilePath: boolean) {
-  return await db.processArtifact.findUnique({
+export async function getArtifactMetaData(fileNameOrPath: string, isFilePath: boolean) {
+  return await db.artifact.findUnique({
     where: isFilePath ? { filePath: fileNameOrPath } : { fileName: fileNameOrPath },
   });
 }
@@ -79,7 +80,6 @@ export async function saveEnityFile(
   mimeType: string,
   fileName: string,
   fileContent?: Buffer | Uint8Array | Blob,
-  businessObjectId?: string,
 ) {
   if (!isContentTypeAllowed(mimeType)) {
     return contentTypeNotAllowed(`Content type '${mimeType}' is not allowed`);
@@ -87,7 +87,7 @@ export async function saveEnityFile(
 
   switch (entityType) {
     case EntityType.PROCESS:
-      return saveProcessArtifact(entityId, fileName, mimeType, fileContent, businessObjectId);
+      return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
     case EntityType.ORGANIZATION:
       return saveOrganisationLogo(fileName, entityId, mimeType, fileContent);
     case EntityType.MACHINE:
@@ -137,7 +137,6 @@ export async function saveProcessArtifact(
   fileName: string,
   mimeType: string,
   fileContent?: Buffer | Uint8Array | Blob,
-  businessObjectId?: string,
   generateNewFileNameFlag: boolean = true,
 ) {
   const newFileName = generateNewFileNameFlag ? getNewFileName(fileName) : fileName;
@@ -147,9 +146,8 @@ export async function saveProcessArtifact(
   const usePresignedUrl = ['images', 'others'].includes(artifactType);
 
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent, usePresignedUrl);
-
   if (status) {
-    await saveArtifactToDB(newFileName, filePath, processId, artifactType, businessObjectId);
+    await saveArtifactToDB(newFileName, filePath, processId, artifactType);
   } else {
     await deleteFile(filePath);
     return { presignedUrl: null, fileName: null };
@@ -184,12 +182,8 @@ export async function retrieveProcessArtifact(
   return retrieveFile(filePath, usePresignedUrl);
 }
 
-export async function deleteProcessArtifact(
-  fileNameOrPath: string,
-  isFilePath = false,
-  businessObjectId?: string,
-) {
-  const artifact = await getProcessArtifactMetaData(fileNameOrPath, isFilePath);
+export async function deleteProcessArtifact(fileNameOrPath: string, isFilePath = false) {
+  const artifact = await getArtifactMetaData(fileNameOrPath, isFilePath);
   if (!artifact) {
     throw new Error(`${fileNameOrPath} not found`);
   }
@@ -203,7 +197,7 @@ export async function deleteProcessArtifact(
   } else {
     await db.artifactReference.deleteMany({
       where: {
-        OR: [{ processArtifactId: artifact.id }],
+        OR: [{ artifactId: artifact.id }],
       },
     });
 
@@ -273,7 +267,6 @@ export async function updateFileDeletableStatus(
   fileName: string,
   status: boolean,
   processId: string,
-  businessObjectId?: string,
 ) {
   // if (!userId) {
   //   throw new Error(`user is undefined ${userId}`);
@@ -286,34 +279,24 @@ export async function updateFileDeletableStatus(
   // const ability = await getAbilityForUser(userId, spaceId);
   //TODO ability check
 
-  return await updateFileRefCounter(fileName, status, processId, businessObjectId);
+  return await updateFileRefCounter(fileName, status, processId);
 }
 
-async function checkIfArtifactRefAlreadyExists(
-  processArtifactId: string,
-  processId: string,
-  businessObjectId: string,
-) {
+async function getArtifactReference(artifactId: string, processId: string) {
   const res = await db.artifactReference.findUnique({
     where: {
-      processArtifactId_businessObjectId_processId: {
-        processArtifactId,
-        businessObjectId,
+      artifactId_processId: {
+        artifactId,
         processId,
       },
     },
   });
-  return res ? true : false;
+  return res;
 }
 
 // Update file status in the database
-export async function updateFileRefCounter(
-  fileName: string,
-  status: boolean,
-  processId: string,
-  businessObjectId: string | null = null,
-) {
-  const artifact = await db.processArtifact.findUnique({
+export async function updateFileRefCounter(fileName: string, status: boolean, processId: string) {
+  const artifact = await db.artifact.findUnique({
     where: { fileName },
   });
 
@@ -322,12 +305,12 @@ export async function updateFileRefCounter(
   }
 
   if (!status) {
-    if (await checkIfArtifactRefAlreadyExists(artifact.id, processId, businessObjectId ?? '')) {
+    if (await getArtifactReference(artifact.id, processId)) {
       return;
     }
     try {
       await db.artifactReference.create({
-        data: { processArtifactId: artifact.id, processId, businessObjectId },
+        data: { artifactId: artifact.id, processId },
       });
     } catch (error: any) {
       if (error.code === 'P2002') {
@@ -338,10 +321,51 @@ export async function updateFileRefCounter(
   } else {
     await db.artifactReference.deleteMany({
       where: {
-        processArtifactId: artifact.id,
+        artifactId: artifact.id,
       },
     });
   }
 
   // refCounter handled by db triggers
+}
+
+export async function softDeleteProcessUserTask(processId: string, userTaskFilename: string) {
+  const res = await getProcessUserTaskJSON(processId, userTaskFilename);
+  if (res) {
+    const userTaskJson = JSON.parse(res);
+    const referencedArtifactFilenames = findKey(userTaskJson, 'src');
+    referencedArtifactFilenames.push(`${userTaskFilename}.json`);
+    const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+      getArtifactMetaData(filename, false),
+    );
+
+    const references = await asyncMap(artifacts, (artifact) =>
+      getArtifactReference(artifact!.id, processId),
+    );
+
+    for (const ref of references) {
+      await db.artifactReference.delete({ where: { id: ref?.id } });
+    }
+  }
+}
+
+export async function revertSoftDeleteProcessUserTask(processId: string, userTaskFilename: string) {
+  const res = await getProcessUserTaskJSON(processId, userTaskFilename);
+  if (res) {
+    const userTaskJson = JSON.parse(res);
+    const referencedArtifactFilenames = findKey(userTaskJson, 'src');
+    referencedArtifactFilenames.push(`${userTaskFilename}.json`);
+    const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+      getArtifactMetaData(filename, false),
+    );
+
+    for (const artifact of artifacts) {
+      await db.artifactReference.create({
+        data: {
+          artifactId: artifact!.id,
+          processId: processId,
+        },
+      });
+    }
+  }
 }

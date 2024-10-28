@@ -22,7 +22,6 @@ interface ImageUploadProps {
     entityId: string; // needed for folder hierarchy
     useDefaultRemoveFunction: boolean; //set true if delete should be automatically handled by file maanger
     fileName?: string;
-    businessObjectId?: string; // to track artifacts referenced by this
   };
 }
 
@@ -34,7 +33,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   endpoints,
   config,
 }) => {
-  const { upload, remove, replace } = useFileManager(config.entityType, config.businessObjectId);
+  const { upload, remove, replace } = useFileManager(config.entityType);
 
   const handleImageUpload = async (image: Blob, uploadedFileName: string, imageExists: boolean) => {
     try {

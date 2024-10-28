@@ -38,7 +38,7 @@ type BuilderProps = {
 type BuilderModalProps = BuilderProps & {
   onSave: () => void;
   hasUnsavedChanges: boolean;
-  onInit: (filename: string) => void;
+  onInit: () => void;
 };
 
 const EditorModal: React.FC<BuilderModalProps> = ({
@@ -91,7 +91,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
         actions.deserialize(importData);
         actions.history.clear();
-        onInit(filename);
+        onInit();
       });
     }
   }, [processId, open, filename, environment]);
@@ -150,7 +150,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
           <AntRow className={styles.EditorBody}>
             {!isMobile && (
               <Col style={{ height: '100%', overflow: 'auto' }} span={4}>
-                <Sidebar businessObjectId={filename!} />
+                <Sidebar />
               </Col>
             )}
             <Col
@@ -185,23 +185,19 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
   const isMobile = breakpoint.xs;
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const businessObjectId = useRef<string>();
-  const { spaceId } = useEnvironment();
-  const { data, status } = useSession({ required: true });
+
   const prevState = useRef({});
 
   const [modalApi, modalElement] = Modal.useModal();
 
   function updateImageReference(action: 'add' | 'delete', src: string) {
     const isDeleteAction = action === 'delete';
-    console.log(businessObjectId);
     updateImageRefCounter(
       // spaceId,
       // data?.user.id!,
       src,
       isDeleteAction,
       processId,
-      businessObjectId.current,
     );
   }
 
@@ -287,8 +283,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
           open={open}
           hasUnsavedChanges={hasUnsavedChanges}
           onClose={handleClose}
-          onInit={(fileName: string) => {
-            businessObjectId.current = fileName;
+          onInit={() => {
             setHasUnsavedChanges(false);
           }}
           onSave={() => setHasUnsavedChanges(false)}

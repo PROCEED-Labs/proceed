@@ -14,13 +14,12 @@ import { useFileManager } from '@/lib/useFileManager';
 import { enableUseFileManager } from 'FeatureFlags';
 
 type ImageProps = {
-  businessObjectId: string;
   src?: string;
   reloadParam?: number;
   width?: number;
 };
 
-const Image: UserComponent<ImageProps> = ({ src, reloadParam, width, businessObjectId }) => {
+const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   const { query } = useEditor();
 
   const [showResize, setShowResize] = useState(false);
@@ -96,7 +95,6 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width, businessObj
               entityId: params.processId,
               useDefaultRemoveFunction: false,
               fileName: src,
-              businessObjectId: businessObjectId,
             }}
           />
         )}
@@ -237,7 +235,6 @@ Image.craft = {
     settings: ImageSettings,
   },
   props: {
-    businessObjectId: undefined,
     src: undefined,
     reloadParam: 0,
     width: undefined,

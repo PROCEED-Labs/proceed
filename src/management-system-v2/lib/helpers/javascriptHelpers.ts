@@ -133,6 +133,27 @@ export function deepEquals(
   return verbose ? null : true; // Values are equal
 }
 
+// helper function to find all values of specific key (targetKey) in a json obj
+export function findKey(data: any, targetKey = 'src'): string[] {
+  let results: string[] = [];
+
+  if (typeof data === 'object' && data !== null) {
+    for (const key in data) {
+      if (key === targetKey) {
+        results.push(data[key]);
+      } else if (typeof data[key] === 'object') {
+        results = results.concat(findKey(data[key], targetKey));
+      }
+    }
+  } else if (Array.isArray(data)) {
+    for (const item of data) {
+      results = results.concat(findKey(item, targetKey));
+    }
+  }
+
+  return results;
+}
+
 // TODO: Typescriptify or remove
 export function isObject(candidate: any) {
   return !!candidate && typeof candidate === 'object' && !Array.isArray(candidate);

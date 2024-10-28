@@ -8,7 +8,6 @@ import {
 } from './data/file-manager-facade';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
-import { useSession } from 'next-auth/react';
 
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
 
@@ -28,7 +27,7 @@ interface UseFileManagerReturn {
     file: File | Blob,
     entityId: string,
     oldFileName: string,
-    newFileName?: string,
+    newFileName: string,
   ) => Promise<{ ok: boolean; fileName?: string }>;
   reset: () => void;
   isLoading: boolean;
@@ -38,15 +37,11 @@ interface UseFileManagerReturn {
 
 const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
 
-export function useFileManager(
-  entityType: EntityType,
-  businessObjectId?: string,
-): UseFileManagerReturn {
+export function useFileManager(entityType: EntityType): UseFileManagerReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const { spaceId } = useEnvironment();
-  const { data } = useSession();
 
   const performFileOperation = useCallback(
     async (
@@ -83,14 +78,7 @@ export function useFileManager(
 
   const handleUpload = async (entityId: string, fileName: string, file: File | Blob) => {
     if (DEPLOYMENT_ENV === 'cloud') {
-      const response = await saveEnityFile(
-        entityType,
-        entityId,
-        file.type,
-        fileName,
-        undefined,
-        businessObjectId,
-      );
+      const response = await saveEnityFile(entityType, entityId, file.type, fileName, undefined);
       if ('error' in response) {
         return { success: false, error: response.error.message };
       }
@@ -106,13 +94,13 @@ export function useFileManager(
 
   const handleDownload = async (entityId: string, fileName: string, shareToken?: string | null) => {
     if (DEPLOYMENT_ENV === 'cloud') {
-      const presignedUrl = await retrieveEntityFile(entityType, entityId, fileName);
-      const fileResponse = await fetch(presignedUrl as string);
-      if (!fileResponse.ok) throw new Error('Download failed');
+      const presignedUrl = (await retrieveEntityFile(entityType, entityId, fileName)) as string;
+      //const fileResponse = await fetch(presignedUrl as string);
+      // if (!fileResponse.ok) throw new Error('Download failed');
 
-      const blob = await fileResponse.blob();
-      const url = URL.createObjectURL(blob);
-      return { success: true, fileUrl: url };
+      // const blob = await fileResponse.blob();
+      // const url = URL.createObjectURL(blob);
+      return { success: true, fileUrl: presignedUrl };
     } else {
       return handleLocalOperation('GET', entityId, fileName, null, shareToken);
     }
@@ -140,7 +128,7 @@ export function useFileManager(
     file?: File | Blob | null,
     shareToken?: string | null,
   ): Promise<{ success: boolean; fileUrl?: string; fileName?: string }> => {
-    const url = `/api/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&businessObjectId=${businessObjectId}&shareToken=${shareToken}`;
+    const url = `/api/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
 
     const response = await fetch(url, {
       method,
@@ -194,7 +182,7 @@ export function useFileManager(
     file: File | Blob,
     entityId: string,
     oldFileName: string,
-    newFileName?: string,
+    newFileName: string,
   ): Promise<{ ok: boolean; fileName?: string }> => {
     try {
       setIsLoading(true);

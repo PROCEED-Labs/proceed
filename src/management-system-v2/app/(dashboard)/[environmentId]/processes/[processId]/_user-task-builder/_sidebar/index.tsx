@@ -7,11 +7,11 @@ import styles from './index.module.scss';
 import Toolbox from './Toolbox';
 import Settings from './Settings';
 
-const Sidebar: React.FC<{ businessObjectId: string }> = ({ businessObjectId }) => {
+const Sidebar = () => {
   return (
     <Row className={styles.Sidebar}>
       <Divider>Elements</Divider>
-      <Toolbox businessObjectId={businessObjectId} />
+      <Toolbox />
       <Divider>Settings</Divider>
       <Settings />
     </Row>

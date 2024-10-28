@@ -58,7 +58,7 @@ CREATE TABLE "process" (
 );
 
 -- CreateTable
-CREATE TABLE "process_artifact" (
+CREATE TABLE "artifact" (
     "id" TEXT NOT NULL,
     "filePath" TEXT NOT NULL,
     "fileName" TEXT NOT NULL,
@@ -67,14 +67,13 @@ CREATE TABLE "process_artifact" (
     "artifactType" TEXT NOT NULL,
     "refCounter" INTEGER NOT NULL DEFAULT 0,
 
-    CONSTRAINT "process_artifact_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "artifact_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "artifact_reference" (
     "id" TEXT NOT NULL,
-    "processArtifactId" TEXT NOT NULL,
-    "businessObjectId" TEXT,
+    "artifactId" TEXT NOT NULL,
     "processId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -173,13 +172,13 @@ CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 CREATE UNIQUE INDEX "oauth_account_providerAccountId_key" ON "oauth_account"("providerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "process_artifact_filePath_key" ON "process_artifact"("filePath");
+CREATE UNIQUE INDEX "artifact_filePath_key" ON "artifact"("filePath");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "process_artifact_fileName_key" ON "process_artifact"("fileName");
+CREATE UNIQUE INDEX "artifact_fileName_key" ON "artifact"("fileName");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "artifact_reference_processArtifactId_businessObjectId_proce_key" ON "artifact_reference"("processArtifactId", "businessObjectId", "processId");
+CREATE UNIQUE INDEX "artifact_reference_artifactId_processId_key" ON "artifact_reference"("artifactId", "processId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "version_version_key" ON "version"("version");
@@ -200,7 +199,7 @@ ALTER TABLE "process" ADD CONSTRAINT "process_environmentId_fkey" FOREIGN KEY ("
 ALTER TABLE "process" ADD CONSTRAINT "process_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "artifact_reference" ADD CONSTRAINT "artifact_reference_processArtifactId_fkey" FOREIGN KEY ("processArtifactId") REFERENCES "process_artifact"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "artifact_reference" ADD CONSTRAINT "artifact_reference_artifactId_fkey" FOREIGN KEY ("artifactId") REFERENCES "artifact"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "artifact_reference" ADD CONSTRAINT "artifact_reference_processId_fkey" FOREIGN KEY ("processId") REFERENCES "process"("id") ON DELETE CASCADE ON UPDATE CASCADE;

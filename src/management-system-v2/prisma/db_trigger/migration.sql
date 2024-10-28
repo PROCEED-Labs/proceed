@@ -1,3 +1,4 @@
+-- Step 1: Create the trigger function
 CREATE OR REPLACE FUNCTION set_deletable_and_deletedon_based_on_refcounter()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -17,33 +18,36 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to update the deletable flag
+-- Step 2: Create the trigger
 CREATE TRIGGER update_deletable_and_deletedon_on_refcounter_change
-BEFORE INSERT OR UPDATE OF "refCounter" --condition to release the trigger
-ON process_artifact
+BEFORE INSERT OR UPDATE OF "refCounter"
+ON artifact
 FOR EACH ROW
 EXECUTE FUNCTION set_deletable_and_deletedon_based_on_refcounter();
 
-CREATE OR REPLACE FUNCTION update_process_artifact_refcounter()
+
+-- Step 1: Create the function to update refCounter
+CREATE OR REPLACE FUNCTION update_artifact_refcounter()
 RETURNS TRIGGER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
         -- Increment refCounter when a new reference is added
-        UPDATE process_artifact
+        UPDATE artifact
         SET "refCounter" = "refCounter" + 1
-        WHERE id = NEW."processArtifactId";
+        WHERE id = NEW."artifactId";
     ELSIF TG_OP = 'DELETE' THEN
         -- Decrement refCounter when a reference is removed
-        UPDATE process_artifact
+        UPDATE artifact
         SET "refCounter" = GREATEST("refCounter" - 1, 0)
-        WHERE id = OLD."processArtifactId";
+        WHERE id = OLD."artifactId";
     END IF;
     RETURN NULL; -- for AFTER triggers, return value is ignored
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to update the refCounter
+-- Step 2: Create the trigger
 CREATE TRIGGER update_refcounter_on_artifact_reference_change
-AFTER INSERT OR DELETE ON artifact_reference --condition to release the trigger
+AFTER INSERT OR DELETE ON artifact_reference
 FOR EACH ROW
-EXECUTE FUNCTION update_process_artifact_refcounter();
+EXECUTE FUNCTION update_artifact_refcounter();
+

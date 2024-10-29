@@ -204,8 +204,9 @@ class SubprocesScriptExecution extends NativeModule {
   getProcess(processId, processInstanceId, scriptIdentifier) {
     const processScripts = this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
 
-    if (scriptIdentifier) return processScripts?.get(scriptIdentifier);
-    else return processScripts?.values();
+    if (!processScripts) return undefined;
+    if (scriptIdentifier) return processScripts.get(scriptIdentifier);
+    else return processScripts.values();
   }
 
   getAllProcesses() {

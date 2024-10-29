@@ -37,7 +37,7 @@ class ScriptExecutor extends System {
     if (!process) return { statusCode: 404, response: {} };
 
     const auth = req.headers.authorization;
-    if (!auth?.startsWith('Bearer ')) return { statusCode: 401, response: {} };
+    if (!auth || !auth.startsWith('Bearer ')) return { statusCode: 401, response: {} };
     const token = auth.substring('Bearer '.length);
     // NOTE: a simple comparison may be vulnerable to a timing attack
 
@@ -64,7 +64,7 @@ class ScriptExecutor extends System {
             statusCode: 400,
           };
 
-        let result = req?.body.result;
+        let result = req.body ? req.body.result : undefined;
 
         try {
           if (
@@ -96,7 +96,7 @@ class ScriptExecutor extends System {
         const { functionName, args } = req.body;
 
         try {
-          let target = req.process?.dependencies;
+          let target = req.process.dependencies;
           for (const segment of functionName.split('.')) {
             target = target[segment];
 
@@ -236,8 +236,9 @@ class ScriptExecutor extends System {
   getProcess(processId, processInstanceId, scriptIdentifier) {
     const processScripts = this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
 
-    if (scriptIdentifier) return processScripts?.get(scriptIdentifier);
-    else return processScripts?.values();
+    if (!processScripts) return undefined;
+    else if (scriptIdentifier) return processScripts.get(scriptIdentifier);
+    else return processScripts.values();
   }
 
   /**

@@ -31,7 +31,9 @@
     <scriptTask id="Activity_024hiuu" scriptFormat="application/javascript">
       <incoming>Flow_0xsb6pm</incoming>
       <outgoing>Flow_0ijy7a4</outgoing>
-      <script>return new Promise(resolve => setTimeout(resolve, 2000))</script>
+      <script>
+      return new Promise(res => setTimeoutAsync(res, 2_000));
+      </script>
     </scriptTask>
   </process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

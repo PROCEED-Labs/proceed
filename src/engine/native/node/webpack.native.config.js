@@ -40,7 +40,7 @@ module.exports = {
   ],
   externals: {
     './injector.js': 'Function',
-    'node:child_process': 'node:child_process',
+    'node:child_process': 'commonjs2 child_process',
   },
   node: {
     __dirname: false,

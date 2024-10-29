@@ -162,10 +162,17 @@ context.evalClosureSync(
   [sleep],
 );
 
+function wrapScriptInAsyncFunction(script) {
+  return `async function main() { ${script} }; main();`;
+}
+
 context
-  .eval(wrapScriptWithErrorHandling(scriptString), { promise: true })
+  .eval(wrapScriptInAsyncFunction(wrapScriptWithErrorHandling(scriptString)), {
+    promise: true,
+    externalCopy: true,
+  })
   .then((result) => {
-    callToExecutor('result', { result });
+    callToExecutor('result', { result: result.copy() });
   })
   .catch((err) => {
     let result = err;

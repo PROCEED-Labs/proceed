@@ -122,10 +122,6 @@ class ScriptExecutor extends System {
    * @param {Object} dependencies
    */
   execute(processId, processInstanceId, tokenId, scriptString, dependencies) {
-    // NOTE: maybe just warn
-    if (this.getProcess(processId, processInstanceId))
-      throw new Error('This process is already executing a script');
-
     try {
       const scriptIdentifier = crypto.randomUUID();
       const processEntry = {

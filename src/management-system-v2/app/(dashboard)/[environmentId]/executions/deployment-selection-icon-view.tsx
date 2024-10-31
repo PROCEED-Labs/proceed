@@ -12,7 +12,7 @@ const ProcessIconView = ({
 }: {
   data: ProcessListProcess[];
   openFolder: (id: string) => void;
-  selectProcess: (id: string) => void;
+  selectProcess: (process: ProcessListProcess) => void;
 }) => {
   const folders = filteredData.filter((item) => item.type === 'folder');
   const processesData = filteredData.filter((item) => item.type !== 'folder');
@@ -30,7 +30,7 @@ const ProcessIconView = ({
         {item?.name.highlighted}
         <span style={{ flex: 1 }}></span>
         {item.type !== 'folder' && (
-          <Button type="primary" size="small" onClick={() => selectProcess(item.id)}>
+          <Button type="primary" size="small" onClick={() => selectProcess(item)}>
             Deploy Process
           </Button>
         )}

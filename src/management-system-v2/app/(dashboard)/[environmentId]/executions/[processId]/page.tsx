@@ -272,6 +272,7 @@ function ProcessDeploymentView({
                 return;
 
               setSelectedElement(element ?? canvasRef.current?.getCurrentRoot());
+              setInfoPanelOpen(true);
             }}
             onRootChange={applyColoring}
           />

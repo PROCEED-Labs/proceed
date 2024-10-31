@@ -179,7 +179,6 @@ export async function deployProcess(
     ],
     spaceId,
   );
-  console.log('processesExportData', processesExportData);
 
   if (method === 'static') {
     await staticDeployment(definitionId, version, processesExportData, forceMachine);

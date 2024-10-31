@@ -1,6 +1,5 @@
 'use client';
 
-import styles from '@/components/item-list-view.module.scss';
 import { Button, Grid, TableColumnsType, TableProps, Tooltip } from 'antd';
 import { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';

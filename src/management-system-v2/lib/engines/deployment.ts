@@ -42,7 +42,7 @@ async function deployProcessToMachines(
             endpoints.sendImage(machine, exportData.definitionId, image.filename, image.data),
           );
 
-          await Promise.all([userTasks, images]);
+          await Promise.all([...userTasks, ...images]);
         }),
       );
     });

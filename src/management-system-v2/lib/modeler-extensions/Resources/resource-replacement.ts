@@ -90,25 +90,25 @@ export default class ResourceReplacementProvider implements PopupMenuProvider {
       }
       if (businessObject.machineType != 'Robot')
         entries.robot = {
-          label: 'Machine Performer: Robot',
+          label: 'IT System: Robot',
           className: 'proceed-robot-icon',
           action: () => switchType('Robot'),
         };
       if (businessObject.machineType != 'Laptop')
         entries.laptop = {
-          label: 'Machine Performer: Laptop',
+          label: 'IT System: Laptop',
           className: 'proceed-laptop-icon',
           action: () => switchType('Laptop'),
         };
       if (businessObject.machineType != 'Screen')
         entries.screen = {
-          label: 'Machine Performer: Screen',
+          label: 'IT System: Screen',
           className: 'proceed-screen-icon',
           action: () => switchType('Screen'),
         };
       if (businessObject.machineType != 'Server')
         entries.server = {
-          label: 'Machine Performer: Server',
+          label: 'IT System: Server',
           className: 'proceed-server-icon',
           action: () => switchType('Server'),
         };

@@ -60,15 +60,5 @@ export default class LabelBehavior extends CommandInterceptor {
         }
       }
     });
-
-    this.preExecute('shape.move', (event: any) => {
-      const {
-        context: { shape, delta },
-      } = event;
-
-      if (isLabel(shape) && is(shape, 'proceed:Performer')) {
-        console.log(JSON.stringify(shape, null, 2), delta);
-      }
-    });
   }
 }

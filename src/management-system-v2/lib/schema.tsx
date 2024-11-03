@@ -483,12 +483,8 @@ export const schema = {
       ],
     },
     {
-      name: 'PerformerAssociation',
-      extends: ['bpmn:Association'],
-    },
-    {
       name: 'PerformableNode',
-      extends: ['bpmn:Activity', 'bpmn:Event'],
+      extends: ['bpmn:Activity', 'bpmn:Event', 'bpmn:Gateway'],
       properties: [
         {
           name: 'Performers',

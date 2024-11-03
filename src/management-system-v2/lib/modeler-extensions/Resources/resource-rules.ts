@@ -21,7 +21,7 @@ export default class CustomRules extends RuleProvider {
       const { source, target } = context;
 
       const sourceIsPerformer = is(source, 'proceed:Performer');
-      const targetCanHavePerformer = isAny(target, ['bpmn:Activity', 'bpmn:Event']);
+      const targetCanHavePerformer = is(target, 'proceed:PerformableNode');
 
       const { elementRegistry } = this;
       const associations = elementRegistry.filter((el) => el.type === 'bpmn:Association');
@@ -40,7 +40,7 @@ export default class CustomRules extends RuleProvider {
       const { source, target, connection } = context;
 
       const sourceIsPerformer = is(source, 'proceed:Performer');
-      const targetCanHavePerformer = isAny(target, ['bpmn:Activity', 'bpmn:Event']);
+      const targetCanHavePerformer = is(target, 'proceed:PerformableNode');
       const isAssociation = is(connection, 'bpmn:Association');
 
       if (sourceIsPerformer && targetCanHavePerformer && isAssociation) return true;

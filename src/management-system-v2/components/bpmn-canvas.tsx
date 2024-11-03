@@ -26,6 +26,7 @@ import {
   ResourceLabelEditingModule,
   ResourcePaletteProviderModule,
   ResourceContextPadProviderModule,
+  ResourceLabelBehaviorModule,
 } from '@/lib/modeler-extensions/Resources';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
@@ -199,6 +200,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           ResourceLabelEditingModule,
           ResourceReplaceModule,
           ResourceRulesModule,
+          ResourceLabelBehaviorModule,
         );
       }
 

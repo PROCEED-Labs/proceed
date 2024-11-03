@@ -9,6 +9,7 @@ import PopupMenu from 'diagram-js/lib/features/popup-menu/PopupMenu';
 import { Element as BaseElement } from 'diagram-js/lib/model/Types';
 
 import { isAny } from 'bpmn-js/lib/util/ModelUtil';
+import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 
 export default class CustomContextPadProvider implements ContextPadProvider {
   // this tells bpmn-js which modules need to be passed to the constructor (the order must be the
@@ -31,12 +32,12 @@ export default class CustomContextPadProvider implements ContextPadProvider {
     const { connect, popupMenu, contextPad } = this;
     const actions: ContextPadEntries = {};
 
-    function startConnect(event: Event, element: BaseElement | BaseElement[]) {
+    function startConnect(event: MouseEvent, element: BaseElement) {
       connect.start(event, element);
     }
 
     const { businessObject } = element;
-    if (isAny(businessObject, ['proceed:HumanPerformer', 'proceed:MachinePerformer'])) {
+    if (isAny(businessObject, ['proceed:Performer']) && !isLabel(element)) {
       actions.connect = {
         group: 'connect',
         className: 'bpmn-icon-connection-multi',
@@ -44,7 +45,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
         action: {
           click: startConnect,
           dragstart: startConnect,
-        },
+        } as any,
       };
 
       function getReplaceMenuPosition(element: BaseElement) {
@@ -68,7 +69,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
         className: 'bpmn-icon-screw-wrench',
         title: 'Change element',
         action: {
-          click: function (event, element) {
+          click: function (event: any, element: BaseElement) {
             let position = { x: event.x, y: event.y };
             position = getReplaceMenuPosition(element);
 
@@ -78,7 +79,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
               search: true,
             });
           },
-        },
+        } as any,
       };
     }
 

@@ -4,6 +4,7 @@ import ResourceContextPadProvider from './resource-context';
 import ResourceRules from './resource-rules';
 import ResourceReplace from './resource-replacement';
 import ResourceLabelEditingProvider from './resource-label-editing';
+import ResourceLabelBehavior from './resource-label-behavior';
 
 export const ResourceRendererModule = {
   __init__: ['resourceRenderer'],
@@ -28,4 +29,8 @@ export const ResourceReplaceModule = {
 export const ResourceLabelEditingModule = {
   __init__: ['resourceLabelEditing'],
   resourceLabelEditing: ['type', ResourceLabelEditingProvider],
+};
+export const ResourceLabelBehaviorModule = {
+  __init__: ['resourceLabelBehavior'],
+  resourceLabelBehavior: ['type', ResourceLabelBehavior],
 };

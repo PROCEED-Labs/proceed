@@ -2,7 +2,6 @@ import PaletteProvider, {
   PaletteEntriesCallback,
 } from 'diagram-js/lib/features/palette/PaletteProvider';
 
-import { black } from 'bpmn-js/lib/draw/BpmnRenderUtil';
 import ElementFactory from 'bpmn-js/lib/features/modeling/ElementFactory';
 import Palette from 'diagram-js/lib/features/palette/Palette';
 import Create from 'diagram-js/lib/features/create/Create';
@@ -31,7 +30,7 @@ export default class CustomPaletteProvider implements PaletteProvider {
     this.bpmnFactory = bpmnFactory;
   }
 
-  getPaletteEntries(): PaletteEntriesCallback {
+  getPaletteEntries(): any {
     const { create, elementFactory } = this;
 
     function createAction(
@@ -59,7 +58,7 @@ export default class CustomPaletteProvider implements PaletteProvider {
       };
     }
 
-    return function (entries) {
+    return function (entries: any) {
       return {
         ...entries,
         'flow-separator': {

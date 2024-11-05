@@ -1,0 +1,67 @@
+{
+  "get": {
+    "/machine/:properties": {
+      "params": true
+    },
+    "/machine/": {},
+    "/capabilities/": {},
+    "/configuration/": {},
+    "/configuration/:key": {},
+    "/logging": {},
+    "/logging/status": {},
+    "/logging/standard": {},
+    "/logging/process": {},
+    "/logging/process/:definitionId": {},
+    "/logging/process/:definitionId/instance/:instanceId": {},
+    "/monitoring/": {},
+    "/tasklist/api/": {},
+    "/tasklist/api/userTask": {},
+    "/configuration/api/config": {},
+    "/logging/api/log": {},
+    "/": {},
+    "/process/": {},
+    "/process/:definitionId": {},
+    "/process/:definitionId/versions": {},
+    "/process/:definitionId/versions/:version": {},
+    "/process/:definitionId/instance": {},
+    "/process/:definitionId/instance/:instanceID": {},
+    "/process/:definitionId/user-tasks/:fileName": {},
+    "/process/:definitionId/user-tasks": {},
+    "/status/": {},
+    "/resources/process/:definitionId/images/:fileName": {},
+    "/resources/process/:definitionId/images/": {}
+  },
+  "post": {
+    "/capabilities/execute": {},
+    "/capabilities/return": {},
+    "/evaluation/": {},
+    "/tasklist/api/userTask": {},
+    "/configuration/api/config": {},
+    "/process/": {},
+    "/process/:definitionId/versions/:version/instance": {},
+    "/process/:definitionId/instance/:instanceId/tokens": {},
+    "/process/:definitionId/instance/:instanceId/variables": {},
+    "/process/:definitionId/versions/:version/instance/migration": {}
+  },
+  "put": {
+    "/configuration/": {},
+    "/tasklist/api/variable": {},
+    "/tasklist/api/milestone": {},
+    "/process/:definitionId/instance/:instanceID": {},
+    "/process/:definitionId/instance/:instanceID/instanceState": {},
+    "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {},
+    "/process/:definitionId/instance/:instanceId/tokens/:tokenId/currentFlowNodeState": {},
+    "/process/:definitionId/user-tasks/:fileName": {},
+    "/resources/process/:definitionId/images/:fileName": {}
+  },
+  "delete": {
+    "/configuration/": {},
+    "/logging": {},
+    "/logging/standard": {},
+    "/logging/process": {},
+    "/logging/process/:definitionId": {},
+    "/logging/process/:definitionId/instance/:instanceId": {},
+    "/process/:definitionId": {},
+    "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {}
+  }
+}

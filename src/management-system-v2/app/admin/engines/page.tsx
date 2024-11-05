@@ -37,3 +37,5 @@ export default function EnginesPage() {
     </Content>
   );
 }
+
+export const dynamic = 'force-dynamic';

@@ -9,7 +9,7 @@ import {
 // @ts-ignore
 // import decider from '@proceed/decider';
 import { Machine, getMachines } from './machines';
-import * as endpoints from './endpoints';
+import * as endpoints from './http-endpoints';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 

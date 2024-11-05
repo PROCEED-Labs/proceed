@@ -11,8 +11,6 @@ const mqttCredentials = {
 const baseTopicPrefix = env.MQTT_BASETOPIC ? env.MQTT_BASETOPIC + '/' : '';
 
 export function getClient(options?: mqtt.IClientOptions): Promise<mqtt.MqttClient> {
-  if (!env.MQTT_SERVER_ADDRESS) throw new Error('MQTT_SERVER_ADDRESS is not set');
-
   return new Promise((res, rej) => {
     const client = mqtt.connect(env.MQTT_SERVER_ADDRESS, {
       ...mqttCredentials,

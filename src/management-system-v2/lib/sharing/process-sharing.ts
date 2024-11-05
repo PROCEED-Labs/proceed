@@ -35,7 +35,7 @@ export async function updateProcessGuestAccessRights(
   );
 }
 
-async function generateProcessShareToken(payload: TokenPayload) {
+function generateProcessShareToken(payload: TokenPayload) {
   const secretKey = env.SHARING_ENCRYPTION_SECRET;
   const token = jwt.sign(payload, secretKey!);
   return token;
@@ -46,7 +46,7 @@ export async function generateSharedViewerUrl(
   version?: string,
   settings?: string[],
 ) {
-  const token = await generateProcessShareToken(payload);
+  const token = generateProcessShareToken(payload);
 
   const header = headers();
   const host = header.get('host');

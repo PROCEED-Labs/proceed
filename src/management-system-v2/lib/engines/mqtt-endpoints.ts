@@ -70,3 +70,57 @@ export async function getEngines() {
 
   return engines;
 }
+
+const requestClient = getClient();
+
+export async function mqttRequest(
+  engineId: string,
+  url: string,
+  message: {
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    body: Record<string, any>;
+    query: Record<string, any>;
+    page?: number;
+  },
+) {
+  const client = await requestClient;
+
+  const requestId = crypto.randomUUID();
+  const requestTopic = getEnginePrefix(engineId) + '/api' + url;
+  await subscribeToTopic(client, requestTopic);
+
+  // handler for the response
+  let res: (res: any) => void, rej: (Err: any) => void;
+  const receivedAnswer = new Promise<any>((_res, _rej) => {
+    res = _res;
+    rej = _rej;
+  });
+  function handler(topic: string, _message: any) {
+    const message = JSON.parse(_message.toString());
+    if (topic !== requestTopic) return;
+    if (
+      !message ||
+      typeof message !== 'object' ||
+      !('type' in message) ||
+      message.type !== 'response' ||
+      !('id' in message) ||
+      message.id !== requestId
+    )
+      return;
+
+    res(JSON.parse(message.body));
+  }
+  client.on('message', handler);
+
+  // send request
+  client.publish(requestTopic, JSON.stringify({ ...message, type: 'request', id: requestId }));
+
+  // await for response or timeout
+  setTimeout(rej!, mqttTimeout);
+  const response = await receivedAnswer;
+
+  // cleanup
+  client.removeListener('message', handler);
+
+  return response;
+}

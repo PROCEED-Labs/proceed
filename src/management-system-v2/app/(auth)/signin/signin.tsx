@@ -198,7 +198,7 @@ const SignIn: FC<{
           {oauthProviders.map((provider, idx) => {
             if (provider.type !== 'oauth') return null;
             return (
-              <Tooltip title={`Sign in with ${provider.name}`}>
+              <Tooltip title={`Sign in with ${provider.name}`} key={provider.id}>
                 <AntDesignButton
                   key={idx}
                   style={{

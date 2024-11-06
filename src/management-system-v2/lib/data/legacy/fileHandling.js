@@ -564,7 +564,7 @@ async function getProcessInfo(bpmn, process) {
     departments: process.departments || [],
     variables: process.variables || [],
     createdOn: process.createdOn || currentDate,
-    lastEdited: process.lastEdited || currentDate,
+    lastEditedOn: process.lastEditedOn || currentDate,
     type: process.type || (process.isProject ? 'project' : 'process'),
     processIds,
     versions: [],

@@ -22,12 +22,12 @@ export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 
 
 const DeploymentButtons = ({
   isAdvancedView,
-  processId,
+  process,
   onDeploy,
 }: {
   isAdvancedView: boolean;
-  processId: string;
-  onDeploy: (processId: string, method?: 'static' | 'dynamic') => void;
+  process: ProcessListProcess;
+  onDeploy: (process: ProcessListProcess, method?: 'static' | 'dynamic') => void;
 }) => {
   return isAdvancedView ? (
     <Space style={{ float: 'right' }}>
@@ -35,7 +35,7 @@ const DeploymentButtons = ({
         type="primary"
         size="small"
         onClick={() => {
-          onDeploy(processId);
+          onDeploy(process);
         }}
       >
         Normal
@@ -44,7 +44,7 @@ const DeploymentButtons = ({
         type="primary"
         size="small"
         onClick={() => {
-          onDeploy(processId, 'static');
+          onDeploy(process, 'static');
         }}
       >
         Static
@@ -53,7 +53,7 @@ const DeploymentButtons = ({
         type="primary"
         size="small"
         onClick={() => {
-          onDeploy(processId, 'dynamic');
+          onDeploy(process, 'dynamic');
         }}
       >
         Dynamic
@@ -65,7 +65,7 @@ const DeploymentButtons = ({
       type="primary"
       size="small"
       onClick={() => {
-        onDeploy(processId);
+        onDeploy(process);
       }}
     >
       Deploy Process
@@ -86,7 +86,7 @@ const DeploymentsModal = ({
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
-  selectProcess: (id: string) => void;
+  selectProcess: (process: ProcessListProcess) => void;
 }) => {
   const [isAdvancedView, setIsAdvancedView] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -100,9 +100,9 @@ const DeploymentsModal = ({
         parentId: null,
         type: 'folder',
         id: initialFolder.parentId,
-        createdOn: '',
+        createdOn: null,
         createdBy: '',
-        lastEdited: '',
+        lastEditedOn: null,
         environmentId: '',
       },
       ...initialProcesses,
@@ -154,9 +154,9 @@ const DeploymentsModal = ({
           parentId: null,
           type: 'folder',
           id: folder.parentId,
-          createdOn: '',
+          createdOn: new Date(),
           createdBy: '',
-          lastEdited: '',
+          lastEditedOn: new Date(),
           environmentId: '',
         },
         ...folderContents,
@@ -271,13 +271,13 @@ const DeploymentsModal = ({
               openFolder={(id) => {
                 openFolder(id);
               }}
-              deploymentButtons={({ processId }: { processId: string }) => (
+              deploymentButtons={({ process }) => (
                 <DeploymentButtons
                   isAdvancedView={isAdvancedView}
                   onDeploy={(processId, method) => {
-                    console.log('deploy', processId, method);
+                    selectProcess(processId);
                   }}
-                  processId={processId}
+                  process={process}
                 ></DeploymentButtons>
               )}
             ></ProcessDeploymentList>

@@ -45,6 +45,10 @@ module.exports = {
   // Whether the Chatbot UserInterface and its functionality should be enabled
   enableChatbot: false,
 
+  //feature to switch to prisma from fs
+  enableUseDB: false,
+  enableUseFileManager: false,
+
   // -----------------------------------------------------------------------------
   // Chopping Block
   //

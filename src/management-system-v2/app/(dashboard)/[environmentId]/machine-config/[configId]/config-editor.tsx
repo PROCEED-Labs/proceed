@@ -33,7 +33,11 @@ import {
 
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultMachineConfiguration, defaultTargetConfiguration } from '../configuration-helper';
+import {
+  customMachineConfiguration,
+  defaultMachineConfiguration,
+  defaultTargetConfiguration,
+} from '../configuration-helper';
 import MachineConfigurations from './mach-config';
 import TargetConfiguration from './target-config';
 import Content_ from './config-content';
@@ -157,13 +161,33 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     values: {
       name: string;
       description: string;
+      copyTarget: boolean;
     }[],
   ) => {
-    const { name, description } = values[0];
+    const { name, description, copyTarget } = values[0];
     if (createConfigType === 'target') {
-      await addTargetConfig(parentConfig.id, defaultTargetConfiguration(name, description));
+      await addTargetConfig(
+        parentConfig.id,
+        defaultTargetConfiguration(parentConfig.environmentId, name, description),
+      );
     } else {
-      await addMachineConfig(parentConfig.id, defaultMachineConfiguration(name, description));
+      if (copyTarget && parentConfig.targetConfig) {
+        await addMachineConfig(
+          parentConfig.id,
+          customMachineConfiguration(
+            parentConfig.environmentId,
+            name,
+            description,
+            parentConfig.targetConfig,
+          ),
+          true,
+        );
+      } else {
+        await addMachineConfig(
+          parentConfig.id,
+          defaultMachineConfiguration(parentConfig.environmentId, name, description),
+        );
+      }
     }
     setCreateConfigType('');
     router.refresh();
@@ -320,6 +344,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                 )}
               </Space.Compact> */}
             </Space>
+
             <Space>
               {editable && (
                 <AddButton
@@ -329,39 +354,43 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                 />
               )}
             </Space>
+
             <Space>
               <Radio.Group
                 value={editable ? 'edit' : 'view'}
                 onChange={(e) => onChangeEditable(e.target.value === 'edit')}
               >
                 <Radio.Button value="view">
-                  View{' '}
+                  View
                   <EyeOutlined
                     style={{
-                      margin: '0 0 0 6px',
+                      margin: '0 0 0 8px',
                     }}
                   />
                 </Radio.Button>
+
                 <Radio.Button value="edit">
-                  Edit{' '}
+                  Edit
                   <EditOutlined
                     style={{
-                      margin: '0 0 0 6px',
+                      margin: '0 0 0 8px',
                     }}
                   />
                 </Radio.Button>
               </Radio.Group>
+
               <Button onClick={exportCurrentConfig}>
-                Export{' '}
+                Export
                 <ExportOutlined
                   style={{
-                    margin: '0 0 0 16px',
+                    margin: '0 0 0 12px',
                   }}
                 />
               </Button>
             </Space>
           </Flex>
         </Header>
+
         <Content
           style={{
             margin: '24px 16px 0',
@@ -387,11 +416,14 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           )}
         </Content>
       </Layout>
+
       <MachineConfigModal
         open={!!createConfigType}
         title={machineConfigModalTitle}
         onCancel={() => setCreateConfigType('')}
         onSubmit={handleCreateConfig}
+        configType={createConfigType}
+        targetConfigExists={!!parentConfig.targetConfig}
       />
     </>
   );

@@ -51,21 +51,24 @@ let storedData: StoredConfigsAndParameters =
  * @param parentId ID of the parent object.
  * @param parentType Information about the type of parent (_'target-config'_ | _'machine-config'_ | _'parameter'_ | _'parent-config'_)
  * @param parameters Record of nested parameters.
+ * @param newId Boolean determining if new IDs are to be generated.
  * @return References to nested parameter IDs.
  */
 function parametersToStorage(
   parentId: string,
   parentType: StoredParameter['parentType'],
   parameters: Record<string, Parameter>,
+  newId: boolean = false,
 ) {
   // TODO: why are ids optional for parameters?
   Object.entries(parameters).forEach(([key, parameter]) => {
+    parameter.id = newId ? v4() : parameter.id;
     storedData.parameters[parameter.id!] = {
       ...parameter,
       key,
       parentId,
       parentType,
-      parameters: parametersToStorage(parameter.id!, 'parameter', parameter.parameters),
+      parameters: parametersToStorage(parameter.id!, 'parameter', parameter.parameters, newId),
     };
   });
 
@@ -76,15 +79,26 @@ function parametersToStorage(
  * Stores a given targetConfig into the new storage referencing other elements by id instead of having them nested. If called without a TargetConfig the function returns void.
  * @param parentId ID of the parent object.
  * @param targetConfig TargetConfig that is to be stored, able to contain ParameterConfigs
+ * @param newId Boolean determining if new IDs are to be generated.
  * @return ID of the TargetConfig that was stored.
  */
-function targetConfigToStorage(parentId: string, targetConfig?: TargetConfig) {
+function targetConfigToStorage(
+  parentId: string,
+  targetConfig?: TargetConfig,
+  newId: boolean = false,
+) {
   if (targetConfig) {
+    targetConfig.id = newId ? v4() : targetConfig.id;
     storedData.targetConfigs[targetConfig.id] = {
       ...targetConfig,
       parentId,
-      metadata: parametersToStorage(targetConfig.id, 'target-config', targetConfig.metadata),
-      parameters: parametersToStorage(targetConfig.id, 'target-config', targetConfig.parameters),
+      metadata: parametersToStorage(targetConfig.id, 'target-config', targetConfig.metadata, newId),
+      parameters: parametersToStorage(
+        targetConfig.id,
+        'target-config',
+        targetConfig.parameters,
+        newId,
+      ),
     };
 
     return targetConfig.id;
@@ -95,15 +109,31 @@ function targetConfigToStorage(parentId: string, targetConfig?: TargetConfig) {
  * Stores a given MachineConfig into the new storage referencing other elements by id instead of having them nested.
  * @param parentId ID of the parent object.
  * @param machineConfig MachineConfigs that are to be stored, able to contain ParameterConfigs
+ * @param newId Boolean determining if new IDs are to be generated.
  * @return IDs of the MachineConfigs that were stored.
  */
-function machineConfigsToStorage(parentId: string, machineConfigs: MachineConfig[]) {
+function machineConfigsToStorage(
+  parentId: string,
+  machineConfigs: MachineConfig[],
+  newId: boolean = false,
+) {
   machineConfigs.forEach((machineConfig) => {
+    machineConfig.id = newId ? v4() : machineConfig.id;
     storedData.machineConfigs[machineConfig.id] = {
       ...machineConfig,
       parentId,
-      metadata: parametersToStorage(machineConfig.id, 'machine-config', machineConfig.metadata),
-      parameters: parametersToStorage(machineConfig.id, 'machine-config', machineConfig.parameters),
+      metadata: parametersToStorage(
+        machineConfig.id,
+        'machine-config',
+        machineConfig.metadata,
+        newId,
+      ),
+      parameters: parametersToStorage(
+        machineConfig.id,
+        'machine-config',
+        machineConfig.parameters,
+        newId,
+      ),
     };
   });
 
@@ -113,15 +143,18 @@ function machineConfigsToStorage(parentId: string, machineConfigs: MachineConfig
 /**
  * Stores a given ParentConfig into the new storage referencing other elements by id instead of having them nested.
  * @param parentConfig ParentConfig that is to be stored, able to contain TargetConfigs, MachineConfigs and ParameterConfigs
+ * @param newId Boolean determining if new IDs are to be generated.
  */
-function parentConfigToStorage(parentConfig: ParentConfig) {
+function parentConfigToStorage(parentConfig: ParentConfig, newId: boolean = false) {
   const { targetConfig, metadata, machineConfigs } = parentConfig;
+
+  parentConfig.id = newId ? v4() : parentConfig.id;
 
   storedData.parentConfigs[parentConfig.id] = {
     ...parentConfig,
-    targetConfig: targetConfigToStorage(parentConfig.id, targetConfig),
-    machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs),
-    metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata),
+    targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
+    machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+    metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
   };
 }
 
@@ -161,14 +194,19 @@ await init();
  */
 function nestedParametersFromStorage(parameterIds: string[]) {
   const parameters: Record<string, Parameter> = {};
+  // console.log('getting parameters for parameter IDs: ', parameterIds); //TODO remove
 
   parameterIds.forEach((id) => {
     const storedParameter = storedData.parameters[id];
-    parameters[storedParameter.key] = {
-      ...storedParameter,
-      parameters: nestedParametersFromStorage(storedParameter.parameters),
-    };
+    // TODO remove
+    if (true || (storedParameter && storedParameter.key)) {
+      parameters[storedParameter.key] = {
+        ...storedParameter,
+        parameters: nestedParametersFromStorage(storedParameter.parameters),
+      };
+    }
   });
+  // console.log('returning: ', parameters);  //TODO remove
 
   return parameters;
 }
@@ -235,6 +273,8 @@ export async function getDeepParentConfigurationById(
 
   // TODO: check if the user can access the config
 
+  // console.log('getting data for parent ID: ', parentConfigId); // TODO remove
+
   const parentConfig = {
     ...storedParentConfig,
     metadata: nestedParametersFromStorage(storedParentConfig.metadata),
@@ -259,6 +299,8 @@ export async function getParentConfigurations(
   const storedParentConfigs = Object.values(storedData.parentConfigs).filter(
     (config) => config.environmentId === environmentId,
   );
+
+  // console.log('ID: ', environmentId, '\nAbility: ', ability, '\nstored:\n', storedParentConfigs); //TODO remove
 
   const parentConfigs = await asyncMap(storedParentConfigs, ({ id }) =>
     getDeepParentConfigurationById(id),
@@ -396,7 +438,9 @@ export async function copyConfig(
 }
 
 /**
- *
+ * @param originalId ID of the config to be copied.
+ * @param machineConfigInput Config the selected config is to be pasted into
+ * @param environmentId
  * @throws {Error} in case:
  * * config ID does not exist.
  * * the folder is not found.
@@ -416,7 +460,7 @@ export async function copyParentConfig(
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
 
     const newId = v4();
-    const date = new Date().toUTCString();
+    const date = new Date();
     const copy = {
       ...(JSON.parse(JSON.stringify(originalConfig)) as typeof originalConfig),
       id: newId,
@@ -439,7 +483,7 @@ export async function copyParentConfig(
 
     // if no folder ID is given, set ID to root folder's
     if (!copy.folderId) {
-      copy.folderId = getRootFolder(environmentId).id;
+      copy.folderId = (await getRootFolder(environmentId)).id;
     }
 
     const folderData = foldersMetaObject.folders[copy.folderId];
@@ -472,7 +516,7 @@ export async function addParentConfig(
 ) {
   try {
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
-    const date = new Date().toUTCString();
+    const date = new Date();
     const metadata: ParentConfig = {
       ...({
         id: v4(),
@@ -481,12 +525,11 @@ export async function addParentConfig(
         variables: [],
         createdBy: environmentId,
         lastEditedBy: environmentId,
-        lastEditedOn: date,
         metadata: {},
         departments: [],
         inEditingBy: [],
         createdOn: date,
-        lastEdited: date,
+        lastEditedOn: date,
         sharedAs: 'protected',
         shareTimestamp: 0,
         allowIframeTimestamp: 0,
@@ -499,19 +542,20 @@ export async function addParentConfig(
       ...parentConfigData,
       ...(base ? base : {}),
     };
-    metadata.id = v4();
-    if (!metadata.folderId) {
-      metadata.folderId = getRootFolder(metadata.environmentId).id;
-    }
+
+    metadata.folderId = (await getRootFolder(environmentId)).id;
+    metadata.environmentId = environmentId;
 
     const folderData = foldersMetaObject.folders[metadata.folderId];
     if (!folderData) throw new Error('Folder not found');
+    let idCollision = false;
     const { id: parentConfigId } = metadata;
     if (storedData.parentConfigs[parentConfigId]) {
-      throw new Error(`A parent configuration with the id ${parentConfigId} already exists!`);
+      // throw new Error(`A parent configuration with the id ${parentConfigId} already exists!`);
+      idCollision = true;
     }
 
-    parentConfigToStorage(metadata);
+    parentConfigToStorage(metadata, idCollision);
     store.set('techData', 'parentConfigs', storedData.parentConfigs);
     store.set('techData', 'machineConfigs', storedData.machineConfigs);
     store.set('techData', 'targetConfigs', storedData.targetConfigs);
@@ -520,8 +564,10 @@ export async function addParentConfig(
     eventHandler.dispatch('machineConfigAdded', { machineConfig: metadata });
 
     return metadata;
-  } catch (e) {
-    return userError("Couldn't create Machine Config");
+  } catch (e: unknown) {
+    const error = e as Error;
+    // console.log(error.message);
+    return userError(error.message ?? "Couldn't create Machine Config");
   }
 }
 
@@ -541,12 +587,16 @@ export async function addTargetConfig(parentConfigId: string, targetConfig: Targ
   store.set('techData', 'parentConfigs', storedData.parentConfigs);
 }
 
-export async function addMachineConfig(parentConfigId: string, machineConfig: MachineConfig) {
+export async function addMachineConfig(
+  parentConfigId: string,
+  machineConfig: MachineConfig,
+  newId: boolean = false,
+) {
   const parentConfig = storedData.parentConfigs[parentConfigId];
   if (!parentConfig)
     throw new Error(`There is no parent configuration with the id ${parentConfigId}.`);
 
-  machineConfigsToStorage(parentConfigId, [machineConfig]);
+  machineConfigsToStorage(parentConfigId, [machineConfig], newId);
   store.set('techData', 'machineConfigs', storedData.machineConfigs);
   store.set('techData', 'parameters', storedData.parameters);
 
@@ -715,7 +765,11 @@ export async function removeMachineConfig(machineConfigId: string) {
   store.set('techData', 'machineConfigs', storedData.machineConfigs);
 }
 
-/** Removes an existing parent config */
+/**
+ * Removes an existing parent config for a given ID from store.
+ *
+ * @param parentConfigId ID of the ParentConfig that is to be removed.
+ */
 export async function removeParentConfiguration(parentConfigId: string) {
   const parentConfig = storedData.parentConfigs[parentConfigId];
 

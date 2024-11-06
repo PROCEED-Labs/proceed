@@ -246,12 +246,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     },
     {
       title: 'Last Edited',
-      dataIndex: 'lastEdited',
+      dataIndex: 'lastEditedOn',
       key: 'Last Edited',
       render: (date: string) => generateDateString(date, true),
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
-      ),
+      sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
       responsive: ['md'],
     },
     {
@@ -259,9 +257,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      ),
+      sorter: folderAwareSort((a, b) => b.createdOn!.getTime() - a.createdOn!.getTime()),
       responsive: ['md'],
     },
     {
@@ -274,10 +270,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
-      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.owner),
+      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.creatorId),
       sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? a.createdBy ?? '' : a.owner).localeCompare(
-          b.type === 'folder' ? b.createdBy ?? '' : b.owner,
+        (a.type === 'folder' ? a.createdBy ?? '' : a.creatorId).localeCompare(
+          b.type === 'folder' ? b.createdBy ?? '' : b.creatorId,
         ),
       ),
       responsive: ['md'],
@@ -417,7 +413,7 @@ type ProcessDeploymentListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
   openFolder: (id: string) => void;
-  deploymentButtons: (additionalProps: { processId: string }) => ReactElement;
+  deploymentButtons: (additionalProps: { process: ProcessListProcess }) => ReactElement;
 }>;
 
 const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
@@ -479,18 +475,10 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
           );
         },
         ['Meta Data Button']: (_, record) => {
-          return record.type !== 'folder' ? (
-            <>{deploymentButtons({ processId: record.id })}</>
-          ) : (
-            <></>
-          );
+          return record.type !== 'folder' ? <>{deploymentButtons({ process: record })}</> : <></>;
         },
         ['customProps']: (_, record) => {
-          return record.type !== 'folder' ? (
-            <>{deploymentButtons({ processId: record.id })}</>
-          ) : (
-            <></>
-          );
+          return record.type !== 'folder' ? <>{deploymentButtons({ process: record })}</> : <></>;
         },
       }}
     ></BaseProcessList>

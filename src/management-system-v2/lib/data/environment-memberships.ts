@@ -2,18 +2,30 @@
 
 import { getCurrentEnvironment } from '@/components/auth';
 import { UserErrorType, userError } from '../user-error';
-import { getUserByEmail } from './legacy/iam/users';
-import { isMember, removeMember } from './legacy/iam/memberships';
 import { z } from 'zod';
 import { env } from '@/lib/env-vars';
 import { sendEmail } from '../email/mailer';
 import renderOrganizationInviteEmail from '../organization-invite-email';
-import { getEnvironmentById } from './legacy/iam/environments';
 import { OrganizationEnvironment } from './environment-schema';
 import { generateInvitationToken } from '../invitation-tokens';
-import { getRoleById } from './legacy/iam/roles';
 import { toCaslResource } from '../ability/caslAbility';
 import { RoleMapping } from './legacy/iam/role-mappings';
+import { enableUseDB } from 'FeatureFlags';
+import { TMembershipsModule, TUsersModule } from './module-import-types-temp';
+import { getUserByEmail, getRoleById, getEnvironmentById, isMember } from './DTOs';
+
+let addMember: TMembershipsModule['addMember'];
+let removeMember: TMembershipsModule['removeMember'];
+// Function to load modules based on feature flag
+const loadModules = async () => {
+  const [membershipModuleImport] = await Promise.all([
+    enableUseDB ? import('./db/iam/memberships') : import('./legacy/iam/memberships'),
+  ]);
+
+  removeMember = membershipModuleImport.removeMember;
+};
+
+loadModules().catch(console.error);
 
 const EmailListSchema = z.array(z.string().email());
 
@@ -30,7 +42,7 @@ export async function inviteUsersToEnvironment(
 
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    const organization = getEnvironmentById(environmentId) as OrganizationEnvironment;
+    const organization = (await getEnvironmentById(environmentId)) as OrganizationEnvironment;
 
     // ability check disallows from adding to personal environments
     if (!ability.can('create', 'User'))
@@ -39,9 +51,9 @@ export async function inviteUsersToEnvironment(
         UserErrorType.PermissionError,
       );
 
-    const filteredRoles = roleIds?.filter((roleId) => {
+    const filteredRoles = roleIds?.filter(async (roleId) => {
       return (
-        ability.can('manage', toCaslResource('Role', getRoleById(roleId))) &&
+        ability.can('manage', toCaslResource('Role', await getRoleById(roleId))) &&
         ability.can(
           'create',
           toCaslResource('RoleMapping', { userId: '', roleId } satisfies Partial<RoleMapping>),
@@ -51,8 +63,8 @@ export async function inviteUsersToEnvironment(
     });
 
     for (const invitedEmail of invitedEmails) {
-      const invitedUser = getUserByEmail(invitedEmail);
-      if (invitedUser && isMember(environmentId, invitedUser.id)) continue;
+      const invitedUser = await getUserByEmail(invitedEmail);
+      if (invitedUser && (await isMember(environmentId, invitedUser.id))) continue;
 
       const expirationDate = new Date(Date.now() + invitationExpirationTime);
 

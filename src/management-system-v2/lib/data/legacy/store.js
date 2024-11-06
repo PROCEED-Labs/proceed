@@ -62,6 +62,7 @@ if (!global.stores) {
     }),
   };
   stores.systemAdmins = { store: getStore('systemAdmins') };
+  stores.verificationTokens = { store: getStore('verificationTokens') };
 }
 
 /**

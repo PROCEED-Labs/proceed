@@ -5,19 +5,15 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import {
-  addUser,
-  deleteUser,
-  getUserById,
-  updateUser,
-  usersMetaObject,
-} from '@/lib/data/legacy/iam/users';
+import { addUser, deleteUser, getUserById, getUserByUsername, updateUser } from '@/lib/data/DTOs';
+import { usersMetaObject } from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
-import renderSigninLinkEmail from './signin-link-email';
+import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
+import { enableUseDB } from 'FeatureFlags';
 
 const nextAuthOptions: AuthOptions = {
   secret: env.NEXTAUTH_SECRET,
@@ -31,12 +27,15 @@ const nextAuthOptions: AuthOptions = {
       id: 'guest-signin',
       credentials: {},
       async authorize() {
-        return addUser({ guest: true });
+        return addUser({ isGuest: true });
       },
     }),
     EmailProvider({
       sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail(params.url, params.expires);
+        const signinMail = renderSigninLinkEmail({
+          signInLink: params.url,
+          expires: params.expires,
+        });
 
         sendEmail({
           to: params.identifier,
@@ -52,7 +51,7 @@ const nextAuthOptions: AuthOptions = {
     async jwt({ token, user: _user, trigger }) {
       let user = _user as User | undefined;
 
-      if (trigger === 'update') user = getUserById(token.user.id);
+      if (trigger === 'update') user = (await getUserById(token.user.id)) as User;
 
       if (user) token.user = user;
 
@@ -68,18 +67,18 @@ const nextAuthOptions: AuthOptions = {
       const session = await getServerSession(nextAuthOptions);
       const sessionUser = session?.user;
 
-      if (sessionUser?.guest && account?.provider !== 'guest-loguin') {
+      if (sessionUser?.isGuest && account?.provider !== 'guest-loguin') {
         const user = _user as Partial<AuthenticatedUser>;
-        const guestUser = getUserById(sessionUser.id);
+        const guestUser = await getUserById(sessionUser.id);
 
-        if (guestUser.guest) {
+        if (guestUser?.isGuest) {
           updateUser(guestUser.id, {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,
             image: user.image ?? undefined,
             email: user.email ?? undefined,
-            guest: false,
+            isGuest: false,
           });
         }
       }
@@ -88,16 +87,18 @@ const nextAuthOptions: AuthOptions = {
     },
   },
   events: {
-    signOut({ token }) {
-      if (!token.user.guest) return;
+    async signOut({ token }) {
+      if (!token.user.isGuest) return;
 
-      const user = getUserById(token.user.id);
-      if (!user.guest) {
-        console.warn('User with invalid session');
-        return;
+      const user = await getUserById(token.user.id);
+      if (user) {
+        if (!user.isGuest) {
+          console.warn('User with invalid session');
+          return;
+        }
+
+        deleteUser(user.id);
       }
-
-      deleteUser(user.id);
     },
   },
   pages: {
@@ -182,8 +183,8 @@ if (env.NODE_ENV === 'development') {
       lastName: 'Doe',
       email: 'johndoe@proceed-labs.org',
       id: 'development-id|johndoe',
-      guest: false,
-      emailVerified: null,
+      isGuest: false,
+      emailVerifiedOn: null,
       image: null,
     },
     {
@@ -192,8 +193,8 @@ if (env.NODE_ENV === 'development') {
       lastName: 'Admin',
       email: 'admin@proceed-labs.org',
       id: 'development-id|admin',
-      guest: false,
-      emailVerified: null,
+      isGuest: false,
+      emailVerifiedOn: null,
       image: null,
     },
   ] satisfies User[];
@@ -206,6 +207,18 @@ if (env.NODE_ENV === 'development') {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },
       async authorize(credentials) {
+        if (enableUseDB) {
+          const userTemplate = developmentUsers.find(
+            (user) => user.username === credentials?.username,
+          );
+
+          if (!userTemplate) return null;
+
+          let user = await getUserByUsername(userTemplate.username);
+          if (!user) user = await addUser(userTemplate);
+
+          return user;
+        }
         const userTemplate = developmentUsers.find(
           (user) => user.username === credentials?.username,
         );
@@ -214,7 +227,7 @@ if (env.NODE_ENV === 'development') {
 
         let user = usersMetaObject[userTemplate.id];
 
-        if (!user) user = addUser(userTemplate);
+        if (!user) user = await addUser(userTemplate);
 
         return user;
       },

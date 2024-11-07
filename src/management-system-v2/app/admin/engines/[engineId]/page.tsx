@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
 import { getEngines, mqttRequest } from '@/lib/engines/mqtt-endpoints';
-import { Result, Skeleton } from 'antd';
+import { Result, Skeleton, Tag } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import { env } from 'process';
 import { Suspense } from 'react';
@@ -22,9 +22,27 @@ async function Engine({ engineId }: { engineId: string }) {
       method: 'GET',
     });
 
-    return <EngineOverview engine={engine} />;
+    return (
+      <Content
+        title={
+          <>
+            Engine: {engine.name}{' '}
+            <Tag color={engine.online ? 'success' : 'error'}>
+              {engine.online ? 'online' : 'offline'}
+            </Tag>
+          </>
+        }
+      >
+        <EngineOverview engine={engine} />
+      </Content>
+    );
   } catch (e) {
-    return <Result status="500" title="Error" subTitle="Couldn't fetch engines" />;
+    console.error(e);
+    return (
+      <Content>
+        <Result status="500" title="Error" subTitle="Couldn't fetch engines" />
+      </Content>
+    );
   }
 }
 
@@ -35,11 +53,15 @@ export default function EnginesPage({ params }: { params: { engineId: string } }
   const engineId = decodeURIComponent(params.engineId);
 
   return (
-    <Content title={`Engine: ${engineId}`}>
-      <Suspense fallback={<Skeleton active />}>
-        <Engine engineId={engineId} />
-      </Suspense>
-    </Content>
+    <Suspense
+      fallback={
+        <Content>
+          <Skeleton active />
+        </Content>
+      }
+    >
+      <Engine engineId={engineId} />
+    </Suspense>
   );
 }
 

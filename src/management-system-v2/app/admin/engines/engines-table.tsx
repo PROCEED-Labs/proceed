@@ -6,6 +6,7 @@ import { type TableEngine } from './page';
 import ElementList from '@/components/item-list-view';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
+import Link from 'next/link';
 
 export default function EnginesTable({ engines }: { engines: TableEngine[] }) {
   const { filteredData, searchQuery, setSearchQuery } = useFuzySearch({
@@ -38,7 +39,9 @@ export default function EnginesTable({ engines }: { engines: TableEngine[] }) {
           {
             title: 'Engine ID',
             dataIndex: 'name',
-            render: (_, engine) => engine.engineId.highlighted,
+            render: (_, engine) => (
+              <Link href={`/admin/engine/${engine.id}`}>{engine.engineId.highlighted}</Link>
+            ),
           },
           {
             title: 'Status',

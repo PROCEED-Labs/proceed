@@ -191,8 +191,11 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       const ModelerOrViewer =
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
+      // this will allow any type of viewer or editor we create to render our performer elements
       const additionalModules: any[] = [ResourceRendererModule];
 
+      // the modules related to editing can only be registered in modelers since they depend on
+      // other modeler modules
       if (type === 'modeler') {
         additionalModules.push(
           ResourceContextPadProviderModule,

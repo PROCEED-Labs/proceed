@@ -4,9 +4,9 @@ import { FC, useTransition } from 'react';
 import { Button, Form, Input, Modal, App, ModalProps } from 'antd';
 import { updateUser } from '@/lib/data/users';
 import { User, AuthenticatedUserData, AuthenticatedUserDataSchema } from '@/lib/data/user-schema';
-import { useRouter } from 'next/navigation';
 import useParseZodErrors from '@/lib/useParseZodErrors';
 import { useSession } from 'next-auth/react';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type modalInputField = {
   userDataField: keyof AuthenticatedUserData;
@@ -31,8 +31,7 @@ const AuthenticatedUserDataModal: FC<{
   const session = useSession();
   const [form] = Form.useForm();
   const [loading, startTransition] = useTransition();
-  const { message } = App.useApp();
-  const router = useRouter();
+  const app = App.useApp();
 
   const [formatErrors, parseInput, resetErrors] = useParseZodErrors(
     AuthenticatedUserDataSchema.partial(),
@@ -46,20 +45,18 @@ const AuthenticatedUserDataModal: FC<{
 
   const submitData = async (values: any) => {
     startTransition(async () => {
-      try {
-        const data = parseInput(values);
-        if (!data) return;
+      const data = parseInput(values);
+      if (!data) return;
 
-        const result = await updateUser(values as AuthenticatedUserData);
-        if (result && 'error' in result) throw new Error();
-        session.update();
-
-        message.success({ content: 'Profile updated' });
-        router.refresh();
-        close();
-      } catch (e) {
-        message.error({ content: 'An error ocurred' });
-      }
+      await wrapServerCall({
+        fn: () => updateUser(values as AuthenticatedUserData),
+        onSuccess: () => {
+          app.message.success({ content: 'Profile updated' });
+          session.update();
+          close();
+        },
+        app,
+      });
     });
   };
 

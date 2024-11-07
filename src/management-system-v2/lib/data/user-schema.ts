@@ -18,7 +18,7 @@ export const AuthenticatedUserDataSchema = z.object({
     .regex(/^[A-Za-z-_0-9]+$/, 'The Username can only contain letters from a to z and numbers')
     .regex(/^[^\s]+$/, 'The Username cannot contain spaces')
     .min(1, 'The Username must be at least 1 character long')
-    .max(35, 'The Username cannot be longer than 35 characters')
+    .max(50, 'The Username cannot be longer than 50 characters')
     .optional(),
   image: z.string().url().nullable().optional(),
   favourites: z.array(z.string()).optional(),

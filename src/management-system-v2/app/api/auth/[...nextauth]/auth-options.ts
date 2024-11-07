@@ -65,6 +65,7 @@ const nextAuthOptions: AuthOptions = {
             // add User if not existing already (=> Sign Up)
             confluenceUser = await addUser({
               id: decodedToken.sub as string,
+              username: (decodedToken.sub as string).split(':').pop(),
               confluenceId: decodedToken.sub,
               isGuest: false,
               emailVerifiedOn: null,

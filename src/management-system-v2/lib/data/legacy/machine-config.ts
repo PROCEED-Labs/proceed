@@ -587,12 +587,16 @@ export async function addTargetConfig(parentConfigId: string, targetConfig: Targ
   store.set('techData', 'parentConfigs', storedData.parentConfigs);
 }
 
-export async function addMachineConfig(parentConfigId: string, machineConfig: MachineConfig) {
+export async function addMachineConfig(
+  parentConfigId: string,
+  machineConfig: MachineConfig,
+  newId: boolean = false,
+) {
   const parentConfig = storedData.parentConfigs[parentConfigId];
   if (!parentConfig)
     throw new Error(`There is no parent configuration with the id ${parentConfigId}.`);
 
-  machineConfigsToStorage(parentConfigId, [machineConfig]);
+  machineConfigsToStorage(parentConfigId, [machineConfig], newId);
   store.set('techData', 'machineConfigs', storedData.machineConfigs);
   store.set('techData', 'parameters', storedData.parameters);
 

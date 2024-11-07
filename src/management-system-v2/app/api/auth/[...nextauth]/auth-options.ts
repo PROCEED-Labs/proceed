@@ -23,9 +23,9 @@ import { env } from '@/lib/env-vars';
 import { enableUseDB } from 'FeatureFlags';
 import { verifyJwt } from '@/app/confluence/helpers';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
-import { addMember } from '@/lib/data/db/iam/memberships';
-import { getRoleByName } from '@/lib/data/db/iam/roles';
-import { addRoleMappings } from '@/lib/data/role-mappings';
+import { addMember } from '@/lib/data/legacy/iam/memberships';
+import { getRoleByName } from '@/lib/data/legacy/iam/roles';
+import { addRoleMappings } from '@/lib/data/legacy/iam/role-mappings';
 
 const nextAuthOptions: AuthOptions = {
   secret: env.NEXTAUTH_SECRET,
@@ -86,8 +86,9 @@ const nextAuthOptions: AuthOptions = {
               );
             }
 
-            await addRoleMappings(confluenceClientInfos.proceedSpace.id, [
+            await addRoleMappings([
               {
+                environmentId: confluenceClientInfos.proceedSpace.id,
                 roleId: adminRole.id,
                 userId: confluenceUser.id,
               },

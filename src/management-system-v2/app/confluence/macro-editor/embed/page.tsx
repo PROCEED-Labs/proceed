@@ -8,6 +8,7 @@ import { Environment } from '@/lib/data/environment-schema';
 import Layout from '../../layout-client';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 const MacroEditorPage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
   const jwtToken = searchParams.jwt;
@@ -26,11 +27,13 @@ const MacroEditorPage = async ({ params, searchParams }: { params: any; searchPa
   const { userId } = await getCurrentUser();
 
   if (userId) {
-    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+    const userOrganizationEnvironments = await getUserOrganizationEnvironments(userId);
+
     userEnvironments.push(
-      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-        getEnvironmentById(environmentId),
-      ),
+      ...(await asyncMap(userOrganizationEnvironments, async (environmentId) => {
+        return getEnvironmentById(environmentId);
+      })),
     );
 
     const confluenceClientInfos = await getConfluenceClientInfos(clientKey);
@@ -44,7 +47,7 @@ const MacroEditorPage = async ({ params, searchParams }: { params: any; searchPa
 
     const { ability } = await getCurrentEnvironment(confluenceSelectedProceedSpace.id);
     // get all the processes the user has access to
-    const ownedProcesses = (await getProcesses(ability, true)) as Process[];
+    const ownedProcesses = (await getProcesses(userId, ability, true)) as Process[];
 
     return (
       <Layout

@@ -68,8 +68,8 @@ const ProcessList = ({
 
     row.cells.push(
       {
-        key: 'lastEdited' + process.lastEdited + process.id,
-        content: new Date(process.lastEdited).toLocaleString(),
+        key: 'lastEdited' + process.lastEditedOn + process.id,
+        content: new Date(process.lastEditedOn).toLocaleString(),
       },
       {
         key: 'createdOn' + process.createdOn + process.id,

@@ -9,6 +9,7 @@ import { getProcesses } from '@/lib/data/legacy/process';
 import { Process } from '@/lib/data/process-schema';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 const MacroPage = async ({
   params,
@@ -35,11 +36,13 @@ const MacroPage = async ({
   const { userId } = await getCurrentUser();
 
   if (userId) {
-    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+    const userOrganizationEnvironments = await getUserOrganizationEnvironments(userId);
+
     userEnvironments.push(
-      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-        getEnvironmentById(environmentId),
-      ),
+      ...(await asyncMap(userOrganizationEnvironments, async (environmentId) => {
+        return getEnvironmentById(environmentId);
+      })),
     );
 
     const confluenceClientInfos = await getConfluenceClientInfos(clientKey);
@@ -56,7 +59,7 @@ const MacroPage = async ({
     // get all the processes the user has access to in the selected space for confluence
     const ownedProcesses = (
       await Promise.all(
-        (await getProcesses(ability)).map(async (process) => {
+        (await getProcesses(userId, ability)).map(async (process) => {
           const res = await getProcessBPMN(process.id, confluenceSelectedProceedSpace.id);
           if (typeof res === 'string') {
             return { ...process, bpmn: res };

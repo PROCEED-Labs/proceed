@@ -6,6 +6,7 @@ import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/membershi
 import Config from './config';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 const ConfigPage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
   const jwtToken = searchParams.jwt;
@@ -19,11 +20,13 @@ const ConfigPage = async ({ params, searchParams }: { params: any; searchParams:
   const { userId } = await getCurrentUser();
 
   if (userId) {
-    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+    const userOrganizationEnvironments = await getUserOrganizationEnvironments(userId);
+
     userEnvironments.push(
-      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-        getEnvironmentById(environmentId),
-      ),
+      ...(await asyncMap(userOrganizationEnvironments, async (environmentId) => {
+        return getEnvironmentById(environmentId);
+      })),
     );
 
     const confluenceClientInfos = await getConfluenceClientInfos(clientKey);

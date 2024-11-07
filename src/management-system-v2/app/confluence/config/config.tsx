@@ -17,9 +17,9 @@ const SpaceSelectionTab = ({
   initialSpaceId?: string;
 }) => {
   const options = userEnvironments
-    .filter((environment) => environment.organization)
+    .filter((environment) => environment.isOrganization)
     .map((environment) => {
-      if (environment.organization) {
+      if (environment.isOrganization) {
         return { label: environment.name, value: environment.id };
       }
       return { label: environment.id, value: environment.id };

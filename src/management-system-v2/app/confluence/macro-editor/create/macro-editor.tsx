@@ -61,7 +61,7 @@ const MacroEditor = ({
     if (process) {
       const bpmnResponse = await getProcessBPMN(process.id, spaceId);
 
-      if (typeof bpmnResponse === 'object' && 'error' in bpmnResponse) {
+      if (!bpmnResponse || (typeof bpmnResponse === 'object' && 'error' in bpmnResponse)) {
         throw new Error('Could not retrieve BPMN of process');
       }
 

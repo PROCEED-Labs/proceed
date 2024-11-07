@@ -31,6 +31,7 @@ export const AuthenticatedUserSchema = AuthenticatedUserDataSchema.extend({
   // NOTE: maybe email should be moved to user data as the user could change their email
   // TODO: email is optional because Twitter doesn't return an email for the time being,
   // once it does this type should be non-optional and the commit d34be03d9a89cd11418f4b550a04b3664ce1de71 reverted
+  confluenceId: z.string().optional(),
   email: z.string().optional(),
   emailVerifiedOn: z.date().nullable(),
 });
@@ -42,15 +43,7 @@ export const GuestUserSchema = z.object({
 });
 export type GuestUser = z.infer<typeof GuestUserSchema> & { id: string };
 
-export const ConfluenceUserSchema = z.object({
-  guest: z.literal(false),
-  confluence: z.literal(true),
-  id: z.string().optional(),
-  username: z.string(),
-});
-export type ConfluenceUser = z.infer<typeof ConfluenceUserSchema> & { id: string };
-
-export const UserSchema = z.union([AuthenticatedUserSchema, GuestUserSchema, ConfluenceUserSchema]);
+export const UserSchema = z.union([AuthenticatedUserSchema, GuestUserSchema]);
 export type User = z.infer<typeof UserSchema> & { id: string };
 
 /**

@@ -9,6 +9,7 @@ import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { findPROCEEDMacrosInSpace } from './helpers';
 import { ConfluenceProceedProcess } from './process-list';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 const ConfluencePage = async ({
   params,
@@ -34,11 +35,13 @@ const ConfluencePage = async ({
   const { userId } = await getCurrentUser();
 
   if (userId) {
-    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+    const userOrganizationEnvironments = await getUserOrganizationEnvironments(userId);
+
     userEnvironments.push(
-      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-        getEnvironmentById(environmentId),
-      ),
+      ...(await asyncMap(userOrganizationEnvironments, async (environmentId) => {
+        return getEnvironmentById(environmentId);
+      })),
     );
 
     const confluenceClientInfos = await getConfluenceClientInfos(clientKey);
@@ -53,7 +56,7 @@ const ConfluencePage = async ({
     const { ability } = await getCurrentEnvironment(confluenceSelectedProceedSpace.id);
 
     // get all the processes the user has access to
-    const ownedProcesses = await getProcesses(ability);
+    const ownedProcesses = await getProcesses(userId, ability);
 
     const result = await findPROCEEDMacrosInSpace(spaceKey);
 

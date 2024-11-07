@@ -18,11 +18,9 @@ export class ProcessListPage {
   }
 
   async goto() {
-    if (!this.page.url().endsWith('processes')) {
-      await this.page.goto('/processes');
-      await this.page.waitForURL('**/processes');
-      await waitForHydration(this.page);
-    }
+    await this.page.goto('/processes');
+    await this.page.waitForURL('**/processes');
+    await waitForHydration(this.page);
   }
 
   /**
@@ -165,8 +163,6 @@ export class ProcessListPage {
       await waitForHydration(this.page);
     }
 
-    this.processDefinitionIds.push(id);
-
     return id;
   }
 
@@ -174,7 +170,10 @@ export class ProcessListPage {
     const { page } = this;
 
     if (this.processDefinitionIds.length) {
-      await this.goto();
+      if (!page.url().endsWith('processes')) {
+        await this.goto();
+        await page.waitForURL('**/processes');
+      }
 
       /* Ensure nothing is selected (esc) */
       await page.locator('body').focus();

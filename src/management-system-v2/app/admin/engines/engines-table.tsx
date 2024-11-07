@@ -40,7 +40,7 @@ export default function EnginesTable({ engines }: { engines: TableEngine[] }) {
             title: 'Engine ID',
             dataIndex: 'name',
             render: (_, engine) => (
-              <Link href={`/admin/engine/${engine.id}`}>{engine.engineId.highlighted}</Link>
+              <Link href={`/admin/engines/${engine.id}`}>{engine.engineId.highlighted}</Link>
             ),
           },
           {

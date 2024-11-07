@@ -74,10 +74,10 @@ const nextAuthOptions: AuthOptions = {
 
           if (
             confluenceClientInfos.proceedSpace &&
-            !isMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id)
+            !(await isMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id))
           ) {
             // Add Confluence User to configured proceed space to gain access to shared processes
-            addMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id);
+            await addMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id);
 
             const adminRole = await getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
             if (!adminRole) {
@@ -86,7 +86,7 @@ const nextAuthOptions: AuthOptions = {
               );
             }
 
-            addRoleMappings(confluenceClientInfos.proceedSpace.id, [
+            await addRoleMappings(confluenceClientInfos.proceedSpace.id, [
               {
                 roleId: adminRole.id,
                 userId: confluenceUser.id,

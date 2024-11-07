@@ -58,7 +58,7 @@ export default class CustomPaletteProvider implements PaletteProvider {
       };
     }
 
-    return function (entries: any) {
+    return function(entries: any) {
       return {
         ...entries,
         'flow-separator': {

@@ -135,30 +135,36 @@
 
 .proceed-robot-icon::before {
   font-family: var(--custom-icon-font);
-  content: 'A';
+  content: 'a';
   width: 1em;
 }
 
 .proceed-screen-icon::before {
   font-family: var(--custom-icon-font);
-  content: 'B';
+  content: 'b';
   width: 1em;
 }
 
 .proceed-user-icon::before {
   font-family: var(--custom-icon-font);
-  content: 'C';
-  width: 1em;
-}
-
-.proceed-laptop-icon::before {
-  font-family: var(--custom-icon-font);
-  content: 'E';
+  content: 'c';
   width: 1em;
 }
 
 .proceed-server-icon::before {
   font-family: var(--custom-icon-font);
-  content: 'D';
+  content: 'd';
+  width: 1em;
+}
+
+.proceed-laptop-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'e';
+  width: 1em;
+}
+
+.proceed-server-with-screen-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'f';
   width: 1em;
 }

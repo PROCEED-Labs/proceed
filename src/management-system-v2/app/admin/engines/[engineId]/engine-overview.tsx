@@ -227,6 +227,65 @@ export default function EngineOverview({ engine }: { engine: Engine }) {
           ]}
         />
       </Card>
+
+      <Card className={styles.networkDevices}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
+          {engine.network.map((network, idx) => {
+            const paragraphStyle = {
+              margin: 0,
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+              overflow: 'hidden',
+              maxWidth: '100%',
+            } as const;
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography.Title level={4} style={{ margin: 0, display: 'block' }}>
+                  Network {idx + 1}:
+                </Typography.Title>
+                <Display
+                  data={[
+                    {
+                      title: 'Type:',
+                      content: network.type,
+                    },
+                    {
+                      title: 'IPv4:',
+                      content: (
+                        <>
+                          <p style={{ textWrap: 'wrap' }}>{network.ip4}</p>
+                          <p style={paragraphStyle}>{network.netmaskv4}</p>
+                        </>
+                      ),
+                    },
+                    {
+                      title: 'IPv6:',
+                      content: (
+                        <>
+                          <p style={paragraphStyle}>{network.ip6}</p>
+                          <p style={paragraphStyle}>{network.netmaskv6}</p>
+                        </>
+                      ),
+                    },
+                    {
+                      title: 'Mac Address:',
+                      content: network.mac,
+                    },
+                  ]}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </Card>
     </div>
   );
 }

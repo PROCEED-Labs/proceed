@@ -7,7 +7,7 @@
   grid-template-areas:
     'cpu cpu basicInfo networkInfo'
     'ram ram opeatingSystem battery'
-    'disk disk none none';
+    'disk disk networkDevices networkDevices';
 
   > div {
     overflow: hidden;
@@ -39,5 +39,9 @@
 
   .cpu {
     grid-area: cpu;
+  }
+
+  .networkDevices {
+    grid-area: networkDevices;
   }
 }

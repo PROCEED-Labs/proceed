@@ -1,13 +1,15 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
 import { getEngines, mqttRequest } from '@/lib/engines/mqtt-endpoints';
-import { Result, Skeleton, Tag } from 'antd';
+import { Button, Result, Skeleton, Space, Tag } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import { env } from 'process';
 import { Suspense } from 'react';
 import { getSystemAdminByUserId } from '@/lib/data/DTOs';
 import { endpointBuilder } from '@/lib/engines/endpoint';
 import EngineOverview from './engine-overview';
+import Link from 'next/link';
+import { LeftOutlined } from '@ant-design/icons';
 
 export type TableEngine = Awaited<ReturnType<typeof getEngines>>[number] & { id: string };
 
@@ -17,6 +19,14 @@ async function Engine({ engineId }: { engineId: string }) {
   const adminData = getSystemAdminByUserId(user.userId);
   if (!adminData) redirect('/');
 
+  const backButton = (
+    <Link href="/admin/engines">
+      <Button icon={<LeftOutlined />} type="text">
+        Engines
+      </Button>
+    </Link>
+  );
+
   try {
     const engine = await mqttRequest(engineId, endpointBuilder('get', '/machine/'), {
       method: 'GET',
@@ -25,12 +35,13 @@ async function Engine({ engineId }: { engineId: string }) {
     return (
       <Content
         title={
-          <>
+          <Space style={{ alignItems: 'center' }}>
+            {backButton}
             Engine: {engine.name}{' '}
             <Tag color={engine.online ? 'success' : 'error'}>
               {engine.online ? 'online' : 'offline'}
             </Tag>
-          </>
+          </Space>
         }
       >
         <EngineOverview engine={engine} />
@@ -39,7 +50,7 @@ async function Engine({ engineId }: { engineId: string }) {
   } catch (e) {
     console.error(e);
     return (
-      <Content>
+      <Content title={backButton}>
         <Result status="500" title="Error" subTitle="Couldn't fetch engines" />
       </Content>
     );

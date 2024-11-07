@@ -440,7 +440,7 @@ type ProcessDeploymentListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
   openFolder: (id: string) => void;
-  deploymentButtons: (additionalProps: { processId: string }) => ReactElement;
+  deploymentButtons: (additionalProps: { process: ProcessListProcess }) => ReactElement;
 }>;
 
 const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
@@ -502,18 +502,10 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
           );
         },
         ['Meta Data Button']: (_, record) => {
-          return record.type !== 'folder' ? (
-            <>{deploymentButtons({ processId: record.id })}</>
-          ) : (
-            <></>
-          );
+          return record.type !== 'folder' ? <>{deploymentButtons({ process: record })}</> : <></>;
         },
         ['customProps']: (_, record) => {
-          return record.type !== 'folder' ? (
-            <>{deploymentButtons({ processId: record.id })}</>
-          ) : (
-            <></>
-          );
+          return record.type !== 'folder' ? <>{deploymentButtons({ process: record })}</> : <></>;
         },
       }}
     ></BaseProcessList>

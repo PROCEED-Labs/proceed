@@ -1,19 +1,21 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
-import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Select, Tooltip } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { FC, PropsWithChildren, createContext, useState } from 'react';
+import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
+import { AppstoreOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
 import { signIn, useSession } from 'next-auth/react';
 import { create } from 'zustand';
-import { useRouter } from 'next/navigation';
 import { Environment } from '@/lib/data/environment-schema';
 import UserAvatar from '@/components/user-avatar';
 import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
+import AuthenticatedUserDataModal from './profile/user-data-modal';
+import SpaceLink from '@/components/space-link';
+import { FaUserEdit } from 'react-icons/fa';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -22,19 +24,24 @@ export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean
   }),
 );
 
-export const UserSpacesContext = createContext<Environment[] | null>(null);
+export const UserSpacesContext = createContext<Environment[] | undefined>(undefined);
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
-export const SpaceContext = createContext({ spaceId: '', isOrganization: false });
+export const SpaceContext = createContext<{
+  spaceId: string;
+  isOrganization: boolean;
+  customLogo?: string;
+}>({ spaceId: '', isOrganization: false });
 
 const Layout: FC<
   PropsWithChildren<{
     loggedIn: boolean;
-    userEnvironments: Environment[];
+    userEnvironments?: Environment[];
     layoutMenuItems: NonNullable<MenuProps['items']>;
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;
+    customLogo?: string;
   }>
 > = ({
   loggedIn,
@@ -43,9 +50,10 @@ const Layout: FC<
   activeSpace,
   children,
   hideSider,
+  customLogo,
 }) => {
   const session = useSession();
-  const router = useRouter();
+  const userData = session?.data?.user;
 
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
@@ -55,15 +63,84 @@ const Layout: FC<
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
-  const layoutMenuItems = _layoutMenuItems.filter(
-    (item) => !(breakpoint.xs && item && 'type' in item && item.type === 'divider'),
-  );
+  let layoutMenuItems = _layoutMenuItems;
+  if (breakpoint.xs) {
+    layoutMenuItems = layoutMenuItems.filter(
+      (item) => !(item && 'type' in item && item.type === 'divider'),
+    );
 
-  const menu = <Menu theme="light" mode="inline" items={layoutMenuItems} />;
+    if (userData && !userData.isGuest) {
+      layoutMenuItems = [
+        {
+          label: 'Profile',
+          key: 'profile-settings',
+          type: 'group',
+          children: [
+            {
+              key: 'profile',
+              title: 'Profile Settings',
+              label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
+              icon: <FaUserEdit />,
+            },
+            {
+              key: 'environments',
+              title: 'My Spaces',
+              label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+              icon: <AppstoreOutlined />,
+            },
+          ],
+        },
+        ...layoutMenuItems,
+      ];
+    }
+  }
+
+  let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
+  if (customLogo) imageSource = customLogo;
+
+  const menu = (
+    <Menu
+      theme="light"
+      style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
+      mode="inline"
+      items={layoutMenuItems}
+      onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
+    />
+  );
 
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
       <SpaceContext.Provider value={activeSpace}>
+        {userData && !userData.isGuest ? (
+          <AuthenticatedUserDataModal
+            modalOpen={!userData.username || !userData.lastName || !userData.firstName}
+            userData={userData}
+            close={() => {}}
+            structure={{
+              title: 'You need to complete your profile to continue',
+              password: false,
+              inputFields: [
+                {
+                  label: 'First Name',
+                  submitField: 'firstName',
+                  userDataField: 'firstName',
+                },
+                {
+                  label: 'Last Name',
+                  submitField: 'lastName',
+                  userDataField: 'lastName',
+                },
+                {
+                  label: 'Username',
+                  submitField: 'username',
+                  userDataField: 'username',
+                },
+              ],
+            }}
+            modalProps={{ closeIcon: null, destroyOnClose: true }}
+          />
+        ) : null}
+
         <AntLayout style={{ height: '100vh' }}>
           <AntLayout hasSider>
             {!hideSider && (
@@ -77,24 +154,22 @@ const Layout: FC<
                 collapsible
                 collapsed={collapsed}
                 onCollapse={(collapsed) => setCollapsed(collapsed)}
-                collapsedWidth={breakpoint.xs ? '0' : '80'}
+                collapsedWidth={breakpoint.xs ? '0' : '100'}
                 breakpoint="xl"
                 trigger={null}
               >
-                <div className={styles.LogoContainer}>
-                  <Link href={spaceURL(activeSpace, `/processes`)}>
-                    <Image
-                      src={breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg'}
-                      alt="PROCEED Logo"
-                      className={cn(breakpoint.xs ? styles.Icon : styles.Logo, {
-                        [styles.collapsed]: collapsed,
-                      })}
-                      width={breakpoint.xs ? 85 : 160}
-                      height={breakpoint.xs ? 35 : 63}
-                      priority
-                    />
-                  </Link>
-                </div>
+                <Link className={styles.LogoContainer} href={spaceURL(activeSpace, `/processes`)}>
+                  <Image
+                    src={imageSource}
+                    alt="PROCEED Logo"
+                    className={cn(styles.Logo, {
+                      [styles.collapsed]: collapsed,
+                    })}
+                    width={160}
+                    height={63}
+                    priority
+                  />
+                </Link>
 
                 {loggedIn ? menu : null}
               </AntLayout.Sider>
@@ -113,21 +188,13 @@ const Layout: FC<
         <Drawer
           title={
             loggedIn ? (
-              <>
-                <Tooltip title="Account Settings">
-                  <UserAvatar user={session.data?.user} />
-                </Tooltip>
-              </>
+              <Tooltip title="Account Settings">
+                <UserAvatar user={userData} />
+              </Tooltip>
             ) : (
-              <>
-                <Button type="text" onClick={() => signIn()}>
-                  <u>Log in</u>
-                </Button>
-
-                <Tooltip title="Log in">
-                  <Button shape="circle" icon={<UserOutlined />} onClick={() => signIn()} />
-                </Tooltip>
-              </>
+              <Button type="text" onClick={() => signIn()}>
+                <u>Sign In</u>
+              </Button>
             )
           }
           placement="right"

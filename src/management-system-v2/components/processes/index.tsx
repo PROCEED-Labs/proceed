@@ -1,14 +1,21 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useRef, useState, useTransition } from 'react';
+import {
+  ComponentProps,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  PlusOutlined,
   FolderOutlined,
   FileOutlined,
 } from '@ant-design/icons';
@@ -46,6 +53,7 @@ import Ability from '@/lib/ability/abilityHelper';
 import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 export function canDeleteItems(
   items: ProcessListProcess[],
@@ -87,15 +95,15 @@ const Processes = ({
         parentId: null,
         type: 'folder',
         id: folder.parentId,
-        createdOn: '',
+        createdOn: null,
         createdBy: '',
-        lastEdited: '',
+        lastEditedOn: null,
         environmentId: '',
       },
       ...processes,
     ];
 
-  const { message } = App.useApp();
+  const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
@@ -107,7 +115,8 @@ const Processes = ({
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
-  const canDeleteSelected = canDeleteItems(selectedRowElements, 'delete', ability);
+  const canDeleteSelected =
+    !!selectedRowElements.length && canDeleteItems(selectedRowElements, 'delete', ability);
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
@@ -116,6 +125,7 @@ const Processes = ({
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
+
   const [showMobileMetaData, setShowMobileMetaData] = useState(false);
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
   const [updateFolderModal, setUpdateFolderModal] = useState<Folder | undefined>(undefined);
@@ -148,7 +158,18 @@ const Processes = ({
   });
 
   useAddControlCallback('process-list', 'esc', () => setSelectedRowElements([]));
-  useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
+  useAddControlCallback(
+    'process-list',
+    'del',
+    () => {
+      if (canDeleteSelected) {
+        setOpenDeleteModal(true);
+        /* Clear copy selection */
+        setCopySelection([]);
+      }
+    },
+    { dependencies: [canDeleteSelected] },
+  );
   useAddControlCallback(
     'process-list',
     'copy',
@@ -158,9 +179,16 @@ const Processes = ({
     { dependencies: [selectedRowElements] },
   );
 
-  useAddControlCallback('process-list', 'paste', () => {
-    setOpenCopyModal(true);
-  });
+  useAddControlCallback(
+    'process-list',
+    'paste',
+    () => {
+      if (copySelection.length) {
+        setOpenCopyModal(true);
+      }
+    },
+    { dependencies: [copySelection] },
+  );
   useAddControlCallback(
     'process-list',
     'export',
@@ -170,7 +198,29 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
-  const createProcessButton = <ProcessCreationButton wrapperElement="Create Process" />;
+  function deleteCreateProcessSearchParams() {
+    const searchParams = new URLSearchParams(document.location.search);
+    if (searchParams.has('createprocess')) {
+      searchParams.delete('createprocess');
+      router.replace(
+        window.location.origin + window.location.pathname + '?' + searchParams.toString(),
+      );
+    }
+  }
+  const createProcessButton = (
+    <ProcessCreationButton
+      wrapperElement="Create Process"
+      defaultOpen={
+        typeof window !== 'undefined' &&
+        new URLSearchParams(document.location.search).has('createprocess')
+      }
+      modalProps={{
+        onCancel: deleteCreateProcessSearchParams,
+        onOk: deleteCreateProcessSearchParams,
+      }}
+    />
+  );
+
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
@@ -190,20 +240,19 @@ const Processes = ({
     if (!values) return;
 
     startUpdatingFolderTransition(async () => {
-      try {
-        const response = updateFolderServer(
-          { name: values.name, description: values.description },
-          updateFolderModal!.id,
-        );
-
-        if (response && 'error' in response) throw new Error();
-
-        message.open({ type: 'success', content: 'Folder updated successfully' });
-        setUpdateFolderModal(undefined);
-        router.refresh();
-      } catch (e) {
-        message.open({ type: 'error', content: 'Someting went wrong while updating the folder' });
-      }
+      await wrapServerCall({
+        fn: () =>
+          updateFolderServer(
+            { name: values.name, description: values.description },
+            updateFolderModal!.id,
+          ),
+        onSuccess: () => {
+          app.message.open({ type: 'success', content: 'Folder updated' });
+          setUpdateFolderModal(undefined);
+          router.refresh();
+        },
+        app,
+      });
     });
   };
 
@@ -231,7 +280,7 @@ const Processes = ({
       (folderResult && 'error' in folderResult) ||
       (processesResult && 'error' in processesResult)
     ) {
-      return message.open({
+      return app.message.open({
         type: 'error',
         content: 'Something went wrong',
       });
@@ -258,18 +307,11 @@ const Processes = ({
 
   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
     startMovingItemTransition(async () => {
-      try {
-        const response = await moveIntoFolder(items, folderId);
-
-        if (response && 'error' in response) throw new Error();
-
-        router.refresh();
-      } catch (e) {
-        message.open({
-          type: 'error',
-          content: `Someting went wrong`,
-        });
-      }
+      await wrapServerCall({
+        fn: () => moveIntoFolder(items, folderId),
+        onSuccess: router.refresh,
+        app,
+      });
     });
   };
 
@@ -280,7 +322,7 @@ const Processes = ({
     moveItems,
   };
 
-  // Here all the loading states shoud be ORed together
+  // Here all the loading states should be ORed together
   const loading = movingItem;
 
   return (
@@ -381,11 +423,21 @@ const Processes = ({
                   >
                     <Card
                       style={{
-                        width: 'fit-content',
                         cursor: 'move',
                       }}
                     >
-                      {icon} {item?.name}
+                      <span
+                        style={{
+                          width: 'fit-content',
+                          display: 'block',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          maxWidth: '40ch',
+                        }}
+                      >
+                        {icon} {item?.name}
+                      </span>
                     </Card>
                   </Badge>
                 );

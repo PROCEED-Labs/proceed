@@ -5,32 +5,41 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
+import {
+  addUser,
+  deleteUser,
+  getUserById,
+  getUserByUsername,
+  isMember,
+  updateUser,
+} from '@/lib/data/DTOs';
+import { usersMetaObject } from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
-import { randomUUID } from 'crypto';
-import renderSigninLinkEmail from './signin-link-email';
+import renderSigninLinkEmail from '@/lib/email/signin-link-email';
+import { env } from '@/lib/env-vars';
+import { enableUseDB } from 'FeatureFlags';
 import { verifyJwt } from '@/app/confluence/helpers';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
-import { addMember, isMember } from '@/lib/data/legacy/iam/memberships';
-import { getRoleByName } from '@/lib/data/legacy/iam/roles';
-import { addRoleMappings } from '@/lib/data/legacy/iam/role-mappings';
+import { addMember } from '@/lib/data/db/iam/memberships';
+import { getRoleByName } from '@/lib/data/db/iam/roles';
+import { addRoleMappings } from '@/lib/data/role-mappings';
 
 const nextAuthOptions: AuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET,
   adapter: Adapter,
   session: {
     strategy: 'jwt',
   },
   providers: [
     CredentialsProvider({
-      name: 'Continue as a Guest',
+      name: 'Continue as Guest',
       id: 'guest-signin',
       credentials: {},
       async authorize() {
-        return addUser({ guest: true });
+        return addUser({ isGuest: true });
       },
     }),
     CredentialsProvider({
@@ -50,15 +59,16 @@ const nextAuthOptions: AuthOptions = {
 
           const confluenceClientInfos = await getConfluenceClientInfos(decodedToken.iss);
 
-          let confluenceUser = getUserById(decodedToken.sub as string);
+          let confluenceUser = await getUserById(decodedToken.sub as string);
 
           if (!confluenceUser) {
             // add User if not existing already (=> Sign Up)
-            confluenceUser = addUser({
+            confluenceUser = await addUser({
               id: decodedToken.sub as string,
               username: `Confluence_User_${decodedToken.sub}`,
-              confluence: true,
-              guest: false,
+              confluenceId: decodedToken.sub,
+              isGuest: false,
+              emailVerifiedOn: null,
             });
           }
 
@@ -69,16 +79,15 @@ const nextAuthOptions: AuthOptions = {
             // Add Confluence User to configured proceed space to gain access to shared processes
             addMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id);
 
-            const adminRole = getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
+            const adminRole = await getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
             if (!adminRole) {
               throw new Error(
                 `Consistency error: admin role of ${confluenceClientInfos.proceedSpace.id} not found`,
               );
             }
 
-            addRoleMappings([
+            addRoleMappings(confluenceClientInfos.proceedSpace.id, [
               {
-                environmentId: confluenceClientInfos.proceedSpace.id,
                 roleId: adminRole.id,
                 userId: confluenceUser.id,
               },
@@ -92,7 +101,10 @@ const nextAuthOptions: AuthOptions = {
     }),
     EmailProvider({
       sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail(params.url, params.expires);
+        const signinMail = renderSigninLinkEmail({
+          signInLink: params.url,
+          expires: params.expires,
+        });
 
         sendEmail({
           to: params.identifier,
@@ -108,15 +120,13 @@ const nextAuthOptions: AuthOptions = {
     async jwt({ token, user: _user, trigger }) {
       let user = _user as User | undefined;
 
-      if (trigger === 'update') user = getUserById(token.user.id);
-
-      if (trigger === 'signIn') token.csrfToken = randomUUID();
+      if (trigger === 'update') user = (await getUserById(token.user.id)) as User;
 
       if (user) token.user = user;
 
       return token;
     },
-    session({ session, token, trigger }) {
+    session({ session, token }) {
       if (token.user) session.user = token.user;
       if (token.csrfToken) session.csrfToken = token.csrfToken;
 
@@ -126,18 +136,18 @@ const nextAuthOptions: AuthOptions = {
       const session = await getServerSession(nextAuthOptions);
       const sessionUser = session?.user;
 
-      if (sessionUser?.guest && account?.provider !== 'guest-loguin') {
+      if (sessionUser?.isGuest && account?.provider !== 'guest-loguin') {
         const user = _user as Partial<AuthenticatedUser>;
-        const guestUser = getUserById(sessionUser.id);
+        const guestUser = await getUserById(sessionUser.id);
 
-        if (guestUser.guest) {
+        if (guestUser?.isGuest) {
           updateUser(guestUser.id, {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,
             image: user.image ?? undefined,
             email: user.email ?? undefined,
-            guest: false,
+            isGuest: false,
           });
         }
       }
@@ -202,20 +212,35 @@ const nextAuthOptions: AuthOptions = {
       },
     },
   },
+  events: {
+    async signOut({ token }) {
+      if (!token.user.isGuest) return;
+
+      const user = await getUserById(token.user.id);
+      if (user) {
+        if (!user.isGuest) {
+          console.warn('User with invalid session');
+          return;
+        }
+
+        deleteUser(user.id);
+      }
+    },
+  },
   pages: {
     signIn: '/signin',
   },
 };
 
-if (process.env.NODE_ENV === 'production') {
+if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
     Auth0Provider({
-      clientId: process.env.AUTH0_CLIENT_ID as string,
-      clientSecret: process.env.AUTH0_CLIENT_SECRET as string,
-      issuer: process.env.AUTH0_ISSUER,
+      clientId: env.AUTH0_CLIENT_ID,
+      clientSecret: env.AUTH0_CLIENT_SECRET,
+      issuer: env.AUTH0_ISSUER,
       authorization: {
         params: {
-          scope: process.env.AUTH0_SCOPE,
+          scope: env.AUTH0_SCOPE,
         },
       },
       profile(profile) {
@@ -230,8 +255,8 @@ if (process.env.NODE_ENV === 'production') {
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
       profile(profile) {
         return {
           id: profile.sub,
@@ -244,8 +269,8 @@ if (process.env.NODE_ENV === 'production') {
       },
     }),
     DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID as string,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+      clientId: env.DISCORD_CLIENT_ID,
+      clientSecret: env.DISCORD_CLIENT_SECRET,
       profile(profile) {
         const image = profile.avatar
           ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
@@ -255,8 +280,8 @@ if (process.env.NODE_ENV === 'production') {
       },
     }),
     TwitterProvider({
-      clientId: process.env.TWITTER_CLIENT_ID as string,
-      clientSecret: process.env.TWITTER_CLIENT_SECRET as string,
+      clientId: env.TWITTER_CLIENT_ID,
+      clientSecret: env.TWITTER_CLIENT_SECRET,
       version: '2.0',
       profile({ data, email }) {
         const nameParts = data.name.split(' ');
@@ -276,7 +301,7 @@ if (process.env.NODE_ENV === 'production') {
   );
 }
 
-if (process.env.NODE_ENV === 'development') {
+if (env.NODE_ENV === 'development') {
   const developmentUsers = [
     {
       username: 'johndoe',
@@ -284,8 +309,8 @@ if (process.env.NODE_ENV === 'development') {
       lastName: 'Doe',
       email: 'johndoe@proceed-labs.org',
       id: 'development-id|johndoe',
-      guest: false,
-      emailVerified: null,
+      isGuest: false,
+      emailVerifiedOn: null,
       image: null,
     },
     {
@@ -294,8 +319,8 @@ if (process.env.NODE_ENV === 'development') {
       lastName: 'Admin',
       email: 'admin@proceed-labs.org',
       id: 'development-id|admin',
-      guest: false,
-      emailVerified: null,
+      isGuest: false,
+      emailVerifiedOn: null,
       image: null,
     },
   ] satisfies User[];
@@ -303,11 +328,23 @@ if (process.env.NODE_ENV === 'development') {
   nextAuthOptions.providers.push(
     CredentialsProvider({
       id: 'development-users',
-      name: 'Continue with Development Users',
+      name: 'Continue with Development User',
       credentials: {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },
       async authorize(credentials) {
+        if (enableUseDB) {
+          const userTemplate = developmentUsers.find(
+            (user) => user.username === credentials?.username,
+          );
+
+          if (!userTemplate) return null;
+
+          let user = await getUserByUsername(userTemplate.username);
+          if (!user) user = await addUser(userTemplate);
+
+          return user;
+        }
         const userTemplate = developmentUsers.find(
           (user) => user.username === credentials?.username,
         );
@@ -316,7 +353,7 @@ if (process.env.NODE_ENV === 'development') {
 
         let user = usersMetaObject[userTemplate.id];
 
-        if (!user) user = addUser(userTemplate);
+        if (!user) user = await addUser(userTemplate);
 
         return user;
       },

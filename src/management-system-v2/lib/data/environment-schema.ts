@@ -30,19 +30,19 @@ export const UserOrganizationEnvironmentInputSchema = z.object({
 
 export const OrganizationEnvironmentSchema = z.union([
   UserOrganizationEnvironmentInputSchema.extend({
-    organization: z.literal(true),
-    active: z.literal(false),
+    isOrganization: z.literal(true),
+    isActive: z.literal(false),
   }),
   UserOrganizationEnvironmentInputSchema.extend({
-    organization: z.literal(true),
-    active: z.literal(true),
+    isOrganization: z.literal(true),
+    isActive: z.literal(true),
     ownerId: z.string().readonly(),
   }),
 ]);
 
 export const PersonalEnvironmentSchema = z.object({
   ownerId: z.string().readonly(),
-  organization: z.literal(false).readonly(),
+  isOrganization: z.literal(false).readonly(),
 });
 
 export const environmentSchema = z.union([

@@ -1,20 +1,35 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import {
-  deleteUser as _deleteUser,
-  updateUser as _updateUser,
-  usersMetaObject,
-  UserHasToDeleteOrganizationsError,
-} from './legacy/iam/users';
 import { userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
-import { getEnvironmentById } from './legacy/iam/environments';
 import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
+import { enableUseDB } from 'FeatureFlags';
+import { UserHasToDeleteOrganizationsError } from './legacy/iam/users';
+import { TEnvironmentsModule, TUsersModule } from './module-import-types-temp';
+import { usersMetaObject } from './legacy/iam/users';
+
+let _deleteUser: TUsersModule['deleteUser'];
+let _updateUser: TUsersModule['updateUser'];
+let getUserById: TUsersModule['getUserById'];
+let getEnvironmentById: TEnvironmentsModule['getEnvironmentById'];
+
+const loadModules = async () => {
+  const [userModule, environmentModule] = await Promise.all([
+    enableUseDB ? import('./db/iam/users') : import('./legacy/iam/users'),
+    enableUseDB ? import('./db/iam/environments') : import('./legacy/iam/environments'),
+  ]);
+  ({ deleteUser: _deleteUser, updateUser: _updateUser, getUserById } = userModule),
+    ({ getEnvironmentById } = environmentModule);
+};
+
+loadModules().catch(console.error);
 
 export async function deleteUser() {
+  await loadModules();
+
   const { userId } = await getCurrentUser();
 
   try {
@@ -24,7 +39,8 @@ export async function deleteUser() {
 
     if (e instanceof UserHasToDeleteOrganizationsError) {
       const conflictingOrgsNames = e.conflictingOrgs.map(
-        (orgId) => (getEnvironmentById(orgId) as OrganizationEnvironment).name,
+        async (orgId: string) =>
+          ((await getEnvironmentById(orgId)) as OrganizationEnvironment).name,
       );
 
       message = (
@@ -53,6 +69,8 @@ export async function deleteUser() {
 }
 
 export async function updateUser(newUserDataInput: AuthenticatedUserData) {
+  await loadModules();
+
   try {
     const { userId } = await getCurrentUser();
 
@@ -65,19 +83,23 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 }
 
 export async function getUsersFavourites(): Promise<String[]> {
+  await loadModules();
+
   const { userId } = await getCurrentUser();
 
-  const user = usersMetaObject[userId];
+  const user = enableUseDB ? await getUserById(userId) : usersMetaObject[userId];
 
-  if (user.guest || 'confluence' in user) {
+  if (user?.isGuest) {
     return []; // Guest users have no favourites
   }
-  return user.favourites ?? [];
+  return user?.favourites ?? [];
 }
 
 export async function isUserGuest() {
-  const { userId } = await getCurrentUser();
-  const user = usersMetaObject[userId];
+  await loadModules();
 
-  return user.guest;
+  const { userId } = await getCurrentUser();
+  const user = enableUseDB ? await getUserById(userId) : usersMetaObject[userId];
+
+  return user?.isGuest;
 }

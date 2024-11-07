@@ -16,33 +16,35 @@
     ]
   },
   "author": {
-    "name": "PROCEED Project",
-    "email": "proceed@snet.tu-berlin.de",
-    "url": "https://proceed.snet.tu-berlin.de/"
+    "name": "PROCEED Labs GmbH",
+    "email": "dev@proceed-labs.org",
+    "url": "https://www.proceed-labs.org/"
   },
-  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "homepage": "https://app.proceed-labs.org",
   "bugs": "https://github.com/PROCEED-Labs/proceed/issues",
-  "description": "The PROCEED project aims to create a new kind of process execution engine with distributed and decentralized features.",
+  "description": "PROCEED is a Business Process Management System for documenting, analyzing, and automating BPMN-based processes.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/PROCEED-Labs/proceed.git",
-    "directory": "src/management-system"
+    "url": "https://github.com/PROCEED-Labs/proceed.git"
   },
   "engines": {
-    "node": ">=12.0.0",
-    "yarn": ">=1.0.0"
+    "node": ">=20.11.0",
+    "yarn": ">=1.22.22"
   },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610",
   "prettier": {
     "singleQuote": true
   },
   "scripts": {
     "dev": "ts-node src/engine/native/node/index.ts --trace-warnings",
-    "dev-ms-no-iam": "cd src/management-system-v2 && yarn dev",
-    "dev-ms": "cd src/management-system-v2 && cross-env USE_AUTHORIZATION=true yarn dev",
-    "dev-ms-api-no-iam": "cd src/management-system && cross-env process.env.API_ONLY=true USE_AUTHORIZATION=false yarn web:dev-start-backend",
-    "dev-ms-api": "cd src/management-system && cross-env process.env.API_ONLY=true yarn web:dev-iam",
-    "dev-ms-api-auth0": "cd src/management-system && cross-env process.env.API_ONLY=true process.env.USE_AUTH0=true yarn web:dev-iam",
+    "dev-ms-db": "cd src/management-system-v2 && docker compose -f docker-compose-dev.yml up -d && ./db-helper.sh --init",
+    "dev-ms-db-create": "cd src/management-system-v2 && ./db-helper.sh --new",
+    "dev-ms-db-deploy": "cd src/management-system-v2 && yarn prisma migrate deploy",
+    "dev-ms-db-migrate": "cd src/management-system-v2 && yarn prisma migrate dev",
+    "dev-ms-db-use": "cd src/management-system-v2 && ./db-helper.sh --use",
+    "dev-ms-db-delete": "cd src/management-system-v2 && ./db-helper.sh --delete",
+    "dev-ms": "cd src/management-system-v2 && yarn dev",
     "dev-ms-old": "cd src/management-system && yarn web:dev",
     "dev-ms-old-iam": "cd src/management-system && yarn web:dev-iam",
     "dev-web": "yarn build && cd src/engine/native/web/server && yarn serve",
@@ -61,7 +63,11 @@
     "test-all": "yarn test-engine && yarn test-ms && yarn test-e2e",
     "jsdoc": "jsdoc -c ./jsdoc.config.json --pedantic",
     "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",
-    "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug"
+    "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*": "prettier --check --ignore-path .eslintignore"
   },
   "husky": {
     "hooks": {
@@ -69,16 +75,13 @@
       "pre-push": "yarn test-engine && yarn test-ms"
     }
   },
-  "lint-staged": {
-    "*": "prettier --check --ignore-path .eslintignore"
-  },
   "devDependencies": {
     "@babel/core": "^7.5.0",
     "@babel/eslint-plugin": "7.19.1",
     "@babel/plugin-proposal-class-properties": "^7.5.0",
     "@babel/preset-env": "^7.5.2",
     "@open-wc/webpack-import-meta-loader": "0.4.7",
-    "@playwright/test": "^1.30.0",
+    "@playwright/test": "1.48.1",
     "@types/jest": "^29.5.1",
     "@userfrosting/merge-package-dependencies": "^1.2.0",
     "@vue/cli-plugin-typescript": "5.0.8",
@@ -95,7 +98,7 @@
     "fs-extra": "^7.0.1",
     "html-webpack-inline-source-plugin": "^0.0.10",
     "html-webpack-plugin": "^3.2.0",
-    "husky": "^4.2.3",
+    "husky": "^9.1.6",
     "jest": "29.7.0",
     "jest-when": "3.6.0",
     "jsdoc": "^3.6.6",
@@ -114,5 +117,8 @@
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.0",
     "webpack-dev-server": "^3.2.1"
+  },
+  "dependencies": {
+    "react-resizable": "^3.0.5"
   }
 }

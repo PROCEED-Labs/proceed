@@ -1,11 +1,11 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
-import { roleMetaObjects } from './roles';
+import { getRoleById, roleMetaObjects } from './roles';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { z } from 'zod';
-import { usersMetaObject } from './users';
-import { environmentsMetaObject } from './environments';
+import { getUserById, usersMetaObject } from './users';
+import { environmentsMetaObject, getEnvironmentById } from './environments';
 
 const RoleMappingInputSchema = z.object({
   roleId: z.string(),
@@ -31,11 +31,13 @@ export let roleMappingsMetaObjects: {
   //@ts-ignore
   global.roleMappingsMetaObjects || (global.roleMappingsMetaObjects = {});
 
+let inited = false;
 /**
  * initializes the role mappings meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   // get role mappings that were persistently stored
   const storedRoleMappings = store.get('roleMappings');
@@ -50,7 +52,7 @@ export function init() {
 init();
 
 /** Returns all role mappings in form of an array */
-export function getRoleMappings(ability?: Ability, environmentId?: string) {
+export async function getRoleMappings(ability?: Ability, environmentId?: string) {
   if (environmentId) {
     if (!(environmentId in roleMappingsMetaObjects)) return [];
     const roleMappings = Object.values(roleMappingsMetaObjects[environmentId].users).flat();
@@ -66,7 +68,12 @@ export function getRoleMappings(ability?: Ability, environmentId?: string) {
 }
 
 /** Returns a role mapping by user id */
-export function getRoleMappingByUserId(userId: string, environmentId: string, ability?: Ability) {
+export async function getRoleMappingByUserId(
+  userId: string,
+  environmentId: string,
+  ability?: Ability,
+  roleId?: string,
+) {
   const environmentMappings = roleMappingsMetaObjects[environmentId];
   if (!environmentMappings) return [];
 
@@ -76,12 +83,18 @@ export function getRoleMappingByUserId(userId: string, environmentId: string, ab
   return ability.filter('view', 'RoleMapping', userRoleMappings);
 }
 
-// TODO: also check if user exists?
 /** Adds a user role mapping */
-export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?: Ability) {
+export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?: Ability) {
   const roleMappings = roleMappingsInput.map((roleMappingInput) =>
     RoleMappingInputSchema.parse(roleMappingInput),
   );
+
+  if (ability) {
+    for (const { roleId } of roleMappings) {
+      const role = await getRoleById(roleId);
+      if (!ability.can('manage', toCaslResource('Process', role))) throw new UnauthorizedError();
+    }
+  }
 
   const allowedRoleMappings = ability
     ? ability.filter('create', 'RoleMapping', roleMappings)
@@ -93,7 +106,7 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
     const environment = environmentsMetaObject[environmentId];
     if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
 
-    if (!environment.organization)
+    if (!environment.isOrganization)
       throw new Error('Cannot add role mapping to personal environment');
 
     let role = roleMetaObjects[roleId];
@@ -120,7 +133,7 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
 
     const user = usersMetaObject[userId];
     if (!user) throw new Error('User not found');
-    if (user.guest) throw new Error('Guests cannot have role mappings');
+    if (user.isGuest) throw new Error('Guests cannot have role mappings');
 
     const id = v4();
     const createdOn = new Date().toUTCString();
@@ -133,24 +146,9 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
     };
 
     userMappings.push(newRoleMapping);
-
-    if ('confluence' in user) {
-      role.members.push({
-        userId: userId,
-        username: user.username ?? '',
-        firstName: '',
-        lastName: '',
-        email: '',
-      });
-    } else {
-      role.members.push({
-        userId: userId,
-        username: user.username ?? '',
-        firstName: user.firstName ?? '',
-        lastName: user.lastName ?? '',
-        email: user.email ?? '',
-      });
-    }
+    role.members.push({
+      userId: userId,
+    });
 
     // persist new role mapping in file system
     store.setDictElement('roleMappings', roleMappingsMetaObjects);
@@ -159,11 +157,8 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
   });
 }
 
-// TODO: also check if user exists?
-//NOTE this could also work without environmentId, but it's easeier
-//
 /** Removes a role mapping from a user */
-export function deleteRoleMapping(
+export async function deleteRoleMapping(
   userId: string,
   roleId: string,
   environmentId: string,

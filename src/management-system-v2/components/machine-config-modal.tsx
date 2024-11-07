@@ -2,8 +2,8 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, Checkbox } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 
@@ -14,6 +14,8 @@ type MachineConfigModalProps<T extends { name: string; description: string }> = 
   onCancel: () => void;
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
+  configType?: string;
+  targetConfigExists?: boolean;
 };
 
 const MachineConfigModal = <T extends { name: string; description: string }>({
@@ -23,26 +25,28 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   onCancel,
   onSubmit,
   initialData,
+  configType,
+  targetConfigExists,
 }: MachineConfigModalProps<T>) => {
   const [form] = Form.useForm();
+  const formRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
 
   useEffect(() => {
-    if (initialData) {
+    if (initialData && formRef.current) {
       // form.resetFields is not working, because initialData has not been
       // updated in the internal form store, eventhough the prop has.
       form.setFieldsValue(initialData);
     }
   }, [form, initialData]);
 
-  const items: CollapseProps['items'] =
-    (initialData?.length ?? 0) > 1
-      ? initialData?.map((data, index) => ({
-          label: data.name,
-          children: <MachineConfigInputs index={index} />,
-        }))
-      : undefined;
+  const items: CollapseProps['items'] = initialData?.length
+    ? initialData?.map((data, index) => ({
+        label: data.name,
+        children: <MachineConfigInputs index={index} />,
+      }))
+    : undefined;
 
   const onOk = async () => {
     try {
@@ -68,7 +72,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         // Unkown server error or was not sent from server (e.g. network error)
         message.open({
           type: 'error',
-          content: 'Someting went wrong while submitting the data',
+          content: 'Something went wrong while submitting the data',
         });
       }
       setSubmitting(false);
@@ -96,16 +100,25 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
     >
       <Form
         form={form}
+        ref={formRef}
         layout="vertical"
         name="machine_config_form"
-        initialValues={initialData}
+        initialValues={
+          initialData ?? (configType === 'machine' && targetConfigExists)
+            ? [{ copyTarget: true }]
+            : undefined
+        }
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
         // doesn't work in production, that's why we use the useEffect above)
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <MachineConfigInputs index={0} />
+          <MachineConfigInputs
+            index={0}
+            configType={configType}
+            targetConfigExists={targetConfigExists}
+          />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -116,27 +129,43 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
 
 type MachineConfigInputsProps = {
   index: number;
+  configType?: string;
+  targetConfigExists?: boolean;
 };
 
-const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
+const MachineConfigInputs = ({
+  index,
+  configType,
+  targetConfigExists,
+}: MachineConfigInputsProps) => {
   return (
     <>
       <Form.Item
         name={[index, 'name']}
-        label="Machine Configuration Name"
-        rules={[{ required: true, message: 'Please fill out the Machine Configuration Name' }]}
+        label="Configuration Name"
+        rules={[{ required: true, message: 'Please fill out the Configuration Name' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
-        label="Machine Configuration Description"
+        label="Configuration Description"
         rules={[
-          { required: false, message: 'Please fill out the Machine Configuration Description' },
+          {
+            required: false,
+            message: 'Please fill out the Configuration Description',
+          },
         ]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>
+      {configType === 'machine' && (
+        <Form.Item name={[index, 'copyTarget']} valuePropName="checked">
+          <Checkbox defaultChecked disabled={!targetConfigExists}>
+            Copy Target Tech Data
+          </Checkbox>
+        </Form.Item>
+      )}
     </>
   );
 };

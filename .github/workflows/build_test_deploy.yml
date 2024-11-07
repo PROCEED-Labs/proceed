@@ -281,16 +281,17 @@ jobs:
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
           region: 'europe-west1'
+          revision_traffic: LATEST=100
 
       # The traffic update has to be its own step, as it needs to run after
       # the deployment.
-      - id: 'update-traffic'
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: 'google-github-actions/deploy-cloudrun@v2'
-        with:
-          service: ${{ env.SERVICE_NAME }}
-          region: 'europe-west1'
-          revision_traffic: LATEST=100
+      #- id: 'update-traffic'
+      #  if: ${{ github.ref == 'refs/heads/main' }}
+      #  uses: 'google-github-actions/deploy-cloudrun@v2'
+      #  with:
+      #    service: ${{ env.SERVICE_NAME }}
+      #   region: 'europe-west1'
+      #   revision_traffic: LATEST=100
 
       - id: 'deploy-preview'
         if: ${{ github.event_name == 'pull_request' }}
@@ -314,37 +315,79 @@ jobs:
     steps:
       - run: echo "${{ inputs.environment || 'Staging' }}"
 
-  # testE2E:
-  #   needs: deploy
-  #   timeout-minutes: 60
-  #   runs-on: ubuntu-latest
-  #   if: ${{ inputs.environment != 'Production' }}
-  #   steps:
-  #     - uses: actions/cache@v4
-  #       timeout-minutes: 2
-  #       id: restore-install
-  #       with:
-  #         path: ./*
-  #         key: ${{ github.sha }}-${{ github.run_number }}
+  testE2E:
+    needs: deploy
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    if: ${{ inputs.environment != 'Production' }}
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
 
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #         check-latest: true
-  #         cache: 'yarn'
+      #     - name: Set up Node.js
+      #       uses: actions/setup-node@v4
+      #       with:
+      #         node-version: 20
+      #         check-latest: true
+      #         cache: 'yarn'
 
-  #     - name: Install Playwright Browsers
-  #       run: yarn playwright install --with-deps
+      # TODO: cache these?
+      - name: Install Playwright Browsers
+        run: yarn playwright install --with-deps
 
-  #     - name: Run Playwright tests
-  #       run: yarn playwright test
-  #       env:
-  #         PLAYWRIGHT_TEST_BASE_URL: ${{ github.event_name == 'pull_request' && format('https://pr-{0}---ms-server-staging-c4f6qdpj7q-ew.a.run.app', github.event.number) || 'https://staging.proceed-labs.org' }}
+      - name: Run Playwright tests
+        run: yarn playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: ${{ github.event_name == 'pull_request' && format('https://pr-{0}---ms-server-staging-c4f6qdpj7q-ew.a.run.app', github.event.number) || 'https://staging.proceed-labs.org' }}
 
-  #     - uses: actions/upload-artifact@v4
-  #       if: ${{ !cancelled() }}
-  #       with:
-  #         name: playwright-report
-  #         path: playwright-report/
-  #         retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: all-blob-reports-${{ matrix.shard }}
+          path: blob-report
+          retention-days: 1
+
+  create-report:
+    name: 📔 Create test report
+    if: always()
+    needs: [testE2E]
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - name: Download blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: all-blob-reports-*
+          merge-multiple: true
+          path: all-blob-reports
+
+      - name: Merge into HTML Report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 7

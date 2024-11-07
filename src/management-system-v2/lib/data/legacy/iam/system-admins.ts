@@ -18,41 +18,58 @@ export let systemAdminsMetaObjects: {
   // @ts-ignore
   global.systemAdminsMetaObjects || (global.systemAdminsMetaObjects = {});
 
+let inited = false;
+
 /**
- * initializes the system admins meta information objects
+ * Initializes the system admins meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   const storedAdmins = store.get('systemAdmins') as SystemAdmin[];
   storedAdmins.forEach((admin) => (systemAdminsMetaObjects[admin.id] = admin));
 }
 init();
 
-export function getSystemAdmins() {
-  return Object.values(systemAdminsMetaObjects) as SystemAdmin[];
+/**
+ * Returns all system admins in form of an array
+ */
+export async function getSystemAdmins() {
+  const sysAdmins = Object.values(systemAdminsMetaObjects);
+  return sysAdmins as SystemAdmin[];
 }
 
-export function getAdminById(id: string) {
+/**
+ * Returns a system admin based on the admin ID
+ */
+export async function getAdminById(id: string) {
   return systemAdminsMetaObjects[id];
 }
 
-export function getSystemAdminByUserId(userId: string) {
+/**
+ * Returns a system admin based on the user ID
+ */
+export async function getSystemAdminByUserId(userId: string) {
   for (const admin of Object.values(systemAdminsMetaObjects)) {
     if (admin!.userId === userId) return admin;
   }
 }
 
-export function addSystemAdmin(adminInput: SystemAdminCreationInput) {
-  // TODO: decide if permissions should be checkded here
+/**
+ * Adds a new system admin
+ *
+ * @throws {Error}
+ */
+export async function addSystemAdmin(adminInput: SystemAdminCreationInput) {
+  // TODO: decide if permissions should be checked here
 
-  const now = new Date().toISOString();
-
+  const now = new Date();
   const admin = SystemAdminSchema.parse({
     ...SystemAdminCreationInputSchema.parse(adminInput),
     id: v4(),
     createdOn: now,
-    lastEdited: now,
+    lastEditedOn: now,
   });
 
   if (systemAdminsMetaObjects[admin.id]) throw new Error('System admin id already exists');
@@ -63,16 +80,24 @@ export function addSystemAdmin(adminInput: SystemAdminCreationInput) {
   return admin;
 }
 
-export function updateSystemAdmin(adminId: string, adminUpdate: Partial<SystemAdminUpdateInput>) {
-  // TODO: decide if permissions should be checkded here
+/**
+ * Updates a system admin by ID
+ *
+ * @throws {Error}
+ */
+export async function updateSystemAdmin(
+  adminId: string,
+  adminUpdate: Partial<SystemAdminUpdateInput>,
+) {
+  // TODO: decide if permissions should be checked here
   const adminData = systemAdminsMetaObjects[adminId];
   if (!adminData) throw new Error('System admin not found');
 
   const newAdminData = {
     ...adminData,
     ...SystemAdminUpdateInputSchema.partial().parse(adminUpdate),
-    lastEdited: new Date().toUTCString(),
-  };
+    lastEditedOn: new Date(),
+  } as SystemAdmin;
 
   store.update('systemAdmins', adminId, newAdminData);
   systemAdminsMetaObjects[adminId] = newAdminData;
@@ -80,8 +105,13 @@ export function updateSystemAdmin(adminId: string, adminUpdate: Partial<SystemAd
   return newAdminData;
 }
 
-export function deleteSystemAdmin(adminId: string) {
-  // TODO: decide if permissions should be checkded here
+/**
+ * Deletes a system admin by ID
+ *
+ * @throws {Error}
+ */
+export async function deleteSystemAdmin(adminId: string) {
+  // TODO: decide if permissions should be checked here
   const adminData = systemAdminsMetaObjects[adminId];
   if (!adminData) throw new Error('System admin not found');
 

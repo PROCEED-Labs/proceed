@@ -106,6 +106,11 @@ function getImagesDir(id) {
 }
 
 /**
+ * Directory for organization logos
+ */
+const organizationLogosDir = path.join(getAppDataPath(), 'OrganizationLogos');
+
+/**
  * Find the user task directory for the given process
  *
  * @param {String} id
@@ -293,10 +298,7 @@ export function getUserTaskIds(processDefinitionsId) {
 
       if (files) {
         files.forEach(async (file) => {
-          const htmlFilePath = path.join(userTaskDir, file);
-          const htmlFileContents = fse.readFileSync(htmlFilePath, 'utf-8');
           const [taskId] = file.split('.');
-
           userTaskIds.push(taskId);
         });
       }
@@ -307,20 +309,16 @@ export function getUserTaskIds(processDefinitionsId) {
 }
 
 /**
- * Saves the html of the a user task
+ * Saves the form data of a user task
  *
  * @param {String} processDefinitionsId the id of the process that contains the user task
  * @param {String} taskId the id of the specific user task
- * @param {String} html the html data of the user task
+ * @param {String} json the user task form data
  */
-export async function saveUserTaskHTML(processDefinitionsId, taskId, html) {
+export async function saveUserTaskJSON(processDefinitionsId, taskId, json) {
   const userTaskDir = getUserTaskDir(processDefinitionsId);
-
   fse.ensureDirSync(userTaskDir);
-
-  fse.writeFileSync(path.join(userTaskDir, `${taskId}.html`), html);
-
-  eventHandler.dispatch('files_changed_html', { processDefinitionsId, taskId, html });
+  fse.writeFileSync(path.join(userTaskDir, `${taskId}.json`), json);
 }
 
 /**
@@ -431,27 +429,27 @@ export async function deleteImage(processDefinitionsId, imageFileName) {
 }
 
 /**
- * Returns the html for a user task with the given id in a process
+ * Returns the form data for a user task with the given id in a process
  *
  * @param {String} processDefinitionsId
  * @param {String} taskId
  */
-export function getUserTaskHTML(processDefinitionsId, taskId) {
+export function getUserTaskJSON(processDefinitionsId, taskId) {
   const userTaskDir = getUserTaskDir(processDefinitionsId);
-  const userTaskFile = `${taskId}.html`;
+  const userTaskFile = `${taskId}.json`;
   const userTaskPath = path.join(userTaskDir, userTaskFile);
   return fse.readFileSync(userTaskPath, 'utf-8');
 }
 
 /**
- * Returns the html for all user tasks in a process
+ * Returns the form data for all user tasks in a process
  *
  * @param {String} processDefinitionsId
  *
  * @returns {Promise}
- *    @resolves {Object} Object containing a taskId to task html mapping
+ *    @resolves {Object} Object containing a taskId to form data mapping
  */
-export function getUserTasksHTML(processDefinitionsId) {
+export function getUserTasksJSON(processDefinitionsId) {
   return new Promise((resolve, reject) => {
     const userTaskDir = getUserTaskDir(processDefinitionsId);
 
@@ -465,26 +463,26 @@ export function getUserTasksHTML(processDefinitionsId) {
         return;
       }
 
-      const userTasksHTML = {};
+      const userTasksJSON = {};
 
       if (files) {
         files.forEach(async (file) => {
-          const htmlFilePath = path.join(userTaskDir, file);
-          const htmlFileContents = fse.readFileSync(htmlFilePath, 'utf-8');
+          const filePath = path.join(userTaskDir, file);
+          const fileContents = fse.readFileSync(filePath, 'utf-8');
           const [taskId] = file.split('.');
 
-          userTasksHTML[taskId] = htmlFileContents;
+          userTasksJSON[taskId] = fileContents;
         });
       }
 
-      resolve(userTasksHTML);
+      resolve(userTasksJSON);
     });
   });
 }
 
-export async function deleteUserTaskHTML(processDefinitionsId, taskId) {
+export async function deleteUserTaskJSON(processDefinitionsId, taskId) {
   const userTaskDir = getUserTaskDir(processDefinitionsId);
-  const taskFile = `${taskId}.html`;
+  const taskFile = `${taskId}.json`;
   const filePath = path.join(userTaskDir, taskFile);
 
   fse.unlinkSync(filePath);
@@ -630,7 +628,7 @@ async function getProcessInfo(bpmn, process) {
     departments: process.departments || [],
     variables: process.variables || [],
     createdOn: process.createdOn || currentDate,
-    lastEdited: process.lastEdited || currentDate,
+    lastEditedOn: process.lastEditedOn || currentDate,
     type: process.type || (process.isProject ? 'project' : 'process'),
     processIds,
     versions: [],
@@ -651,4 +649,46 @@ async function getProcessInfo(bpmn, process) {
     };
   }
   return newProcess;
+}
+
+/**
+ * Saves a logo for an organization
+ *
+ * @param {String} organizationId the id of the organization
+ * @param {Buffer} image an image
+ */
+export function saveLogo(organizationId, image) {
+  fse.ensureDirSync(organizationLogosDir);
+
+  fse.writeFileSync(path.join(organizationLogosDir, `${organizationId}`), image);
+}
+
+/**
+ * Returns the logo for an organization
+ *
+ * @param {String} organizationId the id of the organization
+ */
+export function hasLogo(organizationId) {
+  const imagePath = path.join(organizationLogosDir, `${organizationId}`);
+  return fse.existsSync(imagePath);
+}
+
+/**
+ * Returns the logo for an organization
+ *
+ * @param {String} organizationId the id of the organization
+ */
+export function getLogo(organizationId) {
+  const imagePath = path.join(organizationLogosDir, `${organizationId}`);
+  return fse.readFileSync(imagePath);
+}
+
+/**
+ * Deletes organizations logo
+ *
+ * @param {String} organizationId the id of the organization
+ */
+export function deleteLogo(organizationId) {
+  const imagePath = path.join(organizationLogosDir, `${organizationId}`);
+  fse.removeSync(imagePath);
 }

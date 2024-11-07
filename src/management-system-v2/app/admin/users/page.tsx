@@ -1,15 +1,12 @@
 import { getCurrentUser } from '@/components/auth';
-import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
-import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
-import {
-  UserHasToDeleteOrganizationsError,
-  deleteUser,
-  getUsers,
-} from '@/lib/data/legacy/iam/users';
+import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
+import { getSystemAdminByUserId } from '@/lib/data/DTOs';
+import { deleteUser, getUsers } from '@/lib/data/DTOs';
 import { redirect } from 'next/navigation';
 import UserTable from './user-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
+import { UserHasToDeleteOrganizationsError } from '@/lib/data/db/iam/users';
 
 async function deleteUsers(userIds: string[]) {
   'use server';
@@ -32,26 +29,39 @@ export default async function UsersPage() {
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
 
-  const adminData = getSystemAdminByUserId(user.userId);
+  const adminData = await getSystemAdminByUserId(user.userId);
   if (!adminData) redirect('/');
 
-  const users = getUsers().map((user) => {
-    const orgs = getUserOrganizationEnvironments(user.id).length;
-    if (orgs > 0) console.log(getUserOrganizationEnvironments(user.id));
+  async function getProcessedUsers(page: number = 1, pageSize: number = 10) {
+    const { users: paginatedUsers, pagination } = await getUsers(page, pageSize);
 
-    if (user.guest || 'confluence' in user)
-      return {
-        ...user,
-        guest: false as const,
-        email: '',
-        username: 'Guest',
-        firstName: 'Guest',
-        lastName: '',
-        orgs,
-      };
+    const processedUsers = await Promise.all(
+      paginatedUsers.map(async (user) => {
+        const orgs = (await getUserOrganizationEnvironments(user.id)).length;
+        if (orgs > 0) {
+          console.log(await getUserOrganizationEnvironments(user.id));
+        }
+        return user.isGuest
+          ? {
+              ...user,
+              isGuest: false as const,
+              email: '',
+              username: 'Guest',
+              firstName: 'Guest',
+              lastName: '',
+              orgs,
+            }
+          : { ...user, orgs };
+      }),
+    );
 
-    return { ...user, orgs };
-  });
+    return {
+      users: processedUsers,
+      pagination,
+    };
+  }
+
+  const { users, pagination } = await getProcessedUsers();
 
   return (
     <Content title="MS users">

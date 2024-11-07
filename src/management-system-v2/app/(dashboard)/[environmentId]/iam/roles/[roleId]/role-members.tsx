@@ -3,13 +3,14 @@
 import { FC, useState, useTransition } from 'react';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import UserList, { UserListProps } from '@/components/user-list';
-import { Button, Modal, Tooltip } from 'antd';
+import { App, Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
 import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/lib/data/role-schema';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { useEnvironment } from '@/components/auth-can';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const AddUserModal: FC<{
   role: Role;
@@ -20,20 +21,27 @@ const AddUserModal: FC<{
   const [loading, startTransition] = useTransition();
   const router = useRouter();
   const environment = useEnvironment();
+  const app = App.useApp();
 
   type AddUserParams = Parameters<NonNullable<UserListProps['selectedRowActions']>>;
 
   const addUsers = (users: AddUserParams[2], clearIds?: AddUserParams[1]) => {
     startTransition(async () => {
-      if (clearIds) clearIds();
-      await addRoleMappings(
-        environment.spaceId,
-        users.map((user) => ({
-          userId: user.id,
-          roleId: role.id,
-        })),
-      );
-      router.refresh();
+      await wrapServerCall({
+        fn: () =>
+          addRoleMappings(
+            environment.spaceId,
+            users.map((user) => ({
+              userId: user.id,
+              roleId: role.id,
+            })),
+          ),
+        onSuccess: () => {
+          if (clearIds) clearIds();
+          router.refresh();
+        },
+        app,
+      });
     });
   };
 
@@ -53,19 +61,18 @@ const AddUserModal: FC<{
         /* ---- */
         users={usersNotInRole}
         loading={loading}
-        columns={(clearSelected, hoveredId, selectedRowKeys) => [
+        columns={(clearSelected, _, selectedRowKeys) => [
           {
             dataIndex: 'id',
             render: (id, user) => (
               <Tooltip placement="top" title="Add to role">
                 <Button
                   icon={<PlusOutlined />}
-                  type="text"
+                  type="primary"
                   onClick={() => addUsers([user], clearSelected)}
-                  style={{
-                    opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
-                  }}
-                />
+                >
+                  Add to role
+                </Button>
               </Tooltip>
             ),
           },
@@ -89,21 +96,28 @@ const RoleMembers: FC<{
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const environment = useEnvironment();
+  const app = App.useApp();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
-    clearIds();
     setLoading(true);
 
-    await deleteRoleMappings(
-      environment.spaceId,
-      userIds.map((userId) => ({
-        roleId: role.id,
-        userId: userId,
-      })),
-    );
+    await wrapServerCall({
+      fn: () =>
+        deleteRoleMappings(
+          environment.spaceId,
+          userIds.map((userId) => ({
+            roleId: role.id,
+            userId: userId,
+          })),
+        ),
+      onSuccess: () => {
+        router.refresh();
+        clearIds();
+      },
+      app,
+    });
 
     setLoading(false);
-    router.refresh();
   }
 
   return (

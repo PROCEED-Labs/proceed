@@ -5,7 +5,7 @@ import EventBus from 'diagram-js/lib/core/EventBus';
 import BpmnRenderer from 'bpmn-js/lib/draw/BpmnRenderer';
 import TextRenderer from 'bpmn-js/lib/draw/TextRenderer';
 
-import { is, isAny } from 'bpmn-js/lib/util/ModelUtil';
+import { is } from 'bpmn-js/lib/util/ModelUtil';
 
 import {
   black,
@@ -58,6 +58,7 @@ export default class ResourceRenderer extends BaseRenderer {
   }
 
   canRender(element: Element): boolean {
+    // tell bpmn-js to render performer elements with this module
     return is(element, 'proceed:Performer');
   }
 
@@ -68,7 +69,8 @@ export default class ResourceRenderer extends BaseRenderer {
   ): SVGElement {
     if (isLabel(shape)) {
       let box;
-
+      // recreating the label rendering since the default one does not work for labels on our custom
+      // elements
       // this is yanked from the default bpmn renderer to circumvent some default logic that cannot handle labels for our custom elements
       // https://github.com/bpmn-io/bpmn-js/blob/develop/lib/draw/BpmnRenderer.js (see the renderExternalLabel and renderLabel functions)
       box = {
@@ -117,10 +119,6 @@ export default class ResourceRenderer extends BaseRenderer {
           return draw(iconPaths.laptop);
         case 'Server':
           return draw(iconPaths.server);
-        // const server = draw(iconPaths['server-with-screen'].server);
-        // svgAppend(parentGfx, draw(iconPaths['server-with-screen'].screen));
-        // svgAppend(parentGfx, draw(iconPaths['server-with-screen'].gear));
-        // return server;
         default:
           throw new Error('Cannot draw unknown performer type');
       }

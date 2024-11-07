@@ -1,8 +1,8 @@
 import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
-import EventBus, { Event, EventBusEventCallback } from 'diagram-js/lib/core/EventBus';
+import EventBus, { EventBusEventCallback } from 'diagram-js/lib/core/EventBus';
 import Canvas from 'diagram-js/lib/core/Canvas';
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
-import { Element, Shape } from 'bpmn-js/lib/model/Types';
+import { Shape } from 'bpmn-js/lib/model/Types';
 
 import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 import { is } from 'bpmn-js/lib/util/ModelUtil';

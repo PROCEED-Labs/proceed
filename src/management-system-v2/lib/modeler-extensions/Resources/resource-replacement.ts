@@ -28,6 +28,8 @@ export default class ResourceReplacementProvider implements PopupMenuProvider {
   ) {
     popupMenu.registerProvider('resource-replace', this);
 
+    // here we handle how performers are replaced by another performer type through the context menu
+
     this.modeling = modeling;
     this.rules = rules;
     this.bpmnFactory = bpmnFactory;
@@ -58,7 +60,7 @@ export default class ResourceReplacementProvider implements PopupMenuProvider {
         // another
         modeling.updateProperties(target as any, { machineType: newType });
       } else {
-        // we need to replace element because we switch between a Human Performer and a
+        // we need to replace the element because we switch between a Human Performer and a
         // Machine Performer
         const newPerformerType =
           newType === 'User' ? 'proceed:HumanPerformer' : 'proceed:MachinePerformer';
@@ -69,7 +71,7 @@ export default class ResourceReplacementProvider implements PopupMenuProvider {
           di: {} as any,
           businessObject: bpmnFactory.create(newPerformerType, { machineType }),
         };
-
+        // keep the graphical settings for the new element
         newPerformer.di.fill = target.di.fill;
         newPerformer.di.stroke = target.di.stroke;
         newPerformer.di['background-color'] = target.di['background-color'];

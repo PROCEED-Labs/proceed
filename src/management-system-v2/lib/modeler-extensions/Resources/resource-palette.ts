@@ -58,13 +58,17 @@ export default class CustomPaletteProvider implements PaletteProvider {
       };
     }
 
+    // here we add some custom elements to the palette sidebar in the modeler
     return function(entries: any) {
       return {
         ...entries,
+        // adding a separator between the flow nodes we support and the rest we dont really support
+        // (during execution)
         'flow-separator': {
           group: 'activity',
           separator: true,
         },
+        // add elements to create our custom performer elements
         'create.human-resource': createAction(
           'proceed:HumanPerformer',
           'perfomer',

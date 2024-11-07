@@ -29,6 +29,8 @@ export default class CustomRules extends RuleProvider {
         (association) => association.source === source && association.target === target,
       );
 
+      // if the user tries to connect a performer to some element we want the connection to be an
+      // association
       if (sourceIsPerformer && targetCanHavePerformer && !isRedundant) {
         return {
           type: 'bpmn:Association',
@@ -43,6 +45,8 @@ export default class CustomRules extends RuleProvider {
       const targetCanHavePerformer = is(target, 'proceed:PerformableNode');
       const isAssociation = is(connection, 'bpmn:Association');
 
+      // if a performer element is replaced by another performer element make sure to keep the
+      // connection
       if (sourceIsPerformer && targetCanHavePerformer && isAssociation) return true;
     });
   }

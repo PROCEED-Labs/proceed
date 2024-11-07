@@ -37,6 +37,8 @@ export default class CustomContextPadProvider implements ContextPadProvider {
     }
 
     const { businessObject } = element;
+    // this tells bpmn-js what it should show in the context menu when one of our performer elements
+    // is selected
     if (isAny(businessObject, ['proceed:Performer']) && !isLabel(element)) {
       actions.connect = {
         group: 'connect',
@@ -69,7 +71,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
         className: 'bpmn-icon-screw-wrench',
         title: 'Change element',
         action: {
-          click: function (event: any, element: BaseElement) {
+          click: function(event: any, element: BaseElement) {
             let position = { x: event.x, y: event.y };
             position = getReplaceMenuPosition(element);
 

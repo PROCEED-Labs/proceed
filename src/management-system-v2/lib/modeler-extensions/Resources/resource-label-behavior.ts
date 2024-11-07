@@ -10,6 +10,10 @@ export default class LabelBehavior extends CommandInterceptor {
   constructor(eventBus: EventBus, modeling: Modeling, textRenderer: TextRenderer) {
     super(eventBus);
 
+    // here we intercept some of the editing events in the modeler to inject our logic for label
+    // creation on performer elements or to prevent some default bpmn-js logic to run which would
+    // cause errors
+
     this.preExecute('element.updateLabel', (event: any) => {
       const { context } = event;
       const { element, newLabel } = context;

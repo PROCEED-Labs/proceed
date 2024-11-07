@@ -116,11 +116,11 @@ export default class ResourceRenderer extends BaseRenderer {
         case 'Laptop':
           return draw(iconPaths.laptop);
         case 'Server':
-          // return draw(iconPaths.server);
-          const server = draw(iconPaths['server-with-screen'].server);
-          svgAppend(parentGfx, draw(iconPaths['server-with-screen'].screen));
-          svgAppend(parentGfx, draw(iconPaths['server-with-screen'].gear));
-          return server;
+          return draw(iconPaths.server);
+        // const server = draw(iconPaths['server-with-screen'].server);
+        // svgAppend(parentGfx, draw(iconPaths['server-with-screen'].screen));
+        // svgAppend(parentGfx, draw(iconPaths['server-with-screen'].gear));
+        // return server;
         default:
           throw new Error('Cannot draw unknown performer type');
       }

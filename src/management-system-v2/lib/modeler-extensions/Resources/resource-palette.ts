@@ -74,9 +74,9 @@ export default class CustomPaletteProvider implements PaletteProvider {
         'create.machine-resource': createAction(
           'proceed:MachinePerformer',
           'perfomer',
-          'proceed-server-icon',
+          'proceed-laptop-icon',
           'IT System',
-          'Server',
+          'Laptop',
         ),
       };
     };

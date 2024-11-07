@@ -114,7 +114,7 @@ export async function mqttRequest(
   client.publish(requestTopic, JSON.stringify({ ...message, type: 'request', id: requestId }));
 
   // await for response or timeout
-  setTimeout(rej!, mqttTimeout);
+  setTimeout(() => rej(new Error('Timed out waiting for response'))!, mqttTimeout);
   const response = await receivedAnswer;
 
   // cleanup

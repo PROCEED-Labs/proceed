@@ -103,25 +103,25 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   } = theme.useToken();
 
   const selectedVersion =
-    selectedConfig.versions.find(
+    parentConfig.versions.find(
       (version: any) => version.version === parseInt(selectedVersionId ?? '-1'),
     ) ?? LATEST_VERSION;
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
-  // const createConfigVersion = async (values: {
-  //   versionName: string;
-  //   versionDescription: string;
-  // }) => {
-  //   selectedConfig.versions.push({
-  //     version: selectedConfig.versions.length + 1,
-  //     name: values.versionName,
-  //     description: values.versionDescription,
-  //     versionBasedOn: selectedConfig.versions.length,
-  //   });
-  //   await saveParentConfig(configId, parentConfig);
-  //   router.refresh();
-  // };
+  const createConfigVersion = async (values: {
+    versionName: string;
+    versionDescription: string;
+  }) => {
+    parentConfig.versions.push({
+      version: parentConfig.versions.length + 1,
+      name: values.versionName,
+      description: values.versionDescription,
+      versionBasedOn: parentConfig.versions.length,
+    });
+    // await saveParentConfig(configId, parentConfig);
+    router.refresh();
+  };
 
   const showMobileView = useMobileModeler();
 
@@ -301,7 +301,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                   {selectedConfig.name}
                 </Title>
               </div>
-              {/* <Space.Compact style={{ margin: '0 0 0 10px' }}>
+              <Space.Compact style={{ margin: '0 0 0 10px' }}>
                 <Select
                   popupMatchSelectWidth={false}
                   placeholder="Select Version"
@@ -319,14 +319,14 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                     router.push(
                       spaceURL(
                         environment,
-                        `/machine-config/${configId as string}${
+                        `/machine-config/${parentConfig.id as string}${
                           searchParams.size ? '?' + searchParams.toString() : ''
                         }`,
                       ),
                     );
                   }}
                   options={[LATEST_VERSION]
-                    .concat(selectedConfig.versions ?? [])
+                    .concat(parentConfig.versions ?? [])
                     .map(({ version, name }) => ({
                       value: version,
                       label: name,
@@ -342,7 +342,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                     </Tooltip>
                   </>
                 )}
-              </Space.Compact> */}
+              </Space.Compact>
             </Space>
 
             <Space>

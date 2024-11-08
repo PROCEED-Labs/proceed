@@ -23,6 +23,7 @@ import { v4 } from 'uuid';
 import eventHandler from './eventHandler.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { defaultConfiguration } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
 // @ts-ignore
 let firstInit = !global.machineConfigMetaObjects;
@@ -33,6 +34,7 @@ type StoredConfigsAndParameters = {
   machineConfigs: Record<string, StoredMachineConfig>;
   targetConfigs: Record<string, StoredTargetConfig>;
   parameters: Record<string, StoredParameter>;
+  versionedParentConfigs: Record<string, StoredParentConfig>;
 };
 
 let storedData: StoredConfigsAndParameters =
@@ -44,6 +46,7 @@ let storedData: StoredConfigsAndParameters =
     machineConfigs: {},
     targetConfigs: {},
     parameters: {},
+    versionedParentConfigs: {},
   } as StoredConfigsAndParameters);
 
 /**
@@ -99,7 +102,7 @@ function targetConfigToStorage(
         targetConfig.parameters,
         newId,
       ),
-    };
+    } as StoredTargetConfig;
 
     return targetConfig.id;
   }
@@ -134,7 +137,7 @@ function machineConfigsToStorage(
         machineConfig.parameters,
         newId,
       ),
-    };
+    } as StoredMachineConfig;
   });
 
   return machineConfigs.map(({ id }) => id);
@@ -145,12 +148,16 @@ function machineConfigsToStorage(
  * @param parentConfig ParentConfig that is to be stored, able to contain TargetConfigs, MachineConfigs and ParameterConfigs
  * @param newId Boolean determining if new IDs are to be generated.
  */
-function parentConfigToStorage(parentConfig: ParentConfig, newId: boolean = false) {
+function parentConfigToStorage(
+  parentConfig: ParentConfig,
+  newId: boolean = false,
+  versioned: boolean = false,
+) {
   const { targetConfig, metadata, machineConfigs } = parentConfig;
 
   parentConfig.id = newId ? v4() : parentConfig.id;
 
-  storedData.parentConfigs[parentConfig.id] = {
+  (versioned ? storedData.versionedParentConfigs : storedData.parentConfigs)[parentConfig.id] = {
     ...parentConfig,
     targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
     machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
@@ -509,13 +516,11 @@ export async function copyParentConfig(
 
 /*************************** Element Addition *****************************/
 
-export async function addParentConfig(
-  machineConfigInput: ParentConfig,
-  environmentId: string,
-  base?: ParentConfig,
-) {
+export async function addParentConfig(machineConfigInput: ParentConfig, environmentId: string) {
   try {
+    // TODO this doesn't do anything since every property is optional
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
+    // TODO to be replaced by defaultConfiguration
     const date = new Date();
     const metadata: ParentConfig = {
       ...({
@@ -539,8 +544,7 @@ export async function addParentConfig(
         machineConfigs: [],
         environmentId: environmentId,
       } as ParentConfig),
-      ...parentConfigData,
-      ...(base ? base : {}),
+      ...machineConfigInput,
     };
 
     metadata.folderId = (await getRootFolder(environmentId)).id;
@@ -561,7 +565,43 @@ export async function addParentConfig(
     store.set('techData', 'targetConfigs', storedData.targetConfigs);
     store.set('techData', 'parameters', storedData.parameters);
 
-    eventHandler.dispatch('machineConfigAdded', { machineConfig: metadata });
+    return metadata;
+  } catch (e: unknown) {
+    const error = e as Error;
+    // console.log(error.message);
+    return userError(error.message ?? "Couldn't create Machine Config");
+  }
+}
+
+// TODO
+export async function addParentConfigVersion(
+  machineConfigInput: ParentConfig,
+  environmentId: string,
+  version: number,
+) {
+  const newVersion: ParentConfig = JSON.parse(JSON.stringify(machineConfigInput));
+  newVersion.id = newVersion.id + '-' + version;
+
+  try {
+    const parentConfigData = AbstractConfigInputSchema.parse(newVersion);
+    const date = new Date();
+    const metadata: ParentConfig = {
+      ...(defaultConfiguration(environmentId) as ParentConfig),
+      ...newVersion,
+    };
+
+    metadata.folderId = (await getRootFolder(environmentId)).id;
+    metadata.environmentId = environmentId;
+
+    const folderData = foldersMetaObject.folders[metadata.folderId];
+    if (!folderData) throw new Error('Folder not found');
+
+    // true to generate new IDs for data and create a version of a parentConfig instead of a regular one
+    parentConfigToStorage(metadata, true, true);
+    store.set('techData', 'versionedParentConfigs', storedData.versionedParentConfigs);
+    store.set('techData', 'machineConfigs', storedData.machineConfigs);
+    store.set('techData', 'targetConfigs', storedData.targetConfigs);
+    store.set('techData', 'parameters', storedData.parameters);
 
     return metadata;
   } catch (e: unknown) {

@@ -140,7 +140,7 @@ export default function EngineOverview({ engine }: { engine: Engine }) {
           ]}
         />
       </Card>
-      <Card className={styles.opeatingSystem}>
+      <Card className={styles.operatingSystem}>
         <Display
           data={[
             {

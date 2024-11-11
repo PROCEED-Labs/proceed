@@ -5,8 +5,34 @@
   gap: 1rem;
   grid-template-areas:
     'cpu cpu basicInfo networkInfo'
-    'ram ram opeatingSystem battery'
+    'ram ram operatingSystem battery'
     'disk disk networkDevices networkDevices';
+
+  // Sizes from https://github.com/PROCEED-Labs/proceed/wiki/Responsive-Design-in-PROCEED
+  // md
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'basicInfo networkInfo'
+      'operatingSystem cpu'
+      'ram ram'
+      'disk disk'
+      'networkDevices networkDevices'
+      'battery battery';
+  }
+  // sm
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'basicInfo '
+      'networkInfo'
+      'operatingSystem'
+      'cpu'
+      'ram'
+      'disk'
+      'networkDevices'
+      'battery';
+  }
 
   > div {
     overflow: hidden;
@@ -20,8 +46,8 @@
     grid-area: networkInfo;
   }
 
-  .opeatingSystem {
-    grid-area: opeatingSystem;
+  .operatingSystem {
+    grid-area: operatingSystem;
   }
 
   .ram {

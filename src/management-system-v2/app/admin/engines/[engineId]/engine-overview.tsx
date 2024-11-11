@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Progress, Typography } from 'antd';
+import { Card, Progress, Tag, Typography } from 'antd';
 import React, { ReactNode } from 'react';
 import styles from './engine-overview.module.scss';
 
@@ -128,6 +128,14 @@ export default function EngineOverview({ engine }: { engine: Engine }) {
             {
               title: 'Port:',
               content: engine.port,
+            },
+            {
+              title: 'Online',
+              content: (
+                <Tag color={engine.online ? 'success' : 'error'} style={{ width: 'fit-content' }}>
+                  {engine.online ? 'online' : 'offline'}
+                </Tag>
+              ),
             },
             {
               title: 'Online Checking Addresses:',

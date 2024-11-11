@@ -2,7 +2,6 @@
   display: grid;
   max-width: 100%;
   grid-template-columns: 1fr 1fr 1fr 1fr;
-  grid-auto-rows: max(1fr);
   gap: 1rem;
   grid-template-areas:
     'cpu cpu basicInfo networkInfo'

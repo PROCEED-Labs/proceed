@@ -137,10 +137,6 @@ export default function EngineOverview({ engine }: { engine: Engine }) {
                 </Tag>
               ),
             },
-            {
-              title: 'Online Checking Addresses:',
-              content: engine.onlineCheckingAddresses.join(', '),
-            },
           ]}
         />
       </Card>

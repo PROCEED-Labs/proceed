@@ -11,8 +11,11 @@ const mqttCredentials = {
 const baseTopicPrefix = env.MQTT_BASETOPIC ? env.MQTT_BASETOPIC + '/' : '';
 
 export function getClient(options?: mqtt.IClientOptions): Promise<mqtt.MqttClient> {
+  const address = env.MQTT_SERVER_ADDRESS;
+  if (!address) throw new Error('MQTT_SERVER_ADDRESS is not set');
+
   return new Promise((res, rej) => {
-    const client = mqtt.connect(env.MQTT_SERVER_ADDRESS, {
+    const client = mqtt.connect(address, {
       ...mqttCredentials,
       ...options,
     });
@@ -40,7 +43,7 @@ export async function getEngines() {
     connectTimeout: mqttTimeout,
   });
 
-  const engines: { engineId: string; running: boolean; version: string }[] = [];
+  const engines: { id: string; running: boolean; version: string }[] = [];
 
   await subscribeToTopic(client, `${getEnginePrefix('+')}/status`);
 

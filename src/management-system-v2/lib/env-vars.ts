@@ -57,10 +57,6 @@ const environmentVariables = {
     TWITTER_CLIENT_SECRET: z.string(),
 
     SHARING_ENCRYPTION_SECRET: z.string(),
-
-    MQTT_SERVER_ADDRESS: z.string().url(),
-    MQTT_USERNAME: z.string(),
-    MQTT_PASSWORD: z.string(),
   },
   development: {
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),

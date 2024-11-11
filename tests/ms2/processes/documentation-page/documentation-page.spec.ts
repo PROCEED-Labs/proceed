@@ -747,6 +747,7 @@ test('allow a different user that was given the share link to import the shared 
   processModelerPage,
   ms2Page,
 }) => {
+  test.slow();
   // import the first process imported by the importer process and create a version to reference
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();

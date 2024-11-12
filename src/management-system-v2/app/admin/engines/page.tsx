@@ -8,7 +8,7 @@ import { Suspense } from 'react';
 import { getSystemAdminByUserId } from '@/lib/data/DTOs';
 import EnginesTable from './engines-table';
 
-export type TableEngine = Awaited<ReturnType<typeof getEngines>>[number] & { id: string };
+export type TableEngine = Awaited<ReturnType<typeof getEngines>>[number] & { name: string };
 
 async function Engines() {
   const user = await getCurrentUser();
@@ -17,7 +17,7 @@ async function Engines() {
   if (!adminData) redirect('/');
 
   try {
-    const engines = (await getEngines()).map((e) => ({ ...e, id: e.engineId }));
+    const engines = (await getEngines()).map((e) => ({ ...e, name: e.id }));
 
     return <EnginesTable engines={engines} />;
   } catch (e) {

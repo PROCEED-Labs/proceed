@@ -10,8 +10,8 @@ import useFuzySearch from '@/lib/useFuzySearch';
 export default function EnginesTable({ engines }: { engines: TableEngine[] }) {
   const { filteredData, searchQuery, setSearchQuery } = useFuzySearch({
     data: engines,
-    keys: ['engineId'],
-    highlightedKeys: ['engineId'],
+    keys: ['name'],
+    highlightedKeys: ['name'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
@@ -38,7 +38,7 @@ export default function EnginesTable({ engines }: { engines: TableEngine[] }) {
           {
             title: 'Engine ID',
             dataIndex: 'name',
-            render: (_, engine) => engine.engineId.highlighted,
+            render: (_, engine) => engine.name.highlighted,
           },
           {
             title: 'Status',

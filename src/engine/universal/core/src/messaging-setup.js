@@ -58,4 +58,26 @@ module.exports = {
       }
     }
   },
+  async setupContinousDataPublishing(messaging, configModule, machineModule, logger, network) {
+    let { serverAddress, baseTopic } = await configModule.readConfig('messaging');
+    if (!serverAddress) return;
+
+    if (baseTopic && !baseTopic.endsWith('/')) baseTopic += '/';
+    baseTopic += 'proceed-pms';
+
+    // Monitoring data
+    const [{ id: machineId }, loadInterval] = await Promise.all([
+      machineModule.getMachineInformation(['id']),
+      configModule.readConfig('engine.loadInterval'),
+    ]);
+
+    setInterval(async () => {
+      try {
+        const monitoring = await network.loopback('get', '/machine/');
+        await messaging.publish(`${baseTopic}/engine/${machineId}/machine/monitoring`, monitoring);
+      } catch (e) {
+        logger.error('Failed to publish monitoring data');
+      }
+    }, loadInterval * 1000);
+  },
 };

@@ -53,6 +53,13 @@ module.exports = {
 
     if (enableMessaging) {
       await setupMessaging(system.messaging, config, machineInformation, logger);
+      await setupContinousDataPublishing(
+        system.messaging,
+        config,
+        machineInformation,
+        logger,
+        system.network,
+      );
     }
 
     if (!options.silentMode) {

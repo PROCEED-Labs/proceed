@@ -17,6 +17,12 @@ class Network {
     this._http = new HTTP(env);
     this.environment = env;
     this._messaging = messaging;
+    this._callbacks = {
+      get: new Map(),
+      put: new Map(),
+      post: new Map(),
+      delete: new Map(),
+    };
   }
 
   /**
@@ -74,23 +80,63 @@ class Network {
   }
 
   get(path, options, callback) {
-    this._http.get(path, options, wrapInFilterResponseMiddleware(callback));
-    this._messaging.get(path, options, wrapInFilterResponseMiddleware(callback));
+    const wrappedCallback = wrapInFilterResponseMiddleware(callback);
+    this._callbacks.get.set(path, wrappedCallback);
+    this._http.get(path, options, wrappedCallback);
+    this._messaging.get(path, options, wrappedCallback);
   }
 
   put(path, options, callback) {
-    this._http.put(path, options, wrapInFilterResponseMiddleware(callback));
-    this._messaging.put(path, options, wrapInFilterResponseMiddleware(callback));
+    const wrappedCallback = wrapInFilterResponseMiddleware(callback);
+    this._callbacks.get.set(path, wrappedCallback);
+    this._http.put(path, options, wrappedCallback);
+    this._messaging.put(path, options, wrappedCallback);
   }
 
   post(path, options, callback) {
-    this._http.post(path, options, wrapInFilterResponseMiddleware(callback));
-    this._messaging.post(path, options, wrapInFilterResponseMiddleware(callback));
+    const wrappedCallback = wrapInFilterResponseMiddleware(callback);
+    this._callbacks.post.set(path, wrappedCallback);
+    this._http.post(path, options, wrappedCallback);
+    this._messaging.post(path, options, wrappedCallback);
   }
 
   delete(path, options, callback) {
-    this._http.delete(path, options, wrapInFilterResponseMiddleware(callback));
-    this._messaging.delete(path, options, wrapInFilterResponseMiddleware(callback));
+    const wrappedCallback = wrapInFilterResponseMiddleware(callback);
+    this._callbacks.delete.set(path, wrappedCallback);
+    this._http.delete(path, options, wrappedCallback);
+    this._messaging.delete(path, options, wrappedCallback);
+  }
+
+  /**
+    * Call endpoints from within the engine
+    *
+    * @param {string} method The method to use for the request
+    * @param {string} path The path to the endpoint
+    * @param {{
+        hostname?: string;
+        ip?: string;
+        method?: string;
+        params?: any;
+        query?: any;
+        path?: string;
+        body?: any;
+        files?: any;
+      }} reqObject The request object to pass to the endpoint
+    * @throws {Error} If the method isn't supported, if no callback is registered for the path, or
+    * if the callback for the path throws an error
+    */
+  async loopback(method, path, reqObject) {
+    if (!(method in this._callbacks)) throw new Error(`Method ${method} not supported`);
+
+    if (!reqObject) reqObject = {};
+    if (!('query' in reqObject)) reqObject.query = {};
+    if (!('method' in reqObject)) reqObject.method = method.toUpperCase();
+    if (!('path' in reqObject)) reqObject.path = path;
+
+    const callback = this._callbacks[method].get(path);
+    if (!callback) throw new Error(`No callback registered for path ${path}`);
+
+    return await callback(reqObject);
   }
 }
 

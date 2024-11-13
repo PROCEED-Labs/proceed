@@ -25,6 +25,8 @@ import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import { ArrayEntryType } from '../typescript-utils';
 
+import { SerializedNode } from '@craftjs/core';
+
 /**
  * The options that can be used to select what should be exported
  */
@@ -105,27 +107,30 @@ async function getVersionBpmn(
 /**
  * Returns the required locally (on the ms server) stored image data for all image elements inside the given user task
  *
- * @param html the html file that might reference locally stored images
+ * @param json the json file that might reference locally stored images
  * @returns an array containing information about all image files needed for the user task
  */
-function getImagesReferencedByHtml(html: string) {
+function getImagesReferencedByJSON(json: string) {
   try {
-    const parser = new DOMParser();
-    const htmlDom = parser.parseFromString(html, 'text/html');
+    const nodeMap = JSON.parse(json) as SerializedNode;
 
-    const imageElements = Array.from(htmlDom.getElementsByTagName('img'));
+    const images = Object.values(nodeMap)
+      .filter((node) => {
+        const nodeType = typeof node.type === 'object' ? node.type.resolvedName : node.type;
+        return nodeType === 'Image' && node.props.src;
+      })
+      .map((node) => node.props.src as string);
 
     // get the referenced images that are stored locally
-    const seperatelyStored = imageElements
-      .map((img) => img.src)
-      .filter((src) => src.includes('/resources/process/'))
+    const seperatelyStored = images
+      .filter((src) => src.startsWith('/api/'))
       .map((src) => src.split('/').pop())
       .filter((imageName): imageName is string => !!imageName);
 
     // remove duplicates
     return [...new Set(seperatelyStored)];
   } catch (err) {
-    throw new Error('Unable to parse the image information from the given html');
+    throw new Error('Unable to parse the image information from the given json');
   }
 }
 
@@ -420,8 +425,8 @@ export async function prepareExport(
       }
 
       // determine the images that are used inside user tasks
-      for (const { html } of exportData[definitionId].userTasks) {
-        const referencedImages = getImagesReferencedByHtml(html);
+      for (const { json } of exportData[definitionId].userTasks) {
+        const referencedImages = getImagesReferencedByJSON(json);
         for (const filename of referencedImages) {
           allRequiredImageFiles.add(filename);
         }

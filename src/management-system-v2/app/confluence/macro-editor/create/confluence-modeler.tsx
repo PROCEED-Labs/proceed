@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import ModelerToolbar from './confluence-modeler-toolbar';
 import useModelerStateStore from '../../../(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
-import ModelerZoombar from './confluence-modeler-zoombar';
 import BPMNModeler from '@/app/(dashboard)/[environmentId]/processes/[processId]/bpmn-modeler';
+import ModelerZoombar from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-zoombar';
+import ModelerToolbar from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar';
 
 type ConfluenceModelerProps = {
   process: { name: string; id: string; bpmn: string };
@@ -19,8 +19,16 @@ const Modeler = ({ process, isViewer = false }: ConfluenceModelerProps) => {
   return (
     <div style={{ height: '100%' }}>
       <>
-        {isLoaded && <ModelerToolbar viewOnly={isViewer} canRedo={canRedo} canUndo={canUndo} />}
-        <ModelerZoombar></ModelerZoombar>
+        {isLoaded && (
+          <ModelerToolbar
+            versions={[]}
+            canRedo={!isViewer && canRedo}
+            canUndo={!isViewer && canUndo}
+            processId={process.id}
+            onOpenXmlEditor={() => console.log('ok')}
+          />
+        )}
+        <ModelerZoombar allowFullScreen={false}></ModelerZoombar>
       </>
       <BPMNModeler versions={[]} process={process} isNavigatedViewer={isViewer}></BPMNModeler>
     </div>

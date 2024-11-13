@@ -1,14 +1,14 @@
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getProcesses } from '@/lib/data/legacy/_process';
-import Layout from './layout-client';
+import Layout from '../layout-client';
 import { Environment } from '@/lib/data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import ManagableProcessList from './managable-process-list';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { findPROCEEDMacrosInSpace } from './helpers';
-import { ConfluenceProceedProcess } from './process-list';
+import { findPROCEEDMacrosInSpace } from '../helpers';
+import { ConfluenceProceedProcess } from '../process-list';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 const ConfluencePage = async ({

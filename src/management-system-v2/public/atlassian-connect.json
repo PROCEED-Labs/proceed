@@ -32,7 +32,7 @@
     },
     "generalPages": [
       {
-        "url": "/confluence?spaceKey={space.key}",
+        "url": "/confluence/process-list?spaceKey={space.key}",
         "key": "proceed-process-list-page",
         "name": {
           "value": "PROCEED Process List"

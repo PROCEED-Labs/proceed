@@ -1,12 +1,12 @@
 'use client';
-import ProcessList, { ConfluenceProceedProcess } from './process-list';
+import ProcessList, { ConfluenceProceedProcess } from '../process-list';
 import { Process } from '@/lib/data/process-schema';
 import Button, { ButtonGroup } from '@atlaskit/button';
 import { deleteProcesses, updateProcess } from '@/lib/data/processes';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
-import ProcessModal from './process-modal';
+import ProcessModal from '../process-modal';
 import ProcessExportModal from '@/components/process-export';
 
 const ActionButtons = ({ process }: { process: Process }) => {

@@ -71,7 +71,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
         className: 'bpmn-icon-screw-wrench',
         title: 'Change element',
         action: {
-          click: function(event: any, element: BaseElement) {
+          click: function (event: any, element: BaseElement) {
             let position = { x: event.x, y: event.y };
             position = getReplaceMenuPosition(element);
 

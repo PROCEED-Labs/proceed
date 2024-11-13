@@ -33,7 +33,11 @@ import {
 
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultMachineConfiguration, defaultTargetConfiguration } from '../configuration-helper';
+import {
+  customMachineConfiguration,
+  defaultMachineConfiguration,
+  defaultTargetConfiguration,
+} from '../configuration-helper';
 import MachineConfigurations from './mach-config';
 import TargetConfiguration from './target-config';
 import Content_ from './config-content';
@@ -161,13 +165,33 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     values: {
       name: string;
       description: string;
+      copyTarget: boolean;
     }[],
   ) => {
-    const { name, description } = values[0];
+    const { name, description, copyTarget } = values[0];
     if (createConfigType === 'target') {
-      await addTargetConfig(parentConfig.id, defaultTargetConfiguration(name, description));
+      await addTargetConfig(
+        parentConfig.id,
+        defaultTargetConfiguration(parentConfig.environmentId, name, description),
+      );
     } else {
-      await addMachineConfig(parentConfig.id, defaultMachineConfiguration(name, description));
+      if (copyTarget && parentConfig.targetConfig) {
+        await addMachineConfig(
+          parentConfig.id,
+          customMachineConfiguration(
+            parentConfig.environmentId,
+            name,
+            description,
+            parentConfig.targetConfig,
+          ),
+          true,
+        );
+      } else {
+        await addMachineConfig(
+          parentConfig.id,
+          defaultMachineConfiguration(parentConfig.environmentId, name, description),
+        );
+      }
     }
     setCreateConfigType('');
     router.refresh();
@@ -419,6 +443,8 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
         title={configModalTitle}
         onCancel={() => setCreateConfigType('')}
         onSubmit={handleCreateConfig}
+        configType={createConfigType}
+        targetConfigExists={!!parentConfig.targetConfig}
       />
     </>
   );

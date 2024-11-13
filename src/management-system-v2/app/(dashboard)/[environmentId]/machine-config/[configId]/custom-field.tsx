@@ -65,23 +65,14 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
   const [deleteFieldOpen, setDeleteFieldOpen] = useState<boolean>(false);
 
-  // TODO: check if this actually works when given the newest data after refresh
-  const currentKeyRef = useRef(keyId);
-  useEffect(() => {
-    if (keyId !== currentKeyRef.current) currentKeyRef.current = keyId;
-  }, [keyId]);
-  const restoreKey = () => {
-    currentKeyRef.current = keyId;
-  };
-  const saveKey = async () => {
-    if (!currentKeyRef.current) return;
-    await updateParameter(parameter.id!, { key: currentKeyRef.current });
+  const handleKeyChange = async (newKey: string) => {
+    if (!newKey) return;
+    await updateParameter(parameter.id!, { key: newKey });
     router.refresh();
   };
 
   const handleDeleteConfirm = async () => {
     if (parameter.id) await removeParameter(parameter.id);
-
     setCreateFieldOpen(false);
     router.refresh();
   };
@@ -193,14 +184,12 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
                 editable && {
                   icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
                   tooltip: 'Edit Parameter Key',
-                  onCancel: restoreKey,
-                  onChange: (newValue) => (currentKeyRef.current = newValue),
-                  onEnd: saveKey,
+                  onChange: handleKeyChange,
                   enterIcon: <CheckOutlined />,
                 }
               }
             >
-              {currentKeyRef.current}
+              {keyId}
             </Text>
             {editable && (
               <Space.Compact size="small">

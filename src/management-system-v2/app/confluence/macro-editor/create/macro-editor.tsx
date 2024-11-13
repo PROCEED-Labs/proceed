@@ -118,10 +118,7 @@ const MacroEditor = ({
               Close
             </Button>
           </div>
-          <Modeler
-            style={{ flexGrow: 1 }}
-            process={{ name: process.name, id: process.id, bpmn: process.bpmn }}
-          />
+          <Modeler process={{ name: process.name, id: process.id, bpmn: process.bpmn }} />
         </div>
       ) : (
         <ProcessModal

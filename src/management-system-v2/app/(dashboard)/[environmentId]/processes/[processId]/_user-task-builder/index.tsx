@@ -13,7 +13,7 @@ import Sidebar from './_sidebar';
 
 import * as Elements from './elements';
 
-import { iframeDocument, defaultForm } from './utils';
+import { iframeDocument, defaultForm, toHtml } from './utils';
 
 import CustomEventhandlers from './CustomCommandhandlers';
 import useBoundingClientRect from '@/lib/useBoundingClientRect';
@@ -109,7 +109,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
             implementation: getUserTaskImplementationString(),
           });
         }
-        saveProcessUserTask(processId, filename!, json, environment.spaceId).then(
+        const html = toHtml(json);
+        saveProcessUserTask(processId, filename!, json, html, environment.spaceId).then(
           (res) => res && console.error(res.error),
         );
         onSave();

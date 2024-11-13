@@ -1,6 +1,7 @@
 import {
   getProcess,
   getProcessBPMN,
+  getProcessUserTaskHTML,
   getProcessUserTaskData,
   getProcessImage,
 } from '@/lib/data/processes';
@@ -23,9 +24,6 @@ import { getImageDimensions, getSVGFromBPMN, isSelectedOrInsideSelected } from '
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import { ArrayEntryType } from '../typescript-utils';
-
-import { SerializedNodes } from '@craftjs/core';
-import { toHtml } from '@/app/(dashboard)/[environmentId]/processes/[processId]/_user-task-builder/utils';
 
 /**
  * The options that can be used to select what should be exported
@@ -107,29 +105,27 @@ async function getVersionBpmn(
 /**
  * Returns the required locally (on the ms server) stored image data for all image elements inside the given user task
  *
- * @param {string} json the json file that might reference locally stored images
- * @returns {string[]} an array containing information about all image files needed for the user task
+ * @param html the html file that might reference locally stored images
+ * @returns an array containing information about all image files needed for the user task
  */
-function getImagesReferencedByJSON(json: string) {
+function getImagesReferencedByHtml(html: string) {
   try {
-    const nodeMap = JSON.parse(json) as SerializedNodes;
+    const parser = new DOMParser();
+    const htmlDom = parser.parseFromString(html, 'text/html');
 
-    const images = Object.values(nodeMap)
-      .filter((node) => {
-        const nodeType = typeof node.type === 'object' ? node.type.resolvedName : node.type;
-        return nodeType === 'Image' && node.props.src;
-      })
-      .map((node) => node.props.src as string);
+    const imageElements = Array.from(htmlDom.getElementsByTagName('img'));
 
     // get the referenced images that are stored locally
-    const seperatelyStored = images
-      .filter((src) => src.startsWith('/api/'))
+    const seperatelyStored = imageElements
+      .map((img) => img.src)
+      .filter((src) => src.includes('/resources/process/'))
       .map((src) => src.split('/').pop())
       .filter((imageName): imageName is string => !!imageName);
+
     // remove duplicates
     return [...new Set(seperatelyStored)];
   } catch (err) {
-    throw new Error('Unable to parse the image information from the given json');
+    throw new Error('Unable to parse the image information from the given html');
   }
 }
 
@@ -400,12 +396,13 @@ export async function prepareExport(
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
         const json = await getProcessUserTaskData(definitionId, filename, spaceId);
+        const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
 
         if (typeof json !== 'string') {
           throw json.error;
+        } else if (typeof html !== 'string') {
+          throw html.error;
         }
-
-        const html = toHtml(json);
 
         exportData[definitionId].userTasks.push({ filename, json, html });
       }
@@ -423,8 +420,8 @@ export async function prepareExport(
       }
 
       // determine the images that are used inside user tasks
-      for (const { json } of exportData[definitionId].userTasks) {
-        const referencedImages = getImagesReferencedByJSON(json);
+      for (const { html } of exportData[definitionId].userTasks) {
+        const referencedImages = getImagesReferencedByHtml(html);
         for (const filename of referencedImages) {
           allRequiredImageFiles.add(filename);
         }

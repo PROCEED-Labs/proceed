@@ -106,9 +106,13 @@ const ModelerToolbar = ({
       )
         throw new Error();
 
-      const newBpmn = await getProcessBPMN(processId, environment.spaceId);
-      if (!selectedElementId && newBpmn && typeof newBpmn === 'string') {
-        await modeler?.loadBPMN(newBpmn);
+      // reimport the new version since the backend has added versionBasedOn information that would
+      // be overwritten by following changes
+      if (!selectedElementId) {
+        const newBpmn = await getProcessBPMN(processId, environment.spaceId);
+        if (newBpmn && typeof newBpmn === 'string') {
+          await modeler?.loadBPMN(newBpmn);
+        }
       }
       router.refresh();
     } catch (_) {

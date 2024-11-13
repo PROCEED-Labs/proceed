@@ -244,7 +244,8 @@ const ModelerToolbar = ({
                 router.push(
                   spaceURL(
                     environment,
-                    `/processes/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
+                    `/processes/${processId as string}${
+                      searchParams.size ? '?' + searchParams.toString() : ''
                     }`,
                   ),
                 );
@@ -346,13 +347,13 @@ const ModelerToolbar = ({
         processes={
           showProcessExportModal
             ? [
-              {
-                definitionId: processId as string,
-                processVersion: selectedVersionId || undefined,
-                selectedElements: elementsSelectedForExport,
-                rootSubprocessLayerId: rootLayerIdForExport,
-              },
-            ]
+                {
+                  definitionId: processId as string,
+                  processVersion: selectedVersionId || undefined,
+                  selectedElements: elementsSelectedForExport,
+                  rootSubprocessLayerId: rootLayerIdForExport,
+                },
+              ]
             : []
         }
         onClose={() => setShowProcessExportModal(false)}

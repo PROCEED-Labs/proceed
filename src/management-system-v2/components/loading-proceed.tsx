@@ -49,8 +49,7 @@ const ProceedLoadingIndicator: FC<PropsWithChildren<LoadingProps>> = ({
 
       const size = `scale(${1.75 - 1.75 * shrink}, ${1.75 - 1.75 * shrink})`;
       // @ts-ignore
-      // const positioning = `translate(${-40 + x},${-3 + y})`;
-      const positioning = `translate(${-40},${-3})`;
+      const positioning = `translate(${-40 + x},${-3 + y})`;
 
       return (
         <>

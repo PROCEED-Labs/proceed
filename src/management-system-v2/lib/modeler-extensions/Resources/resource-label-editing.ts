@@ -121,7 +121,7 @@ export default class ResourceLabelEditingProvider {
             y: element.di.label.bounds.y,
             width: element.di.label.bounds.width,
             height: element.di.label.bounds.height,
-          },
+          } as any,
           {
             id: element.businessObject.id + '_label',
             businessObject: element.businessObject,

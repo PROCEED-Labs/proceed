@@ -132,7 +132,7 @@ class SubprocesScriptExecution extends NativeModule {
             code,
           },
         ]);
-        this.deleteProcess(processId, processInstanceId);
+        this.deleteProcess(processId, processInstanceId, scriptIdentifier);
       });
     } catch (e) {
       // TODO: use proper logger
@@ -218,9 +218,14 @@ class SubprocesScriptExecution extends NativeModule {
   /**
    * @param {string} processId
    * @param {string} processInstanceId
+   * @param {string} [scriptIdentifier]
    */
-  deleteProcess(processId, processInstanceId) {
-    return this.childProcesses.delete(JSON.stringify([processId, processInstanceId]));
+  deleteProcess(processId, processInstanceId, scriptIdentifier) {
+    const scriptParams = JSON.stringify([processId, processInstanceId]);
+    if (!scriptIdentifier) return this.childProcesses.delete(scriptParams);
+
+    const processScripts = this.childProcesses.get(scriptParams);
+    if (processScripts) return processScripts.delete(scriptIdentifier);
   }
 
   deleteAllProcess() {

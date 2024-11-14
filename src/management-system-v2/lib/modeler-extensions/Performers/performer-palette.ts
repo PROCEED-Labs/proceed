@@ -67,13 +67,13 @@ export default class CustomPaletteProvider implements PaletteProvider {
           separator: true,
         },
         // add elements to create our custom performer elements
-        'create.human-resource': createAction(
+        'create.human-performer': createAction(
           'proceed:HumanPerformer',
           'perfomer',
           'proceed-user-icon',
           'Human Performer',
         ),
-        'create.machine-resource': createAction(
+        'create.machine-performer': createAction(
           'proceed:MachinePerformer',
           'perfomer',
           'proceed-laptop-icon',

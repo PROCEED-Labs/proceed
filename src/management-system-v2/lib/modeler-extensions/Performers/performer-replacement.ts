@@ -11,7 +11,7 @@ import { Shape } from 'bpmn-js/lib/model/Types';
 import { isArray } from 'min-dash';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 
-export default class ResourceReplacementProvider implements PopupMenuProvider {
+export default class PerformerReplacementProvider implements PopupMenuProvider {
   modeling: Modeling;
   rules: Rules;
   bpmnFactory: BpmnFactory;
@@ -26,7 +26,7 @@ export default class ResourceReplacementProvider implements PopupMenuProvider {
     replace: Replace,
     rules: Rules,
   ) {
-    popupMenu.registerProvider('resource-replace', this);
+    popupMenu.registerProvider('performer-replace', this);
 
     // here we handle how performers are replaced by another performer type through the context menu
 

@@ -8,7 +8,7 @@ import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 import TextRenderer from 'bpmn-js/lib/draw/TextRenderer';
 
-export default class ResourceLabelEditingProvider {
+export default class PerformerLabelEditingProvider {
   static $inject = [
     'eventBus',
     'modeling',

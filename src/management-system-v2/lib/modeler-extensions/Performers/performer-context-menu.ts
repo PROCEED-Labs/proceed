@@ -75,7 +75,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
             let position = { x: event.x, y: event.y };
             position = getReplaceMenuPosition(element);
 
-            popupMenu.open(element, 'resource-replace', position, {
+            popupMenu.open(element, 'performer-replace', position, {
               title: 'Change element',
               width: 300,
               search: true,

@@ -22,7 +22,7 @@ import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 
 const HIGH_PRIORITY = 3000;
 
-export default class ResourceRenderer extends BaseRenderer {
+export default class PerformerRenderer extends BaseRenderer {
   bpmnRenderer: BpmnRenderer;
   textRenderer: TextRenderer;
   styles: any;

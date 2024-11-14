@@ -255,14 +255,15 @@ export function getImports(bpmn: string | object): Promise<object[]>;
  * Returns the version information of the given bpmn process definition
  *
  * @param {string|object} bpmn - the process definition as XML string or BPMN-moddle Object
- * @returns {(Promise.<{version?: number, name?: string, description?: string, versionBasedOn?: number}>)} - The version information if it exists
+ * @returns {(Promise.<{version?: string, name?: string, description?: string, versionBasedOn?: string, versionCreatedOn?: string}>)} - The version information if it exists
  * @throws {Error} will throw if the definition contains a version that is not a number
  */
 export function getDefinitionsVersionInformation(bpmn: string | object): Promise<{
-  version?: number;
+  versionId?: string;
   name?: string;
   description?: string;
-  versionBasedOn?: number;
+  versionBasedOn?: string;
+  versionCreatedOn: string;
 }>;
 /**
  * Get all process ids from a BPMN definitions/object.
@@ -392,7 +393,7 @@ export function getTargetDefinitionsAndProcessIdForCallActivityByObject(
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {boolean} [dontThrow] - whether to throw errors or not in retrieving process ids in call activities
- * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, version: number }}> } an object (a map) with all callActivityIds as keys
+ * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, version: string }}> } an object (a map) with all callActivityIds as keys
  * @throws see function: {@link getTargetDefinitionsAndProcessIdForCallActivityByObject}
  */
 export function getDefinitionsAndProcessIdForEveryCallActivity(
@@ -402,7 +403,7 @@ export function getDefinitionsAndProcessIdForEveryCallActivity(
   [callActivityId: string]: {
     definitionId: string;
     processId: string;
-    version: number;
+    version: string;
   };
 }>;
 /**

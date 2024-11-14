@@ -3,7 +3,7 @@ import { useEnvironment } from '@/components/auth-can';
 import {
   deleteEntityFile,
   retrieveEntityFile,
-  saveEnityFile,
+  saveEntityFile,
   updateFileDeletableStatus,
 } from './data/file-manager-facade';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
@@ -78,9 +78,9 @@ export function useFileManager(entityType: EntityType): UseFileManagerReturn {
 
   const handleUpload = async (entityId: string, fileName: string, file: File | Blob) => {
     if (DEPLOYMENT_ENV === 'cloud') {
-      const response = await saveEnityFile(entityType, entityId, file.type, fileName, undefined);
+      const response = await saveEntityFile(entityType, entityId, file.type, fileName, undefined);
       if ('error' in response) {
-        return { success: false, error: response.error.message };
+        return { success: false, error: (response.error as Error).message };
       }
       if (!response.presignedUrl) {
         return { success: false, error: 'Failed to get presignedUrl' };

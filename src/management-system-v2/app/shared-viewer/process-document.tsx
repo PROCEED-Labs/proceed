@@ -19,7 +19,7 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 
 export type VersionInfo = {
-  id?: number;
+  id?: string;
   name?: string;
   description?: string;
 };

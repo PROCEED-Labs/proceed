@@ -161,3 +161,46 @@ export const deleteFile = async (filePath: string): Promise<boolean> => {
     throw new Error(`Failed to delete file: ${error.message}`);
   }
 };
+
+interface CopyFileOptions {
+  newFilename?: string;
+}
+
+export const copyFile = async (
+  sourceFilePath: string,
+  destinationFilePath: string,
+  options?: CopyFileOptions,
+): Promise<{ status: boolean; newFilename: string; newFilepath: string }> => {
+  let status = false;
+  const finalFileName = options?.newFilename || path.basename(destinationFilePath);
+  const finalDestinationPath = path.join(path.dirname(destinationFilePath), finalFileName);
+
+  try {
+    if (DEPLOYMENT_ENV === 'cloud') {
+      // Handle GCP bucket file copying
+      ensureBucketExists();
+
+      const sourceFile = bucket.file(sourceFilePath);
+      const destinationFile = bucket.file(finalDestinationPath);
+      await sourceFile.copy(destinationFile);
+    } else {
+      // Handle local file copying
+      const fullSourcePath = path.join(LOCAL_STORAGE_BASE, sourceFilePath);
+      const fullDestinationPath = path.join(LOCAL_STORAGE_BASE, finalDestinationPath);
+
+      if (await fse.pathExists(fullSourcePath)) {
+        await fse.ensureDir(path.dirname(fullDestinationPath));
+        await fse.copy(fullSourcePath, fullDestinationPath);
+        cache.set(finalDestinationPath, await fse.readFile(fullDestinationPath));
+      } else {
+        throw new Error(`Source file does not exist at path ${fullSourcePath}`);
+      }
+    }
+
+    status = true;
+  } catch (error: any) {
+    throw new Error(`Failed to copy file: ${error.message}`);
+  }
+
+  return { status, newFilename: finalFileName, newFilepath: finalDestinationPath };
+};

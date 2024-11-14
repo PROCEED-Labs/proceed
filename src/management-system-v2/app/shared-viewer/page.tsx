@@ -41,7 +41,7 @@ const getProcessInfo = async (
   timestamp: number,
   embeddedMode: boolean,
   isImport: boolean,
-  versionId?: number,
+  versionId?: string,
 ) => {
   const { session, userId } = await getCurrentUser();
 
@@ -148,7 +148,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   try {
     const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
 
-    const versionId = version === undefined ? version : parseInt(version as string);
+    const versionId = version === undefined ? version : (version as string);
 
     const processInfo = await getProcessInfo(
       processId as string,

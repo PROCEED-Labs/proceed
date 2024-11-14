@@ -139,7 +139,7 @@ export async function getViewer(bpmn: string) {
 
 export type ImportsInfo = {
   [definitionId: string]: {
-    [versionId: number]: string;
+    [versionId: string]: string;
   };
 };
 

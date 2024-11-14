@@ -11,7 +11,7 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import {
   deleteEntityFile,
   retrieveEntityFile,
-  saveEnityFile,
+  saveEntityFile,
 } from '@/lib/data/file-manager-facade';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   const entityId = searchParams.get('entityId');
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId') || 'unauthenticated';
-  const fileName = searchParams.get('fileName');
+  const fileName = searchParams.get('fileName') || undefined;
   if (!entityId || !entityType || !environmentId) {
     return new NextResponse(null, {
       status: 400,
@@ -176,7 +176,7 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const res = await saveEnityFile(
+    const res = await saveEntityFile(
       entityType as EntityType,
       entityId,
       fileType.mime,
@@ -184,7 +184,7 @@ export async function PUT(request: NextRequest) {
       buffer,
     );
 
-    if ('error' in res) throw new Error(res.error.message);
+    if ('error' in res) throw new Error((res.error as any).message);
 
     const { fileName: newFileName } = res;
 

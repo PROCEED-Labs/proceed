@@ -9,7 +9,7 @@ import {
   getUserTaskFileNameMapping,
   setUserTaskData,
 } from '@proceed/bpmn-helper';
-import { asyncForEach } from './javascriptHelpers';
+import { asyncForEach, asyncMap, findKey } from './javascriptHelpers';
 import {
   deleteProcessUserTask,
   getProcessUserTasksJSON,
@@ -21,6 +21,8 @@ import {
 import { Process } from '../data/process-schema';
 import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from '../data/module-import-types-temp';
+//import { updateArtifactRefVersionedUserTask } from '../data/file-manager-facade';
+import { toCustomUTCString } from './timeHelper';
 
 const { diff } = require('bpmn-js-differ');
 
@@ -49,19 +51,21 @@ export async function areVersionsEqual(bpmn: string, otherBpmn: string) {
   const otherBpmnObj = await toBpmnObject(otherBpmn);
 
   const {
-    version,
+    versionId,
     name: versionName,
     description: versionDescription,
     versionBasedOn,
+    versionCreatedOn,
   } = await getDefinitionsVersionInformation(otherBpmnObj);
 
-  if (version) {
+  if (versionId) {
     // check if the two bpmns were the same if they had the same version information
     await setDefinitionsVersionInformation(bpmnObj, {
-      version,
+      versionId,
       versionName,
       versionDescription,
       versionBasedOn,
+      versionCreatedOn,
     });
 
     // compare the two bpmns
@@ -81,10 +85,10 @@ export async function areVersionsEqual(bpmn: string, otherBpmn: string) {
 export async function convertToEditableBpmn(bpmn: string) {
   let bpmnObj = await toBpmnObject(bpmn);
 
-  const { version } = await getDefinitionsVersionInformation(bpmnObj);
+  const { versionId } = await getDefinitionsVersionInformation(bpmnObj);
 
   bpmnObj = (await setDefinitionsVersionInformation(bpmnObj, {
-    versionBasedOn: version,
+    versionBasedOn: versionId,
   })) as object;
 
   const changedFileNames = {} as { [key: string]: string };
@@ -102,12 +106,12 @@ export async function convertToEditableBpmn(bpmn: string) {
   return { bpmn: await toBpmnXml(bpmnObj), changedFileNames };
 }
 
-export async function getLocalVersionBpmn(process: Process, localVersion: number) {
+export async function getLocalVersionBpmn(process: Process, localVersion: string) {
   // early exit if there are no known versions for the process locally
   if (!Array.isArray(process.versions) || !process.versions.length) return;
 
   // check if the specific version exists locally and get its bpmn if it does
-  if (process.versions.some(({ version }) => +version == localVersion)) {
+  if (process.versions.some(({ createdOn }) => toCustomUTCString(createdOn) == localVersion)) {
     const bpmn = getProcessVersionBpmn(process.id, localVersion);
     return bpmn;
   }
@@ -115,13 +119,13 @@ export async function getLocalVersionBpmn(process: Process, localVersion: number
 
 export async function versionUserTasks(
   processInfo: Process,
-  newVersion: number,
+  newVersion: string,
   bpmnObj: object,
   dryRun = false,
 ) {
   const dataMapping = await getUserTaskFileNameMapping(bpmnObj);
-
-  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const versionedUserTaskFilenames: string[] = [];
+  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   for (let userTaskId in dataMapping) {
     const { fileName, implementation } = dataMapping[userTaskId];
@@ -135,7 +139,7 @@ export async function versionUserTasks(
       // get the data of the user task in the based on version (if there is one and it is locally known)
       const basedOnBPMN =
         versionBasedOn !== undefined
-          ? await getLocalVersionBpmn(processInfo, versionBasedOn)
+          ? await getLocalVersionBpmn(processInfo, versionCreatedOn!)
           : undefined;
 
       // check if there is a preceding version and if the data of the user task actually changed from that version
@@ -170,21 +174,27 @@ export async function versionUserTasks(
 
       // store the user task version if it didn't exist before
       if (!dryRun && !userTaskDataAlreadyExisting) {
-        saveProcessUserTask(processInfo.id, versionFileName, userTaskData!);
+        await saveProcessUserTask(processInfo.id, versionFileName, userTaskData!, versionCreatedOn);
+        // update ref for the artifacts referenced by the versioned user task
+        //const refIds = await updateArtifactRefVersionedUserTask(userTaskData!, versionFileName);
+        versionedUserTaskFilenames.push(versionFileName);
       }
     }
   }
+  return versionedUserTaskFilenames;
 }
 
-export async function updateProcessVersionBasedOn(processInfo: Process, versionBasedOn: number) {
+export async function updateProcessVersionBasedOn(processInfo: Process, versionBasedOn: string) {
   if (processInfo?.bpmn) {
-    const { version, description, name } = await getDefinitionsVersionInformation(processInfo.bpmn);
+    const { versionId, description, name, versionCreatedOn } =
+      await getDefinitionsVersionInformation(processInfo.bpmn);
 
     const bpmn = (await setDefinitionsVersionInformation(processInfo.bpmn, {
-      version,
+      versionId,
       versionDescription: description,
       versionName: name,
       versionBasedOn,
+      versionCreatedOn,
     })) as string;
 
     await updateProcess(processInfo.id, { bpmn });
@@ -205,12 +215,12 @@ const getUsedFileNames = async (bpmn: string) => {
   return [...fileNames];
 };
 
-export async function selectAsLatestVersion(processId: string, version: number) {
+export async function selectAsLatestVersion(processId: string, versionId: string) {
   // make sure that the user task data is also rolled back
-  const processDataMapping = await getProcessUserTasksJSON(processId);
+  const processDataMapping = await getProcessUserTasksJSON(processId, versionId);
 
   const editableBpmn = (await getProcessBpmn(processId)) as string;
-  const versionBpmn = (await getProcessVersionBpmn(processId, version)) as string;
+  const versionBpmn = (await getProcessVersionBpmn(processId, versionId)) as string;
   const fileNamesinEditableVersion = await getUsedFileNames(editableBpmn);
 
   const { bpmn: convertedBpmn, changedFileNames } = await convertToEditableBpmn(versionBpmn);

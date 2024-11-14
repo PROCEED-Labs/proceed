@@ -71,13 +71,23 @@ CREATE TABLE "artifact" (
 );
 
 -- CreateTable
-CREATE TABLE "artifact_reference" (
+CREATE TABLE "artifact_process_reference" (
     "id" TEXT NOT NULL,
     "artifactId" TEXT NOT NULL,
-    "processId" TEXT,
+    "processId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "artifact_reference_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "artifact_process_reference_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "artifact_version_reference" (
+    "id" TEXT NOT NULL,
+    "artifactId" TEXT NOT NULL,
+    "versionId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "artifact_version_reference_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -122,13 +132,11 @@ CREATE TABLE "folder" (
 CREATE TABLE "version" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "version" BIGINT NOT NULL,
     "description" TEXT NOT NULL,
     "processId" TEXT NOT NULL,
-    "versionBasedOn" BIGINT,
+    "versionBasedOn" TEXT,
     "createdOn" TIMESTAMP(3) NOT NULL,
-    "lastEditedOn" TIMESTAMP(3) NOT NULL,
-    "bpmn" XML NOT NULL,
+    "bpmnFilePath" TEXT NOT NULL,
 
     CONSTRAINT "version_pkey" PRIMARY KEY ("id")
 );
@@ -178,10 +186,13 @@ CREATE UNIQUE INDEX "artifact_filePath_key" ON "artifact"("filePath");
 CREATE UNIQUE INDEX "artifact_fileName_key" ON "artifact"("fileName");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "artifact_reference_artifactId_processId_key" ON "artifact_reference"("artifactId", "processId");
+CREATE UNIQUE INDEX "artifact_process_reference_artifactId_processId_key" ON "artifact_process_reference"("artifactId", "processId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "version_version_key" ON "version"("version");
+CREATE UNIQUE INDEX "artifact_version_reference_artifactId_versionId_key" ON "artifact_version_reference"("artifactId", "versionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "version_createdOn_key" ON "version"("createdOn");
 
 -- AddForeignKey
 ALTER TABLE "system_admin" ADD CONSTRAINT "system_admin_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -199,10 +210,16 @@ ALTER TABLE "process" ADD CONSTRAINT "process_environmentId_fkey" FOREIGN KEY ("
 ALTER TABLE "process" ADD CONSTRAINT "process_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "artifact_reference" ADD CONSTRAINT "artifact_reference_artifactId_fkey" FOREIGN KEY ("artifactId") REFERENCES "artifact"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "artifact_process_reference" ADD CONSTRAINT "artifact_process_reference_artifactId_fkey" FOREIGN KEY ("artifactId") REFERENCES "artifact"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "artifact_reference" ADD CONSTRAINT "artifact_reference_processId_fkey" FOREIGN KEY ("processId") REFERENCES "process"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "artifact_process_reference" ADD CONSTRAINT "artifact_process_reference_processId_fkey" FOREIGN KEY ("processId") REFERENCES "process"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "artifact_version_reference" ADD CONSTRAINT "artifact_version_reference_artifactId_fkey" FOREIGN KEY ("artifactId") REFERENCES "artifact"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "artifact_version_reference" ADD CONSTRAINT "artifact_version_reference_versionId_fkey" FOREIGN KEY ("versionId") REFERENCES "version"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "space" ADD CONSTRAINT "space_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;

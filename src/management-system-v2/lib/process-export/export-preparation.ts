@@ -45,7 +45,7 @@ export type ProcessExportOptions = {
  */
 export type ExportProcessInfo = {
   definitionId: string;
-  processVersion?: number | string;
+  processVersion?: string;
   selectedElements?: string[];
   rootSubprocessLayerId?: string;
 }[];
@@ -89,12 +89,7 @@ export type ProcessesExportData = ProcessExportData[];
  * @param definitionId
  * @param processVersion
  */
-async function getVersionBpmn(
-  definitionId: string,
-  spaceId: string,
-  processVersion?: string | number,
-) {
-  processVersion = typeof processVersion === 'string' ? parseInt(processVersion) : processVersion;
+async function getVersionBpmn(definitionId: string, spaceId: string, processVersion?: string) {
   const bpmn = await getProcessBPMN(definitionId, spaceId, processVersion);
 
   if (typeof bpmn !== 'string') {
@@ -178,7 +173,7 @@ type ExportMap = {
   };
 };
 
-function getVersionName(version?: string | number) {
+function getVersionName(version?: string) {
   return version ? `${version}` : 'latest';
 }
 
@@ -396,11 +391,10 @@ export async function prepareExport(
 
         for (const filename of versionUserTasks) allRequiredUserTaskFiles.add(filename);
       }
-
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
         const json = await getProcessUserTaskData(definitionId, filename, spaceId);
-
+        console.log(json);
         if (typeof json !== 'string') {
           throw json!.error;
         }

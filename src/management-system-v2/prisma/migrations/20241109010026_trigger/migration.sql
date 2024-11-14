@@ -1,4 +1,4 @@
--- Step 1: Create the trigger function
+-- This is an empty migration.-- Step 1: Create the trigger function
 CREATE OR REPLACE FUNCTION set_deletable_and_deletedon_based_on_refcounter()
 RETURNS TRIGGER AS $$
 BEGIN

@@ -68,3 +68,24 @@ export function hasUuidBeforeUnderscore(filename: string): boolean {
   const res = uuidPattern.test(filename);
   return res;
 }
+
+// Utility to handle file paths for process artifacts
+export const generateProcessFilePath = (
+  fileName: string,
+  processId: string,
+  mimeType?: string,
+  versionCreatedOn?: string,
+): string => {
+  const artifactType = getFileCategory(fileName, mimeType);
+
+  if (artifactType === 'images' || artifactType === 'others') {
+    return `artifacts/${artifactType}/${fileName}`;
+  }
+
+  if (artifactType === 'bpmns') {
+    return `processes/${processId}/${fileName}`;
+  }
+
+  // For user-tasks, scripts
+  return `processes/${processId}/${versionCreatedOn ? versionCreatedOn : 'latest'}/${artifactType}/${fileName}`;
+};

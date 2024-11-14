@@ -23,12 +23,11 @@ import {
   updateFileDeletableStatus,
 } from '@/lib/data/file-manager-facade';
 import { useSession } from 'next-auth/react';
-import { Coming_Soon } from 'next/font/google';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: { name: string; id: string; bpmn: string };
-  versions: { version: number; name: string; description: string }[];
+  versions: { id: string; name: string; description: string }[];
 };
 
 const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {

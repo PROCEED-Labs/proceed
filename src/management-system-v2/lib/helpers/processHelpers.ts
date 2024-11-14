@@ -18,9 +18,12 @@ import {
   getIdentifyingInfos,
   addDocumentation,
   setDefinitionsVersionInformation,
+  getUserTaskFileNameMapping,
+  setUserTaskData,
 } from '@proceed/bpmn-helper';
 import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
+import { asyncForEach } from './javascriptHelpers';
 
 interface ProcessInfo {
   bpmn: string;
@@ -190,7 +193,7 @@ export const getFinalBpmn = async ({
   await setTargetNamespace(bpmnObj, id);
 
   await setDefinitionsVersionInformation(bpmnObj, {
-    version: undefined,
+    versionId: undefined,
     versionName: undefined,
     versionDescription: undefined,
     versionBasedOn: undefined,
@@ -198,3 +201,21 @@ export const getFinalBpmn = async ({
 
   return await toBpmnXml(bpmnObj);
 };
+
+export async function updateUserTaskFileName(
+  bpmn: string,
+  oldFilename: string,
+  newFilename: string,
+) {
+  let bpmnObj = await toBpmnObject(bpmn);
+
+  const fileNameMapping = await getUserTaskFileNameMapping(bpmnObj);
+
+  await asyncForEach(Object.entries(fileNameMapping), async ([userTaskId, { fileName }]) => {
+    if (fileName === oldFilename.split('.json')[0]) {
+      await setUserTaskData(bpmnObj, userTaskId, newFilename.split('.json')[0]);
+    }
+  });
+
+  return { bpmn: await toBpmnXml(bpmnObj), newFilename };
+}

@@ -31,14 +31,14 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
+const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   processId: string;
   onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  versions: { version: number; name: string; description: string }[];
+  versions: { id: string; name: string; description: string }[];
 };
 const ModelerToolbar = ({
   processId,
@@ -202,8 +202,7 @@ const ModelerToolbar = ({
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   const selectedVersion =
-    versions.find((version) => version.version === parseInt(selectedVersionId ?? '-1')) ??
-    LATEST_VERSION;
+    versions.find((version) => version.id === selectedVersionId ?? '-1') ?? LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
 
@@ -226,13 +225,13 @@ const ModelerToolbar = ({
               showSearch
               filterOption={filterOption}
               value={{
-                value: selectedVersion.version,
+                value: selectedVersion.id,
                 label: selectedVersion.name,
               }}
               onSelect={(_, option) => {
                 // change the version info in the query but keep other info (e.g. the currently open subprocess)
                 const searchParams = new URLSearchParams(query);
-                if (!option.value || option.value === -1) searchParams.delete('version');
+                if (!option.value || option.value === '-1') searchParams.delete('version');
                 else searchParams.set(`version`, `${option.value}`);
                 router.push(
                   spaceURL(
@@ -243,8 +242,8 @@ const ModelerToolbar = ({
                   ),
                 );
               }}
-              options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({
-                value: version,
+              options={[LATEST_VERSION].concat(versions ?? []).map(({ id, name }) => ({
+                value: id,
                 label: name,
               }))}
             />

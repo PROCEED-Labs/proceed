@@ -13,27 +13,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model SystemAdmin  {
-  id            String @id @default(uuid())
-  role          String @default("admin")
-  user          User @relation(name: "systemAdmin",fields: [userId],references: [id])
-  userId        String @unique
-  createdOn     DateTime @default(now())
-  lastEditedOn  DateTime @updatedAt
+model SystemAdmin {
+  id           String   @id @default(uuid())
+  role         String   @default("admin")
+  user         User     @relation(name: "systemAdmin", fields: [userId], references: [id])
+  userId       String   @unique
+  createdOn    DateTime @default(now())
+  lastEditedOn DateTime @updatedAt
 }
 
 model User {
-  id              String        @id @default(uuid())
+  id              String         @id @default(uuid())
   firstName       String?
   lastName        String?
-  username        String?       @unique
-  email           String?       @unique
+  username        String?        @unique
+  email           String?        @unique
   isGuest         Boolean
   emailVerifiedOn DateTime?
   image           String?
   favourites      String[]
   processes       Process[]
-  ownedSpaces     Space[]       @relation("spaceOwner")
+  ownedSpaces     Space[]        @relation("spaceOwner")
   memberIn        Membership[]
   folders         Folder[]
   oauthAccounts   OauthAccount[]
@@ -42,60 +42,59 @@ model User {
 }
 
 model OauthAccount {
-  id                String  @id @default(uuid())
+  id                String @id @default(uuid())
   userId            String
   provider          String
   type              String
-  providerAccountId String  @unique
+  providerAccountId String @unique
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Process {
-  id                   String   @id @default(uuid())
+  id                   String             @id @default(uuid())
   originalId           String
   name                 String
   description          String
   createdOn            DateTime
-  lastEditedOn         DateTime @updatedAt
+  lastEditedOn         DateTime           @updatedAt
   inEditingBy          Json?
   processIds           String[]
   type                 String
-  folder               Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folder               Folder             @relation(fields: [folderId], references: [id], onDelete: Cascade)
   folderId             String
   sharedAs             String
   shareTimestamp       BigInt
   allowIframeTimestamp BigInt
-  space                Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  space                Space              @relation(fields: [environmentId], references: [id], onDelete: Cascade)
   environmentId        String
   versions             Version[]
-  bpmn                 String   @db.Xml
-  creator              User?    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  bpmn                 String             @db.Xml
+  creator              User?              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   creatorId            String
   //TODO: Departments and Variables add here if needed in future
   processArtifacts     ProcessArtifacts[]
-
 }
 
 model ProcessArtifacts {
-  id            String  @id @default(uuid())
-  filePath      String  @unique
-  fileName      String  @unique
-  process       Process @relation(fields: [processId], references: [id])
-  processId     String
-  deletable     Boolean? @default(false)
-  deletedOn     DateTime @default(now())
+  id        String   @id @default(uuid())
+  filePath  String   @unique
+  fileName  String   @unique
+  process   Process  @relation(fields: [processId], references: [id])
+  processId String
+  deletable Boolean? @default(false)
+  deletedOn DateTime @default(now())
 }
 
 model Space {
-  id                 String        @id @default(uuid())
+  id                 String       @id @default(uuid())
   name               String?
   isOrganization     Boolean
   isActive           Boolean?
   description        String?
   contactPhoneNumber String?
   logo               String?
-  owner              User?         @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner              User?        @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId            String
   members            Membership[]
   folders            Folder[]
@@ -104,66 +103,64 @@ model Space {
 }
 
 model Membership {
-  id            String    @id @default(uuid())
+  id            String   @id @default(uuid())
   userId        String
   environmentId String
-  createdOn     DateTime  
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  space         Space     @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  createdOn     DateTime
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 }
-
 
 model Folder {
   id             String    @id @default(uuid())
   name           String
   description    String
-  parentFolder   Folder?   @relation("folderChildren", fields: [parentId], references: [id],onDelete: Cascade)
+  parentFolder   Folder?   @relation("folderChildren", fields: [parentId], references: [id], onDelete: Cascade)
   parentId       String?
-  owner           User?    @relation(fields: [createdBy], references: [id])
+  owner          User?     @relation(fields: [createdBy], references: [id])
   createdBy      String?
-  space          Space     @relation(fields: [environmentId], references: [id], onDelete:Cascade)
+  space          Space     @relation(fields: [environmentId], references: [id], onDelete: Cascade)
   environmentId  String
-  processes      Process[] 
+  processes      Process[]
   childrenFolder Folder[]  @relation("folderChildren")
   lastEditedOn   DateTime  @updatedAt
-  createdOn      DateTime 
+  createdOn      DateTime
 }
 
 model Version {
-  id            String     @id @default(uuid())
-  name          String
-  version       BigInt     @unique
-  description   String
-  process       Process    @relation(fields: [processId], references: [id], onDelete: Cascade)
-  processId     String
+  id             String   @id @default(uuid())
+  name           String
+  version        BigInt   @unique
+  description    String
+  process        Process  @relation(fields: [processId], references: [id], onDelete: Cascade)
+  processId      String
   versionBasedOn BigInt?
-  createdOn     DateTime
-  lastEditedOn  DateTime   @updatedAt
-  bpmn          String     @db.Xml
+  createdOn      DateTime
+  lastEditedOn   DateTime @updatedAt
+  bpmn           String   @db.Xml
 }
 
 model Role {
-  id           String      @id @default(uuid())
-  space        Space       @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  id            String    @id @default(uuid())
+  space         Space     @relation(fields: [environmentId], references: [id], onDelete: Cascade)
   environmentId String
-  name         String
-  description  String?
-  note         String?
-  permissions  Json
-  expiration   DateTime?
-  default      Boolean?
-  createdOn    DateTime
-  lastEditedOn DateTime   @updatedAt
+  name          String
+  description   String?
+  note          String?
+  permissions   Json
+  expiration    DateTime?
+  default       Boolean?
+  createdOn     DateTime
+  lastEditedOn  DateTime  @updatedAt
 
-  members      RoleMember[]
+  members RoleMember[]
 }
 
 model RoleMember {
-  id        String  @id @default(uuid())
-  role      Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   roleId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   createdOn DateTime
 }
-

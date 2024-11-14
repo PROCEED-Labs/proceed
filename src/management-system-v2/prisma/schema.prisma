@@ -100,6 +100,7 @@ model Space {
   folders            Folder[]
   processes          Process[]
   roles              Role[]
+  Engine             Engine[]
 }
 
 model Membership {
@@ -163,4 +164,13 @@ model RoleMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   createdOn DateTime
+}
+
+model Engine {
+  id            String   @id @default(uuid())
+  space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String
+  url           String /// Either an http url for an engine or a mqtt url
+  createdOn     DateTime @default(now())
+  lastEditedOn  DateTime @updatedAt
 }

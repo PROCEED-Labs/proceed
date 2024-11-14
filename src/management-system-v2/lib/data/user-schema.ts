@@ -18,7 +18,7 @@ export const AuthenticatedUserDataSchema = z.object({
     .regex(/^[A-Za-z-_0-9]+$/, 'The Username can only contain letters from a to z and numbers')
     .regex(/^[^\s]+$/, 'The Username cannot contain spaces')
     .min(1, 'The Username must be at least 1 character long')
-    .max(35, 'The Username cannot be longer than 35 characters')
+    .max(50, 'The Username cannot be longer than 50 characters')
     .optional(),
   image: z.string().url().nullable().optional(),
   favourites: z.array(z.string()).optional(),
@@ -31,6 +31,7 @@ export const AuthenticatedUserSchema = AuthenticatedUserDataSchema.extend({
   // NOTE: maybe email should be moved to user data as the user could change their email
   // TODO: email is optional because Twitter doesn't return an email for the time being,
   // once it does this type should be non-optional and the commit d34be03d9a89cd11418f4b550a04b3664ce1de71 reverted
+  confluenceId: z.string().optional(),
   email: z.string().optional(),
   emailVerifiedOn: z.date().nullable(),
 });

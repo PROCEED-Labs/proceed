@@ -19,12 +19,18 @@ type ModelerStateStore = {
   zoomLevel: number;
   rootElement: Root | null;
   isFullScreen: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  isLoaded: boolean;
   setModeler: (newModeler: BPMNCanvasRef | null) => void;
   setSelectedElementId: (newId: null | string) => void;
   setZoomLevel: (newZoomLevel: number) => void;
   setRootElement: (newRoot: Root | null) => void;
   incrementChangeCounter: () => void;
   setFullScreen: (isFullScreen: boolean) => void;
+  setCanUndo: (canUndo: boolean) => void;
+  setCanRedo: (canUndo: boolean) => void;
+  setIsLoaded: (loaded: boolean) => void;
 };
 
 const useModelerStateStore = create<ModelerStateStore>()(
@@ -35,6 +41,9 @@ const useModelerStateStore = create<ModelerStateStore>()(
     zoomLevel: 1,
     rootElement: null,
     isFullScreen: false,
+    canUndo: false,
+    canRedo: false,
+    isLoaded: false,
     setModeler: (newModeler) =>
       set((state) => {
         state.modeler = newModeler;
@@ -58,6 +67,18 @@ const useModelerStateStore = create<ModelerStateStore>()(
     setFullScreen: (isFullScreen) =>
       set((state) => {
         state.isFullScreen = isFullScreen;
+      }),
+    setCanUndo: (canUndo) =>
+      set((state) => {
+        state.canUndo = canUndo;
+      }),
+    setCanRedo: (canRedo) =>
+      set((state) => {
+        state.canRedo = canRedo;
+      }),
+    setIsLoaded: (isLoaded) =>
+      set((state) => {
+        state.isLoaded = isLoaded;
       }),
   })),
 );

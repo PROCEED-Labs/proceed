@@ -1,0 +1,16 @@
+.Main {
+  //margin-left: 200px;
+  transition: margin-left 0.2s;
+  flex: auto;
+  position: relative;
+  /* Need this for the absolute editor page to work in non-parallel route. */
+  height: 100%;
+  width: 100%;
+}
+
+.Footer {
+  text-align: center;
+  color: #9a9a9a;
+  font-weight: 300;
+  padding: 5px 0;
+}

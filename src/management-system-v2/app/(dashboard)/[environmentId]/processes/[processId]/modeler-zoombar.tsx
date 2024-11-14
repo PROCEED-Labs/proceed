@@ -11,9 +11,11 @@ import styles from './modeler-zoombar.module.scss';
 import { useEffect, useState } from 'react';
 import useModelerStateStore from './use-modeler-state-store';
 
-type ModelerZoombarProps = {};
+type ModelerZoombarProps = {
+  allowFullScreen?: boolean;
+};
 
-const ModelerZoombar = ({}: ModelerZoombarProps) => {
+const ModelerZoombar = ({ allowFullScreen = true }: ModelerZoombarProps) => {
   const modeler = useModelerStateStore((state) => state.modeler);
   const zoomLevel = useModelerStateStore((state) => state.zoomLevel);
 
@@ -52,20 +54,22 @@ const ModelerZoombar = ({}: ModelerZoombarProps) => {
       }}
     >
       <Space>
-        <Button
-          size="large"
-          icon={
-            isFullScreen ? (
-              <FullscreenExitOutlined style={{ fontSize: '0.875rem' }}></FullscreenExitOutlined>
-            ) : (
-              <FullscreenOutlined style={{ fontSize: '0.875rem' }}></FullscreenOutlined>
-            )
-          }
-          style={{ border: 'none', backgroundColor: '#eeeeee' }}
-          onClick={() => {
-            setFullScreen(!isFullScreen);
-          }}
-        ></Button>
+        {allowFullScreen && (
+          <Button
+            size="large"
+            icon={
+              isFullScreen ? (
+                <FullscreenExitOutlined style={{ fontSize: '0.875rem' }}></FullscreenExitOutlined>
+              ) : (
+                <FullscreenOutlined style={{ fontSize: '0.875rem' }}></FullscreenOutlined>
+              )
+            }
+            style={{ border: 'none', backgroundColor: '#eeeeee' }}
+            onClick={() => {
+              setFullScreen(!isFullScreen);
+            }}
+          ></Button>
+        )}
         <Space.Compact block>
           <Button
             size="large"

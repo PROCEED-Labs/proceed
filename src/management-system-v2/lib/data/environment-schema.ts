@@ -5,23 +5,26 @@ import { z } from 'zod';
 export const UserOrganizationEnvironmentInputSchema = z.object({
   name: z.string().min(4, { message: 'Name must be at least 4 characters long' }),
   description: z.string().min(4, { message: 'Description must be at least 4 characters long' }),
-  contactPhoneNumber: z.string().transform((arg, ctx) => {
-    const phone = parsePhoneNumberFromString(arg, {
-      defaultCountry: 'DE',
-      extract: false,
-    });
+  contactPhoneNumber: z
+    .string()
+    .transform((arg, ctx) => {
+      const phone = parsePhoneNumberFromString(arg, {
+        defaultCountry: 'DE',
+        extract: false,
+      });
 
-    if (phone && phone.isValid()) {
-      return phone.number.toString();
-    }
+      if (phone && phone.isValid()) {
+        return phone.number.toString();
+      }
 
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Invalid phone number',
-    });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Invalid phone number',
+      });
 
-    return z.NEVER;
-  }),
+      return z.NEVER;
+    })
+    .optional(),
   logoUrl: z.string().url().optional(),
 });
 

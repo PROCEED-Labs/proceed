@@ -49,7 +49,7 @@ export async function generateSharedViewerUrl(
 
   const header = headers();
   const host = header.get('host');
-  const scheme = header.get('referer')?.split('://')[0];
+  const scheme = header.get('referer')?.split('://')[0] || 'https';
 
   const baseUrl = `${scheme}://${host}`;
   let url = `${baseUrl}/shared-viewer?token=${token}`;

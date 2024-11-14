@@ -1,38 +1,36 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import ModelerToolbar from './modeler-toolbar';
-import XmlEditor from './xml-editor';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useModelerStateStore from './use-modeler-state-store';
 import { debounce, spaceURL } from '@/lib/utils';
-import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
 import { App } from 'antd';
-import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
+import { isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
-import styles from './modeler.module.scss';
-import ModelerZoombar from './modeler-zoombar';
+import styles from './bpmn-modeler.module.scss';
 import { useAddControlCallback } from '@/lib/controls-store';
 
-type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
+type BPMNModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: { name: string; id: string; bpmn: string };
   versions: { version: number; name: string; description: string }[];
+  isNavigatedViewer?: boolean;
 };
 
-const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
-  const pathname = usePathname();
+const BPMNModeler = ({
+  versionName,
+  process,
+  versions,
+  isNavigatedViewer = false,
+  ...divProps
+}: BPMNModelerProps) => {
   const environment = useEnvironment();
-  const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
   const { message: messageApi } = App.useApp();
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-  const [loaded, setLoaded] = useState(false);
 
   const modeler = useRef<BPMNCanvasRef>(null);
 
@@ -42,6 +40,9 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
+  const setCanUndo = useModelerStateStore((state) => state.setCanUndo);
+  const setCanRedo = useModelerStateStore((state) => state.setCanRedo);
+  const setIsLoaded = useModelerStateStore((state) => state.setIsLoaded);
 
   /* Pressing ESC twice (in 500ms) lets user return to Process List */
   const escCounter = useRef(0);
@@ -67,15 +68,12 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     { dependencies: [router] },
   );
 
-  /// Derived State
-  const minimized = !decodeURIComponent(pathname).includes(process.id);
-
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
 
   const showMobileView = useMobileModeler();
 
-  const canEdit = !selectedVersionId && !showMobileView;
+  const canEdit = !selectedVersionId && !showMobileView && !isNavigatedViewer;
 
   const saveDebounced = useMemo(
     () =>
@@ -142,43 +140,9 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     async (root) => {
       console.log('root changed');
       setRootElement(root);
-      // When the current root (the visible layer [the main
-      // process/collaboration or some collapsed subprocess]) is changed to a
-      // subprocess add its id to the query
-      const searchParams = new URLSearchParams(window.location.search);
-      const before = searchParams.toString();
-
-      let replace = false;
-      if (bpmnIs(root, 'bpmn:SubProcess')) {
-        searchParams.set(`subprocess`, `${root.businessObject.id}`);
-      } else {
-        const canvas = modeler.current!.getCanvas();
-        const subprocessPlane = canvas
-          .getRootElements()
-          .find((el: any) => el.businessObject.id === searchParams.get('subprocess'));
-        if (searchParams.has('subprocess') && !subprocessPlane) {
-          // The subprocess that was open does not exist anymore in this
-          // version. Switch to the main process view and replace history
-          // instead of push.
-          replace = true;
-        }
-        searchParams.delete('subprocess');
-      }
-
-      if (before !== searchParams.toString()) {
-        if (replace) {
-          router.replace(pathname + '?' + searchParams.toString());
-        } else {
-          router.push(
-            spaceURL(
-              environment,
-              `/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
-            ),
-          );
-        }
-      }
+      // TODO: Handle rest in parent component using modeler store for rootElement change
     },
-    [process.id, router, setRootElement],
+    [setRootElement],
   );
 
   const onUnload = useCallback<Required<BPMNCanvasProps>['onUnload']>(
@@ -204,7 +168,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     // stay in the current subprocess when the page or the modeler reloads
     // (unless the subprocess does not exist anymore because the process
     // changed)
-    setLoaded(true);
+    setIsLoaded(true);
     console.log('onLoaded');
     if (subprocessId && modeler.current) {
       const canvas = modeler.current.getCanvas();
@@ -241,32 +205,6 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     }
   }, [subprocessId]);
 
-  const handleOpenXmlEditor = async () => {
-    // Undefined can maybe happen when click happens during router transition?
-    if (modeler.current) {
-      const xml = await modeler.current.getXML();
-      setXmlEditorBpmn(xml);
-    }
-  };
-
-  useAddControlCallback('modeler', 'cut', handleOpenXmlEditor);
-
-  const handleCloseXmlEditor = () => {
-    setXmlEditorBpmn(undefined);
-  };
-
-  const handleXmlEditorSave = async (bpmn: string) => {
-    if (modeler.current) {
-      await modeler.current.loadBPMN(bpmn);
-      // If the bpmn contains unexpected content (text content for an element
-      // where the model does not define text) the modeler will remove it
-      // automatically => make sure the stored bpmn is the same as the one in
-      // the modeler.
-      const cleanedBpmn = await modeler.current.getXML();
-      await updateProcess(process.id, environment.spaceId, cleanedBpmn);
-    }
-  };
-
   // Create a new object to force rerendering when the bpmn doesn't change.
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),
@@ -276,31 +214,6 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
 
   return (
     <div className={styles.Modeler} style={{ height: '100%' }}>
-      {!minimized && (
-        <>
-          {loaded && (
-            <ModelerToolbar
-              processId={process.id}
-              onOpenXmlEditor={handleOpenXmlEditor}
-              versions={versions}
-              canRedo={canRedo}
-              canUndo={canUndo}
-            />
-          )}
-          {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
-          <ModelerZoombar></ModelerZoombar>
-          {!!xmlEditorBpmn && (
-            <XmlEditor
-              bpmn={xmlEditorBpmn}
-              canSave={!selectedVersionId}
-              onClose={handleCloseXmlEditor}
-              onSaveXml={handleXmlEditorSave}
-              process={process}
-              versionName={versionName}
-            />
-          )}
-        </>
-      )}
       <BPMNCanvas
         ref={modeler}
         type={canEdit ? 'modeler' : 'navigatedviewer'}
@@ -317,4 +230,4 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   );
 };
 
-export default Modeler;
+export default BPMNModeler;

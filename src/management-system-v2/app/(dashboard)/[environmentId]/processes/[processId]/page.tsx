@@ -1,7 +1,7 @@
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import Wrapper from './wrapper';
 import styles from './page.module.scss';
-import Modeler from './modeler';
+import Modeler from './modeler-wrapper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
 import { getProcess, getProcesses } from '@/lib/data/DTOs';

@@ -50,6 +50,13 @@ export function getAppDataPath() {
  * Find the path to the folder where the info about all Processes is stored
  * @returns {String}
  */
+function getConfluenceClientFolder() {
+  return path.join(getAppDataPath(), 'Confluence');
+}
+/**
+ * Find the path to the folder where the info about all Processes is stored
+ * @returns {String}
+ */
 function getProcessesFolder() {
   return path.join(getAppDataPath(), 'Processes');
 }
@@ -110,6 +117,63 @@ const organizationLogosDir = path.join(getAppDataPath(), 'OrganizationLogos');
  */
 function getUserTaskDir(id) {
   return path.join(getFolder(id), 'user-tasks');
+}
+
+/**
+ * Adds new confluence client
+ *
+ * @param {String} clientKey
+ * @param {String} sharedSecret
+ * @param {String} baseUrl
+ */
+export async function addConfluenceClient(clientKey, sharedSecret, baseUrl) {
+  const confluenceClientDir = getConfluenceClientFolder();
+
+  fse.ensureDirSync(confluenceClientDir);
+
+  const sharedSecretData = JSON.stringify({ clientKey, sharedSecret, baseUrl });
+  fse.writeFileSync(path.join(confluenceClientDir, `${clientKey}.json`), sharedSecretData);
+}
+
+/**
+ * Update confluence client infos
+ *
+ * @param {String} clientKey
+ * @param {object} clientInfos
+ */
+export async function updateConfluenceClientInfos(clientKey, newClientInfos) {
+  const initialConfluenceClientInfos = await getConfluenceClientInfos(clientKey);
+
+  if (initialConfluenceClientInfos) {
+    const confluenceClientDir = getConfluenceClientFolder();
+
+    fse.ensureDirSync(confluenceClientDir);
+
+    const sharedSecretData = JSON.stringify({
+      ...initialConfluenceClientInfos,
+      ...newClientInfos,
+      clientKey,
+    });
+    fse.writeFileSync(path.join(confluenceClientDir, `${clientKey}.json`), sharedSecretData);
+  }
+}
+
+/**
+ * Get infos of confluence client
+ *
+ * @param {String} clientKey
+ * @returns {Promise<{ clientKey: string; sharedSecret: string; baseUrl: string; proceedSpace?: {id: string, confluenceFolderId: string} }>}
+ */
+export async function getConfluenceClientInfos(clientKey) {
+  const confluenceClientDir = getConfluenceClientFolder();
+  const confluenceClientFilePath = path.join(confluenceClientDir, `${clientKey}.json`);
+
+  if (fse.existsSync(confluenceClientFilePath)) {
+    const confluenceClientData = JSON.parse(fse.readFileSync(confluenceClientFilePath, 'utf-8'));
+
+    return confluenceClientData;
+  }
+  return { error: 'Does not exist' };
 }
 
 /**

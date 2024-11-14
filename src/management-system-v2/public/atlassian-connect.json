@@ -1,0 +1,162 @@
+{
+  "name": "Confluence PROCEED",
+  "description": "PROCEED in Confluence",
+  "icon": {
+    "width": 16,
+    "height": 16,
+    "url": "/proceed-icon.png"
+  },
+  "key": "proceed-confluence-app",
+  "baseUrl": "https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app",
+  "vendor": {
+    "name": "PROCEED",
+    "url": "https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app"
+  },
+  "authentication": {
+    "type": "jwt"
+  },
+  "scopes": ["READ", "WRITE", "ACT_AS_USER", "ADMIN"],
+  "lifecycle": {
+    "installed": "/api/confluence/installed"
+  },
+  "modules": {
+    "configurePage": {
+      "url": "/confluence/config",
+      "name": {
+        "value": "PROCEED Configuration"
+      },
+      "icon": {
+        "url": "/proceed-icon.png"
+      },
+      "key": "proceed-config-page"
+    },
+    "generalPages": [
+      {
+        "url": "/confluence/process-list?spaceKey={space.key}",
+        "key": "proceed-process-list-page",
+        "name": {
+          "value": "PROCEED Process List"
+        },
+        "location": ""
+      }
+    ],
+    "customContent": [
+      {
+        "key": "proceed-process-list",
+        "name": {
+          "value": "PROCEED Process List"
+        },
+        "apiSupport": {
+          "supportedContainerTypes": ["space"]
+        },
+        "uiSupport": {
+          "listViewComponent": {
+            "moduleKey": "proceed-process-list-page"
+          },
+          "contentViewComponent": {
+            "moduleKey": "proceed-process-list-page"
+          },
+          "icons": {
+            "item": {
+              "url": "/proceed-icon.png"
+            }
+          }
+        }
+      }
+    ],
+    "dynamicContentMacros": [
+      {
+        "renderModes": {
+          "pdf": {
+            "url": "/confluence/macro/{processId}/pdf-export?contentId={content.id}"
+          }
+        },
+        "width": "400px",
+        "height": "400px",
+        "key": "bpmn-create-macro",
+        "bodyType": "none",
+        "outputType": "block",
+        "name": {
+          "value": "BPMN Process Modeler"
+        },
+        "description": {
+          "value": "Create a new BPMN Process"
+        },
+        "icon": {
+          "url": "/proceed-icon.png"
+        },
+        "url": "/confluence/macro/{processId}",
+        "editor": {
+          "url": "/confluence/macro-editor/create",
+          "editTitle": {
+            "value": "Edit Process"
+          },
+          "insertTitle": {
+            "value": "Create Process"
+          },
+          "width": "100%",
+          "height": "100%"
+        },
+        "parameters": [
+          {
+            "identifier": "processId",
+            "name": {
+              "value": "Process ID"
+            },
+            "description": {
+              "value": "The ID of the process to edit."
+            },
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      {
+        "renderModes": {
+          "pdf": {
+            "url": "/confluence/macro/{processId}/pdf-export?contentId={content.id}"
+          }
+        },
+        "width": "400px",
+        "height": "400px",
+        "key": "proceed-embed-macro",
+        "bodyType": "none",
+        "outputType": "block",
+        "name": {
+          "value": "Embed PROCEED BPMN Process"
+        },
+        "description": {
+          "value": "Embed PROCEED BPMN Processes into Confluence"
+        },
+        "icon": {
+          "url": "/proceed-icon.png"
+        },
+        "url": "/confluence/macro/{processId}",
+        "editor": {
+          "url": "/confluence/macro-editor/embed",
+          "editTitle": {
+            "value": "Edit Process"
+          },
+          "insertTitle": {
+            "value": "Embed Process"
+          },
+          "width": "100%",
+          "height": "100%"
+        },
+        "parameters": [
+          {
+            "identifier": "processId",
+            "name": {
+              "value": "Process ID"
+            },
+            "description": {
+              "value": "The ID of the process to edit."
+            },
+            "type": "string",
+            "required": true
+          }
+        ]
+      }
+    ]
+  }
+}

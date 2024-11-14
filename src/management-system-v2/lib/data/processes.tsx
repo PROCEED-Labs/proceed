@@ -29,6 +29,7 @@ import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
 import {
   getProcessUserTaskJSON as _getProcessUserTaskJSON,
+  getProcessUserTaskHtml as _getProcessUserTaskHtml,
   getProcessImage as _getProcessImage,
   saveProcessUserTask as _saveProcessUserTask,
 } from './legacy/_process';
@@ -447,10 +448,27 @@ export const getProcessUserTaskData = async (
   }
 };
 
+export const getProcessUserTaskHTML = async (
+  definitionId: string,
+  taskFileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  try {
+    return await _getProcessUserTaskHtml(definitionId, taskFileName);
+  } catch (err) {
+    return userError('Unable to get the requested User Task html.', UserErrorType.NotFoundError);
+  }
+};
+
 export const saveProcessUserTask = async (
   definitionId: string,
   taskFileName: string,
   json: string,
+  html: string,
   spaceId: string,
 ) => {
   const error = await checkValidity(definitionId, 'update', spaceId);
@@ -463,7 +481,7 @@ export const saveProcessUserTask = async (
       UserErrorType.ConstraintError,
     );
 
-  await _saveProcessUserTask!(definitionId, taskFileName, json);
+  await _saveProcessUserTask!(definitionId, taskFileName, json, html);
 };
 
 export const getProcessImage = async (

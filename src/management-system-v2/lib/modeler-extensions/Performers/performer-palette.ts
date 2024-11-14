@@ -1,6 +1,4 @@
-import PaletteProvider, {
-  PaletteEntriesCallback,
-} from 'diagram-js/lib/features/palette/PaletteProvider';
+import PaletteProvider from 'diagram-js/lib/features/palette/PaletteProvider';
 
 import ElementFactory from 'bpmn-js/lib/features/modeling/ElementFactory';
 import Palette from 'diagram-js/lib/features/palette/Palette';

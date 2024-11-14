@@ -3,7 +3,7 @@ import RuleProvider from 'diagram-js/lib/features/rules/RuleProvider';
 import EventBus from 'diagram-js/lib/core/EventBus';
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
-import { is, isAny } from 'bpmn-js/lib/util/ModelUtil';
+import { is } from 'bpmn-js/lib/util/ModelUtil';
 
 export default class CustomRules extends RuleProvider {
   elementRegistry: ElementRegistry;

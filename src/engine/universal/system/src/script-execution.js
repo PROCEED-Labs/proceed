@@ -153,7 +153,7 @@ class ScriptExecutor extends System {
           if (!response || typeof response !== 'object' || !('type' in response))
             rej(new Error('Invalid response from sub process module: ' + JSON.stringify(response)));
 
-          const processEntry = this.getProcess(processId, processInstanceId);
+          const processEntry = this.getProcess(processId, processInstanceId, scriptIdentifier);
           if (!processEntry)
             rej(
               new Error(
@@ -162,7 +162,7 @@ class ScriptExecutor extends System {
             );
 
           if (response.type === 'process-finished') {
-            this.deleteProcess(processId, processInstanceId);
+            this.deleteProcess(processId, processInstanceId, scriptIdentifier);
 
             if (response.code === 0) res(processEntry.result);
             else rej(processEntry.result);
@@ -244,9 +244,14 @@ class ScriptExecutor extends System {
   /**
    * @param {string} processId
    * @param {string} processInstanceId
+   * @param {string} [scriptIdentifier]
    */
-  deleteProcess(processId, processInstanceId) {
-    return this.childProcesses.delete(JSON.stringify([processId, processInstanceId]));
+  deleteProcess(processId, processInstanceId, scriptIdentifier) {
+    const scriptParams = JSON.stringify([processId, processInstanceId]);
+    if (!scriptIdentifier) return this.childProcesses.delete(scriptParams);
+
+    const processScripts = this.childProcesses.get(scriptParams);
+    if (processScripts) return processScripts.delete(scriptIdentifier);
   }
 }
 

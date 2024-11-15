@@ -57,7 +57,7 @@ import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
-export function canDeleteItems(
+export function canDoActionOnResource(
   items: ProcessListProcess[],
   action: Parameters<Ability['can']>[0],
   ability: Ability,
@@ -118,7 +118,9 @@ const Processes = ({
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
   const canDeleteSelected =
-    !!selectedRowElements.length && canDeleteItems(selectedRowElements, 'delete', ability);
+    !!selectedRowElements.length && canDoActionOnResource(selectedRowElements, 'delete', ability);
+  const canCreateProcess = ability.can('create', 'Process');
+  const canEditSelected = canDoActionOnResource(selectedRowElements, 'update', ability);
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
@@ -365,48 +367,61 @@ const Processes = ({
                     )}
 
                     <SelectionActions count={selectedRowKeys.length}>
-                      {/* TODO: */}
                       {/* Copy */}
-                      {/* <AuthCan create Process>
+                      {canCreateProcess && (
                         <Tooltip placement="top" title={'Copy'}>
                           <Button
                             // className={classNames(styles.ActionButton)}
                             type="text"
-                            icon={<CopyOutlined />}
+                            icon={<CopyOutlined className={styles.Icon} />}
                             onClick={() => {
-                              const processes = selectedRowKeys.map((definitionId) => ({
-                                definitionId: definitionId as string,
-                              }));
-                              // copyItem(processes);
+                              setCopySelection(selectedRowElements);
+                              setOpenCopyModal(true);
                             }}
                           />
                         </Tooltip>
-                      </AuthCan> */}
+                      )}
+
                       {/* Export */}
                       <Tooltip placement="top" title={'Export'}>
-                        <ExportOutlined
-                          className={styles.Icon}
+                        <Button
+                          type="text"
                           onClick={() => {
                             setOpenExportModal(true);
                           }}
-                        />
+                          icon={<ExportOutlined className={styles.Icon} />}
+                        ></Button>
                       </Tooltip>
                       {/* Edit (only if one selected) */}
-                      {/* Delete */}
-                      {canDeleteSelected && (
-                        <Tooltip placement="top" title={'Delete'}>
-                          <ConfirmationButton
-                            title="Delete Processes"
-                            externalOpen={openDeleteModal}
-                            onExternalClose={() => setOpenDeleteModal(false)}
-                            description="Are you sure you want to delete the selected processes?"
-                            onConfirm={() => deleteItems(selectedRowElements)}
-                            buttonProps={{
-                              icon: <DeleteOutlined />,
-                              type: 'text',
+
+                      {selectedRowKeys.length === 1 && canEditSelected && (
+                        <Tooltip placement="top" title={'Edit'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<EditOutlined className={styles.Icon} />}
+                            onClick={() => {
+                              editItem(selectedRowElements[0]);
                             }}
                           />
                         </Tooltip>
+                      )}
+                      {/* Delete */}
+                      {canDeleteSelected && (
+                        // <Tooltip placement="top" title={'Delete'}>
+                        <ConfirmationButton
+                          tooltip="Delete"
+                          title="Delete Processes"
+                          externalOpen={openDeleteModal}
+                          onExternalClose={() => setOpenDeleteModal(false)}
+                          description="Are you sure you want to delete the selected processes?"
+                          onConfirm={() => deleteItems(selectedRowElements)}
+                          buttonProps={{
+                            icon: <DeleteOutlined className={styles.Icon} />,
+                            type: 'text',
+                          }}
+                        />
+                        // </Tooltip>
                       )}
                     </SelectionActions>
                   </span>

@@ -33,6 +33,7 @@ import {
   saveProcessUserTask as _saveProcessUserTask,
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
   saveProcessScriptTask as _saveProcessScriptTask,
+  deleteProcessScriptTask as _deleteProcessScriptTask,
 } from './legacy/_process';
 
 // Declare variables to hold the process module functions
@@ -448,6 +449,7 @@ export const saveProcessUserTask = async (
 export const getProcessScriptTaskData = async (
   definitionId: string,
   taskFileName: string,
+  fileExtension: 'js' | 'ts' | 'xml',
   spaceId: string,
 ) => {
   const error = await checkValidity(definitionId, 'view', spaceId);
@@ -455,7 +457,7 @@ export const getProcessScriptTaskData = async (
   if (error) return error;
 
   try {
-    return await _getProcessScriptTaskScript(definitionId, taskFileName);
+    return _getProcessScriptTaskScript(definitionId, `${taskFileName}.${fileExtension}`);
   } catch (err) {
     return userError('Unable to get the requested Script Task data.', UserErrorType.NotFoundError);
   }
@@ -464,6 +466,7 @@ export const getProcessScriptTaskData = async (
 export const saveProcessScriptTask = async (
   definitionId: string,
   taskFileName: string,
+  fileExtension: 'js' | 'ts' | 'xml',
   script: string,
   spaceId: string,
 ) => {
@@ -477,7 +480,20 @@ export const saveProcessScriptTask = async (
       UserErrorType.ConstraintError,
     );
 
-  await _saveProcessScriptTask(definitionId, taskFileName, script);
+  await _saveProcessScriptTask(definitionId, `${taskFileName}.${fileExtension}`, script);
+};
+
+export const deleteProcessScriptTask = async (
+  definitionId: string,
+  taskFileName: string,
+  fileExtension: 'js' | 'ts' | 'xml',
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'delete', spaceId);
+
+  if (error) return error;
+
+  await _deleteProcessScriptTask(definitionId, `${taskFileName}.${fileExtension}`);
 };
 
 export const getProcessImage = async (

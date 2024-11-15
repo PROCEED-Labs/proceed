@@ -23,6 +23,7 @@ import {
   saveScriptTaskScript,
   getScriptTaskScript,
   getScriptTasksScript,
+  deleteScriptTaskScript,
 } from './fileHandling.js';
 import { mergeIntoObject } from '../../helpers/javascriptHelpers';
 import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
@@ -390,12 +391,12 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string) {
 /** Returns the script for a specific script task in a process */
 export async function getProcessScriptTaskScript(
   processDefinitionsId: string,
-  taskFileName: string,
+  taskFileNameWithExtension: string,
 ) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    return getScriptTaskScript(processDefinitionsId, taskFileName);
+    return getScriptTaskScript(processDefinitionsId, taskFileNameWithExtension);
   } catch (err) {
     logger.debug(`Error getting data of script task. Reason:\n${err}`);
     throw new Error('Unable to get data for script task!');
@@ -445,13 +446,13 @@ export async function deleteProcessUserTask(
 
 export async function saveProcessScriptTask(
   processDefinitionsId: string,
-  scriptTaskFileName: string,
-  json: string,
+  taskFileNameWithExtension: string,
+  script: string,
 ) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    await saveScriptTaskScript(processDefinitionsId, scriptTaskFileName, json);
+    await saveScriptTaskScript(processDefinitionsId, taskFileNameWithExtension, script);
   } catch (err) {
     logger.debug(`Error storing user task data. Reason:\n${err}`);
     throw new Error('Failed to store the user task data');
@@ -461,14 +462,14 @@ export async function saveProcessScriptTask(
 /** Removes a stored script task from disk */
 export async function deleteProcessScriptTask(
   processDefinitionsId: string,
-  scriptTaskFileName: string,
+  taskFileNameWithExtension: string,
 ) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    await deleteUserTaskJSON(processDefinitionsId, scriptTaskFileName);
+    await deleteScriptTaskScript(processDefinitionsId, taskFileNameWithExtension);
   } catch (err) {
-    logger.debug(`Error removing user task data. Reason:\n${err}`);
+    logger.debug(`Error removing script task data. Reason:\n${err}`);
   }
 }
 

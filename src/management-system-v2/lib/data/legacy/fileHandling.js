@@ -324,13 +324,17 @@ export async function getScriptTaskIds(processDefinitionsId) {
  * Saves the script of a script task
  *
  * @param {String} processDefinitionsId the id of the process that contains the script task
- * @param {String} taskId the id of the specific script task
+ * @param {String} taskFileNameWithExtension the fileName including file type of the specific script task
  * @param {String} script the script task script
  */
-export async function saveScriptTaskScript(processDefinitionsId, taskId, script) {
+export async function saveScriptTaskScript(
+  processDefinitionsId,
+  taskFileNameWithExtension,
+  script,
+) {
   const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
   fse.ensureDirSync(scriptTaskDir);
-  fse.writeFileSync(path.join(scriptTaskDir, `${taskId}.ts`), script);
+  fse.writeFileSync(path.join(scriptTaskDir, taskFileNameWithExtension), script);
 }
 
 /**
@@ -475,15 +479,14 @@ export async function deleteUserTaskJSON(processDefinitionsId, taskId) {
 }
 
 /**
- * Returns the stored script for a script task with the given id in a process
+ * Returns the stored script for a script task with the given fileName in a process
  *
  * @param {String} processDefinitionsId
- * @param {String} taskId
+ * @param {String} taskFileNameWithExtension
  */
-export function getScriptTaskScript(processDefinitionsId, taskId) {
+export function getScriptTaskScript(processDefinitionsId, taskFileNameWithExtension) {
   const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
-  const scriptTaskFile = `${taskId}.ts`;
-  const scriptTaskPath = path.join(scriptTaskDir, scriptTaskFile);
+  const scriptTaskPath = path.join(scriptTaskDir, taskFileNameWithExtension);
   return fse.readFileSync(scriptTaskPath, 'utf-8');
 }
 
@@ -499,10 +502,9 @@ export async function getScriptTasksScript(processDefinitionsId) {
   return getFilesFromTaskDir(scriptTaskDir);
 }
 
-export async function deleteScriptTaskScript(processDefinitionsId, taskId) {
+export async function deleteScriptTaskScript(processDefinitionsId, taskFileNameWithExtension) {
   const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
-  const taskFile = `${taskId}.ts`;
-  const filePath = path.join(scriptTaskDir, taskFile);
+  const filePath = path.join(scriptTaskDir, taskFileNameWithExtension);
 
   fse.unlinkSync(filePath);
 }

@@ -457,7 +457,7 @@ export const getProcessScriptTaskData = async (
   if (error) return error;
 
   try {
-    return _getProcessScriptTaskScript(definitionId, `${taskFileName}.${fileExtension}`);
+    return await _getProcessScriptTaskScript(definitionId, `${taskFileName}.${fileExtension}`);
   } catch (err) {
     return userError('Unable to get the requested Script Task data.', UserErrorType.NotFoundError);
   }

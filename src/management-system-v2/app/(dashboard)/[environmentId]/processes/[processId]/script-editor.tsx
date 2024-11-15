@@ -42,9 +42,11 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
   useEffect(() => {
     if (filename && open) {
-      getProcessScriptTaskData(processId, filename, environment.spaceId).then((res) => {
+      getProcessScriptTaskData(processId, filename, 'ts', environment.spaceId).then((res) => {
         if (typeof res === 'string') {
           setScript(res);
+        } else {
+          setScript('');
         }
       });
     }
@@ -67,18 +69,32 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     monacoRef.current.editor.createModel(languageExtension, 'typescript');
   };
 
-  const handleSave = () => {
-    if (modeler && editorRef.current) {
-      const scriptText = editorRef.current.getValue();
-      if (selectedElement && filename) {
-        modeler.getModeling().updateProperties(selectedElement, {
-          fileName: filename,
-        });
+  const handleSave = async () => {
+    if (modeler && editorRef.current && monacoRef.current && selectedElement && filename) {
+      const typescriptCode = editorRef.current.getValue();
 
-        saveProcessScriptTask(processId, filename, scriptText, environment.spaceId).then(
-          (res) => res && console.error(res.error),
+      // Transpile TS code to JS
+      const typescriptWorker = await monacoRef.current.languages.typescript.getTypeScriptWorker();
+      const editorModel = editorRef.current.getModel();
+      if (!editorModel) {
+        throw new Error(
+          'Could not get model from editor to transpile TypeScript code to JavaScript',
         );
       }
+      const client = await typescriptWorker(editorModel.uri);
+      const emitOutput = await client.getEmitOutput(editorModel.uri.toString());
+      const javascriptCode = emitOutput.outputFiles[0].text;
+
+      modeler.getModeling().updateProperties(selectedElement, {
+        fileName: filename,
+      });
+
+      saveProcessScriptTask(processId, filename, 'ts', typescriptCode, environment.spaceId).then(
+        (res) => res && console.error(res.error),
+      );
+      saveProcessScriptTask(processId, filename, 'js', javascriptCode, environment.spaceId).then(
+        (res) => res && console.error(res.error),
+      );
     }
   };
 

@@ -11,7 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { Active, DroppableContainer, RectMap } from '@dnd-kit/core/dist/store';
 import { Coordinates } from '@dnd-kit/utilities';
-import { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Row } from './elements';
 import { createPortal } from 'react-dom';
 
@@ -356,7 +356,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
       sensors={sensors}
       measuring={{
         droppable: {
-          measure: (element) => {
+          measure: () => {
             // deactivating the default measuring since it sometimes runs before the required data is ready in craft js
             return { top: 0, bottom: 0, left: 0, right: 0, height: 0, width: 0 };
           },
@@ -366,15 +366,20 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
         cachedDroppableRects.current = null;
         needNewHistoryBundle.current = true;
         setActive(event.active.id.toString());
-        if (isCreating) iframeRef.current!.style.pointerEvents = 'none';
+        const isCreating = /^create-.*-button$/.test(event.active.id.toString());
+        if (isCreating && iframeRef.current) {
+          iframeRef.current.style.pointerEvents = 'none';
+        }
       }}
       onDragCancel={() => {
-        if (isCreating) iframeRef.current!.style.pointerEvents = '';
+        if (isCreating && iframeRef.current?.contentDocument?.body)
+          iframeRef.current.style.pointerEvents = '';
         setActive('');
       }}
       onDragEnd={(event) => {
         const { active, collisions } = event;
-        if (isCreating) iframeRef.current!.style.pointerEvents = '';
+        if (isCreating && iframeRef.current?.contentDocument?.body)
+          iframeRef.current.style.pointerEvents = '';
         else return;
         setActive('');
 

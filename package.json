@@ -39,6 +39,12 @@
   },
   "scripts": {
     "dev": "ts-node src/engine/native/node/index.ts --trace-warnings",
+    "dev-ms-db": "cd src/management-system-v2 && docker compose -f docker-compose-dev.yml up -d && ./db-helper.sh --init",
+    "dev-ms-db-create": "cd src/management-system-v2 && ./db-helper.sh --new",
+    "dev-ms-db-deploy": "cd src/management-system-v2 && yarn prisma migrate deploy",
+    "dev-ms-db-migrate": "cd src/management-system-v2 && yarn prisma migrate dev",
+    "dev-ms-db-use": "cd src/management-system-v2 && ./db-helper.sh --use",
+    "dev-ms-db-delete": "cd src/management-system-v2 && ./db-helper.sh --delete",
     "dev-ms": "cd src/management-system-v2 && yarn dev",
     "dev-ms-old": "cd src/management-system && yarn web:dev",
     "dev-ms-old-iam": "cd src/management-system && yarn web:dev-iam",
@@ -60,7 +66,8 @@
     "jsdoc": "jsdoc -c ./jsdoc.config.json --pedantic",
     "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",
     "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug",
-    "postinstall": "yarn build && yarn build-engine-types"
+    "postinstall": "yarn build && yarn build-engine-types",
+    "prepare": "husky"
   },
   "lint-staged": {
     "*": "prettier --check --ignore-path .eslintignore"
@@ -78,7 +85,7 @@
     "@babel/plugin-proposal-class-properties": "^7.5.0",
     "@babel/preset-env": "^7.5.2",
     "@open-wc/webpack-import-meta-loader": "0.4.7",
-    "@playwright/test": "^1.30.0",
+    "@playwright/test": "1.48.1",
     "@types/jest": "^29.5.1",
     "@userfrosting/merge-package-dependencies": "^1.2.0",
     "@vue/cli-plugin-typescript": "5.0.8",
@@ -95,7 +102,7 @@
     "fs-extra": "^7.0.1",
     "html-webpack-inline-source-plugin": "^0.0.10",
     "html-webpack-plugin": "^3.2.0",
-    "husky": "^4.2.3",
+    "husky": "^9.1.6",
     "jest": "29.7.0",
     "jest-when": "3.6.0",
     "jsdoc": "^3.6.6",

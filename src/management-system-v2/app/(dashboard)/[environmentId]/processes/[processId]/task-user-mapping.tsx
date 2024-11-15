@@ -1,11 +1,24 @@
 import React, { FC, useCallback, useEffect, useState } from 'react';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import { Divider, Space, TreeSelect } from 'antd';
+import {
+  Descriptions,
+  Divider,
+  Space,
+  Tooltip,
+  TreeSelect,
+  Typography,
+  DescriptionsProps,
+} from 'antd';
+import { UserOutlined, TeamOutlined } from '@ant-design/icons';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { useEnvironment } from '@/components/auth-can';
-import { getRoles, getUserById } from '@/lib/data/DTOs';
+import { getMembers, getRoles, getUserById, getUsers } from '@/lib/data/DTOs';
 import Ability from '@/lib/ability/abilityHelper';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+import { Role } from '@/lib/data/role-schema';
+import { User } from '@/lib/data/user-schema';
+
+const { Text } = Typography;
 
 type UserMappingProps = {
   selectedElement: ElementLike;
@@ -13,31 +26,32 @@ type UserMappingProps = {
 };
 
 type TreeData = {
-  title: string;
+  title: string | JSX.Element;
   value: string;
-  key: string;
-  children: {
-    title: string;
-    value: string;
-    key: string;
-  }[];
+  key?: string;
 }[];
 
 const UserMapping: FC<UserMappingProps> = ({ selectedElement, modeler }) => {
   const ability = useAbilityStore((store) => store.ability);
   const environment = useEnvironment();
 
-  const [executes, setExecutes] = useState<TreeData>([]);
-  const [blames, setBlames] = useState<TreeData>([]);
+  const [executinRoles, setExecutinRoles] = useState<TreeData>([]);
+  const [executingUsers, setExecutingUsers] = useState<TreeData>([]);
+
+  const [responsibleRoles, setResponsibleRoles] = useState<TreeData>([]);
+  const [responsibleUsers, setResponsibleUsers] = useState<TreeData>([]);
 
   useEffect(() => {
     if (!environment) return;
 
     const spaceID = environment.spaceId;
 
-    getRolesUserColumns(spaceID, ability).then((columns) => {
-      setExecutes(columns);
-      setBlames(columns);
+    getRolesUserColumns(spaceID, ability).then(({ roles, users }) => {
+      setExecutinRoles(roles);
+      setExecutingUsers(users);
+
+      setResponsibleRoles(roles);
+      setResponsibleUsers(users);
     });
   }, [getRolesUserColumns, ability, environment]);
 
@@ -49,10 +63,16 @@ const UserMapping: FC<UserMappingProps> = ({ selectedElement, modeler }) => {
         role="group"
         aria-labelledby="user-task-mapping-title"
       >
-        <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-          <span style={{ marginRight: '0.3em' }}>Execution</span>
-        </Divider>
-        <UserTree userSelection={executes} placeholder="Who executes this task?" />
+        <Tooltip title={<div>Who executes this task?</div>}>
+          <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+            <span style={{ marginRight: '0.3em' }}>Performer</span>
+          </Divider>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <ResourceTree recources={executinRoles} placeholder="Roles Executing the Task" />
+
+            <ResourceTree recources={executingUsers} placeholder="Users Executing the Task" />
+          </Space>
+        </Tooltip>
       </Space>
       <Space
         direction="vertical"
@@ -60,10 +80,16 @@ const UserMapping: FC<UserMappingProps> = ({ selectedElement, modeler }) => {
         role="group"
         aria-labelledby="user-task-mapping-title"
       >
-        <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-          <span style={{ marginRight: '0.3em' }}>Blame:</span>
-        </Divider>
-        <UserTree userSelection={blames} placeholder="Who is responsible for this task?" />
+        <Tooltip title={<div>Who is responsible for this task?</div>}>
+          <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+            <span style={{ marginRight: '0.3em' }}>Responsible</span>
+          </Divider>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <ResourceTree recources={executinRoles} placeholder="Roles Responsible for the Task" />
+
+            <ResourceTree recources={executingUsers} placeholder="Users Rsponsible for the Task" />
+          </Space>
+        </Tooltip>
       </Space>
     </>
   );
@@ -72,167 +98,80 @@ const UserMapping: FC<UserMappingProps> = ({ selectedElement, modeler }) => {
 async function getRolesUserColumns(
   spaceID: string,
   ability: Ability,
-  filterFunction: (role: Role, ind?: Number, arr?: Role[]) => boolean = () => true,
+  filterFunctions: {
+    role: (role: Role, ind?: Number, arr?: Role[]) => boolean;
+    user: (user: User, ind?: Number, arr?: User[]) => boolean;
+  } = {
+    role: () => true,
+    user: () => true,
+  },
 ) {
-  /* Get roles of Space */
-  const roles = await getRoles(spaceID /* , ability */);
-  /* Get members for each role */
-  const result = await Promise.all(
-    roles.map(async (role) => {
-      return {
-        title: role.name,
-        value: '' + '----' + role.id,
-        children: await Promise.all(
-          role.members.map(async (member) => {
-            const user = await getUserById(member.userId);
-            /* 
-                email: "johndoe@proceed-labs.org"
-                emailVerifiedOn: null
-                firstName: "John"
-                id: "development-id|johndoe"
-                image: null
-                isGuest: false
-                lastName: "Doe"
-                username: "johndoe"
-            */
-            return {
-              // @ts-ignore
-              title: `${user.lastName}, ${user.firstName}${user.username ? ` (${user.username})` : ''}`,
-              value: member.userId + '----' + role.id /* Same user can be in multiple roles */,
-              //   key: member.userId + '----' + role.id /* Same user can be in multiple roles */,
-            };
-          }),
-        ),
-      };
-    }),
-  );
+  const { role: roleFilter, user: userFilter } = filterFunctions;
 
-  return result.filter(filterFunction);
+  /* Get roles of Space */
+  const rawRoles = (await getRoles(spaceID /* , ability */)).filter(roleFilter);
+  /* Get members of orga / space */
+  const memberIDs = (await getMembers(spaceID /* , ability */)).map(({ userId }) => userId);
+  /* Map Members to users */
+  const rawUsers = (
+    await Promise.all(memberIDs.map(async (userID) => (await getUserById(userID)) as User))
+  ).filter(userFilter);
+
+  /* Map to column shape */
+  const roles = rawRoles.map(({ id, name }) => ({
+    title: (
+      // @ts-ignore
+      <>
+        <span style={{ marginRight: '4px' }}>
+          <TeamOutlined />
+          {/* <UserOutlined /> */}
+        </span>
+        {name}
+      </>
+    ),
+    value: id,
+    // icon: <TeamOutlined />, /* Currently bugged */
+  })) as TreeData;
+
+  const users = (
+    rawUsers.map(
+      // @ts-ignore
+      ({ id, firstName, lastName, username }) => ({
+        title: (
+          <>
+            <span style={{ marginRight: '4px' }}>
+              {/* <TeamOutlined /> */}
+              <UserOutlined />
+            </span>
+            {firstName && lastName ? `${firstName} ${lastName}` : username ? username : 'Guest'}
+          </>
+        ),
+        value: id,
+        // icon: <UserOutlined />, /* Currently bugged */
+      }),
+    ) as TreeData
+  ).filter(({ title }) => title !== 'Guest');
+
+  return { roles, users };
 }
 
-type UserTreeProps = {
-  userSelection: TreeData;
+type ResourceTreeProps = {
+  recources: TreeData;
   placeholder?: string;
 };
 
-const UserTree: FC<UserTreeProps> = ({ userSelection /* : treeData */, placeholder }) => {
+const ResourceTree: FC<ResourceTreeProps> = ({ recources: treeData, placeholder }) => {
   const { SHOW_PARENT } = TreeSelect;
-
-  const treeData = [
-    {
-      title: 'Group A',
-      value: 'Group A',
-      key: 'Group A',
-      children: [
-        {
-          title: 'Worker 1',
-          value: 'Worker 1----Group A',
-        },
-      ],
-    },
-    {
-      title: 'Group B',
-      value: 'Group B',
-      key: 'Group B',
-      children: [
-        {
-          title: 'Worker 2',
-          value: 'Worker 2----Group B',
-        },
-        {
-          title: 'Worker 1',
-          value: 'Worker 1----Group B',
-        },
-      ],
-    },
-    // {
-    //   title: 'Group C',
-    //   value: 'Group C',
-    //   key: 'Group C',
-    //   children: [
-    //     {
-    //       title: 'Worker 1',
-    //       value: 'Worker 1----Group C',
-    //     },
-    //     {
-    //       title: 'Worker 3',
-    //       value: 'Worker 3----Group C',
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: 'Group D',
-    //   value: 'Group D',
-    //   key: 'Group D',
-    //   children: [
-    //     {
-    //       title: 'Worker 1',
-    //       value: 'Worker 1----Group D',
-    //     },
-    //     {
-    //       title: 'Worker 2',
-    //       value: 'Worker 2----Group D',
-    //     },
-    //     {
-    //       title: 'Worker 3',
-    //       value: 'Worker 3----Group D',
-    //     },
-    //   ],
-    // },
-  ];
-
-  const roleGroupIDs = treeData.map((roleGroup) => roleGroup.value);
-  const userIDs = treeData.flatMap((roleGroup) => roleGroup.children.map((user) => user.value));
-
-  console.log('Role Group IDs:', roleGroupIDs);
-  console.log('User IDs:', userIDs);
 
   const [value, setValue] = useState([] as string[]);
 
   const selectUser = useCallback((newValues: string[]) => {
-    /* newValue : userID----roleID || ----roleID */
-    const selectedIDs = newValues.map((newValue) => {
-      const [userID, roleID] = newValue.split('----');
-      return { userID, roleID };
-    });
-    /* Selected groups */
-    const selectedGroups = selectedIDs
-      .filter(({ userID }) => userID === '')
-      .map(({ roleID }) => roleID);
-    /* Selected users */
-    const selectedUsers = selectedIDs
-      .filter(({ userID }) => userID !== '')
-      .map(({ userID }) => userID);
-
-    console.log('Selected Groups:', selectedGroups);
-    console.log('Selected Users:', selectedUsers);
-
-    /* Add groups */
-    let newSelection = roleGroupIDs.filter((roleGroupID) => {
-      selectedGroups.some((selectedGroup) => {
-        roleGroupID.includes(selectedGroup);
-      });
-    });
-    /* Add single selections */
-    userIDs.forEach((userID) => {
-      if (selectedUsers.some((selectedUser) => userID.includes(selectedUser))) {
-        newSelection.push(userID);
-      }
-    });
-
-    /* Update state */
-    setValue(newSelection);
-    // setValue((oldSelection) => {
-    /* 
-        Edge cases: 
-        - If a group is selected, all users in that group should be selected in other groups aswell.
-        - If a user is deselected, the user should be deselected in all other groups aswell.
-        */
-    // });
+    setValue(newValues);
   }, []);
 
   const treeProps = {
     treeData,
+    // treeLine: { showLeafIcon: true }, /* CUrrently bugged */
     value,
     onChange: selectUser,
     treeCheckable: true,
@@ -244,6 +183,140 @@ const UserTree: FC<UserTreeProps> = ({ userSelection /* : treeData */, placehold
   };
 
   return <TreeSelect {...treeProps} />;
+};
+
+type UserMappingDescritionProps = UserMappingProps & {
+  onClick?: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
+};
+
+export const UserMappingReadOnly: FC<UserMappingDescritionProps> = ({
+  selectedElement,
+  modeler,
+  onClick = () => {},
+}) => {
+  const user = ['Test', 'Maxi'];
+  const roles = ['Admin', 'User'];
+
+  const userMapping: DescriptionsProps['items'] = [
+    {
+      key: 'execution-description',
+      label: 'Performer / Execution:',
+      span: 3,
+      children: (
+        <>
+          {roles.map((e, i) => {
+            return (
+              <>
+                <div>
+                  <Text
+                    keyboard
+                    key={`${i}-roles-mapping-description-table`}
+                    style={{ color: '#45a852' }}
+                  >
+                    <span style={{ marginRight: '4px' }}>
+                      <TeamOutlined />
+                      {/* <UserOutlined /> */}
+                    </span>
+                    {e}
+                  </Text>
+                </div>
+              </>
+            );
+          })}
+          {user.map((e, i) => {
+            return (
+              <>
+                <div>
+                  <Text
+                    keyboard
+                    key={`${i}-user-mapping-description-table`}
+                    style={{ color: '#207ad3' }}
+                  >
+                    <span style={{ marginRight: '4px' }}>
+                      {/* <TeamOutlined /> */}
+                      <UserOutlined />
+                    </span>
+                    {e}
+                  </Text>
+                </div>
+              </>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      key: 'responsibility-description',
+      label: 'Responsibility:',
+      span: 3,
+      children: (
+        <>
+          {roles.map((e, i) => {
+            return (
+              <>
+                <div>
+                  <Text
+                    keyboard
+                    key={`${i}-roles-mapping-description-table`}
+                    style={{ color: '#45a852' }}
+                  >
+                    <span style={{ marginRight: '4px' }}>
+                      <TeamOutlined />
+                      {/* <UserOutlined /> */}
+                    </span>
+                    {e}
+                  </Text>
+                </div>
+              </>
+            );
+          })}
+          {user.map((e, i) => {
+            return (
+              <>
+                <div>
+                  <Text
+                    keyboard
+                    key={`${i}-user-mapping-description-table`}
+                    style={{ color: '#207ad3' }}
+                  >
+                    <span style={{ marginRight: '4px' }}>
+                      {/* <TeamOutlined /> */}
+                      <UserOutlined />
+                    </span>
+                    {e}
+                  </Text>
+                </div>
+              </>
+            );
+          })}
+        </>
+      ),
+    },
+  ];
+
+  return (
+    <>
+      <Space
+        direction="vertical"
+        style={{ width: '100%' }}
+        role="group"
+        aria-labelledby="user-task-mapping-title"
+      >
+        <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+          <span style={{ marginRight: '0.3em' }}>Execution Information</span>
+        </Divider>
+        <span onClick={onClick}>
+          <Descriptions
+            // title="Execution Information"
+            bordered
+            items={userMapping}
+            size={'small'}
+            layout={'horizontal'}
+          />
+        </span>
+      </Space>
+    </>
+  );
 };
 
 export default UserMapping;

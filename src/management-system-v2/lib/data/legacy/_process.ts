@@ -11,6 +11,10 @@ import {
   saveImage,
   deleteImage,
   getUserTaskIds,
+  getUserTaskHTML,
+  getUserTasksHTML,
+  saveUserTaskHTML,
+  deleteUserTaskHTML,
   getUserTaskJSON,
   getUserTasksJSON,
   saveUserTaskJSON,
@@ -365,10 +369,22 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, taskF
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    return await getUserTaskJSON(processDefinitionsId, taskFileName);
+    return getUserTaskJSON(processDefinitionsId, taskFileName);
   } catch (err) {
     logger.debug(`Error getting data of user task. Reason:\n${err}`);
     throw new Error('Unable to get data for user task!');
+  }
+}
+
+/** Returns the html for a specific user task in a process */
+export async function getProcessUserTaskHtml(processDefinitionsId: string, taskFileName: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    return getUserTaskHTML(processDefinitionsId, taskFileName);
+  } catch (err) {
+    logger.debug(`Error getting html of user task. Reason:\n${err}`);
+    throw new Error('Unable to get html for user task!');
   }
 }
 
@@ -384,15 +400,29 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string) {
   }
 }
 
+/** Return object mapping from user tasks fileNames to their html */
+export async function getProcessUserTasksHtml(processDefinitionsId: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    return await getUserTasksHTML(processDefinitionsId);
+  } catch (err) {
+    logger.debug(`Error getting user task html. Reason:\n${err}`);
+    throw new Error('Failed getting html for all user tasks');
+  }
+}
+
 export async function saveProcessUserTask(
   processDefinitionsId: string,
   userTaskFileName: string,
   json: string,
+  html: string,
 ) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
     await saveUserTaskJSON(processDefinitionsId, userTaskFileName, json);
+    await saveUserTaskHTML(processDefinitionsId, userTaskFileName, html);
   } catch (err) {
     logger.debug(`Error storing user task data. Reason:\n${err}`);
     throw new Error('Failed to store the user task data');
@@ -408,6 +438,7 @@ export async function deleteProcessUserTask(
 
   try {
     await deleteUserTaskJSON(processDefinitionsId, userTaskFileName);
+    await deleteUserTaskHTML(processDefinitionsId, userTaskFileName);
   } catch (err) {
     logger.debug(`Error removing user task data. Reason:\n${err}`);
   }

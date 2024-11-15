@@ -26,6 +26,7 @@ import PlannedCostInput from './planned-cost-input';
 import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
+import UserMapping from './task-user-mapping';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -189,6 +190,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       </Space>
 
       <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
+
+      <UserMapping selectedElement={selectedElement} modeler={modeler} />
 
       <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
 

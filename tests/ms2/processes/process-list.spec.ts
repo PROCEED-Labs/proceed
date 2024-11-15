@@ -1424,8 +1424,11 @@ test.describe('Selecting Processes', () => {
     await inputSearch.fill('(Copy)');
 
     /* Get their ids */
-    const processRows = await page.locator('tr[data-row-key]').all();
-    const visibleIds = await asyncMap(processRows, async (el) => el.getAttribute('data-row-key'));
+    const visibleIds = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('tr[data-row-key]')).map((el) =>
+        el.getAttribute('data-row-key'),
+      ),
+    );
     processListPage.processDefinitionIds.push(...visibleIds);
 
     /* Clear Search */

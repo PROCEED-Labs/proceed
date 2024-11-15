@@ -698,14 +698,8 @@ test.describe('shortcuts in process-list', () => {
   }) => {
     const { page } = processListPage;
     /* Create 3 Processes */
-    const 
-    
-    
-    
-    
-    
-    
-    = [];
+    const processIDs = [];
+
     for (let i = 0; i < 3; i++) {
       processIDs.push(
         await processListPage.createProcess({

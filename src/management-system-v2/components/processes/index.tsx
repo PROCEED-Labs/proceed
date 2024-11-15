@@ -37,7 +37,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
-import { useEnvironment } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from '@/components/folder-creation-button';
 import {
@@ -367,12 +367,14 @@ const Processes = ({
                     )}
 
                     <SelectionActions count={selectedRowKeys.length}>
+
                       {/* Copy */}
                       {canCreateProcess && (
                         <Tooltip placement="top" title={'Copy'}>
                           <Button
                             // className={classNames(styles.ActionButton)}
                             type="text"
+
                             icon={<CopyOutlined className={styles.Icon} />}
                             onClick={() => {
                               setCopySelection(selectedRowElements);
@@ -381,6 +383,7 @@ const Processes = ({
                           />
                         </Tooltip>
                       )}
+
                       {/* Export */}
                       <Tooltip placement="top" title={'Export'}>
                         <Button
@@ -392,6 +395,7 @@ const Processes = ({
                         ></Button>
                       </Tooltip>
                       {/* Edit (only if one selected) */}
+
                       {selectedRowKeys.length === 1 && canEditSelected && (
                         <Tooltip placement="top" title={'Edit'}>
                           <Button
@@ -400,6 +404,7 @@ const Processes = ({
                             icon={<EditOutlined className={styles.Icon} />}
                             onClick={() => {
                               editItem(selectedRowElements[0]);
+
                             }}
                           />
                         </Tooltip>

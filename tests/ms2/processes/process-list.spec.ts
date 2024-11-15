@@ -379,8 +379,13 @@ test('create a new folder and remove it with context menu', async ({ processList
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
-  // await folderLocator.scrollIntoViewIfNeeded();
+
+  /* The playwright browser crops it's view which can cause unwanted scroling */
+  /* Clicking calls scrollIntoView before clicking, which can cause the context menu to close */
+  /* Workauround: */
   await page.evaluate(() => window!.scrollTo(0, 0));
+  await folderLocator.scrollIntoViewIfNeeded();
+
   folderLocator.click({ button: 'right' });
   const menuLocator = page.getByRole('menuitem', { name: 'delete Delete' });
   await menuLocator.click();

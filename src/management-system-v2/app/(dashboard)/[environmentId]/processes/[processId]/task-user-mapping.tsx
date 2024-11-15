@@ -5,9 +5,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import { useEnvironment } from '@/components/auth-can';
 import { getRoles, getUserById } from '@/lib/data/DTOs';
 import Ability from '@/lib/ability/abilityHelper';
-import { set } from 'zod';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
-import { tree } from 'next/dist/build/templates/app-page';
 
 type UserMappingProps = {
   selectedElement: ElementLike;

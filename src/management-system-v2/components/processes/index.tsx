@@ -367,14 +367,12 @@ const Processes = ({
                     )}
 
                     <SelectionActions count={selectedRowKeys.length}>
-
                       {/* Copy */}
                       {canCreateProcess && (
                         <Tooltip placement="top" title={'Copy'}>
                           <Button
                             // className={classNames(styles.ActionButton)}
                             type="text"
-
                             icon={<CopyOutlined className={styles.Icon} />}
                             onClick={() => {
                               setCopySelection(selectedRowElements);
@@ -404,7 +402,6 @@ const Processes = ({
                             icon={<EditOutlined className={styles.Icon} />}
                             onClick={() => {
                               editItem(selectedRowElements[0]);
-
                             }}
                           />
                         </Tooltip>

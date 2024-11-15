@@ -30,7 +30,7 @@ export const Settings: React.FC = () => {
 
   return (
     <div className={styles.Settings}>
-      {/* this id is targeted by a react portal to render the text editor interface when a user start text editing */}
+      {/* this id is targeted by a react portal to render the text editor interface when a user starts text editing */}
       <div id="text-editable-toolbar"></div>
       {!isTextEditing &&
         (selectedNodeId ? (
@@ -42,6 +42,8 @@ export const Settings: React.FC = () => {
         ) : (
           <div style={{ textAlign: 'center' }}>No element selected.</div>
         ))}
+      {/* this id is targeted by react portals that can be used in elements to edit specific sections of the element*/}
+      <div id="sub-element-settings-toolbar"></div>
     </div>
   );
 };

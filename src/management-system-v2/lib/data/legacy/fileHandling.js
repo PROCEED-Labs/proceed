@@ -311,30 +311,18 @@ export async function saveUserTaskJSON(processDefinitionsId, taskId, json) {
 }
 
 /**
- * Returns the ids of all script tasks of the process with the given id
+ * Saves the form data of a user task
  *
- * @param {String} processDefinitionsId
+ * @param {String} processDefinitionsId the id of the process that contains the user task
+ * @param {String} taskId the id of the specific user task
+ * @param {String} html the html data of the user task
  */
-export async function getScriptTaskIds(processDefinitionsId) {
-  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
-  return getTaskIds(scriptTaskDir);
-}
+export async function saveUserTaskHTML(processDefinitionsId, taskId, html) {
+  const userTaskDir = getUserTaskDir(processDefinitionsId);
 
-/**
- * Saves the script of a script task
- *
- * @param {String} processDefinitionsId the id of the process that contains the script task
- * @param {String} taskFileNameWithExtension the fileName including file type of the specific script task
- * @param {String} script the script task script
- */
-export async function saveScriptTaskScript(
-  processDefinitionsId,
-  taskFileNameWithExtension,
-  script,
-) {
-  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
-  fse.ensureDirSync(scriptTaskDir);
-  fse.writeFileSync(path.join(scriptTaskDir, taskFileNameWithExtension), script);
+  fse.ensureDirSync(userTaskDir);
+
+  fse.writeFileSync(path.join(userTaskDir, `${taskId}.html`), html);
 }
 
 /**
@@ -458,6 +446,19 @@ export function getUserTaskJSON(processDefinitionsId, taskId) {
 }
 
 /**
+ * Returns the html for a user task with the given id in a process
+ *
+ * @param {String} processDefinitionsId
+ * @param {String} taskId
+ */
+export function getUserTaskHTML(processDefinitionsId, taskId) {
+  const userTaskDir = getUserTaskDir(processDefinitionsId);
+  const userTaskFile = `${taskId}.html`;
+  const userTaskPath = path.join(userTaskDir, userTaskFile);
+  return fse.readFileSync(userTaskPath, 'utf-8');
+}
+
+/**
  * Returns the form data for all user tasks in a process
  *
  * @param {String} processDefinitionsId
@@ -465,9 +466,78 @@ export function getUserTaskJSON(processDefinitionsId, taskId) {
  * @returns {Promise}
  *    @resolves {Object} Object containing a taskId to form data mapping
  */
-export async function getUserTasksJSON(processDefinitionsId) {
-  const userTaskDir = getUserTaskDir(processDefinitionsId);
-  return getFilesFromTaskDir(userTaskDir);
+export function getUserTasksJSON(processDefinitionsId) {
+  return new Promise((resolve, reject) => {
+    const userTaskDir = getUserTaskDir(processDefinitionsId);
+
+    if (!fse.existsSync(userTaskDir)) {
+      resolve({});
+    }
+
+    fse.readdir(userTaskDir, (err, files) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const userTasksJSON = {};
+
+      if (files) {
+        files
+          .filter((path) => path.endsWith('json'))
+          .forEach(async (file) => {
+            const filePath = path.join(userTaskDir, file);
+            const fileContents = fse.readFileSync(filePath, 'utf-8');
+            const [taskId] = file.split('.');
+
+            userTasksJSON[taskId] = fileContents;
+          });
+      }
+
+      resolve(userTasksJSON);
+    });
+  });
+}
+
+/**
+ * Returns the html for all user tasks in a process
+ *
+ * @param {String} processDefinitionsId
+ *
+ * @returns {Promise}
+ *    @resolves {Object} Object containing a taskId to task html mapping
+ */
+export function getUserTasksHTML(processDefinitionsId) {
+  return new Promise((resolve, reject) => {
+    const userTaskDir = getUserTaskDir(processDefinitionsId);
+
+    if (!fse.existsSync(userTaskDir)) {
+      resolve({});
+    }
+
+    fse.readdir(userTaskDir, (err, files) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const userTasksHTML = {};
+
+      if (files) {
+        files
+          .filter((path) => path.endsWith('html'))
+          .forEach(async (file) => {
+            const htmlFilePath = path.join(userTaskDir, file);
+            const htmlFileContents = fse.readFileSync(htmlFilePath, 'utf-8');
+            const [taskId] = file.split('.');
+
+            userTasksHTML[taskId] = htmlFileContents;
+          });
+      }
+
+      resolve(userTasksHTML);
+    });
+  });
 }
 
 export async function deleteUserTaskJSON(processDefinitionsId, taskId) {
@@ -476,6 +546,41 @@ export async function deleteUserTaskJSON(processDefinitionsId, taskId) {
   const filePath = path.join(userTaskDir, taskFile);
 
   fse.unlinkSync(filePath);
+}
+
+export async function deleteUserTaskHTML(processDefinitionsId, taskId) {
+  const userTaskDir = getUserTaskDir(processDefinitionsId);
+  const taskFile = `${taskId}.html`;
+  const filePath = path.join(userTaskDir, taskFile);
+
+  fse.unlinkSync(filePath);
+}
+
+/**
+ * Returns the ids of all script tasks of the process with the given id
+ *
+ * @param {String} processDefinitionsId
+ */
+export async function getScriptTaskIds(processDefinitionsId) {
+  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
+  return getTaskIds(scriptTaskDir);
+}
+
+/**
+ * Saves the script of a script task
+ *
+ * @param {String} processDefinitionsId the id of the process that contains the script task
+ * @param {String} taskFileNameWithExtension the fileName including file type of the specific script task
+ * @param {String} script the script task script
+ */
+export async function saveScriptTaskScript(
+  processDefinitionsId,
+  taskFileNameWithExtension,
+  script,
+) {
+  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
+  fse.ensureDirSync(scriptTaskDir);
+  fse.writeFileSync(path.join(scriptTaskDir, taskFileNameWithExtension), script);
 }
 
 /**

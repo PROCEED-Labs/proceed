@@ -258,7 +258,7 @@ test('open properties panel for element and fill property values', async ({
   await expect(propertiesPanelPage.page.locator('.ant-popover-content')).toBeVisible(); // popover for color picker should be visible
 
   await propertiesPanelPage.page
-    .getByRole('tooltip', { name: 'HEX # right Recommended right' })
+    .getByRole('tooltip', { name: 'HEX' })
     .getByRole('textbox')
     .fill('#FF00AA');
 
@@ -275,7 +275,7 @@ test('open properties panel for element and fill property values', async ({
   await expect(propertiesPanelPage.page.locator('.ant-popover-content').nth(1)).toBeVisible(); // popover for color picker should be visible
 
   await propertiesPanelPage.page
-    .getByRole('tooltip', { name: 'HEX # right Recommended right' })
+    .getByRole('tooltip', { name: 'HEX' })
     .locator('input[value="000000"]:visible')
     .fill('#FF00AA');
 

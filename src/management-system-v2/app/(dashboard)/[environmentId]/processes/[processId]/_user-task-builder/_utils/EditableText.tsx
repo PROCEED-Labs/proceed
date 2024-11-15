@@ -12,48 +12,57 @@ type EditableTextProps<T extends keyof JSX.IntrinsicElements> = Omit<
   'onChange' | 'value'
 > & {
   value: string;
+  active: boolean;
+  onStopEditing?: () => void;
   onChange: (newText: string) => void;
   tagName: T;
 };
 
 function EditableText<T extends keyof JSX.IntrinsicElements>({
   value,
+  active,
+  onStopEditing,
   onChange,
   tagName,
   ...props
 }: EditableTextProps<T>) {
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
-  const [active, setActive] = useState(false);
 
   const selectingText = useRef(false);
+  const externalEditingStart = useRef(false);
   const editorRef = useRef<TextEditorRef>(null);
 
   const frame = useFrame();
 
+  useEffect(() => {
+    if (active) externalEditingStart.current = true;
+  }, [active]);
+
   // if the editor is disabled make sure that this is also disabled
   useEffect(() => {
     if (!editingEnabled) {
-      setActive(false);
+      onStopEditing?.();
     }
   }, [editingEnabled]);
 
   useEffect(() => {
     const handleClick = async () => {
-      if (!selectingText.current) {
+      if (!selectingText.current && !externalEditingStart.current) {
         // when not selecting text disable this element when the mouse is released outside of it
         if (editorRef.current) {
           onChange(await editorRef.current.getCurrentValue());
         }
-        setActive(false);
+        onStopEditing?.();
       } else {
         selectingText.current = false;
+        externalEditingStart.current = false;
       }
     };
     frame.window?.addEventListener('click', handleClick);
     return () => {
       frame.window?.removeEventListener('click', handleClick);
     };
-  }, [frame, onChange]);
+  }, [frame, onChange, onStopEditing]);
 
   return (
     <>
@@ -72,7 +81,7 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
                   if (editorRef.current) {
                     onChange(await editorRef.current.getCurrentValue());
                   }
-                  setActive(false);
+                  onStopEditing?.();
                   e.stopPropagation();
                   e.preventDefault();
                 }
@@ -88,12 +97,7 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
       ) : (
         React.createElement(tagName, {
           dangerouslySetInnerHTML: { __html: value },
-          onDoubleClick: () => {
-            if (editingEnabled) {
-              setActive(true);
-            }
-          },
-          onClick: (e: MouseEvent) => !e.ctrlKey && e.preventDefault(),
+          onClick: (e: MouseEvent) => !(e.ctrlKey || e.metaKey) && e.preventDefault(),
           ...props,
         })
       )}

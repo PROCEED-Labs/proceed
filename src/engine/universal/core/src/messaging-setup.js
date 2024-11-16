@@ -82,7 +82,7 @@ module.exports = {
     }, loadInterval * 1000);
 
     // Logging data
-    const consoleLevel = await config.readConfig('logs.consoleLevel');
+    const consoleLevel = await config.readConfig('logs.mqttLevel');
     const orderedLevels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
     const consoleLevelIdx = orderedLevels.indexOf(consoleLevel);
     const logGuard = (level) => orderedLevels.indexOf(level) >= consoleLevelIdx;

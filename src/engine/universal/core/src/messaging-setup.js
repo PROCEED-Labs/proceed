@@ -1,4 +1,5 @@
 const { version: proceedVersion } = require('../../../native/node/package.json');
+const { logging } = require('@proceed/machine');
 
 /**
  * This file contains functionality that handles setup and interactions of the messaging interface with other modules of the engine
@@ -79,5 +80,47 @@ module.exports = {
         logger.error('Failed to publish monitoring data');
       }
     }, loadInterval * 1000);
+
+    // Logging data
+    const consoleLevel = await config.readConfig('logs.consoleLevel');
+    const orderedLevels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+    const consoleLevelIdx = orderedLevels.indexOf(consoleLevel);
+    const logGuard = (level) => orderedLevels.indexOf(level) >= consoleLevelIdx;
+
+    logging.registerCallback(async (obj, log) => {
+      try {
+        if (!logGuard(log?.level)) return;
+
+        const sentMessages = [];
+        const print = `[${log.level.toUpperCase()}] ${log.moduleName}${obj.definitionId} ${log.msg}`;
+
+        sentMessages.push(messaging.publish(`${baseTopic}/engine/${machineId}/logging`, print));
+
+        if (obj.definitionId) {
+          sentMessages.push(
+            messaging.publish(`${baseTopic}/engine/${machineId}/logging/process`, print),
+          );
+
+          if (log.instanceId) {
+            sentMessages.push(
+              messaging.publish(
+                `${baseTopic}/engine/process/${obj.definitionId}/instance/${log.instanceId}/logging`,
+                print,
+              ),
+            );
+          }
+        } else {
+          sentMessages.push(
+            messaging.publish(`${baseTopic}/engine/${machineId}/logging/standard`, print),
+          );
+        }
+
+        await Promise.all(sentMessages);
+      } catch (e) {
+        // NOTE: possible infinite loop if publish keeps failing
+        // logger.error('Failed to publish log data');
+        console.error(e);
+      }
+    });
   },
 };

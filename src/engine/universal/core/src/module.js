@@ -10,7 +10,7 @@ const monitoring = require('@proceed/monitoring');
 const management = require('./management.js');
 const { setup5thIndustryEndpoints } = require('./engine/5thIndustry.js');
 const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
-const { setupMessaging } = require('./messaging-setup.js');
+const { setupMessaging, setupContinousDataPublishing } = require('./messaging-setup.js');
 const { enableMessaging, enable5thIndustryIntegration } = require('../../../../../FeatureFlags.js');
 
 const configObject = {

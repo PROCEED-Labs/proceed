@@ -10,8 +10,6 @@ const [
   processCommunicationAdress,
 ] = process.argv.slice(2);
 
-console.log('args ->', process.argv);
-
 if (
   !processId ||
   !processInstanceId ||

@@ -139,23 +139,11 @@ context.evalClosureSync(
   [sleep],
 );
 
-// NOTE: I thought this was going to eventually reach the maximum stack call size
-// but when testing it, it never happened
 context.evalClosureSync(
-  function setIntervalAsync(cb, ms) {
-    async function recursiveCall(res, rej) {
-      try {
-        await $0.apply(null, [ms], { result: { promise: true } });
-        const stop = await cb();
-
-        if (stop) res();
-        else recursiveCall(res, rej);
-      } catch (_) {
-        rej;
-      }
-    }
-
-    return new Promise((res, rej) => recursiveCall(res, rej));
+  async function setIntervalAsync(cb, ms) {
+    do {
+      await $0.apply(null, [ms], { result: { promise: true } });
+    } while (!(await cb()));
   }.toString() + 'globalThis["setIntervalAsync"]=setIntervalAsync;',
   [sleep],
 );

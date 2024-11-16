@@ -59,7 +59,7 @@ module.exports = {
       }
     }
   },
-  async setupContinousDataPublishing(messaging, configModule, machineModule, logger, network) {
+  async setupMonitoringAndLogging(messaging, configModule, machineModule, logger, network) {
     let { serverAddress, baseTopic } = await configModule.readConfig('messaging');
     if (!serverAddress) return;
 

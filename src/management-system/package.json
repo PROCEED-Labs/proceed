@@ -60,7 +60,7 @@
     "@proceed/native-koa": "^1.0.0",
     "@proceed/native-machine": "^1.0.0",
     "@proceed/native-mdns": "^1.0.0",
-    "@proceed/native-vm2": "^1.0.0",
+    "@proceed/native-script-execution": "^1.0.0",
     "@proceed/system": "^1.0.0",
     "acme": "^3.0.3",
     "acme-http-01-webroot": "^3.0.0",

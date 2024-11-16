@@ -1,7 +1,7 @@
 {
-  "name": "@proceed/native-vm2",
+  "name": "@proceed/native-script-execution",
   "version": "1.0.0",
-  "description": "Native module that provides a vm2 script executor for the engine.",
+  "description": "Native module that executes scripts in a subprocess",
   "main": "src/index.js",
   "author": "PROCEED Project",
   "license": "MIT",

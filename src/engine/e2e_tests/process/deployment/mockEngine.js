@@ -6,7 +6,7 @@ const MockMachine = require('./mockNativeMachine.js');
 const Nmdns = require('@proceed/native-mdns');
 const Ncapabilities = require('@proceed/native-capabilities');
 const Nconsole = require('@proceed/native-console');
-const ChildProcessExecutor = require('@proceed/native-vm2');
+const ChildProcessExecutor = require('@proceed/native-script-execution');
 
 native.registerModule(new Nfs({ dir: process.argv[2] }));
 native.registerModule(new Nexpress());

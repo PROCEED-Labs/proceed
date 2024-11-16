@@ -29,7 +29,7 @@ class SubprocesScriptExecution extends NativeModule {
     this.commands = ['launch-child-process', 'stop-child-process'];
 
     /** @type{string} */
-    this.id = require.resolve('@proceed/native-vm2');
+    this.id = require.resolve('@proceed/native-script-execution');
 
     /** @type{Map<
      *  string,

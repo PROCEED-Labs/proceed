@@ -128,13 +128,15 @@ class Network {
   async loopback(method, path, reqObject) {
     if (!(method in this._callbacks)) throw new Error(`Method ${method} not supported`);
 
+    const alternatePath = path.endsWith('/') ? path.slice(0, -1) : `${path}/`;
+    const callback =
+      this._callbacks[method].get(path) || this._callbacks[method].get(alternatePath);
+    if (!callback) throw new Error(`No callback registered for path ${path}`);
+
     if (!reqObject) reqObject = {};
     if (!('query' in reqObject)) reqObject.query = {};
     if (!('method' in reqObject)) reqObject.method = method.toUpperCase();
     if (!('path' in reqObject)) reqObject.path = path;
-
-    const callback = this._callbacks[method].get(path);
-    if (!callback) throw new Error(`No callback registered for path ${path}`);
 
     return await callback(reqObject);
   }

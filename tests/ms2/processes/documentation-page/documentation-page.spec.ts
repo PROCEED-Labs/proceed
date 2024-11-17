@@ -1,18 +1,21 @@
-import { Browser, Page, chromium, firefox } from '@playwright/test';
+import { Browser, Page, chromium } from '@playwright/test';
 import { test, expect } from '../processes.fixtures';
-import { closeModal, openModal, waitForHydration } from '../../testUtils';
+import { closeModal, openModal } from '../../testUtils';
 
 test('show process information', async ({ page, processListPage }) => {
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
   await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await waitForHydration(page);
+
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_1eclh91"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
-  await waitForHydration(documentationPage);
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Process 1' })).toBeVisible();
@@ -56,13 +59,16 @@ test('show content of collapsed subprocesses in a separate section', async ({
   const { definitionId } = await processListPage.importProcess('subprocess.bpmn');
   await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await waitForHydration(page);
+
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_1inc7tc"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
-  await waitForHydration(documentationPage);
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   let elementSections = await documentationPage
     .locator('css=[class^=process-document_ElementPage]')
@@ -100,13 +106,16 @@ test('show version information', async ({ page, processListPage, processModelerP
   await page.getByText('Latest Version').click();
   await page.getByText('Version 1').click();
   await page.waitForURL(/\?version=/);
-  await waitForHydration(page);
+
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
-  await waitForHydration(documentationPage);
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check if the process information includes version information
   await expect(documentationPage.getByRole('heading', { name: 'Import 1' })).toBeVisible();
@@ -122,13 +131,16 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   const { definitionId } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await waitForHydration(page);
+
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
-  await waitForHydration(documentationPage);
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   let elementSections = await documentationPage
     .locator('css=[class^=process-document_ElementPage]')
@@ -225,6 +237,7 @@ test('recursively show information about imports', async ({
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
   const import1Version = await processModelerPage.createVersion('Version 1', 'First Version');
 
   await processListPage.goto();
@@ -232,17 +245,8 @@ test('recursively show information about imports', async ({
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
   await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_11c5e5n"]')).toBeVisible();
   const import2Version = await processModelerPage.createVersion('Version 2', 'Second Version');
-
-  // share this process so it is visible in the  documentation for other users
-  const shareModal = await openModal(page, () =>
-    page.getByRole('button', { name: 'share-alt' }).click(),
-  );
-  await shareModal.getByText('Share Process with Public Link').click();
-  await page
-    .locator('.ant-message')
-    .filter({ hasText: 'Process shared' })
-    .waitFor({ state: 'visible' });
 
   await processListPage.goto();
   // import the process that imports the other two and set the correct versions in its bpmn
@@ -259,11 +263,15 @@ test('recursively show information about imports', async ({
   );
   await page.locator(`tr[data-row-key="${importerId}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_060jvsw"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Importer' })).toBeVisible();
@@ -476,13 +484,16 @@ test('a setting allows to show the subprocess element instead of its content', a
   const { definitionId } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await waitForHydration(page);
+
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
-  await waitForHydration(documentationPage);
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   let elementSections = await documentationPage
     .locator('css=[class^=process-document_ElementPage]')
@@ -574,6 +585,7 @@ test('a setting allows to show a call activity instead of the imported process',
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
   const import1Version = await processModelerPage.createVersion('Version 1', 'First Version');
 
   await processListPage.goto();
@@ -581,17 +593,8 @@ test('a setting allows to show a call activity instead of the imported process',
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
   await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_11c5e5n"]')).toBeVisible();
   const import2Version = await processModelerPage.createVersion('Version 2', 'Second Version');
-
-  // share this process so it is visible in the  documentation for other users
-  const shareModal = await openModal(page, () =>
-    page.getByRole('button', { name: 'share-alt' }).click(),
-  );
-  await shareModal.getByText('Share Process with Public Link').click();
-  await page
-    .locator('.ant-message')
-    .filter({ hasText: 'Process shared' })
-    .waitFor({ state: 'visible' });
 
   await processListPage.goto();
   // import the process that imports the other two and set the correct versions in its bpmn
@@ -608,11 +611,15 @@ test('a setting allows to show a call activity instead of the imported process',
   );
   await page.locator(`tr[data-row-key="${importerId}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_060jvsw"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Importer' })).toBeVisible();
@@ -695,13 +702,16 @@ test('a setting allows to show elements that have no meta data which are not sho
   const { definitionId } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await waitForHydration(page);
+
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
-  await waitForHydration(documentationPage);
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   let elementSections = await documentationPage
     .locator('css=[class^=process-document_ElementPage]')
@@ -741,7 +751,7 @@ test('a setting allows to show elements that have no meta data which are not sho
   expect(elementSection.getByRole('heading', { name: 'A.B' })).toBeVisible();
 });
 
-test('allow a different user that was given the share link to import the shared process', async ({
+test('the page shows only imported processes that are shared themselves to other users', async ({
   page,
   processListPage,
   processModelerPage,
@@ -752,6 +762,7 @@ test('allow a different user that was given the share link to import the shared 
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
   const import1Version = await processModelerPage.createVersion('Version 1', 'First Version');
 
   await processListPage.goto();
@@ -759,6 +770,7 @@ test('allow a different user that was given the share link to import the shared 
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
   await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_11c5e5n"]')).toBeVisible();
   const import2Version = await processModelerPage.createVersion('Version 2', 'Second Version');
 
   // share this process so it is visible in the  documentation for other users
@@ -786,11 +798,103 @@ test('allow a different user that was given the share link to import the shared 
   );
   await page.locator(`tr[data-row-key="${importerId}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_060jvsw"]')).toBeVisible();
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'file-pdf' }).click();
   const documentationPage = await documentationPagePromise;
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
+
+  let elementSections = await documentationPage
+    .locator('css=[class^=process-document_ElementPage]')
+    .all();
+
+  // check that the elements that should be visible to the owner are visible
+  expect(elementSections.length).toBe(5);
+
+  // check if the process overview is shown and the bpmn is correct
+  const processOverview = elementSections[0];
+  expect(processOverview.getByText('Process Diagram')).toBeVisible();
+
+  // check if the overview of the first import is shown and the bpmn is correct
+  const import1Overview = elementSections[1];
+  expect(import1Overview.getByText('Imported Process: Import 1')).toBeVisible();
+
+  // check if the overview of the subprocess in the first import is shown and the bpmn is correct
+  const import1SubprocessOverview = elementSections[2];
+  expect(import1SubprocessOverview.getByText('Subprocess: A')).toBeVisible();
+
+  // check that the user task in the subprocess in the import that has meta data is shown
+  const subprocessMilestoneTask = elementSections[3];
+  await expect(subprocessMilestoneTask.getByRole('heading', { name: 'A.A' })).toBeVisible();
+
+  // check if the overview of the first import is shown and the bpmn is correct
+  const import2Overview = elementSections[4];
+  expect(import2Overview.getByText('Imported Process: Import 2')).toBeVisible();
+
+  // share process with link
+  await openModal(page, () => page.getByRole('button', { name: 'share-alt' }).click());
+
+  await page.getByRole('button', { name: 'Share Public Link' }).click();
+  await page.getByText('Share Process with Public Link').click();
+
+  await expect(page.locator('input[name="generated share link"]')).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copy link' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Save QR Code' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copy QR Code' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Copy link' }).click();
+
+  const clipboardData = await ms2Page.readClipboard(true);
+
+  // Visit the shared link
+  const browser: Browser = await chromium.launch();
+  const newPage: Page = await browser.newPage();
+
+  await newPage.goto(`${clipboardData}`);
+  await newPage.waitForURL(`${clipboardData}`);
+
+  // check that the imported processes that are not shared are not visible to an non-owner
+
+  // check that the process imported by the "Import 1" Call-Activity is not visible since it is not owned by the user and also not shared
+  await expect(newPage.locator('css=[class^=process-document_ElementPage]')).toHaveCount(2);
+  await expect(
+    newPage
+      .locator('css=[class^=process-document_ElementPage]')
+      .first()
+      .getByText('Process Diagram'),
+  ).toBeVisible();
+  // the process imported by the "Import 2" Call-Activity should be visible since it is shared
+  await expect(
+    newPage
+      .locator('css=[class^=process-document_ElementPage]')
+      .nth(1)
+      .getByText('Imported Process: Import 2'),
+  ).toBeVisible();
+  await expect(newPage.getByText('Imported Process: Import 1')).not.toBeVisible();
+});
+
+test('allow a different user that was given the share link to import the shared process', async ({
+  page,
+  processListPage,
+  ms2Page,
+}) => {
+  const { definitionId } = await processListPage.importProcess('process1.bpmn');
+  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+
+  await expect(page.locator('.djs-shape[data-element-id="StartEvent_1eclh91"]')).toBeVisible();
+
+  // go to the documentation page
+  const documentationPagePromise = page.waitForEvent('popup');
+  await page.getByRole('button', { name: 'file-pdf' }).click();
+  const documentationPage = await documentationPagePromise;
+
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check that the "Add to your workspace option is not shown to a user that already owns the process"
   await expect(
@@ -818,23 +922,6 @@ test('allow a different user that was given the share link to import the shared 
 
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
-
-  // check that the process imported by the "Import 1" Call-Activity is not visible since it is not owned by the user and also not shared
-  await expect(newPage.locator('css=[class^=process-document_ElementPage]')).toHaveCount(2);
-  await expect(
-    newPage
-      .locator('css=[class^=process-document_ElementPage]')
-      .first()
-      .getByText('Process Diagram'),
-  ).toBeVisible();
-  // the process imported by the "Import 2" Call-Activity should be visible since it is shared
-  await expect(
-    newPage
-      .locator('css=[class^=process-document_ElementPage]')
-      .nth(1)
-      .getByText('Imported Process: Import 2'),
-  ).toBeVisible();
-  await expect(newPage.getByText('Imported Process: Import 1')).not.toBeVisible();
 
   // check that the add to workspace button is visible since the user does not own the process
   await expect(newPage.getByRole('button', { name: 'Add to your workspace' })).toBeVisible();

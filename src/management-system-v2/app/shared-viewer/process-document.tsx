@@ -219,7 +219,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
     <>
       <div className={styles.ProcessDocument}>
         {!processHierarchy ? (
-          <Spin tip="Loading" size="large" style={{ top: '50px' }}>
+          <Spin tip="Loading process data" size="large" style={{ top: '50px' }}>
             <div></div>
           </Spin>
         ) : (

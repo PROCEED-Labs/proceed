@@ -38,8 +38,8 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 
-  const baseUrl = `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
-  console.log(src);
+  const baseUrl =
+    editingEnabled && `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
 
   return (
     <ContextMenu menu={[]}>
@@ -61,7 +61,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
           style={{ width: width && `${width}%` }}
           src={src ? `${src}?${reloadParam}` : fallbackImage}
         />
-        {editingEnabled && isHovered && (
+        {editingEnabled && baseUrl && isHovered && (
           <ImageUpload
             imageExists={!!src}
             onReload={() => setProp((props: ImageProps) => (props.reloadParam = Date.now()))}

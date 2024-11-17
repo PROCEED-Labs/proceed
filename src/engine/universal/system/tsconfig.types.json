@@ -1,0 +1,9 @@
+{
+  "extends": "../../../../tsconfig.json",
+  "include": ["./src/", "../core/src", "../distribution/src/"],
+  "exclude": ["./@types/system/src/module.d.ts"],
+  "compilerOptions": {
+    "declarationDir": "./@types",
+    "emitDeclarationOnly": true
+  }
+}

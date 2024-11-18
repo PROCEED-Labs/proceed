@@ -9,8 +9,10 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   // Open/close XML Viewer
   let modal = await openModal(page, () => page.getByRole('button', { name: 'xml-sign' }).click());
   await expect(page.getByRole('dialog', { name: 'BPMN XML' })).toBeVisible();
+  /* While the xml editor is there, the xml is still loading, wait for it to load, before closing the modal */
+  await expect(page.getByText('<?xml version="1.0" encoding')).toBeVisible();
   //todo: check xml for startevent
-  await closeModal(modal, () => modal.getByRole('button', { name: 'Ok' }).click());
+  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Ok' }).click());
 
   // Open/collapse/close properties panel
   const propertiesPanel = page.getByRole('region', { name: 'Properties' });
@@ -249,7 +251,8 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   let clipboardData: string;
 
   const { definitionId: process1Id } = await processListPage.importProcess('process1.bpmn');
-  await page.locator(`tr[data-row-key="${process1Id}"]`).dblclick();
+  // open the new process in the modeler
+  await page.locator(`tr[data-row-key="${process1Id}"]>td:nth-child(3)`).click();
 
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 

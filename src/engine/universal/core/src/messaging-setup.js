@@ -92,7 +92,7 @@ module.exports = {
         if (!logGuard(log?.level)) return;
 
         const sentMessages = [];
-        const print = `[${log.level.toUpperCase()}] ${log.moduleName}${obj.definitionId} ${log.msg}`;
+        const print = `[${log.level.toUpperCase()}] ${log.moduleName}${obj.definitionId || ''} ${log.msg}`;
 
         sentMessages.push(messaging.publish(`${baseTopic}/engine/${machineId}/logging`, print));
 

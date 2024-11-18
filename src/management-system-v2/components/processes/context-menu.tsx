@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ProcessActions, ProcessListProcess, canDeleteItems } from '.';
+import { ProcessActions, ProcessListProcess, canDoActionOnResource } from '.';
 import { FC, PropsWithChildren } from 'react';
 import { App, Dropdown, MenuProps } from 'antd';
 import { useAbilityStore } from '@/lib/abilityStore';
@@ -45,7 +45,7 @@ const ConextMenuArea: FC<
 
     if (
       selectedContextMenuItems.length === 1 &&
-      canDeleteItems(selectedContextMenuItems, 'delete', ability)
+      canDoActionOnResource(selectedContextMenuItems, 'delete', ability)
     )
       children.push(
         {
@@ -81,7 +81,7 @@ const ConextMenuArea: FC<
         },
       );
 
-    if (canDeleteItems(selectedContextMenuItems, 'delete', ability))
+    if (canDoActionOnResource(selectedContextMenuItems, 'delete', ability))
       children.push({
         key: 'delete-selected',
         label: 'Delete',
@@ -123,7 +123,7 @@ const ConextMenuArea: FC<
     if (
       folder.parentId !== null &&
       !selectedContextMenuItems.some(({ id }) => id === folder.parentId) &&
-      canDeleteItems(selectedContextMenuItems, 'update', ability)
+      canDoActionOnResource(selectedContextMenuItems, 'update', ability)
     )
       children.push({
         key: 'move-selected',

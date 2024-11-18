@@ -10,9 +10,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   let modal = await openModal(page, () => page.getByRole('button', { name: 'xml-sign' }).click());
   await expect(page.getByRole('dialog', { name: 'BPMN XML' })).toBeVisible();
   /* While the xml editor is there, the xml is still loading, wait for it to load, before closing the modal */
-  await expect(
-    page.locator('span').filter({ hasText: '<?xml version="1.0" encoding' }),
-  ).toBeVisible();
+  await expect(page.getByText('<?xml version="1.0" encoding')).toBeVisible();
   //todo: check xml for startevent
   await closeModal(modal, async () => await modal.getByRole('button', { name: 'Ok' }).click());
 

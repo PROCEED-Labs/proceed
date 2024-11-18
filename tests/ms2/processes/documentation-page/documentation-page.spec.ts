@@ -520,7 +520,7 @@ test('a setting allows to show the subprocess element instead of its content', a
   let settingsModal = await openModal(documentationPage, () =>
     documentationPage.getByRole('button', { name: 'setting' }).click(),
   );
-  await settingsModal.getByLabel('Nested Subprocesses').uncheck();
+  await settingsModal.getByLabel('Nested Subprocesses').click();
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
   elementSections = await documentationPage
@@ -641,7 +641,7 @@ test('a setting allows to show a call activity instead of the imported process',
   const settingsModal = await openModal(documentationPage, () =>
     documentationPage.getByRole('button', { name: 'setting' }).click(),
   );
-  await settingsModal.getByLabel('Imported Processes').uncheck();
+  await settingsModal.getByLabel('Imported Processes').click();
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
   elementSections = await documentationPage
@@ -724,7 +724,7 @@ test('a setting allows to show elements that have no meta data which are not sho
   const settingsModal = await openModal(documentationPage, () =>
     documentationPage.getByRole('button', { name: 'setting' }).click(),
   );
-  await settingsModal.getByLabel('Exclude Empty Elements').uncheck();
+  await settingsModal.getByLabel('Exclude Empty Elements').click();
 
   // prevent the tooltip of the unchecked checkbox from overlapping the confirmation button when we try to click it next
   let tooltips = await documentationPage.getByRole('tooltip').all();

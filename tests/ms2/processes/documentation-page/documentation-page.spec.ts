@@ -4,7 +4,7 @@ import { closeModal, openModal } from '../../testUtils';
 
 test('show process information', async ({ page, processListPage }) => {
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
-  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_1eclh91"]')).toBeVisible();
@@ -57,7 +57,7 @@ test('show content of collapsed subprocesses in a separate section', async ({
   processListPage,
 }) => {
   const { definitionId } = await processListPage.importProcess('subprocess.bpmn');
-  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_1inc7tc"]')).toBeVisible();
@@ -99,8 +99,8 @@ test('show content of collapsed subprocesses in a separate section', async ({
 
 test('show version information', async ({ page, processListPage, processModelerPage }) => {
   // import the first process imported by the importer process and create a version to reference
-  const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
-  await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
+  const { definitionId } = await processListPage.importProcess('import1.bpmn');
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await processModelerPage.createVersion('Version 1', 'First Version');
   await page.getByText('Latest Version').click();
@@ -129,7 +129,7 @@ test('show version information', async ({ page, processListPage, processModelerP
 
 test('show meta data of a process element', async ({ page, processListPage }) => {
   const { definitionId } = await processListPage.importProcess('import1.bpmn');
-  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
@@ -235,7 +235,7 @@ test('recursively show information about imports', async ({
 }) => {
   // import the first process imported by the importer process and create a version to reference
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
-  await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${import1Id}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
   const import1Version = await processModelerPage.createVersion('Version 1', 'First Version');
@@ -243,7 +243,7 @@ test('recursively show information about imports', async ({
   await processListPage.goto();
   // import the second process imported by the importer process and create a version to reference
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
-  await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${import2Id}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_11c5e5n"]')).toBeVisible();
   const import2Version = await processModelerPage.createVersion('Version 2', 'Second Version');
@@ -261,7 +261,7 @@ test('recursively show information about imports', async ({
       return bpmn;
     },
   );
-  await page.locator(`tr[data-row-key="${importerId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${importerId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_060jvsw"]')).toBeVisible();
 
@@ -482,7 +482,7 @@ test('a setting allows to show the subprocess element instead of its content', a
   processListPage,
 }) => {
   const { definitionId } = await processListPage.importProcess('import1.bpmn');
-  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
@@ -583,7 +583,7 @@ test('a setting allows to show a call activity instead of the imported process',
 }) => {
   // import the first process imported by the importer process and create a version to reference
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
-  await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${import1Id}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
   const import1Version = await processModelerPage.createVersion('Version 1', 'First Version');
@@ -591,7 +591,7 @@ test('a setting allows to show a call activity instead of the imported process',
   await processListPage.goto();
   // import the second process imported by the importer process and create a version to reference
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
-  await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${import2Id}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_11c5e5n"]')).toBeVisible();
   const import2Version = await processModelerPage.createVersion('Version 2', 'Second Version');
@@ -609,7 +609,7 @@ test('a setting allows to show a call activity instead of the imported process',
       return bpmn;
     },
   );
-  await page.locator(`tr[data-row-key="${importerId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${importerId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_060jvsw"]')).toBeVisible();
 
@@ -700,7 +700,7 @@ test('a setting allows to show elements that have no meta data which are not sho
   processListPage,
 }) => {
   const { definitionId } = await processListPage.importProcess('import1.bpmn');
-  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
@@ -760,7 +760,7 @@ test('the page shows only imported processes that are shared themselves to other
   test.slow();
   // import the first process imported by the importer process and create a version to reference
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
-  await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${import1Id}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]')).toBeVisible();
   const import1Version = await processModelerPage.createVersion('Version 1', 'First Version');
@@ -768,7 +768,7 @@ test('the page shows only imported processes that are shared themselves to other
   await processListPage.goto();
   // import the second process imported by the importer process and create a version to reference
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
-  await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${import2Id}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_11c5e5n"]')).toBeVisible();
   const import2Version = await processModelerPage.createVersion('Version 2', 'Second Version');
@@ -796,7 +796,7 @@ test('the page shows only imported processes that are shared themselves to other
       return bpmn;
     },
   );
-  await page.locator(`tr[data-row-key="${importerId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${importerId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_060jvsw"]')).toBeVisible();
 
@@ -883,7 +883,7 @@ test('allow a different user that was given the share link to import the shared 
   ms2Page,
 }) => {
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
-  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_1eclh91"]')).toBeVisible();

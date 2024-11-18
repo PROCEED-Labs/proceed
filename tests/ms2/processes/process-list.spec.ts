@@ -503,7 +503,7 @@ test('sorting process list columns', async ({ processListPage }) => {
     const checkbox = page.getByRole('checkbox', { name: column });
 
     expect(checkbox).toBeVisible();
-    if (!(await checkbox.isChecked())) await checkbox.check();
+    if (!(await checkbox.isChecked())) await checkbox.click();
     await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
   }
 

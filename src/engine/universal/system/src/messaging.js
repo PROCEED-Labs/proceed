@@ -499,7 +499,7 @@ class Messaging extends System {
       );
     } catch (err) {
       if (!this._firstServeHasFailed) {
-        logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
+        this._logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
       }
     }
   }

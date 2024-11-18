@@ -2,7 +2,7 @@
 CREATE TABLE "Engine" (
     "id" TEXT NOT NULL,
     "environmentId" TEXT NOT NULL,
-    "url" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
     "createdOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastEditedOn" TIMESTAMP(3) NOT NULL,
 

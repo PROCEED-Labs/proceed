@@ -53,13 +53,7 @@ module.exports = {
 
     if (enableMessaging) {
       await setupMessaging(system.messaging, config, machineInformation, logger);
-      await setupMonitoringAndLogging(
-        system.messaging,
-        config,
-        machineInformation,
-        logger,
-        system.network,
-      );
+      await setupMonitoringAndLogging(system.messaging, config, machineInformation, logger);
     }
 
     if (!options.silentMode) {

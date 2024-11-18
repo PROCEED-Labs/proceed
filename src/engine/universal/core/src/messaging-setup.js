@@ -59,7 +59,7 @@ module.exports = {
       }
     }
   },
-  async setupMonitoringAndLogging(messaging, configModule, machineModule, logger, network) {
+  async setupMonitoringAndLogging(messaging, configModule, machineModule, logger) {
     let { serverAddress, baseTopic } = await configModule.readConfig('messaging');
     if (!serverAddress) return;
 
@@ -74,8 +74,8 @@ module.exports = {
 
     setInterval(async () => {
       try {
-        const monitoring = await network.loopback('get', '/machine/');
-        await messaging.publish(`${baseTopic}/engine/${machineId}/machine/monitoring`, monitoring);
+        const machineData = await machineModule.getMachineInformation();
+        await messaging.publish(`${baseTopic}/engine/${machineId}/machine/monitoring`, machineData);
       } catch (e) {
         logger.error('Failed to publish monitoring data');
       }

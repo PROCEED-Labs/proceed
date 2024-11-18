@@ -55,6 +55,7 @@ import Ability from '@/lib/ability/abilityHelper';
 import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
+import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
 export function canDoActionOnResource(
@@ -500,7 +501,14 @@ const Processes = ({
                 moveItems(items, over.id);
               }}
             >
-              <Spin spinning={loading}>
+              {/* <Spin spinning={loading}> */}
+              <ProceedLoadingIndicator
+                width={'100%'}
+                scale="60%"
+                // position={{ x: '25%', y: '20%' }}
+                loading={loading}
+                small={true}
+              >
                 {iconView ? (
                   <IconView
                     data={filteredData}
@@ -537,7 +545,8 @@ const Processes = ({
                     />
                   </div>
                 )}
-              </Spin>
+              </ProceedLoadingIndicator>
+              {/* </Spin> */}
             </DraggableContext>
           </div>
 

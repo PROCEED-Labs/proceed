@@ -12,9 +12,10 @@ import { useUserPreferences } from './user-preferences';
 import { Resizable } from 'react-resizable';
 import styles from './useColumnWidth.module.scss';
 import classNames from 'classnames';
+import { AnyObject } from 'antd/es/_util/type';
 
-export const useResizeableColumnWidth = (
-  columns: NonNullable<TableProps['columns']>,
+export const useResizeableColumnWidth = <T extends AnyObject>(
+  columns: NonNullable<TableProps<T>['columns']>,
   preferenceKey: string,
   notResizeabel: string[] = [],
   minWidth: number = 150,

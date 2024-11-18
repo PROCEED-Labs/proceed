@@ -33,6 +33,7 @@ import {
   getProcessImage as _getProcessImage,
   saveProcessUserTask as _saveProcessUserTask,
 } from './legacy/_process';
+import { Prisma } from '@prisma/client';
 
 // Declare variables to hold the process module functions
 let removeProcess: TProcessModule['removeProcess'];
@@ -42,7 +43,7 @@ let _updateProcess: TProcessModule['updateProcess'];
 let getProcessVersionBpmn: TProcessModule['getProcessVersionBpmn'];
 let addProcessVersion: TProcessModule['addProcessVersion'];
 
-let updateProcessMetaData: TProcessModule['updateProcessMetaData'];
+let _updateProcessMetaData: TProcessModule['updateProcessMetaData'];
 
 let _getProcessBpmn: TProcessModule['getProcessBpmn'];
 
@@ -56,7 +57,7 @@ const loadModules = async () => {
     updateProcess: _updateProcess,
     getProcessVersionBpmn,
     addProcessVersion,
-    updateProcessMetaData,
+    updateProcessMetaData: _updateProcessMetaData,
     getProcessBpmn: _getProcessBpmn,
   } = moduleImport);
 };
@@ -214,12 +215,10 @@ export const addProcesses = async (
   return newProcesses;
 };
 
-export const updateProcessShareInfo = async (
+export const updateProcessMetaData = async (
   definitionsId: string,
-  sharedAs: 'public' | 'protected' | undefined,
-  shareTimestamp: number | undefined,
-  allowIframeTimestamp: number | undefined,
   spaceId: string,
+  metaData: Prisma.ProcessUpdateInput,
 ) => {
   await loadModules();
 
@@ -227,11 +226,7 @@ export const updateProcessShareInfo = async (
 
   if (error) return error;
 
-  await updateProcessMetaData(definitionsId, {
-    sharedAs: sharedAs,
-    shareTimestamp: shareTimestamp,
-    allowIframeTimestamp: allowIframeTimestamp,
-  });
+  await _updateProcessMetaData(definitionsId, metaData as any);
 };
 
 export const updateProcess = async (

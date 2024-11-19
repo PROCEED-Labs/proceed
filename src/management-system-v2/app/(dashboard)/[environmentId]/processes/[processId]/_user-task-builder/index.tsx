@@ -26,6 +26,8 @@ import { useEnvironment } from '@/components/auth-can';
 
 import EditorDnDHandler from './DragAndDropHandler';
 
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+
 type BuilderProps = {
   processId: string;
   open: boolean;
@@ -66,9 +68,11 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+
+  const selectedElement = modeler && selectedElementId && modeler.getElement(selectedElementId);
+
   const filename = useMemo(() => {
-    if (modeler && selectedElementId) {
-      const selectedElement = modeler.getElement(selectedElementId);
+    if (modeler && selectedElement && bpmnIs(selectedElement, 'bpmn:UserTask')) {
       if (selectedElement && selectedElement.type === 'bpmn:UserTask') {
         return (
           (selectedElement.businessObject.fileName as string | undefined) ||
@@ -78,7 +82,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
     }
 
     return undefined;
-  }, [modeler, selectedElementId]);
+  }, [modeler, selectedElement]);
 
   useEffect(() => {
     if (filename && open) {

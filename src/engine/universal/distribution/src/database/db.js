@@ -67,15 +67,15 @@ module.exports = {
     // get the requirements for the version
     const requirements = versionInfo.needs;
 
-    // TODO // get all known script-task files for the process
-    // const knownScriptTaskFiles = ((await data.getAllScriptTasks(definitionId)) || []).map(
-    //   (fileName) => fileName.split('.js')[0],
-    // );
+    // get all known script-task files for the process
+    const knownScriptTaskFiles = ((await data.getAllScriptTasks(definitionId)) || []).map(
+      (fileName) => fileName.split('.js')[0],
+    );
 
-    // // check if script data is missing
-    // if (!requirements.scripts.every((fileName) => knownScriptTaskFiles.includes(fileName))) {
-    //   return false;
-    // }
+    // check if script data is missing
+    if (!requirements.scripts.every((fileName) => knownScriptTaskFiles.includes(fileName))) {
+      return false;
+    }
 
     // get all known user task files for the process
     const knownUserTaskFiles = ((await data.getAllUserTasks(definitionId)) || []).map(

@@ -17,7 +17,7 @@ const allowedResponseKeys = [
   'statusCode',
   'statusMessage',
 ];
-/** @param {{response: import('http').IncomingMessage, body: string}} response */
+/** @param {{response: import('http').IncomingMessage, body: any}} response */
 function networkResponseToSerializable(response) {
   if (!response || !response.response) return response;
   const filteredResponse = {};

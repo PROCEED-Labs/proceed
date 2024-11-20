@@ -2,6 +2,28 @@ const NeoEngine = require('neo-bpmn-engine');
 const system = require('@proceed/system');
 const capabilities = require('@proceed/capabilities');
 
+const allowedResponseKeys = [
+  'httpVersionMajor',
+  'httpVersionMinor',
+  'httpVersion',
+  'complete',
+  'rawHeaders',
+  'rawTrailers',
+  'joinDuplicateHeaders',
+  'aborted',
+  'upgrade',
+  'url',
+  'method',
+  'statusCode',
+  'statusMessage',
+];
+/** @param {{response: import('http').IncomingMessage, body: string}} response */
+function networkResponseToSerializable(response) {
+  const filteredResponse = {};
+  for (const key of allowedResponseKeys) filteredResponse[key] = response.response[key];
+  return { response: filteredResponse, body: response.body };
+}
+
 module.exports = {
   setupNeoEngine() {
     // Register the modules which we wish to make use of in the script environment
@@ -10,13 +32,14 @@ module.exports = {
         capabilities.startCapability.call(capabilities, capabilityName, args, callback),
     });
     NeoEngine.provideService('network', {
-      get: (_processId, _processInstanceId, _tokenId, url, options) => {
-        return system.http.request.call(system.http, url, {
+      get: async (_processId, _processInstanceId, _tokenId, url, options) => {
+        const response = await system.http.request.call(system.http, url, {
           ...options,
           method: 'GET',
         });
+        return networkResponseToSerializable(response);
       },
-      post: (
+      post: async (
         _processId,
         _processInstanceId,
         _tokenId,
@@ -25,7 +48,7 @@ module.exports = {
         contentType = 'text/plain',
         options = {},
       ) => {
-        return system.http.request.call(system.http, url, {
+        const response = await system.http.request.call(system.http, url, {
           ...options,
           body,
           method: 'POST',
@@ -34,8 +57,9 @@ module.exports = {
             'Content-Type': contentType,
           },
         });
+        return networkResponseToSerializable(response);
       },
-      put: (
+      put: async (
         _processId,
         _processInstanceId,
         _tokenId,
@@ -44,7 +68,7 @@ module.exports = {
         contentType = 'text/plain',
         options = {},
       ) => {
-        return system.http.request.call(system.http, url, {
+        const response = await system.http.request.call(system.http, url, {
           ...options,
           body,
           method: 'PUT',
@@ -53,18 +77,21 @@ module.exports = {
             'Content-Type': contentType,
           },
         });
+        return networkResponseToSerializable(response);
       },
-      delete: (_processId, _processInstanceId, _tokenId, url, options) => {
-        return system.http.request.call(system.http, url, {
+      delete: async (_processId, _processInstanceId, _tokenId, url, options) => {
+        const response = await system.http.request.call(system.http, url, {
           ...options,
           method: 'DELETE',
         });
+        return networkResponseToSerializable(response);
       },
-      head: (_processId, _processInstanceId, _tokenId, url, options) => {
-        return system.http.request.call(system.http, url, {
+      head: async (_processId, _processInstanceId, _tokenId, url, options) => {
+        const response = await system.http.request.call(system.http, url, {
           ...options,
           method: 'HEAD',
         });
+        return networkResponseToSerializable(response);
       },
     });
   },

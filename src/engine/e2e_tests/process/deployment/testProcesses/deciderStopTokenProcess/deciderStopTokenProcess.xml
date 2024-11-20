@@ -49,7 +49,7 @@
       <incoming>Flow_1pzlp7r</incoming>
       <outgoing>Flow_0a94qz4</outgoing>
       <script>
-        return new Promise(resolve => setTimeout(resolve, 1000));
+        return new Promise(resolve => setTimeoutAsync(resolve, 1000));
       </script>
     </scriptTask>
   </process>

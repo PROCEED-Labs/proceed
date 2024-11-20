@@ -6,7 +6,7 @@ module.exports = {
   setupNeoEngine() {
     // Register the modules which we wish to make use of in the script environment
     NeoEngine.provideService('capabilities', {
-      startCapability: (processId, processInstanceId, capabilityName, args, callback) =>
+      startCapability: (processId, processInstanceId, tokenId, capabilityName, args, callback) =>
         capabilities.startCapability.call(capabilities, capabilityName, args, callback),
     });
     NeoEngine.provideService('network', {

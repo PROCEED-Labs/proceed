@@ -409,7 +409,10 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
       onExportProcess={onExportProcess}
       processActions={processActions}
       tableProps={{
-        scroll: { x: metaPanelisOpened ? '71vw' : '85.5vw' },
+        scroll: {
+          y: `${window?.innerHeight - 32 /* Footer */ - 64 /* Header */ - 82 /* Table-Search etc */ - 60 /* Table-head */ - 60 /* Table-Footer / Pagination */}px`,
+        },
+        pagination: { position: ['bottomCenter'], pageSize: 20 },
         onRow: (item) => ({
           // onDoubleClick: () =>
           //   router.push(

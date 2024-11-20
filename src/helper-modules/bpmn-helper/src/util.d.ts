@@ -35,7 +35,10 @@ export function toBpmnXml(obj: any): Promise<string>;
  * @param {string} id the id of the element to be copied
  * @returns {Promise<object|undefined>} - returns the copied object or undefined when no matching object was found
  */
-export function deepCopyElementById(bpmn: string | object, elemId: any): Promise<object | undefined>;
+export function deepCopyElementById(
+  bpmn: string | object,
+  elemId: any,
+): Promise<object | undefined>;
 /**
  * Finds all kinds of childnodes in a given node
  *
@@ -85,7 +88,11 @@ export function getElementDI(element: object, definitions?: object): any;
  * @param {manipulationFunction} manipFunc - the function that will be used to change the element
  * @returns {Promise<string|object>} the BPMN process as bpmn-moddle object or XML string based on input
  */
-export function manipulateElementById(bpmn: (string | object), id: string, manipFunc: manipulationFunction): Promise<string | object>;
+export function manipulateElementById(
+  bpmn: string | object,
+  id: string,
+  manipFunc: manipulationFunction,
+): Promise<string | object>;
 /**
  * Function that changes all elements in the given xml with the given tagname
  * using the given function
@@ -95,4 +102,8 @@ export function manipulateElementById(bpmn: (string | object), id: string, manip
  * @param {manipulationFunction} manipFunc - the function that gets called on each element with a forEach-Loop
  * @returns {Promise<string|object>} the BPMN process as bpmn-moddle object or XML string based on input
  */
-export function manipulateElementsByTagName(bpmn: (string | object), tagName: string, manipFunc: manipulationFunction): Promise<string | object>;
+export function manipulateElementsByTagName(
+  bpmn: string | object,
+  tagName: string,
+  manipFunc: manipulationFunction,
+): Promise<string | object>;

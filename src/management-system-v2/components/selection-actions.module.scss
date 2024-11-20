@@ -8,8 +8,15 @@
   align-items: center;
   justify-content: center;
   text-wrap: nowrap;
-  padding: 0 0.5rem;
   gap: 0.5rem;
+
+  &.one-row {
+    padding: 0 2rem 0 0.25rem;
+  }
+
+  &.multiple-rows {
+    padding: 0 1.5rem 0 0.5rem;
+  }
 }
 
 .Icons {

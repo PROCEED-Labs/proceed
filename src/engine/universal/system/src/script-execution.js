@@ -78,7 +78,7 @@ class ScriptExecutor extends System {
               req.process.dependencies[result.errorClass] === Error)
           )
             result = new req.process.dependencies[result.errorClass](result.errorArgs);
-        } catch (_) {}
+        } catch (_) { }
 
         req.process.result = result;
 

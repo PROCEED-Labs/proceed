@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, Checkbox } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 
@@ -14,6 +14,8 @@ type MachineConfigModalProps<T extends { name: string; description: string }> = 
   onCancel: () => void;
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
+  configType?: string;
+  targetConfigExists?: boolean;
 };
 
 const MachineConfigModal = <T extends { name: string; description: string }>({
@@ -23,6 +25,8 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   onCancel,
   onSubmit,
   initialData,
+  configType,
+  targetConfigExists,
 }: MachineConfigModalProps<T>) => {
   const [form] = Form.useForm();
   const formRef = useRef(null);
@@ -99,14 +103,22 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         ref={formRef}
         layout="vertical"
         name="machine_config_form"
-        initialValues={initialData}
+        initialValues={
+          initialData ?? (configType === 'machine' && targetConfigExists)
+            ? [{ copyTarget: true }]
+            : undefined
+        }
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
         // doesn't work in production, that's why we use the useEffect above)
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <MachineConfigInputs index={0} />
+          <MachineConfigInputs
+            index={0}
+            configType={configType}
+            targetConfigExists={targetConfigExists}
+          />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -117,9 +129,15 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
 
 type MachineConfigInputsProps = {
   index: number;
+  configType?: string;
+  targetConfigExists?: boolean;
 };
 
-const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
+const MachineConfigInputs = ({
+  index,
+  configType,
+  targetConfigExists,
+}: MachineConfigInputsProps) => {
   return (
     <>
       <Form.Item
@@ -141,6 +159,13 @@ const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>
+      {configType === 'machine' && (
+        <Form.Item name={[index, 'copyTarget']} valuePropName="checked">
+          <Checkbox defaultChecked disabled={!targetConfigExists}>
+            Copy Target Tech Data
+          </Checkbox>
+        </Form.Item>
+      )}
     </>
   );
 };

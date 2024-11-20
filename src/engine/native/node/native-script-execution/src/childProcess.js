@@ -194,7 +194,7 @@ context
     let result = err;
     try {
       result = JSON.parse(err);
-    } catch (_) {}
+    } catch (_) { }
 
     console.error(result);
 

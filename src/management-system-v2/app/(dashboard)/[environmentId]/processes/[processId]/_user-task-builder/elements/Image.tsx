@@ -42,8 +42,8 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 
-  const baseUrl = `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
-  console.log(src);
+  const baseUrl =
+    editingEnabled && `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
 
   useEffect(() => {
     if (enableUseFileManager && src) {
@@ -71,7 +71,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
           style={{ width: width && `${width}%` }}
           src={src ? (enableUseFileManager ? imageUrl! : `${src}?${reloadParam}`) : fallbackImage}
         />
-        {editingEnabled && isHovered && (
+        {editingEnabled && baseUrl && isHovered && (
           <ImageUpload
             imageExists={!!src}
             onReload={() => {

@@ -1,6 +1,7 @@
 import {
   getProcess,
   getProcessBPMN,
+  getProcessUserTaskHTML,
   getProcessUserTaskData,
   getProcessImage,
 } from '@/lib/data/processes';
@@ -24,8 +25,7 @@ import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import { ArrayEntryType } from '../typescript-utils';
 
-import { SerializedNodes } from '@craftjs/core';
-import { toHtml } from '@/app/(dashboard)/[environmentId]/processes/[processId]/_user-task-builder/utils';
+import { SerializedNode } from '@craftjs/core';
 
 /**
  * The options that can be used to select what should be exported
@@ -102,12 +102,12 @@ async function getVersionBpmn(definitionId: string, spaceId: string, processVers
 /**
  * Returns the required locally (on the ms server) stored image data for all image elements inside the given user task
  *
- * @param {string} json the json file that might reference locally stored images
- * @returns {string[]} an array containing information about all image files needed for the user task
+ * @param json the json file that might reference locally stored images
+ * @returns an array containing information about all image files needed for the user task
  */
 function getImagesReferencedByJSON(json: string) {
   try {
-    const nodeMap = JSON.parse(json) as SerializedNodes;
+    const nodeMap = JSON.parse(json) as SerializedNode;
 
     const images = Object.values(nodeMap)
       .filter((node) => {
@@ -121,6 +121,7 @@ function getImagesReferencedByJSON(json: string) {
       .filter((src) => src.startsWith('/api/'))
       .map((src) => src.split('/').pop())
       .filter((imageName): imageName is string => !!imageName);
+
     // remove duplicates
     return [...new Set(seperatelyStored)];
   } catch (err) {
@@ -395,11 +396,13 @@ export async function prepareExport(
       for (const filename of allRequiredUserTaskFiles) {
         const json = await getProcessUserTaskData(definitionId, filename, spaceId);
         console.log(json);
+        const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
+
         if (typeof json !== 'string') {
           throw json!.error;
+        } else if (typeof html !== 'string') {
+          throw html.error;
         }
-
-        const html = toHtml(json);
 
         exportData[definitionId].userTasks.push({ filename, json, html });
       }

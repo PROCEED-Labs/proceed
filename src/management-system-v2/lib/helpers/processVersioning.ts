@@ -2,7 +2,6 @@ import 'server-only';
 import {
   toBpmnObject,
   toBpmnXml,
-  getDefinitionsId,
   setDefinitionsVersionInformation,
   getDefinitionsVersionInformation,
   getUserTaskImplementationString,
@@ -12,12 +11,13 @@ import {
 import { asyncForEach, asyncMap, findKey } from './javascriptHelpers';
 import {
   deleteProcessUserTask,
+  getProcessUserTasksHtml,
   getProcessUserTasksJSON,
   saveProcessUserTask,
   getProcessUserTaskJSON as getUserTaskJSON,
 } from '../data/db/process'; //from '../data/legacy/_process';
 
-//import { getUserTaskJSON } from '../data/legacy/fileHandling';
+//import { getUserTaskJSON, getUserTaskHTML } from '../data/legacy/fileHandling';
 import { Process } from '../data/process-schema';
 import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from '../data/module-import-types-temp';
@@ -123,42 +123,42 @@ export async function versionUserTasks(
   bpmnObj: object,
   dryRun = false,
 ) {
-  const dataMapping = await getUserTaskFileNameMapping(bpmnObj);
+  const htmlMapping = await getUserTaskFileNameMapping(bpmnObj);
   const versionedUserTaskFilenames: string[] = [];
   const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
-  for (let userTaskId in dataMapping) {
-    const { fileName, implementation } = dataMapping[userTaskId];
+  for (let userTaskId in htmlMapping) {
+    const { fileName, implementation } = htmlMapping[userTaskId];
 
     // only version user tasks that use html
     if (fileName && implementation === getUserTaskImplementationString()) {
-      const userTaskData = await getUserTaskJSON(processInfo.id, fileName);
+      const userTaskHtml = await getUserTaskHTML(processInfo.id, fileName);
 
       let versionFileName = `${fileName}-${newVersion}`;
 
-      // get the data of the user task in the based on version (if there is one and it is locally known)
+      // get the html of the user task in the based on version (if there is one and it is locally known)
       const basedOnBPMN =
         versionBasedOn !== undefined
           ? await getLocalVersionBpmn(processInfo, versionCreatedOn!)
           : undefined;
 
-      // check if there is a preceding version and if the data of the user task actually changed from that version
-      let userTaskDataAlreadyExisting = false;
+      // check if there is a preceding version and if the html of the user task actually changed from that version
+      let userTaskHtmlAlreadyExisting = false;
       if (basedOnBPMN) {
-        const basedOnVersionDataMapping = await getUserTaskFileNameMapping(basedOnBPMN);
+        const basedOnVersionHtmlMapping = await getUserTaskFileNameMapping(basedOnBPMN);
 
-        // check if the user task existed and if it had the same data
-        const basedOnVersionFileInfo = basedOnVersionDataMapping[userTaskId];
+        // check if the user task existed and if it had the same html
+        const basedOnVersionFileInfo = basedOnVersionHtmlMapping[userTaskId];
 
         if (basedOnVersionFileInfo && basedOnVersionFileInfo.fileName) {
-          const basedOnVersionUserTaskData = await getUserTaskJSON(
+          const basedOnVersionUserTaskHtml = await getUserTaskHTML(
             processInfo.id,
             basedOnVersionFileInfo.fileName,
           );
 
-          if (basedOnVersionUserTaskData === userTaskData) {
-            // reuse the data of the previous version
-            userTaskDataAlreadyExisting = true;
+          if (basedOnVersionUserTaskHtml === userTaskHtml) {
+            // reuse the html of the previous version
+            userTaskHtmlAlreadyExisting = true;
             versionFileName = basedOnVersionFileInfo.fileName;
           }
         }
@@ -173,8 +173,15 @@ export async function versionUserTasks(
       );
 
       // store the user task version if it didn't exist before
-      if (!dryRun && !userTaskDataAlreadyExisting) {
-        await saveProcessUserTask(processInfo.id, versionFileName, userTaskData!, versionCreatedOn);
+      if (!dryRun && !userTaskHtmlAlreadyExisting) {
+        const userTaskData = getUserTaskJSON(processInfo.id, fileName);
+        await saveProcessUserTask(
+          processInfo.id,
+          versionFileName,
+          userTaskData,
+          userTaskHtml!,
+          versionCreatedOn,
+        );
         // update ref for the artifacts referenced by the versioned user task
         //const refIds = await updateArtifactRefVersionedUserTask(userTaskData!, versionFileName);
         versionedUserTaskFilenames.push(versionFileName);
@@ -216,8 +223,9 @@ const getUsedFileNames = async (bpmn: string) => {
 };
 
 export async function selectAsLatestVersion(processId: string, versionId: string) {
-  // make sure that the user task data is also rolled back
+  // make sure that the user task data and html is also rolled back
   const processDataMapping = await getProcessUserTasksJSON(processId, versionId);
+  const processHtmlMapping = await getProcessUserTasksHtml(processId);
 
   const editableBpmn = (await getProcessBpmn(processId)) as string;
   const versionBpmn = (await getProcessVersionBpmn(processId, versionId)) as string;
@@ -232,7 +240,12 @@ export async function selectAsLatestVersion(processId: string, versionId: string
 
   // Store UserTasks from this version as UserTasks from latest version
   await asyncForEach(Object.entries(changedFileNames), async ([oldName, newName]) => {
-    await saveProcessUserTask(processId, newName, processDataMapping![oldName]);
+    await saveProcessUserTask(
+      processId,
+      newName,
+      processDataMapping![oldName],
+      processHtmlMapping[oldName],
+    );
   });
 
   // Store bpmn from this version as latest version

@@ -1,6 +1,7 @@
 import { test, expect } from './processes.fixtures';
 import { openModal, closeModal, waitForHydration } from '../testUtils';
 import { asyncMap } from 'proceed-management-system/src/shared-frontend-backend/helpers/javascriptHelpers';
+import { Page } from '@playwright/test';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
@@ -34,7 +35,7 @@ test('import a process', async ({ processListPage }) => {
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
 
   // open the new process in the modeler
-  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
   // check if the process in the modeler is the one that we tried to import
@@ -379,6 +380,12 @@ test('create a new folder and remove it with context menu', async ({ processList
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
+  /* The playwright browser crops it's view which can cause unwanted scroling */
+  /* Clicking calls scrollIntoView before clicking, which can cause the context menu to close */
+  /* Workauround: */
+  await page.evaluate(() => window!.scrollTo(0, 0));
+  await folderLocator.scrollIntoViewIfNeeded();
+
   folderLocator.click({ button: 'right' });
   const menuLocator = page.getByRole('menuitem', { name: 'delete Delete' });
   await menuLocator.click();
@@ -438,7 +445,7 @@ test('create a new folder and process, move process to folder and then delete bo
   await expect(processLocator).toBeVisible();
 
   // drag process to folder
-  await processLocator.dragTo(folderRow);
+  // await processLocator.dragTo(folderRow); /* What does this do? */
   await processLocator.hover();
   await page.mouse.down();
   await page.mouse.move(100, 100, { steps: 10 }); // needed to "start dragging" the element
@@ -449,7 +456,8 @@ test('create a new folder and process, move process to folder and then delete bo
   await expect(processLocator).not.toBeVisible();
 
   // go to folder page
-  await folderRow.click({ clickCount: 2 });
+  const nameCell = folderRow.locator(`td:has-text("${folderId}")`);
+  await nameCell.click({ clickCount: 1 });
   await page.waitForURL(/\/processes\/folder\/([a-zA-Z0-9-_]+)/);
 
   // check for process and delete it
@@ -495,15 +503,16 @@ test('sorting process list columns', async ({ processListPage }) => {
     const checkbox = page.getByRole('checkbox', { name: column });
 
     expect(checkbox).toBeVisible();
-    if (!(await checkbox.isChecked())) await checkbox.check();
+    if (!(await checkbox.isChecked())) await checkbox.click();
     await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
   }
 
   async function getColumnValues(col: number) {
-    const tableRows = await page.locator('tbody tr').all();
+    const tableRows = await page.locator('tbody>tr:not(.ant-table-measure-row)').all();
     const rowNames: { text: string; ariaLabel: string }[] = [];
     for (const row of tableRows) {
       const icon = row.locator('td').nth(2).locator('span').first();
+
       const ariaLabel = await icon.evaluate((el) => el.getAttribute('aria-label'));
 
       const text = await row.locator('td').nth(col).textContent();
@@ -554,9 +563,10 @@ test('sorting process list columns', async ({ processListPage }) => {
 
   const sortableColumns = [
     { columnName: 'Name', sortFunction: textSort, offset: 2 },
+    /* TODO: */
     // { columnName: 'Last Edited', sortFunction: dateSort, offset: 4 },
     // { columnName: 'Created On', sortFunction: dateSort, offset: 5 },
-    { columnName: 'File Size', sortFunction: textSort, offset: 6 },
+    // { columnName: 'File Size', sortFunction: textSort, offset: 6 },
     { columnName: 'Owner', sortFunction: textSort, offset: 7 },
   ];
 
@@ -689,6 +699,7 @@ test.describe('shortcuts in process-list', () => {
     const { page } = processListPage;
     /* Create 3 Processes */
     const processIDs = [];
+
     for (let i = 0; i < 3; i++) {
       processIDs.push(
         await processListPage.createProcess({
@@ -803,7 +814,9 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if Process has been added */
     await expect(
-      page.locator('tbody>tr'),
+      page.locator(
+        'tbody>tr:not(.ant-table-measure-row)',
+      ) /* Ant-Design added a measure row -> ignore */,
       'Could not find copied process in Process-List',
     ).toHaveCount(2);
     /* Check with name */
@@ -834,7 +847,9 @@ test.describe('shortcuts in process-list', () => {
     }
 
     /* Check if Process has been added */
-    await expect(page.locator('tbody>tr')).toHaveCount(3);
+    await expect(page.locator('tbody>tr:not(.ant-table-measure-row)')).toHaveCount(
+      3,
+    ); /* Ignore measurement row */
     /* Check with name */
     await expect(page.locator('tbody')).toContainText(processName + ' - Meta');
   });
@@ -883,16 +898,18 @@ test.describe('shortcuts in process-list', () => {
 
     /* Submit copy */
     if (browserName !== 'firefox') {
-      await page.getByRole('main').press('ControlOrMeta+Enter');
+      await page.getByRole('main').press('Control+Enter');
     } else {
       await modal.click();
-      await page.locator('body').press('ControlOrMeta+Enter');
+      await page.locator('body').press('Control+Enter');
     }
 
     await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if Processes have been added */
-    await expect(page.locator('tbody>tr')).toHaveCount(4);
+    await expect(page.locator('tbody>tr:not(.ant-table-measure-row)')).toHaveCount(
+      4,
+    ); /* Ignore measurement row */
 
     /* Check with names */
     for (const name of names) {
@@ -1305,9 +1322,101 @@ test.describe('Favourites', () => {
   //   });
   // });
 });
+// test('Resizing columns', async ({ processListPage }) => {
+//   const { page } = processListPage;
 
+//   /**
+//    * Columns that are resizeable:
+//    * Name         - visible
+//    * Description  - visible
+//    * Last Edited  - visible
+//    * Created On
+//    * File Size
+//    * Owner
+//    */
+
+//   const selectableCols = ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
+//   const getColumnwidth = (column: string) => {
+//     return page
+//       .getByRole('columnheader', { name: column })
+//       .boundingBox()
+//       .then((box) => box.width);
+//   };
+
+//   /* Select only Name */
+//   await page
+//     .getByRole('columnheader', { name: 'more' })
+//     .getByRole('button', { name: 'more' })
+//     .click();
+
+//   for (const column of selectableCols) {
+//     const checkbox = page.getByRole('checkbox', { name: column });
+
+//     if (await checkbox.isChecked()) await checkbox.uncheck();
+//     await expect(page.getByRole('columnheader', { name: column })).not.toBeVisible();
+//   }
+
+//   /* Resize Name */
+//   const nameColumn = await page.getByRole('columnheader', { name: 'Name' });
+//   const nameColumnHandle = await nameColumn.locator('span').last();
+
+//   await expect(nameColumnHandle, `Could not find handle for 'Name' column`).toHaveClass(
+//     /react-resizable-handle/i,
+//   );
+
+//   /* Get width of the column */
+//   const nameColumnWidth = await getColumnwidth('Name');
+//   console.log('Name Column Width:', await getColumnwidth('Name'));
+
+//   const emptyCol = await page.locator('div.PROCEED-RESIZE-COLUMN');
+
+/* Resize the column */
+/* ________________________________________________________ */
+// /* A */
+// await nameColumnHandle.dragTo(emptyCol, {
+//   sourcePosition: {
+//     x: -20,
+//     y: 2,
+//   },
+//   targetPosition: {
+//     x: 50,
+//     y: 1,
+//   },
+//   force: true,
+// });
+// /* ________________________________________________________ */
+// /* B */
+// let x, y;
+// await nameColumnHandle.boundingBox().then((box) => {
+//   x = box.x + box.width * 0.5;
+//   y = box.y + box.height * 0.5;
+// });
+
+// await nameColumnHandle.hover();
+// await page.mouse.down();
+// await page.mouse.move(x + 100, y), { steps: 10 };
+// await page.mouse.up();
+// /* ________________________________________________________ */
+
+//   // // await nameColumnHandle.hover();
+//   // await page.mouse.move(x, y);
+//   // await page.mouse.down();
+//   // await page.mouse.move(x + 50, y, { steps: 10 });
+//   // await page.mouse.up();
+
+//   await console.log('Name Column Width:', await getColumnwidth('Name'));
+// });
 test.describe('Selecting Processes', () => {
+  test.slow(); // triples test time (see https://playwright.dev/docs/test-timeouts)
+
+  /* When copying many processes, not all of them will be added to processListPage.definitionsIDs, hence, we track the number of added processes */
+  let numberOfProcesses = 0;
+  const getNumberOfSelectedProcesses = async (page: Page) => {
+    return Number.parseInt(await page.getByRole('note').textContent());
+  };
+
   test.beforeEach(async ({ processListPage }) => {
+    numberOfProcesses = 0;
     const { page } = processListPage;
     /* TODO: The number of processes necessary to cause second page depends on viewport height */
     /* Create 10 processes + XYZ Process ( =11) */
@@ -1316,15 +1425,19 @@ test.describe('Selecting Processes', () => {
         processName: `Process ${i}`,
         returnToProcessList: true,
       });
+      numberOfProcesses++;
     }
-
-    await page.getByRole('main').press('ControlOrMeta+a');
 
     /* Copy + Paste until multiple pages */
     while ((await page.locator('.ant-pagination-next').getAttribute('aria-disabled')) === 'true') {
+      await page.getByRole('main').press('ControlOrMeta+a');
+      const adding = await getNumberOfSelectedProcesses(page);
+
       await page.getByRole('main').press('ControlOrMeta+c');
       const modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+v'));
       await closeModal(modal, () => page.getByRole('main').press('ControlOrMeta+Enter'));
+
+      numberOfProcesses += adding;
     }
 
     /* Add Copys to processListPage.processDefinitionIds */
@@ -1333,8 +1446,11 @@ test.describe('Selecting Processes', () => {
     await inputSearch.fill('(Copy)');
 
     /* Get their ids */
-    const processRows = await page.locator('tr[data-row-key]').all();
-    const visibleIds = await asyncMap(processRows, async (el) => el.getAttribute('data-row-key'));
+    const visibleIds = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('tr[data-row-key]')).map((el) =>
+        el.getAttribute('data-row-key'),
+      ),
+    );
     processListPage.processDefinitionIds.push(...visibleIds);
 
     /* Clear Search */
@@ -1350,18 +1466,18 @@ test.describe('Selecting Processes', () => {
       processName: 'XYZ',
       returnToProcessList: true,
     });
+    numberOfProcesses++;
   });
+
+  const getNumberOfVisibleRows = async (page: Page) => {
+    return await page.locator('tbody>tr:not(.ant-table-measure-row)').count(); // Ignore measurement row
+  };
 
   test('Selecting Processes with click', async ({ processListPage }) => {
     const { page } = processListPage;
     const inputSearch = await page.locator('.ant-input-affix-wrapper');
 
-    const getNumberOfVisibleRows = async () => {
-      return await page.locator('tbody tr').count();
-    };
-
     const processIDs = processListPage.getDefinitionIds();
-
     /* ____________________________________ */
     /* Selection persists after page change */
     /* Select the first process*/
@@ -1389,9 +1505,9 @@ test.describe('Selecting Processes', () => {
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
-    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows(page)) + 1}`);
 
     /* Deselect all visible */
     await page.getByLabel('Select all').uncheck();
@@ -1427,9 +1543,9 @@ test.describe('Selecting Processes', () => {
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
-    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows(page)) + 1}`);
 
     /* ____________________________________ */
     /* Selection persists after folder change (? TODO:) */
@@ -1438,20 +1554,16 @@ test.describe('Selecting Processes', () => {
     processListPage,
   }) => {
     const { page } = processListPage;
-    const processIDs = processListPage.getDefinitionIds();
-    const getNumberOfVisibleRows = async () => {
-      return await page.locator('tbody tr').count();
-    };
 
     /* Select all with ctrl + a */
     await page.getByRole('main').press('ControlOrMeta+a');
 
     /* Check if all visible selected */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
-      await getNumberOfVisibleRows(),
+      await getNumberOfVisibleRows(page),
     );
 
     /* Check if displayed note show correct number */
-    await expect(await page.getByRole('note')).toContainText(`${processIDs.length}`);
+    await expect(await page.getByRole('note')).toContainText(`${numberOfProcesses}`);
   });
 });

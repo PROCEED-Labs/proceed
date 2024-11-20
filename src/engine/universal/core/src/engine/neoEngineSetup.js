@@ -19,6 +19,7 @@ const allowedResponseKeys = [
 ];
 /** @param {{response: import('http').IncomingMessage, body: string}} response */
 function networkResponseToSerializable(response) {
+  if (!response || !response.response) return response;
   const filteredResponse = {};
   for (const key of allowedResponseKeys) filteredResponse[key] = response.response[key];
   return { response: filteredResponse, body: response.body };

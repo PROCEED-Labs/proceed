@@ -6,20 +6,20 @@ module.exports = {
   setupNeoEngine() {
     // Register the modules which we wish to make use of in the script environment
     NeoEngine.provideService('capabilities', {
-      startCapability: (processId, processInstanceId, tokenId, capabilityName, args, callback) =>
+      startCapability: (_processId, _processInstanceId, _tokenId, capabilityName, args, callback) =>
         capabilities.startCapability.call(capabilities, capabilityName, args, callback),
     });
     NeoEngine.provideService('network', {
-      get: (processId, processInstanceId, tokenId, url, options) => {
+      get: (_processId, _processInstanceId, _tokenId, url, options) => {
         return system.http.request.call(system.http, url, {
           ...options,
           method: 'GET',
         });
       },
       post: (
-        processId,
-        processInstanceId,
-        tokenId,
+        _processId,
+        _processInstanceId,
+        _tokenId,
         url,
         body,
         contentType = 'text/plain',
@@ -36,9 +36,9 @@ module.exports = {
         });
       },
       put: (
-        processId,
-        processInstanceId,
-        tokenId,
+        _processId,
+        _processInstanceId,
+        _tokenId,
         url,
         body,
         contentType = 'text/plain',
@@ -54,13 +54,13 @@ module.exports = {
           },
         });
       },
-      delete: (processId, processInstanceId, tokenId, url, options) => {
+      delete: (_processId, _processInstanceId, _tokenId, url, options) => {
         return system.http.request.call(system.http, url, {
           ...options,
           method: 'DELETE',
         });
       },
-      head: (processId, processInstanceId, tokenId, url, options) => {
+      head: (_processId, _processInstanceId, _tokenId, url, options) => {
         return system.http.request.call(system.http, url, {
           ...options,
           method: 'HEAD',

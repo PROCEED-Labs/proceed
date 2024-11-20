@@ -6,7 +6,11 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import styles from './milestone-selection-section.module.scss';
 
 import { Button, Divider, Form, FormInstance, Grid, Input, Modal, Space, Table } from 'antd';
-import { getMilestonesFromElement, setProceedElement } from '@proceed/bpmn-helper';
+import {
+  deepCopyElementById,
+  getMilestonesFromElement,
+  setProceedElement,
+} from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import FormSubmitButton from '@/components/form-submit-button';
@@ -163,21 +167,25 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
     setIsMilestoneModalOpen(true);
   };
 
-  const addMilestone = (newMilestone: { id: string; name: string; description?: string }) => {
+  const addMilestone = async (newMilestone: { id: string; name: string; description?: string }) => {
     const modeling = modeler!.getModeling();
-    setProceedElement(selectedElement.businessObject, 'Milestone', undefined, newMilestone);
+    const bpmn = await modeler!.getXML();
+    const selectedElementCopy = (await deepCopyElementById(bpmn!, selectedElement.id)) as any;
+    setProceedElement(selectedElementCopy, 'Milestone', undefined, newMilestone);
     modeling.updateProperties(selectedElement as any, {
-      extensionElements: selectedElement.businessObject.extensionElements,
+      extensionElements: selectedElementCopy.extensionElements,
     });
   };
 
-  const removeMilestone = (milestoneId: string) => {
+  const removeMilestone = async (milestoneId: string) => {
     const modeling = modeler!.getModeling();
-    setProceedElement(selectedElement.businessObject, 'Milestone', null, {
+    const bpmn = await modeler!.getXML();
+    const selectedElementCopy = (await deepCopyElementById(bpmn!, selectedElement.id)) as any;
+    setProceedElement(selectedElementCopy, 'Milestone', null, {
       id: milestoneId,
     });
     modeling.updateProperties(selectedElement as any, {
-      extensionElements: selectedElement.businessObject.extensionElements,
+      extensionElements: selectedElementCopy.extensionElements,
     });
   };
 

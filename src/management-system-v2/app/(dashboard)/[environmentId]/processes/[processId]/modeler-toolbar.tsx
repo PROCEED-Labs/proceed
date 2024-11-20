@@ -297,11 +297,15 @@ const ModelerToolbar = ({
                     </Button>
                   </Tooltip>
                 )) ||
-                (bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
-                  <Tooltip title="Edit Script Task">
-                    <Button icon={<FormOutlined />} onClick={() => setShowScriptTaskEditor(true)} />
-                  </Tooltip>
-                )))}
+                (process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
+                  bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
+                    <Tooltip title="Edit Script Task">
+                      <Button
+                        icon={<FormOutlined />}
+                        onClick={() => setShowScriptTaskEditor(true)}
+                      />
+                    </Tooltip>
+                  )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>

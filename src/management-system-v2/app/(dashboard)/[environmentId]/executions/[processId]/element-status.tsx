@@ -7,7 +7,7 @@ import { convertISODurationToMiliseconds, getMetaDataFromElement } from '@procee
 import { generateRequestUrl } from '@/lib/engines/endpoints';
 import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
 
-function transformMilisecondsToTimeFormat(milliseconds: number | undefined) {
+function transformMillisecondsToTimeFormat(milliseconds: number | undefined) {
   if (!milliseconds || milliseconds < 0 || milliseconds < 1000) return;
 
   const days = Math.floor(milliseconds / (3600000 * 24));
@@ -232,7 +232,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
-        {transformMilisecondsToTimeFormat(delays.start)}
+        {transformMillisecondsToTimeFormat(delays.start)}
       </Typography.Text>
     </Space>,
   ]);
@@ -241,18 +241,18 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     <Space>
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Duration:</Typography.Text>
-      <Typography.Text>{transformMilisecondsToTimeFormat(duration)}</Typography.Text>
+      <Typography.Text>{transformMillisecondsToTimeFormat(duration)}</Typography.Text>
     </Space>,
     <Space>
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Duration:</Typography.Text>
-      <Typography.Text>{transformMilisecondsToTimeFormat(plan.duration)}</Typography.Text>
+      <Typography.Text>{transformMillisecondsToTimeFormat(plan.duration)}</Typography.Text>
     </Space>,
     <Space>
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
-        {delays.start ? transformMilisecondsToTimeFormat(delays.duration) : ''}
+        {delays.start ? transformMillisecondsToTimeFormat(delays.duration) : ''}
       </Typography.Text>
     </Space>,
   ]);
@@ -272,7 +272,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
-        {transformMilisecondsToTimeFormat(delays.end)}
+        {transformMillisecondsToTimeFormat(delays.end)}
       </Typography.Text>
     </Space>,
   ]);

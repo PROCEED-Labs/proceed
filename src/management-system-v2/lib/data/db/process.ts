@@ -366,7 +366,6 @@ export async function addProcessVersion(
   // get the version from the given bpmn
 
   let versionInformation = await getDefinitionsVersionInformation(bpmn);
-  console.log(versionInformation);
   if (!versionInformation) {
     throw new Error('The given bpmn does not contain a version.');
   }
@@ -422,12 +421,13 @@ export async function addProcessVersion(
 
     if (version && versionedUserTaskFilenames) {
       await asyncMap(versionedUserTaskFilenames, async (fileName) => {
-        const res = await getArtifactMetaData(`${fileName}.json`, false);
-        if (res) {
-          console.log(res);
-          return await db.artifactVersionReference.create({
-            data: { artifactId: res.id, versionId: version.id },
-          });
+        for (const extension of ['.json', '.html']) {
+          const res = await getArtifactMetaData(`${fileName}${extension}`, false);
+          if (res) {
+            await db.artifactVersionReference.create({
+              data: { artifactId: res.id, versionId: version.id },
+            });
+          }
         }
       });
     }
@@ -557,7 +557,6 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string, vers
         fileName: true,
       },
     });
-    console.dir(res, { depth: 3 });
 
     if (res) {
       let userTaskJsons: Record<string, string> = {};
@@ -567,13 +566,12 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string, vers
             processDefinitionsId,
             task.filePath,
             true,
-            true,
+            false,
           )) as Buffer;
           const taskId = task.fileName.split('.').shift();
           userTaskJsons[taskId!] = jsonAsBuffer.toString('utf8');
         }),
       );
-      console.log(userTaskJsons);
       return userTaskJsons;
     }
   } catch (error) {
@@ -614,23 +612,63 @@ export async function checkIfUserTaskExists(processDefinitionsId: string, userTa
   }
 }
 
+export async function getProcessUserTaskHtml(processDefinitionsId: string, taskFileName: string) {
+  checkIfProcessExists(processDefinitionsId);
+  try {
+    const res = await db.artifact.findFirst({
+      where: {
+        AND: [
+          { fileName: `${taskFileName}.html` },
+          { processReferences: { some: { processId: processDefinitionsId } } },
+        ],
+      },
+      select: {
+        filePath: true,
+      },
+    });
+
+    if (!res) {
+      throw new Error('Unable to get html for user task!');
+    }
+
+    const html = (
+      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
+    ).toString('utf-8');
+    return html;
+  } catch (err) {
+    logger.debug(`Error getting html of user task. Reason:\n${err}`);
+    throw new Error('Unable to get html for user task!');
+  }
+}
+
 export async function saveProcessUserTask(
   processDefinitionsId: string,
   userTaskId: string,
   json: string,
+  html: string,
   versionCreatedOn?: string,
 ) {
   checkIfProcessExists(processDefinitionsId);
   try {
-    const base64String = btoa(json);
-    const content = Uint8Array.from(atob(base64String), (c) => c.charCodeAt(0));
-
     const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
+    const content = new TextEncoder().encode(json);
     const { fileName } = await saveProcessArtifact(
       processDefinitionsId,
       `${userTaskId}.json`,
       'application/json',
       content,
+      {
+        generateNewFileName: false,
+        versionCreatedOn: versionCreatedOn,
+        replaceFileContentOnly: res?.filePath ? true : false,
+      },
+    );
+
+    await saveProcessArtifact(
+      processDefinitionsId,
+      `${userTaskId}.html`,
+      'text/html',
+      new TextEncoder().encode(html),
       {
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
@@ -719,6 +757,8 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
     },
   });
 
+  console.log('Refs: ', refs);
+
   const oldNewFilenameMapping = await asyncMap(refs, async (ref) => {
     const { artifactId, artifact } = ref;
     const sourceFilePath = artifact.filePath;
@@ -764,7 +804,78 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
 }
 
 export async function getProcessImage(processDefinitionsId: string, imageFileName: string) {
-  // TODO
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    const res = await db.artifact.findFirst({
+      where: {
+        AND: [
+          { fileName: imageFileName },
+          { processReferences: { some: { processId: processDefinitionsId } } },
+        ],
+      },
+      select: { filePath: true },
+    });
+    if (!res) {
+      throw new Error('Unable to get image!');
+    }
+    const image = (await retrieveProcessArtifact(
+      processDefinitionsId,
+      res?.filePath,
+      true,
+      false,
+    )) as Buffer;
+    return image;
+  } catch (err) {
+    logger.debug(`Error getting image. Reason:\n${err}`);
+    throw new Error('Unable to get image!');
+  }
+}
+
+/** Return object mapping from user tasks fileNames to their html */
+export async function getProcessUserTasksHtml(processDefinitionsId: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    const res = await db.artifact.findMany({
+      where: {
+        OR: [
+          {
+            processReferences: {
+              some: {
+                processId: processDefinitionsId,
+              },
+            },
+          },
+        ],
+        artifactType: 'user-tasks',
+      },
+      select: {
+        filePath: true,
+        fileName: true,
+      },
+    });
+
+    if (res) {
+      let userTaskHTMLs: Record<string, string> = {};
+      await Promise.all(
+        res.map(async (task) => {
+          const htmlAsBuffer = (await retrieveProcessArtifact(
+            processDefinitionsId,
+            task.filePath,
+            true,
+            false,
+          )) as Buffer;
+          const taskId = task.fileName.split('.').shift();
+          userTaskHTMLs[taskId!] = htmlAsBuffer.toString('utf8');
+        }),
+      );
+      return userTaskHTMLs;
+    }
+  } catch (err) {
+    logger.debug(`Error getting user task html. Reason:\n${err}`);
+    throw new Error('Failed getting html for all user tasks');
+  }
 }
 
 /** Return Array with fileNames of images for given process */

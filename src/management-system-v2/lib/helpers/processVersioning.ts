@@ -8,20 +8,19 @@ import {
   getUserTaskFileNameMapping,
   setUserTaskData,
 } from '@proceed/bpmn-helper';
-import { asyncForEach, asyncMap, findKey } from './javascriptHelpers';
+import { asyncForEach } from './javascriptHelpers';
 import {
   deleteProcessUserTask,
+  getProcessUserTaskHtml,
   getProcessUserTasksHtml,
   getProcessUserTasksJSON,
   saveProcessUserTask,
   getProcessUserTaskJSON as getUserTaskJSON,
 } from '../data/db/process'; //from '../data/legacy/_process';
 
-//import { getUserTaskJSON, getUserTaskHTML } from '../data/legacy/fileHandling';
 import { Process } from '../data/process-schema';
 import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from '../data/module-import-types-temp';
-//import { updateArtifactRefVersionedUserTask } from '../data/file-manager-facade';
 import { toCustomUTCString } from './timeHelper';
 
 const { diff } = require('bpmn-js-differ');
@@ -132,8 +131,7 @@ export async function versionUserTasks(
 
     // only version user tasks that use html
     if (fileName && implementation === getUserTaskImplementationString()) {
-      const userTaskHtml = await getUserTaskHTML(processInfo.id, fileName);
-
+      const userTaskHtml = await getProcessUserTaskHtml(processInfo.id, fileName);
       let versionFileName = `${fileName}-${newVersion}`;
 
       // get the html of the user task in the based on version (if there is one and it is locally known)
@@ -151,7 +149,7 @@ export async function versionUserTasks(
         const basedOnVersionFileInfo = basedOnVersionHtmlMapping[userTaskId];
 
         if (basedOnVersionFileInfo && basedOnVersionFileInfo.fileName) {
-          const basedOnVersionUserTaskHtml = await getUserTaskHTML(
+          const basedOnVersionUserTaskHtml = await getProcessUserTaskHtml(
             processInfo.id,
             basedOnVersionFileInfo.fileName,
           );
@@ -174,11 +172,11 @@ export async function versionUserTasks(
 
       // store the user task version if it didn't exist before
       if (!dryRun && !userTaskHtmlAlreadyExisting) {
-        const userTaskData = getUserTaskJSON(processInfo.id, fileName);
+        const userTaskData = await getUserTaskJSON(processInfo.id, fileName);
         await saveProcessUserTask(
           processInfo.id,
           versionFileName,
-          userTaskData,
+          userTaskData!,
           userTaskHtml!,
           versionCreatedOn,
         );
@@ -244,7 +242,7 @@ export async function selectAsLatestVersion(processId: string, versionId: string
       processId,
       newName,
       processDataMapping![oldName],
-      processHtmlMapping[oldName],
+      processHtmlMapping![oldName],
     );
   });
 

@@ -383,7 +383,6 @@ export async function prepareExport(
     if (options.artefacts) {
       const allRequiredUserTaskFiles: Set<string> = new Set();
       const allRequiredImageFiles: Set<string> = new Set();
-
       // determine the user task files that are need per version and across all versions
       for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
         const versionUserTasks = Object.keys(
@@ -392,11 +391,12 @@ export async function prepareExport(
 
         for (const filename of versionUserTasks) allRequiredUserTaskFiles.add(filename);
       }
+
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
         const json = await getProcessUserTaskData(definitionId, filename, spaceId);
-        console.log(json);
         const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
+        console.log(html);
 
         if (typeof json !== 'string') {
           throw json!.error;

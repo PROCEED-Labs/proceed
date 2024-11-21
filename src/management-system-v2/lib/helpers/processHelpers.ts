@@ -212,8 +212,8 @@ export async function updateUserTaskFileName(
   const fileNameMapping = await getUserTaskFileNameMapping(bpmnObj);
 
   await asyncForEach(Object.entries(fileNameMapping), async ([userTaskId, { fileName }]) => {
-    if (fileName === oldFilename.split('.json')[0]) {
-      await setUserTaskData(bpmnObj, userTaskId, newFilename.split('.json')[0]);
+    if (fileName === oldFilename.split('.')[0]) {
+      await setUserTaskData(bpmnObj, userTaskId, newFilename.split('.')[0]);
     }
   });
 

@@ -362,6 +362,7 @@ export async function softDeleteProcessUserTask(processId: string, userTaskFilen
     const userTaskJson = JSON.parse(res);
     const referencedArtifactFilenames = findKey(userTaskJson, 'src');
     referencedArtifactFilenames.push(`${userTaskFilename}.json`);
+    referencedArtifactFilenames.push(`${userTaskFilename}.html`);
 
     const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
       getArtifactMetaData(filename, false),
@@ -387,6 +388,7 @@ export async function revertSoftDeleteProcessUserTask(processId: string, userTas
     const userTaskJson = JSON.parse(res);
     const referencedArtifactFilenames = findKey(userTaskJson, 'src');
     referencedArtifactFilenames.push(`${userTaskFilename}.json`);
+    referencedArtifactFilenames.push(`${userTaskFilename}.html`);
 
     const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
       getArtifactMetaData(filename, false),

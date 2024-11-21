@@ -33,13 +33,14 @@ import {
   checkIfUserTaskExists,
   copyProcessArtifactReferences,
   copyProcessFiles,
+} from './db/process';
+import {
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
   saveProcessScriptTask as _saveProcessScriptTask,
   deleteProcessScriptTask as _deleteProcessScriptTask,
-} from './db/process';
+} from './legacy/_process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
-import { setProceedElement } from '@proceed/bpmn-helper/src/proceedExtensions';
 
 // Declare variables to hold the process module functions
 let removeProcess: TProcessModule['removeProcess'];

@@ -38,6 +38,19 @@ async function deployProcessToMachines(
             ),
           );
 
+          const scripts = exportData.scriptTasks.map((scriptTask) => {
+            if (!scriptTask.js)
+              throw Error(
+                `Missing js for a script task (${scriptTask.filename}) in a process that is being deployed`,
+              );
+            endpoints.sendScriptTaskScript(
+              machine,
+              exportData.definitionId,
+              scriptTask.filename,
+              scriptTask.js,
+            );
+          });
+
           const images = exportData.images.map((image) =>
             endpoints.sendImage(machine, exportData.definitionId, image.filename, image.data),
           );

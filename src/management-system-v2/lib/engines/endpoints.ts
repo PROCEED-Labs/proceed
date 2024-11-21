@@ -47,6 +47,25 @@ export function sendUserTaskHTML(
   });
 }
 
+export function sendScriptTaskScript(
+  machine: Machine,
+  definitionId: string,
+  scriptTaskId: string,
+  script: string,
+) {
+  return fetch(
+    generateRequestUrl(machine, `/process/${definitionId}/script-tasks/${scriptTaskId}`),
+    {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ script }),
+    },
+  );
+}
+
 export function sendImage(machine: Machine, definitionId: string, fileName: string, image: Blob) {
   return fetch(
     generateRequestUrl(machine, `/resources/process/${definitionId}/images/${fileName}`),

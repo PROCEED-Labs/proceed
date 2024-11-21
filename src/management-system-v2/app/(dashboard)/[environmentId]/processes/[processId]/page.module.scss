@@ -23,6 +23,16 @@
     min-height: 0 !important;
   }
 
+  .HeaderLeftContent {
+    display: flex;
+    align-items: center;
+
+    > button {
+      height: 32px;
+      line-height: normal;
+    }
+  }
+
   .Modeler {
     height: 100%;
     width: 100%;

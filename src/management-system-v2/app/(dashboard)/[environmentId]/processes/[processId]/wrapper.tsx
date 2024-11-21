@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './page.module.scss';
-import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
+import { Children, PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
@@ -39,9 +39,15 @@ type SubprocessInfo = {
 type WrapperProps = PropsWithChildren<{
   processName: string;
   processes: { id: string; name: string }[];
+  timelineViewFeatureEnabled: boolean;
 }>;
 
-const Wrapper = ({ children, processName, processes }: WrapperProps) => {
+const Wrapper = ({
+  children,
+  processName,
+  processes,
+  timelineViewFeatureEnabled,
+}: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
@@ -53,6 +59,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   const modeler = useModelerStateStore((state) => state.modeler);
   const rootElement = useModelerStateStore((state) => state.rootElement);
   const [editingName, setEditingName] = useState<null | string>(null);
+  const [timelineViewActive, setTimelineViewActive] = useState(false);
 
   const {
     token: { fontSizeHeading1 },
@@ -232,10 +239,12 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
     }
   };
 
+  const childrenArray = Children.toArray(children);
+
   return (
     <Content
       headerLeft={
-        <div style={{ flex: 1, padding: '0 5px' }}>
+        <div style={{ flex: 1, padding: '0 5px' }} className={styles.HeaderLeftContent}>
           {showMobileView ? (
             <Button icon={<LeftOutlined />} type="text" onClick={handleBackButtonClick}>
               <Typography.Text
@@ -254,6 +263,9 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
               separator={<span style={{ fontSize: '20px' }}>/</span>}
               items={breadcrumbItems}
             />
+          )}
+          {timelineViewFeatureEnabled && (
+            <button onClick={() => setTimelineViewActive(!timelineViewActive)}>switch mode</button>
           )}
         </div>
       }
@@ -289,7 +301,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      {children}
+      {timelineViewActive ? childrenArray[1] : childrenArray[0]}
       {minimized ? (
         <Overlay processId={processId as string} onClose={() => setClosed(true)} />
       ) : null}

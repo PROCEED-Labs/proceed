@@ -21,7 +21,6 @@ function transformMilisecondsToTimeFormat(milliseconds: number | undefined) {
   const seconds = Math.floor(milliseconds / 1000);
   milliseconds -= seconds * 1000;
 
-  // Will display time in 10:30:23 format
   return `${days} Days, ${hours}h, ${minutes}min, ${seconds}s`;
 }
 

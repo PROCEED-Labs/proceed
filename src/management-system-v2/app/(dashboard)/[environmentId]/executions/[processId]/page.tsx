@@ -6,7 +6,7 @@ import useDeployments from '../deployments-hook';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
-import { PlusOutlined, InfoCircleOutlined, FilterOutlined, } from '@ant-design/icons';
+import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
 import { useCallback, useRef, useState } from 'react';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import contentStyles from './content.module.scss';
@@ -186,15 +186,17 @@ function ProcessDeploymentView({
                     items: [
                       {
                         key: '-1',
-                        label:
-                          'Select a version'
-                        ,
-                        disabled: true
+                        label: 'Select a version',
+                        disabled: true,
                       },
-                      ...(selectedVersion ? [{
-                        label: '<none>',
-                        key: '-2'
-                      }] : []),
+                      ...(selectedVersion
+                        ? [
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
+                        : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
                         key: `${version.version}`,
@@ -226,7 +228,7 @@ function ProcessDeploymentView({
                     selectedKeys: [selectedColoring],
                   }}
                 >
-                  <Button icon={< MdOutlineColorLens size={18} />} />
+                  <Button icon={<MdOutlineColorLens size={18} />} />
                 </Dropdown>
               </Tooltip>
             </ToolbarGroup>

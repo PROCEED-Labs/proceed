@@ -223,15 +223,6 @@ export async function versionScriptTasks(
             basedOnVersionFileInfo.fileName + '.ts',
           );
 
-          console.log(
-            basedOnVersionScriptTaskJS,
-            scriptTaskJS,
-            basedOnVersionScriptTaskTS,
-            scriptTaskTS,
-            basedOnVersionScriptTaskJS === scriptTaskJS,
-            basedOnVersionScriptTaskTS === scriptTaskTS,
-          );
-
           if (
             basedOnVersionScriptTaskJS === scriptTaskJS &&
             basedOnVersionScriptTaskTS === scriptTaskTS

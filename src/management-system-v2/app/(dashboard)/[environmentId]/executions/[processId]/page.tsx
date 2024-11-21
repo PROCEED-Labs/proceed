@@ -6,14 +6,14 @@ import useDeployments from '../deployments-hook';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
-import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
+import { PlusOutlined, InfoCircleOutlined, FilterOutlined, } from '@ant-design/icons';
 import { useCallback, useRef, useState } from 'react';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
-import { MdColorLens } from 'react-icons/md';
+import { MdColorLens, MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, applyColors, colorOptions, flushPreviousStyling } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
@@ -226,7 +226,7 @@ function ProcessDeploymentView({
                     selectedKeys: [selectedColoring],
                   }}
                 >
-                  <Button icon={<MdColorLens />} />
+                  <Button icon={< MdOutlineColorLens size={18} />} />
                 </Dropdown>
               </Tooltip>
             </ToolbarGroup>

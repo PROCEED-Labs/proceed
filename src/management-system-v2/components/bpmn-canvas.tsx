@@ -244,13 +244,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           onShapeRemove?.(event.element);
         });
 
-        modeler.current!.on('commandStack.element.updateProperties.executed', (event: any) => {
-          console.log('executed', event);
-        });
-        modeler.current!.on('commandStack.element.updateProperties.reverted', (event: any) => {
-          console.log('reverted', event);
-        });
-
         // Undo fires commandStack.revert
         modeler.current!.on(
           'commandStack.revert',

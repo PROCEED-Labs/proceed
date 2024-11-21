@@ -661,6 +661,7 @@ export async function saveProcessUserTask(
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
         replaceFileContentOnly: res?.filePath ? true : false,
+        context: 'user-tasks',
       },
     );
 
@@ -673,6 +674,7 @@ export async function saveProcessUserTask(
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
         replaceFileContentOnly: res?.filePath ? true : false,
+        context: 'user-tasks',
       },
     );
     return fileName;
@@ -756,8 +758,6 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
       artifact: { select: { filePath: true, fileName: true, artifactType: true } },
     },
   });
-
-  console.log('Refs: ', refs);
 
   const oldNewFilenameMapping = await asyncMap(refs, async (ref) => {
     const { artifactId, artifact } = ref;

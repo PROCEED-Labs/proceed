@@ -131,6 +131,7 @@ interface SaveProcessArtifactOptions {
   useDefaultArtifactsTable?: boolean;
   versionCreatedOn?: string;
   replaceFileContentOnly?: boolean;
+  context?: ArtifactType; // option to override the file category in case of collision ( eg: xml extension is used for usertask and bpmn both)
 }
 
 // Functionality for handling process artifact files
@@ -146,10 +147,11 @@ export async function saveProcessArtifact(
     useDefaultArtifactsTable = true,
     versionCreatedOn,
     replaceFileContentOnly = false,
+    context,
   } = options;
 
   const newFileName = generateNewFileName ? getNewFileName(fileName) : fileName;
-  const artifactType = getFileCategory(fileName, mimeType);
+  const artifactType = context ? context : getFileCategory(fileName, mimeType);
   const filePath = generateProcessFilePath(newFileName, processId, mimeType, versionCreatedOn);
 
   const usePresignedUrl = ['images', 'others'].includes(artifactType);

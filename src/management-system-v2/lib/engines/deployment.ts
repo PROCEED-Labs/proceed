@@ -120,7 +120,7 @@ async function dynamicDeployment(
 
   try {
     deployProcessToMachines([preferredMachine], processesExportData);
-  } catch (error) { }
+  } catch (error) {}
 }
 
 async function staticDeployment(

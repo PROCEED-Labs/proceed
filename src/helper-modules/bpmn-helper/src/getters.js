@@ -444,7 +444,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
     );
   }
 
-  const version = importElement.version || importElement.$attrs['proceed:versionId'];
+  const version = importElement.versionId || importElement.$attrs['proceed:versionId'];
 
   if (!version) {
     throw new Error(
@@ -455,7 +455,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
   return {
     definitionId: importElement.location,
     processId,
-    version: version,
+    versionId: version,
   };
 }
 

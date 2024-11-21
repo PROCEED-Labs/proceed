@@ -55,7 +55,7 @@ async function deployProcessToMachines(
             endpoints.sendImage(machine, exportData.definitionId, image.filename, image.data),
           );
 
-          await Promise.all([...userTasks, ...images]);
+          await Promise.all([...scripts, ...userTasks, ...images]);
         }),
       );
     });
@@ -120,7 +120,7 @@ async function dynamicDeployment(
 
   try {
     deployProcessToMachines([preferredMachine], processesExportData);
-  } catch (error) {}
+  } catch (error) { }
 }
 
 async function staticDeployment(

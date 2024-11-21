@@ -252,7 +252,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
-        {delays.start ? transformMillisecondsToTimeFormat(delays.duration) : ''}
+        {transformMillisecondsToTimeFormat(delays.duration)}
       </Typography.Text>
     </Space>,
   ]);

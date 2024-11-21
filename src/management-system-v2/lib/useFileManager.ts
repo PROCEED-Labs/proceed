@@ -128,7 +128,7 @@ export function useFileManager(entityType: EntityType): UseFileManagerReturn {
     file?: File | Blob | null,
     shareToken?: string | null,
   ): Promise<{ success: boolean; fileUrl?: string; fileName?: string }> => {
-    const url = `/api/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
+    const url = `/api/private/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
 
     const response = await fetch(url, {
       method,

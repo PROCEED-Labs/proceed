@@ -3,11 +3,8 @@
 import Bar from '@/components/bar';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import { Button, Space } from 'antd';
-import { FC, useState } from 'react';
+import { FC } from 'react';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
-import EnvironmentSidePanel from './environments-side-panel';
-import { AiOutlineClose } from 'react-icons/ai';
-import SelectionActions from '@/components/selection-actions';
 import ElementList from '@/components/item-list-view';
 
 const highlightedKeys = ['name', 'description'] as const;
@@ -26,9 +23,6 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
     transformData: (results) => results.map((result) => result.item),
   });
 
-  const [selectedRows, setSelectedRows] = useState<typeof filteredData>([]);
-  const selectedRowKeys = selectedRows.map((row) => row.id);
-
   return (
     <>
       <Bar
@@ -37,9 +31,6 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
             <Button type="primary" href="/create-organization">
               New Organization
             </Button>
-            <SelectionActions count={selectedRowKeys.length}>
-              <Button type="text" icon={<AiOutlineClose />} onClick={() => setSelectedRows([])} />
-            </SelectionActions>
           </Space>
         }
         searchProps={{
@@ -64,15 +55,8 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
           },
         ]}
         data={filteredData}
-        elementSelection={{
-          selectedElements: selectedRows,
-          setSelectionElements: (orgs) => setSelectedRows(orgs),
-        }}
         tableProps={{
           rowKey: 'id',
-          onRow: (row) => ({
-            onClick: () => setSelectedRows([row]),
-          }),
         }}
       />
     </>

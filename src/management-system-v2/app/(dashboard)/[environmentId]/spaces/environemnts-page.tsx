@@ -6,6 +6,7 @@ import { Button, Space } from 'antd';
 import { FC } from 'react';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
+import Link from 'next/link';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -51,7 +52,11 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
             key: 'tooltip',
             title: '',
             width: 100,
-            render: (id: string, environment) => <></>,
+            render: (id: string) => (
+              <Link href={`/${id}/processes`}>
+                <Button>Enter</Button>
+              </Link>
+            ),
           },
         ]}
         data={filteredData}

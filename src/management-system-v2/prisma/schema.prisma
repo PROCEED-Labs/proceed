@@ -171,6 +171,7 @@ model Engine {
   space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
   environmentId String
   address       String /// Either an http url for an engine or a mqtt url
+  name          String?
   createdOn     DateTime @default(now())
   lastEditedOn  DateTime @updatedAt
 }

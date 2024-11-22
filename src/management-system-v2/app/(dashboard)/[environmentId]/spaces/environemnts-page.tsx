@@ -2,7 +2,7 @@
 
 import Bar from '@/components/bar';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
-import { Button, Space } from 'antd';
+import { Button } from 'antd';
 import { FC } from 'react';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
@@ -28,11 +28,9 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
     <>
       <Bar
         leftNode={
-          <Space>
-            <Button type="primary" href="/create-organization">
-              New Organization
-            </Button>
-          </Space>
+          <Link href="/create-organization">
+            <Button type="primary">New Organization</Button>
+          </Link>
         }
         searchProps={{
           value: searchQuery,

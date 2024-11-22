@@ -51,6 +51,10 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
   return sorter;
 }
 
+export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess['type'] } }) {
+  return item.type === 'folder' ? <FolderFilled /> : <FileFilled />;
+}
+
 type BaseProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
@@ -201,7 +205,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
           >
-            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
+            <ProcessListItemIcon item={record} /> {record.name.highlighted}
           </div>
         </SpaceLink>
       ),
@@ -242,12 +246,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     },
     {
       title: 'Last Edited',
-      dataIndex: 'lastEdited',
+      dataIndex: 'lastEditedOn',
       key: 'Last Edited',
       render: (date: string) => generateDateString(date, true),
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
-      ),
+      sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
       responsive: ['md'],
     },
     {
@@ -255,9 +257,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      ),
+      sorter: folderAwareSort((a, b) => b.createdOn!.getTime() - a.createdOn!.getTime()),
       responsive: ['md'],
     },
     {
@@ -270,10 +270,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
-      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.owner),
+      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.creatorId),
       sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? a.createdBy ?? '' : a.owner).localeCompare(
-          b.type === 'folder' ? b.createdBy ?? '' : b.owner,
+        (a.type === 'folder' ? a.createdBy ?? '' : a.creatorId).localeCompare(
+          b.type === 'folder' ? b.createdBy ?? '' : b.creatorId,
         ),
       ),
       responsive: ['md'],
@@ -459,8 +459,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
                   : undefined
               }
             >
-              {record.type === 'folder' ? <FolderFilled /> : <FileFilled />}{' '}
-              {record.name.highlighted}
+              <ProcessListItemIcon item={record} /> {record.name.highlighted}
             </div>
           );
         },

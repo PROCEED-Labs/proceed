@@ -1,11 +1,10 @@
 'use client';
 
-import { UserOutlined, WarningOutlined } from '@ant-design/icons';
+import { UserOutlined, WarningOutlined, AppstoreOutlined } from '@ant-design/icons';
 import {
   Alert,
   Avatar,
   Button,
-  ConfigProvider,
   Dropdown,
   MenuProps,
   Modal,
@@ -25,19 +24,16 @@ import { useEnvironment } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
+import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
 
 const HeaderActions: FC = () => {
   const session = useSession();
-  const isGuest = session.data?.user.guest;
+  const isGuest = session.data?.user.isGuest;
   const loggedIn = session.status === 'authenticated';
   const token = theme.useToken();
   const [guestWarningOpen, setGuestWarningOpen] = useState(false);
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
-
-  if (!process.env.NEXT_PUBLIC_USE_AUTH) {
-    return null;
-  }
 
   if (!loggedIn) {
     return (
@@ -59,6 +55,7 @@ const HeaderActions: FC = () => {
       key: 'profile',
       title: 'Profile Settings',
       label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
+      icon: <FaUserEdit />,
     },
   ];
 
@@ -78,6 +75,20 @@ const HeaderActions: FC = () => {
         </Button>
       </>
     );
+
+    avatarDropdownItems.push({
+      key: 'delete data',
+      title: 'Delete Data',
+      label: 'Delete Data',
+      onClick: () =>
+        Modal.confirm({
+          title: 'Delete Data',
+          content: 'Are you sure you want to delete all your data',
+          onOk: signOut,
+          maskClosable: true,
+        }),
+      icon: <FaSignOutAlt />,
+    });
   } else {
     // userSpaces is null when the component is outside of the UserSpaces provider
     if (userSpaces) {
@@ -85,13 +96,17 @@ const HeaderActions: FC = () => {
         <div style={{ padding: '1rem' }}>
           <Select
             options={userSpaces.map((space) => {
-              const name = space.organization ? space.name : 'My Space';
+              const name = space.isOrganization ? space.name : 'My Space';
               return {
                 label: (
                   <Tooltip title={name} placement="left">
                     <Link
+                      style={{ display: 'block' }}
                       href={spaceURL(
-                        { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                        {
+                          spaceId: space?.id ?? '',
+                          isOrganization: space?.isOrganization ?? false,
+                        },
                         `/processes`,
                       )}
                     >
@@ -114,12 +129,14 @@ const HeaderActions: FC = () => {
         key: 'environments',
         title: 'My Spaces',
         label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+        icon: <AppstoreOutlined />,
       },
       {
         key: 'signout',
-        title: 'Sign out',
-        label: 'Sign out',
+        title: 'Sign Out',
+        label: 'Sign Out',
         onClick: () => signOut(),
+        icon: <FaSignOutAlt />,
       },
     );
   }

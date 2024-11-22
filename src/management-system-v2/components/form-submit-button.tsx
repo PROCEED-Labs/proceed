@@ -1,5 +1,5 @@
 import { FormInstance, Form, Button } from 'antd';
-import React, { useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 
 const FormSubmitButton = ({
   form,
@@ -8,7 +8,7 @@ const FormSubmitButton = ({
 }: {
   form: FormInstance;
   onSubmit: Function;
-  submitText: string;
+  submitText: ReactNode;
 }) => {
   const [submittable, setSubmittable] = useState(false);
 

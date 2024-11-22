@@ -2,26 +2,28 @@ import { PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
-import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
 import { MenuProps } from 'antd';
 import {
   FileOutlined,
-  ProfileOutlined,
   UnlockOutlined,
   UserOutlined,
   SettingOutlined,
   ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { getUserRules } from '@/lib/authorization/authorization';
-import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
+import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { MdOutlineComputer } from 'react-icons/md';
+import { GoOrganization } from 'react-icons/go';
 import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
-import { adminRules } from '@/lib/ability/abilityHelper';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
+import { env } from '@/lib/env-vars';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { adminRules } from '@/lib/authorization/globalRules';
 
 const DashboardLayout = async ({
   children,
@@ -31,13 +33,11 @@ const DashboardLayout = async ({
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
+  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
+  const orgEnvironments = await asyncMap(userOrgEnvs, (envId) => getEnvironmentById(envId));
 
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+  userEnvironments.push(...orgEnvironments);
 
   const userRules = systemAdmin
     ? (adminRules as RemoveReadOnly<typeof adminRules>)
@@ -88,7 +88,7 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (process.env.NEXT_PUBLIC_ENABLE_EXECUTION) {
+  if (env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({
@@ -122,10 +122,10 @@ const DashboardLayout = async ({
     });
   }
 
-  if (process.env.ENABLE_MACHINE_CONFIG) {
+  if (env.ENABLE_MACHINE_CONFIG && can('view', 'MachineConfig')) {
     layoutMenuItems.push({
       key: 'machine-config',
-      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,
+      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,
       icon: <LuTable2 />,
     });
 
@@ -169,31 +169,54 @@ const DashboardLayout = async ({
     });
   }
 
-  if (can('view', 'Setting')) {
+  if (can('view', 'Setting') || can('manage', 'Environment')) {
+    const children: MenuProps['items'] = [];
+
+    if (can('update', 'Environment') || can('delete', 'Environment'))
+      children.push({
+        key: 'organization-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>
+            Organization Settings
+          </Link>
+        ),
+        icon: <GoOrganization />,
+      });
+
+    if (can('view', 'Setting'))
+      children.push({
+        key: 'general-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
+        ),
+        icon: <SettingOutlined />,
+      });
+
     layoutMenuItems.push({
       key: 'settings-group',
       label: 'Settings',
       type: 'group',
-      children: [
-        {
-          key: 'general-settings',
-          label: (
-            <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
-          ),
-          icon: <SettingOutlined />,
-        },
-      ],
+      children,
     });
   }
 
+  let logo;
+  if (activeEnvironment.isOrganization && (await organizationHasLogo(activeEnvironment.spaceId)))
+    logo = `/api/private/${activeEnvironment.spaceId}/logo`;
+
   return (
     <>
-      <SetAbility rules={userRules} environmentId={activeEnvironment.spaceId} />
+      <SetAbility
+        rules={userRules}
+        environmentId={activeEnvironment.spaceId}
+        treeMap={await getSpaceFolderTree(activeEnvironment.spaceId)}
+      />
       <Layout
         loggedIn={!!userId}
         userEnvironments={userEnvironments}
         layoutMenuItems={layoutMenuItems}
         activeSpace={activeEnvironment}
+        customLogo={logo}
       >
         {children}
       </Layout>

@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getProcess, getSharedProcessWithBpmn } from '@/lib/data/processes';
-import { getProcesses, getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/legacy/process';
+import { getProcesses, getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/DTOs';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
@@ -13,12 +13,12 @@ import ErrorMessage from '../../components/error-message';
 import styles from './page.module.scss';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { Environment } from '@/lib/data/environment-schema';
-import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
-import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
 
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
 import { SettingsOption } from './settings-modal';
+import { env } from '@/lib/env-vars';
 
 interface PageProps {
   searchParams: {
@@ -43,7 +43,7 @@ const getProcessInfo = async (
   isImport: boolean,
   versionId?: number,
 ) => {
-  const { session } = await getCurrentUser();
+  const { session, userId } = await getCurrentUser();
 
   let spaceId;
   let isOwner = false;
@@ -54,13 +54,13 @@ const getProcessInfo = async (
     const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
-    const ownedProcesses = await getProcesses(ability);
+    const ownedProcesses = await getProcesses(userId, ability);
     // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
     isOwner = ownedProcesses.some((process) => process.id === definitionId);
   }
 
   if (isOwner) {
-    // the user has access to the process so just get the necessary data from the appropiate/regular api
+    // the user has access to the process so just get the necessary data from the appropriate/regular api
     const processMetaData = await getProcess(definitionId, spaceId!);
 
     if (processMetaData && !('error' in processMetaData)) {
@@ -89,7 +89,7 @@ const getProcessInfo = async (
     }
   }
 
-  return { isOwner, processData };
+  return { isOwner, processData } as { isOwner: boolean; processData: Process };
 };
 
 /**
@@ -113,10 +113,10 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
         const { bpmn: importBpmn } = processInfo.processData;
 
         if (!knownInfos[definitionId]) knownInfos[definitionId] = {};
-        knownInfos[definitionId][version] = importBpmn;
+        knownInfos[definitionId][version] = importBpmn as string;
 
         // recursively get the imports of the imports
-        await getImportInfos(importBpmn, knownInfos);
+        await getImportInfos(importBpmn as string, knownInfos);
       }
     }
   }
@@ -129,16 +129,19 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     return <ErrorMessage message="Invalid Token " />;
   }
 
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
+  const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
+    return await getEnvironmentById(environmentId);
+  });
+
+  const orgEnvironments = await Promise.all(orgEnvironmentsPromises);
+
+  userEnvironments.push(...orgEnvironments);
 
   let isOwner = false;
 
-  const key = process.env.SHARING_ENCRYPTION_SECRET!;
+  const key = env.SHARING_ENCRYPTION_SECRET;
   let processData: Process | undefined;
   let iframeMode;
   let defaultSettings = settings as SettingsOption;

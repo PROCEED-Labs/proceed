@@ -49,7 +49,7 @@ export function getProcessMetaObjects() {
 }
 
 /** Returns all processes for a user */
-export async function getProcesses(ability?: Ability, includeBPMN = false) {
+export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
   const processes = Object.values(processMetaObjects);
 
   const userProcesses = ability ? ability.filter('view', 'Process', processes) : processes;
@@ -101,7 +101,7 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
   };
 
   if (!metadata.folderId) {
-    metadata.folderId = getRootFolder(metadata.environmentId).id;
+    metadata.folderId = (await getRootFolder(metadata.environmentId)).id;
   }
 
   const folderData = foldersMetaObject.folders[metadata.folderId];

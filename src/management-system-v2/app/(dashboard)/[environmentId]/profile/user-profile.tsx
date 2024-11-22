@@ -11,6 +11,9 @@ import { User } from '@/lib/data/user-schema';
 import { deleteUser as deleteUserServerAction } from '@/lib/data/users';
 import UserAvatar from '@/components/user-avatar';
 import { CloseOutlined } from '@ant-design/icons';
+import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
+import { z } from 'zod';
+import { requestEmailChange as serverRequestEmailChange } from '@/lib/change-email/server-actions';
 import Link from 'next/link';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
@@ -57,8 +60,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
     }
   }
 
-  const firstName = userData.guest ? 'Guest' : userData.firstName || '';
-  const lastName = userData.guest ? '' : userData.lastName || '';
+  const firstName = userData.isGuest ? 'Guest' : userData.firstName || '';
+  const lastName = userData.isGuest ? '' : userData.lastName || '';
 
   return (
     <>
@@ -90,7 +93,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
       />
 
       <Modal
-        title="Change your email"
+        title="Change your email address"
         open={changeEmailModalOpen}
         closeIcon={null}
         onCancel={() => setChangeEmailModalOpen(false)}
@@ -98,8 +101,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
         destroyOnClose
       >
         <Alert
-          type="warning"
-          message="We'll send a sign in link to your new email, if you don't open it in this browser your email won't be changed"
+          type="info"
+          message="We'll send you a verification link to your new email address."
           style={{ marginBottom: '1rem' }}
         />
         <Form
@@ -145,7 +148,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               position: 'relative',
             }}
           >
-            {userData.guest && (
+            {userData.isGuest && (
               <div
                 style={{
                   zIndex: 100,
@@ -180,13 +183,14 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 {
                   key: 'username',
                   title: 'Username',
-                  value: !userData.guest ? userData.username : 'Guest',
+                  value: !userData.isGuest ? userData.username : 'Guest',
                   action: () => setChangeNameModalOpen(true),
                 },
                 {
                   key: 'email',
                   title: 'Email',
-                  value: !userData.guest ? userData.email : 'Guest',
+                  value: !userData.isGuest ? userData.email : 'Guest',
+                  action: () => setChangeEmailModalOpen(true),
                 },
               ]}
               columns={[
@@ -194,7 +198,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 { dataIndex: 'value' },
                 {
                   key: 'action',
-                  render: (_, row) => row.action && <RightOutlined />,
+                  render: () => <RightOutlined />,
                 },
               ]}
               onRow={(row) =>
@@ -209,7 +213,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               className={styles.Table}
               style={{
                 marginBottom: 16,
-                ...(userData.guest && { filter: 'blur(7px)', pointerEvents: 'none' }),
+                ...(userData.isGuest && { filter: 'blur(7px)', pointerEvents: 'none' }),
               }}
             />
           </div>
@@ -224,7 +228,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               }}
               buttonProps={{ danger: true }}
             >
-              {userData.guest ? 'Delete Data' : 'Delete Account'}
+              {userData.isGuest ? 'Delete Data' : 'Delete Account'}
             </ConfirmationButton>
           </Space>
         </Card>

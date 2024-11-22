@@ -5,9 +5,9 @@ import {
   updateUser,
   addOauthAccount,
   getOauthAccountByProviderId,
-} from '@/lib/data/legacy/iam/users';
+} from '@/lib/data/DTOs';
 import {
-  createVerificationToken,
+  saveVerificationToken,
   deleteVerificationToken,
   getVerificationToken,
 } from '@/lib/data/legacy/verification-tokens';
@@ -21,20 +21,21 @@ const Adapter = {
     return addUser({
       image: null,
       ...user,
-      guest: false,
+      isGuest: false,
+      emailVerifiedOn: null,
     });
   },
   getUser: async (id: string) => {
     return getUserById(id);
   },
   updateUser: async (user: AuthenticatedUser) => {
-    return updateUser(user.id, { ...user, guest: false });
+    return updateUser(user.id, { ...user, isGuest: false });
   },
   getUserByEmail: async (email: string) => {
     return getUserByEmail(email) ?? null;
   },
   createVerificationToken: async (token: VerificationToken) => {
-    return createVerificationToken(token);
+    return saveVerificationToken(token);
   },
   useVerificationToken: async (params: { identifier: string; token: string }) => {
     // next-auth checks if the token is expired
@@ -52,7 +53,10 @@ const Adapter = {
     });
   },
   getUserByAccount: async (account: AdapterAccount) => {
-    const userAccount = getOauthAccountByProviderId(account.provider, account.providerAccountId);
+    const userAccount = await getOauthAccountByProviderId(
+      account.provider,
+      account.providerAccountId,
+    );
 
     if (!userAccount) return null;
 

@@ -11,6 +11,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 import ElementList from './item-list-view';
 import UserAvatar from './user-avatar';
+import SelectionActions from './selection-actions';
 
 type _ListUser = Partial<
   Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
@@ -116,14 +117,11 @@ const UserList: FC<UserListProps> = ({
             <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
               {breakpoint.md ? createUserNode : null}
 
-              {selectedRowKeys.length ? (
-                <span className={styles.SelectedRow}>
-                  {selectedRowKeys.length} selected:
-                  {selectedRowActions
-                    ? selectedRowActions(selectedRowKeys, () => setSelectedRows([]), selectedRows)
-                    : null}
-                </span>
-              ) : undefined}
+              {selectedRowActions ? (
+                <SelectionActions count={selectedRowKeys.length}>
+                  {selectedRowActions(selectedRowKeys, () => setSelectedRows([]), selectedRows)}
+                </SelectionActions>
+              ) : null}
             </span>
 
             <span>

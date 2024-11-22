@@ -1,8 +1,8 @@
 'use server';
 
-import { getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getProcesses } from '@/lib/data/DTOs';
 import { Folder } from '@/lib/data/folder-schema';
-import { getProcesses, removeProcess, updateProcess } from '@/lib/data/legacy/_process';
 import {
   getFolders,
   getRootFolder,
@@ -20,15 +20,15 @@ async function ensureValidRequest(guestId: string) {}
 export async function transferProcesses(guestId: string, callbackUrl: string = '/') {
   const { session } = await getCurrentUser();
   if (!session) return userError("You're not signed in", UserErrorType.PermissionError);
-  if (session.user.guest)
+  if (session.user.isGuest)
     return userError("You can't be a guest to transfer processes", UserErrorType.PermissionError);
 
   if (guestId === session.user.id) redirect(callbackUrl);
 
-  const possibleGuest = getUserById(guestId);
+  const possibleGuest = await getUserById(guestId);
   if (
     !possibleGuest ||
-    !possibleGuest.guest ||
+    !possibleGuest.isGuest ||
     possibleGuest?.signedInWithUserId !== session.user.id
   )
     return userError('Invalid guest id', UserErrorType.PermissionError);
@@ -38,9 +38,8 @@ export async function transferProcesses(guestId: string, callbackUrl: string = '
   const userRootFolderId = getRootFolder(session.user.id).id;
   const guestRootFolderId = getRootFolder(guestId).id;
 
-  const guestProcesses = (await getProcesses()).filter(
-    ({ environmentId }) => environmentId === guestId,
-  );
+  const { ability } = await getCurrentEnvironment(possibleGuest.id);
+  const guestProcesses = await getProcesses(guestId, ability);
   for (const process of guestProcesses) {
     const processUpdate: Partial<Process> = {
       environmentId: session.user.id,
@@ -70,15 +69,15 @@ export async function transferProcesses(guestId: string, callbackUrl: string = '
 export async function discardProcesses(guestId: string, redirectUrl: string = '/') {
   const { session } = await getCurrentUser();
   if (!session) return userError("You're not signed in", UserErrorType.PermissionError);
-  if (session.user.guest)
+  if (session.user.isGuest)
     return userError("You can't be a guest to transfer processes", UserErrorType.PermissionError);
 
   if (guestId === session.user.id) redirect(redirectUrl);
 
-  const possibleGuest = getUserById(guestId);
+  const possibleGuest = await getUserById(guestId);
   if (
     !possibleGuest ||
-    !possibleGuest.guest ||
+    !possibleGuest.isGuest ||
     possibleGuest?.signedInWithUserId !== session.user.id
   )
     return userError('Invalid guest id', UserErrorType.PermissionError);

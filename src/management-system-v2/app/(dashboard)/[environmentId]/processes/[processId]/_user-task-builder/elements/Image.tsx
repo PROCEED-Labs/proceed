@@ -38,7 +38,11 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   });
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
-  const { fileUrl: imageUrl, download: getImageUrl, remove } = useFileManager(EntityType.PROCESS);
+  const {
+    fileUrl: imageUrl,
+    download: getImageUrl,
+    remove,
+  } = useFileManager({ entityType: EntityType.PROCESS });
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 
@@ -245,7 +249,7 @@ Image.craft = {
       const src = node.data.props.src as undefined | string;
       if (src) {
         enableUseFileManager
-          ? null
+          ? null // already handled by onNodesChange in index.tsx file
           : await fetch(src, {
               method: 'DELETE',
             });

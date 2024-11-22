@@ -65,7 +65,9 @@ const Layout: FC<
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
-  const { download: getLogo, fileUrl: logoUrl } = useFileManager(EntityType.ORGANIZATION);
+  const { download: getLogo, fileUrl: logoUrl } = useFileManager({
+    entityType: EntityType.ORGANIZATION,
+  });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
 

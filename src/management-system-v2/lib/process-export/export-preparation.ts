@@ -328,7 +328,7 @@ export async function prepareExport(
           }
         }
 
-        for (const { definitionId: importDefinitionId, version: importVersion } of Object.values(
+        for (const { definitionId: importDefinitionId, versionId: importVersion } of Object.values(
           importInfo,
         )) {
           // add the import information to the respective version

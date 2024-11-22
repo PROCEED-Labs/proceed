@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Space, Upload } from 'antd';
+import { Button, Space, Upload, message } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
@@ -33,34 +33,62 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   endpoints,
   config,
 }) => {
-  const { upload, remove, replace } = useFileManager(config.entityType);
+  const { upload, remove, replace } = useFileManager({ entityType: config.entityType });
 
   const handleImageUpload = async (image: Blob, uploadedFileName: string, imageExists: boolean) => {
     try {
-      let response;
-      if (imageExists && endpoints.putEndpoint) {
-        // Update existing image
-        response = enableUseFileManager
-          ? await replace(image, config.entityId, config.fileName!, uploadedFileName)
-          : await fetch(endpoints.putEndpoint, {
-              method: 'PUT',
-              body: image,
-            });
-      } else {
-        // Add new image
-        response = enableUseFileManager
-          ? await upload(image, config.entityId, uploadedFileName)
-          : await fetch(endpoints.postEndpoint, {
-              method: 'POST',
-              body: image,
-            });
-      }
+      if (enableUseFileManager) {
+        const response = await new Promise<{ ok: boolean; fileName?: string }>(
+          (resolve, reject) => {
+            if (imageExists && config.fileName) {
+              //replace
+              replace(image, config.entityId, config.fileName, uploadedFileName, {
+                onSuccess: (data) => resolve({ ok: true, fileName: data?.fileName }),
+                onError: (error) => {
+                  console.error('Upload failed:', error);
+                  resolve({ ok: false });
+                },
+              });
+            } else {
+              // new upload
+              upload(image, config.entityId, uploadedFileName, {
+                onSuccess: (data) => resolve({ ok: true, fileName: data?.fileName }),
+                onError: (error) => {
+                  console.error('Upload failed:', error);
+                  resolve({ ok: false });
+                },
+              });
+            }
+          },
+        );
 
-      if (!response.ok) {
-        onUploadFail?.();
+        if (!response.ok) {
+          onUploadFail?.();
+          return;
+        }
+
+        const newImageFileName = response.fileName || uploadedFileName;
+        onImageUpdate(newImageFileName);
+        onReload?.();
       } else {
-        const newImageFileName =
-          response instanceof Response ? await response.text() : response.fileName;
+        // should be removed after we fully switch to db and gcp
+        const uploadEndpoint = imageExists ? endpoints.putEndpoint : endpoints.postEndpoint;
+
+        if (!uploadEndpoint) {
+          throw new Error('No upload endpoint provided');
+        }
+
+        const response = await fetch(uploadEndpoint, {
+          method: imageExists ? 'PUT' : 'POST',
+          body: image,
+        });
+
+        if (!response.ok) {
+          onUploadFail?.();
+          return;
+        }
+
+        const newImageFileName = await response.text();
         onImageUpdate(newImageFileName);
         onReload?.();
       }

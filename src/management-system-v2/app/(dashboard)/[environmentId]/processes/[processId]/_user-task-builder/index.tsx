@@ -27,9 +27,9 @@ import { useEnvironment } from '@/components/auth-can';
 import EditorDnDHandler from './DragAndDropHandler';
 import { DiffResult, deepEquals } from '@/lib/helpers/javascriptHelpers';
 import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/file-manager-facade';
-import { useSession } from 'next-auth/react';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 type BuilderProps = {
   processId: string;
@@ -54,6 +54,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
   const { query, actions, editingEnabled } = useEditor((state) => {
     return { editingEnabled: state.options.enabled };
   });
+
+  const queryClient = new QueryClient();
 
   const environment = useEnvironment();
 

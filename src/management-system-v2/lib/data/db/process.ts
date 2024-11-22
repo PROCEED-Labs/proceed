@@ -17,9 +17,8 @@ import {
   saveProcessArtifact,
 } from '../file-manager-facade';
 import { toCustomUTCString } from '@/lib/helpers/timeHelper';
-import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { copyFile } from '../file-manager/file-manager';
-import path from 'path';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 
 /** Returns all processes for a user */

@@ -464,7 +464,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {boolean} [dontThrow] - whether to throw errors or not in retrieving process ids in call activities
- * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, version: string }}> } an object (a map) with all callActivityIds as keys
+ * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, versionId: string }}> } an object (a map) with all callActivityIds as keys
  * @throws see function: {@link getTargetDefinitionsAndProcessIdForCallActivityByObject}
  */
 async function getDefinitionsAndProcessIdForEveryCallActivity(bpmn, dontThrow = false) {

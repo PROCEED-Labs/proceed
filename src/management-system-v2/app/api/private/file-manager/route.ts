@@ -57,10 +57,8 @@ export async function GET(request: NextRequest) {
       }
     } else {
       // if the user is not unauthenticated check if they have access to the process due to being an owner
-      if (environmentId !== 'unauthenticated') {
-        const { ability } = await getCurrentEnvironment(environmentId);
-        canAccess = ability.can('view', toCaslResource('Process', processMeta));
-      }
+      const { ability } = await getCurrentEnvironment(environmentId);
+      canAccess = ability.can('view', toCaslResource('Process', processMeta));
     }
 
     if (!canAccess) {

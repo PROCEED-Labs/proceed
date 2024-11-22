@@ -103,17 +103,17 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
   const taskImportMap = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
 
   for (const taskId in taskImportMap) {
-    const { definitionId, version } = taskImportMap[taskId];
+    const { definitionId, versionId } = taskImportMap[taskId];
 
-    if (!(knownInfos[definitionId] && knownInfos[definitionId][version])) {
-      const processInfo = await getProcessInfo(definitionId, 0, false, true, version);
+    if (!(knownInfos[definitionId] && knownInfos[definitionId][versionId])) {
+      const processInfo = await getProcessInfo(definitionId, 0, false, true, versionId);
 
       // check if the return value is a valid process info (might also be a react component that signals an error => no isOwner)
       if ('isOwner' in processInfo && processInfo.processData) {
         const { bpmn: importBpmn } = processInfo.processData;
 
         if (!knownInfos[definitionId]) knownInfos[definitionId] = {};
-        knownInfos[definitionId][version] = importBpmn as string;
+        knownInfos[definitionId][versionId] = importBpmn as string;
 
         // recursively get the imports of the imports
         await getImportInfos(importBpmn as string, knownInfos);

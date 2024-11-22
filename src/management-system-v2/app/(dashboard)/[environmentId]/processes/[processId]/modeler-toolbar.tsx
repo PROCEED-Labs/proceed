@@ -211,7 +211,7 @@ const ModelerToolbar = ({
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   const selectedVersion =
-    versions.find((version) => version.id === selectedVersionId ?? '-1') ?? LATEST_VERSION;
+    versions.find((version) => version.id === (selectedVersionId ?? '-1')) ?? LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
 

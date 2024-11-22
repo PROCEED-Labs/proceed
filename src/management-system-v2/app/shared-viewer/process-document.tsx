@@ -17,6 +17,7 @@ import TableOfContents, { ElementInfo } from './table-of-content';
 import { useEnvironment } from '@/components/auth-can';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
 
 export type VersionInfo = {
   id?: string;
@@ -83,16 +84,15 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       elementLabel = importedProcess.name!;
       ({ milestones, meta, description } = importedProcess);
     }
-
-    console.log(hierarchyElement);
-
-    const newImageUrl = await new Promise<string>((resolve) => {
-      getImage(processData.id, image, shareToken, {
-        onSuccess(data) {
-          resolve(data.fileUrl!);
-        },
-      });
-    });
+    const newImageUrl = enableUseFileManager
+      ? await new Promise<string>((resolve) => {
+          getImage(processData.id, image, shareToken, {
+            onSuccess(data) {
+              resolve(data.fileUrl!);
+            },
+          });
+        })
+      : null;
 
     let imageURL =
       image &&

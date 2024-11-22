@@ -28,59 +28,54 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
 
   const [selectedRows, setSelectedRows] = useState<typeof filteredData>([]);
   const selectedRowKeys = selectedRows.map((row) => row.id);
-  const selectedRow = selectedRows.at(-1);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', height: '100%', gap: '10px' }}>
-      <div style={{ flexGrow: 1 }}>
-        <Bar
-          leftNode={
-            <Space>
-              <Button type="primary" href="/create-organization">
-                New Organization
-              </Button>
-              <SelectionActions count={selectedRowKeys.length}>
-                <Button type="text" icon={<AiOutlineClose />} onClick={() => setSelectedRows([])} />
-              </SelectionActions>
-            </Space>
-          }
-          searchProps={{
-            value: searchQuery,
-            onChange: (e) => setSearchQuery(e.target.value),
-            placeholder: 'Search Environments',
-          }}
-        />
-        <ElementList<(typeof filteredData)[number]>
-          columns={[
-            { title: 'Name', render: (_, environment) => environment.name.highlighted },
-            {
-              title: 'Description',
-              render: (_, environment) => environment.description.highlighted,
-            },
-            {
-              dataIndex: 'id',
-              key: 'tooltip',
-              title: '',
-              width: 100,
-              render: (id: string, environment) => <></>,
-            },
-          ]}
-          data={filteredData}
-          elementSelection={{
-            selectedElements: selectedRows,
-            setSelectionElements: (orgs) => setSelectedRows(orgs),
-          }}
-          tableProps={{
-            rowKey: 'id',
-            onRow: (row) => ({
-              onClick: () => setSelectedRows([row]),
-            }),
-          }}
-        />
-      </div>
-
-      <EnvironmentSidePanel environment={selectedRow} />
-    </div>
+    <>
+      <Bar
+        leftNode={
+          <Space>
+            <Button type="primary" href="/create-organization">
+              New Organization
+            </Button>
+            <SelectionActions count={selectedRowKeys.length}>
+              <Button type="text" icon={<AiOutlineClose />} onClick={() => setSelectedRows([])} />
+            </SelectionActions>
+          </Space>
+        }
+        searchProps={{
+          value: searchQuery,
+          onChange: (e) => setSearchQuery(e.target.value),
+          placeholder: 'Search Environments',
+        }}
+      />
+      <ElementList<(typeof filteredData)[number]>
+        columns={[
+          { title: 'Name', render: (_, environment) => environment.name.highlighted },
+          {
+            title: 'Description',
+            render: (_, environment) => environment.description.highlighted,
+          },
+          {
+            dataIndex: 'id',
+            key: 'tooltip',
+            title: '',
+            width: 100,
+            render: (id: string, environment) => <></>,
+          },
+        ]}
+        data={filteredData}
+        elementSelection={{
+          selectedElements: selectedRows,
+          setSelectionElements: (orgs) => setSelectedRows(orgs),
+        }}
+        tableProps={{
+          rowKey: 'id',
+          onRow: (row) => ({
+            onClick: () => setSelectedRows([row]),
+          }),
+        }}
+      />
+    </>
   );
 };
 export default EnvironmentsPage;

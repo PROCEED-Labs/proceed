@@ -191,11 +191,11 @@ function ProcessDeploymentView({
                       },
                       ...(selectedVersion
                         ? [
-                          {
-                            label: '<none>',
-                            key: '-2',
-                          },
-                        ]
+                            {
+                              label: '<none>',
+                              key: '-2',
+                            },
+                          ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,

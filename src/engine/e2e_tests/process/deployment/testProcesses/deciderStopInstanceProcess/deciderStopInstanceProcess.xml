@@ -55,7 +55,7 @@
       <incoming>Flow_1lwdqo3</incoming>
       <outgoing>Flow_1j1u3ad</outgoing>
       <script>
-        return new Promise(resolve => setTimeout(resolve, 3000));
+        return new Promise(resolve => setTimeoutAsync(resolve, 3000));
       </script>
     </scriptTask>
   </process>

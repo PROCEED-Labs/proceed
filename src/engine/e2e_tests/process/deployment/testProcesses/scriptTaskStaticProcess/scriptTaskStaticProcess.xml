@@ -22,7 +22,7 @@
       <incoming>Flow_0n4ueli</incoming>
       <outgoing>Flow_1t4tcmh</outgoing>
         <script>
-            return new Promise(resolve => setTimeout(resolve, 2000));
+        return new Promise(res => setTimeoutAsync(res, 2000));
         </script>
     </scriptTask>
   </process>

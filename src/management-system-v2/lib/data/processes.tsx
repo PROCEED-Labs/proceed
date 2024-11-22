@@ -29,8 +29,12 @@ import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
 import {
   getProcessUserTaskJSON as _getProcessUserTaskJSON,
+  getProcessUserTaskHtml as _getProcessUserTaskHtml,
   getProcessImage as _getProcessImage,
   saveProcessUserTask as _saveProcessUserTask,
+  getProcessScriptTaskScript as _getProcessScriptTaskScript,
+  saveProcessScriptTask as _saveProcessScriptTask,
+  deleteProcessScriptTask as _deleteProcessScriptTask,
 } from './legacy/_process';
 
 // Declare variables to hold the process module functions
@@ -345,6 +349,29 @@ export const copyProcesses = async (
   return copiedProcesses;
 };
 
+// TODO: fix: this function doesn't work yet
+export const processHasChangesSinceLastVersion = async (processId: string, spaceId: string) => {
+  const error = await checkValidity(processId, 'view', spaceId);
+  if (error) return error;
+
+  const process = await _getProcess(processId, true);
+  if (!process) return userError('Process not found', UserErrorType.NotFoundError);
+
+  const bpmnObj = await toBpmnObject(process.bpmn!);
+  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
+
+  const versionedBpmn = await toBpmnXml(bpmnObj);
+
+  // if the new version has no changes to the version it is based on don't create a new version and return the previous version
+  const basedOnBPMN =
+    versionBasedOn !== undefined
+      ? await getLocalVersionBpmn(process as Process, versionBasedOn)
+      : undefined;
+
+  const versionsAreEqual = basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN));
+  return !versionsAreEqual;
+};
+
 export const createVersion = async (
   versionName: string,
   versionDescription: string,
@@ -424,10 +451,27 @@ export const getProcessUserTaskData = async (
   }
 };
 
+export const getProcessUserTaskHTML = async (
+  definitionId: string,
+  taskFileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  try {
+    return await _getProcessUserTaskHtml(definitionId, taskFileName);
+  } catch (err) {
+    return userError('Unable to get the requested User Task html.', UserErrorType.NotFoundError);
+  }
+};
+
 export const saveProcessUserTask = async (
   definitionId: string,
   taskFileName: string,
   json: string,
+  html: string,
   spaceId: string,
 ) => {
   const error = await checkValidity(definitionId, 'update', spaceId);
@@ -440,7 +484,57 @@ export const saveProcessUserTask = async (
       UserErrorType.ConstraintError,
     );
 
-  await _saveProcessUserTask!(definitionId, taskFileName, json);
+  await _saveProcessUserTask!(definitionId, taskFileName, json, html);
+};
+
+export const getProcessScriptTaskData = async (
+  definitionId: string,
+  taskFileName: string,
+  fileExtension: 'js' | 'ts' | 'xml',
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  try {
+    return await _getProcessScriptTaskScript(definitionId, `${taskFileName}.${fileExtension}`);
+  } catch (err) {
+    return userError('Unable to get the requested Script Task data.', UserErrorType.NotFoundError);
+  }
+};
+
+export const saveProcessScriptTask = async (
+  definitionId: string,
+  taskFileName: string,
+  fileExtension: 'js' | 'ts' | 'xml',
+  script: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'update', spaceId);
+
+  if (error) return error;
+
+  if (/-\d+$/.test(taskFileName))
+    return userError(
+      'Illegal attempt to overwrite a script task version!',
+      UserErrorType.ConstraintError,
+    );
+
+  await _saveProcessScriptTask(definitionId, `${taskFileName}.${fileExtension}`, script);
+};
+
+export const deleteProcessScriptTask = async (
+  definitionId: string,
+  taskFileName: string,
+  fileExtension: 'js' | 'ts' | 'xml',
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'delete', spaceId);
+
+  if (error) return error;
+
+  await _deleteProcessScriptTask(definitionId, `${taskFileName}.${fileExtension}`);
 };
 
 export const getProcessImage = async (

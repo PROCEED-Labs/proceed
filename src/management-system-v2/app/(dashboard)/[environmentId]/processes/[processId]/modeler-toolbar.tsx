@@ -20,7 +20,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, updateProcess } from '@/lib/data/processes';
+import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
@@ -28,7 +28,9 @@ import { useAddControlCallback } from '@/lib/controls-store';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
+import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
+import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -48,10 +50,12 @@ const ModelerToolbar = ({
 }: ModelerToolbarProps) => {
   const router = useRouter();
   const environment = useEnvironment();
+  const { message } = App.useApp();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
+  const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
@@ -80,22 +84,42 @@ const ModelerToolbar = ({
     }
   }, [modeler, showProcessExportModal, showUserTaskEditor]);
 
+  const selectedVersionId = query.get('version');
+
   const createProcessVersion = async (values: {
     versionName: string;
     versionDescription: string;
   }) => {
-    // Ensure latest BPMN on server.
-    const xml = (await modeler?.getXML()) as string;
-    await updateProcess(processId, environment.spaceId, xml);
+    try {
+      // Ensure latest BPMN on server.
+      const xml = (await modeler?.getXML()) as string;
+      if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
+        throw new Error();
 
-    await createVersion(
-      values.versionName,
-      values.versionDescription,
-      processId,
-      environment.spaceId,
-    );
-    // TODO: navigate to new version?
-    router.refresh();
+      if (
+        isUserErrorResponse(
+          await createVersion(
+            values.versionName,
+            values.versionDescription,
+            processId,
+            environment.spaceId,
+          ),
+        )
+      )
+        throw new Error();
+
+      // reimport the new version since the backend has added versionBasedOn information that would
+      // be overwritten by following changes
+      if (!selectedElementId) {
+        const newBpmn = await getProcessBPMN(processId, environment.spaceId);
+        if (newBpmn && typeof newBpmn === 'string') {
+          await modeler?.loadBPMN(newBpmn);
+        }
+      }
+      router.refresh();
+    } catch (_) {
+      message.error('Something went wrong');
+    }
   };
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
@@ -141,8 +165,6 @@ const ModelerToolbar = ({
     setShowProcessExportModal(!showProcessExportModal);
   };
 
-  const selectedVersionId = query.get('version');
-
   const handleUndo = () => {
     modeler?.undo();
   };
@@ -170,10 +192,8 @@ const ModelerToolbar = ({
     }
   };
 
-  const { message } = App.useApp();
-
   const handleOpenDocumentation = async () => {
-    // the timestamp does not matter here since it is overriden by the user being an owner of the process
+    // the timestamp does not matter here since it is overridden by the user being an owner of the process
     try {
       const url = await generateSharedViewerUrl(
         { processId, timestamp: 0 },
@@ -276,7 +296,16 @@ const ModelerToolbar = ({
                       Open Subprocess
                     </Button>
                   </Tooltip>
-                )))}
+                )) ||
+                (process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
+                  bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
+                    <Tooltip title="Edit Script Task">
+                      <Button
+                        icon={<FormOutlined />}
+                        onClick={() => setShowScriptTaskEditor(true)}
+                      />
+                    </Tooltip>
+                  )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -344,11 +373,20 @@ const ModelerToolbar = ({
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
       {process.env.NEXT_PUBLIC_ENABLE_EXECUTION && (
-        <UserTaskBuilder
-          processId={processId}
-          open={showUserTaskEditor}
-          onClose={() => setShowUserTaskEditor(false)}
-        />
+        <>
+          <UserTaskBuilder
+            processId={processId}
+            open={showUserTaskEditor}
+            onClose={() => setShowUserTaskEditor(false)}
+          />
+
+          <ScriptEditor
+            processId={processId}
+            open={showScriptTaskEditor}
+            onClose={() => setShowScriptTaskEditor(false)}
+            selectedElement={selectedElement}
+          />
+        </>
       )}
     </>
   );

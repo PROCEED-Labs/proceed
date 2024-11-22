@@ -44,6 +44,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
           marginTop: '1rem',
         }}
       >
+        {/** TODO: correct image url */}
         <Image
           src={generateRequestUrl(
             { id: '', ip: 'localhost', port: 33029 },

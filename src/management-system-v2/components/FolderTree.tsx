@@ -76,7 +76,6 @@ export const FolderTree = ({
 
       if (!rootNode) return;
 
-      rootNode.style;
       nodeMap.current.set(rootNode.key, rootNode);
 
       console.log({ rootNode });

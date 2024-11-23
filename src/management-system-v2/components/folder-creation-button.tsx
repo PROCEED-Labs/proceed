@@ -9,6 +9,7 @@ import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema
 import { createFolder as serverCreateFolder } from '@/lib/data/folders';
 import FolderModal from './folder-modal';
 import useParseZodErrors from '@/lib/useParseZodErrors';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 export const FolderCreationModal: FC<
   Partial<ComponentProps<typeof FolderModal>> & { open: boolean; close: () => void }
@@ -22,9 +23,10 @@ export const FolderCreationModal: FC<
 
   const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
-      try {
-        const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
-        if (!folderInput) throw new Error();
+      await wrapServerCall({
+        fn: () => {
+          const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
+          if (!folderInput) throw new Error();
 
         const response = await serverCreateFolder(folderInput);
         if (response && 'error' in response) throw new Error();

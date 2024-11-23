@@ -11,6 +11,10 @@ import {
   saveImage,
   deleteImage,
   getUserTaskIds,
+  getUserTaskHTML,
+  getUserTasksHTML,
+  saveUserTaskHTML,
+  deleteUserTaskHTML,
   getUserTaskJSON,
   getUserTasksJSON,
   saveUserTaskJSON,
@@ -20,6 +24,10 @@ import {
   updateProcess as overwriteProcess,
   getUpdatedProcessesJSON,
   getImageFileNames,
+  saveScriptTaskScript,
+  getScriptTaskScript,
+  getScriptTasksScript,
+  deleteScriptTaskScript,
 } from './fileHandling.js';
 import { mergeIntoObject } from '../../helpers/javascriptHelpers';
 import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
@@ -365,10 +373,22 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, taskF
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    return await getUserTaskJSON(processDefinitionsId, taskFileName);
+    return getUserTaskJSON(processDefinitionsId, taskFileName);
   } catch (err) {
     logger.debug(`Error getting data of user task. Reason:\n${err}`);
     throw new Error('Unable to get data for user task!');
+  }
+}
+
+/** Returns the html for a specific user task in a process */
+export async function getProcessUserTaskHtml(processDefinitionsId: string, taskFileName: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    return getUserTaskHTML(processDefinitionsId, taskFileName);
+  } catch (err) {
+    logger.debug(`Error getting html of user task. Reason:\n${err}`);
+    throw new Error('Unable to get html for user task!');
   }
 }
 
@@ -377,10 +397,22 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    return await getUserTasksJSON(processDefinitionsId);
+    return getUserTasksJSON(processDefinitionsId);
   } catch (err) {
     logger.debug(`Error getting user task data. Reason:\n${err}`);
     throw new Error('Failed getting data for all user tasks');
+  }
+}
+
+/** Return object mapping from user tasks fileNames to their html */
+export async function getProcessUserTasksHtml(processDefinitionsId: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    return await getUserTasksHTML(processDefinitionsId);
+  } catch (err) {
+    logger.debug(`Error getting user task html. Reason:\n${err}`);
+    throw new Error('Failed getting html for all user tasks');
   }
 }
 
@@ -388,11 +420,13 @@ export async function saveProcessUserTask(
   processDefinitionsId: string,
   userTaskFileName: string,
   json: string,
+  html: string,
 ) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
     await saveUserTaskJSON(processDefinitionsId, userTaskFileName, json);
+    await saveUserTaskHTML(processDefinitionsId, userTaskFileName, html);
   } catch (err) {
     logger.debug(`Error storing user task data. Reason:\n${err}`);
     throw new Error('Failed to store the user task data');
@@ -408,8 +442,65 @@ export async function deleteProcessUserTask(
 
   try {
     await deleteUserTaskJSON(processDefinitionsId, userTaskFileName);
+    await deleteUserTaskHTML(processDefinitionsId, userTaskFileName);
   } catch (err) {
     logger.debug(`Error removing user task data. Reason:\n${err}`);
+  }
+}
+
+/** Returns the script for a specific script task in a process */
+export async function getProcessScriptTaskScript(
+  processDefinitionsId: string,
+  taskFileNameWithExtension: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    return getScriptTaskScript(processDefinitionsId, taskFileNameWithExtension);
+  } catch (err) {
+    logger.debug(`Error getting data of script task. Reason:\n${err}`);
+    throw new Error('Unable to get data for script task!');
+  }
+}
+
+/** Return object mapping from script tasks fileNames to their script */
+export async function getProcessScriptTasksScript(processDefinitionsId: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    return getScriptTasksScript(processDefinitionsId);
+  } catch (err) {
+    logger.debug(`Error getting script task data. Reason:\n${err}`);
+    throw new Error('Failed getting data for all script tasks');
+  }
+}
+
+export async function saveProcessScriptTask(
+  processDefinitionsId: string,
+  taskFileNameWithExtension: string,
+  script: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    await saveScriptTaskScript(processDefinitionsId, taskFileNameWithExtension, script);
+  } catch (err) {
+    logger.debug(`Error storing user task data. Reason:\n${err}`);
+    throw new Error('Failed to store the user task data');
+  }
+}
+
+/** Removes a stored script task from disk */
+export async function deleteProcessScriptTask(
+  processDefinitionsId: string,
+  taskFileNameWithExtension: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    await deleteScriptTaskScript(processDefinitionsId, taskFileNameWithExtension);
+  } catch (err) {
+    logger.debug(`Error removing script task data. Reason:\n${err}`);
   }
 }
 

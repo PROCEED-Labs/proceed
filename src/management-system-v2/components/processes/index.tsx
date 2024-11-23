@@ -12,6 +12,8 @@ import {
 } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
+  CopyOutlined,
+  EditOutlined,
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
@@ -35,7 +37,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
-import { useEnvironment } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton, { FolderCreationModal } from '@/components/folder-creation-button';
 import {
@@ -53,8 +55,10 @@ import Ability from '@/lib/ability/abilityHelper';
 import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
+import ProceedLoadingIndicator from '../loading-proceed';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
-export function canDeleteItems(
+export function canDoActionOnResource(
   items: ProcessListProcess[],
   action: Parameters<Ability['can']>[0],
   ability: Ability,
@@ -102,7 +106,7 @@ const Processes = ({
       ...processes,
     ];
 
-  const { message } = App.useApp();
+  const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
@@ -115,10 +119,14 @@ const Processes = ({
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
   const canDeleteSelected =
-    !!selectedRowElements.length && canDeleteItems(selectedRowElements, 'delete', ability);
+    !!selectedRowElements.length && canDoActionOnResource(selectedRowElements, 'delete', ability);
+  const canCreateProcess = ability.can('create', 'Process');
+  const canEditSelected = canDoActionOnResource(selectedRowElements, 'update', ability);
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
+  const { open: metaPanelisOpened, width: metaPanelWidth } =
+    useUserPreferences.use['process-meta-data']();
 
   const [openExportModal, setOpenExportModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
@@ -233,20 +241,19 @@ const Processes = ({
     if (!values) return;
 
     startUpdatingFolderTransition(async () => {
-      try {
-        const response = updateFolderServer(
-          { name: values.name, description: values.description },
-          updateFolderModal!.id,
-        );
-
-        if (response && 'error' in response) throw new Error();
-
-        message.open({ type: 'success', content: 'Folder updated successfully' });
-        setUpdateFolderModal(undefined);
-        router.refresh();
-      } catch (e) {
-        message.open({ type: 'error', content: 'Someting went wrong while updating the folder' });
-      }
+      await wrapServerCall({
+        fn: () =>
+          updateFolderServer(
+            { name: values.name, description: values.description },
+            updateFolderModal!.id,
+          ),
+        onSuccess: () => {
+          app.message.open({ type: 'success', content: 'Folder updated' });
+          setUpdateFolderModal(undefined);
+          router.refresh();
+        },
+        app,
+      });
     });
   };
 
@@ -274,7 +281,7 @@ const Processes = ({
       (folderResult && 'error' in folderResult) ||
       (processesResult && 'error' in processesResult)
     ) {
-      return message.open({
+      return app.message.open({
         type: 'error',
         content: 'Something went wrong',
       });
@@ -301,18 +308,11 @@ const Processes = ({
 
   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
     startMovingItemTransition(async () => {
-      try {
-        const response = await moveIntoFolder(items, folderId);
-
-        if (response && 'error' in response) throw new Error();
-
-        router.refresh();
-      } catch (e) {
-        message.open({
-          type: 'error',
-          content: `Something went wrong`,
-        });
-      }
+      await wrapServerCall({
+        fn: () => moveIntoFolder(items, folderId),
+        onSuccess: router.refresh,
+        app,
+      });
     });
   };
 
@@ -364,29 +364,61 @@ const Processes = ({
                     )}
 
                     <SelectionActions count={selectedRowKeys.length}>
-                      <Tooltip placement="top" title={'Export'}>
-                        <ExportOutlined
-                          className={styles.Icon}
-                          onClick={() => {
-                            setOpenExportModal(true);
-                          }}
-                        />
-                      </Tooltip>
-
-                      {canDeleteSelected && (
-                        <Tooltip placement="top" title={'Delete'}>
-                          <ConfirmationButton
-                            title="Delete Processes"
-                            externalOpen={openDeleteModal}
-                            onExternalClose={() => setOpenDeleteModal(false)}
-                            description="Are you sure you want to delete the selected processes?"
-                            onConfirm={() => deleteItems(selectedRowElements)}
-                            buttonProps={{
-                              icon: <DeleteOutlined />,
-                              type: 'text',
+                      {/* Copy */}
+                      {canCreateProcess && (
+                        <Tooltip placement="top" title={'Copy'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<CopyOutlined className={styles.Icon} />}
+                            onClick={() => {
+                              setCopySelection(selectedRowElements);
+                              setOpenCopyModal(true);
                             }}
                           />
                         </Tooltip>
+                      )}
+
+                      {/* Export */}
+                      <Tooltip placement="top" title={'Export'}>
+                        <Button
+                          type="text"
+                          onClick={() => {
+                            setOpenExportModal(true);
+                          }}
+                          icon={<ExportOutlined className={styles.Icon} />}
+                        ></Button>
+                      </Tooltip>
+                      {/* Edit (only if one selected) */}
+
+                      {selectedRowKeys.length === 1 && canEditSelected && (
+                        <Tooltip placement="top" title={'Edit'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<EditOutlined className={styles.Icon} />}
+                            onClick={() => {
+                              editItem(selectedRowElements[0]);
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                      {/* Delete */}
+                      {canDeleteSelected && (
+                        // <Tooltip placement="top" title={'Delete'}>
+                        <ConfirmationButton
+                          tooltip="Delete"
+                          title="Delete Processes"
+                          externalOpen={openDeleteModal}
+                          onExternalClose={() => setOpenDeleteModal(false)}
+                          description="Are you sure you want to delete the selected processes?"
+                          onConfirm={() => deleteItems(selectedRowElements)}
+                          buttonProps={{
+                            icon: <DeleteOutlined className={styles.Icon} />,
+                            type: 'text',
+                          }}
+                        />
+                        // </Tooltip>
                       )}
                     </SelectionActions>
                   </span>
@@ -465,7 +497,14 @@ const Processes = ({
                 moveItems(items, over.id);
               }}
             >
-              <Spin spinning={loading}>
+              {/* <Spin spinning={loading}> */}
+              <ProceedLoadingIndicator
+                width={'100%'}
+                scale="60%"
+                // position={{ x: '25%', y: '20%' }}
+                loading={loading}
+                small={true}
+              >
                 {iconView ? (
                   <IconView
                     data={filteredData}
@@ -476,23 +515,34 @@ const Processes = ({
                     setShowMobileMetaData={setShowMobileMetaData}
                   />
                 ) : (
-                  <ProcessList
-                    data={filteredData}
-                    folder={folder}
-                    selection={selectedRowKeys}
-                    setSelectionElements={setSelectedRowElements}
-                    selectedElements={selectedRowElements}
-                    // TODO: Replace with server component loading state
-                    //isLoading={isLoading}
-                    onExportProcess={(id) => {
-                      setSelectedRowElements([id]);
-                      setOpenExportModal(true);
+                  <div
+                    style={{
+                      maxWidth: breakpoint.xl
+                        ? metaPanelisOpened
+                          ? `calc(87vw - ${metaPanelWidth}px)`
+                          : '85.5vw'
+                        : '100%',
                     }}
-                    setShowMobileMetaData={setShowMobileMetaData}
-                    processActions={processActions}
-                  />
+                  >
+                    <ProcessList
+                      data={filteredData}
+                      folder={folder}
+                      selection={selectedRowKeys}
+                      setSelectionElements={setSelectedRowElements}
+                      selectedElements={selectedRowElements}
+                      // TODO: Replace with server component loading state
+                      //isLoading={isLoading}
+                      onExportProcess={(id) => {
+                        setSelectedRowElements([id]);
+                        setOpenExportModal(true);
+                      }}
+                      setShowMobileMetaData={setShowMobileMetaData}
+                      processActions={processActions}
+                    />
+                  </div>
                 )}
-              </Spin>
+              </ProceedLoadingIndicator>
+              {/* </Spin> */}
             </DraggableContext>
           </div>
 

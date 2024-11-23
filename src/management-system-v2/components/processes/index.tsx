@@ -1,16 +1,8 @@
 'use client';
 
 import styles from './processes.module.scss';
-import {
-  ComponentProps,
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
+import { ComponentProps, useRef, useState, useTransition } from 'react';
+import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge } from 'antd';
 import {
   CopyOutlined,
   EditOutlined,
@@ -26,7 +18,7 @@ import ProcessList from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
 import ProcessExportModal from '@/components/process-export';
 import Bar from '@/components/bar';
-import ProcessCreationButton, { ProcessCreationModal } from '@/components/process-creation-button';
+import { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -37,9 +29,9 @@ import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
-import { AuthCan, useEnvironment } from '@/components/auth-can';
+import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
-import FolderCreationButton, { FolderCreationModal } from '@/components/folder-creation-button';
+import { FolderCreationModal } from '@/components/folder-creation-button';
 import {
   deleteFolder,
   moveIntoFolder,

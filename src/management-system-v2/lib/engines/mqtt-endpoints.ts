@@ -58,9 +58,9 @@ export async function getEngines() {
     client.on('message', (topic, message) => {
       const match = topic.match(new RegExp(`^${getEnginePrefix('')}([^\/]+)\/status`));
       if (match) {
-        const engineId = match[1];
+        const id = match[1];
         const status = JSON.parse(message.toString());
-        engines.push({ engineId, ...status });
+        engines.push({ id, ...status });
         res();
       }
     });

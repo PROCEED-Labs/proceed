@@ -70,6 +70,10 @@ function generateUserTaskFileName() {
   return generateBpmnId('User_Task_');
 }
 
+function generateScriptTaskFileName() {
+  return generateBpmnId('Script_Task_');
+}
+
 function generateProcessId() {
   return generateBpmnId('Process_');
 }
@@ -128,6 +132,7 @@ module.exports = {
   generateDefinitionsId,
   generateProcessId,
   generateUserTaskFileName,
+  generateScriptTaskFileName,
   getUserTaskImplementationString,
   generateTargetNamespace,
   initXml,

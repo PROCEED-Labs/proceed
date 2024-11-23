@@ -164,11 +164,6 @@ module.exports = {
     } else {
       config.target = 'electron-renderer';
       // vm2 can't be bundled using webpack
-      config.externals = [
-        {
-          vm2: "require('vm2')",
-        },
-      ];
     }
   },
   chainWebpack: (config) => {
@@ -226,14 +221,7 @@ module.exports = {
           icon: 'public/icons',
           category: 'development',
         },
-        extraResources: [
-          {
-            // copying from hoisted node_modules in root directory into the app directory
-            from: '../../node_modules/vm2',
-            to: './node_modules/vm2',
-            filter: '**',
-          },
-        ],
+        extraResources: [],
       },
       nodeModulesPath: ['../../node_modules', './node_modules'],
       mainProcessFile: './src/backend/electron/background.js',

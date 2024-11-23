@@ -1,0 +1,12 @@
+{
+  "name": "@proceed/native-script-execution",
+  "version": "1.0.0",
+  "description": "Native module that executes scripts in a subprocess",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@proceed/native-module": "^1.0.0",
+    "isolated-vm": "^5.0.1"
+  }
+}

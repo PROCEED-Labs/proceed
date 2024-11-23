@@ -1,8 +1,8 @@
 'use client';
 
 import { FC, useState, useTransition } from 'react';
-import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Tooltip, App, Grid, Button, FloatButton } from 'antd';
+import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Tooltip, App, Grid, Button } from 'antd';
 import HeaderActions, { FloatButtonActions } from './header-actions';
 import UserList, { ListUser } from '@/components/user-list';
 import ConfirmationButton from '@/components/confirmation-button';
@@ -11,9 +11,11 @@ import { useRouter } from 'next/navigation';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
 import { useEnvironment } from '@/components/auth-can';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import { Role } from '@/lib/data/role-schema';
 
-const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
-  const { message: messageApi } = App.useApp();
+const UsersPage: FC<{ users: (AuthenticatedUser & { roles?: Role[] })[] }> = ({ users }) => {
+  const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
   const [deletingUser, startTransition] = useTransition();
@@ -23,16 +25,16 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
   const environment = useEnvironment();
 
   async function removeUsers(ids: string[], unsetIds: () => void) {
-    startTransition(async () => {
-      unsetIds();
-
-      const result = await removeUsersFromEnvironment(environment.spaceId, ids);
-
-      if (result && 'error' in result)
-        messageApi.open({ type: 'error', content: 'Something went wrong' });
-
-      router.refresh();
-    });
+    startTransition(() =>
+      wrapServerCall({
+        fn: () => removeUsersFromEnvironment(environment.spaceId, ids),
+        onSuccess: () => {
+          router.refresh();
+          unsetIds();
+        },
+        app,
+      }),
+    );
   }
 
   return (
@@ -47,22 +49,22 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
       <div style={{ flex: '1' }}>
         {/* <!-- FloatButtonGroup needs a z-index of 101
             since BPMN Logo of the viewer has an z-index of 100 --> */}
-        {breakpoint.xl ? undefined : (
-          <FloatButton.Group
-            trigger="click"
-            type="primary"
-            style={{ marginBottom: '60px', zIndex: '101' }}
-            icon={<PlusOutlined />}
-          >
-            <Tooltip trigger="hover" placement="left" title="Create an user">
-              <FloatButton icon={<FloatButtonActions />} />
-            </Tooltip>
-          </FloatButton.Group>
-        )}
+        {!breakpoint.md && <FloatButtonActions />}
 
         <UserList
           users={users}
           columns={(clearSelected, hoveredId, selectedRowKeys) => [
+            {
+              dataIndex: 'roles',
+              key: 'roles',
+              title: 'Roles',
+              render: (_, user: any) =>
+                user.roles && (
+                  <Tooltip title={user.roles.map((r: Role) => r.name).join(', ')}>
+                    {user.roles.length}
+                  </Tooltip>
+                ),
+            },
             {
               dataIndex: 'id',
               key: 'tooltip',

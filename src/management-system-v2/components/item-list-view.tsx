@@ -5,6 +5,8 @@ import { PropsWithChildren, ReactNode, SetStateAction, useMemo, useRef } from 'r
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
+import { ResizeableTitle } from '@/lib/useColumnWidth';
+import { getUniqueObjects } from '@/lib/utils';
 
 type ElementListProps<T extends { id: string }> = PropsWithChildren<{
   data: T[];
@@ -104,10 +106,11 @@ const ElementList = <T extends { id: string }>({
   }
 
   const selectedElementsKeys = elementSelection?.selectedElements.map(({ id }) => id);
+  const { components } = tableProps || {};
 
   return (
     <Table
-      size={breakpoint.xs ? 'large' : 'middle'}
+      // size={breakpoint.xs ? 'large' : 'middle'}
       pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
       {...tableProps}
       rowSelection={
@@ -116,18 +119,40 @@ const ElementList = <T extends { id: string }>({
           selectedRowKeys: selectedElementsKeys,
           // onChange: (_, selectedRows) => elementSelection.setSelectionElements(selectedRows),
           getCheckboxProps: (record) => ({ name: record.id }),
-          onSelect: (record, __, selectedRows, nativeEvent) => {
-            console.log(nativeEvent);
+          onSelect: (record, selected, selectedRows, nativeEvent) => {
             // @ts-ignore
             if (nativeEvent.shiftKey && elementSelection.selectedElements.length > 0) {
-              console.log('shift key pressed');
+              // console.log('shift key pressed');
+              /* If checkbox shiftclick is recognizeable, a drag select can be implemented here */
+              /* Currently, the event is not fired in most browser on checkbox */
             } else {
-              elementSelection.setSelectionElements(selectedRows);
+              // console.log('data length', data.length);
+              // console.log('setting rows', selectedRows);
+              if (selected) {
+                elementSelection.setSelectionElements((prev) => [...prev, record]);
+              } else {
+                elementSelection.setSelectionElements((prev) =>
+                  prev.filter(({ id }) => id !== record.id),
+                );
+              }
             }
             lastItemClicked.current = record;
           },
-          onSelectNone: () => elementSelection.setSelectionElements([]),
-          onSelectAll: (_, selectedRows) => elementSelection.setSelectionElements(selectedRows),
+          // onSelectNone: () => elementSelection.setSelectionElements([]),
+          onSelectAll: (selected, selectedRows, changeRows) => {
+            elementSelection.setSelectionElements((oldSelection) => {
+              if (selected) {
+                return getUniqueObjects([...oldSelection, ...changeRows], 'id') as T[];
+              } else {
+                return getUniqueObjects(
+                  oldSelection.filter(
+                    ({ id }) => !changeRows.some(({ id: rowId }) => rowId === id),
+                  ),
+                  'id',
+                ) as T[];
+              }
+            });
+          },
         }
       }
       onRow={
@@ -176,6 +201,13 @@ const ElementList = <T extends { id: string }>({
       columns={columns}
       dataSource={data}
       className={cn(breakpoint.xs ? styles.MobileTable : '')}
+      components={{
+        ...components,
+        header: {
+          ...components?.header,
+          cell: ResizeableTitle,
+        },
+      }}
     />
   );
 };

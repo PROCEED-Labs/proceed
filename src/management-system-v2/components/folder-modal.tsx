@@ -6,6 +6,7 @@ import type { ModalProps } from 'antd';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { Folder, FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
 import TextArea from 'antd/es/input/TextArea';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 type FolderModalProps = {
   spaceId: string;
@@ -40,6 +41,35 @@ const FolderModal = ({
     if (initialValues) form.setFieldsValue(initialValues);
     else form.resetFields();
   }, [open, initialValues]);
+
+  useAddControlCallback(
+    'process-list',
+    [
+      'selectall',
+      'esc',
+      'del',
+      'copy',
+      'paste',
+      'enter',
+      'cut',
+      'export',
+      'import',
+      'shift+enter',
+      'new',
+    ],
+    (e) => {
+      // e.preventDefault();
+    },
+    { level: 2, blocking: open },
+  );
+  useAddControlCallback(
+    'process-list',
+    'control+enter',
+    () => {
+      // if (open) onOk();
+    },
+    { level: 2, blocking: open, dependencies: [open] },
+  );
 
   return (
     <Modal

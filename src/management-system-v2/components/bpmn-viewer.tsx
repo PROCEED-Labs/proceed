@@ -8,7 +8,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useEnvironment } from './auth-can';
 import style from './bpmn-viewer.module.scss';
 import { useLazyRendering } from './scrollbar';
-import ProceedLoading from './loading-proceed';
+import ProceedLoadingIndicator from './loading-proceed';
 
 type BPMNViewerProps = {
   definitionId: string;
@@ -33,7 +33,7 @@ const BPMNViewer: FC<BPMNViewerProps> = ({ definitionId, reduceLogo, fitOnResize
       if (typeof res === 'object' && 'error' in res) {
         throw res.error;
       }
-      return res;
+      return res as string;
     },
   });
 
@@ -56,7 +56,7 @@ type LazyLoadingBPMNViewerProps = BPMNViewerProps & {
 };
 
 export const LazyBPMNViewer: FC<LazyLoadingBPMNViewerProps> = ({
-  fallback = <ProceedLoading scale="100%" />,
+  fallback = <ProceedLoadingIndicator scale="100%" />,
   ...props
 }) => {
   const ViewerContainerRef = useRef(null);

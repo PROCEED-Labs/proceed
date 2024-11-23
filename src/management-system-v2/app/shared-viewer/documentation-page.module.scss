@@ -1,31 +1,3 @@
-.WorkspaceSelection {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-
-  .WorkspaceButton {
-    border: 1px solid black;
-    width: 150px;
-    height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    white-space: normal;
-    text-overflow: ellipsis;
-    border-color: black;
-    box-shadow: 2px 2px 2px grey;
-
-    .WorkspaceButtonLabel {
-      margin: 5px;
-      text-align: center;
-    }
-  }
-}
-
 .DocumentationPageContent {
   .MainContent {
     display: flex;

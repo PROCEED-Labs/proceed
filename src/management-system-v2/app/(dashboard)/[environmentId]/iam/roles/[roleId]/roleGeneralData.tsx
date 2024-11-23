@@ -15,6 +15,7 @@ import FormSubmitButton from '@/components/form-submit-button';
 import { FolderTree } from '@/components/FolderTree';
 import { ProcessListItemIcon } from '@/components/process-list';
 import { Folder } from '@/lib/data/folder-schema';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const InputSchema = RoleInputSchema.omit({ environmentId: true, permissions: true });
 
@@ -88,7 +89,7 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
   role: _role,
   roleParentFolder,
 }) => {
-  const { message } = App.useApp();
+  const app = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
   const router = useRouter();
@@ -104,14 +105,14 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
       delete values.expirationDayJs;
     }
 
-    try {
-      const result = await updateRole(environment.spaceId, role.id, values);
-      if (result && 'error' in result) throw new Error();
-      router.refresh();
-      message.open({ type: 'success', content: 'Role updated' });
-    } catch (_) {
-      message.open({ type: 'error', content: 'Something went wrong' });
-    }
+    await wrapServerCall({
+      fn: () => updateRole(environment.spaceId, role.id, values),
+      onSuccess: () => {
+        router.refresh();
+        app.message.open({ type: 'success', content: 'Role updated' });
+      },
+      app,
+    });
   }
 
   return (

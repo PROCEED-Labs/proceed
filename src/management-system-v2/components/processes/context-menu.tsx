@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ProcessActions, ProcessListProcess, canDeleteItems } from '.';
+import { ProcessActions, ProcessListProcess, canDoActionOnResource } from '.';
 import { FC, PropsWithChildren } from 'react';
 import { App, Dropdown, MenuProps } from 'antd';
 import { useAbilityStore } from '@/lib/abilityStore';
@@ -45,7 +45,7 @@ const ConextMenuArea: FC<
 
     if (
       selectedContextMenuItems.length === 1 &&
-      canDeleteItems(selectedContextMenuItems, 'delete', ability)
+      canDoActionOnResource(selectedContextMenuItems, 'delete', ability)
     )
       children.push(
         {
@@ -81,7 +81,7 @@ const ConextMenuArea: FC<
         },
       );
 
-    if (canDeleteItems(selectedContextMenuItems, 'delete', ability))
+    if (canDoActionOnResource(selectedContextMenuItems, 'delete', ability))
       children.push({
         key: 'delete-selected',
         label: 'Delete',
@@ -123,7 +123,7 @@ const ConextMenuArea: FC<
     if (
       folder.parentId !== null &&
       !selectedContextMenuItems.some(({ id }) => id === folder.parentId) &&
-      canDeleteItems(selectedContextMenuItems, 'update', ability)
+      canDoActionOnResource(selectedContextMenuItems, 'update', ability)
     )
       children.push({
         key: 'move-selected',
@@ -150,11 +150,23 @@ const ConextMenuArea: FC<
     contextMenuItems.push(
       {
         type: 'group',
-        label:
-          selectedContextMenuItems.length > 1
-            ? `${selectedContextMenuItems.length} selected`
-            : selectedContextMenuItems[0].name.value,
+        label: (
+          <span
+            style={{
+              display: 'block',
+              textOverflow: 'ellipsis',
+              overflow: 'hidden',
+            }}
+          >
+            {selectedContextMenuItems.length > 1
+              ? `${selectedContextMenuItems.length} selected`
+              : selectedContextMenuItems[0].name.value}
+          </span>
+        ),
         children,
+        style: {
+          textOverflow: 'ellipsis',
+        },
       },
       {
         key: 'item-divider',
@@ -166,6 +178,10 @@ const ConextMenuArea: FC<
     <Dropdown
       menu={{
         items: [...(prefix || []), ...contextMenuItems, ...(suffix || [])],
+        style: {
+          maxWidth: '40ch',
+          whiteSpace: 'nowrap',
+        },
       }}
       trigger={['contextMenu']}
       onOpenChange={(open) => {

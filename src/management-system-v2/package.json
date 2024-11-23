@@ -25,6 +25,7 @@
     "@lexical/html": "^0.17.0",
     "@lexical/react": "^0.17.0",
     "@monaco-editor/react": "4.6.0",
+    "@prisma/client": "^5.15.0",
     "@proceed/bpmn-helper": "1.0.0",
     "@react-email/components": "^0.0.15",
     "@tanstack/react-query": "5.29.2",
@@ -53,7 +54,6 @@
     "next": "14.2.3",
     "next-auth": "4.24.7",
     "nodemailer": "6.9.13",
-    "npm": "^10.8.2",
     "openapi-fetch": "0.8.2",
     "react": "18.2.0",
     "react-contenteditable": "^3.3.7",
@@ -66,7 +66,8 @@
     "winston": "^3.3.3",
     "yup": "^0.32.9",
     "zod": "3.22.4",
-    "zustand": "4.5.2"
+    "zustand": "4.5.2",
+    "react-resizable": "^3.0.5"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "5.28.11",
@@ -82,8 +83,10 @@
     "eslint-config-prettier": "9.1.0",
     "openapi-typescript": "6.7.4",
     "prettier": "3.2.5",
+    "prisma": "^5.15.0",
     "sass": "1.75.0",
     "ts-node": "10.9.2",
-    "typescript": "5.4.5"
+    "typescript": "5.4.5",
+    "@types/react-resizable": "^3.0.7"
   }
 }

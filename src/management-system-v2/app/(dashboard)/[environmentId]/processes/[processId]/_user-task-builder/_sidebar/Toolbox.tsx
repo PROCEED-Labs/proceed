@@ -63,19 +63,25 @@ const Toolbox = () => {
   return (
     <div className={styles.Toolbox}>
       <CreationButton title="Header" icon={<MdTitle />}>
-        <Text text='<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me</strong></b></h1>' />
+        <Text text='<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">New Title Element</strong></b></h1>' />
       </CreationButton>
       <CreationButton title="Text" icon={<LuText />}>
-        <Text text="Double Click Me" />
+        <Text />
       </CreationButton>
       <CreationButton title="Input" icon={<LuFormInput />}>
-        <Input type="text" label="Double Click Me" />
+        <Input />
       </CreationButton>
       <CreationButton title="Radio" icon={<MdRadioButtonChecked />}>
-        <CheckBoxOrRadioGroup type="radio" />
+        <CheckBoxOrRadioGroup
+          type="radio"
+          data={[{ label: 'New Radio Button', value: '', checked: false }]}
+        />
       </CreationButton>
       <CreationButton title="Checkbox" icon={<MdCheckBox />}>
-        <CheckBoxOrRadioGroup type="checkbox" />
+        <CheckBoxOrRadioGroup
+          type="checkbox"
+          data={[{ label: 'New Checkbox', value: '', checked: false }]}
+        />
       </CreationButton>
       <CreationButton title="Table" icon={<LuTable />}>
         <Table />

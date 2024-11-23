@@ -8,7 +8,7 @@ import {
   AppstoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Space, Button, Table, App, Breakpoint, Grid, FloatButton, Tooltip } from 'antd';
+import { Space, Button, Table, Breakpoint, Grid, FloatButton, Tooltip, App } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -26,14 +26,24 @@ import styles from './role-page.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 
+function getMembersRepresentation(members: Role['members']) {
+  if (members.length === 0) return undefined;
+
+  return members.map((member) => userRepresentation(member)).join(', ');
+}
+
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
-import { spaceURL } from '@/lib/utils';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import SelectionActions from '@/components/selection-actions';
+import { spaceURL, userRepresentation } from '@/lib/utils';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 
-export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
+type ModifiedRole = Role & { members: AuthenticatedUser[] };
+export type FilteredRole = ReplaceKeysWithHighlighted<ModifiedRole, 'name'>;
 
-const RolesPage = ({ roles }: { roles: Role[] }) => {
-  const { message: messageApi } = App.useApp();
+const RolesPage = ({ roles }: { roles: ModifiedRole[] }) => {
+  const app = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();
   const environment = useEnvironment();
@@ -67,16 +77,15 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
   );
 
   async function deleteRoles(roleIds: string[]) {
-    try {
-      const result = await serverDeleteRoles(environment.spaceId, roleIds);
-      if (result && 'error' in result) throw new Error();
-
-      setSelectedRowKeys([]);
-      setSelectedRows([]);
-      router.refresh();
-    } catch (e) {
-      messageApi.error({ content: 'Something went wrong' });
-    }
+    await wrapServerCall({
+      fn: () => serverDeleteRoles(environment.spaceId, roleIds),
+      onSuccess: () => {
+        setSelectedRowKeys([]);
+        setSelectedRows([]);
+        router.refresh();
+      },
+      app,
+    });
   }
 
   const columns = [
@@ -93,7 +102,9 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
     {
       title: 'Members',
       dataIndex: 'members',
-      render: (members: FilteredRole['members']) => members.length,
+      render: (members: FilteredRole['members']) => (
+        <Tooltip title={getMembersRepresentation(members)}>{members.length}</Tooltip>
+      ),
       key: 'username',
     },
     {
@@ -149,26 +160,25 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
                 <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                   {breakpoint.xs ? null : <HeaderActions />}
 
-                  {selectedRowKeys.length > 0 ? (
-                    <Space size={20}>
-                      <Button
-                        type="text"
-                        icon={<CloseOutlined />}
-                        onClick={() => setSelectedRowKeys([])}
-                      />
-                      <span>{selectedRowKeys.length} selected:</span>
-                      <ConfirmationButton
-                        title="Delete Roles"
-                        description="Are you sure you want to delete the selected roles?"
-                        onConfirm={() => deleteRoles(selectedRowKeys)}
-                        buttonProps={{
-                          icon: <DeleteOutlined />,
-                          disabled: cannotDeleteSelected,
-                          type: 'text',
-                        }}
-                      />
-                    </Space>
-                  ) : undefined}
+                  <SelectionActions count={selectedRowKeys.length}>
+                    <Button
+                      type="text"
+                      icon={<CloseOutlined />}
+                      onClick={() => setSelectedRowKeys([])}
+                    />
+                    <ConfirmationButton
+                      title="Delete Roles"
+                      description="Are you sure you want to delete the selected roles?"
+                      onConfirm={() => deleteRoles(selectedRowKeys)}
+                      buttonProps={{
+                        icon: <DeleteOutlined />,
+                        disabled: cannotDeleteSelected,
+                        type: 'text',
+                      }}
+                    />
+                  </SelectionActions>
+
+                  {selectedRowKeys.length > 0 ? <Space size={20}></Space> : undefined}
                 </span>
 
                 {

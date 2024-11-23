@@ -3,8 +3,8 @@ import Content from '@/components/content';
 import { getRoleById } from '@/lib/data/legacy/iam/roles';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { getMemebers } from '@/lib/data/legacy/iam/memberships';
-import { getUserById } from '@/lib/data/legacy/iam/users';
+import { getMembers } from '@/lib/data/DTOs';
+import { getUserById } from '@/lib/data/DTOs';
 import { Button, Card, Space, Tabs } from 'antd';
 import { LeftOutlined } from '@ant-design/icons';
 import RoleGeneralData from './roleGeneralData';
@@ -20,7 +20,8 @@ const Page = async ({
   params: { roleId: string; environmentId: string };
 }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-  const role = getRoleById(roleId, ability);
+  const role = await getRoleById(roleId, ability);
+  if (role && !ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
 
   if (!role)
     return (
@@ -29,19 +30,19 @@ const Page = async ({
       </Content>
     );
 
-  if (!ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
-
-  const usersInRole = role.members.map((member) =>
-    getUserById(member.userId),
-  ) as AuthenticatedUser[];
+  const usersInRole = (await Promise.all(
+    role.members.map((member) => getUserById(member.userId)),
+  )) as AuthenticatedUser[];
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
 
-  const memberships = getMemebers(activeEnvironment.spaceId, ability);
-  const usersNotInRole = memberships
-    .filter(({ userId }) => !roleUserSet.has(userId))
-    .map((user) => getUserById(user.userId)) as AuthenticatedUser[];
+  const memberships = await getMembers(activeEnvironment.spaceId, ability);
+  const usersNotInRole = (await Promise.all(
+    memberships
+      .filter(({ userId }) => !roleUserSet.has(userId))
+      .map((user) => getUserById(user.userId)),
+  )) as AuthenticatedUser[];
 
-  const roleParentFolder = role.parentId ? getFolderById(role.parentId, ability) : undefined;
+  const roleParentFolder = role.parentId ? await getFolderById(role.parentId, ability) : undefined;
 
   return (
     <Content

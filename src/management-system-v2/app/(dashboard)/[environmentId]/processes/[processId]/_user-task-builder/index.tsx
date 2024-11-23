@@ -13,7 +13,7 @@ import Sidebar from './_sidebar';
 
 import * as Elements from './elements';
 
-import { iframeDocument, defaultForm } from './utils';
+import { iframeDocument, defaultForm, toHtml } from './utils';
 
 import CustomEventhandlers from './CustomCommandhandlers';
 import useBoundingClientRect from '@/lib/useBoundingClientRect';
@@ -25,6 +25,8 @@ import { generateUserTaskFileName, getUserTaskImplementationString } from '@proc
 import { useEnvironment } from '@/components/auth-can';
 
 import EditorDnDHandler from './DragAndDropHandler';
+
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 type BuilderProps = {
   processId: string;
@@ -66,9 +68,11 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+
+  const selectedElement = modeler && selectedElementId && modeler.getElement(selectedElementId);
+
   const filename = useMemo(() => {
-    if (modeler && selectedElementId) {
-      const selectedElement = modeler.getElement(selectedElementId);
+    if (modeler && selectedElement && bpmnIs(selectedElement, 'bpmn:UserTask')) {
       if (selectedElement && selectedElement.type === 'bpmn:UserTask') {
         return (
           (selectedElement.businessObject.fileName as string | undefined) ||
@@ -78,7 +82,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
     }
 
     return undefined;
-  }, [modeler, selectedElementId]);
+  }, [modeler, selectedElement]);
 
   useEffect(() => {
     if (filename && open) {
@@ -109,7 +113,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
             implementation: getUserTaskImplementationString(),
           });
         }
-        saveProcessUserTask(processId, filename!, json, environment.spaceId).then(
+        const html = toHtml(json);
+        saveProcessUserTask(processId, filename!, json, html, environment.spaceId).then(
           (res) => res && console.error(res.error),
         );
         onSave();
@@ -150,7 +155,12 @@ const EditorModal: React.FC<BuilderModalProps> = ({
                 <Sidebar />
               </Col>
             )}
-            <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={isMobile ? 24 : 20}>
+            <Col
+              style={{ border: '2px solid #d3d3d3', borderRadius: '8px' }}
+              ref={iframeContainerRef}
+              className={styles.HtmlEditor}
+              span={isMobile ? 24 : 20}
+            >
               <IFrame
                 id="user-task-builder-iframe"
                 ref={iframeRef}

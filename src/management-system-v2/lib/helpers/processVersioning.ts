@@ -335,7 +335,7 @@ export async function selectAsLatestVersion(processId: string, version: number) 
       try {
         const fileContent = getScriptTaskScript(processId, oldName + '.' + type);
         await saveProcessScriptTask(processId, newName + '.' + type, fileContent);
-      } catch (err) { }
+      } catch (err) {}
     }
   });
 

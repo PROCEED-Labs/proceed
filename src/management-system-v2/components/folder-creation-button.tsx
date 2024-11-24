@@ -24,19 +24,18 @@ export const FolderCreationModal: FC<
   const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
       await wrapServerCall({
-        fn: () => {
+        fn: async () => {
           const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
           if (!folderInput) throw new Error();
 
-        const response = await serverCreateFolder(folderInput);
-        if (response && 'error' in response) throw new Error();
-
-        router.refresh();
-        message.open({ type: 'success', content: 'Folder Created' });
-        props.close();
-      } catch (e) {
-        message.open({ type: 'error', content: 'Something went wrong' });
-      }
+          return await serverCreateFolder(folderInput);
+        },
+        onSuccess: () => {
+          router.refresh();
+          message.open({ type: 'success', content: 'Folder Created' });
+          props.close();
+        },
+      });
     });
   };
 

@@ -4,10 +4,9 @@ import { ComponentProps, FC, useTransition } from 'react';
 import { App } from 'antd';
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
-import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
+import { FolderUserInput } from '@/lib/data/folder-schema';
 import { createFolder as serverCreateFolder } from '@/lib/data/folders';
 import FolderModal from './folder-modal';
-import useParseZodErrors from '@/lib/useParseZodErrors';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
 export const FolderCreationModal: FC<
@@ -18,18 +17,12 @@ export const FolderCreationModal: FC<
   const spaceId = useEnvironment().spaceId;
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
   const [isLoading, startTransition] = useTransition();
-  const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
 
   const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
       await wrapServerCall({
-        fn: async () => {
-          const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
-          if (!folderInput) throw new Error();
-
-          return await serverCreateFolder(folderInput);
-        },
-        onSuccess: () => {
+        fn: async () => serverCreateFolder(values),
+        onSuccess() {
           router.refresh();
           message.open({ type: 'success', content: 'Folder Created' });
           props.close();

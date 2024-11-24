@@ -3,10 +3,10 @@ import Content from '@/components/content';
 import { getEngines } from '@/lib/engines/mqtt-endpoints';
 import { Result, Skeleton } from 'antd';
 import { notFound, redirect } from 'next/navigation';
-import { env } from 'process';
 import { Suspense } from 'react';
 import { getSystemAdminByUserId } from '@/lib/data/DTOs';
 import EnginesTable from './engines-table';
+import { env } from '@/lib/env-vars';
 
 export type TableEngine = Awaited<ReturnType<typeof getEngines>>[number] & { name: string };
 
@@ -28,6 +28,9 @@ async function Engines() {
 
 export default function EnginesPage() {
   if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) return notFound();
+
+  if (!env.MQTT_SERVER_ADDRESS)
+    return <Result status="500" title="Error" subTitle="No MQTT server address configured" />;
 
   return (
     <Content title="Engines">

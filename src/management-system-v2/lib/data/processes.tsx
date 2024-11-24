@@ -18,6 +18,7 @@ import {
   getLocalVersionBpmn,
   selectAsLatestVersion,
   updateProcessVersionBasedOn,
+  versionScriptTasks,
   versionUserTasks,
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
@@ -402,6 +403,7 @@ export const createVersion = async (
   const process = (await _getProcess(processId)) as Process;
 
   await versionUserTasks(process, epochTime, bpmnObj);
+  await versionScriptTasks(process, epochTime, bpmnObj);
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
 

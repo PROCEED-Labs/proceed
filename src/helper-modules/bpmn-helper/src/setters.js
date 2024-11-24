@@ -230,6 +230,20 @@ async function setUserTaskData(
 }
 
 /**
+ * Sets the 'fileName' attributes of a ScriptTask with new values.
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} scriptTaskId - the scriptTaskId to look for
+ * @param {string} newFileName - the new value of 'fileName' attribute
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
+ */
+async function setScriptTaskData(bpmn, scriptTaskId, newFileName) {
+  return await manipulateElementById(bpmn, scriptTaskId, (scriptTask) => {
+    scriptTask.fileName = newFileName;
+  });
+}
+
+/**
  * Function that sets the machineInfo of all elements in the given xml with the given machineIds
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -573,6 +587,7 @@ module.exports = {
   setDeploymentMethod,
   setMachineInfo,
   setUserTaskData,
+  setScriptTaskData,
   addConstraintsToElementById,
   addCallActivityReference,
   removeCallActivityReference,

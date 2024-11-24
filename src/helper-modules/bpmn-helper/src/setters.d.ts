@@ -123,6 +123,19 @@ export function setUserTaskData(
   newImplementation?: string,
 ): Promise<string | object>;
 /**
+ * Sets the 'fileName' attributes of a ScriptTask with new values.
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} scriptTaskId - the scriptTaskId to look for
+ * @param {string} newFileName - the new value of 'fileName' attribute
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
+ */
+export function setScriptTaskData(
+  bpmn: string | object,
+  scriptTaskId: string,
+  newFileName: string,
+): Promise<string | object>;
+/**
  * Adds the given constraints to the bpmn element with the given id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -212,4 +225,4 @@ export function updatePerformersOnElementById(
   bpmn: string | object,
   elementId: string,
   performers: any[],
-): Promise<any>;
+): Promise<string | object>;

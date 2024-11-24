@@ -204,6 +204,25 @@ async function getUserTaskFileNameMapping(bpmn) {
 }
 
 /**
+ * Get all fileName for all scriptTasks,
+ * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [scriptTaskId: string]: { fileName?: string }}> } an object (a map) with all scriptTaskIds as keys
+ */
+async function getScriptTaskFileNameMapping(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const scriptTasks = getElementsByTagName(bpmnObj, 'bpmn:ScriptTask');
+  const mapping = {};
+  scriptTasks.forEach((task) => {
+    mapping[task.id] = {
+      fileName: task.fileName,
+    };
+  });
+  return mapping;
+}
+
+/**
  * Creates a map (object) that contains the 'fileName' (key) and UserTask-IDs (value)
  * for every UserTask in a BPMN process.
  *
@@ -1159,6 +1178,9 @@ module.exports = {
   // userTasks
   getUserTaskFileNameMapping,
   getAllUserTaskFileNamesAndUserTaskIdsMapping,
+
+  // scriptTasks
+  getScriptTaskFileNameMapping,
 
   // sub-process related
   getSubprocess,

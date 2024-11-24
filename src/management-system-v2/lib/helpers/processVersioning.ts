@@ -6,16 +6,21 @@ import {
   getDefinitionsVersionInformation,
   getUserTaskImplementationString,
   getUserTaskFileNameMapping,
+  getScriptTaskFileNameMapping,
   setUserTaskData,
+  setScriptTaskData,
 } from '@proceed/bpmn-helper';
 import { asyncForEach } from './javascriptHelpers';
 import {
   deleteProcessUserTask,
   getProcessUserTasksHtml,
   getProcessUserTasksJSON,
+  getProcessScriptTasksScript,
   saveProcessUserTask,
+  saveProcessScriptTask,
+  deleteProcessScriptTask,
 } from '../data/legacy/_process';
-import { getUserTaskJSON, getUserTaskHTML } from '../data/legacy/fileHandling';
+import { getUserTaskJSON, getUserTaskHTML, getScriptTaskScript } from '../data/legacy/fileHandling';
 import { Process } from '../data/process-schema';
 import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from '../data/module-import-types-temp';
@@ -85,19 +90,35 @@ export async function convertToEditableBpmn(bpmn: string) {
     versionBasedOn: version,
   })) as object;
 
-  const changedFileNames = {} as { [key: string]: string };
+  const changedUserTaskFileNames = {} as { [key: string]: string };
+  const userTaskFileNameMapping = await getUserTaskFileNameMapping(bpmnObj);
 
-  const fileNameMapping = await getUserTaskFileNameMapping(bpmnObj);
+  await asyncForEach(
+    Object.entries(userTaskFileNameMapping),
+    async ([userTaskId, { fileName }]) => {
+      if (fileName) {
+        const [unversionedName] = fileName.split('-');
+        changedUserTaskFileNames[fileName] = unversionedName;
+        await setUserTaskData(bpmnObj, userTaskId, unversionedName);
+      }
+    },
+  );
 
-  await asyncForEach(Object.entries(fileNameMapping), async ([userTaskId, { fileName }]) => {
-    if (fileName) {
-      const [unversionedName] = fileName.split('-');
-      changedFileNames[fileName] = unversionedName;
-      await setUserTaskData(bpmnObj, userTaskId, unversionedName);
-    }
-  });
+  const changedScriptTaskFileNames = {} as { [key: string]: string };
+  const scriptTaskFileNameMapping = await getScriptTaskFileNameMapping(bpmnObj);
 
-  return { bpmn: await toBpmnXml(bpmnObj), changedFileNames };
+  await asyncForEach(
+    Object.entries(scriptTaskFileNameMapping),
+    async ([scriptTaskId, { fileName }]) => {
+      if (fileName) {
+        const [unversionedName] = fileName.split('-');
+        changedScriptTaskFileNames[fileName] = unversionedName;
+        await setScriptTaskData(bpmnObj, scriptTaskId, unversionedName);
+      }
+    },
+  );
+
+  return { bpmn: await toBpmnXml(bpmnObj), changedUserTaskFileNames, changedScriptTaskFileNames };
 }
 
 export async function getLocalVersionBpmn(process: Process, localVersion: number) {
@@ -175,6 +196,73 @@ export async function versionUserTasks(
   }
 }
 
+export async function versionScriptTasks(
+  processInfo: Process,
+  newVersion: number,
+  bpmnObj: object,
+  dryRun = false,
+) {
+  const scriptMapping = await getScriptTaskFileNameMapping(bpmnObj);
+
+  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
+
+  for (let scriptTaskId in scriptMapping) {
+    const { fileName } = scriptMapping[scriptTaskId];
+
+    // only handle script tasks that reference a file
+    if (fileName) {
+      const scriptTaskJS = getScriptTaskScript(processInfo.id, fileName + '.js');
+      const scriptTaskTS = getScriptTaskScript(processInfo.id, fileName + '.ts');
+
+      let versionFileName = `${fileName}-${newVersion}`;
+
+      // get the script of the script task in the based on version (if there is one and it is locally known)
+      const basedOnBPMN =
+        versionBasedOn !== undefined
+          ? await getLocalVersionBpmn(processInfo, versionBasedOn)
+          : undefined;
+
+      // check if there is a preceding version and if the script of the script task actually changed from that version
+      let scriptTaskScriptAlreadyExisting = false;
+      if (basedOnBPMN) {
+        const basedOnVersionScriptMapping = await getScriptTaskFileNameMapping(basedOnBPMN);
+
+        // check if the script task existed and if it had the same script
+        const basedOnVersionFileInfo = basedOnVersionScriptMapping[scriptTaskId];
+
+        if (basedOnVersionFileInfo && basedOnVersionFileInfo.fileName) {
+          const basedOnVersionScriptTaskJS = getScriptTaskScript(
+            processInfo.id,
+            basedOnVersionFileInfo.fileName + '.js',
+          );
+          const basedOnVersionScriptTaskTS = getScriptTaskScript(
+            processInfo.id,
+            basedOnVersionFileInfo.fileName + '.ts',
+          );
+
+          if (
+            basedOnVersionScriptTaskJS === scriptTaskJS &&
+            basedOnVersionScriptTaskTS === scriptTaskTS
+          ) {
+            // reuse the script of the previous version
+            scriptTaskScriptAlreadyExisting = true;
+            versionFileName = basedOnVersionFileInfo.fileName;
+          }
+        }
+      }
+
+      // make sure the script task is using the correct data
+      await setScriptTaskData(bpmnObj, scriptTaskId, versionFileName);
+
+      // store the script task version if it didn't exist before
+      if (!dryRun && !scriptTaskScriptAlreadyExisting) {
+        saveProcessScriptTask(processInfo.id, versionFileName + '.js', scriptTaskJS);
+        saveProcessScriptTask(processInfo.id, versionFileName + '.ts', scriptTaskTS);
+      }
+    }
+  }
+}
+
 export async function updateProcessVersionBasedOn(processInfo: Process, versionBasedOn: number) {
   if (processInfo?.bpmn) {
     const { version, description, name } = await getDefinitionsVersionInformation(processInfo.bpmn);
@@ -190,7 +278,21 @@ export async function updateProcessVersionBasedOn(processInfo: Process, versionB
   }
 }
 
-const getUsedFileNames = async (bpmn: string) => {
+const getUsedScriptTaskFileNames = async (bpmn: string) => {
+  const userTaskFileNameMapping = await getScriptTaskFileNameMapping(bpmn);
+
+  const fileNames = new Set<string>();
+
+  Object.values(userTaskFileNameMapping).forEach(({ fileName }) => {
+    if (fileName) {
+      fileNames.add(fileName);
+    }
+  });
+
+  return [...fileNames];
+};
+
+const getUsedUserTaskFileNames = async (bpmn: string) => {
   const userTaskFileNameMapping = await getUserTaskFileNameMapping(bpmn);
 
   const fileNames = new Set<string>();
@@ -211,17 +313,39 @@ export async function selectAsLatestVersion(processId: string, version: number) 
 
   const editableBpmn = (await getProcessBpmn(processId)) as string;
   const versionBpmn = (await getProcessVersionBpmn(processId, version)) as string;
-  const fileNamesinEditableVersion = await getUsedFileNames(editableBpmn);
+  const userTaskFileNamesinEditableVersion = await getUsedUserTaskFileNames(editableBpmn);
+  const scriptFileNamesinEditableVersion = await getUsedScriptTaskFileNames(editableBpmn);
 
-  const { bpmn: convertedBpmn, changedFileNames } = await convertToEditableBpmn(versionBpmn);
+  const {
+    bpmn: convertedBpmn,
+    changedScriptTaskFileNames,
+    changedUserTaskFileNames,
+  } = await convertToEditableBpmn(versionBpmn);
+
+  // delete scripts stored for latest version
+  await asyncForEach(scriptFileNamesinEditableVersion, async (taskFileName) => {
+    await deleteProcessScriptTask(processId, taskFileName + '.js');
+    await deleteProcessScriptTask(processId, taskFileName + '.ts');
+  });
+
+  // store ScriptTasks from this version as ScriptTasks from latest version
+  await asyncForEach(Object.entries(changedScriptTaskFileNames), async ([oldName, newName]) => {
+    const fileTypes = ['js', 'ts', 'xml'];
+    for (const type of fileTypes) {
+      try {
+        const fileContent = getScriptTaskScript(processId, oldName + '.' + type);
+        await saveProcessScriptTask(processId, newName + '.' + type, fileContent);
+      } catch (err) {}
+    }
+  });
 
   // Delete UserTasks stored for latest version
-  await asyncForEach(fileNamesinEditableVersion, async (taskFileName) => {
+  await asyncForEach(userTaskFileNamesinEditableVersion, async (taskFileName) => {
     await deleteProcessUserTask(processId, taskFileName);
   });
 
   // Store UserTasks from this version as UserTasks from latest version
-  await asyncForEach(Object.entries(changedFileNames), async ([oldName, newName]) => {
+  await asyncForEach(Object.entries(changedUserTaskFileNames), async ([oldName, newName]) => {
     await saveProcessUserTask(
       processId,
       newName,

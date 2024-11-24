@@ -117,8 +117,7 @@ module.exports = {
 
         await Promise.all(sentMessages);
       } catch (e) {
-        // NOTE: possible infinite loop if publish keeps failing
-        // logger.error('Failed to publish log data');
+        // NOTE: using logger.error could cause an infinite loop if publish keeps failing
         console.error(e);
       }
     });

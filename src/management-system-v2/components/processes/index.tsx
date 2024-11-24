@@ -31,7 +31,7 @@ import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
-import { FolderCreationModal } from '@/components/folder-creation-button';
+import { FolderCreationModal } from '@/components/folder-creation';
 import {
   deleteFolder,
   moveIntoFolder,

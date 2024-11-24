@@ -1,8 +1,7 @@
 'use client';
 
-import { ComponentProps, FC, ReactNode, useState, useTransition } from 'react';
-import { App, Button } from 'antd';
-import type { ButtonProps } from 'antd';
+import { ComponentProps, FC, useTransition } from 'react';
+import { App } from 'antd';
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
@@ -54,27 +53,3 @@ export const FolderCreationModal: FC<
     />
   );
 };
-
-const FolderCreationButton: FC<
-  ButtonProps & {
-    wrapperElement?: ReactNode;
-  }
-> = ({ wrapperElement, ...props }) => {
-  const [modalOpen, setModalOpen] = useState(false);
-
-  return (
-    <>
-      {wrapperElement ? (
-        <div onClick={() => setModalOpen(true)}>{wrapperElement}</div>
-      ) : (
-        <Button {...props} onClick={() => setModalOpen(true)}>
-          Create Folder
-        </Button>
-      )}
-
-      <FolderCreationModal open={modalOpen} close={() => setModalOpen(false)} />
-    </>
-  );
-};
-
-export default FolderCreationButton;

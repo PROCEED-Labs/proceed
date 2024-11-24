@@ -20,7 +20,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, updateProcess } from '@/lib/data/processes';
+import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
@@ -30,6 +30,7 @@ import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
+import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -54,6 +55,7 @@ const ModelerToolbar = ({
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
+  const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
@@ -82,6 +84,8 @@ const ModelerToolbar = ({
     }
   }, [modeler, showProcessExportModal, showUserTaskEditor]);
 
+  const selectedVersionId = query.get('version');
+
   const createProcessVersion = async (values: {
     versionName: string;
     versionDescription: string;
@@ -104,7 +108,14 @@ const ModelerToolbar = ({
       )
         throw new Error();
 
-      // TODO: navigate to new version?
+      // reimport the new version since the backend has added versionBasedOn information that would
+      // be overwritten by following changes
+      if (!selectedElementId) {
+        const newBpmn = await getProcessBPMN(processId, environment.spaceId);
+        if (newBpmn && typeof newBpmn === 'string') {
+          await modeler?.loadBPMN(newBpmn);
+        }
+      }
       router.refresh();
     } catch (_) {
       message.error('Something went wrong');
@@ -153,8 +164,6 @@ const ModelerToolbar = ({
     setPreselectedExportType(preselectedExportType);
     setShowProcessExportModal(!showProcessExportModal);
   };
-
-  const selectedVersionId = query.get('version');
 
   const handleUndo = () => {
     modeler?.undo();
@@ -287,7 +296,16 @@ const ModelerToolbar = ({
                       Open Subprocess
                     </Button>
                   </Tooltip>
-                )))}
+                )) ||
+                (process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
+                  bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
+                    <Tooltip title="Edit Script Task">
+                      <Button
+                        icon={<FormOutlined />}
+                        onClick={() => setShowScriptTaskEditor(true)}
+                      />
+                    </Tooltip>
+                  )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -355,11 +373,20 @@ const ModelerToolbar = ({
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
       {process.env.NEXT_PUBLIC_ENABLE_EXECUTION && (
-        <UserTaskBuilder
-          processId={processId}
-          open={showUserTaskEditor}
-          onClose={() => setShowUserTaskEditor(false)}
-        />
+        <>
+          <UserTaskBuilder
+            processId={processId}
+            open={showUserTaskEditor}
+            onClose={() => setShowUserTaskEditor(false)}
+          />
+
+          <ScriptEditor
+            processId={processId}
+            open={showScriptTaskEditor}
+            onClose={() => setShowScriptTaskEditor(false)}
+            selectedElement={selectedElement}
+          />
+        </>
       )}
     </>
   );

@@ -57,16 +57,15 @@ export function getProcessMetaObjects() {
 }
 
 /** Returns all processes for a user */
-export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
-  const processes = Object.values(processMetaObjects);
-
-  const userProcesses = ability ? ability.filter('view', 'Process', processes) : processes;
-
-  return await Promise.all(
-    userProcesses.map(async (process) =>
-      !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
-    ),
+export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
+  const spaceProcesses = Object.values(processMetaObjects).filter(
+    (process) => process.environmentId === environmentId,
   );
+
+  const processes = ability ? ability.filter('view', 'Process', spaceProcesses) : spaceProcesses;
+
+  if (!includeBPMN) return processes;
+  return processes.map((process) => ({ ...process, bpmn: getProcessBpmn(process.id) }));
 }
 
 export async function getProcess(processDefinitionsId: string, includeBPMN = false) {

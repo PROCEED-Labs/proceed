@@ -17,11 +17,14 @@ import db from '@/lib/data';
 import { v4 } from 'uuid';
 import { UserErrorType, userError } from '@/lib/user-error';
 
-/** Returns all processes for a user */
-export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
-  const userProcesses = await db.process.findMany({
+/**
+ * Returns all processes in an environment
+ * If you want the processes for a specific user, you have to provide his ability
+ * */
+export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
+  const spaceProcesses = await db.process.findMany({
     where: {
-      creatorId: userId,
+      environmentId,
     },
     select: {
       id: true,
@@ -46,10 +49,9 @@ export async function getProcesses(userId: string, ability: Ability, includeBPMN
     },
   });
 
-  //TODO: ability check ? is it really necessary in this case?
   //TODO: add pagination
 
-  return userProcesses;
+  return ability ? ability.filter('view', 'Process', spaceProcesses) : spaceProcesses;
 }
 
 export async function getProcess(processDefinitionsId: string, includeBPMN = false) {

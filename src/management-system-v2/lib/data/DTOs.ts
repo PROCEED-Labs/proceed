@@ -28,10 +28,10 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
     : await processModuleLegacy.getProcess(processDefinitionsId, includeBPMN);
 }
 
-export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
+export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
   return enableUseDB
-    ? await processModuleDB.getProcesses(userId, ability, includeBPMN)
-    : await processModuleLegacy.getProcesses(userId, ability, includeBPMN);
+    ? await processModuleDB.getProcesses(environmentId, ability, includeBPMN)
+    : await processModuleLegacy.getProcesses(environmentId, ability, includeBPMN);
 }
 
 export async function getProcessBpmn(processDefinitionsId: string) {

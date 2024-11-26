@@ -142,33 +142,15 @@ export async function deleteUser(userId: string) {
   return user;
 }
 
-<<<<<<< HEAD
-export function updateUser(
-  userId: string,
-  inputUser:
-    | (Partial<AuthenticatedUser> & { guest: false })
-    | (Partial<GuestUser> & { guest: true }),
-) {
-  const user = getUserById(userId, { throwIfNotFound: true });
-
-  const isGoingToBeGuest = inputUser.guest !== undefined ? inputUser.guest : user.guest;
-=======
 export async function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
   const user = await getUserById(userId, { throwIfNotFound: true });
   const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user?.isGuest;
->>>>>>> origin/main
 
   let updatedUser: User;
   if (isGoingToBeGuest) {
     updatedUser = {
-<<<<<<< HEAD
-      id: user.id,
-      signedInWithUserId: user.guest ? user.signedInWithUserId : undefined,
-      ...GuestUserSchema.parse(inputUser),
-=======
       id: user!.id,
       isGuest: true,
->>>>>>> origin/main
     };
   } else {
     const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);

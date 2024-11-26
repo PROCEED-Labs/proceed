@@ -67,6 +67,7 @@ const nextAuthOptions: AuthOptions = {
       const session = await getServerSession(nextAuthOptions);
       const sessionUser = session?.user;
 
+      // Guest account signs in with proper auth
       if (
         sessionUser?.isGuest &&
         account?.provider !== 'guest-signin' &&
@@ -79,9 +80,7 @@ const nextAuthOptions: AuthOptions = {
         const user = _user as Partial<AuthenticatedUser>;
         const userSigningIn = await getUserById(_user.id);
 
-        if (userSigningIn) {
-          await updateUser(sessionUser.id, { isGuest: true, signedInWithUserId: userSigningIn.id });
-        } else {
+        if (!userSigningIn) {
           await updateUser(sessionUser.id, {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,

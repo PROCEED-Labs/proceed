@@ -45,6 +45,12 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
     : await processModuleLegacy.getProcessVersionBpmn(processDefinitionsId, version);
 }
 
+export async function updateProcess(...args: Parameters<typeof processModuleDB.updateProcess>) {
+  return enableUseDB
+    ? await processModuleDB.updateProcess(...args)
+    : await processModuleLegacy.updateProcess(...args);
+}
+
 export async function getFolderContents(folderId: string, ability?: Ability) {
   return enableUseDB
     ? await folderModuleDB.getFolderContents(folderId, ability)
@@ -61,6 +67,20 @@ export async function getFolderById(folderId: string, ability?: Ability) {
   return enableUseDB
     ? await folderModuleDB.getFolderById(folderId, ability)
     : await folderModuleLegacy.getFolderById(folderId, ability);
+}
+
+export async function moveFolder(folderId: string, newParentId: string, ability?: Ability) {
+  return enableUseDB
+    ? await folderModuleDB.moveFolder(folderId, newParentId, ability)
+    : await folderModuleLegacy.moveFolder(folderId, newParentId, ability);
+}
+
+export async function updateFolderMetaData(
+  ...args: Parameters<typeof folderModuleDB.updateFolderMetaData>
+) {
+  return enableUseDB
+    ? await folderModuleDB.updateFolderMetaData(...args)
+    : await folderModuleLegacy.updateFolderMetaData(...args);
 }
 
 export async function deleteEnvironment(environmentId: string, ability?: Ability) {

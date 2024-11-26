@@ -13,23 +13,9 @@ const baseTopicPrefix = env.MQTT_BASETOPIC ? env.MQTT_BASETOPIC + '/' : '';
 export function getClient(options?: mqtt.IClientOptions): Promise<mqtt.MqttClient> {
   const address = env.MQTT_SERVER_ADDRESS || '';
 
-  return new Promise((res, rej) => {
-    const client = mqtt.connect(address, {
-      ...mqttCredentials,
-      ...options,
-    });
-    client.on('connect', () => res(client));
-    client.on('error', (err) => rej(err));
-  });
-}
-
-function subscribeToTopic(client: mqtt.MqttClient, topic: string) {
-  return new Promise<void>((res, rej) => {
-    setTimeout(rej, mqttTimeout); // Timeout if the subscription takes too long
-    client.subscribe(topic, (err) => {
-      if (err) rej(err);
-      res();
-    });
+  return mqtt.connectAsync(address, {
+    ...mqttCredentials,
+    ...options,
   });
 }
 
@@ -44,7 +30,7 @@ export async function getEngines() {
 
   const engines: { id: string; running: boolean; version: string }[] = [];
 
-  await subscribeToTopic(client, `${getEnginePrefix('+')}/status`);
+  await client.subscribeAsync(`${getEnginePrefix('+')}/status`);
 
   // All retained messages are sent at once
   // The broker should bundle them in one tcp packet,
@@ -87,7 +73,7 @@ export async function mqttRequest(
 
   const requestId = crypto.randomUUID();
   const requestTopic = getEnginePrefix(engineId) + '/api' + url;
-  await subscribeToTopic(client, requestTopic);
+  await client.subscribeAsync(requestTopic);
 
   // handler for the response
   let res: (res: any) => void, rej: (Err: any) => void;

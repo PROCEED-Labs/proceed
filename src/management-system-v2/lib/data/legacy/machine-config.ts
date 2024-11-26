@@ -34,7 +34,8 @@ type StoredConfigsAndParameters = {
   machineConfigs: Record<string, StoredMachineConfig>;
   targetConfigs: Record<string, StoredTargetConfig>;
   parameters: Record<string, StoredParameter>;
-  versionedParentConfigs: Record<string, StoredParentConfig>;
+  // versionedParentConfigs: Record<string, StoredParentConfig>;
+  versionedParentConfigs: Record<string, Record<number, StoredParentConfig>>;
 };
 
 let storedData: StoredConfigsAndParameters =
@@ -151,18 +152,29 @@ function machineConfigsToStorage(
 function parentConfigToStorage(
   parentConfig: ParentConfig,
   newId: boolean = false,
-  versioned: boolean = false,
+  version: number = 0,
 ) {
   const { targetConfig, metadata, machineConfigs } = parentConfig;
 
-  parentConfig.id = newId ? v4() : parentConfig.id;
+  parentConfig.id = newId && !version ? v4() : parentConfig.id;
 
-  (versioned ? storedData.versionedParentConfigs : storedData.parentConfigs)[parentConfig.id] = {
-    ...parentConfig,
-    targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
-    machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
-    metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
-  };
+  storedData.versionedParentConfigs[parentConfig.id]
+    ? undefined
+    : (storedData.versionedParentConfigs[parentConfig.id] = {});
+
+  version
+    ? (storedData.versionedParentConfigs[parentConfig.id][version] = {
+        ...parentConfig,
+        targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
+        machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+        metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+      })
+    : (storedData.parentConfigs[parentConfig.id] = {
+        ...parentConfig,
+        targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
+        machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+        metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+      });
 }
 
 /**
@@ -274,9 +286,12 @@ function nestedMachineConfigsFromStorage(machineConfigIds: string[]): MachineCon
  */
 export async function getDeepParentConfigurationById(
   parentConfigId: string,
+  version: number = 0,
   ability?: Ability,
 ): Promise<ParentConfig> {
-  const storedParentConfig = storedData.parentConfigs[parentConfigId];
+  const storedParentConfig = version
+    ? storedData.versionedParentConfigs[parentConfigId][version]
+    : storedData.parentConfigs[parentConfigId];
 
   // TODO: check if the user can access the config
 
@@ -287,6 +302,7 @@ export async function getDeepParentConfigurationById(
     metadata: nestedParametersFromStorage(storedParentConfig.metadata),
     targetConfig: nestedConfigFromStorage('target-config', storedParentConfig.targetConfig),
     machineConfigs: nestedMachineConfigsFromStorage(storedParentConfig.machineConfigs),
+    versions: storedData.parentConfigs[parentConfigId].versions,
   };
 
   if (
@@ -580,7 +596,7 @@ export async function addParentConfigVersion(
   version: number,
 ) {
   const newVersion: ParentConfig = JSON.parse(JSON.stringify(machineConfigInput));
-  newVersion.id = newVersion.id + '-' + version;
+  newVersion.id = newVersion.id;
 
   try {
     const parentConfigData = AbstractConfigInputSchema.parse(newVersion);
@@ -597,7 +613,7 @@ export async function addParentConfigVersion(
     if (!folderData) throw new Error('Folder not found');
 
     // true to generate new IDs for data and create a version of a parentConfig instead of a regular one
-    parentConfigToStorage(metadata, true, true);
+    parentConfigToStorage(metadata, true, version);
     store.set('techData', 'versionedParentConfigs', storedData.versionedParentConfigs);
     store.set('techData', 'machineConfigs', storedData.machineConfigs);
     store.set('techData', 'targetConfigs', storedData.targetConfigs);
@@ -812,14 +828,19 @@ export async function removeMachineConfig(machineConfigId: string) {
  */
 export async function removeParentConfiguration(parentConfigId: string) {
   const parentConfig = storedData.parentConfigs[parentConfigId];
+  const parentConfigVersions = storedData.versionedParentConfigs[parentConfigId];
 
   if (!parentConfig) return;
+  if (!parentConfigVersions) return;
 
   delete storedData.parentConfigs[parentConfigId];
+  delete storedData.versionedParentConfigs[parentConfigId];
 
   if (parentConfig.targetConfig) await removeTargetConfig(parentConfig.targetConfig);
   await asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id));
   await asyncForEach(parentConfig.metadata, (id) => removeParameter(id));
+
+  // TODO for each version removeTargetConfig(), removeMachineConfig(), removeParameter() like above
 
   // remove parentConfig from folder
   foldersMetaObject.folders[parentConfig.folderId]!.children = foldersMetaObject.folders[
@@ -828,6 +849,7 @@ export async function removeParentConfiguration(parentConfigId: string) {
 
   // remove from store
   store.set('techData', 'parentConfigs', storedData.parentConfigs);
+  store.set('techData', 'versionedParentConfigs', storedData.versionedParentConfigs);
 }
 
 export const deleteParentConfigurations = async (definitionIds: string[], spaceId: string) => {

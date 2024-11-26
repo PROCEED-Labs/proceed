@@ -8,13 +8,17 @@ type MachineConfigProps = {
   searchParams: { version?: string };
 };
 
-const MachineConfigView: React.FC<MachineConfigProps> = async ({ params: { configId } }) => {
-  let machineConfig = await getDeepParentConfigurationById(configId);
+const MachineConfigView: React.FC<MachineConfigProps> = async ({
+  params: { configId },
+  searchParams,
+}) => {
+  const selectedVersionId = searchParams.version ? +searchParams.version : undefined;
+  let machineConfig = await getDeepParentConfigurationById(configId, selectedVersionId);
 
   //replace ConfigContent <-> MachineConfigEditor as needed
   return (
     <Content title={`Tech Data Set: ${machineConfig.name}`}>
-      <ConfigPage parentConfig={machineConfig} />
+      <ConfigPage parentConfig={machineConfig} editingAllowed={!selectedVersionId} />
     </Content>
   );
 };

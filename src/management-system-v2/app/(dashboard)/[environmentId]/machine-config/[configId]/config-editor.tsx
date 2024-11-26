@@ -49,6 +49,7 @@ import AddButton from './add-button';
 import MachineConfigModal from '@/components/machine-config-modal';
 import {
   addMachineConfig,
+  addParentConfigVersion,
   addTargetConfig,
   updateMachineConfig,
   updateParentConfig,
@@ -58,15 +59,17 @@ type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;
   editable: boolean;
+  editingAllowed: boolean;
   onChangeEditable: (isEditable: boolean) => void;
 };
 
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
+const LATEST_VERSION = { version: -2, name: 'Latest Version', description: '' };
 
 const ConfigEditor: React.FC<MachineDataViewProps> = ({
   selectedConfig,
   parentConfig,
   editable,
+  editingAllowed,
   onChangeEditable,
 }) => {
   const router = useRouter();
@@ -106,6 +109,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     parentConfig.versions.find(
       (version: any) => version.version === parseInt(selectedVersionId ?? '-1'),
     ) ?? LATEST_VERSION;
+
+  // TODO use FuzzySearch
+  // currently only ignores capitalization
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
@@ -113,13 +119,18 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     versionName: string;
     versionDescription: string;
   }) => {
+    const epochTime = +new Date();
+    await addParentConfigVersion(parentConfig, environment.spaceId, epochTime);
+
     parentConfig.versions.push({
-      version: parentConfig.versions.length + 1,
+      version: epochTime,
       name: values.versionName,
       description: values.versionDescription,
-      versionBasedOn: parentConfig.versions.length,
+      versionBasedOn: -1,
     });
-    // await saveParentConfig(configId, parentConfig);
+
+    const versions = parentConfig.versions;
+    await updateParentConfig(parentConfig.id, { versions });
     router.refresh();
   };
 
@@ -301,6 +312,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                   {selectedConfig.name}
                 </Title>
               </div>
+
               <Space.Compact style={{ margin: '0 0 0 10px' }}>
                 <Select
                   popupMatchSelectWidth={false}
@@ -314,7 +326,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                   onSelect={(_, option) => {
                     // change the version info in the query but keep other info
                     const searchParams = new URLSearchParams(query);
-                    if (!option.value || option.value === -1) searchParams.delete('version');
+                    if (!option.value || option.value === -2) searchParams.delete('version');
                     else searchParams.set(`version`, `${option.value}`);
                     router.push(
                       spaceURL(
@@ -356,28 +368,30 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             </Space>
 
             <Space>
-              <Radio.Group
-                value={editable ? 'edit' : 'view'}
-                onChange={(e) => onChangeEditable(e.target.value === 'edit')}
-              >
-                <Radio.Button value="view">
-                  View
-                  <EyeOutlined
-                    style={{
-                      margin: '0 0 0 8px',
-                    }}
-                  />
-                </Radio.Button>
+              {editingAllowed && (
+                <Radio.Group
+                  value={editable ? 'edit' : 'view'}
+                  onChange={(e) => onChangeEditable(e.target.value === 'edit')}
+                >
+                  <Radio.Button value="view">
+                    View
+                    <EyeOutlined
+                      style={{
+                        margin: '0 0 0 8px',
+                      }}
+                    />
+                  </Radio.Button>
 
-                <Radio.Button value="edit">
-                  Edit
-                  <EditOutlined
-                    style={{
-                      margin: '0 0 0 8px',
-                    }}
-                  />
-                </Radio.Button>
-              </Radio.Group>
+                  <Radio.Button value="edit">
+                    Edit
+                    <EditOutlined
+                      style={{
+                        margin: '0 0 0 8px',
+                      }}
+                    />
+                  </Radio.Button>
+                </Radio.Group>
+              )}
 
               <Button onClick={exportCurrentConfig}>
                 Export

@@ -1,55 +1,54 @@
 'use server';
 
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { getProcesses } from '@/lib/data/DTOs';
+import { getCurrentUser } from '@/components/auth';
 import { Folder } from '@/lib/data/folder-schema';
 import {
+  getProcesses,
   getFolders,
   getRootFolder,
   moveFolder,
   updateFolderMetaData,
-} from '@/lib/data/legacy/folders';
-import { deleteEnvironment } from '@/lib/data/legacy/iam/environments';
+  updateProcess,
+} from '@/lib/data/DTOs';
 import { deleteUser, getUserById } from '@/lib/data/legacy/iam/users';
 import { Process } from '@/lib/data/process-schema';
+import { getGuestReference } from '@/lib/reference-guest-user-token';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { redirect } from 'next/navigation';
 
-async function ensureValidRequest(guestId: string) {}
-
-export async function transferProcesses(guestId: string, callbackUrl: string = '/') {
+export async function transferProcesses(referenceToken: string, callbackUrl: string = '/') {
   const { session } = await getCurrentUser();
   if (!session) return userError("You're not signed in", UserErrorType.PermissionError);
   if (session.user.isGuest)
     return userError("You can't be a guest to transfer processes", UserErrorType.PermissionError);
 
+  const reference = getGuestReference(referenceToken);
+  if ('error' in reference) return userError(reference.error);
+  const guestId = reference.guestId;
+
   if (guestId === session.user.id) redirect(callbackUrl);
 
   const possibleGuest = await getUserById(guestId);
-  if (
-    !possibleGuest ||
-    !possibleGuest.isGuest ||
-    possibleGuest?.signedInWithUserId !== session.user.id
-  )
+  if (!possibleGuest || !possibleGuest.isGuest)
     return userError('Invalid guest id', UserErrorType.PermissionError);
 
   // Processes and folders under root folder of guest space guet their folderId changed to the
   // root folder of the new owner space, for the rest we just update the environmentId
-  const userRootFolderId = getRootFolder(session.user.id).id;
-  const guestRootFolderId = getRootFolder(guestId).id;
+  const userRootFolderId = (await getRootFolder(session.user.id)).id;
+  const guestRootFolderId = (await getRootFolder(guestId)).id;
 
-  const { ability } = await getCurrentEnvironment(possibleGuest.id);
-  const guestProcesses = await getProcesses(guestId, ability);
+  // no ability check necessary, owners of personal spaces can do anything
+  const guestProcesses = await getProcesses(guestId);
   for (const process of guestProcesses) {
     const processUpdate: Partial<Process> = {
       environmentId: session.user.id,
-      owner: session.user.id,
+      creatorId: session.user.id,
     };
     if (process.folderId === guestRootFolderId) processUpdate.folderId = userRootFolderId;
-    updateProcess(process.id, processUpdate);
+    await updateProcess(process.id, processUpdate);
   }
 
-  const guestFolders = getFolders(guestId);
+  const guestFolders = await getFolders(guestId);
   for (const folder of guestFolders) {
     if (folder.id === guestRootFolderId) continue;
 
@@ -66,20 +65,20 @@ export async function transferProcesses(guestId: string, callbackUrl: string = '
   redirect(callbackUrl);
 }
 
-export async function discardProcesses(guestId: string, redirectUrl: string = '/') {
+export async function discardProcesses(referenceToken: string, redirectUrl: string = '/') {
   const { session } = await getCurrentUser();
   if (!session) return userError("You're not signed in", UserErrorType.PermissionError);
   if (session.user.isGuest)
     return userError("You can't be a guest to transfer processes", UserErrorType.PermissionError);
 
+  const reference = getGuestReference(referenceToken);
+  if ('error' in reference) return userError(reference.error);
+  const guestId = reference.guestId;
+
   if (guestId === session.user.id) redirect(redirectUrl);
 
   const possibleGuest = await getUserById(guestId);
-  if (
-    !possibleGuest ||
-    !possibleGuest.isGuest ||
-    possibleGuest?.signedInWithUserId !== session.user.id
-  )
+  if (!possibleGuest || !possibleGuest.isGuest)
     return userError('Invalid guest id', UserErrorType.PermissionError);
 
   deleteUser(guestId);

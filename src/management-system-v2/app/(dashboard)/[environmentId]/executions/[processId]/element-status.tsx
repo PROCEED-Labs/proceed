@@ -4,7 +4,7 @@ import { ClockCircleFilled } from '@ant-design/icons';
 import React from 'react';
 import { statusToType } from './instance-helpers';
 import { convertISODurationToMiliseconds, getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { generateRequestUrl } from '@/lib/engines/endpoints';
+import { endpointBuilder } from '@/lib/engines/endpoint';
 import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
 
 function transformMilisecondsToTimeFormat(milliseconds: number | undefined) {
@@ -47,10 +47,11 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
         }}
       >
         <Image
-          src={generateRequestUrl(
-            { id: '', ip: 'localhost', port: 33029 },
-            `/resources/process/${info.process.definitionId}/images/${metaData.overviewImage}`,
-          )}
+          // TODO: use engine endpoint to get the image
+          src={endpointBuilder('get', '/resources/process/:definitionId/images/:fileName', {
+            definitionId: info.process.definitionId,
+            fileName: metaData.overviewImage,
+          })}
         />
       </div>,
     ]);

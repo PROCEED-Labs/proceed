@@ -78,10 +78,15 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 
   try {
     const { userId } = await getCurrentUser();
+    const user = await getUserById(userId);
+
+    if (user?.isGuest) {
+      return userError('Guest users cannot be updated');
+    }
 
     const newUserData = AuthenticatedUserDataSchema.parse(newUserDataInput);
 
-    _updateUser(userId, { ...newUserData, guest: false });
+    _updateUser(userId, { ...newUserData });
   } catch (_) {
     return userError('Error updating user');
   }

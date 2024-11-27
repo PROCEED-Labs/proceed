@@ -618,7 +618,7 @@ const Processes = ({
       />
       <ProcessCreationModal
         open={openCreateProcessModal}
-        close={() => setOpenCreateProcessModal(false)}
+        setOpen={setOpenCreateProcessModal}
         modalProps={{
           onCancel: deleteCreateProcessSearchParams,
           onOk: deleteCreateProcessSearchParams,

@@ -76,19 +76,19 @@ async function getInstanceInformation(definitionId, instanceId, engineName) {
 let engineProcesses = [];
 describe('Test deploying a process', () => {
   beforeAll(async () => {
-    engineProcesses = [{ name: 'machine1', port: 33020 }]; // await startMockEngineProcesses(6);
+    engineProcesses = await startMockEngineProcesses(6);
   });
 
   afterAll(async () => {
     // kills all processes and their subprocesses
     for (engineProcess of engineProcesses) {
-      //await killEngineProcess(engineProcess.process);
+      await killEngineProcess(engineProcess.process);
     }
   });
 
   beforeEach(() => {
     // allows each test to get only the output that occured while running the test
-    //engineProcesses.forEach((engineProcess) => engineProcess.resetTestOutputStream());
+    engineProcesses.forEach((engineProcess) => engineProcess.resetTestOutputStream());
   });
 
   test('every machine is reachable', async () => {
@@ -693,9 +693,6 @@ describe('Test deploying a process', () => {
           // after starting the process, wait 3 seconds before requesting the state of the instance
           await new Promise((resolve) => setTimeout(() => resolve(), 4000));
 
-          console.log(1);
-          return;
-
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
@@ -1294,7 +1291,7 @@ describe('Test deploying a process', () => {
           });
         });
 
-        test.only('maxTimeFlowNode profile config - stop token if time exceed for flowNode', async () => {
+        test('maxTimeFlowNode profile config - stop token if time exceed for flowNode', async () => {
           /**
            * on machine 4 the profile config has a maxTimeFlowNode of 1 sec
            * -> task Activity_024hiuu takes above 2 seconds to execute -> profile config unfulfilled
@@ -1303,7 +1300,7 @@ describe('Test deploying a process', () => {
           const definitionId = '_fdf6c05f-87b8-4085-80da-d1ebdc1b9086';
 
           // filter for engines to deploy this process to
-          let engineNames = ['machine1'];
+          let engineNames = ['machine4'];
 
           // deploy and start process on machine 4
           await deployProcess('parallelScriptTaskDynamicProcess', engineNames[0]);

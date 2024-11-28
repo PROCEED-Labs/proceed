@@ -46,10 +46,11 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       >
         {/** TODO: correct image url */}
         <Image
-          src={generateRequestUrl(
-            { id: '', ip: 'localhost', port: 33029 },
-            `/resources/process/${info.process.definitionId}/images/${metaData.overviewImage}`,
-          )}
+          // TODO: use engine endpoint to get the image
+          src={endpointBuilder('get', '/resources/process/:definitionId/images/:fileName', {
+            definitionId: info.process.definitionId,
+            fileName: metaData.overviewImage,
+          })}
         />
       </div>,
     ]);

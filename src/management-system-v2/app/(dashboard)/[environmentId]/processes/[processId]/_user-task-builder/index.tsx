@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
@@ -28,6 +28,7 @@ import EditorDnDHandler from './DragAndDropHandler';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { useSearchParams } from 'next/navigation';
+import BuilderContext from './BuilderContext';
 
 type BuilderProps = {
   processId: string;
@@ -49,9 +50,9 @@ const EditorModal: React.FC<BuilderModalProps> = ({
   onSave,
   onInit,
 }) => {
-  const { query, actions, editingEnabled } = useEditor((state) => {
-    return { editingEnabled: state.options.enabled };
-  });
+  const { query, actions } = useEditor();
+
+  const { editingEnabled } = useContext(BuilderContext);
 
   const environment = useEnvironment();
 
@@ -139,7 +140,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
     >
       <EditorDnDHandler
         iframeRef={iframeRef}
-        disabled={!iframeMounted}
+        disabled={!iframeMounted || !editingEnabled}
         mobileView={iframeLayout === 'mobile'}
       >
         <div className={styles.BuilderUI}>
@@ -194,8 +195,6 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
   const query = useSearchParams();
   const selectedVersionId = query.get('version');
 
-  const canEdit = !selectedVersionId && !isMobile;
-
   const handleClose = () => {
     if (!hasUnsavedChanges) {
       onClose();
@@ -212,35 +211,37 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
   return (
     <>
-      <Editor
-        resolver={{
-          ...Elements,
-        }}
-        enabled={canEdit}
-        handlers={(store: EditorStore) =>
-          new CustomEventhandlers({
-            store,
-            isMultiSelectEnabled: () => false,
-            removeHoverOnMouseleave: true,
-          })
-        }
-        onNodesChange={() => {
-          setHasUnsavedChanges(true);
-        }}
-      >
-        <EditorModal
-          processId={processId}
-          open={open}
-          hasUnsavedChanges={hasUnsavedChanges}
-          onClose={handleClose}
-          onInit={() => {
-            setHasUnsavedChanges(false);
+      <BuilderContext.Provider value={{ editingEnabled: !isMobile && !selectedVersionId }}>
+        <Editor
+          resolver={{
+            ...Elements,
           }}
-          onSave={() => setHasUnsavedChanges(false)}
-        />
-      </Editor>
+          enabled={!isMobile}
+          handlers={(store: EditorStore) =>
+            new CustomEventhandlers({
+              store,
+              isMultiSelectEnabled: () => false,
+              removeHoverOnMouseleave: true,
+            })
+          }
+          onNodesChange={() => {
+            setHasUnsavedChanges(true);
+          }}
+        >
+          <EditorModal
+            processId={processId}
+            open={open}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onClose={handleClose}
+            onInit={() => {
+              setHasUnsavedChanges(false);
+            }}
+            onSave={() => setHasUnsavedChanges(false)}
+          />
+        </Editor>
 
-      {modalElement}
+        {modalElement}
+      </BuilderContext.Provider>
     </>
   );
 };

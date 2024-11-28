@@ -1,13 +1,14 @@
-import { useEffect, useId, useState } from 'react';
+import { useContext, useEffect, useId, useState } from 'react';
 
 import { Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 
-import { UserComponent, useEditor, useNode } from '@craftjs/core';
+import { UserComponent, useNode } from '@craftjs/core';
 
 import { ContextMenu, Overlay, Setting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useBuilderStateStore from '../use-builder-state-store';
+import BuilderContext from '../BuilderContext';
 
 type InputProps = {
   label?: string;
@@ -26,7 +27,7 @@ const Input: UserComponent<InputProps> = ({
     connectors: { connect },
     actions: { setProp },
   } = useNode();
-  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
+  const { editingEnabled } = useContext(BuilderContext);
 
   const inputId = useId();
 
@@ -65,7 +66,7 @@ const Input: UserComponent<InputProps> = ({
             onMouseEnter={() => setLabelHovered(true)}
           >
             <Overlay
-              show={labelHovered && !textEditing}
+              show={editingEnabled && labelHovered && !textEditing}
               onHide={() => setLabelHovered(false)}
               controls={[
                 {
@@ -90,6 +91,7 @@ const Input: UserComponent<InputProps> = ({
 
         <input
           id={inputId}
+          disabled={!editingEnabled}
           type={type}
           value={defaultValue}
           onClick={() => {
@@ -116,7 +118,6 @@ export const InputSettings = () => {
     type: node.data.props.type,
     labelPosition: node.data.props.labelPosition,
   }));
-  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   return (
     <>
@@ -131,7 +132,6 @@ export const InputSettings = () => {
               { value: 'email', label: 'E-Mail' },
             ]}
             value={type}
-            disabled={!editingEnabled}
             onChange={(val) =>
               setProp((props: InputProps) => {
                 props.type = val;
@@ -151,7 +151,6 @@ export const InputSettings = () => {
               { value: 'none', label: 'Hidden' },
             ]}
             value={labelPosition}
-            disabled={!editingEnabled}
             onChange={(val) =>
               setProp((props: InputProps) => {
                 props.labelPosition = val;

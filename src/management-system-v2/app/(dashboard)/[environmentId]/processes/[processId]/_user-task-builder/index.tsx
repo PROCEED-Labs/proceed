@@ -27,6 +27,7 @@ import { useEnvironment } from '@/components/auth-can';
 import EditorDnDHandler from './DragAndDropHandler';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+import { useSearchParams } from 'next/navigation';
 
 type BuilderProps = {
   processId: string;
@@ -190,6 +191,11 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
   const [modalApi, modalElement] = Modal.useModal();
 
+  const query = useSearchParams();
+  const selectedVersionId = query.get('version');
+
+  const canEdit = !selectedVersionId && !isMobile;
+
   const handleClose = () => {
     if (!hasUnsavedChanges) {
       onClose();
@@ -210,7 +216,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
         resolver={{
           ...Elements,
         }}
-        enabled={!isMobile}
+        enabled={canEdit}
         handlers={(store: EditorStore) =>
           new CustomEventhandlers({
             store,

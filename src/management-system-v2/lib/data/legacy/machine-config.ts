@@ -314,7 +314,7 @@ export async function getDeepParentConfigurationById(
   return parentConfig;
 }
 
-/** Returns all shallow machineConfigs in form of an array */
+/** Returns all shallow Configs in form of an array */
 export async function getParentConfigurations(
   environmentId: string,
   ability?: Ability,
@@ -620,6 +620,22 @@ export async function addParentConfigVersion(
     store.set('techData', 'parameters', storedData.parameters);
 
     return metadata;
+  } catch (e: unknown) {
+    const error = e as Error;
+    // console.log(error.message);
+    return userError(error.message ?? "Couldn't create Machine Config");
+  }
+}
+
+export async function setParentConfigVersionAsLatest(machineConfigInput: ParentConfig) {
+  try {
+    parentConfigToStorage(machineConfigInput, false);
+    store.set('techData', 'parentConfigs', storedData.parentConfigs);
+    store.set('techData', 'machineConfigs', storedData.machineConfigs);
+    store.set('techData', 'targetConfigs', storedData.targetConfigs);
+    store.set('techData', 'parameters', storedData.parameters);
+
+    return machineConfigInput;
   } catch (e: unknown) {
     const error = e as Error;
     // console.log(error.message);

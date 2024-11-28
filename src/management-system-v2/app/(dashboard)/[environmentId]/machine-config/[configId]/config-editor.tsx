@@ -51,10 +51,12 @@ import {
   addMachineConfig,
   addParentConfigVersion,
   addTargetConfig,
+  setParentConfigVersionAsLatest,
   updateMachineConfig,
   updateParentConfig,
   updateTargetConfig,
 } from '@/lib/data/legacy/machine-config';
+import ConfirmationButton from '@/components/confirmation-button';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;
@@ -132,6 +134,10 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     const versions = parentConfig.versions;
     await updateParentConfig(parentConfig.id, { versions });
     router.refresh();
+  };
+
+  const makeConfigVersionLatest = async () => {
+    setParentConfigVersionAsLatest(parentConfig);
   };
 
   const showMobileView = useMobileModeler();
@@ -368,6 +374,25 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             </Space>
 
             <Space>
+              {!editingAllowed && (
+                <ConfirmationButton
+                  title="Are you sure you want to continue editing with this Version?"
+                  description="Any changes that are not stored in another version are irrecoverably lost!"
+                  tooltip="Set as latest Version and enable editing"
+                  onConfirm={makeConfigVersionLatest}
+                  modalProps={{
+                    okText: 'Set as latest Version',
+                    okButtonProps: {
+                      danger: true,
+                    },
+                  }}
+                  buttonProps={{
+                    icon: <EditOutlined />,
+                  }}
+                >
+                  Set as Latest
+                </ConfirmationButton>
+              )}
               {editingAllowed && (
                 <Radio.Group
                   value={editable ? 'edit' : 'view'}

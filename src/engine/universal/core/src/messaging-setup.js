@@ -82,10 +82,10 @@ module.exports = {
     }, loadInterval * 1000);
 
     // Logging data
-    const consoleLevel = await configModule.readConfig('logs.mqttLevel');
+    const mqttLevel = await configModule.readConfig('logs.mqttLevel');
     const orderedLevels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
-    const consoleLevelIdx = orderedLevels.indexOf(consoleLevel);
-    const logGuard = (level) => orderedLevels.indexOf(level) >= consoleLevelIdx;
+    const mqttLevelIdx = orderedLevels.indexOf(mqttLevel);
+    const logGuard = (level) => orderedLevels.indexOf(level) >= mqttLevelIdx;
 
     logging.registerCallback(async (obj, log) => {
       try {

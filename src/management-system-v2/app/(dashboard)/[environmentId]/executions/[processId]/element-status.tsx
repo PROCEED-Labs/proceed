@@ -3,8 +3,8 @@ import { Alert, Checkbox, Image, Progress, ProgressProps, Space, Typography } fr
 import { ClockCircleFilled } from '@ant-design/icons';
 import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { generateRequestUrl } from '@/lib/engines/endpoints';
 import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
+import { endpointBuilder } from '@/lib/engines/endpoint';
 
 function transformMillisecondsToTimeFormat(milliseconds: number | undefined) {
   if (!milliseconds || milliseconds < 0 || milliseconds < 1000) return;

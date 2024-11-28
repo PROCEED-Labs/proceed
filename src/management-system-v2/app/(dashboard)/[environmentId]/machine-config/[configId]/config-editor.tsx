@@ -138,6 +138,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
 
   const makeConfigVersionLatest = async () => {
     setParentConfigVersionAsLatest(parentConfig);
+    router.refresh();
   };
 
   const showMobileView = useMobileModeler();

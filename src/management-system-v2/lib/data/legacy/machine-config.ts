@@ -177,6 +177,17 @@ function parentConfigToStorage(
       });
 }
 
+function versionToParentConfigStorage(parentConfig: ParentConfig) {
+  const { targetConfig, metadata, machineConfigs } = parentConfig;
+
+  storedData.parentConfigs[parentConfig.id] = {
+    ...parentConfig,
+    targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, true),
+    machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, true),
+    metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, true),
+  };
+}
+
 /**
  * Initializes StoredConfigsAndParameters object and converts old nested config schema to new implementation.
  */
@@ -589,7 +600,6 @@ export async function addParentConfig(machineConfigInput: ParentConfig, environm
   }
 }
 
-// TODO
 export async function addParentConfigVersion(
   machineConfigInput: ParentConfig,
   environmentId: string,
@@ -627,9 +637,10 @@ export async function addParentConfigVersion(
   }
 }
 
+// TODO
 export async function setParentConfigVersionAsLatest(machineConfigInput: ParentConfig) {
   try {
-    parentConfigToStorage(machineConfigInput, false);
+    versionToParentConfigStorage(machineConfigInput);
     store.set('techData', 'parentConfigs', storedData.parentConfigs);
     store.set('techData', 'machineConfigs', storedData.machineConfigs);
     store.set('techData', 'targetConfigs', storedData.targetConfigs);

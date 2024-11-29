@@ -161,6 +161,7 @@ export async function getEngines() {
     `${baseTopicPrefix}proceed-pms/engine/+/status`,
     engineAccumulator,
     (topic) => engineStatusRegex.test(topic),
+    60 * 60_000,
   );
   if (engines) return Array.from(engines.values());
   else return [];

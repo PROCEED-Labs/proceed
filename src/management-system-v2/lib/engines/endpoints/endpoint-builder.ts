@@ -21,10 +21,9 @@ type EndpointArgs<Endpoint extends string> = EndpointArgsArray<GetParamsFromStri
 type AvailableEndpoints<Method extends Methods> = keyof Endpoints[Method] extends string
   ? keyof Endpoints[Method]
   : never;
-export function endpointBuilder<Method extends Methods, Url extends AvailableEndpoints<Method>>(
-  _: Method,
-  endpoint: Url,
-  ...options: EndpointArgs<Url>
-) {
+export default function endpointBuilder<
+  Method extends Methods,
+  Url extends AvailableEndpoints<Method>,
+>(_: Method, endpoint: Url, ...options: EndpointArgs<Url>) {
   return endpoint.replace(/:([^/]+)/g, (_, capture_group) => options[0]?.[capture_group] || '');
 }

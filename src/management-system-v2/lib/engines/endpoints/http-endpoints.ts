@@ -1,4 +1,4 @@
-import { Machine } from './machines';
+import { Machine } from '../machines';
 
 export function generateRequestUrl(machine: Machine, endpoint: string) {
   const url = `http://${machine.ip}:${machine.port}`;

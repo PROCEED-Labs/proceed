@@ -1,9 +1,10 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import { useDraggable } from '@dnd-kit/core';
-import { useRef } from 'react';
+import { useContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
 import useBuilderStateStore from '../use-builder-state-store';
+import BuilderContext from '../BuilderContext';
 /**
  * This component wraps every editor element provides drag handling and some styling
  */
@@ -24,6 +25,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   }));
 
   const dragBlockers = useBuilderStateStore((state) => state.dragBlockers);
+  const { editingEnabled } = useContext(BuilderContext);
 
   const ref = useRef<HTMLDivElement>();
   const frame = useFrame();
@@ -35,7 +37,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
     isDragging,
   } = useDraggable({
     id: nodeId,
-    disabled: fixed || !!dragBlockers.length,
+    disabled: fixed || !!dragBlockers.length || !editingEnabled,
   });
 
   return (

@@ -78,7 +78,10 @@ export async function mqttRequest(
   return response;
 }
 
-const collectedDataEntries: Map<string, { onMessageCallback: mqtt.OnMessageCallback; data?: any }> =
+const collectedDataEntries: Map<
+  string,
+  { onMessageCallback: mqtt.OnMessageCallback; data?: any; clearInterval?: NodeJS.Timeout }
+> =
   (globalThis as any).collectedDataEntries ||
   ((globalThis as any).collectedDataEntries = new Map());
 
@@ -86,6 +89,7 @@ export async function collectMqttData<TData>(
   topic: string,
   accumulator: (topic?: string, data?: any, previousState?: TData) => TData | undefined,
   validTopic?: (topic: string) => boolean,
+  staleAfter?: number,
 ): Promise<TData | undefined> {
   let collectedData = collectedDataEntries.get(topic);
 
@@ -94,10 +98,18 @@ export async function collectMqttData<TData>(
       onMessageCallback(messageTopic, message) {
         if (validTopic ? !validTopic(messageTopic) : messageTopic !== topic) return;
 
+        if (staleAfter) {
+          clearTimeout(collectedData!.clearInterval);
+          collectedData!.clearInterval = setTimeout(() => clearCollectedData(topic), staleAfter);
+        }
+
         collectedData!.data = accumulator(messageTopic, message.toString(), collectedData!.data);
 
         // TODO: do something with message
       },
+      clearInterval: staleAfter
+        ? setTimeout(() => clearCollectedData(topic), staleAfter)
+        : undefined,
     };
 
     collectedDataEntries.set(topic, collectedData);
@@ -118,6 +130,16 @@ export async function collectMqttData<TData>(
   // Call without message, to let the accumulator remove stale data if it needs to
   // Don't change the actual stored data to avoid race conditions (i'm not 100% sure about this)
   return accumulator(undefined, undefined, collectedData.data);
+}
+
+export async function clearCollectedData(topic: string) {
+  const collectedData = collectedDataEntries.get(topic);
+  if (!collectedData) return;
+
+  const client = await mqttClient;
+  client.removeListener('message', collectedData.onMessageCallback);
+  await client.unsubscribeAsync(topic);
+  collectedDataEntries.delete(topic);
 }
 
 type EngineStatus = Map<string, { id: string; running: boolean; version: string }>;

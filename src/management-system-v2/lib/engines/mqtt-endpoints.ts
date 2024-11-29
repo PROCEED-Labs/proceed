@@ -19,7 +19,8 @@ export function getClient(options?: mqtt.IClientOptions): Promise<mqtt.MqttClien
   });
 }
 
-const mqttClient = (globalThis as any).mqttClient || ((globalThis as any).mqttClient = getClient());
+const mqttClient: Promise<mqtt.MqttClient> =
+  (globalThis as any).mqttClient || ((globalThis as any).mqttClient = getClient());
 
 function getEnginePrefix(engineId: string) {
   return `${baseTopicPrefix}proceed-pms/engine/${engineId}`;

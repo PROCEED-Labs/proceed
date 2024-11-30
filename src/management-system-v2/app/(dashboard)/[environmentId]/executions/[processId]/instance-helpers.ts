@@ -1,3 +1,7 @@
+import { InstanceInfo } from '@/lib/engines/deployment';
+import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
+
 export type ElementStatus =
   | 'PAUSED'
   | 'DEPLOYMENT_WAITING'
@@ -25,8 +29,6 @@ export function statusToType(status: string) {
     case 'ENDED':
       return 'success';
     case 'ABORTED':
-    case 'ERROR-SEMANTIC':
-    case 'ERROR-TECHNICAL':
     case 'ERROR-INTERRUPTED':
     case 'ERROR-CONSTRAINT-UNFULFILLED':
     case 'STOPPED':
@@ -36,20 +38,96 @@ export function statusToType(status: string) {
   }
 }
 
-export function getPlannedEnd(plannedStart: number, plannedDuration: string) {
-  const anchor = new Date(plannedStart);
+export function getTimeInfo({
+  element,
+  logInfo,
+  token,
+  instance,
+}: {
+  element: ElementLike;
+  /** Log entry for element in instance information */
+  logInfo?: InstanceInfo['log'][number];
+  /** Token where currentFlowElementId is the element   */
+  token?: InstanceInfo['tokens'][number];
+  instance?: InstanceInfo;
+}) {
+  if (!instance) return { start: undefined, end: undefined, duration: undefined };
 
-  const re =
-    /^P((?<y>\d+)Y)?((?<m>\d+)M)?((?<d>\d+)D)?(T((?<th>\d+)H)?((?<tm>\d+)M)?((?<ts>\d+(.\d+)?)S)?)?$/;
-  const match = re.exec(plannedDuration);
-  if (!match || !match.groups) return null;
+  const isRootElement = element && element.type === 'bpmn:Process';
 
-  anchor.setFullYear(anchor.getFullYear() + (+match.groups['y'] || 0));
-  anchor.setMonth(anchor.getMonth() + (+match.groups['m'] || 0));
-  anchor.setDate(anchor.getDate() + (+match.groups['d'] || 0));
-  anchor.setHours(anchor.getHours() + (+match.groups['th'] || 0));
-  anchor.setMinutes(anchor.getMinutes() + (+match.groups['tm'] || 0));
-  anchor.setSeconds(anchor.getSeconds() + (+match.groups['ts'] || 0));
+  let start: Date | undefined = undefined;
+  if (isRootElement) start = new Date(instance.globalStartTime);
+  else if (logInfo) start = new Date(logInfo.startTime);
+  else if (token) start = new Date(token.currentFlowElementStartTime);
 
-  return anchor;
+  let end;
+  if (isRootElement) {
+    const ended = instance.instanceState.every(
+      (state) =>
+        state !== 'RUNNING' &&
+        state !== 'READY' &&
+        state !== 'DEPLOYMENT-WAITING' &&
+        state !== 'PAUSING' &&
+        state !== 'PAUSED',
+    );
+
+    if (ended) {
+      const lastLog = instance.log[instance.log.length - 1];
+      if (lastLog) end = new Date(lastLog.endTime);
+    }
+  } else if (logInfo) {
+    end = new Date(logInfo.endTime);
+  }
+
+  let duration: number | undefined;
+  if (start && end) duration = end.getTime() - start.getTime();
+
+  return { start, end, duration };
+}
+
+export function getPlanDelays({
+  elementMetaData,
+  start,
+  end,
+  duration,
+}: {
+  elementMetaData: {
+    [key: string]: any;
+  };
+
+  start?: Date;
+  end?: Date;
+  duration?: number;
+}) {
+  const plan = {
+    end: elementMetaData.timePlannedEnd ? new Date(elementMetaData.timePlannedEnd) : undefined,
+    start: elementMetaData.timePlannedOccurrence
+      ? new Date(elementMetaData.timePlannedOccurrence)
+      : undefined,
+    duration: elementMetaData.timePlannedDuration
+      ? convertISODurationToMiliseconds(elementMetaData.timePlannedDuration)
+      : undefined,
+  };
+
+  // The order in which missing times are derived from the others is irrelevant
+  // If there is only one -> not possible to derive the others
+  // If there are two -> derive the missing one (order doesn't matter)
+  // If there are three -> nothing to do
+
+  if (!plan.end && plan.start && plan.duration)
+    plan.end = new Date(plan.start.getTime() + plan.duration);
+
+  if (!plan.start && plan.end && plan.duration)
+    plan.start = new Date(plan.end.getTime() - plan.duration);
+
+  if (!plan.duration && plan.start && plan.end)
+    plan.duration = plan.end.getTime() - plan.start.getTime();
+
+  const delays = {
+    start: plan.start && start && start.getTime() - plan.start.getTime(),
+    end: plan.end && end && end.getTime() - plan.end.getTime(),
+    duration: plan.duration && duration && duration - plan.duration,
+  };
+
+  return { plan, delays };
 }

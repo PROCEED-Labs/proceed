@@ -15,16 +15,17 @@ const writerLoader = require('./writers.js');
  *
  * Class for logger instances
  * Instantiates a new logger
- * @param {object} confObject The configuration for the logger
+ * @param {{moduleName:string;  definitionId: string; consoleOnly: boolean;}} confObject The configuration for the logger
  * @param {promise} loggingInitializedPromise a promise indicating that the logger has
+ * @param {((...args: any[])=>void)[]} [customWriters] Custom writer functions to be used by the logger
  *   finished being asynchronously initialized
  */
 class Logger {
-  constructor(confObject, loggingInitializer) {
+  constructor(confObject, loggingInitializer, customWriters) {
     this.instanceInitialized = false;
     this.confObject = confObject;
     this.loggingInitializer = loggingInitializer;
-    this.functionsForWriter = [];
+    this.functionsForWriter = customWriters ? [...customWriters] : [];
     this.moduleName = confObject.moduleName;
   }
 
@@ -184,7 +185,9 @@ Logger.initialization = new Promise((resolve) => {
 /**
  * @param {object} confObject The configuration for the logger
  * @param {promise} loggingInitializedPromise a promise indicating that the logger has
+ * @param {((...args: any[])=>void)[]} [customWriters] Custom writer functions to be used by the logger
  *   finished being asynchronously initialized
  * @returns a configured instance of the Logger class
  */
-module.exports = (confObject, loggingInitializer) => new Logger(confObject, loggingInitializer);
+module.exports = (confObject, loggingInitializer, customWriters) =>
+  new Logger(confObject, loggingInitializer, customWriters);

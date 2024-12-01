@@ -67,7 +67,8 @@
     "yup": "^0.32.9",
     "zod": "3.22.4",
     "zustand": "4.5.2",
-    "react-resizable": "^3.0.5"
+    "react-resizable": "^3.0.5",
+    "mqtt": "^5.10.1"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "5.28.11",

@@ -1,4 +1,5 @@
 const { version: proceedVersion } = require('../../../native/node/package.json');
+const { logging } = require('@proceed/machine');
 
 /**
  * This file contains functionality that handles setup and interactions of the messaging interface with other modules of the engine
@@ -57,5 +58,68 @@ module.exports = {
         );
       }
     }
+  },
+  async setupMonitoringAndLogging(messaging, configModule, machineModule, logger) {
+    let { serverAddress, baseTopic } = await configModule.readConfig('messaging');
+    if (!serverAddress) return;
+
+    if (baseTopic && !baseTopic.endsWith('/')) baseTopic += '/';
+    baseTopic += 'proceed-pms';
+
+    // Monitoring data
+    const [{ id: machineId }, loadInterval] = await Promise.all([
+      machineModule.getMachineInformation(['id']),
+      configModule.readConfig('engine.loadInterval'),
+    ]);
+
+    setInterval(async () => {
+      try {
+        const machineData = await machineModule.getMachineInformation();
+        await messaging.publish(`${baseTopic}/engine/${machineId}/machine/monitoring`, machineData);
+      } catch (e) {
+        logger.error('Failed to publish monitoring data');
+      }
+    }, loadInterval * 1000);
+
+    // Logging data
+    const mqttLevel = await configModule.readConfig('logs.mqttLevel');
+    const orderedLevels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+    const mqttLevelIdx = orderedLevels.indexOf(mqttLevel);
+    const logGuard = (level) => orderedLevels.indexOf(level) >= mqttLevelIdx;
+
+    logging.registerCallback(async (obj, log) => {
+      try {
+        if (!logGuard(log?.level)) return;
+
+        const sentMessages = [];
+        const print = `[${log.level.toUpperCase()}] ${log.moduleName}${obj.definitionId || ''} ${log.msg}`;
+
+        sentMessages.push(messaging.publish(`${baseTopic}/engine/${machineId}/logging`, print));
+
+        if (obj.definitionId) {
+          sentMessages.push(
+            messaging.publish(`${baseTopic}/engine/${machineId}/logging/process`, print),
+          );
+
+          if (log.instanceId) {
+            sentMessages.push(
+              messaging.publish(
+                `${baseTopic}/engine/process/${obj.definitionId}/instance/${log.instanceId}/logging`,
+                print,
+              ),
+            );
+          }
+        } else {
+          sentMessages.push(
+            messaging.publish(`${baseTopic}/engine/${machineId}/logging/standard`, print),
+          );
+        }
+
+        await Promise.all(sentMessages);
+      } catch (e) {
+        // NOTE: using logger.error could cause an infinite loop if publish keeps failing
+        console.error(e);
+      }
+    });
   },
 };

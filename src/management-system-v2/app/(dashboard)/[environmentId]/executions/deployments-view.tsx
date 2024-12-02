@@ -8,11 +8,12 @@ import useFuzySearch from '@/lib/useFuzySearch';
 import DeploymentsList from './deployments-list';
 import { Folder } from '@/lib/data/folder-schema';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
-import { useQuery } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
 import { processHasChangesSinceLastVersion } from '@/lib/data/processes';
-import { DeployedProcessInfo, deployProcess, getDeployments } from '@/lib/engines/deployment';
-import useDeployments from './deployments-hook';
+import type { DeployedProcessInfo } from '@/lib/engines/deployment';
+import { useRouter } from 'next/navigation';
+import { deployProcess } from '@/lib/engines/server-actions';
+import { isUserError, isUserErrorResponse } from '@/lib/user-error';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -20,20 +21,17 @@ const DeploymentsView = ({
   processes,
   folder,
   favourites,
+  deployedProcesses,
 }: {
   processes: InputItem[];
   folder: any;
   favourites: any;
+  deployedProcesses: (DeployedProcessInfo & { name: string })[];
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const { message } = App.useApp();
   const space = useEnvironment();
-
-  const {
-    data: deployedProcesses,
-    isLoading,
-    refetch: refetchDeployedProcesses,
-  } = useDeployments();
+  const router = useRouter();
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: deployedProcesses ?? [],
@@ -53,24 +51,20 @@ const DeploymentsView = ({
         if (typeof processChangedSinceLastVersion === 'object')
           throw processChangedSinceLastVersion;
 
-        if (processChangedSinceLastVersion) {
-          alert('Process has changed since last version');
-        }
-
         const v = process.versions
           .map((v) => v.version)
           .sort()
           .at(-1);
 
-        await deployProcess(process.id, v as number, space.spaceId, 'dynamic');
-        refetchDeployedProcesses();
+        const res = await deployProcess(process.id, v as number, space.spaceId);
+        if (isUserErrorResponse(res)) throw res;
+        message.success('Process deployed');
+        router.refresh();
       } catch (e) {
         message.error("Something wen't wrong");
       }
     });
   }
-
-  const loading = isLoading || checkingProcessVersion;
 
   return (
     <div>
@@ -93,7 +87,10 @@ const DeploymentsView = ({
         }}
       />
 
-      <DeploymentsList processes={filteredData} tableProps={{ loading }}></DeploymentsList>
+      <DeploymentsList
+        processes={filteredData}
+        tableProps={{ loading: checkingProcessVersion }}
+      ></DeploymentsList>
 
       <DeploymentsModal
         open={modalIsOpen}

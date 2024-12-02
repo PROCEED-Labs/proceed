@@ -13,7 +13,13 @@ export type Machine = {
   name?: string;
 } & MachineStatus;
 
+// TODO: refine this type
+// it doesn't quite reflect differences between http/mqtt
+// Also, it should have an option to acknowledge user hosted
+// mqtt engines.
+export type Engine = { id: string } | { address: string };
+
 // TODO: implement discovery
-export async function getMachines() {
-  return [{ id: 'id', ip: 'localhost', port: 33029, status: 'CONNECTED' }] as Machine[];
+export async function getEngines() {
+  return [{ id: '2796ebe6-237e-4e02-94a2-710030aaa654' }] as Engine[];
 }

@@ -78,8 +78,8 @@ export async function mqttRequest(
   url: string,
   message: {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-    body: Record<string, any>;
-    query: Record<string, any>;
+    body?: Record<string, any>;
+    query?: Record<string, any>;
     page?: number;
   },
 ) {

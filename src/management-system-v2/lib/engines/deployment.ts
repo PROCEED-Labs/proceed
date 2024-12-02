@@ -1,3 +1,5 @@
+import 'server-only';
+
 import {
   getElementMachineMapping,
   getProcessConstraints,
@@ -8,38 +10,52 @@ import {
 // TODO: remove this ignore once the decider is typed
 // @ts-ignore
 // import decider from '@proceed/decider';
-import { Machine, getMachines } from './machines';
-import * as endpoints from './endpoints/http-endpoints';
+import { Engine } from './machines';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
+import { engineRequest } from './endpoints';
 
 // TODO: better error handling
 
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
 
 async function deployProcessToMachines(
-  machines: Machine[],
+  machines: Engine[],
   processesExportData: ProcessesExportData,
 ) {
   try {
     // TODO: check if the order of the processes matters
-    const allMachineRequests = machines.map((machine) => {
+    const allMachineRequests = machines.map((engine) => {
       return Promise.all(
         processesExportData!.map(async (exportData) => {
           const version = Object.values(exportData.versions)[0];
-          await endpoints.deployProcess(machine, version.bpmn);
+          await engineRequest({
+            method: 'post',
+            endpoint: '/process/',
+            body: { bpmn: version.bpmn },
+            engine,
+          });
 
           const userTasks = exportData.userTasks.map((userTask) =>
-            endpoints.sendUserTaskHTML(
-              machine,
-              exportData.definitionId,
-              userTask.filename,
-              userTask.html,
-            ),
+            engineRequest({
+              method: 'put',
+              endpoint: '/process/:definitionId/user-tasks/:fileName',
+              params: { definitionId: exportData.definitionId, fileName: userTask.filename },
+              engine,
+              body: { html: userTask.html },
+            }),
           );
 
           const images = exportData.images.map((image) =>
-            endpoints.sendImage(machine, exportData.definitionId, image.filename, image.data),
+            engineRequest({
+              method: 'put',
+              endpoint: '/resources/process/:definitionId/images/:fileName',
+              params: { definitionId: exportData.definitionId, fileName: image.filename },
+              engine,
+              // TODO: make sure that images are being sent correctly
+              // the pain point is probably going to be MQTT
+              body: { image: image.data },
+            }),
           );
 
           await Promise.all([...userTasks, ...images]);
@@ -52,7 +68,14 @@ async function deployProcessToMachines(
     // TODO: don't remove the whole process when deploying a single version fails
     const removeAllDeployments = Object.values(processesExportData!).map(({ definitionId }) =>
       Promise.all(
-        machines.map((machine) => endpoints.removeDeploymentFromMachines(machine, definitionId)),
+        machines.map((engine) =>
+          engineRequest({
+            method: 'delete',
+            endpoint: '/process/:definitionId',
+            params: { definitionId },
+            engine,
+          }),
+        ),
       ),
     );
     await Promise.all(removeAllDeployments);
@@ -65,7 +88,8 @@ async function dynamicDeployment(
   definitionId: string,
   version: number,
   processesExportData: ProcessesExportData,
-  forceMachine?: Machine,
+  machines: Engine[],
+  forceMachine?: Engine,
 ) {
   const process = processesExportData.find(({ definitionId: id }) => id === definitionId);
   if (!process) throw new Error('Process not found in processesExportData');
@@ -76,11 +100,7 @@ async function dynamicDeployment(
   const processConstraints = await getProcessConstraints(bpmnObj);
   const taskConstraintMapping = await getTaskConstraintMapping(bpmnObj);
 
-  const addedMachines = (await getMachines()).filter(
-    (machine) => !machine.discovered && machine.status === 'CONNECTED',
-  );
-
-  let preferredMachine: Machine;
+  let preferredMachine: Engine;
 
   if (forceMachine) {
     preferredMachine = forceMachine;
@@ -97,7 +117,7 @@ async function dynamicDeployment(
     // // try to get the best engine
     // [preferredMachine] = engineList;
 
-    preferredMachine = addedMachines[Math.floor(Math.random() * addedMachines.length)];
+    preferredMachine = machines[Math.floor(Math.random() * machines.length)];
   }
 
   // there is no deployable machine known to the MS
@@ -105,16 +125,15 @@ async function dynamicDeployment(
     throw new Error('There is no machine the process can be deployed to.');
   }
 
-  try {
-    deployProcessToMachines([preferredMachine], processesExportData);
-  } catch (error) {}
+  await deployProcessToMachines([preferredMachine], processesExportData);
 }
 
 async function staticDeployment(
   definitionId: string,
   version: number,
   processesExportData: ProcessesExportData,
-  forceMachine?: Machine,
+  machines: Engine[],
+  forceMachine?: Engine,
 ) {
   const process = processesExportData.find(({ definitionId: id }) => id === definitionId);
   if (!process) throw new Error('Process not found in processesExportData');
@@ -122,34 +141,35 @@ async function staticDeployment(
 
   const nodeToMachineMapping = Object.values(await getElementMachineMapping(bpmn));
 
-  const machines = await getMachines();
-  const targetedMachines: Machine[] = [];
+  const targetedMachines: Engine[] = [];
 
   // Check if all necessary machines are available
   for (const mapping of nodeToMachineMapping) {
     let machine;
 
-    if (mapping.machineId) {
-      machine = machines.find(({ id }) => id === mapping.machineId);
-    } else if (mapping.machineAddress) {
-      const [ip, port] = mapping.machineAddress
-        .replace(/\[?((?:(?:\d|\w)|:|\.)*)\]?:(\d*)/g, '$1+$2')
-        .split('+');
-      machine = machines.find((m) => ip === m.ip && +port === m.port);
-    }
-
-    if (!machine) {
-      throw new Error("Can't find machine with given id to resolve address");
-    }
-    targetedMachines.push(machine);
+    // TODO: add this once the structure of Engine is final
+    // if (mapping.machineId) {
+    //   machine = machines.find(({ id }) => id === mapping.machineId);
+    // } else if (mapping.machineAddress) {
+    //   const [ip, port] = mapping.machineAddress
+    //     .replace(/\[?((?:(?:\d|\w)|:|\.)*)\]?:(\d*)/g, '$1+$2')
+    //     .split('+');
+    //   machine = machines.find((m) => ip === m.ip && +port === m.port);
+    // }
+    //
+    // if (!machine) {
+    //   throw new Error("Can't find machine with given id to resolve address");
+    // }
+    // targetedMachines.push(machine);
   }
 
+  // TODO: add this check once the structure of Engine is final
   // Add forceMachine if it is not already in the list
-  if (
-    forceMachine &&
-    !targetedMachines.some(({ ip, port }) => ip === forceMachine.ip && port == forceMachine.port)
-  )
-    targetedMachines.push(forceMachine);
+  // if (
+  //   forceMachine &&
+  //   !targetedMachines.some(({ ip, port }) => ip === forceMachine.ip && port == forceMachine.port)
+  // )
+  //   targetedMachines.push(forceMachine);
 
   await deployProcessToMachines(targetedMachines, processesExportData);
 }
@@ -159,7 +179,8 @@ export async function deployProcess(
   version: number,
   spaceId: string,
   method: 'static' | 'dynamic',
-  forceMachine?: Machine,
+  machines: Engine[],
+  forceMachine?: Engine,
 ) {
   const processesExportData = await prepareExport(
     {
@@ -181,9 +202,9 @@ export async function deployProcess(
   );
 
   if (method === 'static') {
-    await staticDeployment(definitionId, version, processesExportData, forceMachine);
+    await staticDeployment(definitionId, version, processesExportData, machines, forceMachine);
   } else {
-    await dynamicDeployment(definitionId, version, processesExportData, forceMachine);
+    await dynamicDeployment(definitionId, version, processesExportData, machines, forceMachine);
   }
 }
 export type ImportInformation = { definitionId: string; processId: string; version: number };
@@ -257,21 +278,35 @@ export type DeployedProcessInfo = {
   // TODO: refine instances type
   instances: InstanceInfo[];
 };
-export async function getDeployments() {
-  const machines = (await getMachines()).filter((m) => m.status === 'CONNECTED');
 
-  const deployments = await Promise.allSettled(
-    machines.map(async (machine) => {
-      const result = await endpoints.getDeploymentFromMachine(
-        machine,
-        'definitionId,versions,instances(processInstanceId,processVersion,instanceState,globalStartTime)',
-      );
-      return await result.json();
-    }),
+export async function getDeployments(engines: Engine[]) {
+  const deploymentsresponse = await Promise.allSettled(
+    engines.map(async (engine) =>
+      engineRequest({
+        method: 'get',
+        endpoint: '/process/',
+        engine,
+      }),
+    ),
   );
 
-  return deployments
+  const deployments = deploymentsresponse
     .filter((result) => result.status === 'fulfilled')
     .map((result) => (result.status === 'fulfilled' ? result.value : null))
     .flat(1) as DeployedProcessInfo[];
+
+  // TODO: don't use version name use what old MS did
+  for (const deployment of deployments) {
+    let latestVesrionIdx = deployment.versions.length - 1;
+    for (let i = deployment.versions.length - 2; i >= 0; i--) {
+      if (deployment.versions[i].version > deployment.versions[latestVesrionIdx].version)
+        latestVesrionIdx = i;
+    }
+    const latestVersion = deployment.versions[latestVesrionIdx];
+
+    // @ts-ignore
+    deployment.name = latestVersion.versionName || latestVersion.definitionName;
+  }
+
+  return deployments as (DeployedProcessInfo & { name: string })[];
 }

@@ -33,7 +33,6 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
-  const { data, status } = useSession({ required: true });
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();

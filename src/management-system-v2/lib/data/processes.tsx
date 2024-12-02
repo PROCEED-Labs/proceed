@@ -120,7 +120,7 @@ const getBpmnVersion = async (definitionId: string, versionId?: string) => {
   const process = await _getProcess(definitionId);
 
   if (versionId) {
-    const version = process.versions.find((version: { id: string }) => version.id === versionId);
+    const version = process.versions.find((version) => version.id === versionId);
 
     if (!version) {
       return userError(
@@ -427,8 +427,8 @@ export const createVersion = async (
   }
   const bpmnObj = await toBpmnObject(bpmn);
 
-  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
-
+  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const versionCreatedOn = toCustomUTCString(new Date());
   // add process version to bpmn
   const versionId = `_${v4()}`;
   await setDefinitionsVersionInformation(bpmnObj, {
@@ -436,7 +436,7 @@ export const createVersion = async (
     versionName,
     versionDescription,
     versionBasedOn,
-    versionCreatedOn: toCustomUTCString(new Date()),
+    versionCreatedOn,
   });
 
   const process = (await _getProcess(processId)) as Process;

@@ -233,15 +233,12 @@ const ModelerToolbar = ({
               placeholder="Select Version"
               showSearch
               filterOption={filterOption}
-              value={{
-                value: selectedVersion.id,
-                label: selectedVersion.name,
-              }}
-              onSelect={(_, option) => {
+              value={selectedVersion.id}
+              onChange={(value) => {
                 // change the version info in the query but keep other info (e.g. the currently open subprocess)
                 const searchParams = new URLSearchParams(query);
-                if (!option.value || option.value === '-1') searchParams.delete('version');
-                else searchParams.set(`version`, `${option.value}`);
+                if (!value || value === '-1') searchParams.delete('version');
+                else searchParams.set(`version`, `${value}`);
                 router.push(
                   spaceURL(
                     environment,

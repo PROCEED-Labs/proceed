@@ -148,7 +148,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   try {
     const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
 
-    const versionId = version === undefined ? version : (version as string);
+    const versionId = version as string | undefined;
 
     const processInfo = await getProcessInfo(
       processId as string,

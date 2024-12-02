@@ -258,6 +258,11 @@ function getVersionFileName(definitionId) {
 export async function saveProcessVersion(definitionId, versionCreatedOn, bpmn) {
   const currentProcessFolder = path.join(getFolder(definitionId), versionCreatedOn);
 
+  // creates the directory if it doesn't exist
+  fse.ensureDirSync(
+    path.dirname(path.join(currentProcessFolder, getVersionFileName(definitionId))),
+  );
+
   fse.writeFileSync(path.join(currentProcessFolder, getVersionFileName(definitionId)), bpmn);
 }
 

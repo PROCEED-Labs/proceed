@@ -32,7 +32,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
     ? await getProcessBPMN(processId, environmentId, selectedVersionId)
     : process.bpmn;
   const selectedVersion = selectedVersionId
-    ? process.versions.find((version: { id: string }) => version.id === selectedVersionId)
+    ? process.versions.find((version) => version.id === selectedVersionId)
     : undefined;
 
   // Since the user is able to minimize and close the page, everyting is in a

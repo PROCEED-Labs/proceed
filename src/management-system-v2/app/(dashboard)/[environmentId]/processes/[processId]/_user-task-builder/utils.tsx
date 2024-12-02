@@ -167,6 +167,7 @@ export function toHtml(json: string) {
       enabled={false}
       resolver={{
         ...Elements,
+        Image: Elements.ExportImage,
       }}
     >
       <Frame data={json} />

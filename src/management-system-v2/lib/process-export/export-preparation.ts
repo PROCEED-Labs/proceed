@@ -74,7 +74,7 @@ export type ProcessExportData = {
   }[];
   images: {
     filename: string;
-    data: Blob;
+    data: Buffer;
   }[];
 };
 
@@ -174,7 +174,7 @@ type ExportMap = {
     }[];
     images: {
       filename: string;
-      data: Blob;
+      data: Buffer;
     }[];
   };
 };
@@ -440,7 +440,7 @@ export async function prepareExport(
 
         exportData[definitionId].images.push({
           filename,
-          data: new Blob([image]),
+          data: image,
         });
       }
     }

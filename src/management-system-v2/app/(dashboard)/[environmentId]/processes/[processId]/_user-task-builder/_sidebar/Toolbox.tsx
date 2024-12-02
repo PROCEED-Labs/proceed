@@ -17,7 +17,7 @@ import {
   CheckBoxOrRadioGroup,
   Column,
   Table,
-  Image,
+  EditImage as Image,
   SubmitButton,
 } from '../elements';
 

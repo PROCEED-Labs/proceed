@@ -209,6 +209,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
       <Editor
         resolver={{
           ...Elements,
+          Image: Elements.EditImage,
         }}
         enabled={!isMobile}
         handlers={(store: EditorStore) =>

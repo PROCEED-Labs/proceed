@@ -17,7 +17,6 @@ export async function httpRequest(
     options.body = JSON.stringify(body);
   }
 
-  console.log('machineAddress', endpoint, machineAddress);
   const url = new URL(endpoint, machineAddress).toString();
   const response = await fetch(url, options);
 

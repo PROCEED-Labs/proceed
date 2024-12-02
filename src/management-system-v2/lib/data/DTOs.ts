@@ -16,6 +16,7 @@ import * as usersModuleDB from '@/lib/data/db/iam/users';
 import * as usersModuleLegacy from '@/lib/data/legacy/iam/users';
 import * as sysAdminsModuleDB from '@/lib/data/db/iam/system-admins';
 import * as sysAdminsModuleLegacy from '@/lib/data/legacy/iam/system-admins';
+import * as spaceEnginesModuleDB from '@/lib/data/db/space-engines';
 
 import { SystemAdminCreationInput } from './system-admin-schema';
 import { Environment } from './environment-schema';
@@ -210,4 +211,18 @@ export async function getFolders(spaceId: string) {
   return enableUseDB
     ? await folderModuleDB.getFolders(spaceId)
     : await folderModuleLegacy.getFolders(spaceId);
+}
+
+export async function getSpaceEngines(spaceId: string, ability?: Ability) {
+  // not implemented, return empty array to not throw error while building
+  if (!enableUseDB) return [];
+
+  return await spaceEnginesModuleDB.getSpaceEngines(spaceId, ability);
+}
+
+export async function getSpaceEngineById(spaceId: string, engineId: string, ability?: Ability) {
+  // not implemented, return empty array to not throw error while building
+  if (!enableUseDB) return undefined;
+
+  return await spaceEnginesModuleDB.getSpaceEngineById(spaceId, engineId, ability);
 }

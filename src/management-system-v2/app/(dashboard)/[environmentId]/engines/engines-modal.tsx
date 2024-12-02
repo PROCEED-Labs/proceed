@@ -1,20 +1,19 @@
-'use client';
-
-import { Form, Input, Modal } from 'antd';
-import { useEffect } from 'react';
+import { Form, Input, Modal, ModalProps } from 'antd';
 
 const EnginesModal = ({
   open,
   close,
   title,
   initialData,
+  modalProps,
 }: {
   open: boolean;
-  close: (data?: { address: string; ownName: string }) => void;
+  close: (data?: { address: string; name: string }) => void;
   title: string;
-  initialData?: { address: string; ownName: string };
+  initialData?: { address: string; name: string };
+  modalProps?: ModalProps;
 }) => {
-  const [form] = Form.useForm<{ address: string; ownName: string }>();
+  const [form] = Form.useForm<{ address: string; name: string }>();
 
   const values = Form.useWatch([], form);
 
@@ -24,10 +23,9 @@ const EnginesModal = ({
       open={open}
       onCancel={() => close()}
       title={title}
-      onOk={() => {
-        close({ ownName: values.ownName, address: values.address });
-      }}
+      onOk={() => close({ name: values.name, address: values.address })}
       destroyOnClose={true}
+      {...modalProps}
     >
       <Form
         layout="vertical"
@@ -37,6 +35,7 @@ const EnginesModal = ({
         wrapperCol={{ span: 24 }}
         autoComplete="off"
         preserve={false}
+        onFinish={() => close({ name: values.name, address: values.address })}
       >
         <Form.Item
           name="address"
@@ -45,9 +44,11 @@ const EnginesModal = ({
         >
           <Input />
         </Form.Item>
-        <Form.Item name="ownName" label="Own Name" rules={[{ required: false }]}>
+        <Form.Item name="name" label="Name" rules={[{ required: false }]}>
           <Input />
         </Form.Item>
+        {/* Needed for submitting the form pressing enter */}
+        <button type="submit" style={{ display: 'none' }} />
       </Form>
     </Modal>
   );

@@ -614,6 +614,7 @@ export async function addParentConfigVersion(
     const metadata: ParentConfig = {
       ...(defaultConfiguration(environmentId) as ParentConfig),
       ...newVersion,
+      version: version,
     };
 
     metadata.folderId = (await getRootFolder(environmentId)).id;

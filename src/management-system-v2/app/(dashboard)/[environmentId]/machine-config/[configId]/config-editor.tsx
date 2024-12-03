@@ -128,7 +128,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
       version: epochTime,
       name: values.versionName,
       description: values.versionDescription,
-      versionBasedOn: -1,
+      versionBasedOn: parentConfig.version ?? -1,
     });
 
     const versions = parentConfig.versions;

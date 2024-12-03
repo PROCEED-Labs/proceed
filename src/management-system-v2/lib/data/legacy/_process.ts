@@ -37,7 +37,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { toCustomUTCString } from '@/lib/helpers/timeHelper';
+import { fromCustomUTCString, toCustomUTCString } from '@/lib/helpers/timeHelper';
 
 let firstInit = false;
 // @ts-ignore
@@ -312,17 +312,20 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
 
   // save the new version in the directory of the process
 
-  await saveProcessVersion(
-    processDefinitionsId,
-    versionInformation.versionCreatedOn || toCustomUTCString(new Date()),
-    bpmn,
-  );
+  const versionCreatedOn = versionInformation.versionCreatedOn || toCustomUTCString(new Date());
+
+  await saveProcessVersion(processDefinitionsId, versionCreatedOn, bpmn);
 
   // add information about the new version to the meta information and inform others about its existance
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
-  //@ts-ignore
-  newVersions.push(versionInformation);
+  newVersions.push({
+    id: versionInformation.versionId!,
+    createdOn: fromCustomUTCString(versionCreatedOn),
+    description: versionInformation.description!,
+    name: versionInformation.name!,
+    versionBasedOn: versionInformation.versionBasedOn,
+  });
   newVersions.sort((a, b) => (b.createdOn > a.createdOn ? 1 : -1));
 
   await updateProcessMetaData(processDefinitionsId, { versions: newVersions });
@@ -343,7 +346,7 @@ export function getProcessVersionBpmn(processDefinitionsId: string, versionId: s
     throw new Error('The version you are trying to get does not exist');
   }
 
-  return getProcessVersion(processDefinitionsId, existingVersion.createdOn.toISOString());
+  return getProcessVersion(processDefinitionsId, toCustomUTCString(existingVersion.createdOn));
 }
 
 /** Removes information from the meta data that would not be correct after a restart */

@@ -86,3 +86,10 @@ export function toCustomUTCString(date: Date): string {
 
   return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}-${milliseconds}`;
 }
+
+export function fromCustomUTCString(dateString: string): Date {
+  const [year, month, day, hours, minutes, seconds, milliseconds] = dateString
+    .split('-')
+    .map(Number);
+  return new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds, milliseconds));
+}

@@ -6,6 +6,8 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
 import { getProcess, getProcesses } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
+import BPMNTimeline from '@/components/bpmn-timeline';
+import { env } from '@/lib/env-vars';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
@@ -23,6 +25,8 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   // Only load bpmn if no version selected.
   const process = await getProcess(processId, !selectedVersionId);
   const processes = await getProcesses(userId, ability, false);
+
+  const timelineViewFeatureEnabled = env.TIMELINE_VIEW === 'true';
 
   if (!ability.can('view', toCaslResource('Process', process))) {
     throw new Error('Forbidden.');
@@ -45,7 +49,14 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
           process={{ ...process, bpmn: selectedVersionBpmn as string }}
           versions={process.versions}
           versionName={selectedVersion?.name}
+          timelineViewFeatureEnabled={timelineViewFeatureEnabled} // required for .env feature flag
         />
+        {timelineViewFeatureEnabled && (
+          <BPMNTimeline
+            className={styles.Modeler}
+            process={{ ...process, bpmn: selectedVersionBpmn as string }}
+          />
+        )}
       </Wrapper>
       <AddUserControls name={'modeler'} />
     </>

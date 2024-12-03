@@ -17,23 +17,23 @@ type BPMNTimelineProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const environment = useEnvironment();
-  const modelerRef = useRef<Modeler | null>(null);
+  const bpmnjsModelerRef = useRef<Modeler | null>(null);
   const toggleTimelineView = useTimelineViewStore((state) => state.toggleTimelineView);
 
   useEffect(() => {
     console.log('init BPMNTimeline');
-    const modeler = new Modeler();
-    modelerRef.current = modeler;
+    const bpmnjsModeler = new Modeler();
+    bpmnjsModelerRef.current = bpmnjsModeler;
 
-    modeler.importXML(process.bpmn).then(() => {
+    bpmnjsModeler.importXML(process.bpmn).then(() => {
       console.log('modeler ready');
     });
 
     return () => {
       console.log('cleanup BPMNTimeline');
       // really needed when saved after each change?
-      if (modelerRef.current && modelerRef.current.getDefinitions()) {
-        modelerRef.current.saveXML({ format: true }).then((data) => {
+      if (bpmnjsModelerRef.current && bpmnjsModelerRef.current.getDefinitions()) {
+        bpmnjsModelerRef.current.saveXML({ format: true }).then((data) => {
           try {
             //updateProcess(process.id, environment.spaceId, data.xml, undefined, undefined, true);
           } catch (error) {
@@ -47,14 +47,14 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [status, setStatus] = useState<string | null>(null);
 
   async function createElement() {
-    if (!modelerRef.current) return;
+    if (!bpmnjsModelerRef.current) return;
 
-    const modeler = modelerRef.current;
-    const modeling: Modeling = modeler.get('modeling');
-    const elementFactory: ElementFactory = modeler.get('elementFactory');
-    const elementRegistry: ElementRegistry = modeler.get('elementRegistry');
+    const bpmnjsModeler = bpmnjsModelerRef.current;
+    const modeling: Modeling = bpmnjsModeler.get('modeling');
+    const elementFactory: ElementFactory = bpmnjsModeler.get('elementFactory');
+    const elementRegistry: ElementRegistry = bpmnjsModeler.get('elementRegistry');
 
-    const processElement = modeler.get<Canvas>('canvas').getRootElement();
+    const processElement = bpmnjsModeler.get<Canvas>('canvas').getRootElement();
 
     let startEvent = elementRegistry.getAll().find((element) => element.type === 'bpmn:StartEvent');
 
@@ -69,7 +69,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
 
     modeling.connect(startEvent as Element, task, { type: 'bpmn:SequenceFlow' });
 
-    const data = await modeler.saveXML({ format: true });
+    const data = await bpmnjsModeler.saveXML({ format: true });
     try {
       updateProcess(process.id, environment.spaceId, data.xml, undefined, undefined, true);
       setStatus('Element created successfully');

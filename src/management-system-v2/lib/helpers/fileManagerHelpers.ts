@@ -6,7 +6,6 @@ export enum EntityType {
   PROCESS = 'PROCESS',
   ORGANIZATION = 'ORGANISATION',
   MACHINE = 'MACHINE',
-  USERTASK = 'USER-TASK',
 }
 
 const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
@@ -20,10 +19,12 @@ const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
   html: 'user-tasks',
   htm: 'user-tasks',
   pdf: 'others',
+  json: 'user-tasks',
   docx: 'others',
   js: 'script-tasks',
   ts: 'script-tasks',
   bpmn: 'bpmns',
+  xml: 'bpmns',
 };
 
 const MIME_TYPE_CATEGORIES: Record<string, ArtifactType> = {
@@ -34,6 +35,7 @@ const MIME_TYPE_CATEGORIES: Record<string, ArtifactType> = {
   'image/bmp': 'images',
   'image/webp': 'images',
   'text/html': 'user-tasks',
+  'application/json': 'user-tasks',
   'application/pdf': 'others',
   'application/xml': 'bpmns',
 };
@@ -66,3 +68,24 @@ export function hasUuidBeforeUnderscore(filename: string): boolean {
   const res = uuidPattern.test(filename);
   return res;
 }
+
+// Utility to handle file paths for process artifacts
+export const generateProcessFilePath = (
+  fileName: string,
+  processId: string,
+  mimeType?: string,
+  versionCreatedOn?: string,
+): string => {
+  const artifactType = getFileCategory(fileName, mimeType);
+
+  if (artifactType === 'images' || artifactType === 'others') {
+    return `artifacts/${artifactType}/${fileName}`;
+  }
+
+  if (artifactType === 'bpmns') {
+    return `processes/${processId}/${fileName}`;
+  }
+
+  // For user-tasks, scripts
+  return `processes/${processId}/${versionCreatedOn ? versionCreatedOn : 'latest'}/${artifactType}/${fileName}`;
+};

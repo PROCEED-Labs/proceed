@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Space, Upload } from 'antd';
+import { Button, Space, Upload, message } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
@@ -17,9 +17,10 @@ interface ImageUploadProps {
     deleteEndpoint?: string;
     putEndpoint?: string;
   };
-  metadata: {
-    entityType: EntityType;
-    entityId: string;
+  config: {
+    entityType: EntityType; // to decide where to save the file
+    entityId: string; // needed for folder hierarchy
+    useDefaultRemoveFunction: boolean; //set true if delete should be automatically handled by file maanger
     fileName?: string;
   };
 }
@@ -30,36 +31,64 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   onUploadFail,
   onReload,
   endpoints,
-  metadata,
+  config,
 }) => {
-  const { upload, remove, replace } = useFileManager(metadata.entityType);
+  const { upload, remove, replace } = useFileManager({ entityType: config.entityType });
 
   const handleImageUpload = async (image: Blob, uploadedFileName: string, imageExists: boolean) => {
     try {
-      let response;
-      if (imageExists && endpoints.putEndpoint) {
-        // Update existing image
-        response = enableUseFileManager
-          ? await replace(image, metadata.entityId, metadata.fileName!)
-          : await fetch(endpoints.putEndpoint, {
-              method: 'PUT',
-              body: image,
-            });
-      } else {
-        // Add new image
-        response = enableUseFileManager
-          ? await upload(image, metadata.entityId, uploadedFileName)
-          : await fetch(endpoints.postEndpoint, {
-              method: 'POST',
-              body: image,
-            });
-      }
+      if (enableUseFileManager) {
+        const response = await new Promise<{ ok: boolean; fileName?: string }>(
+          (resolve, reject) => {
+            if (imageExists && config.fileName) {
+              //replace
+              replace(image, config.entityId, config.fileName, uploadedFileName, {
+                onSuccess: (data) => resolve({ ok: true, fileName: data?.fileName }),
+                onError: (error) => {
+                  console.error('Upload failed:', error);
+                  resolve({ ok: false });
+                },
+              });
+            } else {
+              // new upload
+              upload(image, config.entityId, uploadedFileName, {
+                onSuccess: (data) => resolve({ ok: true, fileName: data?.fileName }),
+                onError: (error) => {
+                  console.error('Upload failed:', error);
+                  resolve({ ok: false });
+                },
+              });
+            }
+          },
+        );
 
-      if (!response.ok) {
-        onUploadFail?.();
+        if (!response.ok) {
+          onUploadFail?.();
+          return;
+        }
+
+        const newImageFileName = response.fileName || uploadedFileName;
+        onImageUpdate(newImageFileName);
+        onReload?.();
       } else {
-        const newImageFileName =
-          response instanceof Response ? await response.text() : response.fileName;
+        // should be removed after we fully switch to db and gcp
+        const uploadEndpoint = imageExists ? endpoints.putEndpoint : endpoints.postEndpoint;
+
+        if (!uploadEndpoint) {
+          throw new Error('No upload endpoint provided');
+        }
+
+        const response = await fetch(uploadEndpoint, {
+          method: imageExists ? 'PUT' : 'POST',
+          body: image,
+        });
+
+        if (!response.ok) {
+          onUploadFail?.();
+          return;
+        }
+
+        const newImageFileName = await response.text();
         onImageUpdate(newImageFileName);
         onReload?.();
       }
@@ -101,7 +130,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           onClick={async () => {
             try {
               if (enableUseFileManager) {
-                await remove(metadata.entityId, metadata.fileName!);
+                config.useDefaultRemoveFunction
+                  ? await remove(config.entityId, config.fileName!)
+                  : null;
               } else {
                 await fetch(endpoints.deleteEndpoint as string, {
                   method: 'DELETE',

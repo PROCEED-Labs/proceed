@@ -4,7 +4,7 @@ import styles from './index.module.scss';
 
 import { Modal, Grid, Row as AntRow, Col } from 'antd';
 
-import { Editor, Frame, useEditor, EditorStore } from '@craftjs/core';
+import { Editor, Frame, useEditor, EditorStore, NodeData } from '@craftjs/core';
 
 import IFrame from 'react-frame-component';
 
@@ -13,7 +13,7 @@ import Sidebar from './_sidebar';
 
 import * as Elements from './elements';
 
-import { iframeDocument, defaultForm } from './utils';
+import { iframeDocument, defaultForm, toHtml } from './utils';
 
 import CustomEventhandlers from './CustomCommandhandlers';
 import useBoundingClientRect from '@/lib/useBoundingClientRect';
@@ -25,6 +25,11 @@ import { generateUserTaskFileName, getUserTaskImplementationString } from '@proc
 import { useEnvironment } from '@/components/auth-can';
 
 import EditorDnDHandler from './DragAndDropHandler';
+import { DiffResult, deepEquals } from '@/lib/helpers/javascriptHelpers';
+import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/file-manager-facade';
+
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 type BuilderProps = {
   processId: string;
@@ -50,6 +55,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
     return { editingEnabled: state.options.enabled };
   });
 
+  const queryClient = new QueryClient();
+
   const environment = useEnvironment();
 
   const [iframeMounted, setIframeMounted] = useState(false);
@@ -66,9 +73,11 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+
+  const selectedElement = modeler && selectedElementId && modeler.getElement(selectedElementId);
+
   const filename = useMemo(() => {
-    if (modeler && selectedElementId) {
-      const selectedElement = modeler.getElement(selectedElementId);
+    if (modeler && selectedElement && bpmnIs(selectedElement, 'bpmn:UserTask')) {
       if (selectedElement && selectedElement.type === 'bpmn:UserTask') {
         return (
           (selectedElement.businessObject.fileName as string | undefined) ||
@@ -78,7 +87,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
     }
 
     return undefined;
-  }, [modeler, selectedElementId]);
+  }, [modeler, selectedElement]);
 
   useEffect(() => {
     if (filename && open) {
@@ -109,7 +118,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
             implementation: getUserTaskImplementationString(),
           });
         }
-        saveProcessUserTask(processId, filename!, json, environment.spaceId).then(
+        const html = toHtml(json);
+        saveProcessUserTask(processId, filename!, json, html, environment.spaceId).then(
           (res) => res && console.error(res.error),
         );
         onSave();
@@ -183,7 +193,20 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const prevState = useRef({});
+
   const [modalApi, modalElement] = Modal.useModal();
+
+  function updateImageReference(action: 'add' | 'delete', src: string) {
+    const isDeleteAction = action === 'delete';
+    updateImageRefCounter(
+      // spaceId,
+      // data?.user.id!,
+      src,
+      isDeleteAction,
+      processId,
+    );
+  }
 
   const handleClose = () => {
     if (!hasUnsavedChanges) {
@@ -213,7 +236,52 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
             removeHoverOnMouseleave: true,
           })
         }
-        onNodesChange={() => {
+        onNodesChange={(query) => {
+          const current = JSON.parse(query.serialize());
+
+          if (Object.keys(prevState.current).length !== 0) {
+            const result = deepEquals(prevState.current, current, '', true) as null | DiffResult;
+
+            if (result) {
+              const { valueA, valueB, path } = result;
+              const valueAHasSrc = valueA?.hasOwnProperty('src');
+              const valueBHasSrc = valueB?.hasOwnProperty('src');
+
+              // Handle image deletion
+              if (valueAHasSrc && !valueBHasSrc) {
+                console.log('image deleted');
+                updateImageReference('delete', valueA.src);
+              }
+
+              // Handle image addition
+              if (!valueAHasSrc && valueBHasSrc) {
+                console.log('image added');
+                updateImageReference('add', valueB.src);
+              }
+
+              // Handle image replacement
+              if (path?.includes('props.src')) {
+                console.log('image replaced');
+                updateImageReference('add', valueB.src);
+                updateImageReference('delete', valueA.src);
+              }
+
+              // Handle deleted and added image nodes
+              if (!path) {
+                [result.valueA, result.valueB].forEach((value, isAdding) => {
+                  for (const key in value) {
+                    const node = value[key];
+                    if (node?.displayName === 'Image' && node.props?.hasOwnProperty('src')) {
+                      console.log(`Image Node ${isAdding ? 'added' : 'deleted'}`, node.props);
+                      updateImageReference(isAdding ? 'add' : 'delete', node.props.src);
+                    }
+                  }
+                });
+              }
+            }
+          }
+
+          prevState.current = current;
           setHasUnsavedChanges(true);
         }}
       >

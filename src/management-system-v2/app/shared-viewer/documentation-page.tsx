@@ -88,7 +88,7 @@ const BPMNSharedViewer = ({
     async function transform(
       bpmnViewer: ViewerType,
       el: any, // the element to transform
-      definitions: any, // the defintitions element at the root of the process tree
+      definitions: any, // the definitions element at the root of the process tree
       currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
     ): Promise<ElementInfo> {
       let svg;
@@ -158,8 +158,8 @@ const BPMNSharedViewer = ({
       const root = canvas.getRootElement();
 
       const definitions = getRootFromElement(root.businessObject);
-      getDefinitionsVersionInformation(definitions).then(({ version, name, description }) =>
-        setVersionInfo({ id: version, name, description }),
+      getDefinitionsVersionInformation(definitions).then(({ versionId, name, description }) =>
+        setVersionInfo({ id: versionId, name, description }),
       );
 
       const hierarchy = await transform(

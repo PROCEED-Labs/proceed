@@ -1,13 +1,18 @@
 'use client';
 
-import { Button } from 'antd';
-import { useState } from 'react';
+import { App, Button } from 'antd';
+import { useState, useTransition } from 'react';
 import DeploymentsModal from './deployments-modal';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
 import DeploymentsList from './deployments-list';
 import { Folder } from '@/lib/data/folder-schema';
-import { ProcessMetadata } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
+import { useQuery } from '@tanstack/react-query';
+import { useEnvironment } from '@/components/auth-can';
+import { processHasChangesSinceLastVersion } from '@/lib/data/processes';
+import { DeployedProcessInfo, deployProcess, getDeployments } from '@/lib/engines/deployment';
+import useDeployments from './deployments-hook';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -21,18 +26,14 @@ const DeploymentsView = ({
   favourites: any;
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
+  const { message } = App.useApp();
+  const space = useEnvironment();
 
-  const deployedProcesses = processes
-    .filter((process) => process.type !== 'folder')
-    .map((process) => {
-      return {
-        id: process.id,
-        name: process.name,
-        versions: 4,
-        runningInstances: 4,
-        endedInstances: 2,
-      };
-    });
+  const {
+    data: deployedProcesses,
+    isLoading,
+    refetch: refetchDeployedProcesses,
+  } = useDeployments();
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: deployedProcesses ?? [],
@@ -40,6 +41,36 @@ const DeploymentsView = ({
     highlightedKeys: ['name'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+
+  const [checkingProcessVersion, startCheckingProcessVersion] = useTransition();
+  function checkProcessVersion(process: Pick<Process, 'id' | 'versions'>) {
+    startCheckingProcessVersion(async () => {
+      try {
+        const processChangedSinceLastVersion = await processHasChangesSinceLastVersion(
+          process.id,
+          space.spaceId,
+        );
+        if (typeof processChangedSinceLastVersion === 'object')
+          throw processChangedSinceLastVersion;
+
+        if (processChangedSinceLastVersion) {
+          alert('Process has changed since last version');
+        }
+
+        const v = process.versions
+          .map((v) => v.id)
+          .sort()
+          .at(-1);
+
+        await deployProcess(process.id, v as string, space.spaceId, 'dynamic');
+        refetchDeployedProcesses();
+      } catch (e) {
+        message.error("Something wen't wrong");
+      }
+    });
+  }
+
+  const loading = isLoading || checkingProcessVersion;
 
   return (
     <div>
@@ -62,7 +93,7 @@ const DeploymentsView = ({
         }}
       />
 
-      <DeploymentsList processes={filteredData}></DeploymentsList>
+      <DeploymentsList processes={filteredData} tableProps={{ loading }}></DeploymentsList>
 
       <DeploymentsModal
         open={modalIsOpen}
@@ -70,7 +101,11 @@ const DeploymentsView = ({
         processes={processes}
         folder={folder}
         favourites={favourites}
-        selectProcess={(id: string) => {}}
+        selectProcess={(process) => {
+          if (process.type === 'folder') return;
+          // console.log(process);
+          checkProcessVersion(process);
+        }}
       ></DeploymentsModal>
     </div>
   );

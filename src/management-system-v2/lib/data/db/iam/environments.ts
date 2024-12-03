@@ -14,7 +14,7 @@ import {
 import { createFolder } from '../folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { enableUseDB } from 'FeatureFlags';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 
 export async function getEnvironments() {
   //TODO : Ability check

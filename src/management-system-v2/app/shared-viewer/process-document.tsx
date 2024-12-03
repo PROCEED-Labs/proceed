@@ -17,9 +17,10 @@ import TableOfContents, { ElementInfo } from './table-of-content';
 import { useEnvironment } from '@/components/auth-can';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
 
 export type VersionInfo = {
-  id?: number;
+  id?: string;
   name?: string;
   description?: string;
 };
@@ -47,7 +48,8 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   const query = useSearchParams();
   const shareToken = query.get('token');
 
-  const { download: getImage } = useFileManager(EntityType.PROCESS);
+  const { download: getImage } = useFileManager({ entityType: EntityType.PROCESS });
+
   const [processPages, setProcessPages] = useState<React.JSX.Element[]>([]);
 
   /**
@@ -83,8 +85,15 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       elementLabel = importedProcess.name!;
       ({ milestones, meta, description } = importedProcess);
     }
-
-    const { fileUrl: newImageUrl } = await getImage(processData.id, image, shareToken);
+    const newImageUrl = enableUseFileManager
+      ? await new Promise<string>((resolve) => {
+          getImage(processData.id, image, shareToken, {
+            onSuccess(data) {
+              resolve(data.fileUrl!);
+            },
+          });
+        })
+      : null;
 
     let imageURL =
       image &&
@@ -112,7 +121,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
             ></div>
           )}
         </div>
-        {settings.importedProcesses && importedProcess && importedProcess.version && (
+        {settings.importedProcesses && importedProcess && importedProcess.versionId && (
           <div className={styles.MetaInformation}>
             <Title level={3} id={`${hierarchyElement.id}_version_page`}>
               Version Information
@@ -128,7 +137,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               </p>
             )}
             <p>
-              <b>Creation Time:</b> {new Date(importedProcess.version).toUTCString()}
+              <b>Creation Time:</b> {new Date(importedProcess.versionId).toUTCString()}
             </p>
           </div>
         )}

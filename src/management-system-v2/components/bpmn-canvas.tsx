@@ -84,6 +84,7 @@ export interface BPMNCanvasRef {
   undo: () => void;
   redo: () => void;
   getElement: (id: string) => Element | undefined;
+  getAllElements: () => ElementLike[];
   getCurrentRoot: () => Element | undefined;
   getCanvas: () => Canvas;
   getZoomScroll: () => ZoomScroll;
@@ -141,6 +142,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       getElement: (id: string) => {
         return modeler.current!.get<ElementRegistry>('elementRegistry').get(id) as Element;
       },
+      getAllElements: () => {
+        return modeler.current!.get<ElementRegistry>('elementRegistry').getAll();
+      },
       getCurrentRoot: () => {
         if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
           return;
@@ -179,6 +183,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       deactivateKeyboard: () => {
         modeler.current!.get<Keyboard>('keyboard').unbind();
       },
+      removeColors: () => {},
     }));
 
     const [Modeler, NavigatedViewer, Viewer] = use(BPMNJs);

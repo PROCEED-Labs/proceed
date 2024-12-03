@@ -24,7 +24,10 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   onImageUpdate,
 }) => {
   const { processId } = useParams();
-  const { fileUrl: imageUrlfm, download: getImageURL } = useFileManager(EntityType.PROCESS);
+  const { fileUrl: imageUrlfm, download: getImageURL } = useFileManager({
+    entityType: EntityType.PROCESS,
+  });
+
   const environment = useEnvironment();
 
   const [reloadParam, setReloadParam] = useState(0);
@@ -46,7 +49,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
     (enableUseFileManager ? imageUrlfm : `${baseUrl}/${imageFileName}?${reloadParam}`);
 
   useEffect(() => {
-    if (imageFileName) {
+    if (enableUseFileManager && imageFileName) {
       getImageURL(processId as string, imageFileName);
     }
   }, [imageFileName]);
@@ -77,9 +80,10 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
                 deleteEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
                 putEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
               }}
-              metadata={{
+              config={{
                 entityType: EntityType.PROCESS,
                 entityId: processId as string,
+                useDefaultRemoveFunction: true,
                 fileName: imageFileName,
               }}
             />

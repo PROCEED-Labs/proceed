@@ -52,18 +52,21 @@ const SpaceSettings = ({
     });
   }
 
-  const { download: getLogoUrl } = useFileManager(EntityType.ORGANIZATION);
+  const { download: getLogoUrl } = useFileManager({
+    entityType: EntityType.ORGANIZATION,
+  });
   const logoUrl = `/api/private/${organization.id}/logo`;
   const [organizationLogo, setOrganizationLogo] = useState(
     organization.hasLogo ? logoUrl : undefined,
   );
   useEffect(() => {
-    (async () => {
-      if (enableUseFileManager && organization.hasLogo) {
-        const { fileUrl: url } = await getLogoUrl(organization.id, '');
-        setOrganizationLogo(url);
-      }
-    })();
+    if (enableUseFileManager && organization.hasLogo) {
+      getLogoUrl(organization.id, '', undefined, {
+        onSuccess(data) {
+          setOrganizationLogo(data.fileUrl);
+        },
+      });
+    }
   }, [organization]);
 
   return (
@@ -147,9 +150,10 @@ const SpaceSettings = ({
                           deleteEndpoint: logoUrl,
                           putEndpoint: logoUrl,
                         }}
-                        metadata={{
+                        config={{
                           entityType: EntityType.ORGANIZATION,
                           entityId: organization.id,
+                          useDefaultRemoveFunction: true,
                           fileName: '',
                         }}
                       />

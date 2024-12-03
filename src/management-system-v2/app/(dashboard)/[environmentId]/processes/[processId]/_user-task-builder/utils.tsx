@@ -1,8 +1,9 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { CSSProperties, ReactElement, useId } from 'react';
+import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const styles = `
 body {
@@ -77,6 +78,7 @@ body {
   padding: 0.75rem 0.5rem;
   border: 1px solid lightgrey;
   position: relative;
+  font-weight: normal;
 }
 
 .user-task-form-input-group {
@@ -88,7 +90,7 @@ body {
   cursor: pointer;
 }
 
-.user-task-form-input-group > span {
+.user-task-form-input-group-member {
   display: flex;
   align-items: center;
 }
@@ -146,6 +148,7 @@ p, h1, h2, h3, h4, h5, th, td {
 `;
 
 export function toHtml(json: string) {
+  const queryClient = new QueryClient();
   const markup = ReactDOMServer.renderToStaticMarkup(
     <Editor
       enabled={false}
@@ -153,7 +156,9 @@ export function toHtml(json: string) {
         ...Elements,
       }}
     >
-      <Frame data={json} />
+      <QueryClientProvider client={queryClient}>
+        <Frame data={json} />
+      </QueryClientProvider>
     </Editor>,
   );
 
@@ -192,6 +197,10 @@ export const iframeDocument = `
         padding: 0 10px;    
       }
 
+      .user-task-form-column {
+        position: relative;
+      }
+
       .user-task-form-container svg {
         height: 50px;
       }
@@ -214,7 +223,46 @@ export const iframeDocument = `
         margin: 0 10px;
         cursor: pointer;
         color: white;
-      } 
+      }
+
+      .overlay-mask {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        color: white;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        background-color: rgba(0,0,0,0.5);
+      }
+
+      .overlay-control-icon {
+        margin: 0 3px;
+      }
+
+      .overlay-control-icon > span {
+        display: block;
+        height: 16px;
+      }
+
+      .overlay-control-icon svg {
+        height: fit-content;
+      }
+
+      .target-sub-element {
+        background-color: rgba(255,255,0,0.33);
+      }
+
+      .sub-element-add-preview {
+        background-color: rgba(0,255,0,0.33);
+      }
+
+      .sub-element-remove-preview {
+        background-color: rgba(255,0,0,0.33);
+      }
 
       ${styles}
     </style>
@@ -245,22 +293,3 @@ export const defaultForm = `
   }
 }
 `;
-
-export const Setting: React.FC<{
-  label: string;
-  control: ReactElement;
-  style?: React.CSSProperties;
-}> = ({ label, control, style = {} }) => {
-  const id = useId();
-
-  const clonedControl = React.cloneElement(control, { id });
-
-  return (
-    <div style={{ margin: '5px', ...style }}>
-      <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
-        {label}:
-      </label>
-      {clonedControl}
-    </div>
-  );
-};

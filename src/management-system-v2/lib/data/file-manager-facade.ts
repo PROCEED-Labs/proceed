@@ -1,10 +1,17 @@
 'use server';
 
-import { Prisma } from '@prisma/client';
-import { getFileCategory, getNewFileName, EntityType } from '../helpers/fileManagerHelpers';
+import {
+  getFileCategory,
+  getNewFileName,
+  EntityType,
+  ArtifactType,
+  generateProcessFilePath,
+} from '../helpers/fileManagerHelpers';
 import { contentTypeNotAllowed } from './content-upload-error';
-import { deleteFile, retrieveFile, saveFile } from './file-manager';
-import db from '@/lib/data';
+import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
+import db from '@/lib/data/db';
+import { getProcessUserTaskJSON } from './db/process';
+import { asyncMap, findKey } from '../helpers/javascriptHelpers';
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
@@ -16,50 +23,52 @@ const ALLOWED_CONTENT_TYPES = [
   'application/pdf',
 ];
 
-const isContentTypeAllowed = (mimeType: string) => {
+const isContentTypeAllowed = (mimeType: string): boolean => {
   return ALLOWED_CONTENT_TYPES.includes(mimeType);
 };
 
-const saveArtifactToDB = async (fileName: string, filePath: string, processId: string) => {
-  return db.processArtifacts.create({
-    data: { fileName, filePath, processId },
-  });
-};
+interface SaveArtifactOptions {
+  versionCreatedOn?: string;
+  processId: string;
+}
 
-const removeArtifactFromDB = async (filePath: string, processId: string) => {
-  return db.processArtifacts.delete({
-    where: { filePath, processId },
-  });
-};
-
-// Utility to handle file paths for process artifacts
-const generateProcessFilePath = (
+const saveArtifactToDB = async (
   fileName: string,
-  processId: string,
-  mimeType?: string,
-): string => {
-  const artifactType = getFileCategory(fileName, mimeType);
+  filePath: string,
+  artifactType: ArtifactType,
+  options: SaveArtifactOptions,
+) => {
+  try {
+    const { versionCreatedOn, processId } = options;
+    const data = {
+      fileName,
+      filePath,
+      artifactType,
+      // if versionCreatedOn is provided we are creating null f_key_reference as the version is not created yet, it is updated later by addProcessVersion
+      ...(versionCreatedOn ? undefined : { processReferences: { create: { processId } } }),
+    };
 
-  if (artifactType === 'images' || artifactType === 'others') {
-    return `artifacts/${artifactType}/${fileName}`;
+    return await db.artifact.create({ data });
+  } catch (error) {
+    console.error('Error saving artifact to DB:', error);
+    throw error;
   }
-
-  if (artifactType === 'bpmns') {
-    return `processes/${processId}/${fileName}`;
-  }
-
-  // user-tasks,scripts
-  return `processes/${processId}/${artifactType}/${fileName}`;
 };
 
-export async function getProcessArtifactMetaData(fileNameOrPath: string, isFilePath: boolean) {
-  return await db.processArtifacts.findUnique({
+const removeArtifactFromDB = async (filePath: string) => {
+  return db.artifact.delete({
+    where: { filePath },
+  });
+};
+
+export async function getArtifactMetaData(fileNameOrPath: string, isFilePath: boolean) {
+  return await db.artifact.findUnique({
     where: isFilePath ? { filePath: fileNameOrPath } : { fileName: fileNameOrPath },
-    select: { filePath: true, refCounter: true },
   });
 }
 
-export async function saveEnityFile(
+// Save a file associated with an entity (process, organization, etc.)
+export async function saveEntityFile(
   entityType: EntityType,
   entityId: string,
   mimeType: string,
@@ -67,38 +76,39 @@ export async function saveEnityFile(
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
   if (!isContentTypeAllowed(mimeType)) {
-    return contentTypeNotAllowed(`Content type '${mimeType}' is not allowed`);
+    throw new Error(`Content type '${mimeType}' is not allowed`);
   }
 
   switch (entityType) {
     case EntityType.PROCESS:
-      return saveProcessArtifact(entityId, mimeType, fileName, fileContent);
+      return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
     case EntityType.ORGANIZATION:
-      return saveOrganisationLogo(fileName, entityId, mimeType, fileContent);
-    case EntityType.MACHINE:
-    // Extend for other entity types
+      return saveOrganizationLogo(entityId, fileName, mimeType, fileContent);
+    // Extend for other entity types if needed
     default:
-      return { presignedUrl: null, fileName: null };
+      throw new Error(`Unsupported entity type: ${entityType}`);
   }
 }
 
+// Retrieve a file associated with an entity
 export async function retrieveEntityFile(
   entityType: EntityType,
   entityId: string,
-  fileName?: string | null,
+  fileName?: string,
 ) {
   switch (entityType) {
     case EntityType.PROCESS:
-      return retrieveProcessArtifact(entityId, fileName!);
+      if (!fileName) throw new Error('File name is required for process artifacts');
+      return retrieveProcessArtifact(entityId, fileName);
     case EntityType.ORGANIZATION:
-      return getOrganisationLogo(entityId);
-    case EntityType.MACHINE:
-    // Extend for other entity types
+      return getOrganizationLogo(entityId);
+    // Extend for other entity types if needed
     default:
-      return null;
+      throw new Error(`Unsupported entity type: ${entityType}`);
   }
 }
 
+// Delete a file associated with an entity
 export async function deleteEntityFile(
   entityType: EntityType,
   entityId: string,
@@ -106,81 +116,121 @@ export async function deleteEntityFile(
 ): Promise<boolean> {
   switch (entityType) {
     case EntityType.PROCESS:
-      return deleteProcessArtifact(entityId, fileName!);
+      if (!fileName) throw new Error('File name is required for process artifacts');
+      return deleteProcessArtifact(fileName);
     case EntityType.ORGANIZATION:
-      return deleteOrganisationLogo(entityId);
-    case EntityType.MACHINE:
-    // Extend for other entity types
+      return deleteOrganizationLogo(entityId);
+    // Extend for other entity types if needed
     default:
-      return false;
+      throw new Error(`Unsupported entity type: ${entityType}`);
   }
+}
+
+interface SaveProcessArtifactOptions {
+  generateNewFileName?: boolean;
+  useDefaultArtifactsTable?: boolean;
+  versionCreatedOn?: string;
+  replaceFileContentOnly?: boolean;
+  context?: ArtifactType; // option to override the file category in case of collision ( eg: xml extension is used for usertask and bpmn both)
 }
 
 // Functionality for handling process artifact files
 export async function saveProcessArtifact(
   processId: string,
-  mimeType: string,
   fileName: string,
+  mimeType: string,
   fileContent?: Buffer | Uint8Array | Blob,
+  options: SaveProcessArtifactOptions = {},
 ) {
-  const newFileName = getNewFileName(fileName);
-  const filePath = generateProcessFilePath(newFileName, processId, mimeType);
+  const {
+    generateNewFileName = true,
+    useDefaultArtifactsTable = true,
+    versionCreatedOn,
+    replaceFileContentOnly = false,
+    context,
+  } = options;
 
-  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
+  const newFileName = generateNewFileName ? getNewFileName(fileName) : fileName;
+  const artifactType = context ? context : getFileCategory(fileName, mimeType);
+  const filePath = generateProcessFilePath(newFileName, processId, mimeType, versionCreatedOn);
 
-  if (status) {
-    await saveArtifactToDB(newFileName, filePath, processId);
+  const usePresignedUrl = ['images', 'others'].includes(artifactType);
+
+  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent, usePresignedUrl);
+
+  if (replaceFileContentOnly) {
+    //skip db update
+    return { presignedUrl, status };
+  }
+
+  if (!status) {
+    await deleteFile(filePath);
+    throw new Error('Failed to save file');
+  }
+
+  if (useDefaultArtifactsTable) {
+    await saveArtifactToDB(newFileName, filePath, artifactType, {
+      processId,
+      versionCreatedOn,
+    });
   }
 
   return { presignedUrl, fileName: newFileName };
 }
 
+// Retrieve a process artifact
 export async function retrieveProcessArtifact(
   processId: string,
-  fileNameOrPath: string,
+  fileName: string,
   isFilePath = false,
+  usePresignedUrl = true,
 ) {
-  //TODO: referencing process and referenced procedd validation
-  const resp = await getProcessArtifactMetaData(fileNameOrPath, isFilePath);
-  if (!resp) {
-    throw new Error(`${fileNameOrPath} not found`);
-  }
-  return retrieveFile(resp.filePath);
+  const filePath = isFilePath ? fileName : generateProcessFilePath(fileName, processId);
+  return retrieveFile(filePath, usePresignedUrl);
 }
 
+// Delete a process artifact
 export async function deleteProcessArtifact(
-  processId: string,
   fileNameOrPath: string,
   isFilePath = false,
-) {
-  const resp = await getProcessArtifactMetaData(fileNameOrPath, isFilePath);
-  if (!resp) {
-    throw new Error(`${fileNameOrPath} not found`);
+): Promise<boolean> {
+  const artifact = await getArtifactMetaData(fileNameOrPath, isFilePath);
+  if (!artifact) {
+    throw new Error(`Artifact "${fileNameOrPath}" not found`);
   }
 
-  if (resp.refCounter == 0) {
-    const isDeleted = await deleteFile(resp.filePath);
+  // Remove the reference between artifact and process
+  await db.artifactProcessReference.deleteMany({
+    where: {
+      artifactId: artifact.id,
+    },
+  });
+
+  // Check if there are any remaining references
+  const remainingReferencesCount = await db.artifactProcessReference.count({
+    where: { artifactId: artifact.id },
+  });
+
+  const remainingVersionReferencesCount = await db.artifactVersionReference.count({
+    where: { artifactId: artifact.id },
+  });
+
+  // If no remaining references, delete the artifact
+  if (remainingReferencesCount === 0 && remainingVersionReferencesCount === 0) {
+    const isDeleted = await deleteFile(artifact.filePath);
     if (isDeleted) {
-      await removeArtifactFromDB(resp.filePath, processId);
+      await removeArtifactFromDB(artifact.filePath);
     }
     return isDeleted;
-  } else {
-    await db.processArtifacts.update({
-      where: isFilePath ? { filePath: fileNameOrPath } : { fileName: fileNameOrPath },
-      data: {
-        refCounter: { decrement: 1 },
-      },
-    });
-
-    return true;
   }
+
+  return true;
 }
 
 // Functionality for handling organization logo files
-
-export async function saveOrganisationLogo(
+export async function saveOrganizationLogo(
+  organizationId: string,
   fileName: string,
-  organisationId: string,
   mimeType: string,
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
@@ -189,19 +239,22 @@ export async function saveOrganisationLogo(
 
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
 
-  if (status) {
-    await db.space.update({
-      where: { id: organisationId },
-      data: { logo: filePath },
-    });
+  if (!status) {
+    await deleteFile(filePath);
+    throw new Error('Failed to save organization logo');
   }
+
+  await db.space.update({
+    where: { id: organizationId },
+    data: { logo: filePath },
+  });
 
   return { presignedUrl, fileName: newFileName };
 }
 
-export async function getOrganisationLogo(organisationId: string) {
+export async function getOrganizationLogo(organizationId: string) {
   const result = await db.space.findUnique({
-    where: { id: organisationId },
+    where: { id: organizationId },
     select: { logo: true },
   });
 
@@ -212,9 +265,9 @@ export async function getOrganisationLogo(organisationId: string) {
   return null;
 }
 
-export async function deleteOrganisationLogo(organisationId: string): Promise<boolean> {
+export async function deleteOrganizationLogo(organizationId: string): Promise<boolean> {
   const result = await db.space.findUnique({
-    where: { id: organisationId },
+    where: { id: organizationId },
     select: { logo: true },
   });
 
@@ -222,7 +275,7 @@ export async function deleteOrganisationLogo(organisationId: string): Promise<bo
     const isDeleted = await deleteFile(result.logo);
     if (isDeleted) {
       await db.space.update({
-        where: { id: organisationId },
+        where: { id: organizationId },
         data: { logo: null },
       });
     }
@@ -232,34 +285,155 @@ export async function deleteOrganisationLogo(organisationId: string): Promise<bo
   return false;
 }
 
-// Update file status in the database
-export async function updateFileDeletableStatus(fileName: string, status: boolean) {
-  const artifact = await db.processArtifacts.findUnique({
+export async function updateFileDeletableStatus(
+  //spaceId: string,
+  //userId: string,
+  fileName: string,
+  status: boolean,
+  processId: string,
+) {
+  // if (!userId) {
+  //   throw new Error(user is undefined ${userId});
+  // }
+
+  // if (!fileName) {
+  //   return;
+  // }
+
+  // const ability = await getAbilityForUser(userId, spaceId);
+  //TODO ability check
+
+  return await updateArtifactProcessReference(fileName, processId, status);
+}
+
+async function getArtifactReference(artifactId: string, processId: string) {
+  const res = await db.artifactProcessReference.findUnique({
+    where: {
+      artifactId_processId: {
+        artifactId,
+        processId,
+      },
+    },
+  });
+  return res;
+}
+
+// Update artifact process references
+export async function updateArtifactProcessReference(
+  fileName: string,
+  processId: string,
+  status: boolean,
+) {
+  const artifact = await db.artifact.findUnique({
     where: { fileName },
-    select: { refCounter: true },
   });
 
-  if (!artifact) throw new Error('File not found');
-
-  let updateData: Prisma.ProcessArtifactsUpdateInput = {};
-
-  // If refCounter >= 1, deletable must remain false
-  if (artifact.refCounter >= 1) {
-    updateData = {
-      deletable: false,
-      refCounter: status ? { decrement: 1 } : { increment: 1 },
-    };
-  } else if (artifact.refCounter < 1) {
-    // If refCounter < 1, allow deletable to change based on the provided status
-    updateData = {
-      deletable: status,
-      deletedOn: new Date(),
-      refCounter: status ? { decrement: 1 } : { increment: 1 },
-    };
+  if (!artifact) {
+    throw new Error(`Artifact with fileName "${fileName}" not found.`);
   }
 
-  return await db.processArtifacts.update({
-    where: { fileName },
-    data: updateData,
-  });
+  if (!status) {
+    // Add a new reference
+    try {
+      await db.artifactProcessReference.create({
+        data: { artifactId: artifact.id, processId },
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        console.warn('ArtifactProcessReference already exists.');
+      } else {
+        throw error;
+      }
+    }
+  } else {
+    // Remove the reference
+    await db.artifactProcessReference.deleteMany({
+      where: {
+        artifactId: artifact.id,
+        processId,
+      },
+    });
+  }
+  // refCounter is handled by DB triggers
 }
+
+// Soft delete a user task and its associated artifacts
+export async function softDeleteProcessUserTask(processId: string, userTaskFilename: string) {
+  const res = await getProcessUserTaskJSON(processId, userTaskFilename);
+  if (res) {
+    const userTaskJson = JSON.parse(res);
+    const referencedArtifactFilenames = findKey(userTaskJson, 'src');
+    referencedArtifactFilenames.push(`${userTaskFilename}.json`);
+    referencedArtifactFilenames.push(`${userTaskFilename}.html`);
+
+    const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+      getArtifactMetaData(filename, false),
+    );
+
+    for (const artifact of artifacts) {
+      if (artifact) {
+        await db.artifactProcessReference.deleteMany({
+          where: {
+            artifactId: artifact.id,
+            processId,
+          },
+        });
+      }
+    }
+  }
+}
+
+// Revert soft deletion of a user task and restore its artifacts
+export async function revertSoftDeleteProcessUserTask(processId: string, userTaskFilename: string) {
+  const res = await getProcessUserTaskJSON(processId, userTaskFilename);
+  if (res) {
+    const userTaskJson = JSON.parse(res);
+    const referencedArtifactFilenames = findKey(userTaskJson, 'src');
+    referencedArtifactFilenames.push(`${userTaskFilename}.json`);
+    referencedArtifactFilenames.push(`${userTaskFilename}.html`);
+
+    const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+      getArtifactMetaData(filename, false),
+    );
+
+    for (const artifact of artifacts) {
+      if (artifact) {
+        await db.artifactProcessReference.create({
+          data: {
+            artifactId: artifact.id,
+            processId,
+          },
+        });
+      }
+    }
+  }
+}
+
+// Update artifact references for a versioned user task
+// export async function updateArtifactRefVersionedUserTask(userTask: string, newFileName: string) {
+//   if (!userTask) {
+//     throw new Error('User task is undefined');
+//   }
+
+//   // const refIds: string[] = [];
+//   // const userTaskJson = JSON.parse(userTask);
+//   // const referencedArtifactFilenames = findKey(userTaskJson, 'src');
+
+//   referencedArtifactFilenames.push(`${newFileName}.json`);
+
+//   const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+//     getArtifactMetaData(filename, false),
+//   );
+
+//   for (const artifact of artifacts) {
+//     if (artifact) {
+//       const res = await db.artifactVersionReference.create({
+//         data: {
+//           artifactId: artifact.id,
+//         },
+//       });
+//       if (res) refIds.push(res.id);
+//     }
+//   }
+//   return refIds;
+// }

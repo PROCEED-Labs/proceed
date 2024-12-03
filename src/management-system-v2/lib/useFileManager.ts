@@ -1,106 +1,187 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
-import { deleteEntityFile, retrieveEntityFile, saveEnityFile } from './data/file-manager-facade';
+import {
+  deleteEntityFile,
+  retrieveEntityFile,
+  saveEntityFile,
+  updateFileDeletableStatus,
+} from './data/file-manager-facade';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
 
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
-
-interface UseFileManagerReturn {
-  upload: (
-    file: File | Blob,
-    entityId: string,
-    fileName?: string,
-  ) => Promise<{ ok: boolean; fileName?: string }>;
-  download: (
-    entityId: string,
-    fileName: string,
-    shareToken?: string | null,
-  ) => Promise<{ ok: boolean; fileUrl?: string }>;
-  remove: (entityId: string, fileName: string) => Promise<boolean>;
-  replace: (
-    file: File | Blob,
-    entityId: string,
-    oldFileName: string,
-    newFileName?: string,
-  ) => Promise<{ ok: boolean; fileName?: string }>;
-  reset: () => void;
-  isLoading: boolean;
-  error: string | null;
-  fileUrl: string | null;
-}
-
 const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
 
-export function useFileManager(entityType: EntityType): UseFileManagerReturn {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
+interface FileManagerHookProps {
+  entityType: EntityType;
+}
+
+interface FileOperationResult {
+  ok: boolean;
+  fileName?: string;
+  fileUrl?: string;
+}
+
+export function useFileManager({ entityType }: FileManagerHookProps) {
+  const queryClient = useQueryClient();
   const { spaceId } = useEnvironment();
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
 
-  const performFileOperation = useCallback(
-    async (
-      operation: 'upload' | 'download',
-      entityId: string,
-      fileName: string,
-      file?: Blob,
-      shareToken?: string | null,
-    ): Promise<{ ok: boolean; fileName?: string; fileUrl?: string }> => {
-      setIsLoading(true);
-      setError(null);
+  // Upload Mutation
+  const uploadMutation = useMutation<
+    { fileName?: string },
+    Error,
+    {
+      file: File | Blob;
+      entityId: string;
+      fileName?: string;
+      onSuccess?: (data: { fileName?: string }) => void;
+      onError?: (error: Error) => void;
+    }
+  >({
+    mutationFn: async ({ file, entityId, fileName }) => {
+      if (DEPLOYMENT_ENV === 'cloud') {
+        const response = await saveEntityFile(
+          entityType,
+          entityId,
+          file.type,
+          fileName || (file instanceof File ? file.name : ''),
+        );
 
-      try {
-        const result =
-          operation === 'upload'
-            ? await handleUpload(entityId, fileName, file!)
-            : await handleDownload(entityId, fileName, shareToken);
+        if ('error' in response) {
+          throw new Error((response.error as Error).message);
+        }
 
-        if ('error' in result) throw new Error(result.error);
+        if (!response.presignedUrl) {
+          throw new Error('Failed to get presignedUrl');
+        }
 
-        if (operation === 'download' && result.fileUrl) setFileUrl(result.fileUrl);
-
-        return { ok: true, fileName: result.fileName, fileUrl: result.fileUrl };
-      } catch (err: any) {
-        message.error(err.message);
-        setError(err.message || '| Blob operation failed');
-        return { ok: false };
-      } finally {
-        setIsLoading(false);
+        await uploadToCloud(file, response.presignedUrl);
+        return { fileName: response.fileName };
+      } else {
+        return await handleLocalUpload(
+          entityId,
+          fileName || (file instanceof File ? file.name : ''),
+          file,
+        );
       }
     },
-    [spaceId],
-  );
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['entityFiles', entityType],
+      });
 
-  const handleUpload = async (entityId: string, fileName: string, file: File | Blob) => {
-    if (DEPLOYMENT_ENV === 'cloud') {
-      const response = await saveEnityFile(entityType, entityId, file.type, fileName);
-      if ('error' in response) {
-        return { success: false, error: response.error.message };
+      if (variables.onSuccess) {
+        variables.onSuccess(data);
       }
-      if (!response.presignedUrl) {
-        return { success: false, error: 'Failed to get presignedUrl' };
+    },
+    onError: (error, variables) => {
+      message.error(error.message || 'Upload failed');
+      if (variables.onError) {
+        variables.onError(error);
       }
-      await uploadToCloud(file, response.presignedUrl);
-      return { success: true, fileName: response.fileName };
-    } else {
-      return handleLocalOperation('PUT', entityId, fileName, file);
+    },
+  });
+
+  // Download Mutation
+  const downloadMutation = useMutation<
+    { fileUrl?: string },
+    Error,
+    {
+      entityId: string;
+      fileName: string;
+      shareToken?: string | null;
+      onSuccess?: (data: { fileUrl?: string }) => void;
+      onError?: (error: Error) => void;
     }
-  };
+  >({
+    mutationFn: async ({ entityId, fileName, shareToken }) => {
+      if (DEPLOYMENT_ENV === 'cloud') {
+        const presignedUrl = await retrieveEntityFile(entityType, entityId, fileName);
+        return { fileUrl: presignedUrl as string };
+      } else {
+        return await handleLocalDownload(entityId, fileName, shareToken);
+      }
+    },
+    onSuccess: (data, variables) => {
+      if (data.fileUrl) setFileUrl(data.fileUrl);
+      if (variables.onSuccess) {
+        variables.onSuccess(data);
+      }
+    },
+    onError: (error, variables) => {
+      message.error(error.message || 'Download failed');
+      if (variables.onError) {
+        variables.onError(error);
+      }
+    },
+  });
 
-  const handleDownload = async (entityId: string, fileName: string, shareToken?: string | null) => {
-    if (DEPLOYMENT_ENV === 'cloud') {
-      const presignedUrl = await retrieveEntityFile(entityType, entityId, fileName);
-      const fileResponse = await fetch(presignedUrl as string);
-      if (!fileResponse.ok) throw new Error('Download failed');
+  // Remove Mutation
+  const removeMutation = useMutation<boolean, Error, { entityId: string; fileName: string }>({
+    mutationFn: async ({ entityId, fileName }) => {
+      if (entityType === EntityType.PROCESS) {
+        await updateFileDeletableStatus(fileName, true, entityId);
+      } else {
+        await deleteEntityFile(entityType, entityId, fileName);
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['entityFiles', entityType],
+      });
+    },
+    onError: (error) => {
+      message.error(error.message || 'Delete failed');
+    },
+  });
 
-      const blob = await fileResponse.blob();
-      const url = URL.createObjectURL(blob);
-      return { success: true, fileUrl: url };
-    } else {
-      return handleLocalOperation('GET', entityId, fileName, null, shareToken);
+  // Replace Mutation
+  const replaceMutation = useMutation<
+    FileOperationResult,
+    Error,
+    {
+      file: File | Blob;
+      entityId: string;
+      oldFileName: string;
+      newFileName: string;
+      onSuccess?: (data: { fileName?: string }) => void;
+      onError?: (error: Error) => void;
     }
-  };
+  >({
+    mutationFn: async ({ file, entityId, oldFileName, newFileName }) => {
+      // First remove the old file
+      await removeMutation.mutateAsync({ entityId, fileName: oldFileName });
 
+      // Then upload the new file
+      const uploadResult = await uploadMutation.mutateAsync({
+        file,
+        entityId,
+        fileName: newFileName,
+      });
+
+      return {
+        ok: true,
+        fileName: uploadResult.fileName,
+      };
+    },
+    onSuccess(data, variables) {
+      queryClient.invalidateQueries({
+        queryKey: ['entityFiles', entityType],
+      });
+
+      if (variables.onSuccess) {
+        variables.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      message.error(error.message || 'Replace failed');
+    },
+  });
+
+  // Cloud upload helper
   const uploadToCloud = async (file: File | Blob, presignedUrl: string) => {
     const response = await fetch(presignedUrl, {
       method: 'PUT',
@@ -116,83 +197,86 @@ export function useFileManager(entityType: EntityType): UseFileManagerReturn {
     }
   };
 
-  const handleLocalOperation = async (
-    method: 'PUT' | 'GET',
+  // Local upload helper
+  const handleLocalUpload = async (
     entityId: string,
     fileName: string,
-    file?: File | Blob | null,
-    shareToken?: string | null,
-  ): Promise<{ success: boolean; fileUrl?: string; fileName?: string }> => {
-    const url = `${window.location.origin}/api/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
+    file: File | Blob,
+  ): Promise<{ fileName?: string }> => {
+    const url = `/api/private/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}`;
 
     const response = await fetch(url, {
-      method,
-      body: file ? file : undefined,
+      method: 'PUT',
+      body: file,
     });
 
     if (response.status === 200) {
-      if (method === 'GET') {
-        const blob = await response.blob();
-        const downloadUrl = URL.createObjectURL(blob);
-        return { success: true, fileUrl: downloadUrl };
-      } else {
-        const savedFileName = await response.text();
-        return { success: true, fileName: savedFileName };
-      }
+      const savedFileName = await response.text();
+      return { fileName: savedFileName };
     } else {
-      return { success: false };
+      throw new Error('Local upload failed');
     }
   };
 
-  const upload = (file: File | Blob, entityId: string, fileName?: string) => {
-    console.log(fileName);
-    return performFileOperation(
-      'upload',
-      entityId,
-      fileName || (file instanceof File ? file.name : ''),
-      file,
-    );
-  };
-
-  const download = (entityId: string, fileName: string, shareToken?: string | null) =>
-    performFileOperation('download', entityId, fileName, undefined, shareToken);
-
-  const remove = async (entityId: string, fileName: string): Promise<boolean> => {
-    try {
-      setIsLoading(true);
-      await deleteEntityFile(entityType, entityId, fileName);
-      return true;
-    } catch (err: any) {
-      setError(err.message || 'Delete failed');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const replace = async (
-    file: File | Blob,
+  // Local download helper
+  const handleLocalDownload = async (
     entityId: string,
-    oldFileName: string,
-    newFileName?: string,
-  ): Promise<{ ok: boolean; fileName?: string }> => {
-    try {
-      setIsLoading(true);
-      await remove(entityId, oldFileName);
-      const result = await upload(file, entityId, newFileName);
-      return result;
-    } catch (err: any) {
-      setError(err.message || 'Replace failed');
-      return { ok: false };
-    } finally {
-      setIsLoading(false);
+    fileName: string,
+    shareToken?: string | null,
+  ): Promise<{ fileUrl?: string }> => {
+    const url = `/api/private/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
+
+    const response = await fetch(url, { method: 'GET' });
+
+    if (response.status === 200) {
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      return { fileUrl: downloadUrl };
+    } else {
+      throw new Error('Local download failed');
     }
   };
 
-  const reset = () => {
-    setFileUrl(null);
-    setError(null);
+  return {
+    upload: (
+      file: File | Blob,
+      entityId: string,
+      fileName?: string,
+      options?: {
+        onSuccess?: (data: { fileName?: string }) => void;
+        onError?: (error: Error) => void;
+      },
+    ) => uploadMutation.mutate({ file, entityId, fileName, ...options }),
+    download: (
+      entityId: string,
+      fileName: string,
+      shareToken?: string | null,
+      options?: {
+        onSuccess?: (data: { fileUrl?: string }) => void;
+        onError?: (error: Error) => void;
+      },
+    ) => downloadMutation.mutate({ entityId, fileName, shareToken, ...options }),
+    remove: (entityId: string, fileName: string) => removeMutation.mutate({ entityId, fileName }),
+    replace: (
+      file: File | Blob,
+      entityId: string,
+      oldFileName: string,
+      newFileName: string,
+      options?: {
+        onSuccess?: (data: { fileName?: string }) => void;
+        onError?: (error: Error) => void;
+      },
+    ) => replaceMutation.mutate({ file, entityId, oldFileName, newFileName, ...options }),
+    isLoading:
+      uploadMutation.isPending ||
+      downloadMutation.isPending ||
+      removeMutation.isPending ||
+      replaceMutation.isPending,
+    error:
+      uploadMutation.error ||
+      downloadMutation.error ||
+      removeMutation.error ||
+      removeMutation.error,
+    fileUrl,
   };
-
-  return { upload, download, remove, replace, reset, isLoading, error, fileUrl };
 }

@@ -168,3 +168,23 @@
   content: 'f';
   width: 1em;
 }
+
+.orange:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: orange !important;
+}
+
+.white:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: white !important;
+}
+
+.green:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: #dcffd6ff !important;
+}
+
+.yellow:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: #f2ffd6 !important;
+}
+
+.red:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: #ffd3d3ff !important;
+}

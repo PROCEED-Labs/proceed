@@ -43,16 +43,13 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   // client component from here.
   return (
     <>
-      <Wrapper
-        processName={process.name}
-        processes={processes}
-        timelineViewFeatureEnabled={timelineViewFeatureEnabled}
-      >
+      <Wrapper processName={process.name} processes={processes}>
         <Modeler
           className={styles.Modeler}
           process={{ ...process, bpmn: selectedVersionBpmn as string }}
           versions={process.versions}
           versionName={selectedVersion?.name}
+          timelineViewFeatureEnabled={timelineViewFeatureEnabled} // required for .env feature flag
         />
         {timelineViewFeatureEnabled && (
           <BPMNTimeline

@@ -9,6 +9,7 @@ import Modeling from 'diagram-js/lib/features/modeling/Modeling';
 import { useEnvironment } from './auth-can';
 import { Element, Parent } from 'diagram-js/lib/model/Types';
 import { useEffect, useRef, useState } from 'react';
+import useTimelineViewStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-timeline-view-store';
 
 type BPMNTimelineProps = React.HTMLAttributes<HTMLDivElement> & {
   process: { name: string; id: string; bpmn: string };
@@ -16,8 +17,8 @@ type BPMNTimelineProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const environment = useEnvironment();
-
   const modelerRef = useRef<Modeler | null>(null);
+  const toggleTimelineView = useTimelineViewStore((state) => state.toggleTimelineView);
 
   useEffect(() => {
     console.log('init BPMNTimeline');
@@ -83,6 +84,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
       <pre>name: {process.name}</pre>
       <button onClick={() => createElement()}>add new element</button>
       <p>{status}</p>
+      <button onClick={() => toggleTimelineView()}>close timeline</button>
     </div>
   );
 };

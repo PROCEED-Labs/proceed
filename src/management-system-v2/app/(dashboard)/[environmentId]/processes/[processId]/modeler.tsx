@@ -21,9 +21,16 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: { name: string; id: string; bpmn: string };
   versions: { version: number; name: string; description: string }[];
+  timelineViewFeatureEnabled: boolean;
 };
 
-const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
+const Modeler = ({
+  versionName,
+  process,
+  versions,
+  timelineViewFeatureEnabled,
+  ...divProps
+}: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
@@ -285,6 +292,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
               versions={versions}
               canRedo={canRedo}
               canUndo={canUndo}
+              timelineViewFeatureEnabled={timelineViewFeatureEnabled}
             />
           )}
           {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}

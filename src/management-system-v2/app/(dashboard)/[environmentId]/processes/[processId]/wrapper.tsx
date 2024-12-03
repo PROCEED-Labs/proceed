@@ -23,6 +23,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
+import useTimelineViewStore from './use-timeline-view-store';
 
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
@@ -39,15 +40,9 @@ type SubprocessInfo = {
 type WrapperProps = PropsWithChildren<{
   processName: string;
   processes: { id: string; name: string }[];
-  timelineViewFeatureEnabled: boolean;
 }>;
 
-const Wrapper = ({
-  children,
-  processName,
-  processes,
-  timelineViewFeatureEnabled,
-}: WrapperProps) => {
+const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
@@ -59,7 +54,10 @@ const Wrapper = ({
   const modeler = useModelerStateStore((state) => state.modeler);
   const rootElement = useModelerStateStore((state) => state.rootElement);
   const [editingName, setEditingName] = useState<null | string>(null);
-  const [timelineViewActive, setTimelineViewActive] = useState(false);
+  const { timelineViewActive, disableTimelineView } = useTimelineViewStore((state) => ({
+    timelineViewActive: state.timelineViewActive,
+    disableTimelineView: state.disableTimelineView,
+  }));
 
   const {
     token: { fontSizeHeading1 },
@@ -99,6 +97,11 @@ const Wrapper = ({
       setClosed(false);
     }
   }, [minimized]);
+
+  // always show bpmn-js modeler when opening a process
+  useEffect(() => {
+    disableTimelineView();
+  }, [processId]);
 
   const showMobileView = useMobileModeler();
 
@@ -263,9 +266,6 @@ const Wrapper = ({
               separator={<span style={{ fontSize: '20px' }}>/</span>}
               items={breadcrumbItems}
             />
-          )}
-          {timelineViewFeatureEnabled && (
-            <button onClick={() => setTimelineViewActive(!timelineViewActive)}>switch mode</button>
           )}
         </div>
       }

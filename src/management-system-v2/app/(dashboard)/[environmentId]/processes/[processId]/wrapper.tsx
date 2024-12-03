@@ -247,7 +247,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   return (
     <Content
       headerLeft={
-        <div style={{ flex: 1, padding: '0 5px' }} className={styles.HeaderLeftContent}>
+        <div style={{ flex: 1, padding: '0 5px' }}>
           {showMobileView ? (
             <Button icon={<LeftOutlined />} type="text" onClick={handleBackButtonClick}>
               <Typography.Text

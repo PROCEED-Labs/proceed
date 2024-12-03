@@ -32,14 +32,14 @@ import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
+const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   processId: string;
   onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  versions: { version: number; name: string; description: string }[];
+  versions: { id: string; name: string; description: string }[];
 };
 const ModelerToolbar = ({
   processId,
@@ -211,8 +211,7 @@ const ModelerToolbar = ({
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   const selectedVersion =
-    versions.find((version) => version.version === parseInt(selectedVersionId ?? '-1')) ??
-    LATEST_VERSION;
+    versions.find((version) => version.id === (selectedVersionId ?? '-1')) ?? LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
 
@@ -234,15 +233,12 @@ const ModelerToolbar = ({
               placeholder="Select Version"
               showSearch
               filterOption={filterOption}
-              value={{
-                value: selectedVersion.version,
-                label: selectedVersion.name,
-              }}
-              onSelect={(_, option) => {
+              value={selectedVersion.id}
+              onChange={(value) => {
                 // change the version info in the query but keep other info (e.g. the currently open subprocess)
                 const searchParams = new URLSearchParams(query);
-                if (!option.value || option.value === -1) searchParams.delete('version');
-                else searchParams.set(`version`, `${option.value}`);
+                if (!value || value === '-1') searchParams.delete('version');
+                else searchParams.set(`version`, `${value}`);
                 router.push(
                   spaceURL(
                     environment,
@@ -252,8 +248,8 @@ const ModelerToolbar = ({
                   ),
                 );
               }}
-              options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({
-                value: version,
+              options={[LATEST_VERSION].concat(versions ?? []).map(({ id, name }) => ({
+                value: id,
                 label: name,
               }))}
             />

@@ -65,7 +65,7 @@ const Management = {
   /**
    * Creates a new engine instance for execution of the given process version.
    * @param {string} definitionId The name of the file the process to start is stored in
-   * @param {number} version the version of the process to start
+   * @param {string} version the version of the process to start
    * @param {object} variables The process variables for the execution
    * @param {string} [activityID] The optional id of the activity to start execution at (if not at the beginning)
    * @param {function} [onStarted] an optional callback that should be called when the instance starts

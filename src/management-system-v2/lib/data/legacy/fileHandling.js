@@ -244,36 +244,38 @@ export async function saveProcess(id, bpmn) {
   eventHandler.dispatch('files_changed_bpmn', { processDefinitionsId: id, bpmn });
 }
 
-function getVersionFileName(definitionId, version) {
-  return `${definitionId}-${version}.bpmn`;
+function getVersionFileName(definitionId) {
+  return `${definitionId}.bpmn`;
 }
 
 /**
  * Saves the bpmn of a specific process version
  *
  * @param {String} definitionId
- * @param {number} version the identifier of the version
+ * @param {String} versionCreatedOn the identifier of the version
  * @param {String} bpmn
  */
-export async function saveProcessVersion(definitionId, version, bpmn) {
-  const currentProcessFolder = getFolder(definitionId);
+export async function saveProcessVersion(definitionId, versionCreatedOn, bpmn) {
+  const currentProcessFolder = path.join(getFolder(definitionId), versionCreatedOn);
 
-  fse.writeFileSync(
-    path.join(currentProcessFolder, getVersionFileName(definitionId, version)),
-    bpmn,
+  // creates the directory if it doesn't exist
+  fse.ensureDirSync(
+    path.dirname(path.join(currentProcessFolder, getVersionFileName(definitionId))),
   );
+
+  fse.writeFileSync(path.join(currentProcessFolder, getVersionFileName(definitionId)), bpmn);
 }
 
 /**
  * Will return the bpmn of a specific version of a process
  *
  * @param {String} definitionId
- * @param {number} version
+ * @param {String} versionCreatedOn
  * @returns {String} the bpmn of the specific process version
  */
-export function getProcessVersion(definitionId, version) {
-  const folder = getFolder(definitionId);
-  const bpmnFilePath = path.join(folder, getVersionFileName(definitionId, version));
+export function getProcessVersion(definitionId, versionCreatedOn) {
+  const folder = path.join(getFolder(definitionId), versionCreatedOn);
+  const bpmnFilePath = path.join(folder, getVersionFileName(definitionId));
   return fse.readFileSync(bpmnFilePath, 'utf-8');
 }
 

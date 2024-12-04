@@ -89,7 +89,7 @@ module.exports = {
 
     logging.registerCallback(async (obj, log) => {
       try {
-        if (!logGuard(log?.level)) return;
+        if (!logGuard(log && log.level)) return;
 
         const sentMessages = [];
         const print = `[${log.level.toUpperCase()}] ${log.moduleName}${obj.definitionId || ''} ${log.msg}`;

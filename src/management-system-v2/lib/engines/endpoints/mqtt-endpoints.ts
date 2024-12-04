@@ -10,7 +10,8 @@ const mqttCredentials = {
 
 const baseTopicPrefix = env.MQTT_BASETOPIC ? env.MQTT_BASETOPIC + '/' : '';
 
-export function getClient(options?: mqtt.IClientOptions): Promise<mqtt.MqttClient> {
+/** Returns an mqtt client that connects to PROCEED's broker */
+export function getProceedClient(options?: mqtt.IClientOptions): Promise<mqtt.MqttClient> {
   const address = env.MQTT_SERVER_ADDRESS || '';
 
   return mqtt.connectAsync(address, {
@@ -19,8 +20,13 @@ export function getClient(options?: mqtt.IClientOptions): Promise<mqtt.MqttClien
   });
 }
 
+// Maybe a bit redundant, but if we decide to change libraries we can just update this function
+export function getClient(brokerUrl: string, options?: mqtt.IClientOptions) {
+  return mqtt.connectAsync(brokerUrl, options);
+}
+
 const mqttClient: Promise<mqtt.MqttClient> =
-  (globalThis as any).mqttClient || ((globalThis as any).mqttClient = getClient());
+  (globalThis as any).mqttClient || ((globalThis as any).mqttClient = getProceedClient());
 
 function getEnginePrefix(engineId: string) {
   return `${baseTopicPrefix}proceed-pms/engine/${engineId}`;
@@ -35,8 +41,9 @@ export async function mqttRequest(
     query?: Record<string, any>;
     page?: number;
   },
+  customClient?: mqtt.MqttClient,
 ) {
-  const client = await mqttClient;
+  const client = customClient ?? (await mqttClient);
 
   const requestId = crypto.randomUUID();
   const requestTopic = getEnginePrefix(engineId) + '/api' + url;
@@ -61,6 +68,7 @@ export async function mqttRequest(
     )
       return;
 
+    if ('error' in message) return rej(message.error);
     res(JSON.parse(message.body));
   }
   client.on('message', handler);
@@ -78,10 +86,12 @@ export async function mqttRequest(
   return response;
 }
 
-const collectedDataEntries: Map<
-  string,
-  { onMessageCallback: mqtt.OnMessageCallback; data?: any; clearInterval?: NodeJS.Timeout }
-> =
+type CollectedData = {
+  onMessageCallback: mqtt.OnMessageCallback;
+  data?: any;
+  clearInterval?: NodeJS.Timeout;
+};
+const collectedDataEntries: Map<string, CollectedData> =
   (globalThis as any).collectedDataEntries ||
   ((globalThis as any).collectedDataEntries = new Map());
 
@@ -90,6 +100,7 @@ export async function collectMqttData<TData>(
   accumulator: (topic?: string, data?: any, previousState?: TData) => TData | undefined,
   validTopic?: (topic: string) => boolean,
   staleAfter?: number,
+  customClient?: mqtt.MqttClient,
 ): Promise<TData | undefined> {
   let collectedData = collectedDataEntries.get(topic);
 
@@ -114,7 +125,7 @@ export async function collectMqttData<TData>(
 
     collectedDataEntries.set(topic, collectedData);
 
-    const client = await mqttClient;
+    const client = customClient || (await mqttClient);
     client.on('message', collectedData.onMessageCallback);
     await client.subscribeAsync(topic);
   } else {
@@ -144,7 +155,7 @@ export async function clearCollectedData(topic: string) {
 
 type EngineStatus = Map<string, { id: string; running: boolean; version: string }>;
 const engineStatusRegex = new RegExp(`^${getEnginePrefix('')}([^\/]+)\/status`);
-function engineAccumulator(topic?: string, message?: string, state?: EngineStatus) {
+export function engineAccumulator(topic?: string, message?: string, state?: EngineStatus) {
   if (!topic || !message) return state;
 
   const id = topic.match(engineStatusRegex)![1];

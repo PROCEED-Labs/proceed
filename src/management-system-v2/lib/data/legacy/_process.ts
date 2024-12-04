@@ -37,6 +37,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import { fromCustomUTCString, toCustomUTCString } from '@/lib/helpers/timeHelper';
 
 let firstInit = false;
 // @ts-ignore
@@ -298,39 +299,51 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
   }
 
   // don't add a version a second time
-  if (existingProcess.versions.some(({ version }) => version == versionInformation.version)) {
+  if (
+    existingProcess.versions.some(
+      ({ createdOn }) => toCustomUTCString(createdOn) == versionInformation.versionCreatedOn,
+    )
+  ) {
     return;
   }
 
   // save the new version in the directory of the process
 
-  await saveProcessVersion(processDefinitionsId, versionInformation.version || 0, bpmn);
+  const versionCreatedOn = versionInformation.versionCreatedOn || toCustomUTCString(new Date());
+
+  await saveProcessVersion(processDefinitionsId, versionCreatedOn, bpmn);
 
   // add information about the new version to the meta information and inform others about its existence
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
-  //@ts-ignore
-  newVersions.push(versionInformation);
-  newVersions.sort((a, b) => b.version - a.version);
+  newVersions.push({
+    id: versionInformation.versionId!,
+    createdOn: fromCustomUTCString(versionCreatedOn),
+    description: versionInformation.description!,
+    name: versionInformation.name!,
+    versionBasedOn: versionInformation.versionBasedOn,
+  });
+  newVersions.sort((a, b) => (b.createdOn > a.createdOn ? 1 : -1));
 
   await updateProcessMetaData(processDefinitionsId, { versions: newVersions });
 }
 
 /** Returns the bpmn of a specific process version */
-export function getProcessVersionBpmn(processDefinitionsId: string, version: number) {
+export function getProcessVersionBpmn(processDefinitionsId: string, versionId: string) {
   let existingProcess = processMetaObjects[processDefinitionsId];
   if (!existingProcess) {
     throw new Error('The process for which you try to get a version does not exist');
   }
 
-  if (
-    !existingProcess.versions ||
-    !existingProcess.versions.some((existingVersionInfo) => existingVersionInfo.version == version)
-  ) {
+  const existingVersion = existingProcess.versions?.find(
+    (existingVersionInfo) => existingVersionInfo.id === versionId,
+  );
+
+  if (!existingVersion) {
     throw new Error('The version you are trying to get does not exist');
   }
 
-  return getProcessVersion(processDefinitionsId, version);
+  return getProcessVersion(processDefinitionsId, toCustomUTCString(existingVersion.createdOn));
 }
 
 /** Removes information from the meta data that would not be correct after a restart */

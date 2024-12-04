@@ -1,14 +1,31 @@
 import { Result, Skeleton } from 'antd';
 import Content from '@/components/content';
 import { getDeployments } from '@/lib/engines/deployment';
-import { getEngines } from '@/lib/engines/machines';
+import { getProceedEngines } from '@/lib/engines/machines';
 import ProcessDeploymentView from './process-deployment-view';
 import { Suspense } from 'react';
+import { getSpaceEngines } from '@/lib/data/db/space-engines';
+import { isUserErrorResponse } from '@/lib/user-error';
+import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
+import { getCurrentEnvironment } from '@/components/auth';
 
-async function Deployment({ processId }: { processId: string }) {
-  const engines = await getEngines();
-  const deployments = await getDeployments(engines);
+// TODO: handle multiple process deployments
 
+// TODO: use something like Promise.any to resolve when we find the process
+async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
+  const [deployedInProceed, deployedInSpaceEngines] = await Promise.all([
+    (async () => {
+      const engines = await getProceedEngines();
+      return await getDeployments(engines);
+    })(),
+    (async () => {
+      const spaceEngines = await getSpaceEngines(spaceId);
+      if (isUserErrorResponse(spaceEngines)) return [];
+      return await getDeployedProcessesFromSpaceEngines(spaceEngines);
+    })(),
+  ]);
+
+  const deployments = deployedInProceed.concat(deployedInSpaceEngines);
   const selectedProcess = deployments.find((process) => process.definitionId === processId);
 
   if (!selectedProcess)
@@ -21,8 +38,13 @@ async function Deployment({ processId }: { processId: string }) {
   return <ProcessDeploymentView selectedProcess={selectedProcess} />;
 }
 
-export default async function Page({ params: { processId } }: { params: { processId: string } }) {
+export default async function Page({
+  params,
+}: {
+  params: { processId: string; environmentId: string };
+}) {
   //TODO: authentication + authorization
+  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
 
   return (
     <Suspense
@@ -32,7 +54,10 @@ export default async function Page({ params: { processId } }: { params: { proces
         </Content>
       }
     >
-      <Deployment processId={processId} />
+      <Deployment
+        processId={decodeURIComponent(params.processId)}
+        spaceId={activeEnvironment.spaceId}
+      />
     </Suspense>
   );
 }

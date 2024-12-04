@@ -5,8 +5,28 @@ import { env } from '@/lib/env-vars';
 import DeploymentsView from './deployments-view';
 import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/DTOs';
 import { getUsersFavourites } from '@/lib/data/users';
-import { getDeployments } from '@/lib/engines/deployment';
-import { getEngines } from '@/lib/engines/machines';
+import { DeployedProcessInfo, getDeployments } from '@/lib/engines/deployment';
+import { getProceedEngines } from '@/lib/engines/machines';
+import { getSpaceEngines } from '@/lib/data/space-engines';
+import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
+import { isUserErrorResponse } from '@/lib/user-error';
+
+function getDeploymentNames(deployments: DeployedProcessInfo[]) {
+  // TODO: don't use version name use what old MS used
+  for (const deployment of deployments) {
+    let latestVesrionIdx = deployment.versions.length - 1;
+    for (let i = deployment.versions.length - 2; i >= 0; i--) {
+      if (deployment.versions[i].version > deployment.versions[latestVesrionIdx].version)
+        latestVesrionIdx = i;
+    }
+    const latestVersion = deployment.versions[latestVesrionIdx];
+
+    // @ts-ignore
+    deployment.name = latestVersion.versionName || latestVersion.definitionName;
+  }
+
+  return deployments as (DeployedProcessInfo & { name: string })[];
+}
 
 export default async function ExecutionsPage({ params }: { params: { environmentId: string } }) {
   if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) {
@@ -15,22 +35,30 @@ export default async function ExecutionsPage({ params }: { params: { environment
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
-  // TODO: once the legacy storage is dropped, it would be better to do one db transaction
-  const [favs, [folder, folderContents], deployedProcesses] = await Promise.all([
-    getUsersFavourites(),
-    (async () => {
-      const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
-      const folder = await getFolderById(rootFolder.id);
-      const folderContents = await getFolderContents(folder.id, ability);
-      return [folder, folderContents];
-    })(),
-    (async () => {
-      const engines = await getEngines();
-      return await getDeployments(engines);
-    })(),
-  ]);
-
   // TODO: check ability
+
+  // TODO: once the legacy storage is dropped, it would be better to do one db transaction
+  const [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] =
+    await Promise.all([
+      getUsersFavourites(),
+      (async () => {
+        const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+        const folder = await getFolderById(rootFolder.id);
+        const folderContents = await getFolderContents(folder.id, ability);
+        return [folder, folderContents];
+      })(),
+      (async () => {
+        const engines = await getProceedEngines();
+        return await getDeployments(engines);
+      })(),
+      (async () => {
+        const spaceEngines = await getSpaceEngines(activeEnvironment.spaceId);
+        if (isUserErrorResponse(spaceEngines)) return [];
+        return await getDeployedProcessesFromSpaceEngines(spaceEngines);
+      })(),
+    ]);
+
+  const deployedProcesses = getDeploymentNames(deployedInProceed.concat(deployedInSpaceEngines));
 
   return (
     <Content title="Executions">

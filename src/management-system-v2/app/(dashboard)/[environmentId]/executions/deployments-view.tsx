@@ -14,6 +14,7 @@ import type { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { useRouter } from 'next/navigation';
 import { deployProcess } from '@/lib/engines/server-actions';
 import { isUserError, isUserErrorResponse } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -29,7 +30,7 @@ const DeploymentsView = ({
   deployedProcesses: (DeployedProcessInfo & { name: string })[];
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const { message } = App.useApp();
+  const app = App.useApp();
   const space = useEnvironment();
   const router = useRouter();
 
@@ -43,26 +44,30 @@ const DeploymentsView = ({
   const [checkingProcessVersion, startCheckingProcessVersion] = useTransition();
   function checkProcessVersion(process: Pick<Process, 'id' | 'versions'>) {
     startCheckingProcessVersion(async () => {
-      try {
-        const processChangedSinceLastVersion = await processHasChangesSinceLastVersion(
-          process.id,
-          space.spaceId,
-        );
-        if (typeof processChangedSinceLastVersion === 'object')
-          throw processChangedSinceLastVersion;
+      wrapServerCall({
+        fn: async () => {
+          const processChangedSinceLastVersion = await processHasChangesSinceLastVersion(
+            process.id,
+            space.spaceId,
+          );
+          if (typeof processChangedSinceLastVersion === 'object')
+            return processChangedSinceLastVersion;
 
-        const v = process.versions
-          .map((v) => v.version)
-          .sort()
-          .at(-1);
+          const v = process.versions
+            .map((v) => v.version)
+            .sort()
+            .at(-1);
 
-        const res = await deployProcess(process.id, v as number, space.spaceId);
-        if (isUserErrorResponse(res)) throw res;
-        message.success('Process deployed');
-        router.refresh();
-      } catch (e) {
-        message.error("Something wen't wrong");
-      }
+          const res = await deployProcess(process.id, v as number, space.spaceId);
+          console.log(res);
+          return res;
+        },
+        onSuccess: () => {
+          app.message.success('Process deployed successfully');
+          router.refresh();
+        },
+        app,
+      });
     });
   }
 
@@ -100,7 +105,6 @@ const DeploymentsView = ({
         favourites={favourites}
         selectProcess={(process) => {
           if (process.type === 'folder') return;
-          // console.log(process);
           checkProcessVersion(process);
         }}
       ></DeploymentsModal>

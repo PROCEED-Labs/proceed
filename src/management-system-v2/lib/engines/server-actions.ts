@@ -1,8 +1,10 @@
 'use server';
 
-import { userError } from '../user-error';
+import { isUserErrorResponse, userError } from '../user-error';
 import { deployProcess as _deployProcess } from './deployment';
-import { getEngines } from './machines';
+import { Engine, getProceedEngines as _getEngines } from './machines';
+import { getSpaceEngines } from '@/lib/data/space-engines';
+import { spaceEnginesToEngines } from './space-engines-helpers';
 
 export async function deployProcess(
   definitionId: string,
@@ -14,11 +16,16 @@ export async function deployProcess(
     // TODO: manage permissions
     // TODO: get machines allowed for user
 
-    const engines = await getEngines();
+    const [proceedEngines, spaceEngines] = await Promise.all([
+      _getEngines(),
+      getSpaceEngines(spaceId),
+    ]);
+
+    let engines = proceedEngines;
+    if (!isUserErrorResponse(spaceEngines)) engines = await spaceEnginesToEngines(spaceEngines);
 
     await _deployProcess(definitionId, version, spaceId, method, engines);
   } catch (e) {
-    console.error(e);
     return userError('Something went wrong');
   }
 }

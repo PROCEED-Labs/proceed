@@ -52,7 +52,7 @@ function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
 export default function ProcessDeploymentView({
   selectedProcess,
 }: {
-  selectedProcess: DeployedProcessInfo & { name: string };
+  selectedProcess: DeployedProcessInfo;
 }) {
   const [selectedVersion, setSelectedVersion] = useState<VersionInfo | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
@@ -160,11 +160,11 @@ export default function ProcessDeploymentView({
                       },
                       ...(selectedVersion
                         ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,

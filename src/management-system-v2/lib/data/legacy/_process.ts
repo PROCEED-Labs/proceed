@@ -258,22 +258,6 @@ export async function updateProcessMetaData(
 
 /** Removes an existing process */
 export async function removeProcess(processDefinitionsId: string) {
-  if (enableUseDB) {
-    const process = await db.process.findUnique({
-      where: { id: processDefinitionsId },
-      include: { folder: true },
-    });
-
-    if (!process) {
-      return;
-    }
-
-    // Remove from database
-    await db.process.delete({ where: { id: processDefinitionsId } });
-
-    eventHandler.dispatch('processRemoved', { processDefinitionsId });
-  }
-
   const process = processMetaObjects[processDefinitionsId];
 
   if (!process) {

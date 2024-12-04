@@ -27,7 +27,6 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   const { fileUrl: imageUrlfm, download: getImageURL } = useFileManager({
     entityType: EntityType.PROCESS,
   });
-
   const environment = useEnvironment();
 
   const [reloadParam, setReloadParam] = useState(0);

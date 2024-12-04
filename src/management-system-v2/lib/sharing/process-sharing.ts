@@ -3,6 +3,8 @@
 import jwt from 'jsonwebtoken';
 import { updateProcessShareInfo } from '../data/processes';
 import { headers } from 'next/headers';
+import { Environment } from '../data/environment-schema';
+import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
 import { env } from '@/lib/env-vars';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import Ability, { UnauthorizedError } from '../ability/abilityHelper';

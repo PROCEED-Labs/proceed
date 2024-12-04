@@ -49,7 +49,6 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   const shareToken = query.get('token');
 
   const { download: getImage } = useFileManager({ entityType: EntityType.PROCESS });
-
   const [processPages, setProcessPages] = useState<React.JSX.Element[]>([]);
 
   /**

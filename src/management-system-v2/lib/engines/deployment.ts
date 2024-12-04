@@ -295,18 +295,5 @@ export async function getDeployments(engines: Engine[]) {
     .map((result) => (result.status === 'fulfilled' ? result.value : null))
     .flat(1) as DeployedProcessInfo[];
 
-  // TODO: don't use version name use what old MS did
-  for (const deployment of deployments) {
-    let latestVesrionIdx = deployment.versions.length - 1;
-    for (let i = deployment.versions.length - 2; i >= 0; i--) {
-      if (deployment.versions[i].version > deployment.versions[latestVesrionIdx].version)
-        latestVesrionIdx = i;
-    }
-    const latestVersion = deployment.versions[latestVesrionIdx];
-
-    // @ts-ignore
-    deployment.name = latestVersion.versionName || latestVersion.definitionName;
-  }
-
-  return deployments as (DeployedProcessInfo & { name: string })[];
+  return deployments as DeployedProcessInfo[];
 }

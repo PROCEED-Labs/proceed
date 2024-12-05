@@ -6,7 +6,7 @@ import Nmachine from '@proceed/native-machine';
 import Nmdns from '@proceed/native-mdns';
 import Ncapabilities from '@proceed/native-capabilities';
 import Nconsole from '@proceed/native-console';
-import VM2 from '@proceed/native-vm2';
+import NScriptExecution from '@proceed/native-script-execution';
 import NMQTT from '@proceed/native-mqtt';
 import path from 'path';
 import fse from 'fs-extra';
@@ -27,11 +27,11 @@ async function initEngine(silentMode = true) {
   native.registerModule(new Nmdns());
   native.registerModule(new Ncapabilities({ dir: FILES_DIR }));
   native.registerModule(new Nconsole());
-  native.registerModule(new VM2());
+  native.registerModule(new NScriptExecution());
   native.registerModule(new NMQTT());
 
   if (typeof window !== 'undefined') {
-    // Set this flag to disable the window overwrite by the UI componenet of the
+    // Set this flag to disable the window overwrite by the UI component of the
     // PROCEED engine
     window.PROCEED_DONT_WRITE_WINDOW = true;
   }

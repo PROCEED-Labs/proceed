@@ -9,7 +9,8 @@
     "maxProcessLogEntries": 500,
     "maxProcessLogTables": 5,
     "rotationInterval": 600,
-    "maxStandardLogEntries": 1000
+    "maxStandardLogEntries": 1000,
+    "mqttLevel": "info"
   },
   "processes": {
     "acceptUserTasks": false,

@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const styles = `
 body {
@@ -147,6 +148,7 @@ p, h1, h2, h3, h4, h5, th, td {
 `;
 
 export function toHtml(json: string) {
+  const queryClient = new QueryClient();
   const markup = ReactDOMServer.renderToStaticMarkup(
     <Editor
       enabled={false}
@@ -154,7 +156,9 @@ export function toHtml(json: string) {
         ...Elements,
       }}
     >
-      <Frame data={json} />
+      <QueryClientProvider client={queryClient}>
+        <Frame data={json} />
+      </QueryClientProvider>
     </Editor>,
   );
 

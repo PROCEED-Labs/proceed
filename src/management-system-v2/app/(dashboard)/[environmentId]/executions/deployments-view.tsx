@@ -58,11 +58,11 @@ const DeploymentsView = ({
         }
 
         const v = process.versions
-          .map((v) => v.version)
+          .map((v) => v.id)
           .sort()
           .at(-1);
 
-        await deployProcess(process.id, v as number, space.spaceId, 'dynamic');
+        await deployProcess(process.id, v as string, space.spaceId, 'dynamic');
         refetchDeployedProcesses();
       } catch (e) {
         message.error("Something wen't wrong");

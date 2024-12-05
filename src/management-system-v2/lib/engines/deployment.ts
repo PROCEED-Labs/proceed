@@ -9,7 +9,7 @@ import {
 // @ts-ignore
 // import decider from '@proceed/decider';
 import { Machine, getMachines } from './machines';
-import * as endpoints from './endpoints';
+import * as endpoints from './http-endpoints';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 
@@ -42,7 +42,7 @@ async function deployProcessToMachines(
             endpoints.sendImage(machine, exportData.definitionId, image.filename, image.data),
           );
 
-          await Promise.all([userTasks, images]);
+          await Promise.all([...userTasks, ...images]);
         }),
       );
     });
@@ -63,7 +63,7 @@ async function deployProcessToMachines(
 
 async function dynamicDeployment(
   definitionId: string,
-  version: number,
+  version: string,
   processesExportData: ProcessesExportData,
   forceMachine?: Machine,
 ) {
@@ -112,7 +112,7 @@ async function dynamicDeployment(
 
 async function staticDeployment(
   definitionId: string,
-  version: number,
+  version: string,
   processesExportData: ProcessesExportData,
   forceMachine?: Machine,
 ) {
@@ -156,7 +156,7 @@ async function staticDeployment(
 
 export async function deployProcess(
   definitionId: string,
-  version: number,
+  version: string,
   spaceId: string,
   method: 'static' | 'dynamic',
   forceMachine?: Machine,
@@ -186,9 +186,13 @@ export async function deployProcess(
     await dynamicDeployment(definitionId, version, processesExportData, forceMachine);
   }
 }
-type ImportInformation = { definitionId: string; processId: string; version: number };
-type VersionDependencies = { html: string[]; images: string[]; imports: ImportInformation[] };
-type VersionInfo = {
+export type ImportInformation = { definitionId: string; processId: string; version: number };
+export type VersionDependencies = {
+  html: string[];
+  images: string[];
+  imports: ImportInformation[];
+};
+export type VersionInfo = {
   bpmn: string;
   deploymentDate: number;
   definitionName: string;
@@ -198,11 +202,60 @@ type VersionInfo = {
   versionName: string;
   versionDescription: string;
 };
+// TODO: refine type or iport it
+export type InstanceInfo = {
+  processId: string;
+  processInstanceId: string;
+  globalStartTime: number;
+  instanceState: string[];
+  tokens: {
+    machineHops: number;
+    deciderStorageTime: number;
+    deciderStorageRounds: number;
+    localStartTime: number;
+    tokenId: string;
+    state: string;
+    currentFlowElementId: string;
+    currentFlowNodeState: string;
+    currentFlowElementStartTime: number;
+    previousFlowElementId: string;
+    intermediateVariablesState: null;
+    localExecutionTime: number;
+    currentFlowNodeProgress?: { value: number; manual: boolean };
+    milestones: any[];
+    priority?: number;
+    costsRealSetByOwner?: string;
+  }[];
+  variables: {};
+  log: {
+    flowElementId: string;
+    tokenId: string;
+    executionState: string;
+    startTime: number;
+    endTime: number;
+    progress?: {
+      value: number;
+      manual: boolean;
+    };
+    machine: {
+      id: string;
+      name: string;
+      ip: string;
+      port: number;
+    };
+    executionWasInterrupted?: true;
+    priority?: number;
+    costsRealSetByOwner?: string;
+  }[];
+  adaptationLog: any[];
+  processVersion: string;
+  userTasks: any[];
+};
 export type DeployedProcessInfo = {
   definitionId: string;
   versions: VersionInfo[];
   // TODO: refine instances type
-  instances: any[];
+  instances: InstanceInfo[];
 };
 export async function getDeployments() {
   const machines = (await getMachines()).filter((m) => m.status === 'CONNECTED');

@@ -14,7 +14,7 @@ import {
 import { createFolder } from '../folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { enableUseDB } from 'FeatureFlags';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 
 export async function getEnvironments() {
   //TODO : Ability check
@@ -184,19 +184,21 @@ export async function getOrganizationLogo(organizationId: string) {
   if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
 
   try {
-    //return getLogo(organizationId);
+    return await db.space.findUnique({ where: { id: organizationId }, select: { logo: true } });
   } catch (err) {
     return undefined;
   }
 }
 
 export async function organizationHasLogo(organizationId: string) {
-  const organization = await getEnvironmentById(organizationId, undefined, {
-    throwOnNotFound: true,
+  const res = await db.space.findUnique({
+    where: { id: organizationId },
+    select: { logo: true },
   });
-  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
-
-  return false; //hasLogo(organizationId);
+  if (res?.logo) {
+    return true;
+  }
+  return false;
 }
 
 export async function deleteOrganizationLogo(organizationId: string) {

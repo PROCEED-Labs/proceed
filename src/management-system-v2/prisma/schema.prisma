@@ -223,4 +223,6 @@ model Engine {
   name          String?
   createdOn     DateTime @default(now())
   lastEditedOn  DateTime @updatedAt
+
+  @@map("engine")
 }

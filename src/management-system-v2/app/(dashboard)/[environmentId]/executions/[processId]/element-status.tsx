@@ -1,13 +1,12 @@
 import { ReactNode } from 'react';
 import { Alert, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import React from 'react';
-import { statusToType } from './instance-helpers';
-import { convertISODurationToMiliseconds, getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { endpointBuilder } from '@/lib/engines/endpoint';
+import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
+import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
+import { endpointBuilder } from '@/lib/engines/endpoint';
 
-function transformMilisecondsToTimeFormat(milliseconds: number | undefined) {
+function transformMillisecondsToTimeFormat(milliseconds: number | undefined) {
   if (!milliseconds || milliseconds < 0 || milliseconds < 1000) return;
 
   const days = Math.floor(milliseconds / (3600000 * 24));
@@ -21,7 +20,6 @@ function transformMilisecondsToTimeFormat(milliseconds: number | undefined) {
   const seconds = Math.floor(milliseconds / 1000);
   milliseconds -= seconds * 1000;
 
-  // Will display time in 10:30:23 format
   return `${days} Days, ${hours}h, ${minutes}min, ${seconds}s`;
 }
 
@@ -46,6 +44,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
           marginTop: '1rem',
         }}
       >
+        {/** TODO: correct image url */}
         <Image
           // TODO: use engine endpoint to get the image
           src={endpointBuilder('get', '/resources/process/:definitionId/images/:fileName', {
@@ -159,64 +158,14 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   statusEntries.push(['Documentation:', info.element.businessObject?.documentation?.[0]?.text]);
 
   // Activity time calculation
-  let start: Date | undefined = undefined;
-  if (info.instance) {
-    if (isRootElement) start = new Date(info.instance.globalStartTime);
-    else if (logInfo) start = new Date(logInfo.startTime);
-    else if (token) start = new Date(token.currentFlowElementStartTime);
-  }
+  const { start, end, duration } = getTimeInfo({
+    element: info.element,
+    instance: info.instance,
+    logInfo,
+    token,
+  });
 
-  let end;
-  if (info.instance) {
-    if (isRootElement) {
-      const ended = info.instance.instanceState.every(
-        (state) =>
-          state !== 'RUNNING' &&
-          state !== 'READY' &&
-          state !== 'DEPLOYMENT-WAITING' &&
-          state !== 'PAUSING' &&
-          state !== 'PAUSED',
-      );
-
-      if (ended) {
-        const lastLog = info.instance.log[info.instance.log.length - 1];
-        if (lastLog) end = new Date(lastLog.endTime);
-      }
-    } else if (logInfo) {
-      end = new Date(logInfo.endTime);
-    }
-  }
-
-  let duration;
-  if (start && end) duration = end.getTime() - start.getTime();
-
-  const plan = {
-    end: metaData.timePlannedEnd ? new Date(metaData.timePlannedEnd) : undefined,
-    start: metaData.timePlannedOccurrence ? new Date(metaData.timePlannedOccurrence) : undefined,
-    duration: metaData.timePlannedDuration
-      ? convertISODurationToMiliseconds(metaData.timePlannedDuration)
-      : undefined,
-  };
-
-  // The order in which missing times are derived from the others is irrelevant
-  // If there is only one -> not possible to derive the others
-  // If there are two -> derive the missing one (order doesn't matter)
-  // If there are three -> nothing to do
-
-  if (!plan.end && plan.start && plan.duration)
-    plan.end = new Date(plan.start.getTime() + plan.duration);
-
-  if (!plan.start && plan.end && plan.duration)
-    plan.start = new Date(plan.end.getTime() - plan.duration);
-
-  if (!plan.duration && plan.start && plan.end)
-    plan.duration = plan.end.getTime() - plan.start.getTime();
-
-  const delays = {
-    start: plan.start && start && start.getTime() - plan.start.getTime(),
-    end: plan.end && end && end.getTime() - plan.end.getTime(),
-    duration: plan.duration && duration && duration - plan.duration,
-  };
+  const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
 
   // Activity time
   statusEntries.push([
@@ -234,7 +183,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
-        {transformMilisecondsToTimeFormat(delays.start)}
+        {transformMillisecondsToTimeFormat(delays.start)}
       </Typography.Text>
     </Space>,
   ]);
@@ -243,18 +192,18 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     <Space>
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Duration:</Typography.Text>
-      <Typography.Text>{transformMilisecondsToTimeFormat(duration)}</Typography.Text>
+      <Typography.Text>{transformMillisecondsToTimeFormat(duration)}</Typography.Text>
     </Space>,
     <Space>
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Duration:</Typography.Text>
-      <Typography.Text>{transformMilisecondsToTimeFormat(plan.duration)}</Typography.Text>
+      <Typography.Text>{transformMillisecondsToTimeFormat(plan.duration)}</Typography.Text>
     </Space>,
     <Space>
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
-        {delays.start ? transformMilisecondsToTimeFormat(delays.duration) : ''}
+        {transformMillisecondsToTimeFormat(delays.duration)}
       </Typography.Text>
     </Space>,
   ]);
@@ -274,7 +223,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
-        {transformMilisecondsToTimeFormat(delays.end)}
+        {transformMillisecondsToTimeFormat(delays.end)}
       </Typography.Text>
     </Space>,
   ]);

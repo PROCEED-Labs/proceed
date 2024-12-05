@@ -3,7 +3,7 @@ import Ability from '@/lib/ability/abilityHelper';
 import { getEnvironmentById } from './environments';
 import { v4 } from 'uuid';
 import { Environment } from '../../environment-schema.js';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 
 const MembershipInputSchema = z.object({
   userId: z.string(),

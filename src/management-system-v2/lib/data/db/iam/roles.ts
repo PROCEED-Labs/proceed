@@ -3,7 +3,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 
 /** Returns all roles in form of an array */
 export async function getRoles(environmentId?: string, ability?: Ability) {

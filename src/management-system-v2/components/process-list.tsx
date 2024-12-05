@@ -410,7 +410,10 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
       processActions={processActions}
       tableProps={{
         scroll: {
-          y: `${window?.innerHeight - 32 /* Footer */ - 64 /* Header */ - 82 /* Table-Search etc */ - 60 /* Table-head */ - 60 /* Table-Footer / Pagination */}px`,
+          y:
+            typeof window !== 'undefined' && window.innerHeight > 0
+              ? `${window?.innerHeight - 32 /* Footer */ - 64 /* Header */ - 82 /* Table-Search etc */ - 60 /* Table-head */ - 60 /* Table-Footer / Pagination */}px`
+              : undefined,
         },
         pagination: { position: ['bottomCenter'], pageSize: 20 },
         onRow: (item) => ({

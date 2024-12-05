@@ -34,6 +34,7 @@ export function generateProcessId(): string;
  * @returns A new 'filename' value
  */
 export function generateUserTaskFileName(): string;
+export function generateScriptTaskFileName(): string;
 /**
  * Return the string for the 'implementation' attribute in a UserTask
  * @returns {String} URL of the HTML spec

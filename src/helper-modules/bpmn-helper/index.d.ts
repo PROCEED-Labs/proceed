@@ -11,6 +11,7 @@ declare const _exports: {
   generateDefinitionsId: typeof proceedConstants.generateDefinitionsId;
   generateProcessId: typeof proceedConstants.generateProcessId;
   generateUserTaskFileName: typeof proceedConstants.generateUserTaskFileName;
+  generateScriptTaskFileName: typeof proceedConstants.generateScriptTaskFileName;
   getUserTaskImplementationString: typeof proceedConstants.getUserTaskImplementationString;
   generateTargetNamespace: typeof proceedConstants.generateTargetNamespace;
   initXml: typeof proceedConstants.initXml;

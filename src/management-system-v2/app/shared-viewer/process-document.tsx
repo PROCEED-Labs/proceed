@@ -18,11 +18,13 @@ import { useEnvironment } from '@/components/auth-can';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { enableUseFileManager } from 'FeatureFlags';
+import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 
 export type VersionInfo = {
   id?: string;
   name?: string;
   description?: string;
+  versionCreatedOn?: string;
 };
 
 type ProcessDocumentProps = {
@@ -64,7 +66,6 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       !hierarchyElement.image &&
       !hierarchyElement.children?.length
     ) {
-      setProcessPages(currentPages);
       return;
     }
 
@@ -224,14 +225,24 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       (settings.nestedSubprocesses || !hierarchyElement.nestedSubprocess) &&
       (settings.importedProcesses || !hierarchyElement.importedProcess)
     ) {
-      hierarchyElement.children?.forEach((child) => getContent(child, currentPages));
+      if (hierarchyElement.children) {
+        for (const child of hierarchyElement.children) {
+          await getContent(child, currentPages);
+        }
+      }
     }
   }
 
   // transform the document data into the respective pages of the document
   useEffect(() => {
-    processHierarchy && getContent(processHierarchy, processPages);
-  }, [processHierarchy]);
+    const updateProcessPages = async () => {
+      const newProcessPages: React.JSX.Element[] = [];
+      processHierarchy && (await getContent(processHierarchy, newProcessPages));
+      setProcessPages(newProcessPages);
+    };
+
+    updateProcessPages();
+  }, [processHierarchy, settings]);
 
   return (
     <>
@@ -268,7 +279,12 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                     <div>Version: Latest</div>
                   )}
                   {version.id ? (
-                    <div>Creation Time: {new Date(version.id).toUTCString()}</div>
+                    <div>
+                      Creation Time:{' '}
+                      {version.versionCreatedOn
+                        ? fromCustomUTCString(version.versionCreatedOn).toUTCString()
+                        : 'Unknown'}
+                    </div>
                   ) : (
                     <div>Last Edit: {processData.lastEditedOn.toUTCString()}</div>
                   )}

@@ -527,6 +527,7 @@ test('a setting allows to show the subprocess element instead of its content', a
     .locator('css=[class^=process-document_ElementPage]')
     .all();
 
+  await expect(subprocessMilestoneTask.getByRole('heading', { name: 'A.A' })).toBeHidden();
   expect(elementSections.length).toBe(2);
 
   // check if the bpmn shown for the (collapsed) subprocess is the subprocess element instead of the subrocess content

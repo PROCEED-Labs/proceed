@@ -156,9 +156,11 @@ const BPMNSharedViewer = ({
       const root = canvas.getRootElement();
 
       const definitions = getRootFromElement(root.businessObject);
-      getDefinitionsVersionInformation(definitions).then(({ versionId, name, description }) =>
-        setVersionInfo({ id: versionId, name, description }),
-      );
+
+      const { versionId, name, description, versionCreatedOn } =
+        await getDefinitionsVersionInformation(definitions);
+
+      setVersionInfo({ id: versionId, name, description, versionCreatedOn });
 
       const hierarchy = await transform(
         viewer,

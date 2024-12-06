@@ -42,7 +42,10 @@ const DeploymentsView = ({
   });
 
   const [checkingProcessVersion, startCheckingProcessVersion] = useTransition();
-  function deployProcess(process: Pick<Process, 'id' | 'versions'>, forceEngine?: SpaceEngine) {
+  function deployProcess(
+    process: Pick<Process, 'id' | 'versions'>,
+    forceEngine?: SpaceEngine | 'PROCEED',
+  ) {
     startCheckingProcessVersion(async () => {
       wrapServerCall({
         fn: async () => {

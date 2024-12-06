@@ -77,7 +77,7 @@ const DeploymentButtons = ({
   );
 };
 
-const EngineSelection = ({ onEngine }: { onEngine: (args?: SpaceEngine) => void }) => {
+const EngineSelection = ({ onEngine }: { onEngine: (args?: SpaceEngine | 'PROCEED') => void }) => {
   const space = useEnvironment();
   const { isLoading, error, data } = useQuery({
     queryFn: async () => {
@@ -120,7 +120,7 @@ const EngineSelection = ({ onEngine }: { onEngine: (args?: SpaceEngine) => void 
     <Button
       key={engines.length}
       style={{ padding: '.5rem 1rem', height: 'fit-content', width: '100%' }}
-      onClick={() => onEngine()}
+      onClick={() => onEngine('PROCEED')}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <MdOutlineComputer />
@@ -157,7 +157,7 @@ const DeploymentsModal = ({
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
-  selectProcess: (process: ProcessListProcess, engine?: SpaceEngine) => void;
+  selectProcess: (process: ProcessListProcess, engine?: SpaceEngine | 'PROCEED') => void;
 }) => {
   const environment = useEnvironment();
 
@@ -166,7 +166,7 @@ const DeploymentsModal = ({
     ProcessListProcess | undefined
   >();
 
-  function selectProcess(process: ProcessListProcess, engine?: SpaceEngine) {
+  function selectProcess(process: ProcessListProcess, engine?: SpaceEngine | 'PROCEED') {
     _selectProcess(process, engine);
     close();
   }

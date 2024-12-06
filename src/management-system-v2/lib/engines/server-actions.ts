@@ -16,7 +16,7 @@ export async function deployProcess(
   version: number,
   spaceId: string,
   method: 'static' | 'dynamic' = 'dynamic',
-  _forceEngine?: SpaceEngine,
+  _forceEngine?: SpaceEngine | 'PROCEED',
 ) {
   try {
     // TODO: manage permissions for deploying a process
@@ -26,8 +26,19 @@ export async function deployProcess(
 
     const { ability } = await getCurrentEnvironment(spaceId);
 
+    const [proceedEngines, spaceEngines] = await Promise.allSettled([
+      getProceedEngines(),
+      getSpaceEnginesFromDb(spaceId, ability),
+    ]);
+    if (proceedEngines.status === 'rejected' && spaceEngines.status === 'rejected')
+      throw new Error('Failed to fetch engines');
+
+    // Start with PROCEED engines and overwrite them later if needed
+    let engines = proceedEngines.status === 'fulfilled' ? proceedEngines.value : [];
+
+    // TODO: refactor spaceEnginesToEngines and calls to db potentially happening twice
     let forceEngine: SpaceEngine | undefined = undefined;
-    if (_forceEngine) {
+    if (_forceEngine && _forceEngine !== 'PROCEED') {
       const address =
         _forceEngine.type === 'http' ? _forceEngine.address : _forceEngine.brokerAddress;
       const spaceEngine = await getSpaceEngineByAddressFromDb(address, spaceId, ability);
@@ -36,18 +47,8 @@ export async function deployProcess(
       const engine = await spaceEnginesToEngines([spaceEngine]);
       if (engine.length === 0) throw new Error("Engine couldn't be reached");
       forceEngine = engine[0];
-    }
-
-    const [proceedEngines, spaceEngines] = await Promise.allSettled([
-      getProceedEngines(),
-      getSpaceEnginesFromDb(spaceId, ability),
-    ]);
-    if (proceedEngines.status === 'rejected' && spaceEngines.status === 'rejected')
-      throw new Error('Failed to fetch engines');
-
-    // If there are any space engines, use them instead of the proceed engines
-    let engines = proceedEngines.status === 'fulfilled' ? proceedEngines.value : [];
-    if (spaceEngines.status === 'fulfilled') {
+    } else if (!_forceEngine && spaceEngines.status === 'fulfilled') {
+      // If we don't want to force PROCEEDE engines use space engines if available
       const availableSpaceEngines = await spaceEnginesToEngines(spaceEngines.value);
       if (availableSpaceEngines.length > 0) engines = availableSpaceEngines;
     }

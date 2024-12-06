@@ -12,9 +12,9 @@ import { useEnvironment } from '@/components/auth-can';
 import { processHasChangesSinceLastVersion } from '@/lib/data/processes';
 import type { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { useRouter } from 'next/navigation';
-import { deployProcess } from '@/lib/engines/server-actions';
-import { isUserError, isUserErrorResponse } from '@/lib/user-error';
+import { deployProcess as serverDeployProcess } from '@/lib/engines/server-actions';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { SpaceEngine } from '@/lib/engines/machines';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -42,7 +42,7 @@ const DeploymentsView = ({
   });
 
   const [checkingProcessVersion, startCheckingProcessVersion] = useTransition();
-  function checkProcessVersion(process: Pick<Process, 'id' | 'versions'>) {
+  function deployProcess(process: Pick<Process, 'id' | 'versions'>, forceEngine?: SpaceEngine) {
     startCheckingProcessVersion(async () => {
       wrapServerCall({
         fn: async () => {
@@ -58,9 +58,13 @@ const DeploymentsView = ({
             .sort()
             .at(-1);
 
-          const res = await deployProcess(process.id, v as number, space.spaceId);
-          console.log(res);
-          return res;
+          return await serverDeployProcess(
+            process.id,
+            v as number,
+            space.spaceId,
+            'dynamic',
+            forceEngine,
+          );
         },
         onSuccess: () => {
           app.message.success('Process deployed successfully');
@@ -103,9 +107,9 @@ const DeploymentsView = ({
         processes={processes}
         folder={folder}
         favourites={favourites}
-        selectProcess={(process) => {
+        selectProcess={(process, engine) => {
           if (process.type === 'folder') return;
-          checkProcessVersion(process);
+          deployProcess(process, engine);
         }}
       ></DeploymentsModal>
     </div>

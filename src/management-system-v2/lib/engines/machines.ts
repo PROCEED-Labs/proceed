@@ -8,6 +8,7 @@ type HttpEngine = { type: 'http'; id: string; address: string } & (
   | { spaceEngine: true }
 );
 export type Engine = MqttEngine | HttpEngine;
+export type SpaceEngine = Extract<Engine, { spaceEngine: true }>;
 
 // TODO: implement discovery
 export async function getProceedEngines(): Promise<Engine[]> {

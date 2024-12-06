@@ -1,5 +1,5 @@
 import { Engine as SavedEngine } from '@prisma/client';
-import { Engine } from './machines';
+import { SpaceEngine } from './machines';
 import { DeployedProcessInfo, getDeployments } from './deployment';
 import { engineAccumulator, getClient, mqttRequest } from './endpoints/mqtt-endpoints';
 import endpointBuilder from './endpoints/endpoint-builder';
@@ -8,7 +8,7 @@ import endpointBuilder from './endpoints/endpoint-builder';
 const mqttTimeout = 2000;
 
 // TODO: find a better more standardized way to do this
-async function getMqttEngines(engine: SavedEngine): Promise<Engine[]> {
+async function getMqttEngines(engine: SavedEngine): Promise<SpaceEngine[]> {
   const client = await getClient(engine.address);
   await client.subscribeAsync(`proceed-pms/engine/+/status`);
 
@@ -32,15 +32,15 @@ async function getMqttEngines(engine: SavedEngine): Promise<Engine[]> {
     }));
 }
 
-export async function spaceEnginesToEngines(spaceEngines: SavedEngine[]): Promise<Engine[]> {
-  const engines: Engine[] = [];
+export async function spaceEnginesToEngines(spaceEngines: SavedEngine[]): Promise<SpaceEngine[]> {
+  const engines: SpaceEngine[] = [];
   const mqttEngines = [];
 
   for (const savedEngine of spaceEngines) {
     if (savedEngine.address.startsWith('http')) {
       engines.push({
         type: 'http',
-        id: '', // TODO: what should I do with id here?
+        id: '', // TODO: what should I do with id here? Fetching is seems unnecessary
         address: savedEngine.address,
         spaceEngine: true,
       });

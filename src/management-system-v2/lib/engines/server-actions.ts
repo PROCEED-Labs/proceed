@@ -2,7 +2,7 @@
 
 import { userError } from '../user-error';
 import { deployProcess as _deployProcess } from './deployment';
-import { Engine, getProceedEngines as _getEngines, getProceedEngines } from './machines';
+import { SpaceEngine, getProceedEngines as _getEngines, getProceedEngines } from './machines';
 import { spaceEnginesToEngines } from './space-engines-helpers';
 import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
@@ -16,7 +16,7 @@ export async function deployProcess(
   version: number,
   spaceId: string,
   method: 'static' | 'dynamic' = 'dynamic',
-  _forceEngine?: Extract<Engine, { spaceEngine: true }>,
+  _forceEngine?: SpaceEngine,
 ) {
   try {
     // TODO: manage permissions for deploying a process
@@ -26,7 +26,7 @@ export async function deployProcess(
 
     const { ability } = await getCurrentEnvironment(spaceId);
 
-    let forceEngine: Extract<Engine, { spaceEngine: true }> | undefined = undefined;
+    let forceEngine: SpaceEngine | undefined = undefined;
     if (_forceEngine) {
       const address =
         _forceEngine.type === 'http' ? _forceEngine.address : _forceEngine.brokerAddress;

@@ -182,6 +182,9 @@ export async function deployProcess(
   machines: Engine[],
   forceMachine?: Engine,
 ) {
+  if (machines.length === 0 && !forceMachine)
+    throw new Error('No machines available for deployment');
+
   const processesExportData = await prepareExport(
     {
       type: 'bpmn',

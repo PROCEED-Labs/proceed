@@ -93,7 +93,7 @@ model Artifact {
   artifactType String // user-task, script, image, etc.
   processReferences   ArtifactProcessReference[] // Relation to track references
   versionReferences   ArtifactVersionReference[]
-  refCounter   Int                 @default(0)
+  refCounter   Int                 @default(1)
 
   @@map("artifact")
 }

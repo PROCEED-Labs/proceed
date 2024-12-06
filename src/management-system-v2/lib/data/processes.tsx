@@ -323,6 +323,8 @@ export const copyProcesses = async (
     folderId?: string;
   }[],
   spaceId: string,
+  destinationfolderId?: string,
+  referencedProcessId?: string,
 ) => {
   await loadModules();
 
@@ -347,12 +349,13 @@ export const copyProcesses = async (
       definitionId: newId,
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,
+      folderId: destinationfolderId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
       return userError('Not allowed to create this process', UserErrorType.PermissionError);
     }
-    const process = await _addProcess(newProcess);
+    const process = await _addProcess(newProcess, referencedProcessId);
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');

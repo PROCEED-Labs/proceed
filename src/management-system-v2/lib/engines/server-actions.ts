@@ -57,3 +57,17 @@ export async function deployProcess(
     return userError('Something went wrong');
   }
 }
+
+/** Returns space engines that are currently online */
+export async function getAvailableSpaceEngines(spaceId: string) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableEnginesForSpace only available with enableUseDB');
+
+    const { ability } = await getCurrentEnvironment(spaceId);
+    const spaceEngines = await getSpaceEnginesFromDb(spaceId, ability);
+    return await spaceEnginesToEngines(spaceEngines);
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}

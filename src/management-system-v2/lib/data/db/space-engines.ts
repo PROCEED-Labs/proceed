@@ -32,6 +32,28 @@ export async function getSpaceEngineById(
   return engine;
 }
 
+export async function getSpaceEngineByAddress(address: string, spaceId: string, ability?: Ability) {
+  const engine = await db.engine.findFirst({
+    where: {
+      environmentId: spaceId,
+      address,
+    },
+  });
+
+  if (!engine) {
+    if (ability && !ability.can('view', 'Machine')) throw new UnauthorizedError();
+    return undefined;
+  }
+
+  if (
+    ability &&
+    !ability.can('view', toCaslResource('Machine', engine), { environmentId: spaceId })
+  )
+    throw new UnauthorizedError();
+
+  return engine;
+}
+
 const SpaceEngineArraySchema = SpaceEngineInputSchema.array();
 export function addSpaceEngines(
   environmentId: string,

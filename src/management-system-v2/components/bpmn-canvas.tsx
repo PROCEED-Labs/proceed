@@ -19,6 +19,16 @@ import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
+import {
+  PerformerRulesModule,
+  PerformerReplaceModule,
+  PerformerRendererModule,
+  PerformerLabelEditingModule,
+  PerformerPaletteProviderModule,
+  PerformerContextPadProviderModule,
+  PerformerLabelBehaviorModule,
+} from '@/lib/modeler-extensions/Performers';
+
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
 // immediately loaded when the initial script first executes (not after
@@ -192,11 +202,28 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       const ModelerOrViewer =
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
+      // this will allow any type of viewer or editor we create to render our performer elements
+      const additionalModules: any[] = [PerformerRendererModule];
+
+      // the modules related to editing can only be registered in modelers since they depend on
+      // other modeler modules
+      if (type === 'modeler') {
+        additionalModules.push(
+          PerformerContextPadProviderModule,
+          PerformerPaletteProviderModule,
+          PerformerLabelEditingModule,
+          PerformerReplaceModule,
+          PerformerRulesModule,
+          PerformerLabelBehaviorModule,
+        );
+      }
+
       modeler.current = new ModelerOrViewer({
         container: canvas.current!,
         moddleExtensions: {
           proceed: schema,
         },
+        additionalModules,
       });
 
       if (type === 'modeler') {
@@ -228,7 +255,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           m.destroy();
         });
       };
-    }, [Modeler, NavigatedViewer, type]);
+    }, [Modeler, Viewer, NavigatedViewer, type]);
 
     useEffect(() => {
       // Store handlers so we can remove them later.
@@ -303,6 +330,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
+
         if (m !== modeler.current) {
           // The modeler was reset in the meantime.
           return;

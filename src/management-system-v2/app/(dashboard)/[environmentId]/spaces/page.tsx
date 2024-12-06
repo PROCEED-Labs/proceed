@@ -19,7 +19,7 @@ const Page = async () => {
   )) as OrganizationEnvironment[];
 
   return (
-    <Content title="My Environments">
+    <Content title="My Spaces">
       <EnvironmentsPage organizationEnvironments={organizationEnvironments} />
     </Content>
   );

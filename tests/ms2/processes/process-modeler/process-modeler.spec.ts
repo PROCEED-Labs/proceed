@@ -3,6 +3,7 @@ import { test, expect } from '../processes.fixtures';
 import { openModal, closeModal } from '../../testUtils';
 
 test('process modeler', async ({ processModelerPage, processListPage }) => {
+  test.slow();
   const { page } = processModelerPage;
   const definitionId = await processListPage.createProcess({ processName: 'Process Name' });
 

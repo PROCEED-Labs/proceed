@@ -76,15 +76,18 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
   }
 }
 
-export async function getFolder(folderId: string) {
+export async function getFolder(environmentId: string, folderId?: string) {
   await loadModules();
+  const { ability } = await getCurrentEnvironment(environmentId);
 
-  const folder = await getFolderById(folderId);
+  let folder;
+  if (!folderId) folder = getRootFolder(environmentId, ability);
+  else folder = await getFolderById(folderId);
+
+  if (folder && !ability.can('view', toCaslResource('Folder', folder)))
+    return userError('Permission denied');
+
   if (!folder) return userError('Folder not found');
-
-  const { ability } = await getCurrentEnvironment(folder.environmentId);
-
-  if (!ability.can('view', toCaslResource('Folder', folder))) return userError('Permission denied');
 
   return folder;
 }

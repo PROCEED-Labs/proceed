@@ -65,7 +65,6 @@ const BPMNSharedViewer = ({
   availableImports,
 }: BPMNSharedViewerProps) => {
   const router = useRouter();
-
   const breakpoint = Grid.useBreakpoint();
 
   const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(
@@ -156,8 +155,8 @@ const BPMNSharedViewer = ({
       const root = canvas.getRootElement();
 
       const definitions = getRootFromElement(root.businessObject);
-      getDefinitionsVersionInformation(definitions).then(({ version, name, description }) =>
-        setVersionInfo({ id: version, name, description }),
+      getDefinitionsVersionInformation(definitions).then(({ versionId, name, description }) =>
+        setVersionInfo({ id: versionId, name, description }),
       );
 
       const hierarchy = await transform(

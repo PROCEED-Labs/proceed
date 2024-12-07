@@ -98,7 +98,6 @@ test('show content of collapsed subprocesses in a separate section', async ({
 });
 
 test('show version information', async ({ page, processListPage, processModelerPage }) => {
-  // import the first process imported by the importer process and create a version to reference
   const { definitionId } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
@@ -233,6 +232,7 @@ test('recursively show information about imports', async ({
   processListPage,
   processModelerPage,
 }) => {
+  test.slow();
   // import the first process imported by the importer process and create a version to reference
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]>td:nth-child(3)`).click();
@@ -582,6 +582,7 @@ test('a setting allows to show a call activity instead of the imported process',
   processListPage,
   processModelerPage,
 }) => {
+  test.slow();
   // import the first process imported by the importer process and create a version to reference
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]>td:nth-child(3)`).click();

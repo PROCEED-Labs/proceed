@@ -254,8 +254,7 @@ module.exports = {
       engine.instanceIDs.push(newInstance.id);
 
       const state = newInstance.getState();
-      const processId = state.processId.substring(0, state.processId.lastIndexOf('_') - 1);
-      const processVersion = state.processId.substring(processId.length + 1);
+      const processVersion = state.processId.substring(engine.definitionId.length + 1);
 
       engine._instanceIdProcessMapping[newInstance.id] =
         engine._versionProcessMapping[processVersion];

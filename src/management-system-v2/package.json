@@ -8,7 +8,7 @@
     "docker:build": "docker build -t proceed .",
     "docker:run": "docker run -p 33081:33081 -v ${PWD}/volume:/app/volume --env-file .env.development proceed",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "predev": "ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
     "prebuild": "cross-env NODE_ENV=production ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
     "test:unit": "jest"
@@ -74,6 +74,9 @@
     "mqtt": "^5.10.1"
   },
   "devDependencies": {
+    "@eslint/compat": "1.2.4",
+    "@eslint/js": "9.0.0",
+    "@eslint/eslintrc": "3.2.0",
     "@tanstack/eslint-plugin-query": "5.28.11",
     "@tanstack/react-query-devtools": "5.29.2",
     "@types/node": "20.12.7",
@@ -83,8 +86,9 @@
     "@types/uuid": "9.0.8",
     "cross-env": "7.0.3",
     "eslint": "9.0.0",
-    "eslint-config-next": "14.2.3",
+    "eslint-config-next": "15.0.4",
     "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-react-hooks": "5.1.0",
     "openapi-typescript": "6.7.4",
     "prettier": "3.2.5",
     "prisma": "^5.15.0",
@@ -92,5 +96,8 @@
     "ts-node": "10.9.2",
     "typescript": "5.4.5",
     "@types/react-resizable": "^3.0.7"
+  },
+  "overrides": {
+    "eslint": "$eslint"
   }
 }

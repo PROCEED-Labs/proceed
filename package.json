@@ -77,6 +77,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.5.0",
+    "@babel/eslint-parser": "^7.25.9",
     "@babel/eslint-plugin": "7.19.1",
     "@babel/plugin-proposal-class-properties": "^7.5.0",
     "@babel/preset-env": "^7.5.2",
@@ -104,6 +105,7 @@
     "jsdoc": "^3.6.6",
     "lint-staged": "^14.0.1",
     "mini-css-extract-plugin": "^0.6.0",
+    "node-loader": "^1.0.3",
     "nodemon": "^2.0.12",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
     "prettier": "3.2.5",
@@ -116,8 +118,7 @@
     "uuid": "9.0.1",
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.0",
-    "webpack-dev-server": "^3.2.1",
-    "node-loader": "^1.0.3"
+    "webpack-dev-server": "^3.2.1"
   },
   "dependencies": {
     "react-resizable": "^3.0.5"

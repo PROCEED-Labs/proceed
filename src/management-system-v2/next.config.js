@@ -64,6 +64,9 @@ const nextConfig = {
       destination: `/my/${folder}/:path*`,
     }));
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig;

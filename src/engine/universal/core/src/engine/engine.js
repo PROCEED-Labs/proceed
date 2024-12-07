@@ -405,7 +405,7 @@ class Engine {
     const instance = this.getInstance(instanceId);
 
     const state = instance.getState();
-    const processId = state.processId.substring(0, state.processId.lastIndexOf('-'));
+    const processId = state.processId.substring(0, state.processId.lastIndexOf('_') - 1);
     const version = state.processId.substring(processId.length + 1);
 
     return this._versionBpmnMapping[version];
@@ -440,7 +440,7 @@ class Engine {
     const state = instance.getState();
 
     // FIXME: Doesn't work when version ID is not a number string (e.g. uuid)
-    const processId = state.processId.substring(0, state.processId.lastIndexOf('-'));
+    const processId = state.processId.substring(0, state.processId.lastIndexOf('_') - 1);
     const processVersion = state.processId.substring(processId.length + 1);
 
     // map the adaptation log migration entries to show the version info

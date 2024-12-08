@@ -58,6 +58,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }
 
     return { isHovered: !!parent && parent.events.hovered };
   });
+
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   const {
@@ -65,6 +66,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }
     download: getImageUrl,
     remove,
   } = useFileManager({ entityType: EntityType.PROCESS });
+
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 

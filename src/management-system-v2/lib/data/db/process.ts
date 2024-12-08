@@ -208,8 +208,8 @@ export async function addProcess(
 
   //if referencedProcessId is present, the process was copied from a shared process
   if (referencedProcessId) {
-    await db.processArtifacts.updateMany({
-      where: { processId: referencedProcessId },
+    await db.artifact.updateMany({
+      where: { processReferences: { some: { id: referencedProcessId } } },
       data: { refCounter: { increment: 1 } },
     });
   }
@@ -358,14 +358,15 @@ export async function updateProcessMetaData(
 export async function removeProcess(processDefinitionsId: string) {
   const process = await db.process.findUnique({
     where: { id: processDefinitionsId },
+    include: { artifactProcessReferences: { include: { artifact: true } } },
   });
 
   if (!process) {
     throw new Error(`Process with id: ${processDefinitionsId} not found`);
   }
   await Promise.all(
-    process.processArtifacts.map((artifact) =>
-      deleteProcessArtifact(processDefinitionsId, artifact.filePath, true),
+    process.artifactProcessReferences.map((artifactRef) =>
+      deleteProcessArtifact(artifactRef.artifact.filePath, true),
     ),
   );
 

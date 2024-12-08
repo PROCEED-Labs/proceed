@@ -32,7 +32,7 @@ const WorkspaceSelection: React.FC<
     onFolderSelect: (folder: Omit<FolderTreeNode, 'children'> | null) => void;
   }
 > = ({ hasEditingPermission, workspaces, onWorkspaceSelect, onFolderSelect }) => {
-  const { download: getLogo } = useFileManager(EntityType.ORGANIZATION);
+  const { download: getLogoUrl } = useFileManager({ entityType: EntityType.ORGANIZATION });
   const [selectedWorkspace, setSelectedWorkspace] = useState<Environment | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<Omit<FolderTreeNode, 'children'> | null>(
     null,
@@ -48,8 +48,11 @@ const WorkspaceSelection: React.FC<
       const logos: Record<string, string | null> = {};
       for (const workspace of workspaces) {
         if (workspace.isOrganization) {
-          const res = await getLogo(workspace.id, '');
-          res.ok ? (logos[workspace.id] = res.fileUrl!) : (logos[workspace.id] = null);
+          getLogoUrl(workspace.id, '', undefined, {
+            onSuccess(data) {
+              logos[workspace.id] = data.fileUrl!;
+            },
+          });
         } else {
           logos[workspace.id] = null;
         }

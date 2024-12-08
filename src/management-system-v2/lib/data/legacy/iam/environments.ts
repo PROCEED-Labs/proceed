@@ -13,7 +13,7 @@ import {
   environmentSchema,
 } from '../../environment-schema';
 import { getProcessMetaObjects, removeProcess } from '../_process';
-import { createFolder } from '../folders';
+import { createFolder, deleteFolder, getRootFolder } from '../folders';
 import { deleteLogo, getLogo, hasLogo, saveLogo } from '../fileHandling.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { env } from '@/lib/env-vars.js';
@@ -125,27 +125,26 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
 
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
 
-  const roles = Object.values(roleMetaObjects);
-  for (const role of roles) {
-    if (role.environmentId === environmentId) {
-      deleteRole(role.id); // also deletes role mappings
-    }
-  }
-
-  const processes = Object.values(getProcessMetaObjects());
-  for (const process of processes) {
-    if (process.environmentId === environmentId) {
-      removeProcess(process.id);
-    }
-  }
+  // NOTE: when using a db I think it would be faster to just delete processes and folders where de
+  // environmentId matches
+  const rootFolder = await getRootFolder(environmentId);
+  if (!rootFolder) throw new Error('Root folder not found');
+  await deleteFolder(rootFolder.id);
 
   if (environment.isOrganization) {
     const environmentMemberships = membershipMetaObject[environmentId];
     if (environmentMemberships) {
       for (const { userId } of environmentMemberships) {
-        removeMember(environmentId, userId);
+        await removeMember(environmentId, userId);
       }
       delete membershipMetaObject[environmentId];
+    }
+
+    const roles = Object.values(roleMetaObjects);
+    for (const role of roles) {
+      if (role.environmentId === environmentId) {
+        await deleteRole(role.id); // also deletes role mappings
+      }
     }
   }
 

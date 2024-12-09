@@ -31,7 +31,7 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
-import useTimelineViewStore from './use-timeline-view-store';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 

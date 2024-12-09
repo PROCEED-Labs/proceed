@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './page.module.scss';
-import { Children, PropsWithChildren, useEffect, useMemo, useState } from 'react';
+import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
@@ -23,7 +23,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
-import useTimelineViewStore from './use-timeline-view-store';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
@@ -40,9 +40,11 @@ type SubprocessInfo = {
 type WrapperProps = PropsWithChildren<{
   processName: string;
   processes: { id: string; name: string }[];
+  modelerComponent: React.ReactNode;
+  timelineComponent: React.ReactNode;
 }>;
 
-const Wrapper = ({ children, processName, processes }: WrapperProps) => {
+const Wrapper = ({ processName, processes, modelerComponent, timelineComponent }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
@@ -54,10 +56,8 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   const modeler = useModelerStateStore((state) => state.modeler);
   const rootElement = useModelerStateStore((state) => state.rootElement);
   const [editingName, setEditingName] = useState<null | string>(null);
-  const { timelineViewActive, disableTimelineView } = useTimelineViewStore((state) => ({
-    timelineViewActive: state.timelineViewActive,
-    disableTimelineView: state.disableTimelineView,
-  }));
+  const timelineViewActive = useTimelineViewStore((state) => state.timelineViewActive);
+  const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
 
   const {
     token: { fontSizeHeading1 },
@@ -97,11 +97,6 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
       setClosed(false);
     }
   }, [minimized]);
-
-  // always show bpmn-js modeler when opening a process
-  useEffect(() => {
-    disableTimelineView();
-  }, [processId]);
 
   const showMobileView = useMobileModeler();
 
@@ -242,8 +237,6 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
     }
   };
 
-  const childrenArray = Children.toArray(children);
-
   return (
     <Content
       headerLeft={
@@ -301,7 +294,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      {timelineViewActive ? childrenArray[1] : childrenArray[0]}
+      {timelineViewActive ? timelineComponent : modelerComponent}
       {minimized ? (
         <Overlay processId={processId as string} onClose={() => setClosed(true)} />
       ) : null}

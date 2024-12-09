@@ -9,7 +9,7 @@ import Modeling from 'diagram-js/lib/features/modeling/Modeling';
 import { useEnvironment } from './auth-can';
 import { Element, Parent } from 'diagram-js/lib/model/Types';
 import { useEffect, useRef, useState } from 'react';
-import useTimelineViewStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-timeline-view-store';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 
 type BPMNTimelineProps = React.HTMLAttributes<HTMLDivElement> & {
   process: { name: string; id: string; bpmn: string };
@@ -18,7 +18,9 @@ type BPMNTimelineProps = React.HTMLAttributes<HTMLDivElement> & {
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const environment = useEnvironment();
   const bpmnjsModelerRef = useRef<Modeler | null>(null);
-  const toggleTimelineView = useTimelineViewStore((state) => state.toggleTimelineView);
+  const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
+  // needed due to react strict mode causing unmounts on first render
+  const hasMountedRef = useRef(false);
 
   useEffect(() => {
     console.log('init BPMNTimeline');
@@ -30,16 +32,11 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     });
 
     return () => {
-      console.log('cleanup BPMNTimeline');
-      // really needed when saved after each change?
-      if (bpmnjsModelerRef.current && bpmnjsModelerRef.current.getDefinitions()) {
-        bpmnjsModelerRef.current.saveXML({ format: true }).then((data) => {
-          try {
-            //updateProcess(process.id, environment.spaceId, data.xml, undefined, undefined, true);
-          } catch (error) {
-            console.log(error);
-          }
-        });
+      if (hasMountedRef.current) {
+        console.log('reset BPMNTimelineView on unmount');
+        disableTimelineView(); // Reset the timeline view store
+      } else {
+        hasMountedRef.current = true;
       }
     };
   }, [process.bpmn]);
@@ -84,7 +81,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
       <pre>name: {process.name}</pre>
       <button onClick={() => createElement()}>add new element</button>
       <p>{status}</p>
-      <button onClick={() => toggleTimelineView()}>close timeline</button>
+      <button onClick={() => disableTimelineView()}>close timeline</button>
     </div>
   );
 };

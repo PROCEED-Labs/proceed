@@ -37,6 +37,7 @@ import {
   ImportsInfo,
   getElementSVG,
 } from './documentation-page-utils';
+import { Environment } from '@/lib/data/environment-schema';
 
 /**
  * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server
@@ -54,6 +55,7 @@ const markdownEditor: Promise<ToastEditorType> =
 type BPMNSharedViewerProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   isOwner: boolean;
+  userWorkspaces: Environment[];
   defaultSettings?: SettingsOption;
   availableImports: ImportsInfo;
 };
@@ -61,6 +63,7 @@ type BPMNSharedViewerProps = {
 const BPMNSharedViewer = ({
   processData,
   isOwner,
+  userWorkspaces,
   defaultSettings,
   availableImports,
 }: BPMNSharedViewerProps) => {
@@ -226,6 +229,7 @@ const BPMNSharedViewer = ({
               </Button>
               {!isOwner && (
                 <WorkspaceSelectionModalButton
+                  workspaces={userWorkspaces}
                   processData={processData}
                   versionInfo={versionInfo}
                 />

@@ -7,7 +7,7 @@ import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, Checkbox 
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 
-type MachineConfigModalProps<T extends { name: string; description: string }> = {
+type ConfigModalProps<T extends { name: string; description: string }> = {
   open: boolean;
   title: string;
   okText?: string;
@@ -18,7 +18,7 @@ type MachineConfigModalProps<T extends { name: string; description: string }> = 
   targetConfigExists?: boolean;
 };
 
-const MachineConfigModal = <T extends { name: string; description: string }>({
+const ConfigModal = <T extends { name: string; description: string }>({
   open,
   title,
   okText,
@@ -27,7 +27,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   initialData,
   configType,
   targetConfigExists,
-}: MachineConfigModalProps<T>) => {
+}: ConfigModalProps<T>) => {
   const [form] = Form.useForm();
   const formRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +44,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   const items: CollapseProps['items'] = initialData?.length
     ? initialData?.map((data, index) => ({
         label: data.name,
-        children: <MachineConfigInputs index={index} />,
+        children: <ConfigInputs index={index} />,
       }))
     : undefined;
 
@@ -102,7 +102,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         form={form}
         ref={formRef}
         layout="vertical"
-        name="machine_config_form"
+        name="config_form"
         initialValues={
           initialData ?? (configType === 'machine' && targetConfigExists)
             ? [{ copyTarget: true }]
@@ -114,11 +114,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <MachineConfigInputs
-            index={0}
-            configType={configType}
-            targetConfigExists={targetConfigExists}
-          />
+          <ConfigInputs index={0} configType={configType} targetConfigExists={targetConfigExists} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -127,17 +123,13 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   );
 };
 
-type MachineConfigInputsProps = {
+type ConfigModalInputsProps = {
   index: number;
   configType?: string;
   targetConfigExists?: boolean;
 };
 
-const MachineConfigInputs = ({
-  index,
-  configType,
-  targetConfigExists,
-}: MachineConfigInputsProps) => {
+const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInputsProps) => {
   return (
     <>
       <Form.Item
@@ -170,4 +162,4 @@ const MachineConfigInputs = ({
   );
 };
 
-export default MachineConfigModal;
+export default ConfigModal;

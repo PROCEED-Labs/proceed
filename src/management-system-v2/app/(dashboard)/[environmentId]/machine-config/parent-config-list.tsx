@@ -23,7 +23,7 @@ import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
-import MachineConfigCreationButton from '@/components/machine-config-creation-button';
+import ConfigCreationButton from '@/components/config-creation-button';
 import { App } from 'antd';
 import SpaceLink from '@/components/space-link';
 import {
@@ -48,7 +48,7 @@ import { useAddControlCallback } from '@/lib/controls-store';
 import ConfirmationButton from '@/components/confirmation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
-import MachineConfigModal from '@/components/machine-config-modal';
+import ConfigModal from '@/components/config-modal';
 import { defaultParameter } from './configuration-helper';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 
@@ -113,7 +113,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
   if (ability && ability.can('create', 'MachineConfig'))
     defaultDropdownItems.push({
       key: 'create-machine-config',
-      label: <MachineConfigCreationButton wrapperElement="Create Configuration" />,
+      label: <ConfigCreationButton wrapperElement="Create Configuration" />,
       icon: <FileOutlined />,
     });
 
@@ -232,7 +232,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
         {
           name: valueFromModal.name,
           metadata: {
-            description: defaultParameter('description', valueFromModal.description ?? ''),
+            description: defaultParameter('description', valueFromModal.description),
           },
         },
         space.spaceId,
@@ -426,7 +426,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
         }}
       />
       <AddUserControls name={'machineconfig-list'} />
-      <MachineConfigModal
+      <ConfigModal
         open={openEditModal}
         title={`Edit Machine Config${selectedRowKeys.length > 1 ? 'urations' : ''}`}
         onCancel={() => setOpenEditModal(false)}
@@ -443,7 +443,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
         }
         onSubmit={handleEdit}
       />
-      <MachineConfigModal
+      <ConfigModal
         open={openCopyModal}
         title={`Copy Machine Config${selectedRowKeys.length > 1 ? 'urations' : ''}`}
         onCancel={() => setOpenCopyModal(false)}

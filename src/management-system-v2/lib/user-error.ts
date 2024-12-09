@@ -11,6 +11,8 @@ export enum UserErrorType {
   NotFoundError = 'NotFoundError',
   /** Resource is locked. */
   LockedResourceError = 'LockedResourceError',
+  /** Schema validation failed. */
+  SchemaValidationError = 'SchemaValidationError ',
 }
 
 /**

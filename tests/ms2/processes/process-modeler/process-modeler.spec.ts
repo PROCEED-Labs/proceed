@@ -332,7 +332,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   // Add the shared process to the workspace
   await openModal(newPage, async () => {
-    await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
+    await newPage.getByRole('button', { name: 'edit' }).click();
     await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
   });
 

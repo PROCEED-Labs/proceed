@@ -313,9 +313,7 @@ const WorkspaceSelectionModalButton: React.FC<WorkspaceSelectionProps> = ({
   return (
     <>
       <Tooltip title="Edit">
-        <Button size="large" onClick={handleEditButtonClick}>
-          <MdEdit />
-        </Button>
+        <Button size="large" icon={<MdEdit />} onClick={handleEditButtonClick} />
       </Tooltip>
       <Modal
         title={<div style={{ textAlign: 'center', padding: '10px' }}>Options for Editing</div>}

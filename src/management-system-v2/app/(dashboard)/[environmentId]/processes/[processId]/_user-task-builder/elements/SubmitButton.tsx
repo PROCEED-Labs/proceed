@@ -29,7 +29,7 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div style={{}}>
+    <div>
       <button
         type="submit"
         style={{ width: block ? '100%' : undefined }}

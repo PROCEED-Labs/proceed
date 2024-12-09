@@ -1305,7 +1305,7 @@ describe('Test deploying a process', () => {
           // deploy and start process on machine 4
           await deployProcess('parallelScriptTaskDynamicProcess', engineNames[0]);
 
-          let instanceId = await startInstance(definitionId, 123, engineNames[0]);
+          let instanceId = await startInstance(definitionId, '123', engineNames[0]);
 
           // after starting the process, wait 5 seconds before requesting the state of the instance
           await new Promise((resolve) => setTimeout(() => resolve(), 5000));
@@ -2528,8 +2528,8 @@ describe('Test deploying a process', () => {
                 {
                   type: 'MIGRATION',
                   time: expect.any(Number),
-                  sourceVersion: 111,
-                  targetVersion: 123,
+                  sourceVersion: '111',
+                  targetVersion: '123',
                 },
               ]);
             });
@@ -2699,8 +2699,8 @@ describe('Test deploying a process', () => {
                 {
                   type: 'MIGRATION',
                   time: expect.any(Number),
-                  sourceVersion: 111,
-                  targetVersion: 456,
+                  sourceVersion: '111',
+                  targetVersion: '456',
                 },
                 {
                   type: 'TOKEN-MOVE',
@@ -2872,8 +2872,8 @@ describe('Test deploying a process', () => {
                 {
                   type: 'MIGRATION',
                   time: expect.any(Number),
-                  sourceVersion: 111,
-                  targetVersion: 456,
+                  sourceVersion: '111',
+                  targetVersion: '456',
                 },
                 {
                   type: 'TOKEN-MOVE',

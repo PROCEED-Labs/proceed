@@ -34,10 +34,11 @@ export type VersionedObjectMetadata<T> = Prettify<
     shareTimestamp: number;
     allowIframeTimestamp: number;
     versions: {
-      version: number;
+      id: string;
       name: string;
       description: string;
-      versionBasedOn?: number;
+      versionBasedOn?: string;
+      createdOn: Date;
     }[];
   }
 >;

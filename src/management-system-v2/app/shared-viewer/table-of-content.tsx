@@ -34,9 +34,10 @@ export type ElementInfo = MetaInformation & {
   // information about the imported process that is used by the call-activity that this object represents; can overwrite the information of the call-activity based on the selected settings
   importedProcess?: MetaInformation & {
     planeSvg: string;
-    version?: number;
+    versionId?: string;
     versionName?: string;
     versionDescription?: string;
+    versionCreatedOn?: string;
   };
 };
 
@@ -104,7 +105,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
         title: 'General Description',
       });
     }
-    if (settings.importedProcesses && importedProcess && importedProcess.version) {
+    if (settings.importedProcesses && importedProcess && importedProcess.versionId) {
       children.unshift({
         key: `${hierarchyElement.id}_version`,
         href: linksDisabled ? '' : `#${hierarchyElement.id}_version_page`,

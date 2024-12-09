@@ -9,7 +9,7 @@ import {
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { getProcess } from './process';
 
 export async function getRootFolder(environmentId: string, ability?: Ability) {

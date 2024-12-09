@@ -39,7 +39,7 @@ export async function getProcessBpmn(processDefinitionsId: string) {
     ? await processModuleDB.getProcessBpmn(processDefinitionsId)
     : await processModuleLegacy.getProcessBpmn(processDefinitionsId);
 }
-export async function getProcessVersionBpmn(processDefinitionsId: string, version: number) {
+export async function getProcessVersionBpmn(processDefinitionsId: string, version: string) {
   return enableUseDB
     ? await processModuleDB.getProcessVersionBpmn(processDefinitionsId, version)
     : await processModuleLegacy.getProcessVersionBpmn(processDefinitionsId, version);
@@ -210,4 +210,9 @@ export async function getFolders(spaceId: string) {
   return enableUseDB
     ? await folderModuleDB.getFolders(spaceId)
     : await folderModuleLegacy.getFolders(spaceId);
+}
+export async function getOrganisationLogo(organisationId: string) {
+  return enableUseDB
+    ? await environmentModuleDB.getOrganizationLogo(organisationId)
+    : await environmentModuleLegacy.getOrganizationLogo(organisationId);
 }

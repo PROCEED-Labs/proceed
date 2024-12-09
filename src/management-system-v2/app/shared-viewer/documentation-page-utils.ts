@@ -44,7 +44,6 @@ export function getTitle(el: any) {
  */
 export function getMetaDataFromBpmnElement(el: any, mdEditor: ToastEditorType) {
   const meta = getMetaDataFromElement(el);
-
   let image = '';
 
   // transform the costs information into a [value] [currency-symbol] format (e.g. {value: 123, unit: 'EUR'} => '123 €')
@@ -139,7 +138,7 @@ export async function getViewer(bpmn: string) {
 
 export type ImportsInfo = {
   [definitionId: string]: {
-    [versionId: number]: string;
+    [versionId: string]: string;
   };
 };
 
@@ -183,9 +182,9 @@ export async function getElementSVG(
   } else if (isType(el, 'bpmn:CallActivity')) {
     // check if the call activity references another process which this user can access
     let importDefinitionId: string | undefined;
-    let version: number | undefined;
+    let version: string | undefined;
     try {
-      ({ definitionId: importDefinitionId, version: version } =
+      ({ definitionId: importDefinitionId, versionId: version } =
         getTargetDefinitionsAndProcessIdForCallActivityByObject(getRootFromElement(el), el.id));
     } catch (err) {}
 

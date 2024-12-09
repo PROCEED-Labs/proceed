@@ -8,7 +8,7 @@ import {
   SystemAdminUpdateInputSchema,
 } from '../../system-admin-schema';
 import { enableUseDB } from 'FeatureFlags';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 
 export async function getSystemAdmins() {
   const sysAdmins = await db.systemAdmin.findMany({});

@@ -13,6 +13,7 @@ const environmentVariables = {
     NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
     NEXT_PUBLIC_TIMELINE_VIEW: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
+    SHARING_ENCRYPTION_SECRET: z.string(),
     INVITATION_ENCRYPTION_SECRET: z.string(),
     MS_ENABLED_RESOURCES: z
       .string()
@@ -35,7 +36,6 @@ const environmentVariables = {
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
-
     USE_AUTH0: z.coerce.boolean(),
 
     SMTP_MAIL_USER: z.string(),

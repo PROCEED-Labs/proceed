@@ -7,7 +7,7 @@ import styles from './index.module.scss';
 import Toolbox from './Toolbox';
 import Settings from './Settings';
 
-const Sidebar: React.FC = () => {
+const Sidebar = () => {
   return (
     <Row className={styles.Sidebar}>
       <Divider>Elements</Divider>

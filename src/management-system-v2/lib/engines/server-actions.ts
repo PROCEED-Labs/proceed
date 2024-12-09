@@ -13,7 +13,7 @@ import {
 
 export async function deployProcess(
   definitionId: string,
-  version: number,
+  versionId: string,
   spaceId: string,
   method: 'static' | 'dynamic' = 'dynamic',
   _forceEngine?: SpaceEngine | 'PROCEED',
@@ -53,7 +53,7 @@ export async function deployProcess(
       if (availableSpaceEngines.length > 0) engines = availableSpaceEngines;
     }
 
-    await _deployProcess(definitionId, version, spaceId, method, engines, forceEngine);
+    await _deployProcess(definitionId, versionId, spaceId, method, engines, forceEngine);
   } catch (e) {
     return userError('Something went wrong');
   }

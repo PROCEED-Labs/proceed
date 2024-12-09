@@ -56,14 +56,13 @@ const DeploymentsView = ({
           if (typeof processChangedSinceLastVersion === 'object')
             return processChangedSinceLastVersion;
 
-          const v = process.versions
-            .map((v) => v.id)
-            .sort()
-            .at(-1);
+          let latestVersion = process.versions[0];
+          for (const version of process.versions)
+            if (version.createdOn > latestVersion.createdOn) latestVersion = version;
 
           return await serverDeployProcess(
             process.id,
-            v as number,
+            latestVersion.id,
             space.spaceId,
             'dynamic',
             forceEngine,

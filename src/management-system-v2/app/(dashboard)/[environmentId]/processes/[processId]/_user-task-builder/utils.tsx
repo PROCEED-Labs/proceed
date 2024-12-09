@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
+import BuilderContext from './BuilderContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const styles = `
@@ -150,16 +151,18 @@ p, h1, h2, h3, h4, h5, th, td {
 export function toHtml(json: string) {
   const queryClient = new QueryClient();
   const markup = ReactDOMServer.renderToStaticMarkup(
-    <Editor
-      enabled={false}
-      resolver={{
-        ...Elements,
-      }}
-    >
-      <QueryClientProvider client={queryClient}>
-        <Frame data={json} />
-      </QueryClientProvider>
-    </Editor>,
+    <BuilderContext.Provider value={{ editingEnabled: false }}>
+      <Editor
+        resolver={{
+          ...Elements,
+        }}
+      >
+        <QueryClientProvider client={queryClient}>
+          <Frame data={json} />
+        </QueryClientProvider>
+      </Editor>
+      ,
+    </BuilderContext.Provider>,
   );
 
   return `
@@ -194,7 +197,7 @@ export const iframeDocument = `
 
       .frame-content > div {
         box-sizing: border-box;
-        padding: 0 10px;    
+        padding: 0 10px;
       }
 
       .user-task-form-column {

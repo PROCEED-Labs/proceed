@@ -2,13 +2,14 @@ import { useEditor, useNode, UserComponent, Node } from '@craftjs/core';
 
 import { InputNumber } from 'antd';
 
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import { ContextMenu, Setting } from './utils';
 import ImageUpload from '@/components/image-upload';
+import BuilderContext from '../BuilderContext';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { enableUseFileManager } from 'FeatureFlags';
@@ -36,7 +37,8 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
 
     return { isHovered: !!parent && parent.events.hovered };
   });
-  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
+
+  const { editingEnabled } = useContext(BuilderContext);
 
   const {
     fileUrl: imageUrl,
@@ -184,9 +186,10 @@ export const ImageSettings = () => {
     width: node.data.props.width,
     dom: node.dom,
   }));
-  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   const [currentWidth, setCurrentWidth] = useState<number | null>(null);
+
+  const { editingEnabled } = useContext(BuilderContext);
 
   useEffect(() => {
     if (src && dom?.children[0]) {
@@ -213,7 +216,7 @@ export const ImageSettings = () => {
         label="Width"
         control={
           <InputNumber
-            disabled={!editingEnabled || !src}
+            disabled={!src}
             value={currentWidth}
             min={1}
             max={100}

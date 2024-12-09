@@ -8,6 +8,7 @@ const compat = new FlatCompat({
 const config = [
   ...fixupConfigRules(
     compat.extends(
+      '../../.eslintrc.js',
       'next/core-web-vitals',
       'prettier',
       'plugin:@tanstack/eslint-plugin-query/recommended',

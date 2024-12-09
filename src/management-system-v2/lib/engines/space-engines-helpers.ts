@@ -3,8 +3,8 @@ import { SpaceEngine } from './machines';
 import { DeployedProcessInfo, getDeployments } from './deployment';
 import { engineAccumulator, getClient, mqttRequest } from './endpoints/mqtt-endpoints';
 import endpointBuilder from './endpoints/endpoint-builder';
+import { httpRequest } from './endpoints/http-endpoints';
 
-// TODO: join this with other mqtt timeouts
 const mqttTimeout = 2000;
 
 // TODO: find a better more standardized way to do this
@@ -29,24 +29,36 @@ async function getMqttEngines(engine: SavedEngine): Promise<SpaceEngine[]> {
     }));
 }
 
-export async function spaceEnginesToEngines(spaceEngines: SavedEngine[]): Promise<SpaceEngine[]> {
-  const engines: SpaceEngine[] = [];
-  const mqttEngines = [];
+async function getHttpEngine(engine: SavedEngine): Promise<[SpaceEngine]> {
+  const { id } = await httpRequest(
+    engine.address,
+    endpointBuilder('get', '/machine/:properties', { properties: 'id' }),
+    'GET',
+  );
 
+  return [
+    {
+      type: 'http',
+      id,
+      address: engine.address,
+      spaceEngine: true,
+    },
+  ];
+}
+
+export async function spaceEnginesToEngines(spaceEngines: SavedEngine[]): Promise<SpaceEngine[]> {
+  const enginesRequests = [];
   for (const savedEngine of spaceEngines) {
-    if (savedEngine.address.startsWith('http')) {
-      engines.push({
-        type: 'http',
-        id: '', // TODO: what should I do with id here? Fetching is seems unnecessary
-        address: savedEngine.address,
-        spaceEngine: true,
-      });
-    } else if (savedEngine.address.startsWith('mqtt')) {
-      mqttEngines.push(getMqttEngines(savedEngine));
-    }
+    if (savedEngine.address.startsWith('http')) enginesRequests.push(getHttpEngine(savedEngine));
+    else if (savedEngine.address.startsWith('mqtt'))
+      enginesRequests.push(getMqttEngines(savedEngine));
   }
 
-  return [...engines, ...(await Promise.all(mqttEngines)).flat()];
+  const engines = [];
+  for (const request of await Promise.allSettled(enginesRequests))
+    if (request.status === 'fulfilled') engines.push(...request.value);
+
+  return engines;
 }
 
 async function getMqttEnginesProcesses(engine: SavedEngine): Promise<DeployedProcessInfo[]> {
@@ -60,8 +72,6 @@ async function getMqttEnginesProcesses(engine: SavedEngine): Promise<DeployedPro
     if (!match) return;
 
     if (!JSON.parse(message.toString()).running) return;
-
-    // TODO: check if the engine is running
 
     processPromises.push(
       mqttRequest(match[1], endpointBuilder('get', '/process/'), { method: 'GET' }, client),

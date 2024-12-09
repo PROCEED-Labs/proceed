@@ -3,7 +3,7 @@ import Content from '@/components/content';
 import { getEnvironmentById } from '@/lib/data/DTOs';
 import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
-import EnvironmentsPage from './environemnts-page';
+import EnvironmentsPage from './environments-page';
 import { getUserById } from '@/lib/data/DTOs';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
@@ -19,7 +19,7 @@ const Page = async () => {
   )) as OrganizationEnvironment[];
 
   return (
-    <Content title="My Environments">
+    <Content title="My Spaces">
       <EnvironmentsPage organizationEnvironments={organizationEnvironments} />
     </Content>
   );

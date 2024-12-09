@@ -41,7 +41,6 @@ const defaultPreferences = {
   'role-page-side-panel': { open: false, width: 300 },
   'user-page-side-panel': { open: false, width: 300 },
   'process-meta-data': { open: false, width: 300 },
-  'environments-page-side-panel': { open: false, width: 300 },
   'tech-data-open-tree-items': [] as { id: string; open: string[] }[],
   'tech-data-editor': { siderOpen: true, siderWidth: 300 },
 }; /* as const */ /* Does not work for strings */

@@ -57,7 +57,7 @@ const DeploymentsView = ({
             return processChangedSinceLastVersion;
 
           const v = process.versions
-            .map((v) => v.version)
+            .map((v) => v.id)
             .sort()
             .at(-1);
 

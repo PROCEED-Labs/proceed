@@ -213,7 +213,7 @@ const DeploymentsModal = ({
   });
 
   const openFolder = async (id: string) => {
-    const folder = await getFolder(id);
+    const folder = await getFolder(environment.spaceId, id);
     if ('error' in folder) {
       throw new Error('Failed to fetch folder');
     }

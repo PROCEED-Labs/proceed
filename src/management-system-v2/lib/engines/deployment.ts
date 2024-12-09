@@ -84,7 +84,7 @@ async function deployProcessToMachines(
 
 async function dynamicDeployment(
   definitionId: string,
-  version: number,
+  version: string,
   processesExportData: ProcessesExportData,
   machines: Engine[],
   forceMachine?: Engine,
@@ -128,7 +128,7 @@ async function dynamicDeployment(
 
 async function staticDeployment(
   definitionId: string,
-  version: number,
+  version: string,
   processesExportData: ProcessesExportData,
   machines: Engine[],
   forceMachine?: Engine,
@@ -174,7 +174,7 @@ async function staticDeployment(
 
 export async function deployProcess(
   definitionId: string,
-  version: number,
+  version: string,
   spaceId: string,
   method: 'static' | 'dynamic',
   machines: Engine[],

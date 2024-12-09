@@ -20,6 +20,8 @@ model SystemAdmin {
   userId       String   @unique
   createdOn    DateTime @default(now())
   lastEditedOn DateTime @updatedAt
+
+  @@map("system_admin")
 }
 
 model User {
@@ -39,6 +41,8 @@ model User {
   oauthAccounts   OauthAccount[]
   roleMembers     RoleMember[]
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
+
+  @@map("user")
 }
 
 model OauthAccount {
@@ -49,41 +53,77 @@ model OauthAccount {
   providerAccountId String @unique
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("oauth_account")
 }
 
 model Process {
-  id                   String             @id @default(uuid())
+  id                   String              @id @default(uuid())
   originalId           String
   name                 String
   description          String
   createdOn            DateTime
-  lastEditedOn         DateTime           @updatedAt
+  lastEditedOn         DateTime            @updatedAt
   inEditingBy          Json?
   processIds           String[]
   type                 String
-  folder               Folder             @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folder               Folder              @relation(fields: [folderId], references: [id], onDelete: Cascade)
   folderId             String
   sharedAs             String
   shareTimestamp       BigInt
   allowIframeTimestamp BigInt
-  space                Space              @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  space                Space               @relation(fields: [environmentId], references: [id], onDelete: Cascade)
   environmentId        String
   versions             Version[]
-  bpmn                 String             @db.Xml
-  creator              User?              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  bpmn                 String              @db.Xml
+  creator              User?               @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   creatorId            String
   //TODO: Departments and Variables add here if needed in future
-  processArtifacts     ProcessArtifacts[]
+  artifactProcessReferences   ArtifactProcessReference[]
+
+  @@map("process")
 }
 
-model ProcessArtifacts {
-  id        String   @id @default(uuid())
-  filePath  String   @unique
-  fileName  String   @unique
-  process   Process  @relation(fields: [processId], references: [id])
-  processId String
-  deletable Boolean? @default(false)
-  deletedOn DateTime @default(now())
+model Artifact {
+  id           String              @id @default(uuid())
+  filePath     String              @unique
+  fileName     String              @unique
+  deletable    Boolean?            @default(false)
+  deletedOn    DateTime?
+  artifactType String // user-task, script, image, etc.
+  processReferences   ArtifactProcessReference[] // Relation to track references
+  versionReferences   ArtifactVersionReference[]
+  refCounter   Int                 @default(0)
+
+  @@map("artifact")
+}
+
+model ArtifactProcessReference {
+  id         String   @id @default(uuid())
+  artifact   Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  artifactId String
+  process    Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+  processId  String
+  createdAt  DateTime @default(now())
+
+  @@unique([artifactId, processId])
+
+  @@map("artifact_process_reference")
+}
+
+model ArtifactVersionReference {
+  id         String   @id @default(uuid())
+  artifact   Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  artifactId String
+  version    Version? @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  versionId  String?
+  createdAt  DateTime @default(now())
+  
+  @@unique([artifactId, versionId])
+
+  @@map("artifact_version_reference")
+
+
 }
 
 model Space {
@@ -101,6 +141,8 @@ model Space {
   processes          Process[]
   roles              Role[]
   Engine             Engine[]
+
+  @@map("space")
 }
 
 model Membership {
@@ -110,6 +152,8 @@ model Membership {
   createdOn     DateTime
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@map("membership")
 }
 
 model Folder {
@@ -126,19 +170,22 @@ model Folder {
   childrenFolder Folder[]  @relation("folderChildren")
   lastEditedOn   DateTime  @updatedAt
   createdOn      DateTime
+
+  @@map("folder")
 }
 
 model Version {
-  id             String   @id @default(uuid())
-  name           String
-  version        BigInt   @unique
-  description    String
-  process        Process  @relation(fields: [processId], references: [id], onDelete: Cascade)
-  processId      String
-  versionBasedOn BigInt?
-  createdOn      DateTime
-  lastEditedOn   DateTime @updatedAt
-  bpmn           String   @db.Xml
+  id                String              @id @default(uuid())
+  name              String
+  description       String
+  process           Process             @relation(fields: [processId], references: [id], onDelete: Cascade)
+  processId         String
+  versionBasedOn    String?
+  createdOn         DateTime            @unique @updatedAt
+  bpmnFilePath      String
+  artifactVersionReferences ArtifactVersionReference[]
+
+  @@map("version")
 }
 
 model Role {
@@ -155,6 +202,8 @@ model Role {
   lastEditedOn  DateTime  @updatedAt
 
   members RoleMember[]
+
+  @@map("role")
 }
 
 model RoleMember {
@@ -164,6 +213,8 @@ model RoleMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   createdOn DateTime
+
+  @@map("role_member")
 }
 
 model Engine {
@@ -174,4 +225,6 @@ model Engine {
   name          String?
   createdOn     DateTime @default(now())
   lastEditedOn  DateTime @updatedAt
+
+  @@map("engine")
 }

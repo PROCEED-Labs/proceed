@@ -1,6 +1,6 @@
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-schema';
 
 export async function getSpaceEngines(environmentId?: string, ability?: Ability) {

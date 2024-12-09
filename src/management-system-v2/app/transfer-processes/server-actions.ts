@@ -9,8 +9,9 @@ import {
   moveFolder,
   updateFolderMetaData,
   updateProcess,
+  getUserById,
+  deleteUser,
 } from '@/lib/data/DTOs';
-import { deleteUser, getUserById } from '@/lib/data/legacy/iam/users';
 import { Process } from '@/lib/data/process-schema';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
 import { UserErrorType, userError } from '@/lib/user-error';

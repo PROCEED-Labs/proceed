@@ -65,8 +65,6 @@ async function getMqttEnginesProcesses(engine: SavedEngine): Promise<DeployedPro
   const processPromises: Promise<DeployedProcessInfo[]>[] = [];
   const client = await getClient(engine.address);
 
-  client.subscribeAsync(`proceed-pms/engine/+/status`);
-
   client.on('message', (topic, message) => {
     const match = topic.match(/proceed-pms\/engine\/(.+)\/status/);
     if (!match) return;
@@ -77,6 +75,7 @@ async function getMqttEnginesProcesses(engine: SavedEngine): Promise<DeployedPro
       mqttRequest(match[1], endpointBuilder('get', '/process/'), { method: 'GET' }, client),
     );
   });
+  await client.subscribeAsync(`proceed-pms/engine/+/status`);
 
   await new Promise((res) => setTimeout(res, mqttTimeout));
   await client.endAsync();

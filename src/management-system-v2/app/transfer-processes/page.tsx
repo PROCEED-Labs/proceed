@@ -1,9 +1,9 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
 import { getProcesses, getUserById } from '@/lib/data/DTOs';
-import { Card, Result, Space } from 'antd';
+import { Card, Result } from 'antd';
 import { redirect } from 'next/navigation';
-import { DiscardButton, TransferButton } from './transfer-processes-confirmation-buttons';
+import ProcessTransferButtons from './transfer-processes-confirmation-buttons';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
 
 export default async function TransferProcessesPage({
@@ -23,8 +23,8 @@ export default async function TransferProcessesPage({
   const token = decodeURIComponent(searchParams.referenceToken || '');
   const referenceToken = getGuestReference(token);
   if ('error' in referenceToken) {
-    let message = 'Invalid token';
-    if (referenceToken.error === 'TokenExpiredError') message = 'Expired token';
+    let message = 'Invalid link';
+    if (referenceToken.error === 'TokenExpiredError') message = 'Link expired';
 
     return (
       <Content title="Transfer Processes">
@@ -32,11 +32,6 @@ export default async function TransferProcessesPage({
           status="error"
           title={message}
           subTitle="If you want to transfer the processes from your guest account, you need to sign in with your email from your guest account again."
-          extra={[
-            <DiscardButton referenceToken={token} callbackUrl={callbackUrl} key={0}>
-              Continue without guest processes{' '}
-            </DiscardButton>,
-          ]}
         />
       </Content>
     );
@@ -69,10 +64,7 @@ export default async function TransferProcessesPage({
         Your guest account had {guestProcesses.length} process{guestProcesses.length !== 1 && 'es'}.
         <br />
         Would you like to transfer them to your account?
-        <Space style={{ width: '100%', justifyContent: 'right' }}>
-          <TransferButton referenceToken={token} callbackUrl={callbackUrl} />
-          <DiscardButton referenceToken={token} callbackUrl={callbackUrl} />
-        </Space>
+        <ProcessTransferButtons referenceToken={token} callbackUrl={callbackUrl} />
       </Card>
     </Content>
   );

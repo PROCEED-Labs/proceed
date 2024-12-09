@@ -7,10 +7,9 @@ import {
   discardProcesses as serverDiscardProcesses,
 } from './server-actions';
 
-export function DiscardButton({
+export default function ProcessTransferButtons({
   referenceToken,
   callbackUrl,
-  children = 'No',
 }: {
   referenceToken: string;
   callbackUrl?: string;
@@ -23,24 +22,6 @@ export function DiscardButton({
     });
   }
 
-  return (
-    <Space style={{ width: '100%', justifyContent: 'right' }}>
-      <Button onClick={discardProcesses} loading={discardingProcesses}>
-        {children}
-      </Button>
-    </Space>
-  );
-}
-
-export function TransferButton({
-  referenceToken,
-  callbackUrl,
-  children = 'Yes',
-}: {
-  referenceToken: string;
-  callbackUrl?: string;
-  children?: ReactNode;
-}) {
   const [transferring, startTransfer] = useTransition();
   function transferProcesses() {
     startTransfer(async () => {
@@ -49,8 +30,18 @@ export function TransferButton({
   }
 
   return (
-    <Button type="primary" onClick={transferProcesses} loading={transferring}>
-      {children}
-    </Button>
+    <Space style={{ width: '100%', justifyContent: 'right' }}>
+      <Button onClick={discardProcesses} loading={discardingProcesses} disabled={transferring}>
+        No
+      </Button>
+      <Button
+        type="primary"
+        onClick={transferProcesses}
+        loading={transferring}
+        disabled={discardingProcesses}
+      >
+        Yes
+      </Button>
+    </Space>
   );
 }

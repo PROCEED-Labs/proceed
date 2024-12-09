@@ -3,7 +3,7 @@ import Content from '@/components/content';
 import { getProcesses, getUserById } from '@/lib/data/DTOs';
 import { Card, Result, Space } from 'antd';
 import { redirect } from 'next/navigation';
-import { DiscardButton, TransferButton } from './transfer-processes-confitmation-buttons';
+import { DiscardButton, TransferButton } from './transfer-processes-confirmation-buttons';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
 
 export default async function TransferProcessesPage({

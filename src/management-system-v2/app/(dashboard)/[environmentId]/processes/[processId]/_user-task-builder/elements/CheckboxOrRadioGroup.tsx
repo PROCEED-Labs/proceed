@@ -396,20 +396,13 @@ export const CheckBoxOrRadioGroupSettings = () => {
       <Setting
         label="Variable"
         control={
-          <Select
-            style={{ display: 'block' }}
-            options={[
-              { value: 'var1', label: 'Var1' },
-              { value: 'var2', label: 'Var2' },
-              { value: 'var3', label: 'Var3' },
-            ]}
+          <Input
             value={variable}
-            disabled={!editingEnabled}
-            onChange={(val) =>
+            onChange={(e) => {
               setProp((props: CheckBoxOrRadioGroupProps) => {
-                props.variable = val;
-              })
-            }
+                props.variable = e.target.value;
+              });
+            }}
           />
         }
       />

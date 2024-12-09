@@ -9,14 +9,6 @@ import {
   setUserTaskData,
 } from '@proceed/bpmn-helper';
 import { asyncForEach } from './javascriptHelpers';
-import {
-  deleteProcessUserTask,
-  getProcessUserTaskHtml,
-  getProcessUserTasksHtml,
-  getProcessUserTasksJSON,
-  saveProcessUserTask,
-  getProcessUserTaskJSON as getUserTaskJSON,
-} from '../data/db/process'; //from '../data/legacy/_process';
 
 import { Process } from '../data/process-schema';
 import { enableUseDB } from 'FeatureFlags';
@@ -29,13 +21,29 @@ const { diff } = require('bpmn-js-differ');
 let getProcessVersionBpmn: TProcessModule['getProcessVersionBpmn'];
 let updateProcess: TProcessModule['updateProcess'];
 let getProcessBpmn: TProcessModule['getProcessBpmn'];
+let deleteProcessUserTask: TProcessModule['deleteProcessUserTask'];
+let getProcessUserTaskHtml: TProcessModule['getProcessUserTaskHtml'];
+let getProcessUserTasksHtml: TProcessModule['getProcessUserTasksHtml'];
+let getProcessUserTasksJSON: TProcessModule['getProcessUserTasksJSON'];
+let saveProcessUserTask: TProcessModule['saveProcessUserTask'];
+let getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
 
 const loadModules = async () => {
   const moduleImport = await (enableUseDB
     ? import('@/lib/data/db/process')
     : import('@/lib/data/legacy/_process'));
 
-  ({ getProcessVersionBpmn, updateProcess, getProcessBpmn } = moduleImport);
+  ({
+    getProcessVersionBpmn,
+    updateProcess,
+    getProcessBpmn,
+    deleteProcessUserTask,
+    getProcessUserTaskHtml,
+    getProcessUserTasksHtml,
+    getProcessUserTasksJSON,
+    saveProcessUserTask,
+    getProcessUserTaskJSON,
+  } = moduleImport);
 };
 
 loadModules().catch(console.error);
@@ -172,7 +180,7 @@ export async function versionUserTasks(
 
       // store the user task version if it didn't exist before
       if (!dryRun && !userTaskHtmlAlreadyExisting) {
-        const userTaskData = await getUserTaskJSON(processInfo.id, fileName);
+        const userTaskData = await getProcessUserTaskJSON(processInfo.id, fileName);
         await saveProcessUserTask(
           processInfo.id,
           versionFileName,

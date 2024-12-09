@@ -41,7 +41,6 @@ type ModelerToolbarProps = {
   canUndo: boolean;
   canRedo: boolean;
   versions: { version: number; name: string; description: string }[];
-  timelineViewFeatureEnabled?: boolean;
 };
 const ModelerToolbar = ({
   processId,
@@ -49,7 +48,6 @@ const ModelerToolbar = ({
   canUndo,
   canRedo,
   versions,
-  timelineViewFeatureEnabled,
 }: ModelerToolbarProps) => {
   const router = useRouter();
   const environment = useEnvironment();
@@ -220,6 +218,9 @@ const ModelerToolbar = ({
     LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
+  const timelineViewFeatureEnabled = process.env.NEXT_PUBLIC_TIMELINE_VIEW === 'true';
+
+  console.log('ENV', process.env.NEXT_PUBLIC_TIMELINE_VIEW);
 
   return (
     <>

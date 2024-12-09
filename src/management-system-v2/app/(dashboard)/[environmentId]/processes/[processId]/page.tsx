@@ -26,8 +26,6 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   const process = await getProcess(processId, !selectedVersionId);
   const processes = await getProcesses(userId, ability, false);
 
-  const timelineViewFeatureEnabled = env.TIMELINE_VIEW === 'true';
-
   if (!ability.can('view', toCaslResource('Process', process))) {
     throw new Error('Forbidden.');
   }
@@ -52,7 +50,6 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
             process={{ ...process, bpmn: selectedVersionBpmn as string }}
             versions={process.versions}
             versionName={selectedVersion?.name}
-            timelineViewFeatureEnabled={timelineViewFeatureEnabled} // required for .env feature flag
           />
         }
         timelineComponent={

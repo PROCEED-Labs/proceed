@@ -65,7 +65,9 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(page.getByRole('option', { name: 'Latest Version' })).toBeVisible();
   await expect(page.getByRole('option', { name: 'Version 1' })).toBeVisible();
   await page.getByRole('option', { name: 'Version 1' }).click();
-  const expectedURLWithVersion = new RegExp(`\\/processes\\/${definitionId}\\?version=\\d+$`);
+  const expectedURLWithVersion = new RegExp(
+    `\\/processes\\/${definitionId}\\?version=[a-zA-Z0-9-_]+$`,
+  );
   await page.waitForURL(expectedURLWithVersion);
   expect(expectedURLWithVersion.test(page.url())).toBeTruthy();
 

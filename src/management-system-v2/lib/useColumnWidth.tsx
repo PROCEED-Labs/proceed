@@ -30,7 +30,7 @@ export const useResizeableColumnWidth = (
   const initialisedWithHydratedValues =
     useRef(
       false,
-    ); /* Basically a switch to check whther the state was updated once with the saved values, once hydrated */
+    ); /* Basically a switch to check whether the state was updated once with the saved values, once hydrated */
   const convertedWidthsToNumbers = useRef(false); /* Similar switch */
 
   const computeNewColumns = useCallback(() => {
@@ -58,13 +58,13 @@ export const useResizeableColumnWidth = (
     initialisedWithHydratedValues.current = true;
     // console.debug('Updated columns with hydrated values');
     setResizeableColumns(newColumns);
-  }, [hydrated, computeNewColumns, initialisedWithHydratedValues.current]);
+  }, [hydrated, computeNewColumns]);
 
   /* If the user selects different columns (i.e. columnsInPreferences change) update the state with new columns */
   useEffect(() => {
     if (!hydrated) return;
 
-    /* This should onl run if the length of the arrays is dfferent */
+    /* This should only run if the length of the arrays is dfferent */
     if (columnsInPreferences.length === resizeableColumns.length) return;
 
     const newColumns = computeNewColumns();

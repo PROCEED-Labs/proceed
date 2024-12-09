@@ -33,7 +33,7 @@ export default async function TransferProcessesPage({
           title={message}
           subTitle="If you want to transfer the processes from your guest account, you need to sign in with your email from your guest account again."
           extra={[
-            <DiscardButton referenceToken={token} callbackUrl={callbackUrl}>
+            <DiscardButton referenceToken={token} callbackUrl={callbackUrl} key={0}>
               Continue without guest processes{' '}
             </DiscardButton>,
           ]}

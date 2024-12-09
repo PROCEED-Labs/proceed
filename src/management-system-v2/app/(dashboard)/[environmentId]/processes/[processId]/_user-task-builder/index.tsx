@@ -4,7 +4,7 @@ import styles from './index.module.scss';
 
 import { Modal, Grid, Row as AntRow, Col } from 'antd';
 
-import { Editor, Frame, useEditor, EditorStore } from '@craftjs/core';
+import { Editor, Frame, useEditor, EditorStore, NodeData } from '@craftjs/core';
 
 import IFrame from 'react-frame-component';
 
@@ -25,6 +25,8 @@ import { generateUserTaskFileName, getUserTaskImplementationString } from '@proc
 import { useEnvironment } from '@/components/auth-can';
 
 import EditorDnDHandler from './DragAndDropHandler';
+import { DiffResult, deepEquals } from '@/lib/helpers/javascriptHelpers';
+import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/file-manager-facade';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { useSearchParams } from 'next/navigation';
@@ -190,10 +192,23 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const prevState = useRef({});
+
   const [modalApi, modalElement] = Modal.useModal();
 
   const query = useSearchParams();
   const selectedVersionId = query.get('version');
+
+  function updateImageReference(action: 'add' | 'delete', src: string) {
+    const isDeleteAction = action === 'delete';
+    updateImageRefCounter(
+      // spaceId,
+      // data?.user.id!,
+      src,
+      isDeleteAction,
+      processId,
+    );
+  }
 
   const handleClose = () => {
     if (!hasUnsavedChanges) {
@@ -224,7 +239,52 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
               removeHoverOnMouseleave: true,
             })
           }
-          onNodesChange={() => {
+          onNodesChange={(query) => {
+            const current = JSON.parse(query.serialize());
+
+            if (Object.keys(prevState.current).length !== 0) {
+              const result = deepEquals(prevState.current, current, '', true) as null | DiffResult;
+
+              if (result) {
+                const { valueA, valueB, path } = result;
+                const valueAHasSrc = valueA?.hasOwnProperty('src');
+                const valueBHasSrc = valueB?.hasOwnProperty('src');
+
+                // Handle image deletion
+                if (valueAHasSrc && !valueBHasSrc) {
+                  console.log('image deleted');
+                  updateImageReference('delete', valueA.src);
+                }
+
+                // Handle image addition
+                if (!valueAHasSrc && valueBHasSrc) {
+                  console.log('image added');
+                  updateImageReference('add', valueB.src);
+                }
+
+                // Handle image replacement
+                if (path?.includes('props.src')) {
+                  console.log('image replaced');
+                  updateImageReference('add', valueB.src);
+                  updateImageReference('delete', valueA.src);
+                }
+
+                // Handle deleted and added image nodes
+                if (!path) {
+                  [result.valueA, result.valueB].forEach((value, isAdding) => {
+                    for (const key in value) {
+                      const node = value[key];
+                      if (node?.displayName === 'Image' && node.props?.hasOwnProperty('src')) {
+                        console.log(`Image Node ${isAdding ? 'added' : 'deleted'}`, node.props);
+                        updateImageReference(isAdding ? 'add' : 'delete', node.props.src);
+                      }
+                    }
+                  });
+                }
+              }
+            }
+
+            prevState.current = current;
             setHasUnsavedChanges(true);
           }}
         >

@@ -9,7 +9,7 @@ import {
 // @ts-ignore
 // import decider from '@proceed/decider';
 import { Machine, getMachines } from './machines';
-import * as endpoints from './endpoints';
+import * as endpoints from './http-endpoints';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 
@@ -63,7 +63,7 @@ async function deployProcessToMachines(
 
 async function dynamicDeployment(
   definitionId: string,
-  version: number,
+  version: string,
   processesExportData: ProcessesExportData,
   forceMachine?: Machine,
 ) {
@@ -112,7 +112,7 @@ async function dynamicDeployment(
 
 async function staticDeployment(
   definitionId: string,
-  version: number,
+  version: string,
   processesExportData: ProcessesExportData,
   forceMachine?: Machine,
 ) {
@@ -156,7 +156,7 @@ async function staticDeployment(
 
 export async function deployProcess(
   definitionId: string,
-  version: number,
+  version: string,
   spaceId: string,
   method: 'static' | 'dynamic',
   forceMachine?: Machine,

@@ -15,8 +15,6 @@ import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints';
 
-// TODO: better error handling
-
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
 
 async function deployProcessToMachines(
@@ -226,7 +224,6 @@ export type VersionInfo = {
   versionName: string;
   versionDescription: string;
 };
-// TODO: refine type or iport it
 export type InstanceInfo = {
   processId: string;
   processInstanceId: string;
@@ -278,7 +275,6 @@ export type InstanceInfo = {
 export type DeployedProcessInfo = {
   definitionId: string;
   versions: VersionInfo[];
-  // TODO: refine instances type
   instances: InstanceInfo[];
 };
 

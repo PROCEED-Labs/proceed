@@ -102,7 +102,7 @@ export async function getDeployedProcessesFromSpaceEngines(spaceEngines: SavedEn
         getDeployments([
           {
             type: 'http',
-            id: '', // TODO: what should I do with id here?
+            id: '', // id is not necessary for this request
             address: engine.address,
             spaceEngine: true,
           },

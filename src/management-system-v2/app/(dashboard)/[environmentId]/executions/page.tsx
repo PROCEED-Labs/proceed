@@ -12,7 +12,6 @@ import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engine
 import { isUserErrorResponse } from '@/lib/user-error';
 
 function getDeploymentNames(deployments: DeployedProcessInfo[]) {
-  // TODO: don't use version name use what old MS used
   for (const deployment of deployments) {
     let latestVesrionIdx = deployment.versions.length - 1;
     for (let i = deployment.versions.length - 2; i >= 0; i--) {
@@ -22,7 +21,7 @@ function getDeploymentNames(deployments: DeployedProcessInfo[]) {
     const latestVersion = deployment.versions[latestVesrionIdx];
 
     // @ts-ignore
-    deployment.name = latestVersion.versionName || latestVersion.definitionName;
+    deployment.name = latestVersion.definitionName || latestVersion.versionName;
   }
 
   return deployments as (DeployedProcessInfo & { name: string })[];

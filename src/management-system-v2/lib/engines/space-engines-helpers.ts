@@ -13,10 +13,7 @@ async function getMqttEngines(engine: SavedEngine): Promise<SpaceEngine[]> {
   await client.subscribeAsync(`proceed-pms/engine/+/status`);
 
   const enginesMap = new Map();
-  client.on('message', (topic, message) => {
-    if (!topic.match(/proceed-pms\/engine\/(.+)\/status/)) return;
-    engineAccumulator(topic, message.toString(), enginesMap);
-  });
+  client.on('message', (topic, m) => engineAccumulator(topic, m.toString(), enginesMap));
 
   await new Promise((res) => setTimeout(res, mqttTimeout));
 

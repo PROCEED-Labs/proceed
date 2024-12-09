@@ -158,9 +158,11 @@ const engineStatusRegex = new RegExp(`^${getEnginePrefix('')}([^\/]+)\/status`);
 export function engineAccumulator(topic?: string, message?: string, state?: EngineStatus) {
   if (!topic || !message) return state;
 
-  const id = topic.match(engineStatusRegex)![1];
-  const body = JSON.parse(message);
+  const match = topic.match(engineStatusRegex);
+  if (!match) return state;
+  const id = match[1];
 
+  const body = JSON.parse(message);
   state = state || new Map();
   state.set(id, { id, ...body });
 

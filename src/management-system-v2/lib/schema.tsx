@@ -250,13 +250,13 @@ export const schema = {
       ],
     },
     {
-      name: 'version',
+      name: 'versionId',
       extends: ['bpmn:Definitions', 'bpmn:Import'],
       properties: [
         {
-          name: 'version',
+          name: 'versionId',
           isAttr: true,
-          type: 'Number',
+          type: 'string',
         },
       ],
     },
@@ -288,6 +288,17 @@ export const schema = {
       properties: [
         {
           name: 'versionBasedOn',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'versionCreatedOn',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'versionCreatedOn',
           isAttr: true,
           type: 'String',
         },

@@ -32,7 +32,6 @@ export async function getSpaceEngineById(
   return engine;
 }
 
-<<<<<<< HEAD
 export async function getSpaceEngineByAddress(address: string, spaceId: string, ability?: Ability) {
   const engine = await db.engine.findFirst({
     where: {
@@ -55,8 +54,6 @@ export async function getSpaceEngineByAddress(address: string, spaceId: string, 
   return engine;
 }
 
-=======
->>>>>>> origin/main
 const SpaceEngineArraySchema = SpaceEngineInputSchema.array();
 export function addSpaceEngines(
   environmentId: string,

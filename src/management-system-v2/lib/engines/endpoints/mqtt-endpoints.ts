@@ -89,7 +89,7 @@ export async function mqttRequest(
 type CollectedData = {
   onMessageCallback: mqtt.OnMessageCallback;
   data?: any;
-  clearInterval?: NodeJS.Timeout;
+  staleTimeout?: NodeJS.Timeout;
 };
 const collectedDataEntries: Map<string, CollectedData> =
   (globalThis as any).collectedDataEntries ||
@@ -110,15 +110,15 @@ export async function collectMqttData<TData>(
         if (validTopic ? !validTopic(messageTopic) : messageTopic !== topic) return;
 
         if (staleAfter) {
-          clearTimeout(collectedData!.clearInterval);
-          collectedData!.clearInterval = setTimeout(() => clearCollectedData(topic), staleAfter);
+          clearTimeout(collectedData!.staleTimeout);
+          collectedData!.staleTimeout = setTimeout(() => clearCollectedData(topic), staleAfter);
         }
 
         collectedData!.data = accumulator(messageTopic, message.toString(), collectedData!.data);
 
         // TODO: do something with message
       },
-      clearInterval: staleAfter
+      staleTimeout: staleAfter
         ? setTimeout(() => clearCollectedData(topic), staleAfter)
         : undefined,
     };

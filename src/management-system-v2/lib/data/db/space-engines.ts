@@ -16,7 +16,7 @@ export async function getSpaceEngineById(
   engineId: string,
   ability?: Ability,
 ) {
-  const engine = await db.engine.findFirst({
+  const engine = await db.engine.findUnique({
     where: {
       environmentId: environmentId,
       id: engineId,

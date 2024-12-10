@@ -13,6 +13,8 @@ import db from '@/lib/data/db';
 import { getProcessUserTaskJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
 
+const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
+
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
   'image/jpeg',
@@ -324,6 +326,8 @@ export async function updateArtifactProcessReference(
   processId: string,
   status: boolean,
 ) {
+  if (DEPLOYMENT_ENV !== 'cloud') return;
+
   const artifact = await db.artifact.findUnique({
     where: { fileName },
   });

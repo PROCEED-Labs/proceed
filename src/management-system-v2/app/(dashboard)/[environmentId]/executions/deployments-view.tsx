@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { deployProcess as serverDeployProcess } from '@/lib/engines/server-actions';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { SpaceEngine } from '@/lib/engines/machines';
+import { userError } from '@/lib/user-error';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -58,7 +59,9 @@ const DeploymentsView = ({
 
           let latestVersion = process.versions[0];
           for (const version of process.versions)
-            if (version.createdOn > latestVersion.createdOn) latestVersion = version;
+            if (+version.createdOn > +latestVersion.createdOn) latestVersion = version;
+
+          if (!latestVersion) throw { error: userError('Process has no versions') };
 
           return await serverDeployProcess(
             process.id,

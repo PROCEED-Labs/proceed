@@ -52,7 +52,7 @@ async function deployProcessToMachines(
               engine,
               // TODO: make sure that images are being sent correctly
               // the pain point is probably going to be MQTT
-              body: { image: image.data },
+              body: { type: 'Buffer', data: image.data },
             }),
           );
 

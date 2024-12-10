@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "Engine" (
+CREATE TABLE "engine" (
     "id" TEXT NOT NULL,
     "environmentId" TEXT NOT NULL,
     "address" TEXT NOT NULL,
@@ -7,8 +7,8 @@ CREATE TABLE "Engine" (
     "createdOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastEditedOn" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Engine_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "engine_pkey" PRIMARY KEY ("id")
 );
 
 -- AddForeignKey
-ALTER TABLE "Engine" ADD CONSTRAINT "Engine_environmentId_fkey" FOREIGN KEY ("environmentId") REFERENCES "Space"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "engine" ADD CONSTRAINT "engine_environmentId_fkey" FOREIGN KEY ("environmentId") REFERENCES "space"("id") ON DELETE CASCADE ON UPDATE CASCADE;

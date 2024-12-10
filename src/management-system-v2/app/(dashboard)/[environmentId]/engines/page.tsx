@@ -6,6 +6,7 @@ import { getSpaceEngines } from '@/lib/data/DTOs';
 import { getCurrentEnvironment } from '@/components/auth';
 import Ability from '@/lib/ability/abilityHelper';
 import { Suspense } from 'react';
+import { enableUseDB } from 'FeatureFlags';
 
 const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ability }) => {
   const engines = await getSpaceEngines(spaceId, ability);
@@ -14,7 +15,7 @@ const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ab
 };
 
 const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!process.env.NEXT_PUBLIC_ENABLE_EXECUTION) {
+  if (!process.env.NEXT_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
     return notFound();
   }
 

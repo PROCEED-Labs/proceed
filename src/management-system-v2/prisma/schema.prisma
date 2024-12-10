@@ -93,7 +93,7 @@ model Artifact {
   artifactType String // user-task, script, image, etc.
   processReferences   ArtifactProcessReference[] // Relation to track references
   versionReferences   ArtifactVersionReference[]
-  refCounter   Int                 @default(0)
+  refCounter   Int                 @default(1)
 
   @@map("artifact")
 }
@@ -122,8 +122,6 @@ model ArtifactVersionReference {
   @@unique([artifactId, versionId])
 
   @@map("artifact_version_reference")
-
-
 }
 
 model Space {
@@ -140,7 +138,7 @@ model Space {
   folders            Folder[]
   processes          Process[]
   roles              Role[]
-  Engine             Engine[]
+  engines            Engine[]
 
   @@map("space")
 }

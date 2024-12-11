@@ -1,6 +1,6 @@
 import { useContext, useEffect, useId, useState } from 'react';
 
-import { Select } from 'antd';
+import { Select, Input as AntInput } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
@@ -15,6 +15,7 @@ type InputProps = {
   type?: 'text' | 'number' | 'email';
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
+  variable?: string;
 };
 
 const Input: UserComponent<InputProps> = ({
@@ -22,6 +23,7 @@ const Input: UserComponent<InputProps> = ({
   type = 'text',
   defaultValue = '',
   labelPosition = 'top',
+  variable,
 }) => {
   const {
     connectors: { connect },
@@ -94,6 +96,7 @@ const Input: UserComponent<InputProps> = ({
           disabled={!editingEnabled}
           type={type}
           value={defaultValue}
+          name={variable}
           onClick={() => {
             if (!editingEnabled) return;
             setEditingDefault(true);
@@ -114,9 +117,11 @@ export const InputSettings = () => {
     actions: { setProp },
     type,
     labelPosition,
+    variable,
   } = useNode((node) => ({
     type: node.data.props.type,
     labelPosition: node.data.props.labelPosition,
+    variable: node.data.props.variable,
   }));
 
   return (
@@ -159,6 +164,19 @@ export const InputSettings = () => {
           />
         }
       />
+      <Setting
+        label="Variable"
+        control={
+          <AntInput
+            value={variable}
+            onChange={(e) => {
+              setProp((props: InputProps) => {
+                props.variable = e.target.value;
+              });
+            }}
+          />
+        }
+      />
     </>
   );
 };
@@ -175,6 +193,7 @@ Input.craft = {
     label: 'New Input',
     defaultValue: '',
     labelPosition: 'top',
+    variable: undefined,
   },
 };
 

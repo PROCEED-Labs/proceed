@@ -29,6 +29,7 @@ import { DiffResult, deepEquals } from '@/lib/helpers/javascriptHelpers';
 import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/file-manager-facade';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+
 import { useSearchParams } from 'next/navigation';
 import BuilderContext from './BuilderContext';
 
@@ -230,6 +231,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
         <Editor
           resolver={{
             ...Elements,
+            Image: Elements.EditImage,
           }}
           enabled={!isMobile}
           handlers={(store: EditorStore) =>

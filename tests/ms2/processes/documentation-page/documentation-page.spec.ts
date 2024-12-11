@@ -899,9 +899,7 @@ test('allow a different user that was given the share link to import the shared 
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check that the "Add to your workspace option is not shown to a user that already owns the process"
-  await expect(
-    documentationPage.getByRole('button', { name: 'Add to your workspace' }),
-  ).toBeHidden();
+  await expect(documentationPage.getByRole('button', { name: 'Edit' })).toBeHidden();
 
   // share process with link
   await openModal(page, () => page.getByRole('button', { name: 'share-alt' }).click());
@@ -926,16 +924,18 @@ test('allow a different user that was given the share link to import the shared 
   await newPage.waitForURL(`${clipboardData}`);
 
   // check that the add to workspace button is visible since the user does not own the process
-  await expect(newPage.getByRole('button', { name: 'Add to your workspace' })).toBeVisible();
+  await expect(newPage.getByRole('button', { name: 'Edit' })).toBeVisible();
 
   // Add the shared process to the workspace
-  await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
+  await newPage.getByRole('button', { name: 'Edit' }).click();
   await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
 
   await newPage.getByRole('button', { name: 'Create a Process' }).click();
   await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
 
   await newPage.getByRole('button', { name: 'My Space' }).click();
+  await newPage.getByText('root').click();
+  await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
   const newProcessId = newPage.url().split('/processes/').pop();

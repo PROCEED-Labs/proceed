@@ -182,23 +182,23 @@ export async function getElementSVG(
   } else if (isType(el, 'bpmn:CallActivity')) {
     // check if the call activity references another process which this user can access
     let importDefinitionId: string | undefined;
-    let version: string | undefined;
+    let versionId: string | undefined;
     try {
-      ({ definitionId: importDefinitionId, versionId: version } =
+      ({ definitionId: importDefinitionId, versionId } =
         getTargetDefinitionsAndProcessIdForCallActivityByObject(getRootFromElement(el), el.id));
     } catch (err) {}
 
     if (
       importDefinitionId &&
-      version &&
+      versionId &&
       availableImports[importDefinitionId] &&
-      availableImports[importDefinitionId][version]
+      availableImports[importDefinitionId][versionId]
     ) {
       // remember the bpmn currently loaded into the viewer so we can return to it after getting the svg for the elements in the imported process
       ({ xml: oldBpmn } = await bpmnViewer.saveXML());
 
       // get the bpmn for the import and load it into the viewer
-      const importBpmn = availableImports[importDefinitionId][version];
+      const importBpmn = availableImports[importDefinitionId][versionId];
 
       await bpmnViewer.importXML(importBpmn);
 
@@ -216,7 +216,7 @@ export async function getElementSVG(
         name: `Imported Process: ${definitions.name}`,
         ...getMetaDataFromBpmnElement(el, mdEditor),
         planeSvg: await getSVGFromBPMN(bpmnViewer),
-        version,
+        versionId,
         versionName,
         versionDescription,
       };

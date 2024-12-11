@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
+import BuilderContext from './BuilderContext';
 
 const styles = `
 body {
@@ -163,15 +164,18 @@ p, h1, h2, h3, h4, h5, th, td {
 
 export function toHtml(json: string) {
   const markup = ReactDOMServer.renderToStaticMarkup(
-    <Editor
-      enabled={false}
-      resolver={{
-        ...Elements,
-        Image: Elements.ExportImage,
-      }}
-    >
-      <Frame data={json} />
-    </Editor>,
+    <BuilderContext.Provider value={{ editingEnabled: true }}>
+      <Editor
+        enabled={false}
+        resolver={{
+          ...Elements,
+          Image: Elements.ExportImage,
+        }}
+      >
+        <Frame data={json} />
+      </Editor>
+      ,
+    </BuilderContext.Provider>,
   );
 
   return `

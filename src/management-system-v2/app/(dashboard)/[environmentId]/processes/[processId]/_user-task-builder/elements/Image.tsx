@@ -275,8 +275,8 @@ EditImage.craft = {
         enableUseFileManager
           ? null // already handled by onNodesChange in index.tsx file
           : await fetch(src, {
-            method: 'DELETE',
-          });
+              method: 'DELETE',
+            });
       }
     },
   },

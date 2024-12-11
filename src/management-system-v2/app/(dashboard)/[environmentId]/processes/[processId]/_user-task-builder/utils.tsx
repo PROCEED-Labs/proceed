@@ -164,7 +164,7 @@ p, h1, h2, h3, h4, h5, th, td {
 
 export function toHtml(json: string) {
   const markup = ReactDOMServer.renderToStaticMarkup(
-    <BuilderContext.Provider value={{ editingEnabled: false }}>
+    <BuilderContext.Provider value={{ editingEnabled: true }}>
       <Editor
         enabled={false}
         resolver={{

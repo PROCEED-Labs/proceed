@@ -19,7 +19,29 @@ type ImageProps = {
   width?: number;
 };
 
-const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
+// How the image should be rendered for use outside of the MS (mainly for use on the engine)
+export const ExportImage: UserComponent<ImageProps> = ({ src, width }) => {
+  if (src) {
+    // transform the url used inside the MS into the one expected on the engine
+    // cannot use useParams and useEnvironment since this will not be used inside the context in
+    // which they are defined
+    const msUrl = src.split('/');
+    const filename = msUrl.pop();
+    msUrl.pop();
+    const definitionId = msUrl.pop();
+
+    src = `/resources/process/${definitionId}/images/${filename}`;
+  }
+
+  return (
+    <div className="user-task-form-image">
+      <img style={{ width: width && `${width}%` }} src={src ? `${src}` : fallbackImage} />
+    </div>
+  );
+};
+
+// the Image component to use in the Editor
+export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   const { query } = useEditor();
 
   const [showResize, setShowResize] = useState(false);
@@ -36,6 +58,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
 
     return { isHovered: !!parent && parent.events.hovered };
   });
+
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   const {
@@ -43,6 +66,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
     download: getImageUrl,
     remove,
   } = useFileManager({ entityType: EntityType.PROCESS });
+
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 
@@ -231,7 +255,7 @@ export const ImageSettings = () => {
   );
 };
 
-Image.craft = {
+EditImage.craft = {
   rules: {
     canDrag: () => false,
   },
@@ -257,5 +281,3 @@ Image.craft = {
     },
   },
 };
-
-export default Image;

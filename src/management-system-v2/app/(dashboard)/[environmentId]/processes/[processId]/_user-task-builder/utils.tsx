@@ -3,7 +3,6 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const styles = `
 body {
@@ -107,6 +106,21 @@ body {
   margin: 3px 3px 6px 0;
 }
 
+.user-task-form-button {
+  background-color: #eee;
+  box-shadow: rgba(0,0,0, 0.02) 0 2px 0 0;
+  padding: 4px 15px;
+  border-radius: 6px;
+  border: 1px solid lightgrey;
+}
+
+.user-task-form-button.primary-button {
+  box-shadow: rgba(5, 145, 255, 0.1) 0 2px 0 0;
+  background-color: rgb(22, 119, 255);
+  color: white;
+  border-color: rgb(22, 119, 255);
+}
+
 .user-task-form-image {
   width: 100%;
   display: flex;
@@ -148,17 +162,15 @@ p, h1, h2, h3, h4, h5, th, td {
 `;
 
 export function toHtml(json: string) {
-  const queryClient = new QueryClient();
   const markup = ReactDOMServer.renderToStaticMarkup(
     <Editor
       enabled={false}
       resolver={{
         ...Elements,
+        Image: Elements.ExportImage,
       }}
     >
-      <QueryClientProvider client={queryClient}>
-        <Frame data={json} />
-      </QueryClientProvider>
+      <Frame data={json} />
     </Editor>,
   );
 
@@ -169,9 +181,14 @@ export function toHtml(json: string) {
     <style>
       ${styles}
     </style>
+    <script>
+      {script}
+    </script>
   </head>
   <body>
-    ${markup}
+    <form class="form">
+      ${markup}
+    </form>
   </body>
 </html>
   `;
@@ -194,7 +211,7 @@ export const iframeDocument = `
 
       .frame-content > div {
         box-sizing: border-box;
-        padding: 0 10px;    
+        padding: 0 10px;
       }
 
       .user-task-form-column {
@@ -206,6 +223,10 @@ export const iframeDocument = `
       }
 
       .user-task-form-image {
+        position: relative;
+      }
+
+      .user-task-form-button {
         position: relative;
       }
 
@@ -271,6 +292,7 @@ export const iframeDocument = `
     <div id="mountHere">
     </div>
   </body>
+
 </html>
 `;
 

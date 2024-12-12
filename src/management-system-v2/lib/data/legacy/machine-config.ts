@@ -35,7 +35,7 @@ type StoredConfigsAndParameters = {
   targetConfigs: Record<string, StoredTargetConfig>;
   parameters: Record<string, StoredParameter>;
   // versionedParentConfigs: Record<string, StoredParentConfig>;
-  versionedParentConfigs: Record<string, Record<number, StoredParentConfig>>;
+  versionedParentConfigs: Record<string, Record<string, StoredParentConfig>>;
 };
 
 let storedData: StoredConfigsAndParameters =
@@ -152,7 +152,7 @@ function machineConfigsToStorage(
 function parentConfigToStorage(
   parentConfig: ParentConfig,
   newId: boolean = false,
-  version: number = 0,
+  version: string = '',
 ) {
   const { targetConfig, metadata, machineConfigs } = parentConfig;
 
@@ -297,7 +297,7 @@ function nestedMachineConfigsFromStorage(machineConfigIds: string[]): MachineCon
  */
 export async function getDeepParentConfigurationById(
   parentConfigId: string,
-  version: number = 0,
+  version: string = '',
   ability?: Ability,
 ): Promise<ParentConfig> {
   const storedParentConfig = version
@@ -603,7 +603,7 @@ export async function addParentConfig(machineConfigInput: ParentConfig, environm
 export async function addParentConfigVersion(
   machineConfigInput: ParentConfig,
   environmentId: string,
-  version: number,
+  version: string,
 ) {
   const newVersion: ParentConfig = JSON.parse(JSON.stringify(machineConfigInput));
   newVersion.id = newVersion.id;

@@ -57,6 +57,7 @@ import {
   updateTargetConfig,
 } from '@/lib/data/legacy/machine-config';
 import ConfirmationButton from '@/components/confirmation-button';
+import { v4 } from 'uuid';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;
@@ -65,7 +66,13 @@ type MachineDataViewProps = {
   onChangeEditable: (isEditable: boolean) => void;
 };
 
-const LATEST_VERSION = { version: -2, name: 'Latest Version', description: '' };
+const LATEST_VERSION = {
+  id: '-1',
+  name: 'Latest Version',
+  description: '',
+  versionBasedOn: '',
+  createdOn: new Date(),
+};
 
 const ConfigEditor: React.FC<MachineDataViewProps> = ({
   selectedConfig,
@@ -108,9 +115,8 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   } = theme.useToken();
 
   const selectedVersion =
-    parentConfig.versions.find(
-      (version: any) => version.version === parseInt(selectedVersionId ?? '-1'),
-    ) ?? LATEST_VERSION;
+    parentConfig.versions.find((version: any) => version.id === (selectedVersionId ?? '')) ??
+    LATEST_VERSION;
 
   // TODO use FuzzySearch
   // currently only ignores capitalization
@@ -121,14 +127,15 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     versionName: string;
     versionDescription: string;
   }) => {
-    const epochTime = +new Date();
-    await addParentConfigVersion(parentConfig, environment.spaceId, epochTime);
+    const versionId = v4();
+    await addParentConfigVersion(parentConfig, environment.spaceId, versionId);
 
     parentConfig.versions.push({
-      version: epochTime,
+      id: versionId,
       name: values.versionName,
       description: values.versionDescription,
-      versionBasedOn: parentConfig.version ?? -1,
+      versionBasedOn: parentConfig.version,
+      createdOn: new Date(),
     });
 
     const versions = parentConfig.versions;
@@ -138,6 +145,16 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
 
   const makeConfigVersionLatest = async () => {
     setParentConfigVersionAsLatest(parentConfig);
+    const searchParams = new URLSearchParams(query);
+    searchParams.delete('version');
+    router.push(
+      spaceURL(
+        environment,
+        `/machine-config/${parentConfig.id as string}${
+          searchParams.size ? '?' + searchParams.toString() : ''
+        }`,
+      ),
+    );
     router.refresh();
   };
 
@@ -327,13 +344,13 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                   showSearch
                   filterOption={filterOption}
                   value={{
-                    value: selectedVersion.version,
+                    value: selectedVersion.id,
                     label: selectedVersion.name,
                   }}
                   onSelect={(_, option) => {
                     // change the version info in the query but keep other info
                     const searchParams = new URLSearchParams(query);
-                    if (!option.value || option.value === -2) searchParams.delete('version');
+                    if (!option.value || option.value === '-1') searchParams.delete('version');
                     else searchParams.set(`version`, `${option.value}`);
                     router.push(
                       spaceURL(
@@ -344,10 +361,10 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                       ),
                     );
                   }}
-                  options={[LATEST_VERSION]
-                    .concat(parentConfig.versions ?? [])
-                    .map(({ version, name }) => ({
-                      value: version,
+                  options={[LATEST_VERSION, ...parentConfig.versions]
+                    // .concat(parentConfig.versions ?? [])
+                    .map(({ id, name }) => ({
+                      value: id,
                       label: name,
                     }))}
                 />

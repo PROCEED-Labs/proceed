@@ -12,7 +12,7 @@ const MachineConfigView: React.FC<MachineConfigProps> = async ({
   params: { configId },
   searchParams,
 }) => {
-  const selectedVersionId = searchParams.version ? +searchParams.version : undefined;
+  const selectedVersionId = searchParams.version ? searchParams.version : undefined;
   let machineConfig = await getDeepParentConfigurationById(configId, selectedVersionId);
 
   //replace ConfigContent <-> MachineConfigEditor as needed

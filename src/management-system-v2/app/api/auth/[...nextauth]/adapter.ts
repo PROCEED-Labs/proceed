@@ -29,7 +29,7 @@ const Adapter = {
     return getUserById(id);
   },
   updateUser: async (user: AuthenticatedUser) => {
-    return updateUser(user.id, user);
+    return updateUser(user.id, { ...user, isGuest: false });
   },
   getUserByEmail: async (email: string) => {
     return getUserByEmail(email) ?? null;

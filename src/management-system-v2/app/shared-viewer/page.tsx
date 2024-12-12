@@ -55,7 +55,7 @@ const getProcessInfo = async (
     const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
-    const ownedProcesses = await getProcesses(userId, ability);
+    const ownedProcesses = await getProcesses(spaceId, ability);
     // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
     isOwner = ownedProcesses.some((process) => process.id === definitionId);
   }

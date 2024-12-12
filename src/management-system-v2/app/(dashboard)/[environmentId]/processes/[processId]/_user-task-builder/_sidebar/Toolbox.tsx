@@ -1,6 +1,6 @@
-import { Element, NodeTree, useEditor, WithoutPrivateActions } from '@craftjs/core';
+import { Element } from '@craftjs/core';
 import { Button as AntButton } from 'antd';
-import { ReactNode } from 'react';
+import React, { ReactNode, useContext } from 'react';
 
 import { LuFormInput, LuImage, LuTable, LuText } from 'react-icons/lu';
 import { MdCheckBox, MdRadioButtonChecked, MdTitle, MdOutlineCheck } from 'react-icons/md';
@@ -22,6 +22,7 @@ import {
 } from '../elements';
 
 import { createPortal } from 'react-dom';
+import BuilderContext from '../BuilderContext';
 
 type CreationButtonProps = React.PropsWithChildren<{
   title: string;
@@ -29,9 +30,7 @@ type CreationButtonProps = React.PropsWithChildren<{
 }>;
 
 const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }) => {
-  const { editingEnabled } = useEditor((state) => {
-    return { editingEnabled: state.options.enabled };
-  });
+  const { editingEnabled } = useContext(BuilderContext);
 
   const id = `create-${title}-button`;
 

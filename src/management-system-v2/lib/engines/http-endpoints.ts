@@ -66,15 +66,15 @@ export function sendScriptTaskScript(
   );
 }
 
-export function sendImage(machine: Machine, definitionId: string, fileName: string, image: Blob) {
+export function sendImage(machine: Machine, definitionId: string, fileName: string, image: Buffer) {
   return fetch(
     generateRequestUrl(machine, `/resources/process/${definitionId}/images/${fileName}`),
     {
       method: 'PUT',
       headers: {
-        'Content-Type': 'image/png image/svg+xml image/jpeg',
+        'Content-Type': 'application/json',
       },
-      body: image,
+      body: JSON.stringify({ type: 'Buffer', data: image }),
     },
   );
 }

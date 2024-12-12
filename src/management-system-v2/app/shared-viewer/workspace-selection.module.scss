@@ -1,15 +1,18 @@
 .WorkspaceSelection {
+  margin-bottom: 10px;
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
   gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
 
   .WorkspaceButton {
     border: 1px solid black;
-    width: 150px;
-    height: 100px;
-    display: flex;
+    margin: 5px;
+    width: 200px;
+    height: 120px;
+    display: inline-flex; /* Ensure buttons align horizontally */
     flex-direction: column;
     justify-content: center;
     align-items: center;

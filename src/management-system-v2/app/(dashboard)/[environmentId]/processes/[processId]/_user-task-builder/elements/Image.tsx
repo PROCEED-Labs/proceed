@@ -9,6 +9,9 @@ import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import { ContextMenu, Setting } from './utils';
 import ImageUpload from '@/components/image-upload';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
 
 type ImageProps = {
   src?: string;
@@ -16,7 +19,29 @@ type ImageProps = {
   width?: number;
 };
 
-const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
+// How the image should be rendered for use outside of the MS (mainly for use on the engine)
+export const ExportImage: UserComponent<ImageProps> = ({ src, width }) => {
+  if (src) {
+    // transform the url used inside the MS into the one expected on the engine
+    // cannot use useParams and useEnvironment since this will not be used inside the context in
+    // which they are defined
+    const msUrl = src.split('/');
+    const filename = msUrl.pop();
+    msUrl.pop();
+    const definitionId = msUrl.pop();
+
+    src = `/resources/process/${definitionId}/images/${filename}`;
+  }
+
+  return (
+    <div className="user-task-form-image">
+      <img style={{ width: width && `${width}%` }} src={src ? `${src}` : fallbackImage} />
+    </div>
+  );
+};
+
+// the Image component to use in the Editor
+export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   const { query } = useEditor();
 
   const [showResize, setShowResize] = useState(false);
@@ -33,13 +58,26 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
 
     return { isHovered: !!parent && parent.events.hovered };
   });
+
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
+
+  const {
+    fileUrl: imageUrl,
+    download: getImageUrl,
+    remove,
+  } = useFileManager({ entityType: EntityType.PROCESS });
 
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 
   const baseUrl =
     editingEnabled && `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
+
+  useEffect(() => {
+    if (enableUseFileManager && src) {
+      getImageUrl(params.processId as string, src);
+    }
+  }, [src]);
 
   return (
     <ContextMenu menu={[]}>
@@ -59,15 +97,19 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
         <img
           ref={imageRef}
           style={{ width: width && `${width}%` }}
-          src={src ? `${src}?${reloadParam}` : fallbackImage}
+          src={src ? (enableUseFileManager ? imageUrl! : `${src}?${reloadParam}`) : fallbackImage}
         />
         {editingEnabled && baseUrl && isHovered && (
           <ImageUpload
             imageExists={!!src}
-            onReload={() => setProp((props: ImageProps) => (props.reloadParam = Date.now()))}
+            onReload={() => {
+              setProp((props: ImageProps) => (props.reloadParam = Date.now()));
+            }}
             onImageUpdate={(imageFileName) => {
               setProp((props: ImageProps) => {
-                props.src = imageFileName && `${baseUrl}/${imageFileName}`;
+                props.src =
+                  imageFileName &&
+                  (enableUseFileManager ? imageFileName : `${baseUrl}/${imageFileName}`);
                 props.width = undefined;
               });
             }}
@@ -75,6 +117,12 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
               postEndpoint: baseUrl,
               putEndpoint: src,
               deleteEndpoint: src,
+            }}
+            config={{
+              entityType: EntityType.PROCESS,
+              entityId: params.processId,
+              useDefaultRemoveFunction: false,
+              fileName: src,
             }}
           />
         )}
@@ -207,7 +255,7 @@ export const ImageSettings = () => {
   );
 };
 
-Image.craft = {
+EditImage.craft = {
   rules: {
     canDrag: () => false,
   },
@@ -224,12 +272,12 @@ Image.craft = {
     onDelete: async (node: Node) => {
       const src = node.data.props.src as undefined | string;
       if (src) {
-        await fetch(src, {
-          method: 'DELETE',
-        });
+        enableUseFileManager
+          ? null // already handled by onNodesChange in index.tsx file
+          : await fetch(src, {
+              method: 'DELETE',
+            });
       }
     },
   },
 };
-
-export default Image;

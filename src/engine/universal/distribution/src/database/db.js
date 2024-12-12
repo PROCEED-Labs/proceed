@@ -25,16 +25,16 @@ module.exports = {
   },
 
   /**
-   * Checks if a specific version of a process exists
+   * Checks if a specific versionId of a process exists
    *
    *
    * @param {String} definitionId name of the file the definition of the process is stored in
-   * @param {Number} version the specific version of the process to check
-   * @returns {Boolean} - indicates if the version exists or not
+   * @param {Number} versionId the specific versionId of the process to check
+   * @returns {Boolean} - indicates if the versionId exists or not
    */
-  async isProcessVersionExisting(definitionId, version) {
+  async isProcessVersionExisting(definitionId, versionId) {
     const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
-    return !!(processInfo && processInfo[version]);
+    return !!(processInfo && processInfo[versionId]);
   },
 
   /**
@@ -42,29 +42,29 @@ module.exports = {
    * e.g. there are definitions for all imported processes and html for all user tasks
    *
    * @param {String} definitionId the id of the process definitions to check
-   * @param {Number} version the version to validate
+   * @param {Number} versionId the versionId to validate
    * @param {String} [expectedProcessId] the processId that is expected for this specific process (checked when used as an import)
    * @returns {Boolean} - indicates if the process is valid and can be executed
    */
-  async isProcessVersionValid(definitionId, version, expectedProcessId) {
+  async isProcessVersionValid(definitionId, versionId, expectedProcessId) {
     const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
 
-    if (!processInfo || !processInfo[version]) {
+    if (!processInfo || !processInfo[versionId]) {
       return false;
     }
 
-    const versionInfo = processInfo[version];
+    const versionInfo = processInfo[versionId];
 
     if (expectedProcessId && expectedProcessId !== versionInfo.processId) {
       return false;
     }
 
-    //check if the version was already validated, yes? => just return true
+    //check if the versionId was already validated, yes? => just return true
     if (versionInfo.validated) {
       return true;
     }
 
-    // get the requirements for the version
+    // get the requirements for the versionId
     const requirements = versionInfo.needs;
 
     // get all known script-task files for the process
@@ -98,7 +98,7 @@ module.exports = {
     // recursively check if all imported process versions exist and are valid themselves
     for (const {
       definitionId: importDefinitionId,
-      version: importVersion,
+      versionId: importVersion,
       processId: importProcessId,
     } of requirements.imports) {
       if (!(await this.isProcessVersionValid(importDefinitionId, importVersion, importProcessId)))
@@ -107,17 +107,17 @@ module.exports = {
 
     // set flag in the process file that the validity check was done and succesful
     versionInfo.validated = true;
-    processInfo[version] = versionInfo;
+    processInfo[versionId] = versionInfo;
     await data.write(`processes.json/${definitionId}`, JSON.stringify(processInfo));
 
     return true;
   },
 
   /**
-   * Saves the definition of a process version under the definitionid and version id in the given bpmn
+   * Saves the definition of a process versionId under the definitionid and versionId id in the given bpmn
    *
    * @param {String} bpmn the process definition
-   * @throws Will throw if the bpmn contains either no definitionId or no version information
+   * @throws Will throw if the bpmn contains either no definitionId or no versionId information
    */
   async saveProcessVersionDefinition(bpmn) {
     const bpmnObj = await toBpmnObject(bpmn);
@@ -135,20 +135,20 @@ module.exports = {
 
     const versionInfo = await getDefinitionsVersionInformation(bpmnObj);
 
-    if (!versionInfo || !versionInfo.version) {
-      throw new Error('The bpmn does not contain valid version information!');
+    if (!versionInfo || !versionInfo.versionId) {
+      throw new Error('The bpmn does not contain valid versionId information!');
     }
 
-    const { version } = versionInfo;
+    const { versionId } = versionInfo;
 
-    // save version info into the processes list
+    // save versionId info into the processes list
     let processInfo = JSON.parse(await data.read(`processes.json/${bpmnDefinitionId}`));
     // make sure to keep information about other existing versions
     if (!processInfo) {
       processInfo = {};
     }
-    // save version specific information (needs gives information about the required process fragments)
-    processInfo[version] = {
+    // save versionId specific information (needs gives information about the required process fragments)
+    processInfo[versionId] = {
       deploymentDate: Date.now(),
       needs: await getRequiredProcessFragments(bpmnObj),
       validated: false,
@@ -158,13 +158,13 @@ module.exports = {
     await data.write(`processes.json/${bpmnDefinitionId}`, JSON.stringify(processInfo));
 
     // save the bpmn
-    await data.writeProcessVersionBpmn(bpmnDefinitionId, version, bpmn);
+    await data.writeProcessVersionBpmn(bpmnDefinitionId, versionId, bpmn);
 
-    await publishDeployedVersionInfo(bpmnDefinitionId, version, bpmn);
+    await publishDeployedVersionInfo(bpmnDefinitionId, versionId, bpmn);
 
     return {
       definitionId: bpmnDefinitionId,
-      version,
+      versionId,
       bpmn,
     };
   },
@@ -181,27 +181,27 @@ module.exports = {
   },
 
   /**
-   * Returns the bpmn of a specific process version
+   * Returns the bpmn of a specific process versionId
    *
    * @param {string} definitionId
-   * @param {number} version the version we want to get the bpmn of
-   * @returns {string} the bpmn of the specific process version
+   * @param {number} versionId the versionId we want to get the bpmn of
+   * @returns {string} the bpmn of the specific process versionId
    */
-  async getProcessVersion(definitionId, version) {
-    if (!(await this.isProcessVersionExisting(definitionId, version))) {
+  async getProcessVersion(definitionId, versionId) {
+    if (!(await this.isProcessVersionExisting(definitionId, versionId))) {
       throw new Error(
-        `Process version (${version}) for the process with the given definitionId (${definitionId}) does not exist!`,
+        `Process versionId (${versionId}) for the process with the given definitionId (${definitionId}) does not exist!`,
       );
     }
 
-    return await data.readProcessVersionBpmn(definitionId, version);
+    return await data.readProcessVersionBpmn(definitionId, versionId);
   },
 
   /**
-   * Gets the BPMNs for all version of a process
+   * Gets the BPMNs for all versionId of a process
    *
    * @param {String} definitionId
-   * @returns {Array<{ version: string, bpmn: string }>} - the process definitions of every version of the process
+   * @returns {Array<{ versionId: string, bpmn: string }>} - the process definitions of every versionId of the process
    */
   async getProcess(definitionId) {
     const processInfo = await data.read(`processes.json/${definitionId}`);
@@ -214,54 +214,54 @@ module.exports = {
 
     const versionBpmn = [];
 
-    for (const version of versions) {
+    for (const versionId of versions) {
       versionBpmn.push({
-        version,
-        bpmn: await data.readProcessVersionBpmn(definitionId, version),
+        versionId,
+        bpmn: await data.readProcessVersionBpmn(definitionId, versionId),
       });
     }
   },
 
   /**
    * Information about an imported process
-   * @typedef {{ definitionId: string, processId: string, version: number }} ImportInformation
+   * @typedef {{ definitionId: string, processId: string, versionId: number }} ImportInformation
    */
 
   /**
-   * The dependencies of a process version
+   * The dependencies of a process versionId
    * @typedef {{ html: string[], images: string[], imports: ImportInformation[]}} VersionDependencies
    */
 
   /**
-   * Information about a specific version of a process
-   * @typedef {{ bpmn: string, deploymentDate: number, definitionName: string, deploymentMethod: string, needs: VersionDependencies, version: number, versionName: string, versionDescription: string }} VersionInfo
+   * Information about a specific versionId of a process
+   * @typedef {{ bpmn: string, deploymentDate: number, definitionName: string, deploymentMethod: string, needs: VersionDependencies, versionId: number, versionName: string, versionDescription: string }} VersionInfo
    */
 
   /**
-   * Gets the definition and additional information for a specific version of a process
+   * Gets the definition and additional information for a specific versionId of a process
    *
    * @param {String} processDefinitionId
-   * @param {Number} version
-   * @returns {VersionInfo} the information about the version
+   * @param {Number} versionId
+   * @returns {VersionInfo} the information about the versionId
    */
-  async getProcessVersionInfo(processDefinitionId, version) {
+  async getProcessVersionInfo(processDefinitionId, versionId) {
     const processInfo = JSON.parse(await data.read(`processes.json/${processDefinitionId}`));
 
-    if (!processInfo || !processInfo[version]) {
+    if (!processInfo || !processInfo[versionId]) {
       throw new Error(
-        `Process version ${version} does not exist for the process (id: ${processDefinitionId}).`,
+        `Process versionId ${versionId} does not exist for the process (id: ${processDefinitionId}).`,
       );
     }
 
-    const versionInfo = processInfo[version];
+    const versionInfo = processInfo[versionId];
 
     const deploymentDate = versionInfo.deploymentDate;
 
-    const bpmn = await data.readProcessVersionBpmn(processDefinitionId, version);
+    const bpmn = await data.readProcessVersionBpmn(processDefinitionId, versionId);
 
     if (!bpmn) {
       throw new Error(
-        `There exists no BPMN for the process (id: ${processDefinitionId}) with version ${version}.`,
+        `There exists no BPMN for the process (id: ${processDefinitionId}) with versionId ${versionId}.`,
       );
     }
 
@@ -275,7 +275,7 @@ module.exports = {
       definitionName,
       deploymentMethod,
       needs: versionInfo.needs,
-      version: bpmnVersionInfo.version,
+      versionId: bpmnVersionInfo.versionId,
       versionName: bpmnVersionInfo.name,
       versionDescription: bpmnVersionInfo.description,
       basedOnVersion: bpmnVersionInfo.versionBasedOn,
@@ -301,7 +301,7 @@ module.exports = {
     }
 
     const infoPromises = Object.keys(processInfo).map(
-      async (version) => await this.getProcessVersionInfo(processDefinitionId, version),
+      async (versionId) => await this.getProcessVersionInfo(processDefinitionId, versionId),
     );
 
     const versions = await Promise.all(infoPromises);
@@ -386,14 +386,14 @@ module.exports = {
     const imageDependencies = getHTMLImagesToKnow(html);
 
     if (imageDependencies.length) {
-      // add the dependency to every process version that depends on the user task
-      Object.values(processInfo).forEach((version) => {
-        if (version.needs.html.includes(fileName)) {
-          // if the version has a dependency on the user task
-          // add all the image dependencies that are not already referenced in the needs array of the version
+      // add the dependency to every process versionId that depends on the user task
+      Object.values(processInfo).forEach((versionId) => {
+        if (versionId.needs.html.includes(fileName)) {
+          // if the versionId has a dependency on the user task
+          // add all the image dependencies that are not already referenced in the needs array of the versionId
           imageDependencies.forEach((imageFileName) => {
-            if (!version.needs.images.includes(imageFileName)) {
-              version.needs.images.push(imageFileName);
+            if (!versionId.needs.images.includes(imageFileName)) {
+              versionId.needs.images.push(imageFileName);
             }
           });
         }

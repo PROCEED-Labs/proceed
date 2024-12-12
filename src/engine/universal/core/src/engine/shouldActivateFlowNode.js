@@ -102,7 +102,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
 function onCallActivity(engine, instance, tokenId, callActivity) {
   return new Promise(async (resolve) => {
     // get necessary process information about the process referenced by the callActivity
-    const { definitionId, version } = getTargetDefinitionsAndProcessIdForCallActivityByObject(
+    const { definitionId, versionId } = getTargetDefinitionsAndProcessIdForCallActivityByObject(
       getRootFromElement(callActivity),
       callActivity.id,
     );
@@ -116,7 +116,7 @@ function onCallActivity(engine, instance, tokenId, callActivity) {
     // make sure that the imported process is started with the correct version and the current instance variables
     await engine._management.createInstance(
       definitionId,
-      version,
+      versionId,
       instance.getVariables(),
       undefined,
       // onStarted callBack: log that we started an instance of a callActivity process and put a reference to the instance into the token

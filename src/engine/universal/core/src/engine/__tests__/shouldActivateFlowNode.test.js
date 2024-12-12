@@ -145,7 +145,7 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
       // mock the return values of the function analyzing the bpmn or returning the import bpmn
       getTargetDefinitionsAndProcessIdForCallActivityByObject.mockReturnValue({
         definitionId: 'callActivityDefinitionId',
-        version: 456,
+        versionId: '456',
       });
 
       mockRoot = {
@@ -182,7 +182,7 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
       // check if the creation of the instance of the imported process was triggered
       expect(mockEngine._management.createInstance).toHaveBeenCalledWith(
         'callActivityDefinitionId',
-        456,
+        '456',
         { mockVariable: 'mockValue' },
         undefined,
         expect.any(Function),

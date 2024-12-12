@@ -6,6 +6,8 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
 import { getProcess, getProcesses } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
+import BPMNTimeline from '@/components/bpmn-timeline';
+import { env } from '@/lib/env-vars';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
@@ -39,14 +41,24 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   // client component from here.
   return (
     <>
-      <Wrapper processName={process.name} processes={processes}>
-        <Modeler
-          className={styles.Modeler}
-          process={{ ...process, bpmn: selectedVersionBpmn as string }}
-          versions={process.versions}
-          versionName={selectedVersion?.name}
-        />
-      </Wrapper>
+      <Wrapper
+        processName={process.name}
+        processes={processes}
+        modelerComponent={
+          <Modeler
+            className={styles.Modeler}
+            process={{ ...process, bpmn: selectedVersionBpmn as string }}
+            versions={process.versions}
+            versionName={selectedVersion?.name}
+          />
+        }
+        timelineComponent={
+          <BPMNTimeline
+            className={styles.Modeler}
+            process={{ ...process, bpmn: selectedVersionBpmn as string }}
+          />
+        }
+      />
       <AddUserControls name={'modeler'} />
     </>
   );

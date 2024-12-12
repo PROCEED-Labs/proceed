@@ -164,12 +164,12 @@ const HeaderActions: FC = () => {
         {enableChatbot && <Assistant />}
         {actionButton}
         <Dropdown
-          trigger={['click']}
+          trigger={['click', 'hover']}
           menu={{
             items: avatarDropdownItems,
           }}
         >
-          <UserAvatar user={session.data.user} />
+          <UserAvatar user={session.data.user} style={{ cursor: 'pointer' }} />
         </Dropdown>
       </Space>
     </>

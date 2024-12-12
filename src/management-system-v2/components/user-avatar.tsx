@@ -11,10 +11,9 @@ type UserAvatarProps = {
     firstName?: string | null;
     lastName?: string | null;
   };
-  avatarProps?: ComponentProps<typeof AntDesignAvatar>;
-};
+} & ComponentProps<typeof AntDesignAvatar>;
 
-const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, avatarProps }, ref) => {
+const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, ...avatarProps }, ref) => {
   if (!user) return <AntDesignAvatar />;
 
   if (user.isGuest) return <AntDesignAvatar icon={<UserOutlined />} />;

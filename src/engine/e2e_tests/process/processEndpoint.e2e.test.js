@@ -205,7 +205,7 @@ describe('Test process endpoints', () => {
         });
       });
 
-      describe('/process/{definitionId}/script-tasks/{userTaskFileName}', () => {
+      describe('/process/{definitionId}/script-tasks/{scriptTaskFileName}', () => {
         it('saves the script task script on PUT request', async () => {
           // check that the script task is currently missing
           const response = await request.get(

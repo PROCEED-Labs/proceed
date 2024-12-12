@@ -14,7 +14,11 @@ export function removeEmptyExtensionElements(element: any): void;
  * @returns {object} the container element
  */
 export function ensureContainerElement(element: object, containerType: string): object;
-export function removeEmptyContainerElement(element: any, containerType: any, containerElement: any): void;
+export function removeEmptyContainerElement(
+  element: any,
+  containerType: any,
+  containerElement: any,
+): void;
 /**
  * Updates the Meta Information of an element
  *
@@ -23,7 +27,11 @@ export function removeEmptyContainerElement(element: any, containerType: any, co
  * @param {object} metaValues the meta data values to set
  * @returns {Promise.<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
-export function setMetaData(bpmn: (string | object), elId: string, metaValues: object): Promise<string | object>;
+export function setMetaData(
+  bpmn: string | object,
+  elId: string,
+  metaValues: object,
+): Promise<string | object>;
 /**
  * Sets values and attributes for custom proceed element
  *
@@ -34,4 +42,10 @@ export function setMetaData(bpmn: (string | object), elId: string, metaValues: o
  * @param {object} [oldAttributes] optional old attributes of element
  * @returns {object} attributes of old element
  */
-export function setProceedElement(element: object, proceedElementType: string, value: any, attributes?: object, oldAttributes?: object): object;
+export function setProceedElement(
+  element: object,
+  proceedElementType: string,
+  value: any,
+  attributes?: object,
+  oldAttributes?: object,
+): object;

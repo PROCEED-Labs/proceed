@@ -46,14 +46,16 @@ import Title from 'antd/es/typography/Title';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import AddButton from './add-button';
-import MachineConfigModal from '@/components/machine-config-modal';
+import ConfigModal from '@/components/config-modal';
 import {
   addMachineConfig,
   addTargetConfig,
+  removeTargetConfig,
   updateMachineConfig,
   updateParentConfig,
   updateTargetConfig,
 } from '@/lib/data/legacy/machine-config';
+import ActionButtons from './action-buttons';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;
@@ -127,9 +129,11 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
 
   const { token } = theme.useToken();
   const panelStyle = {
-    marginBottom: 16,
+    marginBottom: 32,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
+    boxShadow:
+      '2px 2px 6px -4px rgba(0, 0, 0, 0.12), 4px 4px 16px 0px rgba(0, 0, 0, 0.08), 6px 6px 28px 8px rgba(0, 0, 0, 0.05)',
     //border: 'none',
   };
 
@@ -193,6 +197,11 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     router.refresh();
   };
 
+  const handleDelete = async (id: string) => {
+    if (id) await removeTargetConfig(id);
+    router.refresh();
+  };
+
   const exportCurrentConfig = () => {
     const blob = new Blob([JSON.stringify([selectedConfig], null, 2)], {
       type: 'application/json',
@@ -222,9 +231,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           editingEnabled={editable}
         />
       ),
-      /* extra: <Tooltip editable={editable} options={['copy', 'edit']} actions={...}/>, */ ///TODO
-      style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
+      style: { ...panelStyle, border: '1px solid #87e8de', background: 'rgba(255, 255, 255, 0.9)' }, //cyan-3
     });
+
     if (selectedConfig.type === 'config') {
       const currentConfig = selectedConfig as ParentConfig;
       if (currentConfig.targetConfig) {
@@ -233,8 +242,19 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           key: '2',
           label: title,
           children: <TargetConfiguration parentConfig={parentConfig} editingEnabled={editable} />,
-          /* extra:  <Tooltip editable={editable} options={['copy', 'edit', 'delete']} actions={...}/> */ //TODO
-          style: { ...panelStyle, border: '1px solid #91caff' }, //blue-3
+          extra: (
+            // TODO stop propagation to collapse component on click
+            <ActionButtons
+              editable={editable}
+              options={['delete']}
+              actions={{ delete: () => handleDelete(currentConfig.targetConfig?.id ?? '') }}
+            />
+          ),
+          style: {
+            ...panelStyle,
+            border: '1px solid #91caff',
+            background: '#f0f4f9',
+          }, //blue-3
         });
       }
     } else if (
@@ -261,7 +281,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     return panels;
   }, [editable, selectedConfig]);
 
-  const machineConfigModalTitle =
+  const configModalTitle =
     createConfigType === 'target' ? 'Create Target Tech Data Set' : 'Create Machine Tech Data Set';
 
   return (
@@ -411,15 +431,16 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             }}
             items={collapseItems}
           />
+
           {selectedConfig.type === 'config' && (
             <MachineConfigurations parentConfig={parentConfig} editingEnabled={editable} />
           )}
         </Content>
       </Layout>
 
-      <MachineConfigModal
+      <ConfigModal
         open={!!createConfigType}
-        title={machineConfigModalTitle}
+        title={configModalTitle}
         onCancel={() => setCreateConfigType('')}
         onSubmit={handleCreateConfig}
         configType={createConfigType}

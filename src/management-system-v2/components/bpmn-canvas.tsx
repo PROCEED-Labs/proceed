@@ -16,8 +16,18 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
-import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
+import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
+
+import {
+  PerformerRulesModule,
+  PerformerReplaceModule,
+  PerformerRendererModule,
+  PerformerLabelEditingModule,
+  PerformerPaletteProviderModule,
+  PerformerContextPadProviderModule,
+  PerformerLabelBehaviorModule,
+} from '@/lib/modeler-extensions/Performers';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -62,6 +72,10 @@ export type BPMNCanvasProps = {
   onSelectionChange?: (oldSelection: ElementLike[], newSelection: ElementLike[]) => void;
   /** Called when the zoom level changed */
   onZoom?: (zoomLevel: number) => void;
+  /** Called when a shape is removed from modeler */
+  onShapeRemove?: (element: Element) => void;
+  /** Called when a shape is removed and undo is done */
+  onShapeRemoveUndo?: (element: Element) => void;
   /** Wether the modeler should fit the viewport if it resizes.  */
   resizeWithContainer?: boolean;
   className?: string;
@@ -80,6 +94,7 @@ export interface BPMNCanvasRef {
   undo: () => void;
   redo: () => void;
   getElement: (id: string) => Element | undefined;
+  getAllElements: () => ElementLike[];
   getCurrentRoot: () => Element | undefined;
   getCanvas: () => Canvas;
   getZoomScroll: () => ZoomScroll;
@@ -102,6 +117,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       onRootChange,
       onSelectionChange,
       onZoom,
+      onShapeRemove,
+      onShapeRemoveUndo,
       resizeWithContainer,
       className,
     },
@@ -134,6 +151,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       },
       getElement: (id: string) => {
         return modeler.current!.get<ElementRegistry>('elementRegistry').get(id) as Element;
+      },
+      getAllElements: () => {
+        return modeler.current!.get<ElementRegistry>('elementRegistry').getAll();
       },
       getCurrentRoot: () => {
         if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
@@ -173,6 +193,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       deactivateKeyboard: () => {
         modeler.current!.get<Keyboard>('keyboard').unbind();
       },
+      removeColors: () => {},
     }));
 
     const [Modeler, NavigatedViewer, Viewer] = use(BPMNJs);
@@ -181,11 +202,28 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       const ModelerOrViewer =
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
+      // this will allow any type of viewer or editor we create to render our performer elements
+      const additionalModules: any[] = [PerformerRendererModule];
+
+      // the modules related to editing can only be registered in modelers since they depend on
+      // other modeler modules
+      if (type === 'modeler') {
+        additionalModules.push(
+          PerformerContextPadProviderModule,
+          PerformerPaletteProviderModule,
+          PerformerLabelEditingModule,
+          PerformerReplaceModule,
+          PerformerRulesModule,
+          PerformerLabelBehaviorModule,
+        );
+      }
+
       modeler.current = new ModelerOrViewer({
         container: canvas.current!,
         moddleExtensions: {
           proceed: schema,
         },
+        additionalModules,
       });
 
       if (type === 'modeler') {
@@ -217,7 +255,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           m.destroy();
         });
       };
-    }, [Modeler, NavigatedViewer, type]);
+    }, [Modeler, Viewer, NavigatedViewer, type]);
 
     useEffect(() => {
       // Store handlers so we can remove them later.
@@ -233,6 +271,28 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
       if (type === 'modeler') {
         modeler.current!.on('commandStack.changed', commandStackChanged);
+
+        modeler.current!.on('shape.remove', (event: { element: Element }) => {
+          onShapeRemove?.(event.element);
+        });
+
+        // Undo fires commandStack.revert
+        modeler.current!.on(
+          'commandStack.revert',
+          (event: { command: string; context: { element: Element; id: string } }) => {
+            if (event.command === 'id.updateClaim') {
+              onShapeRemoveUndo?.(event.context.element);
+            }
+          },
+        );
+
+        // Redo recreates the deleted shape
+        modeler.current!.on(
+          'commandStack.shape.create.executed',
+          (event: { context: { shape: Shape } }) => {
+            onShapeRemoveUndo?.(event.context.shape.businessObject);
+          },
+        );
       }
 
       modeler.current!.on('import.done', _onLoaded);
@@ -270,6 +330,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
+
         if (m !== modeler.current) {
           // The modeler was reset in the meantime.
           return;

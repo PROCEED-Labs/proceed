@@ -24,6 +24,10 @@ import {
   updateProcess as overwriteProcess,
   getUpdatedProcessesJSON,
   getImageFileNames,
+  saveScriptTaskScript,
+  getScriptTaskScript,
+  getScriptTasksScript,
+  deleteScriptTaskScript,
 } from './fileHandling.js';
 import { mergeIntoObject } from '../../helpers/javascriptHelpers';
 import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
@@ -33,6 +37,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import { fromCustomUTCString, toCustomUTCString } from '@/lib/helpers/timeHelper';
 
 let firstInit = false;
 // @ts-ignore
@@ -297,39 +302,51 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
   }
 
   // don't add a version a second time
-  if (existingProcess.versions.some(({ version }) => version == versionInformation.version)) {
+  if (
+    existingProcess.versions.some(
+      ({ createdOn }) => toCustomUTCString(createdOn) == versionInformation.versionCreatedOn,
+    )
+  ) {
     return;
   }
 
   // save the new version in the directory of the process
 
-  await saveProcessVersion(processDefinitionsId, versionInformation.version || 0, bpmn);
+  const versionCreatedOn = versionInformation.versionCreatedOn || toCustomUTCString(new Date());
+
+  await saveProcessVersion(processDefinitionsId, versionCreatedOn, bpmn);
 
   // add information about the new version to the meta information and inform others about its existance
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
-  //@ts-ignore
-  newVersions.push(versionInformation);
-  newVersions.sort((a, b) => b.version - a.version);
+  newVersions.push({
+    id: versionInformation.versionId!,
+    createdOn: fromCustomUTCString(versionCreatedOn),
+    description: versionInformation.description!,
+    name: versionInformation.name!,
+    versionBasedOn: versionInformation.versionBasedOn,
+  });
+  newVersions.sort((a, b) => (b.createdOn > a.createdOn ? 1 : -1));
 
   await updateProcessMetaData(processDefinitionsId, { versions: newVersions });
 }
 
 /** Returns the bpmn of a specific process version */
-export function getProcessVersionBpmn(processDefinitionsId: string, version: number) {
+export function getProcessVersionBpmn(processDefinitionsId: string, versionId: string) {
   let existingProcess = processMetaObjects[processDefinitionsId];
   if (!existingProcess) {
     throw new Error('The process for which you try to get a version does not exist');
   }
 
-  if (
-    !existingProcess.versions ||
-    !existingProcess.versions.some((existingVersionInfo) => existingVersionInfo.version == version)
-  ) {
+  const existingVersion = existingProcess.versions?.find(
+    (existingVersionInfo) => existingVersionInfo.id === versionId,
+  );
+
+  if (!existingVersion) {
     throw new Error('The version you are trying to get does not exist');
   }
 
-  return getProcessVersion(processDefinitionsId, version);
+  return getProcessVersion(processDefinitionsId, toCustomUTCString(existingVersion.createdOn));
 }
 
 /** Removes information from the meta data that would not be correct after a restart */
@@ -393,7 +410,7 @@ export async function getProcessUserTasksJSON(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    return await getUserTasksJSON(processDefinitionsId);
+    return getUserTasksJSON(processDefinitionsId);
   } catch (err) {
     logger.debug(`Error getting user task data. Reason:\n${err}`);
     throw new Error('Failed getting data for all user tasks');
@@ -441,6 +458,62 @@ export async function deleteProcessUserTask(
     await deleteUserTaskHTML(processDefinitionsId, userTaskFileName);
   } catch (err) {
     logger.debug(`Error removing user task data. Reason:\n${err}`);
+  }
+}
+
+/** Returns the script for a specific script task in a process */
+export async function getProcessScriptTaskScript(
+  processDefinitionsId: string,
+  taskFileNameWithExtension: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    return getScriptTaskScript(processDefinitionsId, taskFileNameWithExtension);
+  } catch (err) {
+    logger.debug(`Error getting data of script task. Reason:\n${err}`);
+    throw new Error('Unable to get data for script task!');
+  }
+}
+
+/** Return object mapping from script tasks fileNames to their script */
+export async function getProcessScriptTasksScript(processDefinitionsId: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    return getScriptTasksScript(processDefinitionsId);
+  } catch (err) {
+    logger.debug(`Error getting script task data. Reason:\n${err}`);
+    throw new Error('Failed getting data for all script tasks');
+  }
+}
+
+export async function saveProcessScriptTask(
+  processDefinitionsId: string,
+  taskFileNameWithExtension: string,
+  script: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    await saveScriptTaskScript(processDefinitionsId, taskFileNameWithExtension, script);
+  } catch (err) {
+    logger.debug(`Error storing user task data. Reason:\n${err}`);
+    throw new Error('Failed to store the user task data');
+  }
+}
+
+/** Removes a stored script task from disk */
+export async function deleteProcessScriptTask(
+  processDefinitionsId: string,
+  taskFileNameWithExtension: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    await deleteScriptTaskScript(processDefinitionsId, taskFileNameWithExtension);
+  } catch (err) {
+    logger.debug(`Error removing script task data. Reason:\n${err}`);
   }
 }
 

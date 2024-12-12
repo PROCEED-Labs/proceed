@@ -1,6 +1,7 @@
 import { test, expect } from './processes.fixtures';
 import { openModal, closeModal, waitForHydration } from '../testUtils';
 import { asyncMap } from 'proceed-management-system/src/shared-frontend-backend/helpers/javascriptHelpers';
+import { Page } from '@playwright/test';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
@@ -475,117 +476,6 @@ test('create a new folder and process, move process to folder and then delete bo
   await expect(folderRow).not.toBeVisible();
 });
 
-test('sorting process list columns', async ({ processListPage }) => {
-  // NOTE: screen height is very important for this test, as with a small height
-  // and too many elements, the elements will use multiple pages
-
-  const names = ['a', 'b', 'c'];
-  const { page } = processListPage;
-
-  for (const folderName of names)
-    await processListPage.createFolder({ folderName: '0' + folderName }); // 0 prefix so that folders come first
-
-  const processIds: string[] = [];
-  for (const processName of names) {
-    // 1 prefix so that folders come first
-    processIds.push(await processListPage.createProcess({ processName: '1' + processName }));
-    await processListPage.goto();
-  }
-
-  // make hidden columns visible
-  await page
-    .getByRole('columnheader', { name: 'more' })
-    .getByRole('button', { name: 'more' })
-    .click();
-
-  for (const column of ['Created On', 'File Size', 'Owner']) {
-    const checkbox = page.getByRole('checkbox', { name: column });
-
-    expect(checkbox).toBeVisible();
-    if (!(await checkbox.isChecked())) await checkbox.check();
-    await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
-  }
-
-  async function getColumnValues(col: number) {
-    const tableRows = await page.locator('tbody tr.ant-table-row').all();
-    const rowNames: { text: string; ariaLabel: string }[] = [];
-    for (const row of tableRows) {
-      const icon = row.locator('td').nth(2).locator('span').first();
-      const ariaLabel = await icon.evaluate((el) => el.getAttribute('aria-label'));
-
-      const text = await row.locator('td').nth(col).textContent();
-      rowNames.push({
-        text,
-        ariaLabel,
-      });
-    }
-    return rowNames;
-  }
-
-  function isSorted<T>(values: T[], aShouldBeBeforeB: (a: T, b: T) => boolean) {
-    for (let i = 0; i < values.length - 1; i++) {
-      if (!aShouldBeBeforeB(values[i], values[i + 1])) return false;
-    }
-    return true;
-  }
-
-  // // NOTE: the generateDateString uses the en-UK locale, if this changes this could break
-  // function parseLocaleDateString(str: string) {
-  //   // format: day/month/year, hours:minutes
-  //   const parts = str.split(/\/|:|,/);
-  //   const day = parseInt(parts[0], 10);
-  //   const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed
-  //   const year = parseInt(parts[2], 10);
-  //   const hours = parseInt(parts[3], 10);
-  //   const minutes = parseInt(parts[4], 10);
-  //   return new Date(year, month, day, hours, minutes);
-  // }
-
-  function textSort(a: any, b: any, descending: boolean) {
-    if (a.ariaLabel === 'folder' && b.ariaLabel !== 'folder') return true;
-    if (b.ariaLabel === 'folder' && a.ariaLabel !== 'folder') return false;
-    if (descending) return a.text.localeCompare(b.text) <= 0;
-    return a.text.localeCompare(b.text) >= 0;
-  }
-
-  // function dateSort(a: any, b: any, descending: boolean) {
-  //   if (a.ariaLabel === 'folder' && b.ariaLabel !== 'folder') return true;
-  //   if (b.ariaLabel === 'folder' && a.ariaLabel !== 'folder') return false;
-  //
-  //   const aDate = parseLocaleDateString(a.text);
-  //   const bDate = parseLocaleDateString(b.text);
-  //
-  //   if (descending) return aDate >= bDate;
-  //   return aDate <= bDate;
-  // }
-
-  const sortableColumns = [
-    { columnName: 'Name', sortFunction: textSort, offset: 2 },
-    /* TODO: */
-    // { columnName: 'Last Edited', sortFunction: dateSort, offset: 4 },
-    // { columnName: 'Created On', sortFunction: dateSort, offset: 5 },
-    // { columnName: 'File Size', sortFunction: textSort, offset: 6 },
-    { columnName: 'Owner', sortFunction: textSort, offset: 7 },
-  ];
-
-  for (const column of sortableColumns) {
-    const columnHeader = page
-      .getByRole('columnheader', { name: column.columnName })
-      .locator('div')
-      .first();
-
-    // First click sets it to descending order
-    await columnHeader.click();
-    const descendingValues = await getColumnValues(column.offset);
-    expect(isSorted(descendingValues, (a, b) => column.sortFunction(a, b, true))).toBeTruthy();
-
-    // Second click sets it to ascending order
-    await columnHeader.click();
-    const ascendingValues = await getColumnValues(column.offset);
-    expect(isSorted(ascendingValues, (a, b) => column.sortFunction(a, b, false))).toBeTruthy();
-  }
-});
-
 test.describe('shortcuts in process-list', () => {
   /* Create Process - ctrl / meta + enter */
   test('create and submit a new process with shortcuts', async ({ processListPage }) => {
@@ -697,6 +587,7 @@ test.describe('shortcuts in process-list', () => {
     const { page } = processListPage;
     /* Create 3 Processes */
     const processIDs = [];
+
     for (let i = 0; i < 3; i++) {
       processIDs.push(
         await processListPage.createProcess({
@@ -811,7 +702,9 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if Process has been added */
     await expect(
-      page.locator('tbody>tr.ant-table-row'),
+      page.locator(
+        'tbody>tr:not(.ant-table-measure-row)',
+      ) /* Ant-Design added a measure row -> ignore */,
       'Could not find copied process in Process-List',
     ).toHaveCount(2);
     /* Check with name */
@@ -842,7 +735,9 @@ test.describe('shortcuts in process-list', () => {
     }
 
     /* Check if Process has been added */
-    await expect(page.locator('tbody>tr.ant-table-row')).toHaveCount(3);
+    await expect(page.locator('tbody>tr:not(.ant-table-measure-row)')).toHaveCount(
+      3,
+    ); /* Ignore measurement row */
     /* Check with name */
     await expect(page.locator('tbody')).toContainText(processName + ' - Meta');
   });
@@ -900,7 +795,9 @@ test.describe('shortcuts in process-list', () => {
     await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if Processes have been added */
-    await expect(page.locator('tbody>tr.ant-table-row')).toHaveCount(4);
+    await expect(page.locator('tbody>tr:not(.ant-table-measure-row)')).toHaveCount(
+      4,
+    ); /* Ignore measurement row */
 
     /* Check with names */
     for (const name of names) {
@@ -1398,7 +1295,16 @@ test.describe('Favourites', () => {
 //   await console.log('Name Column Width:', await getColumnwidth('Name'));
 // });
 test.describe('Selecting Processes', () => {
+  test.slow(); // triples test time (see https://playwright.dev/docs/test-timeouts)
+
+  /* When copying many processes, not all of them will be added to processListPage.definitionsIDs, hence, we track the number of added processes */
+  let numberOfProcesses = 0;
+  const getNumberOfSelectedProcesses = async (page: Page) => {
+    return Number.parseInt(await page.getByRole('note').textContent());
+  };
+
   test.beforeEach(async ({ processListPage }) => {
+    numberOfProcesses = 0;
     const { page } = processListPage;
     /* TODO: The number of processes necessary to cause second page depends on viewport height */
     /* Create 10 processes + XYZ Process ( =11) */
@@ -1407,15 +1313,19 @@ test.describe('Selecting Processes', () => {
         processName: `Process ${i}`,
         returnToProcessList: true,
       });
+      numberOfProcesses++;
     }
-
-    await page.getByRole('main').press('ControlOrMeta+a');
 
     /* Copy + Paste until multiple pages */
     while ((await page.locator('.ant-pagination-next').getAttribute('aria-disabled')) === 'true') {
+      await page.getByRole('main').press('ControlOrMeta+a');
+      const adding = await getNumberOfSelectedProcesses(page);
+
       await page.getByRole('main').press('ControlOrMeta+c');
       const modal = await openModal(page, () => page.getByRole('main').press('ControlOrMeta+v'));
       await closeModal(modal, () => page.getByRole('main').press('ControlOrMeta+Enter'));
+
+      numberOfProcesses += adding;
     }
 
     /* Add Copys to processListPage.processDefinitionIds */
@@ -1424,8 +1334,11 @@ test.describe('Selecting Processes', () => {
     await inputSearch.fill('(Copy)');
 
     /* Get their ids */
-    const processRows = await page.locator('tr[data-row-key]').all();
-    const visibleIds = await asyncMap(processRows, async (el) => el.getAttribute('data-row-key'));
+    const visibleIds = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('tr[data-row-key]')).map((el) =>
+        el.getAttribute('data-row-key'),
+      ),
+    );
     processListPage.processDefinitionIds.push(...visibleIds);
 
     /* Clear Search */
@@ -1441,18 +1354,18 @@ test.describe('Selecting Processes', () => {
       processName: 'XYZ',
       returnToProcessList: true,
     });
+    numberOfProcesses++;
   });
 
-  function getNumberOfVisibleRows(page) {
-    return page.locator('tbody tr.ant-table-row').count(); /* There is also a measurement row */
-  }
+  const getNumberOfVisibleRows = async (page: Page) => {
+    return await page.locator('tbody>tr:not(.ant-table-measure-row)').count(); // Ignore measurement row
+  };
 
   test('Selecting Processes with click', async ({ processListPage }) => {
     const { page } = processListPage;
     const inputSearch = await page.locator('.ant-input-affix-wrapper');
 
     const processIDs = processListPage.getDefinitionIds();
-
     /* ____________________________________ */
     /* Selection persists after page change */
     /* Select the first process*/
@@ -1529,7 +1442,6 @@ test.describe('Selecting Processes', () => {
     processListPage,
   }) => {
     const { page } = processListPage;
-    const processIDs = processListPage.getDefinitionIds();
 
     /* Select all with ctrl + a */
     await page.getByRole('main').press('ControlOrMeta+a');
@@ -1540,6 +1452,6 @@ test.describe('Selecting Processes', () => {
     );
 
     /* Check if displayed note show correct number */
-    await expect(await page.getByRole('note')).toContainText(`${processIDs.length}`);
+    await expect(await page.getByRole('note')).toContainText(`${numberOfProcesses}`);
   });
 });

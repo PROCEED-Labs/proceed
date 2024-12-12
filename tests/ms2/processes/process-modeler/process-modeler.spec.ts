@@ -10,9 +10,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   let modal = await openModal(page, () => page.getByRole('button', { name: 'xml-sign' }).click());
   await expect(page.getByRole('dialog', { name: 'BPMN XML' })).toBeVisible();
   /* While the xml editor is there, the xml is still loading, wait for it to load, before closing the modal */
-  await expect(
-    page.locator('span').filter({ hasText: '<?xml version="1.0" encoding' }),
-  ).toBeVisible();
+  await expect(page.getByText('<?xml version="1.0" encoding')).toBeVisible();
   //todo: check xml for startevent
   await closeModal(modal, async () => await modal.getByRole('button', { name: 'Ok' }).click());
 
@@ -67,7 +65,9 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(page.getByRole('option', { name: 'Latest Version' })).toBeVisible();
   await expect(page.getByRole('option', { name: 'Version 1' })).toBeVisible();
   await page.getByRole('option', { name: 'Version 1' }).click();
-  const expectedURLWithVersion = new RegExp(`\\/processes\\/${definitionId}\\?version=\\d+$`);
+  const expectedURLWithVersion = new RegExp(
+    `\\/processes\\/${definitionId}\\?version=[a-zA-Z0-9-_]+$`,
+  );
   await page.waitForURL(expectedURLWithVersion);
   expect(expectedURLWithVersion.test(page.url())).toBeTruthy();
 
@@ -332,7 +332,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   // Add the shared process to the workspace
   await openModal(newPage, async () => {
-    await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
+    await newPage.getByRole('button', { name: 'edit' }).click();
     await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
   });
 
@@ -340,6 +340,9 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
 
   await newPage.getByRole('button', { name: 'My Space' }).click();
+
+  await newPage.getByText('root', { exact: true }).click();
+  await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
   const newProcessId = newPage.url().split('/processes/').pop();

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { AreaChartOutlined, AppstoreOutlined, FileOutlined } from '@ant-design/icons';
+import { MdOutlineComputer } from 'react-icons/md';
 import { FaUsers } from 'react-icons/fa';
 import { RiAdminFill } from 'react-icons/ri';
 
@@ -44,6 +45,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               key: 'systemadmins',
               label: <Link href="/admin/systemadmins">Manage admins</Link>,
               icon: <RiAdminFill />,
+            },
+
+            {
+              key: 'engines',
+              label: <Link href="/admin/engines">Engines</Link>,
+              icon: <MdOutlineComputer />,
             },
           ],
         },

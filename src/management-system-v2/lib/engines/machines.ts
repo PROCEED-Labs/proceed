@@ -1,19 +1,16 @@
-// TODO: refine type
-type MachineStatus = {
-  discovered?: true;
-  saved?: true;
-  status?: 'DISCONNECTED' | 'CONNECTED';
-};
-
-export type Machine = {
-  id: string;
-  ip: string;
-  port: number;
-  hostname?: string;
-  name?: string;
-} & MachineStatus;
+import { getEngines as getMqttEngines } from './endpoints/mqtt-endpoints';
+type MqttEngine = { type: 'mqtt'; id: string } & (
+  | { spaceEngine?: undefined }
+  | { spaceEngine: true; brokerAddress: string }
+);
+type HttpEngine = { type: 'http'; id: string; address: string } & (
+  | { spaceEngine?: undefined }
+  | { spaceEngine: true }
+);
+export type Engine = MqttEngine | HttpEngine;
+export type SpaceEngine = Extract<Engine, { spaceEngine: true }>;
 
 // TODO: implement discovery
-export async function getMachines() {
-  return [{ id: 'id', ip: 'localhost', port: 33029, status: 'CONNECTED' }] as Machine[];
+export async function getProceedEngines(): Promise<Engine[]> {
+  return (await getMqttEngines()).map((e) => ({ ...e, type: 'mqtt' }));
 }

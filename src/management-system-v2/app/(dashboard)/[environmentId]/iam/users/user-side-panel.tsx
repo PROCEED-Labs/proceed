@@ -16,12 +16,8 @@ const UserSiderContent: FC<{ user: (ListUser & { roles?: Role[] }) | null }> = (
     <>
       <UserAvatar
         user={{ ...user, firstName: user.firstName.value, lastName: user.lastName.value }}
-        avatarProps={{
-          size: 60,
-          style: {
-            marginBottom: '1rem',
-          },
-        }}
+        size={60}
+        style={{ marginBottom: '1rem' }}
       />
 
       <Typography.Title>First Name</Typography.Title>
@@ -41,6 +37,7 @@ const UserSiderContent: FC<{ user: (ListUser & { roles?: Role[] }) | null }> = (
           <Typography.Title>Roles</Typography.Title>
           {user.roles.map((role) => (
             <SpaceLink
+              key={role.id}
               href={`/iam/roles/${role.id}`}
               style={{
                 display: 'block',

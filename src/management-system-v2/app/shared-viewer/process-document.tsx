@@ -230,7 +230,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
 
   // transform the document data into the respective pages of the document
   useEffect(() => {
-    processHierarchy && getContent(processHierarchy, processPages);
+    processHierarchy && getContent(processHierarchy, [...processPages]);
   }, [processHierarchy]);
 
   return (

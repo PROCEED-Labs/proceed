@@ -32,10 +32,15 @@ import { set } from 'zod';
 type ShareModalProps = {
   onExport: () => void;
   onExportMobile: (type: ProcessExportOptions['type']) => void;
+  versions: Process['versions'];
 };
 type SharedAsType = 'public' | 'protected';
 
-const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
+const ModelerShareModalButton: FC<ShareModalProps> = ({
+  onExport,
+  onExportMobile,
+  versions: processVersions,
+}) => {
   const { processId } = useParams();
   const environment = useEnvironment();
   const [isOpen, setIsOpen] = useState(false);
@@ -276,6 +281,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
           sharedAs={sharedAs as SharedAsType}
           shareTimestamp={shareTimestamp}
           refresh={checkIfProcessShared}
+          processVersions={processVersions}
         />
       ),
     },

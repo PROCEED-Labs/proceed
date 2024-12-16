@@ -230,7 +230,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
 
   // transform the document data into the respective pages of the document
   useEffect(() => {
-    processHierarchy && getContent(processHierarchy, processPages);
+    processHierarchy && getContent(processHierarchy, []);
   }, [processHierarchy]);
 
   return (
@@ -256,7 +256,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
                 <Title>{processData.name}</Title>
                 <div className={styles.TitleInfos}>
-                  <div>Owner: {processData.creatorId.split('|').pop()}</div>
+                  <div>Owner: {processData.creatorId?.split('|').pop()}</div>
                   {version.id ? (
                     <>
                       <div>Version: {version.name || version.id}</div>

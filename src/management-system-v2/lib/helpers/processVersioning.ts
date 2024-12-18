@@ -147,7 +147,7 @@ export async function getLocalVersionBpmn(process: Process, localVersion: string
   if (!Array.isArray(process.versions) || !process.versions.length) return;
 
   // check if the specific version exists locally and get its bpmn if it does
-  if (process.versions.some(({ createdOn }) => toCustomUTCString(createdOn) == localVersion)) {
+  if (process.versions.some(({ id }) => id === localVersion)) {
     const bpmn = getProcessVersionBpmn(process.id, localVersion);
     return bpmn;
   }
@@ -174,7 +174,7 @@ export async function versionUserTasks(
       // get the html of the user task in the based on version (if there is one and it is locally known)
       const basedOnBPMN =
         versionBasedOn !== undefined
-          ? await getLocalVersionBpmn(processInfo, versionCreatedOn!)
+          ? await getLocalVersionBpmn(processInfo, versionBasedOn!)
           : undefined;
 
       // check if there is a preceding version and if the html of the user task actually changed from that version
@@ -217,12 +217,14 @@ export async function versionUserTasks(
           userTaskHtml!,
           versionCreatedOn,
         );
-        // update ref for the artifacts referenced by the versioned user task
-        //const refIds = await updateArtifactRefVersionedUserTask(userTaskData!, versionFileName);
-        versionedUserTaskFilenames.push(versionFileName);
       }
+
+      // update ref for the artifacts referenced by the versioned user task
+      //const refIds = await updateArtifactRefVersionedUserTask(userTaskData!, versionFileName);
+      versionedUserTaskFilenames.push(versionFileName);
     }
   }
+
   return versionedUserTaskFilenames;
 }
 
@@ -234,7 +236,7 @@ export async function versionScriptTasks(
 ) {
   const scriptMapping = await getScriptTaskFileNameMapping(bpmnObj);
   const versionedScriptTaskFilenames: string[] = [];
-  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   for (let scriptTaskId in scriptMapping) {
     const { fileName } = scriptMapping[scriptTaskId];
@@ -286,12 +288,22 @@ export async function versionScriptTasks(
 
       // store the script task version if it didn't exist before
       if (!dryRun && !scriptTaskScriptAlreadyExisting) {
-        saveProcessScriptTask(processInfo.id, versionFileName + '.js', scriptTaskJS);
-        saveProcessScriptTask(processInfo.id, versionFileName + '.ts', scriptTaskTS);
-
-        // update ref for the artifacts referenced by the versioned script task
-        versionedScriptTaskFilenames.push(versionFileName);
+        await saveProcessScriptTask(
+          processInfo.id,
+          versionFileName + '.js',
+          scriptTaskJS,
+          versionCreatedOn,
+        );
+        await saveProcessScriptTask(
+          processInfo.id,
+          versionFileName + '.ts',
+          scriptTaskTS,
+          versionCreatedOn,
+        );
       }
+
+      // update ref for the artifacts referenced by the versioned script task
+      versionedScriptTaskFilenames.push(versionFileName);
     }
   }
   return versionedScriptTaskFilenames;

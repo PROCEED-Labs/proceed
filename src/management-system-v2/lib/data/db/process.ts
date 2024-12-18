@@ -693,10 +693,7 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
   try {
     const res = await db.artifact.findFirst({
       where: {
-        AND: [
-          { fileName: `${taskFileName}.html` },
-          { processReferences: { some: { processId: processDefinitionsId } } },
-        ],
+        fileName: `${taskFileName}.html`,
       },
       select: {
         filePath: true,
@@ -721,9 +718,7 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
   checkIfProcessExists(processDefinitionsId);
   try {
     const res = await db.artifact.findFirst({
-      where: {
-        AND: [{ fileName }, { processReferences: { some: { processId: processDefinitionsId } } }],
-      },
+      where: { fileName },
       select: {
         filePath: true,
       },

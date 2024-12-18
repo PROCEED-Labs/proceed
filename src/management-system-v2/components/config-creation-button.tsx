@@ -3,8 +3,8 @@
 import React, { ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
-import MachineConfigModal from './config-modal'; //TODO
-import { addParentConfig } from '@/lib/data/legacy/machine-config'; //TODO
+import MachineConfigModal from './config-modal'; //TODO refactoring not using term "machine config"
+import { addParentConfig } from '@/lib/data/legacy/machine-config'; //TODO refactoring not using term "machine config"
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -42,7 +42,7 @@ const ConfigCreationButton: React.FC<ConfigCreationButtonProps> = ({
       return config;
     }
     if (config && 'id' in config) {
-      router.push(spaceURL(environment, `/machine-config/${config.id}`)); //TODO
+      router.push(spaceURL(environment, `/machine-config/${config.id}`)); //TODO refactoring not using term "machine config"
     } else {
       router.refresh();
     }

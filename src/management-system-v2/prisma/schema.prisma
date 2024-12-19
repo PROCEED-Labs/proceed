@@ -93,7 +93,7 @@ model Artifact {
   artifactType String // user-task, script, image, etc.
   processReferences   ArtifactProcessReference[] // Relation to track references
   versionReferences   ArtifactVersionReference[]
-  refCounter   Int                 @default(0)
+  refCounter   Int                 @default(1)
 
   @@map("artifact")
 }
@@ -122,8 +122,6 @@ model ArtifactVersionReference {
   @@unique([artifactId, versionId])
 
   @@map("artifact_version_reference")
-
-
 }
 
 model Space {
@@ -140,6 +138,7 @@ model Space {
   folders            Folder[]
   processes          Process[]
   roles              Role[]
+  engines            Engine[]
 
   @@map("space")
 }
@@ -214,4 +213,16 @@ model RoleMember {
   createdOn DateTime
 
   @@map("role_member")
+}
+
+model Engine {
+  id            String   @id @default(uuid())
+  space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String
+  address       String /// Either an http url for an engine or a mqtt url
+  name          String?
+  createdOn     DateTime @default(now())
+  lastEditedOn  DateTime @updatedAt
+
+  @@map("engine")
 }

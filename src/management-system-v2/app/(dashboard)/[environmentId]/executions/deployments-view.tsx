@@ -58,11 +58,19 @@ const DeploymentsView = ({
         }
 
         const v = process.versions
-          .map((v) => v.id)
-          .sort()
-          .at(-1);
+          .map((v) => ({ id: v.id, creationTime: +v.createdOn }))
+          .sort((a, b) => {
+            return b.creationTime - a.creationTime;
+          })
+          .at(0);
 
-        await deployProcess(process.id, v as string, space.spaceId, 'dynamic');
+        if (!v) {
+          message.error('There is no version to deploy!');
+
+          return;
+        }
+
+        await deployProcess(process.id, v.id, space.spaceId, 'dynamic');
         refetchDeployedProcesses();
       } catch (e) {
         message.error("Something wen't wrong");

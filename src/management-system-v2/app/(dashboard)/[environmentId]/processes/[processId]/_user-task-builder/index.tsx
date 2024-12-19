@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
@@ -29,7 +29,9 @@ import { DiffResult, deepEquals } from '@/lib/helpers/javascriptHelpers';
 import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/file-manager-facade';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+import { useSearchParams } from 'next/navigation';
+import BuilderContext from './BuilderContext';
 
 type BuilderProps = {
   processId: string;
@@ -51,11 +53,9 @@ const EditorModal: React.FC<BuilderModalProps> = ({
   onSave,
   onInit,
 }) => {
-  const { query, actions, editingEnabled } = useEditor((state) => {
-    return { editingEnabled: state.options.enabled };
-  });
+  const { query, actions } = useEditor();
 
-  const queryClient = new QueryClient();
+  const { editingEnabled } = useContext(BuilderContext);
 
   const environment = useEnvironment();
 
@@ -143,7 +143,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
     >
       <EditorDnDHandler
         iframeRef={iframeRef}
-        disabled={!iframeMounted}
+        disabled={!iframeMounted || !editingEnabled}
         mobileView={iframeLayout === 'mobile'}
       >
         <div className={styles.BuilderUI}>
@@ -197,6 +197,9 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
   const [modalApi, modalElement] = Modal.useModal();
 
+  const query = useSearchParams();
+  const selectedVersionId = query.get('version');
+
   function updateImageReference(action: 'add' | 'delete', src: string) {
     const isDeleteAction = action === 'delete';
     updateImageRefCounter(
@@ -224,80 +227,83 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
   return (
     <>
-      <Editor
-        resolver={{
-          ...Elements,
-        }}
-        enabled={!isMobile}
-        handlers={(store: EditorStore) =>
-          new CustomEventhandlers({
-            store,
-            isMultiSelectEnabled: () => false,
-            removeHoverOnMouseleave: true,
-          })
-        }
-        onNodesChange={(query) => {
-          const current = JSON.parse(query.serialize());
+      <BuilderContext.Provider value={{ editingEnabled: !isMobile && !selectedVersionId }}>
+        <Editor
+          resolver={{
+            ...Elements,
+            Image: Elements.EditImage,
+          }}
+          enabled={!isMobile}
+          handlers={(store: EditorStore) =>
+            new CustomEventhandlers({
+              store,
+              isMultiSelectEnabled: () => false,
+              removeHoverOnMouseleave: true,
+            })
+          }
+          onNodesChange={(query) => {
+            const current = JSON.parse(query.serialize());
 
-          if (Object.keys(prevState.current).length !== 0) {
-            const result = deepEquals(prevState.current, current, '', true) as null | DiffResult;
+            if (Object.keys(prevState.current).length !== 0) {
+              const result = deepEquals(prevState.current, current, '', true) as null | DiffResult;
 
-            if (result) {
-              const { valueA, valueB, path } = result;
-              const valueAHasSrc = valueA?.hasOwnProperty('src');
-              const valueBHasSrc = valueB?.hasOwnProperty('src');
+              if (result) {
+                const { valueA, valueB, path } = result;
+                const valueAHasSrc = valueA?.hasOwnProperty('src');
+                const valueBHasSrc = valueB?.hasOwnProperty('src');
 
-              // Handle image deletion
-              if (valueAHasSrc && !valueBHasSrc) {
-                console.log('image deleted');
-                updateImageReference('delete', valueA.src);
-              }
+                // Handle image deletion
+                if (valueAHasSrc && !valueBHasSrc) {
+                  console.log('image deleted');
+                  updateImageReference('delete', valueA.src);
+                }
 
-              // Handle image addition
-              if (!valueAHasSrc && valueBHasSrc) {
-                console.log('image added');
-                updateImageReference('add', valueB.src);
-              }
+                // Handle image addition
+                if (!valueAHasSrc && valueBHasSrc) {
+                  console.log('image added');
+                  updateImageReference('add', valueB.src);
+                }
 
-              // Handle image replacement
-              if (path?.includes('props.src')) {
-                console.log('image replaced');
-                updateImageReference('add', valueB.src);
-                updateImageReference('delete', valueA.src);
-              }
+                // Handle image replacement
+                if (path?.includes('props.src')) {
+                  console.log('image replaced');
+                  updateImageReference('add', valueB.src);
+                  updateImageReference('delete', valueA.src);
+                }
 
-              // Handle deleted and added image nodes
-              if (!path) {
-                [result.valueA, result.valueB].forEach((value, isAdding) => {
-                  for (const key in value) {
-                    const node = value[key];
-                    if (node?.displayName === 'Image' && node.props?.hasOwnProperty('src')) {
-                      console.log(`Image Node ${isAdding ? 'added' : 'deleted'}`, node.props);
-                      updateImageReference(isAdding ? 'add' : 'delete', node.props.src);
+                // Handle deleted and added image nodes
+                if (!path) {
+                  [result.valueA, result.valueB].forEach((value, isAdding) => {
+                    for (const key in value) {
+                      const node = value[key];
+                      if (node?.displayName === 'Image' && node.props?.hasOwnProperty('src')) {
+                        console.log(`Image Node ${isAdding ? 'added' : 'deleted'}`, node.props);
+                        updateImageReference(isAdding ? 'add' : 'delete', node.props.src);
+                      }
                     }
-                  }
-                });
+                  });
+                }
               }
             }
-          }
 
-          prevState.current = current;
-          setHasUnsavedChanges(true);
-        }}
-      >
-        <EditorModal
-          processId={processId}
-          open={open}
-          hasUnsavedChanges={hasUnsavedChanges}
-          onClose={handleClose}
-          onInit={() => {
-            setHasUnsavedChanges(false);
+            prevState.current = current;
+            setHasUnsavedChanges(true);
           }}
-          onSave={() => setHasUnsavedChanges(false)}
-        />
-      </Editor>
+        >
+          <EditorModal
+            processId={processId}
+            open={open}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onClose={handleClose}
+            onInit={() => {
+              setHasUnsavedChanges(false);
+            }}
+            onSave={() => setHasUnsavedChanges(false)}
+          />
+        </Editor>
 
-      {modalElement}
+        {modalElement}
+      </BuilderContext.Provider>
     </>
   );
 };

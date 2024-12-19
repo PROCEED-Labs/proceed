@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ReactNode, useState } from 'react';
+import React, { ComponentProps, ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import MachineConfigModal from './config-modal'; //TODO refactoring not using term "machine config"
@@ -20,19 +20,18 @@ type ConfigCreationButtonProps = ButtonProps & {
  *
  * Button to create Configs including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
  */
-const ConfigCreationButton: React.FC<ConfigCreationButtonProps> = ({
-  wrapperElement,
-  customAction,
-  ...props
-}) => {
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+export const ConfigCreationModal: React.FC<
+  Partial<ComponentProps<typeof MachineConfigModal>> & {
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    customAction?: (values: { name: string; description: string }) => Promise<any>;
+  }
+> = ({ open, setOpen, customAction, ...props }) => {
   const router = useRouter();
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
 
-  const createNewConfig = async (
-    values: { name: string; description: string }[], //TODO - I don't REALLY know why this is an array
-  ) => {
+  const createNewConfig = async (values: { name: string; description: string }[]) => {
     const config = await (customAction?.(values[0]) ??
       addParentConfig(
         defaultParentConfiguration(values[0].name, values[0].description, folderId),
@@ -46,15 +45,15 @@ const ConfigCreationButton: React.FC<ConfigCreationButtonProps> = ({
     } else {
       router.refresh();
     }
-    setIsConfigModalOpen(false);
+    setOpen(false);
   };
 
   useAddControlCallback(
     'machine-config-list',
-    'controlenter',
+    ['control+enter', 'new'],
     () => {
-      if (!isConfigModalOpen) {
-        setIsConfigModalOpen(true);
+      if (!open) {
+        setOpen(true);
       }
     },
     {
@@ -64,30 +63,36 @@ const ConfigCreationButton: React.FC<ConfigCreationButtonProps> = ({
   );
 
   return (
+    <MachineConfigModal
+      open={open}
+      title="Create Configuration"
+      okText="Create"
+      onCancel={() => setOpen(false)}
+      onSubmit={createNewConfig}
+    />
+  );
+};
+
+const ConfigCreationButton: React.FC<ConfigCreationButtonProps> = ({
+  customAction,
+  wrapperElement,
+  ...props
+}) => {
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  return (
     <>
       {wrapperElement ? (
-        <div
-          onClick={() => {
-            setIsConfigModalOpen(true);
-          }}
-        >
-          {wrapperElement}
-        </div>
+        <div onClick={() => setIsConfigModalOpen(true)}>{wrapperElement}</div>
       ) : (
-        <Button
-          {...props}
-          onClick={() => {
-            setIsConfigModalOpen(true);
-          }}
-        ></Button>
+        <Button {...props} onClick={() => setIsConfigModalOpen(true)} />
       )}
-      <MachineConfigModal
-        open={isConfigModalOpen}
-        title="Create Configuration"
-        okText="Create"
-        onCancel={() => setIsConfigModalOpen(false)}
-        onSubmit={createNewConfig}
-      />
+      <div onKeyDown={(e) => e.stopPropagation()}>
+        <ConfigCreationModal
+          open={isConfigModalOpen}
+          setOpen={setIsConfigModalOpen}
+          customAction={customAction}
+        />
+      </div>
     </>
   );
 };

@@ -12,12 +12,9 @@ import {
 } from '@proceed/bpmn-helper';
 import { asyncForEach } from './javascriptHelpers';
 
-// import { getUserTaskJSON, getUserTaskHTML, getScriptTaskScript } from '../data/legacy/fileHandling';
-
 import { Process } from '../data/process-schema';
 import { enableUseDB } from 'FeatureFlags';
 import { TProcessModule } from '../data/module-import-types-temp';
-import { toCustomUTCString } from './timeHelper';
 
 const { diff } = require('bpmn-js-differ');
 
@@ -33,7 +30,6 @@ let saveProcessUserTask: TProcessModule['saveProcessUserTask'];
 let getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
 
 let getProcessScriptTaskScript: TProcessModule['getProcessScriptTaskScript'];
-let getProcessScriptTasksScript: TProcessModule['getProcessScriptTasksScript'];
 let saveProcessScriptTask: TProcessModule['saveProcessScriptTask'];
 let deleteProcessScriptTask: TProcessModule['deleteProcessScriptTask'];
 
@@ -53,7 +49,6 @@ const loadModules = async () => {
     saveProcessUserTask,
     getProcessUserTaskJSON,
     getProcessScriptTaskScript,
-    getProcessScriptTasksScript,
     saveProcessScriptTask,
     deleteProcessScriptTask,
   } = moduleImport);
@@ -391,18 +386,12 @@ export async function selectAsLatestVersion(processId: string, versionId: string
     await deleteProcessUserTask(processId, taskFileName);
   });
 
-  // make sure that the user task data and html is also rolled back
-  const processDataMapping = await getProcessUserTasksJSON(processId, versionId);
-  const processHtmlMapping = await getProcessUserTasksHtml(processId);
-
   // Store UserTasks from this version as UserTasks from latest version
   await asyncForEach(Object.entries(changedUserTaskFileNames), async ([oldName, newName]) => {
-    await saveProcessUserTask(
-      processId,
-      newName,
-      processDataMapping![oldName],
-      processHtmlMapping![oldName],
-    );
+    const json = await getProcessUserTaskJSON(processId, oldName);
+    const html = await getProcessUserTaskHtml(processId, oldName);
+
+    if (json && html) await saveProcessUserTask(processId, newName, json, html);
   });
 
   // Store bpmn from this version as latest version

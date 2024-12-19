@@ -35,11 +35,7 @@ import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
-import {
-  checkIfUserTaskExists,
-  copyProcessArtifactReferences,
-  copyProcessFiles,
-} from './db/process';
+import { copyProcessArtifactReferences, copyProcessFiles } from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
 
@@ -509,24 +505,6 @@ export const getProcessUserTaskData = async (
     return await _getProcessUserTaskJSON(definitionId, taskFileName);
   } catch (err) {
     return userError('Unable to get the requested User Task data.', UserErrorType.NotFoundError);
-  }
-};
-
-export const getProcessUserTaskFileMetaData = async (
-  processDefinitionsId: string,
-  userTaskId: string,
-  spaceId: string,
-) => {
-  const error = await checkValidity(processDefinitionsId, 'view', spaceId);
-  if (error) return error;
-  try {
-    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
-    return res;
-  } catch (error) {
-    return userError(
-      'Unable to get the requested User Task metadata.',
-      UserErrorType.NotFoundError,
-    );
   }
 };
 

@@ -643,8 +643,13 @@ export async function checkIfUserTaskExists(processDefinitionsId: string, userTa
     //     },
     //   },
     // });
-    const artifact = await db.artifact.findUnique({ where: { fileName: `${userTaskId}.json` } });
-    return artifact;
+    const jsonArtifact = await db.artifact.findUnique({
+      where: { fileName: `${userTaskId}.json` },
+    });
+    const htmlArtifact = await db.artifact.findUnique({
+      where: { fileName: `${userTaskId}.html` },
+    });
+    return jsonArtifact || htmlArtifact ? { json: jsonArtifact, html: htmlArtifact } : null;
   } catch (error) {
     console.error('Error checking if user task exists:', error);
     throw new Error('Failed to check if user task exists.');
@@ -757,7 +762,7 @@ export async function saveProcessUserTask(
       {
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
-        replaceFileContentOnly: res?.filePath ? true : false,
+        replaceFileContentOnly: res?.json?.filePath ? true : false,
         context: 'user-tasks',
       },
     );
@@ -770,7 +775,7 @@ export async function saveProcessUserTask(
       {
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
-        replaceFileContentOnly: res?.filePath ? true : false,
+        replaceFileContentOnly: res?.html?.filePath ? true : false,
         context: 'user-tasks',
       },
     );
@@ -818,10 +823,19 @@ export async function deleteProcessUserTask(
   checkIfProcessExists(processDefinitionsId);
   try {
     const res = await checkIfUserTaskExists(processDefinitionsId, userTaskFileName);
-    if (res) {
-      console.log('user task exists', userTaskFileName);
-      return await deleteProcessArtifact(res.filePath, true);
+
+    let isDeleted = false;
+
+    if (res?.json) {
+      console.log('user task json exists', userTaskFileName);
+      isDeleted = await deleteProcessArtifact(res.json.filePath, true);
     }
+    if (res?.html) {
+      console.log('user task html exists', userTaskFileName);
+      isDeleted = (await deleteProcessArtifact(res.html.filePath, true)) || isDeleted;
+    }
+
+    return isDeleted;
   } catch (err) {
     logger.debug(`Error removing user task data. Reason:\n${err}`);
   }
@@ -834,7 +848,7 @@ export async function deleteProcessScriptTask(
 ) {
   checkIfProcessExists(processDefinitionsId);
   try {
-    const res = await checkIfUserTaskExists(processDefinitionsId, taskFileNameWithExtension);
+    const res = await checkIfScriptTaskFileExists(processDefinitionsId, taskFileNameWithExtension);
     if (res) {
       console.log('script task file exists', taskFileNameWithExtension);
       return await deleteProcessArtifact(res.filePath, true);

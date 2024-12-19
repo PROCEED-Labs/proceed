@@ -15,7 +15,8 @@ const TargetConfiguration: React.FC<MachineDataViewProps> = ({ parentConfig, edi
   const { token } = theme.useToken();
   const panelStyle = {
     marginBottom: 20,
-    background: token.colorFillAlter,
+    // background: token.colorFillAlter,
+    background: 'rgba(255,255,255,0.9)',
     borderRadius: token.borderRadiusLG,
     //border: 'none',
   };

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Select } from 'antd';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Select, Card, Typography } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { Localization, languageItemsSelect } from '@/lib/data/locale';
 
@@ -139,42 +139,47 @@ const ParameterInputs = ({ index, showKey }: CreateParameterInputsProps) => {
           <Input />
         </Form.Item>
       )}
-      <Form.Item
-        name={[index, 'displayName']}
-        label="Display Name"
-        rules={[{ required: true, message: 'Please fill out the Display Name' }]}
-      >
-        <Input />
-      </Form.Item>
-      <Form.Item
-        name={[index, 'value']}
-        label="Value"
-        rules={[{ required: false, message: 'Please fill out the Value' }]}
-      >
-        <Input />
-      </Form.Item>
-      <Form.Item
-        name={[index, 'unit']}
-        label="Unit"
-        rules={[{ required: false, message: 'Please fill out the Unit' }]}
-      >
-        <Input />
-      </Form.Item>
-      <Form.Item
-        name={[index, 'language']}
-        label="Language"
-        rules={[{ required: false, message: 'Please fill out the Language' }]}
-      >
-        <Select
-          showSearch
-          placeholder="Search to Select"
-          optionFilterProp="label"
-          filterSort={(optionA, optionB) =>
-            (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
-          }
-          options={languageItemsSelect}
-        />
-      </Form.Item>
+      <Card size="small" style={{ background: 'rgba(0,0,0,0.02)' }}>
+        <Typography.Paragraph strong>Entry Data</Typography.Paragraph>
+        <Form.Item
+          name={[index, 'displayName']}
+          label="Display Name"
+          rules={[{ required: false, message: 'Please fill out the Display Name' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name={[index, 'value']}
+          label="Value"
+          rules={[{ required: false, message: 'Please fill out the Value' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name={[index, 'unit']}
+          label="Unit"
+          rules={[{ required: false, message: 'Please fill out the Unit' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name={[index, 'language']}
+          label="Language"
+          rules={[{ required: false, message: 'Please fill out the Language' }]}
+        >
+          <Select
+            showSearch
+            placeholder="Search to Select"
+            optionFilterProp="label"
+            filterSort={(optionA, optionB) =>
+              (optionA?.label ?? '')
+                .toLowerCase()
+                .localeCompare((optionB?.label ?? '').toLowerCase())
+            }
+            options={languageItemsSelect}
+          />
+        </Form.Item>
+      </Card>
     </>
   );
 };

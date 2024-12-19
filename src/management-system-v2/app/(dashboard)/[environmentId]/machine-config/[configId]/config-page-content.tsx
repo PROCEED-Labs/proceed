@@ -260,6 +260,7 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig }) => {
           </div>
         )}
       </ResizableBox>
+
       <Row style={{ flexGrow: 1, flexShrink: 1 }}>
         <Col style={{ width: '100%', height: '100%' }}>
           {'content' in selectedNode ? (

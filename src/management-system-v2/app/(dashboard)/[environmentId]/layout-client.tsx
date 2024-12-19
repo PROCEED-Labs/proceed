@@ -158,7 +158,6 @@ const Layout: FC<
                   display: modelerIsFullScreen ? 'none' : 'block',
                   overflow: 'auto',
                 }}
-                width={225}
                 className={cn(styles.Sider)}
                 collapsible
                 collapsed={collapsed}

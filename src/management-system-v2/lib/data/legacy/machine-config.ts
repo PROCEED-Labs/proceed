@@ -23,6 +23,7 @@ import { v4 } from 'uuid';
 import eventHandler from './eventHandler.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { defaultConfiguration } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
 // @ts-ignore
 let firstInit = !global.machineConfigMetaObjects;
@@ -33,6 +34,8 @@ type StoredConfigsAndParameters = {
   machineConfigs: Record<string, StoredMachineConfig>;
   targetConfigs: Record<string, StoredTargetConfig>;
   parameters: Record<string, StoredParameter>;
+  // versionedParentConfigs: Record<string, StoredParentConfig>;
+  versionedParentConfigs: Record<string, Record<string, StoredParentConfig>>;
 };
 
 let storedData: StoredConfigsAndParameters =
@@ -44,6 +47,7 @@ let storedData: StoredConfigsAndParameters =
     machineConfigs: {},
     targetConfigs: {},
     parameters: {},
+    versionedParentConfigs: {},
   } as StoredConfigsAndParameters);
 
 /**
@@ -99,7 +103,7 @@ function targetConfigToStorage(
         targetConfig.parameters,
         newId,
       ),
-    };
+    } as StoredTargetConfig;
 
     return targetConfig.id;
   }
@@ -134,7 +138,7 @@ function machineConfigsToStorage(
         machineConfig.parameters,
         newId,
       ),
-    };
+    } as StoredMachineConfig;
   });
 
   return machineConfigs.map(({ id }) => id);
@@ -145,16 +149,42 @@ function machineConfigsToStorage(
  * @param parentConfig ParentConfig that is to be stored, able to contain TargetConfigs, MachineConfigs and ParameterConfigs
  * @param newId Boolean determining if new IDs are to be generated.
  */
-function parentConfigToStorage(parentConfig: ParentConfig, newId: boolean = false) {
+function parentConfigToStorage(
+  parentConfig: ParentConfig,
+  newId: boolean = false,
+  version: string = '',
+) {
   const { targetConfig, metadata, machineConfigs } = parentConfig;
 
-  parentConfig.id = newId ? v4() : parentConfig.id;
+  parentConfig.id = newId && !version ? v4() : parentConfig.id;
+
+  storedData.versionedParentConfigs[parentConfig.id]
+    ? undefined
+    : (storedData.versionedParentConfigs[parentConfig.id] = {});
+
+  version
+    ? (storedData.versionedParentConfigs[parentConfig.id][version] = {
+        ...parentConfig,
+        targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
+        machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+        metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+      })
+    : (storedData.parentConfigs[parentConfig.id] = {
+        ...parentConfig,
+        targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
+        machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+        metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+      });
+}
+
+function versionToParentConfigStorage(parentConfig: ParentConfig) {
+  const { targetConfig, metadata, machineConfigs } = parentConfig;
 
   storedData.parentConfigs[parentConfig.id] = {
     ...parentConfig,
-    targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
-    machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
-    metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+    targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, true),
+    machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, true),
+    metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, true),
   };
 }
 
@@ -267,9 +297,12 @@ function nestedMachineConfigsFromStorage(machineConfigIds: string[]): MachineCon
  */
 export async function getDeepParentConfigurationById(
   parentConfigId: string,
+  version: string = '',
   ability?: Ability,
 ): Promise<ParentConfig> {
-  const storedParentConfig = storedData.parentConfigs[parentConfigId];
+  const storedParentConfig = version
+    ? storedData.versionedParentConfigs[parentConfigId][version]
+    : storedData.parentConfigs[parentConfigId];
 
   // TODO: check if the user can access the config
 
@@ -280,6 +313,7 @@ export async function getDeepParentConfigurationById(
     metadata: nestedParametersFromStorage(storedParentConfig.metadata),
     targetConfig: nestedConfigFromStorage('target-config', storedParentConfig.targetConfig),
     machineConfigs: nestedMachineConfigsFromStorage(storedParentConfig.machineConfigs),
+    versions: storedData.parentConfigs[parentConfigId].versions,
   };
 
   if (
@@ -291,7 +325,7 @@ export async function getDeepParentConfigurationById(
   return parentConfig;
 }
 
-/** Returns all shallow machineConfigs in form of an array */
+/** Returns all shallow Configs in form of an array */
 export async function getParentConfigurations(
   environmentId: string,
   ability?: Ability,
@@ -509,13 +543,11 @@ export async function copyParentConfig(
 
 /*************************** Element Addition *****************************/
 
-export async function addParentConfig(
-  machineConfigInput: ParentConfig,
-  environmentId: string,
-  base?: ParentConfig,
-) {
+export async function addParentConfig(machineConfigInput: ParentConfig, environmentId: string) {
   try {
+    // TODO this doesn't do anything since every property is optional
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
+    // TODO to be replaced by defaultConfiguration
     const date = new Date();
     const metadata: ParentConfig = {
       ...({
@@ -539,8 +571,7 @@ export async function addParentConfig(
         machineConfigs: [],
         environmentId: environmentId,
       } as ParentConfig),
-      ...parentConfigData,
-      ...(base ? base : {}),
+      ...machineConfigInput,
     };
 
     metadata.folderId = (await getRootFolder(environmentId)).id;
@@ -561,9 +592,76 @@ export async function addParentConfig(
     store.set('techData', 'targetConfigs', storedData.targetConfigs);
     store.set('techData', 'parameters', storedData.parameters);
 
-    eventHandler.dispatch('machineConfigAdded', { machineConfig: metadata });
+    return metadata;
+  } catch (e: unknown) {
+    const error = e as Error;
+    // console.log(error.message);
+    return userError(error.message ?? "Couldn't create Machine Config");
+  }
+}
+
+export async function addParentConfigVersion(
+  machineConfigInput: ParentConfig,
+  environmentId: string,
+  versionId: string,
+  versionName: string,
+  versionDescription: string,
+) {
+  let versions = Array.from(machineConfigInput.versions);
+  versions.push({
+    id: versionId,
+    name: versionName,
+    description: versionDescription,
+    versionBasedOn: machineConfigInput.version,
+    createdOn: new Date(),
+  });
+
+  updateParentConfig(machineConfigInput.id, { versions });
+
+  const newVersion: ParentConfig = JSON.parse(JSON.stringify(machineConfigInput));
+  newVersion.id = newVersion.id;
+
+  try {
+    const parentConfigData = AbstractConfigInputSchema.parse(newVersion);
+    const date = new Date();
+    const metadata: ParentConfig = {
+      ...(defaultConfiguration(environmentId) as ParentConfig),
+      ...newVersion,
+      version: versionId,
+    };
+
+    metadata.folderId = (await getRootFolder(environmentId)).id;
+    metadata.environmentId = environmentId;
+
+    const folderData = foldersMetaObject.folders[metadata.folderId];
+    if (!folderData) throw new Error('Folder not found');
+
+    // true to generate new IDs for data and create a version of a parentConfig instead of a regular one
+    parentConfigToStorage(metadata, true, versionId);
+    store.set('techData', 'parentConfigs', storedData.parentConfigs);
+    store.set('techData', 'versionedParentConfigs', storedData.versionedParentConfigs);
+    store.set('techData', 'machineConfigs', storedData.machineConfigs);
+    store.set('techData', 'targetConfigs', storedData.targetConfigs);
+    store.set('techData', 'parameters', storedData.parameters);
 
     return metadata;
+  } catch (e: unknown) {
+    const error = e as Error;
+    // console.log(error.message);
+    return userError(error.message ?? "Couldn't create Machine Config");
+  }
+}
+
+// TODO
+export async function setParentConfigVersionAsLatest(machineConfigInput: ParentConfig) {
+  try {
+    versionToParentConfigStorage(machineConfigInput);
+    store.set('techData', 'parentConfigs', storedData.parentConfigs);
+    store.set('techData', 'machineConfigs', storedData.machineConfigs);
+    store.set('techData', 'targetConfigs', storedData.targetConfigs);
+    store.set('techData', 'parameters', storedData.parameters);
+
+    return machineConfigInput;
   } catch (e: unknown) {
     const error = e as Error;
     // console.log(error.message);
@@ -772,14 +870,19 @@ export async function removeMachineConfig(machineConfigId: string) {
  */
 export async function removeParentConfiguration(parentConfigId: string) {
   const parentConfig = storedData.parentConfigs[parentConfigId];
+  const parentConfigVersions = storedData.versionedParentConfigs[parentConfigId];
 
   if (!parentConfig) return;
+  if (!parentConfigVersions) return;
 
   delete storedData.parentConfigs[parentConfigId];
+  delete storedData.versionedParentConfigs[parentConfigId];
 
   if (parentConfig.targetConfig) await removeTargetConfig(parentConfig.targetConfig);
   await asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id));
   await asyncForEach(parentConfig.metadata, (id) => removeParameter(id));
+
+  // TODO for each version removeTargetConfig(), removeMachineConfig(), removeParameter() like above
 
   // remove parentConfig from folder
   foldersMetaObject.folders[parentConfig.folderId]!.children = foldersMetaObject.folders[
@@ -788,6 +891,7 @@ export async function removeParentConfiguration(parentConfigId: string) {
 
   // remove from store
   store.set('techData', 'parentConfigs', storedData.parentConfigs);
+  store.set('techData', 'versionedParentConfigs', storedData.versionedParentConfigs);
 }
 
 export const deleteParentConfigurations = async (definitionIds: string[], spaceId: string) => {

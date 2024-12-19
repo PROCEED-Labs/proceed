@@ -80,7 +80,6 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
   const [configToCopy, setConfigToCopy] = useState('');
   const [editingMachineName, setEditingMachineName] = useState('');
   const editIcon = useRef<HTMLElement | null>(null);
-  const machineIds = useRef<string[]>([]);
 
   const { token } = theme.useToken();
   const panelStyle = {
@@ -258,7 +257,6 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
 
         style: { ...panelStyle, border: '1px solid #adc6ff' }, //geekblue-3
       });
-      machineIds.current.push(machineConfig.id);
     }
     return list;
   }, [parentConfig, editingEnabled, panelStyle]);
@@ -272,7 +270,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
           background: 'none',
         }}
         items={items}
-        defaultActiveKey={machineIds.current}
+        defaultActiveKey={items.map((machine) => machine.key)}
       />
       <CopyMachineConfigModal
         open={!!configToCopy}

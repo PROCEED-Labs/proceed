@@ -607,7 +607,7 @@ export async function addParentConfigVersion(
   versionName: string,
   versionDescription: string,
 ) {
-  let versions = machineConfigInput.versions.slice(0);
+  let versions = Array.from(machineConfigInput.versions);
   versions.push({
     id: versionId,
     name: versionName,

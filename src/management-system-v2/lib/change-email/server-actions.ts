@@ -67,7 +67,7 @@ export async function changeEmail(token: string, identifier: string, cancel: boo
   )
     return userError('Invalid token');
 
-  if (!cancel) updateUser(userId, { email: verificationToken.identifier });
+  if (!cancel) updateUser(userId, { email: verificationToken.identifier, isGuest: false });
 
   deleteVerificationToken(tokenParams);
 }

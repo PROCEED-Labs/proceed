@@ -34,7 +34,12 @@ export const ConfigCreationModal: React.FC<
   const createNewConfig = async (values: { name: string; description: string }[]) => {
     const config = await (customAction?.(values[0]) ??
       addParentConfig(
-        defaultParentConfiguration(values[0].name, values[0].description, folderId),
+        defaultParentConfiguration(
+          environment.spaceId,
+          values[0].name,
+          values[0].description,
+          folderId,
+        ),
         environment.spaceId,
       ).then((res) => (Array.isArray(res) ? res[0] : res)));
     if (config && 'error' in config) {

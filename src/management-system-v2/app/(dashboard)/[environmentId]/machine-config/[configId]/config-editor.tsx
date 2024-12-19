@@ -29,6 +29,7 @@ import {
   Radio,
   Collapse,
   Typography,
+  App,
 } from 'antd';
 
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -58,6 +59,7 @@ import {
 } from '@/lib/data/legacy/machine-config';
 import ConfirmationButton from '@/components/confirmation-button';
 import { v4 } from 'uuid';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;
@@ -81,6 +83,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   editingAllowed,
   onChangeEditable,
 }) => {
+  const app = App.useApp();
   const router = useRouter();
   const environment = useEnvironment();
   const query = useSearchParams();
@@ -128,34 +131,52 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     versionDescription: string;
   }) => {
     const versionId = v4();
-    await addParentConfigVersion(parentConfig, environment.spaceId, versionId);
-
-    parentConfig.versions.push({
-      id: versionId,
-      name: values.versionName,
-      description: values.versionDescription,
-      versionBasedOn: parentConfig.version,
-      createdOn: new Date(),
+    wrapServerCall({
+      fn: () =>
+        addParentConfigVersion(
+          parentConfig,
+          environment.spaceId,
+          versionId,
+          values.versionName,
+          values.versionDescription,
+        ),
+      onSuccess: () => {
+        router.refresh();
+        app.message.success({
+          content: (
+            <span>
+              Version <em>{values.versionName}</em> successfully created
+            </span>
+          ),
+        });
+      },
+      onError: () => {
+        app.message.success(`Creation of version failed`);
+      },
     });
-
-    const versions = parentConfig.versions;
-    await updateParentConfig(parentConfig.id, { versions });
-    router.refresh();
   };
 
   const makeConfigVersionLatest = async () => {
-    setParentConfigVersionAsLatest(parentConfig);
-    const searchParams = new URLSearchParams(query);
-    searchParams.delete('version');
-    router.push(
-      spaceURL(
-        environment,
-        `/machine-config/${parentConfig.id as string}${
-          searchParams.size ? '?' + searchParams.toString() : ''
-        }`,
-      ),
-    );
-    router.refresh();
+    wrapServerCall({
+      fn: () => setParentConfigVersionAsLatest(parentConfig),
+      onSuccess: () => {
+        const searchParams = new URLSearchParams(query);
+        searchParams.delete('version');
+        router.push(
+          spaceURL(
+            environment,
+            `/machine-config/${parentConfig.id as string}${
+              searchParams.size ? '?' + searchParams.toString() : ''
+            }`,
+          ),
+        );
+        router.refresh();
+        app.message.success(`Version successfully set as latest`);
+      },
+      onError: () => {
+        app.message.success(`There was an error setting this version as latest`);
+      },
+    });
   };
 
   const showMobileView = useMobileModeler();

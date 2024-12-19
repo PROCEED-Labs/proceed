@@ -603,8 +603,21 @@ export async function addParentConfig(machineConfigInput: ParentConfig, environm
 export async function addParentConfigVersion(
   machineConfigInput: ParentConfig,
   environmentId: string,
-  version: string,
+  versionId: string,
+  versionName: string,
+  versionDescription: string,
 ) {
+  let versions = machineConfigInput.versions.slice(0);
+  versions.push({
+    id: versionId,
+    name: versionName,
+    description: versionDescription,
+    versionBasedOn: machineConfigInput.version,
+    createdOn: new Date(),
+  });
+
+  updateParentConfig(machineConfigInput.id, { versions });
+
   const newVersion: ParentConfig = JSON.parse(JSON.stringify(machineConfigInput));
   newVersion.id = newVersion.id;
 
@@ -614,7 +627,7 @@ export async function addParentConfigVersion(
     const metadata: ParentConfig = {
       ...(defaultConfiguration(environmentId) as ParentConfig),
       ...newVersion,
-      version: version,
+      version: versionId,
     };
 
     metadata.folderId = (await getRootFolder(environmentId)).id;
@@ -624,7 +637,8 @@ export async function addParentConfigVersion(
     if (!folderData) throw new Error('Folder not found');
 
     // true to generate new IDs for data and create a version of a parentConfig instead of a regular one
-    parentConfigToStorage(metadata, true, version);
+    parentConfigToStorage(metadata, true, versionId);
+    store.set('techData', 'parentConfigs', storedData.parentConfigs);
     store.set('techData', 'versionedParentConfigs', storedData.versionedParentConfigs);
     store.set('techData', 'machineConfigs', storedData.machineConfigs);
     store.set('techData', 'targetConfigs', storedData.targetConfigs);

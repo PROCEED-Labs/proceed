@@ -22,7 +22,7 @@ const fastParser = require('fast-xml-parser');
 async function getRequiredProcessFragments(bpmnObj) {
   const deployMethod = await getDeploymentMethod(bpmnObj);
 
-  let requiredFragmentInfo = { html: [], imports: [], images: [] };
+  let requiredFragmentInfo = { html: [], imports: [], images: [], scripts: [] };
 
   const flowElements = await getAllBpmnFlowElements(bpmnObj);
   const flowNodes = flowElements.filter((node) => node.$type !== 'bpmn:SequenceFlow');
@@ -63,16 +63,42 @@ async function getRequiredProcessFragments(bpmnObj) {
       [],
     );
 
+    requiredFragmentInfo.scripts = getScriptsToKnow(locallyExecuted);
     requiredFragmentInfo.html = getUserTasksToKnow(locallyExecuted);
     requiredFragmentInfo.imports = getImportsToKnow(bpmnObj, locallyExecuted);
     requiredFragmentInfo.images = getFlowElementImagesToKnow(locallyExecuted);
   } else {
+    requiredFragmentInfo.scripts = getScriptsToKnow(flowNodes);
     requiredFragmentInfo.html = getUserTasksToKnow(flowNodes);
     requiredFragmentInfo.imports = getImportsToKnow(bpmnObj, flowNodes);
     requiredFragmentInfo.images = getFlowElementImagesToKnow(flowNodes);
   }
 
   return requiredFragmentInfo;
+}
+
+/**
+ * Returns the required script data for all script-tasks inside the given list
+ *
+ * @param {Array} flowNodesToKnow the list of flowNodes that might be executed on this machine
+ * @returns {string[]} an array containing information about all script files needed for the process
+ */
+function getScriptsToKnow(flowNodesToKnow) {
+  return flowNodesToKnow.reduce((curr, flowNode) => {
+    // only handle script tasks with a reference to an external file
+    if (flowNode.$type === 'bpmn:ScriptTask' && flowNode.fileName) {
+      const { fileName } = flowNode;
+
+      // TODO: maybe throw if neither a filename nor an inline script is defined
+
+      // prevent duplicate references to the same filename
+      if (!curr.includes(fileName)) {
+        curr.push(fileName);
+      }
+    }
+
+    return curr;
+  }, []);
 }
 
 /**

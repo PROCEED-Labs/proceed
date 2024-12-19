@@ -29,7 +29,7 @@ beforeEach(() => {
   mockEngine = {
     _management: { createInstance: jest.fn() },
     _bpmn: 'Bpmn Definitions',
-    processID: 'mockProcessId',
+    definitionId: 'mockProcessId',
     _log: {
       info: jest.fn().mockImplementation(),
     },
@@ -96,6 +96,45 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
       hookReturnValue.then(() => expect(num).toBe(1));
       ++num;
       mockEngine.userTasks[0].activate();
+    });
+  });
+
+  describe('new script task referencing a file encountered', () => {
+    let mockTask;
+    let hookReturnValue;
+
+    beforeEach(() => {
+      db.getScript.mockClear();
+      db.getScript.mockResolvedValueOnce('console.log("Hello Test");');
+
+      mockTask = {
+        id: 'mockTaskId',
+        $type: 'bpmn:ScriptTask',
+        name: 'mockTaskName',
+        $attrs: {
+          'proceed:fileName': 'scriptFileName',
+        },
+      };
+
+      hookReturnValue = hook('mockProcess', 'mockInstance', 'mockTokenId', mockTask, {
+        mockStateEntry: 'mockStateValue',
+      });
+    });
+
+    it('logs that a new script task was encountered', async () => {
+      expect(mockEngine._log.info).toHaveBeenCalledTimes(1);
+    });
+
+    it('should inject the script into the script task', () => {
+      expect(mockTask).toStrictEqual({
+        ...mockTask,
+        script: 'console.log("Hello Test");',
+        scriptFormat: 'application/javascript',
+      });
+      expect(db.getScript).toHaveBeenCalledWith(
+        mockEngine.definitionId,
+        mockTask.$attrs['proceed:fileName'],
+      );
     });
   });
 

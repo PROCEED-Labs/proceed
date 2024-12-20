@@ -136,7 +136,7 @@ declare const _exports: {
   ): {
     definitionId: string;
     processId: string;
-    version: number;
+    versionId: string;
   };
   getDefinitionsAndProcessIdForEveryCallActivity(
     bpmn: string | object,

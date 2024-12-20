@@ -31,6 +31,7 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -61,6 +62,8 @@ const ModelerToolbar = ({
   const [preselectedExportType, setPreselectedExportType] = useState<
     ProcessExportTypes | undefined
   >();
+
+  const toggleTimelineView = useTimelineViewStore((state) => state.toggleTimelineView);
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -214,6 +217,9 @@ const ModelerToolbar = ({
     versions.find((version) => version.id === (selectedVersionId ?? '-1')) ?? LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
+  const timelineViewFeatureEnabled = process.env.NEXT_PUBLIC_TIMELINE_VIEW === 'true';
+
+  console.log('ENV', process.env.NEXT_PUBLIC_TIMELINE_VIEW);
 
   return (
     <>
@@ -335,6 +341,14 @@ const ModelerToolbar = ({
                       onClick={handleProcessExportModalToggle}
                     ></Button>
                   </Tooltip>
+                  {timelineViewFeatureEnabled && (
+                    <Tooltip title="Switch edit mode">
+                      <Button
+                        icon={<Icon aria-label="xml-sign" component={SvgXML} />}
+                        onClick={toggleTimelineView}
+                      ></Button>
+                    </Tooltip>
+                  )}
                 </>
               )}
             </ToolbarGroup>

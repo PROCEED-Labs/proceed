@@ -192,17 +192,6 @@ export type ResourceInfos = {
   description?: string;
 };
 /**
- * An object containing necessary values for duration
- */
-export type DurationValues = {
-  years: number | null;
-  months: number | null;
-  days: number | null;
-  hours: number | null;
-  minutes: number | null;
-  seconds: number | null;
-};
-/**
  * Returns id of the given process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -255,7 +244,7 @@ export function getImports(bpmn: string | object): Promise<object[]>;
  * Returns the version information of the given bpmn process definition
  *
  * @param {string|object} bpmn - the process definition as XML string or BPMN-moddle Object
- * @returns {(Promise.<{version?: string, name?: string, description?: string, versionBasedOn?: string, versionCreatedOn?: string}>)} - The version information if it exists
+ * @returns {(Promise.<{versionId?: string, name?: string, description?: string, versionBasedOn?: string, versionCreatedOn?: string }>)} - The version information if it exists
  * @throws {Error} will throw if the definition contains a version that is not a number
  */
 export function getDefinitionsVersionInformation(bpmn: string | object): Promise<{
@@ -263,7 +252,7 @@ export function getDefinitionsVersionInformation(bpmn: string | object): Promise
   name?: string;
   description?: string;
   versionBasedOn?: string;
-  versionCreatedOn: string;
+  versionCreatedOn?: string;
 }>;
 /**
  * Get all process ids from a BPMN definitions/object.
@@ -330,6 +319,18 @@ export function getUserTaskFileNameMapping(bpmn: string | object): Promise<{
  */
 export function getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn: string | object): Promise<{
   [userTaskFileName: string]: string[];
+}>;
+/**
+ * Get all fileName for all scriptTasks,
+ * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [scriptTaskId: string]: { fileName?: string }}> } an object (a map) with all scriptTaskIds as keys
+ */
+export function getScriptTaskFileNameMapping(bpmn: string | object): Promise<{
+  [scriptTaskId: string]: {
+    fileName?: string;
+  };
 }>;
 /**
  * Returns a xml with Diagram Elements just from the given subprocess and their nested Processes

@@ -1,18 +1,28 @@
-import { Element, NodeTree, useEditor, WithoutPrivateActions } from '@craftjs/core';
+import { Element } from '@craftjs/core';
 import { Button as AntButton } from 'antd';
-import { ReactNode } from 'react';
+import React, { ReactNode, useContext } from 'react';
 
 import { LuFormInput, LuImage, LuTable, LuText } from 'react-icons/lu';
-import { MdCheckBox, MdRadioButtonChecked, MdTitle } from 'react-icons/md';
+import { MdCheckBox, MdRadioButtonChecked, MdTitle, MdOutlineCheck } from 'react-icons/md';
 import { RxGroup } from 'react-icons/rx';
 
 import { useDraggable } from '@dnd-kit/core';
 
 import styles from './index.module.scss';
 
-import { Text, Container, Input, CheckBoxOrRadioGroup, Column, Table, Image } from '../elements';
+import {
+  Text,
+  Container,
+  Input,
+  CheckBoxOrRadioGroup,
+  Column,
+  Table,
+  EditImage as Image,
+  SubmitButton,
+} from '../elements';
 
 import { createPortal } from 'react-dom';
+import BuilderContext from '../BuilderContext';
 
 type CreationButtonProps = React.PropsWithChildren<{
   title: string;
@@ -20,9 +30,7 @@ type CreationButtonProps = React.PropsWithChildren<{
 }>;
 
 const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }) => {
-  const { editingEnabled } = useEditor((state) => {
-    return { editingEnabled: state.options.enabled };
-  });
+  const { editingEnabled } = useContext(BuilderContext);
 
   const id = `create-${title}-button`;
 
@@ -91,6 +99,9 @@ const Toolbox = () => {
       </CreationButton>
       <CreationButton title="Image" icon={<LuImage />}>
         <Image />
+      </CreationButton>
+      <CreationButton title="Submit" icon={<MdOutlineCheck />}>
+        <SubmitButton />
       </CreationButton>
     </div>
   );

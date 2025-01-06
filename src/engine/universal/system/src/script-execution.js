@@ -97,16 +97,21 @@ class ScriptExecutor extends System {
 
         try {
           let target = req.process.dependencies;
-          for (const segment of functionName.split('.')) {
-            target = target[segment];
+          const segments = functionName.split('.');
+          for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
+
+            if (segments[i - 1] === 'getService') target = target(segment);
+            else target = target[segment];
 
             if (typeof target === 'undefined')
               return { response: { error: 'Function not found' }, statusCode: 404 };
           }
 
+          let result = target;
           if (typeof target === 'function' || typeof target === 'object')
-            return { response: { result: await target(...args) } };
-          else return { response: { result: target } };
+            result = await target(...args);
+          return { response: { result } };
         } catch (e) {
           return { response: { error: `Error: ${e.message}` }, statusCode: 500 };
         }

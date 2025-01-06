@@ -12,6 +12,7 @@ const environmentVariables = {
     ENABLE_MACHINE_CONFIG: z.string().optional(), // NOTE: Not sure if it should be optional
     NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
+    SHARING_ENCRYPTION_SECRET: z.string(),
     INVITATION_ENCRYPTION_SECRET: z.string(),
     MS_ENABLED_RESOURCES: z
       .string()
@@ -34,7 +35,6 @@ const environmentVariables = {
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
-
     USE_AUTH0: z.coerce.boolean(),
 
     SMTP_MAIL_USER: z.string(),
@@ -57,12 +57,15 @@ const environmentVariables = {
     TWITTER_CLIENT_SECRET: z.string(),
 
     SHARING_ENCRYPTION_SECRET: z.string(),
+
+    GUEST_REFERENCE_SECRET: z.string(),
   },
   development: {
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     INVITATION_ENCRYPTION_SECRET: z
       .string()
       .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
+    GUEST_REFERENCE_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
   },
   test: {},
 } satisfies EnvironmentVariables;

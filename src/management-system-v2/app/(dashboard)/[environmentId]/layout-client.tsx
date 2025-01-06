@@ -87,9 +87,9 @@ const Layout: FC<
               icon: <FaUserEdit />,
             },
             {
-              key: 'environments',
+              key: 'spaces',
               title: 'My Spaces',
-              label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+              label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
               icon: <AppstoreOutlined />,
             },
           ],
@@ -195,7 +195,7 @@ const Layout: FC<
                             [styles.collapsed]: collapsed,
                           })}
                           width={160}
-                          height={30}
+                          height={63}
                           priority
                         />
                       </Link>

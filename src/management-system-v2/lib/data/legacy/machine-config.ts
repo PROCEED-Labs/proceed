@@ -158,23 +158,18 @@ function parentConfigToStorage(
 
   parentConfig.id = newId && !version ? v4() : parentConfig.id;
 
-  storedData.versionedParentConfigs[parentConfig.id]
-    ? undefined
-    : (storedData.versionedParentConfigs[parentConfig.id] = {});
+  if (!storedData.versionedParentConfigs[parentConfig.id])
+    storedData.versionedParentConfigs[parentConfig.id] = {};
 
-  version
-    ? (storedData.versionedParentConfigs[parentConfig.id][version] = {
-        ...parentConfig,
-        targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
-        machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
-        metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
-      })
-    : (storedData.parentConfigs[parentConfig.id] = {
-        ...parentConfig,
-        targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
-        machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
-        metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
-      });
+  let toStore = {
+    ...parentConfig,
+    targetConfig: targetConfigToStorage(parentConfig.id, targetConfig, newId),
+    machineConfigs: machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+    metadata: parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+  };
+
+  if (version) storedData.versionedParentConfigs[parentConfig.id][version] = toStore;
+  else storedData.parentConfigs[parentConfig.id] = toStore;
 }
 
 function versionToParentConfigStorage(parentConfig: ParentConfig) {
@@ -622,8 +617,6 @@ export async function addParentConfigVersion(
   newVersion.id = newVersion.id;
 
   try {
-    const parentConfigData = AbstractConfigInputSchema.parse(newVersion);
-    const date = new Date();
     const metadata: ParentConfig = {
       ...(defaultConfiguration(environmentId) as ParentConfig),
       ...newVersion,

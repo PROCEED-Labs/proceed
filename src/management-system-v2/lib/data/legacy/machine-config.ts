@@ -148,6 +148,7 @@ function machineConfigsToStorage(
  * Stores a given ParentConfig into the new storage referencing other elements by id instead of having them nested.
  * @param parentConfig ParentConfig that is to be stored, able to contain TargetConfigs, MachineConfigs and ParameterConfigs
  * @param newId Boolean determining if new IDs are to be generated.
+ * @param version Version-ID of the the config if a versioned config is to be stored.
  */
 function parentConfigToStorage(
   parentConfig: ParentConfig,
@@ -595,6 +596,15 @@ export async function addParentConfig(machineConfigInput: ParentConfig, environm
   }
 }
 
+/**
+ * This adds a new version for a parent configuration to the storage.
+ * @param machineConfigInput Config for which a version is created.
+ * @param environmentId Environment ID for the current space.
+ * @param versionId ID for the version that is to be created.
+ * @param versionName Name for the version that is to be created.
+ * @param versionDescription Description for the version that is to be created.
+ * @returns returns the newly created config version in the case of no errors. Otherwise returns UserError.
+ */
 export async function addParentConfigVersion(
   machineConfigInput: ParentConfig,
   environmentId: string,
@@ -617,27 +627,27 @@ export async function addParentConfigVersion(
   newVersion.id = newVersion.id;
 
   try {
-    const metadata: ParentConfig = {
+    const newConfig: ParentConfig = {
       ...(defaultConfiguration(environmentId) as ParentConfig),
       ...newVersion,
       version: versionId,
     };
 
-    metadata.folderId = (await getRootFolder(environmentId)).id;
-    metadata.environmentId = environmentId;
+    newConfig.folderId = (await getRootFolder(environmentId)).id;
+    newConfig.environmentId = environmentId;
 
-    const folderData = foldersMetaObject.folders[metadata.folderId];
+    const folderData = foldersMetaObject.folders[newConfig.folderId];
     if (!folderData) throw new Error('Folder not found');
 
     // true to generate new IDs for data and create a version of a parentConfig instead of a regular one
-    parentConfigToStorage(metadata, true, versionId);
+    parentConfigToStorage(newConfig, true, versionId);
     store.set('techData', 'parentConfigs', storedData.parentConfigs);
     store.set('techData', 'versionedParentConfigs', storedData.versionedParentConfigs);
     store.set('techData', 'machineConfigs', storedData.machineConfigs);
     store.set('techData', 'targetConfigs', storedData.targetConfigs);
     store.set('techData', 'parameters', storedData.parameters);
 
-    return metadata;
+    return newConfig;
   } catch (e: unknown) {
     const error = e as Error;
     // console.log(error.message);
@@ -645,7 +655,11 @@ export async function addParentConfigVersion(
   }
 }
 
-// TODO
+/**
+ * Copies the data of a specific config-version into the editable "main-config" displayed as latest version.
+ * @param machineConfigInput The config-version that is to be set as latest version.
+ * @returns Returns the config if no errors occur. Otherwise a UserError is returned.
+ */
 export async function setParentConfigVersionAsLatest(machineConfigInput: ParentConfig) {
   try {
     versionToParentConfigStorage(machineConfigInput);

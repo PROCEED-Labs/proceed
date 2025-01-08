@@ -326,7 +326,7 @@ export async function updateArtifactProcessReference(
   processId: string,
   status: boolean,
 ) {
-  if (DEPLOYMENT_ENV !== 'cloud') return;
+  //if (DEPLOYMENT_ENV !== 'cloud') return;
 
   const artifact = await db.artifact.findUnique({
     where: { fileName },

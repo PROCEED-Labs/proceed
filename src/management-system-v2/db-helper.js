@@ -8,7 +8,7 @@ const CONFIG = {
   postgresPassword: 'proceed',
   defaultDb: 'proceed_db',
   dbHost: 'localhost',
-  dbPort: '5432',
+  dbPort: '5433',
   defaultSchema: 'public',
   envFile: './.env',
   checkInterval: 2000,

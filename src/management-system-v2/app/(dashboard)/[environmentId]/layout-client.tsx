@@ -1,7 +1,15 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useState } from 'react';
+import {
+  FC,
+  PropsWithChildren,
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
 import { AppstoreOutlined } from '@ant-design/icons';
 import Image from 'next/image';
@@ -16,6 +24,9 @@ import useModelerStateStore from './processes/[processId]/use-modeler-state-stor
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
 import { FaUserEdit } from 'react-icons/fa';
+import { useFileManager } from '@/lib/useFileManager';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { enableUseFileManager } from 'FeatureFlags';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -54,7 +65,9 @@ const Layout: FC<
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
-
+  const { download: getLogo, fileUrl: logoUrl } = useFileManager({
+    entityType: EntityType.ORGANIZATION,
+  });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
 
@@ -83,9 +96,9 @@ const Layout: FC<
               icon: <FaUserEdit />,
             },
             {
-              key: 'environments',
+              key: 'spaces',
               title: 'My Spaces',
-              label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+              label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
               icon: <AppstoreOutlined />,
             },
           ],
@@ -95,8 +108,12 @@ const Layout: FC<
     }
   }
 
+  useEffect(() => {
+    if (enableUseFileManager && customLogo) getLogo(activeSpace.spaceId, '');
+  }, [activeSpace, customLogo]);
+
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (customLogo) imageSource = customLogo;
+  if (customLogo) imageSource = logoUrl ?? customLogo;
 
   const menu = (
     <Menu
@@ -170,7 +187,6 @@ const Layout: FC<
                     priority
                   />
                 </Link>
-
                 {loggedIn ? menu : null}
               </AntLayout.Sider>
             )}

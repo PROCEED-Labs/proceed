@@ -102,18 +102,18 @@ class Engine {
    * Deploys the process version to the NeoBPMN Engine making it ready to start instances
    *
    * @param {string} definitionId The name of the file of the (main) process (as stored in the `data`)
-   * @param {number} the version of the process to deploy
+   * @param {string} the version of the process to deploy
    */
-  async deployProcessVersion(definitionId, version) {
-    if (!this._versionProcessMapping[version]) {
+  async deployProcessVersion(definitionId, versionId) {
+    if (!this._versionProcessMapping[versionId]) {
       // Fetch the stored BPMN
-      const bpmn = await distribution.db.getProcessVersion(definitionId, version);
+      const bpmn = await distribution.db.getProcessVersion(definitionId, versionId);
 
       const [processId] = await getProcessIds(bpmn);
       // validate imports and user tasks on first deploy || assumes validity for imported processes since we expect to have a fully valid main process
-      if (!(await distribution.db.isProcessVersionValid(definitionId, version))) {
+      if (!(await distribution.db.isProcessVersionValid(definitionId, versionId))) {
         throw new Error(
-          `Process version ${version} for process ${processId} with definitionId ${definitionId} is invalid. It can't be deployed.`,
+          `Process version ${versionId} for process ${processId} with definitionId ${definitionId} is invalid. It can't be deployed.`,
         );
       }
 
@@ -136,7 +136,7 @@ class Engine {
 
       this.machineInformation = { id, name: name || hostname, ip, port };
 
-      const process = await NeoEngine.BpmnProcess.fromXml(`${definitionId}-${version}`, bpmn, {
+      const process = await NeoEngine.BpmnProcess.fromXml(`${definitionId}-${versionId}`, bpmn, {
         shouldPassTokenHook: getShouldPassToken(this),
         shouldActivateFlowNodeHook: getShouldActivateFlowNode(this),
       });
@@ -150,9 +150,9 @@ class Engine {
       // (possibly multiple versions and instances of that process though)
       this.definitionId = definitionId;
 
-      this._versionProcessMapping[version] = process;
-      this._versionBpmnMapping[version] = bpmn;
-      this.versions.push(version);
+      this._versionProcessMapping[versionId] = process;
+      this._versionBpmnMapping[versionId] = bpmn;
+      this.versions.push(versionId);
     }
   }
 
@@ -162,7 +162,7 @@ class Engine {
    * When encountering User Tasks in the ongoing execution, they are added to
    * the `userTasks` array property.
    *
-   * @param {number} the version of the process to start
+   * @param {string} the version of the process to start
    * @param {object} processVariables The process variables in the init state
    * @param {object|string} instance contains the instance object that came from another engine to be contiued here (might contain only an id of an activity to start)
    * @param {function} onStarted function that is executed when the new instance starts
@@ -405,8 +405,7 @@ class Engine {
     const instance = this.getInstance(instanceId);
 
     const state = instance.getState();
-    const processId = state.processId.substring(0, state.processId.lastIndexOf('-'));
-    const version = state.processId.substring(processId.length + 1);
+    const version = state.processId.substring(this.definitionId.length + 1);
 
     return this._versionBpmnMapping[version];
   }
@@ -439,8 +438,7 @@ class Engine {
 
     const state = instance.getState();
 
-    const processId = state.processId.substring(0, state.processId.lastIndexOf('-'));
-    const processVersion = state.processId.substring(processId.length + 1);
+    const processVersion = state.processId.substring(this.definitionId.length + 1);
 
     // map the adaptation log migration entries to show the version info
     const adaptationLog = state.adaptationLog.map((entry) => {
@@ -448,15 +446,15 @@ class Engine {
         return {
           type: entry.type,
           time: entry.time,
-          sourceVersion: parseInt(entry.from.substring(processId.length + 1)),
-          targetVersion: parseInt(entry.to.substring(processId.length + 1)),
+          sourceVersion: entry.from.substring(this.definitionId.length + 1),
+          targetVersion: entry.to.substring(this.definitionId.length + 1),
         };
       } else {
         return entry;
       }
     });
 
-    const instanceInfo = { ...state, processId, processVersion, adaptationLog };
+    const instanceInfo = { ...state, processId: this.definitionId, processVersion, adaptationLog };
 
     if (instance.callingInstance) {
       instanceInfo.callingInstance = instance.callingInstance;

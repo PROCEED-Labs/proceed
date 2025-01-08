@@ -2,6 +2,11 @@ services:
   postgres:
     image: postgres:latest
     container_name: postgres_database_proceed
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_DB: proceed_db
       POSTGRES_USER: proceed

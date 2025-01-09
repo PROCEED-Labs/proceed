@@ -88,13 +88,12 @@ jobs:
     steps:
       - name: Drop Old Database (If Exists)
         env:
-          VM_USER: proceed-ci
-          PRIVATE_KEY: ${{ secrets.VM_SSH_KEY }}
+          PRIVATE_KEY: ${{ secrets.SSH_KEY }}
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
           DB_NAME="proceed_db_${{ github.ref_name }}"
-          ssh -i private_key.pem -o StrictHostKeyChecking=no $VM_USER@${{secrets.VM_IP}} << EOF
+          ssh -i private_key.pem -o StrictHostKeyChecking=no ${{secrets.SSH_USER}}@${{secrets.SSH_HOST}} << EOF
             sudo docker exec postgres_database_proceed psql -U ${{secrets.DB_USER}} -d proceed_db -c "DROP DATABASE IF EXISTS $DB_NAME;"
           EOF
 
@@ -111,19 +110,18 @@ jobs:
     steps:
       - name: Create new database
         env:
-          VM_USER: proceed-ci
-          PRIVATE_KEY: ${{ secrets.VM_SSH_KEY }}
+          PRIVATE_KEY: ${{ secrets.SSH_KEY }}
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          ssh -i private_key.pem -o StrictHostKeyChecking=no $VM_USER@${{secrets.VM_IP}} << EOF
+          ssh -i private_key.pem -o StrictHostKeyChecking=no ${{secrets.SSH_USER}}@${{secrets.SSH_HOST}} << EOF
             sudo docker exec postgres_database_proceed psql -U ${{secrets.DB_USER}} -d proceed_db -c "CREATE DATABASE ${{ needs.generate-db-name.outputs.dbname }};"
           EOF
           rm private_key.pem
 
       - name: Set DATABASE_URL as an output
         id: set-db-url
-        run: echo "DATABASE_URL=postgresql://${{secrets.DB_USER}}:${{secrets.DB_PASSWORD}}@${{secrets.VM_IP}}:5432/${{ needs.generate-db-name.outputs.dbname }}?schema=public" >> $GITHUB_OUTPUT
+        run: echo "DATABASE_URL=postgresql://${{secrets.DB_USER}}:${{secrets.DB_PASSWORD}}@${{secrets.SSH_HOST}}:5432/${{ needs.generate-db-name.outputs.dbname }}?schema=public" >> $GITHUB_OUTPUT
 
       - uses: actions/cache@v4
         timeout-minutes: 2
@@ -206,7 +204,7 @@ jobs:
       MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
       SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.VM_IP }}:5432/${{ needs.generate-db-name.outputs.dbname }}?schema=public
+      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.SSH_HOST }}:5432/${{ needs.generate-db-name.outputs.dbname }}?schema=public
     steps:
       - uses: 'google-github-actions/auth@v2'
         with:

@@ -148,7 +148,7 @@ function machineConfigsToStorage(
  * Stores a given ParentConfig into the new storage referencing other elements by id instead of having them nested.
  * @param parentConfig ParentConfig that is to be stored, able to contain TargetConfigs, MachineConfigs and ParameterConfigs
  * @param newId Boolean determining if new IDs are to be generated.
- * @param version Version-ID of the the config if a versioned config is to be stored.
+ * @param version Version-ID of the config if a versioned config is to be stored.
  */
 function parentConfigToStorage(
   parentConfig: ParentConfig,

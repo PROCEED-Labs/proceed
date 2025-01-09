@@ -36,6 +36,7 @@ const MIME_TYPE_CATEGORIES: Record<string, ArtifactType> = {
   'image/webp': 'images',
   'text/html': 'user-tasks',
   'application/json': 'user-tasks',
+  'application/js': 'script-tasks',
   'application/pdf': 'others',
   'application/xml': 'bpmns',
 };

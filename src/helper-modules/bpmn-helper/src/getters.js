@@ -205,6 +205,25 @@ async function getUserTaskFileNameMapping(bpmn) {
 }
 
 /**
+ * Get all fileName for all scriptTasks,
+ * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [scriptTaskId: string]: { fileName?: string }}> } an object (a map) with all scriptTaskIds as keys
+ */
+async function getScriptTaskFileNameMapping(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const scriptTasks = getElementsByTagName(bpmnObj, 'bpmn:ScriptTask');
+  const mapping = {};
+  scriptTasks.forEach((task) => {
+    mapping[task.id] = {
+      fileName: task.fileName,
+    };
+  });
+  return mapping;
+}
+
+/**
  * Creates a map (object) that contains the 'fileName' (key) and UserTask-IDs (value)
  * for every UserTask in a BPMN process.
  *
@@ -397,7 +416,7 @@ async function getChildrenFlowElements(bpmn, elementId) {
  *
  * @param {object} bpmnObj - The BPMN XML as converted bpmn-moddle object with toBpmnObject
  * @param {string} callActivityId - The id of the callActivity
- * @returns { { definitionId: string, processId: string, version: number } } An Object with the definition, process id and version
+ * @returns { { definitionId: string, processId: string, versionId: string } } An Object with the definition, process id and version
  * @throws An Error if the callActivity id does not exist
  * @throws If the callActivity has no 'calledElement' attribute
  * @throws If the targetNamespace for a callActivity could not be found
@@ -1160,6 +1179,9 @@ module.exports = {
   // userTasks
   getUserTaskFileNameMapping,
   getAllUserTaskFileNamesAndUserTaskIdsMapping,
+
+  // scriptTasks
+  getScriptTaskFileNameMapping,
 
   // sub-process related
   getSubprocess,

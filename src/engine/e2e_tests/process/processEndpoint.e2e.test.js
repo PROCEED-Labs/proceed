@@ -36,7 +36,7 @@ describe('Test process endpoints', () => {
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
               needs: { html: ['userTaskFileName'], imports: [], images: [] },
-              version: 123,
+              versionId: '123',
             },
           ],
           instances: [],
@@ -61,7 +61,7 @@ describe('Test process endpoints', () => {
               imports: [],
               images: ['Activity_08fwikp_image123e6803-63a8-4cf1-9596-2999fdd016a7.png'],
             },
-            version: 1671026484009,
+            versionId: '1671026484009',
             versionName: 'Version 1',
             versionDescription: 'Initial Version',
             basedOnVersion: '1671024712832',
@@ -83,7 +83,7 @@ describe('Test process endpoints', () => {
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
               needs: { html: ['userTaskFileName'], imports: [], images: [] },
-              version: 123,
+              versionId: '123',
             },
           ],
           instances: [],
@@ -94,7 +94,7 @@ describe('Test process endpoints', () => {
         it('returns an array containing all the known versions of a process on a GET request', async () => {
           const getResponse = await request.get('/process/definitionId/versions');
           expect(getResponse.status).toBe(200);
-          expect(getResponse.body).toStrictEqual([123]);
+          expect(getResponse.body).toStrictEqual(['123']);
         });
 
         describe('/process/{definitionId}/versions/{version}', () => {
@@ -107,7 +107,7 @@ describe('Test process endpoints', () => {
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
               needs: { html: ['userTaskFileName'], imports: [], images: [] },
-              version: 123,
+              versionId: '123',
             });
           });
         });
@@ -162,7 +162,7 @@ describe('Test process endpoints', () => {
                     'User_Task_1qjpbcl_image72fe83de-2c44-4d1f-ae71-6b323bee7f1c.png',
                   ],
                 },
-                version: 1671026484009,
+                versionId: '1671026484009',
                 versionName: 'Version 1',
                 versionDescription: 'Initial Version',
                 basedOnVersion: '1671024712832',

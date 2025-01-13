@@ -26,6 +26,13 @@ export async function asyncFilter<Type>(array: Array<Type>, cb: (entry: Type) =>
   ).filter((entry) => entry) as Array<Type>;
 }
 
+export interface DiffResult {
+  path: string;
+  valueA: any;
+  valueB: any;
+  reason: string;
+}
+
 // TODO: Typescriptify or remove
 /**
  * Compares two values
@@ -38,49 +45,113 @@ export async function asyncFilter<Type>(array: Array<Type>, cb: (entry: Type) =>
  * @param {Any} b some value
  * @returns {Boolean} - if the two values are equal
  */
-export function deepEquals(a: any, b: any) {
-  // early exit if types don't match
+export function deepEquals(
+  a: any,
+  b: any,
+  path = '',
+  verbose = false,
+): boolean | DiffResult | null {
+  // Early exit if types don't match
   if (typeof a !== typeof b) {
+    if (verbose) {
+      return {
+        path,
+        valueA: a,
+        valueB: b,
+        reason: 'Type mismatch',
+      };
+    }
     return false;
   }
 
+  // Arrays comparison
   if (Array.isArray(a) && Array.isArray(b)) {
     if (a.length !== b.length) {
+      if (verbose) {
+        return {
+          path,
+          valueA: a,
+          valueB: b,
+          reason: 'Array length mismatch',
+        };
+      }
       return false;
     }
 
-    let index = 0;
-    // can't break early from forEach
-    for (let value of a) {
-      // recursively compare the values from both arrays
-      if (!deepEquals(value, b[index])) {
-        return false;
+    for (let i = 0; i < a.length; i++) {
+      const result = deepEquals(a[i], b[i], `${path}[${i}]`, verbose);
+      if (result) {
+        return verbose ? result : false;
       }
-      ++index;
     }
 
-    return true;
+    return verbose ? null : true; // Arrays are equal
   }
 
-  // the values to compare are not arrays but might be objects
+  // Objects comparison
   if (typeof a === 'object' && a !== null && b !== null) {
     let aKeys = Object.keys(a);
     let bKeys = Object.keys(b);
-    // objects can't be equal with differing keys
+
+    // Objects can't be equal with differing keys
     if (aKeys.length !== bKeys.length || aKeys.some((key) => !bKeys.includes(key))) {
+      if (verbose) {
+        return {
+          path,
+          valueA: a,
+          valueB: b,
+          reason: 'Object keys mismatch',
+        };
+      }
       return false;
     }
 
+    // Recursively compare all keys and values
     for (let key of aKeys) {
-      if (!deepEquals(a[key], b[key])) {
-        return false;
+      const result = deepEquals(a[key], b[key], path ? `${path}.${key}` : key, verbose);
+      if (result) {
+        return verbose ? result : false;
       }
     }
 
-    return true;
+    return verbose ? null : true; // Objects are equal
   }
 
-  return a === b;
+  // Primitive values comparison
+  if (a !== b) {
+    if (verbose) {
+      return {
+        path,
+        valueA: a,
+        valueB: b,
+        reason: 'Value mismatch',
+      };
+    }
+    return false;
+  }
+
+  return verbose ? null : true; // Values are equal
+}
+
+// helper function to find all values of specific key (targetKey) in a json obj
+export function findKey(data: any, targetKey = 'src'): string[] {
+  let results: string[] = [];
+
+  if (typeof data === 'object' && data !== null) {
+    for (const key in data) {
+      if (key === targetKey) {
+        results.push(data[key]);
+      } else if (typeof data[key] === 'object') {
+        results = results.concat(findKey(data[key], targetKey));
+      }
+    }
+  } else if (Array.isArray(data)) {
+    for (const item of data) {
+      results = results.concat(findKey(item, targetKey));
+    }
+  }
+
+  return results;
 }
 
 // TODO: Typescriptify or remove

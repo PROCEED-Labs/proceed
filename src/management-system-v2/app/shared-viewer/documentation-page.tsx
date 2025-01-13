@@ -37,6 +37,7 @@ import {
   ImportsInfo,
   getElementSVG,
 } from './documentation-page-utils';
+import { Environment } from '@/lib/data/environment-schema';
 
 /**
  * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server
@@ -54,6 +55,7 @@ const markdownEditor: Promise<ToastEditorType> =
 type BPMNSharedViewerProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   isOwner: boolean;
+  userWorkspaces: Environment[];
   defaultSettings?: SettingsOption;
   availableImports: ImportsInfo;
 };
@@ -61,11 +63,11 @@ type BPMNSharedViewerProps = {
 const BPMNSharedViewer = ({
   processData,
   isOwner,
+  userWorkspaces,
   defaultSettings,
   availableImports,
 }: BPMNSharedViewerProps) => {
   const router = useRouter();
-
   const breakpoint = Grid.useBreakpoint();
 
   const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(
@@ -90,6 +92,7 @@ const BPMNSharedViewer = ({
       currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
     ): Promise<ElementInfo> {
       let svg;
+      const name = getTitle(el);
 
       let nestedSubprocess;
       let importedProcess;
@@ -138,7 +141,7 @@ const BPMNSharedViewer = ({
       return {
         svg,
         id: el.id,
-        name: getTitle(el),
+        name,
         description,
         meta,
         milestones,
@@ -156,9 +159,11 @@ const BPMNSharedViewer = ({
       const root = canvas.getRootElement();
 
       const definitions = getRootFromElement(root.businessObject);
-      getDefinitionsVersionInformation(definitions).then(({ version, name, description }) =>
-        setVersionInfo({ id: version, name, description }),
-      );
+
+      const { versionId, name, description, versionCreatedOn } =
+        await getDefinitionsVersionInformation(definitions);
+
+      setVersionInfo({ id: versionId, name, description, versionCreatedOn });
 
       const hierarchy = await transform(
         viewer,
@@ -224,6 +229,7 @@ const BPMNSharedViewer = ({
               </Button>
               {!isOwner && (
                 <WorkspaceSelectionModalButton
+                  workspaces={userWorkspaces}
                   processData={processData}
                   versionInfo={versionInfo}
                 />

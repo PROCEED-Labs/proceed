@@ -1,6 +1,6 @@
 import { Machine } from './machines';
 
-function generateRequestUrl(machine: Machine, endpoint: string) {
+export function generateRequestUrl(machine: Machine, endpoint: string) {
   const url = `http://${machine.ip}:${machine.port}`;
   return new URL(endpoint, url).toString();
 }
@@ -47,15 +47,15 @@ export function sendUserTaskHTML(
   });
 }
 
-export function sendImage(machine: Machine, definitionId: string, fileName: string, image: Blob) {
+export function sendImage(machine: Machine, definitionId: string, fileName: string, image: Buffer) {
   return fetch(
     generateRequestUrl(machine, `/resources/process/${definitionId}/images/${fileName}`),
     {
       method: 'PUT',
       headers: {
-        'Content-Type': 'image/png image/svg+xml image/jpeg',
+        'Content-Type': 'application/json',
       },
-      body: image,
+      body: JSON.stringify({ type: 'Buffer', data: image }),
     },
   );
 }

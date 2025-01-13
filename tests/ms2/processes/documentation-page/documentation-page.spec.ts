@@ -941,7 +941,7 @@ test('allow a different user that was given the share link to import the shared 
   const newProcessId = newPage.url().split('/processes/').pop();
 
   await newPage.getByRole('menuitem', { name: 'Processes' }).click();
-  await newPage.getByRole('link', { name: 'List' }).click();
+  await newPage.getByRole('link', { name: 'Editor' }).click();
   await newPage.waitForURL(/processes/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 

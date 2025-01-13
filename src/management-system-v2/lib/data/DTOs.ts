@@ -29,10 +29,10 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
     : await processModuleLegacy.getProcess(processDefinitionsId, includeBPMN);
 }
 
-export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
+export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
   return enableUseDB
-    ? await processModuleDB.getProcesses(userId, ability, includeBPMN)
-    : await processModuleLegacy.getProcesses(userId, ability, includeBPMN);
+    ? await processModuleDB.getProcesses(environmentId, ability, includeBPMN)
+    : await processModuleLegacy.getProcesses(environmentId, ability, includeBPMN);
 }
 
 export async function getProcessBpmn(processDefinitionsId: string) {
@@ -44,6 +44,12 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
   return enableUseDB
     ? await processModuleDB.getProcessVersionBpmn(processDefinitionsId, version)
     : await processModuleLegacy.getProcessVersionBpmn(processDefinitionsId, version);
+}
+
+export async function updateProcess(...args: Parameters<typeof processModuleDB.updateProcess>) {
+  return enableUseDB
+    ? await processModuleDB.updateProcess(...args)
+    : await processModuleLegacy.updateProcess(...args);
 }
 
 export async function getFolderContents(folderId: string, ability?: Ability) {
@@ -62,6 +68,20 @@ export async function getFolderById(folderId: string, ability?: Ability) {
   return enableUseDB
     ? await folderModuleDB.getFolderById(folderId, ability)
     : await folderModuleLegacy.getFolderById(folderId, ability);
+}
+
+export async function moveFolder(folderId: string, newParentId: string, ability?: Ability) {
+  return enableUseDB
+    ? await folderModuleDB.moveFolder(folderId, newParentId, ability)
+    : await folderModuleLegacy.moveFolder(folderId, newParentId, ability);
+}
+
+export async function updateFolderMetaData(
+  ...args: Parameters<typeof folderModuleDB.updateFolderMetaData>
+) {
+  return enableUseDB
+    ? await folderModuleDB.updateFolderMetaData(...args)
+    : await folderModuleLegacy.updateFolderMetaData(...args);
 }
 
 export async function deleteEnvironment(environmentId: string, ability?: Ability) {

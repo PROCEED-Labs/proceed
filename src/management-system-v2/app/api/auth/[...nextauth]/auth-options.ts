@@ -63,16 +63,25 @@ const nextAuthOptions: AuthOptions = {
 
       return session;
     },
-    signIn: async ({ account, user: _user }) => {
+    signIn: async ({ account, user: _user, email }) => {
       const session = await getServerSession(nextAuthOptions);
       const sessionUser = session?.user;
 
-      if (sessionUser?.isGuest && account?.provider !== 'guest-loguin') {
-        const user = _user as Partial<AuthenticatedUser>;
-        const guestUser = await getUserById(sessionUser.id);
+      // Guest account signs in with proper auth
+      if (
+        sessionUser?.isGuest &&
+        account?.provider !== 'guest-signin' &&
+        !email?.verificationRequest
+      ) {
+        // Check if the user's cookie is correct
+        const sessionUserInDb = await getUserById(sessionUser.id);
+        if (!sessionUserInDb || !sessionUserInDb.isGuest) throw new Error('Something went wrong');
 
-        if (guestUser?.isGuest) {
-          updateUser(guestUser.id, {
+        const user = _user as Partial<AuthenticatedUser>;
+        const userSigningIn = await getUserById(_user.id);
+
+        if (!userSigningIn) {
+          await updateUser(sessionUser.id, {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,

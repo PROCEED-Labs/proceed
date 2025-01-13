@@ -39,7 +39,7 @@ type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  versions: { id: string; name: string; description: string }[];
+  versions: { id: string; name: string; description: string; createdOn: Date }[];
 };
 const ModelerToolbar = ({
   processId,

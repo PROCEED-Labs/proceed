@@ -99,37 +99,25 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       database_url: ${{ steps.set-db-url.outputs.DATABASE_URL }}
-    env:
-      ENV: Test
     steps:
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/$ENV.key
-          chmod 600 ~/.ssh/$ENV.key
-          cat >>~/.ssh/config <<END
-          Host $ENV
-              HostName $SSH_HOST
-              User $SSH_USER
-              IdentityFile ~/.ssh/$ENV.key
-              StrictHostKeyChecking no
-          END
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-
       - name: Create new database
+        env:
+          VM_USER: ${{ secrets.SSH_USER }}
+          PRIVATE_KEY: ${{ secrets.SSH_KEY }}
         run: |
-          ssh $ENV << EOF
-            sudo docker exec postgres_database_proceed psql -U proceed -d proceed_db -c "CREATE DATABASE ${{ needs.generate-db-name.outputs.dbname }};"
+          echo "$PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -i private_key.pem -o StrictHostKeyChecking=no $VM_USER@${{ secrets.SSH_HOST }} << EOF
+            sudo docker exec postgres_database_proceed psql -U proceed -d proceed_db -c "CREATE DATABASE test_db;"
           EOF
+          rm private_key.pem
 
       - name: Set DATABASE_URL as an output
         id: set-db-url
-        run: echo "DATABASE_URL=postgresql://proceed:proceed@${{secrets.SSH_HOST}}:5432/${{ needs.generate-db-name.outputs.dbname }}?schema=public" >> $GITHUB_OUTPUT
+        run: echo "DATABASE_URL=postgresql://proceed:proceed@${{ secrets.SSH_HOST }}:5433/test_db?schema=public" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v4
+      - name: Restore Cache
+        uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:
@@ -139,7 +127,10 @@ jobs:
       - name: Apply Prisma Migrations
         env:
           DATABASE_URL: ${{ steps.set-db-url.outputs.DATABASE_URL }}
-        run: cd src/management-system-v2 && yarn prisma migrate deploy
+        run: |
+          cd src/management-system-v2
+          yarn prisma migrate deploy
+
 #   buildMS:
 #     runs-on: ubuntu-latest
 #     env:

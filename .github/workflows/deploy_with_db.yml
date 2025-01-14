@@ -102,19 +102,20 @@ jobs:
     steps:
       - name: Create new database
         env:
-          VM_USER: ${{ secrets.SSH_USER }}
-          PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
-          echo "$PRIVATE_KEY" > private_key.pem
+          echo "$SSH_KEY" > private_key.pem
           chmod 600 private_key.pem
-          ssh -i private_key.pem -o StrictHostKeyChecking=no $VM_USER@${{ secrets.SSH_HOST }} << EOF
+          ssh -i private_key.pem -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << EOF
             sudo docker exec postgres_database_proceed psql -U proceed -d proceed_db -c "CREATE DATABASE test_db;"
           EOF
           rm private_key.pem
 
       - name: Set DATABASE_URL as an output
         id: set-db-url
-        run: echo "DATABASE_URL=postgresql://proceed:proceed@${{ secrets.SSH_HOST }}:5433/test_db?schema=public" >> $GITHUB_OUTPUT
+        run: echo "DATABASE_URL=postgresql://proceed:proceed@$SSH_HOST:5433/test_db?schema=public" >> $GITHUB_OUTPUT
 
       - name: Restore Cache
         uses: actions/cache@v4

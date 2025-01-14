@@ -102,18 +102,24 @@ jobs:
     env:
       ENV: Research
     steps:
-      - name: Create new database
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
-        run: |
-          echo "$SSH_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          ssh -i private_key.pem -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << EOF
-            sudo docker exec postgres_database_proceed psql -U proceed -d proceed_db -c "CREATE DATABASE test_db;"
-          EOF
-          rm private_key.pem
+
+      - run: ssh $ENV "sudo docker exec postgres_database_proceed psql -U proceed -d proceed_db -c "CREATE DATABASE test_db;"
 
       - name: Set DATABASE_URL as an output
         id: set-db-url

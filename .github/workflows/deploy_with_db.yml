@@ -103,14 +103,14 @@ jobs:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/private_key.pem
-          chmod 600 ~/.ssh/private_key.pem
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
           cat >>~/.ssh/config <<END
-          Host db-server
-            HostName $SSH_HOST
-            User $SSH_USER
-            IdentityFile ~/.ssh/private_key.pem
-            StrictHostKeyChecking no
+          Host $ENV
+              HostName $SSH_HOST
+              User $SSH_USER
+              IdentityFile ~/.ssh/$ENV.key
+              StrictHostKeyChecking no
           END
         env:
           SSH_USER: ${{ secrets.SSH_USER }}

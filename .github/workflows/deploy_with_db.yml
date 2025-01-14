@@ -119,14 +119,24 @@ jobs:
           DB_NAME_SANITIZED=$(echo "$DB_NAME" | sed 's|/|_|g')
           echo "DB_NAME=$DB_NAME_SANITIZED" >> $GITHUB_OUTPUT
 
-      - name: Drop Old Database (If Exists)
+      - name: Configure SSH
         run: |
-          echo "$PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          DB_NAME="${{steps.gen-db-name.outputs.dbname }}"
-          ssh -i private_key.pem -o StrictHostKeyChecking=no $VM_USER@${{secrets.VM_IP}} << EOF
-             sudo docker exec postgres_database_proceed psql -U ${{secrets.DB_USER}} -d proceed_db -c "DROP DATABASE IF EXISTS $DB_NAME;"
-          EOF
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      - run: ssh $ENV 'sudo docker exec ${{secrets.DB_CONTAINER_NAME}} psql -U ${{secrets.DB_USER}} -d ${{secrets.DB_DEFAULT_DB}} -c -c "DROP DATABASE IF EXISTS ${{ steps.gen-db-name.outputs.DB_NAME }};"'
 
   create-db:
     # needs: [generate-db-name]

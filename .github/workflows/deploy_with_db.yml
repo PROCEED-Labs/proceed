@@ -145,11 +145,11 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
-      - run: ssh $ENV 'sudo docker exec postgres_database_proceed psql -U proceed -d proceed_db -c "CREATE DATABASE ${{ needs.generate-db-name.outputs.dbname }};"'
+      - run: ssh $ENV 'sudo docker exec ${{secrets.DB_CONTAINER_NAME}} psql -U ${{secrets.DB_USER}} -d ${{secrets.DB_DEFAULT_DB}} -c "CREATE DATABASE ${{ needs.generate-db-name.outputs.dbname }};"'
 
       - name: Set DATABASE_URL as an output
         id: set-db-url
-        run: echo "DATABASE_URL=postgresql://proceed:proceed@$SSH_HOST:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public" >> $GITHUB_OUTPUT
+        run: echo "DATABASE_URL=postgresql://${{secrets.DB_USER}}:${{secrets.DB_PASSWORD}}@$SSH_HOST:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public" >> $GITHUB_OUTPUT
 
       - name: Restore Cache
         uses: actions/cache@v4

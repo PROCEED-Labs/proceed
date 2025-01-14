@@ -99,6 +99,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       database_url: ${{ steps.set-db-url.outputs.DATABASE_URL }}
+    env:
+      ENV: Test
     steps:
       - name: Configure SSH
         run: |

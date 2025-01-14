@@ -95,7 +95,10 @@ jobs:
 
       - name: Generate unique database name
         id: gen-db-name
-        run: echo "DB_NAME=proceed_db_${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        run: |
+          DB_NAME="proceed_db_${{ github.ref_name }}"
+          DB_NAME_SANITIZED=$(echo "$DB_NAME" | sed 's|/|_|g')
+          echo "DB_NAME=$DB_NAME_SANITIZED" >> $GITHUB_OUTPUT
 
   create-db:
     needs: [generate-db-name]

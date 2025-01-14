@@ -41,25 +41,25 @@ jobs:
   #       path: ./*
   #       key: ${{ github.sha }}-${{ github.run_number }}
 
-  lint:
-    runs-on: ubuntu-latest
-    # needs: install
-    # steps:
-    #   - uses: actions/cache@v4
-    #     timeout-minutes: 2
-    #     id: restore-install
-    #     with:
-    #       path: ./*
-    #       key: ${{ github.sha }}-${{ github.run_number }}
+  #lint:
+  #runs-on: ubuntu-latest
+  # needs: install
+  # steps:
+  #   - uses: actions/cache@v4
+  #     timeout-minutes: 2
+  #     id: restore-install
+  #     with:
+  #       path: ./*
+  #       key: ${{ github.sha }}-${{ github.run_number }}
 
-    #   - name: Set up Node.js
-    #     uses: actions/setup-node@v4
-    #     with:
-    #       node-version: 20
-    #       check-latest: true
-    #       cache: 'yarn'
+  #   - name: Set up Node.js
+  #     uses: actions/setup-node@v4
+  #     with:
+  #       node-version: 20
+  #       check-latest: true
+  #       cache: 'yarn'
 
-    #   - run: yarn prettier --check .
+  #   - run: yarn prettier --check .
 
   #buildMS:
   # runs-on: ubuntu-latest
@@ -103,21 +103,30 @@ jobs:
   #       path: ${{ env.DOCKER_PATH_MS_SERVER }}
   #       tag: ${{ steps.set_tag.outputs.tag }}
 
-  #generate-db-name:
-  # runs-on: ubuntu-latest
-  # needs: buildMS
-  # outputs:
-  #   dbname: ${{ steps.gen-db-name.outputs.DB_NAME }}
-  # environment: Research
-  # env:
-  #   ENV: Research
-  # steps:
-  #   - name: Generate unique database name
-  #     id: gen-db-name
-  #     run: |
-  #       DB_NAME="proceed_db_${{ github.ref_name }}"
-  #       DB_NAME_SANITIZED=$(echo "$DB_NAME" | sed 's|/|_|g')
-  #       echo "DB_NAME=$DB_NAME_SANITIZED" >> $GITHUB_OUTPUT
+  generate-db-name:
+    runs-on: ubuntu-latest
+    #needs: buildMS
+    outputs:
+      dbname: ${{ steps.gen-db-name.outputs.DB_NAME }}
+    environment: Research
+    env:
+      ENV: Research
+    steps:
+      - name: Generate unique database name
+        id: gen-db-name
+        run: |
+          DB_NAME="proceed_db_${{ github.ref_name }}"
+          DB_NAME_SANITIZED=$(echo "$DB_NAME" | sed 's|/|_|g')
+          echo "DB_NAME=$DB_NAME_SANITIZED" >> $GITHUB_OUTPUT
+
+      - name: Drop Old Database (If Exists)
+        run: |
+          echo "$PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          DB_NAME="${{steps.gen-db-name.outputs.dbname }}"
+          ssh -i private_key.pem -o StrictHostKeyChecking=no $VM_USER@${{secrets.VM_IP}} << EOF
+             sudo docker exec postgres_database_proceed psql -U ${{secrets.DB_USER}} -d proceed_db -c "DROP DATABASE IF EXISTS $DB_NAME;"
+          EOF
 
   create-db:
     # needs: [generate-db-name]

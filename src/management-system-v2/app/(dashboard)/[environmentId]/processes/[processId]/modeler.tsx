@@ -27,7 +27,7 @@ import { useSession } from 'next-auth/react';
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: { name: string; id: string; bpmn: string };
-  versions: { id: string; name: string; description: string }[];
+  versions: { id: string; name: string; description: string; createdOn: Date }[];
 };
 
 const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {

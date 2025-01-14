@@ -39,7 +39,7 @@ type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  versions: { id: string; name: string; description: string }[];
+  versions: { id: string; name: string; description: string; createdOn: Date }[];
 };
 const ModelerToolbar = ({
   processId,
@@ -317,6 +317,7 @@ const ModelerToolbar = ({
               <ModelerShareModalButton
                 onExport={handleProcessExportModalToggle}
                 onExportMobile={handleProcessExportModalToggleMobile}
+                versions={versions}
               />
               <Tooltip title="Open Documentation">
                 <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />

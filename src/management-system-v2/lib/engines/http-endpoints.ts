@@ -59,3 +59,12 @@ export function sendImage(machine: Machine, definitionId: string, fileName: stri
     },
   );
 }
+
+export function startInstance(machine: Machine, definitionId: string, version: string) {
+  return fetch(
+    generateRequestUrl(machine, `/process/${definitionId}/versions/${version}/instance`),
+    {
+      method: 'POST',
+    },
+  );
+}

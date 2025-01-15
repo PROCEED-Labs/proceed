@@ -198,7 +198,7 @@ export type VersionInfo = {
   definitionName: string;
   deploymentMethod: string;
   needs: VersionDependencies;
-  version: number;
+  versionId: string;
   versionName: string;
   versionDescription: string;
 };
@@ -282,10 +282,7 @@ export async function removeDeployment(processDefinitionsId: string) {
   const deployedTo = (
     await Promise.allSettled(
       machines.map(async (machine) => {
-        const result = await endpoints.getDeploymentFromMachine(
-          machine,
-          'definitionId,versions,instances(processInstanceId,processVersion,instanceState,globalStartTime)',
-        );
+        const result = await endpoints.getDeploymentFromMachine(machine, 'definitionId');
 
         const deployments = (await result.json()) as DeployedProcessInfo[];
 
@@ -303,4 +300,39 @@ export async function removeDeployment(processDefinitionsId: string) {
       endpoints.removeDeploymentFromMachines(machine, processDefinitionsId),
     ),
   );
+}
+
+export async function startInstance(processDefinitionsId: string, version: string) {
+  const machines = (await getMachines()).filter((m) => m.status === 'CONNECTED');
+
+  const deployedTo = (
+    await Promise.allSettled(
+      machines.map(async (machine) => {
+        const result = await endpoints.getDeploymentFromMachine(machine, 'definitionId,versions');
+
+        const deployments = (await result.json()) as DeployedProcessInfo[];
+
+        return deployments.some(
+          (deployment) =>
+            deployment.definitionId === processDefinitionsId &&
+            deployment.versions.some((v) => v.versionId === version),
+        )
+          ? machine
+          : null;
+      }),
+    )
+  )
+    .map((result) => (result.status === 'fulfilled' ? result.value : null))
+    .filter(truthyFilter);
+
+  if (!deployedTo.length)
+    throw new Error(
+      `Cannot find a machine to start version ${version} of the given process (id: ${processDefinitionsId}.`,
+    );
+
+  // TODO: when we have more complex deployments (static) we might need to check the bpmn to find
+  // out which machine the process needs to be started on like in the old MS)
+  const response = await endpoints.startInstance(deployedTo[0], processDefinitionsId, version);
+
+  return (await response.json()).instanceId;
 }

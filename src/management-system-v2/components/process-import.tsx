@@ -268,7 +268,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   return (
     <>
       <Upload
-        accept={process.env.NEXT_PUBLIC_PROJECTS_HTA2 ? '.bpmn,.json' : '.bpmn'}
+        accept={process.env.PROCEED_PUBLIC_PROJECTS_HTA2 ? '.bpmn,.json' : '.bpmn'}
         multiple
         showUploadList={false}
         beforeUpload={async (_, fileList) => {
@@ -276,7 +276,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
             fileList.map(async (file) => {
               const fileText = await file.text();
               const bpmn =
-                process.env.NEXT_PUBLIC_PROJECTS_HTA2 && file.type === 'application/json'
+                process.env.PROCEED_PUBLIC_PROJECTS_HTA2 && file.type === 'application/json'
                   ? await importJsonProcess(fileText)
                   : fileText;
 

@@ -1,6 +1,7 @@
 import { Localization } from '@/lib/data/locale';
 import {
   AbstractConfig,
+  ConfigCategories,
   MachineConfig,
   Parameter,
   ParentConfig,
@@ -33,6 +34,8 @@ export function defaultParameter(
 export function defaultConfiguration(
   environmentId: string,
   name?: string,
+  shortname?: string,
+  categories?: Array<ConfigCategories>,
   description?: string,
 ): AbstractConfig {
   const date = new Date();
@@ -42,6 +45,8 @@ export function defaultConfiguration(
     environmentId: environmentId,
     metadata: {},
     name: name || 'Default Configuration',
+    shortname: shortname || '',
+    categories: categories || [],
     variables: [],
     departments: [],
     inEditingBy: [],

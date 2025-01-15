@@ -3,6 +3,20 @@ import { VersionedObject } from './versioned-object-schema';
 import { Prettify, WithRequired } from '../typescript-utils';
 import { LocalizationZod } from './locale';
 
+export const CategoriesZod = z.enum([
+  'Robotics',
+  'Logistics',
+  'Category1',
+  'Category2',
+  'Category3',
+  'Category4',
+  'Category5',
+  'Category6',
+  'Category7',
+  'Category8',
+]);
+export type ConfigCategories = z.infer<typeof CategoriesZod>;
+
 const ParameterContentZod = z.object({
   value: z.string(),
   displayName: z.string(),
@@ -20,7 +34,9 @@ const ParameterZod = z.object({
 
 export const AbstractConfigInputSchema = z.object({
   id: z.string().optional(),
+  shortname: z.string().optional(),
   name: z.string().optional(),
+  categories: z.array(CategoriesZod),
   metadata: z.record(z.string(), ParameterZod),
   folderId: z.string().optional(),
 });

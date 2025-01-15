@@ -13,6 +13,7 @@ import {
   defaultConfiguration,
   defaultParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { ConfigCategories } from '@/lib/data/machine-config-schema';
 
 type MachineConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -35,12 +36,23 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
   const spaceId = useEnvironment().spaceId;
 
   const createNewMachineConfig = async (
-    values: { name: string; description: string }[], //TODO - I don't REALLY know why this is an array
+    values: {
+      name: string;
+      shortname: string;
+      categories: Array<ConfigCategories>;
+      description: string;
+    }[], //TODO - I don't REALLY know why this is an array
   ) => {
     const machineConfig = await (customAction?.(values[0]) ??
       addParentConfig(
         {
-          ...defaultConfiguration(environment.spaceId, values[0].name, values[0].description),
+          ...defaultConfiguration(
+            environment.spaceId,
+            values[0].name,
+            values[0].shortname,
+            values[0].categories,
+            values[0].description,
+          ),
           type: 'config',
           folderId,
           targetConfig: undefined,

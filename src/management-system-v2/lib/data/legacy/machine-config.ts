@@ -522,6 +522,7 @@ export async function addParentConfig(
         id: v4(),
         type: 'config',
         name: 'Default Parent Configuration',
+        categories: [],
         variables: [],
         createdBy: environmentId,
         lastEditedBy: environmentId,

@@ -178,13 +178,6 @@ jobs:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
-
       - name: Apply Prisma Migrations
         env:
           DATABASE_URL: ${{ steps.set-db-url.outputs.DATABASE_URL }}

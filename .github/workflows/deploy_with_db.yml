@@ -169,7 +169,7 @@ jobs:
 
       - name: Set DATABASE_URL as an output
         id: set-db-url
-        run: echo "DATABASE_URL=postgresql://${{secrets.DB_USER}}:${{secrets.DB_PASSWORD}}@${{secrets.SSH_HOST}}:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public" >> $GITHUB_OUTPUT
+        run: echo "DATABASE_URL=postgresql://${{secrets.DB_USER}}:UiIpWxw8Usegfsl7LP8%2FuWrKiCyJbU2nLE9wBvW7gSE%3D@${{secrets.SSH_HOST}}:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public" >> $GITHUB_OUTPUT
 
       - name: Restore Cache
         uses: actions/cache@v4

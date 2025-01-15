@@ -10,8 +10,9 @@ const environmentVariables = {
   all: {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     ENABLE_MACHINE_CONFIG: z.string().optional(), // NOTE: Not sure if it should be optional
-    NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
-    NEXT_PUBLIC_NEW_LAYOUT: z.string().optional(),
+    PROCEED_PUBLIC_NEW_LAYOUT: z.string().optional(),
+    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
+    PROCEED_PUBLIC_DEPLOYMENT_ENV: z.enum(['cloud', 'local']).optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     SHARING_ENCRYPTION_SECRET: z.string(),
     INVITATION_ENCRYPTION_SECRET: z.string(),
@@ -60,6 +61,8 @@ const environmentVariables = {
     SHARING_ENCRYPTION_SECRET: z.string(),
 
     GUEST_REFERENCE_SECRET: z.string(),
+
+    GOOGLE_CLOUD_BUCKET_NAME: z.string(),
   },
   development: {
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
@@ -89,12 +92,6 @@ const schemaOptions = {
   ...((environmentVariables as EnvironmentVariables)[mode] ?? {}),
 } as Partial<Record<string, ZodType>>;
 
-// Remove server-only environment variables on client
-if (!isServer) {
-  for (const key of Object.keys(schemaOptions))
-    if (!key.startsWith('NEXT_PUBLIC_')) delete schemaOptions[key];
-}
-
 // Get values from env
 const runtimeEnvVariables: Record<string, any> = {};
 for (const variable of Object.keys(schemaOptions))
@@ -115,14 +112,16 @@ if (!parsingResult.success && !onBuild) {
   process.exit(1);
 }
 
-const data = parsingResult.success ? parsingResult.data : {};
+export const env: Extract<typeof parsingResult, { success: true }>['data'] = parsingResult.success
+  ? parsingResult.data
+  : ({} as any);
 
-export const env = new Proxy(data as Extract<typeof parsingResult, { success: true }>['data'], {
-  get(target, prop) {
-    if (typeof prop !== 'string') return undefined;
-    if (!isServer && !(prop in schemaOptions) && !prop.startsWith('NEXT_PUBLIC_'))
-      throw new Error('Attempted to access a server-side environment variable on the client');
+export const publicEnv: PublicEnv = Object.fromEntries(
+  Object.entries(env).filter(([key]) => key.startsWith('PROCEED_PUBLIC_')),
+);
 
-    return Reflect.get(target, prop);
-  },
-});
+export type PrivateEnv = typeof env;
+
+export type PublicEnv = {
+  [K in keyof PrivateEnv as K extends `PROCEED_PUBLIC_${string}` ? K : never]: PrivateEnv[K];
+};

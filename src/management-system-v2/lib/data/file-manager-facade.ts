@@ -12,8 +12,9 @@ import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/fil
 import db from '@/lib/data/db';
 import { getProcessUserTaskJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
+import { env } from '../env-vars';
 
-const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
+const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [

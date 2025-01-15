@@ -63,7 +63,7 @@ const DashboardLayout = async ({
       icon: <EditOutlined />,
     });
 
-    if (env.NEXT_PUBLIC_NEW_LAYOUT) {
+    if (env.PROCEED_PUBLIC_NEW_LAYOUT) {
       children = [
         {
           key: 'processes-list',
@@ -87,7 +87,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (env.NEXT_PUBLIC_ENABLE_EXECUTION) {
+  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     let children: MenuProps['items'] = [];
 
     children.push({
@@ -102,7 +102,7 @@ const DashboardLayout = async ({
       icon: <LaptopOutlined />,
     });
 
-    if (env.NEXT_PUBLIC_NEW_LAYOUT) {
+    if (env.PROCEED_PUBLIC_NEW_LAYOUT) {
       layoutMenuItems = [
         {
           key: 'tasklist',

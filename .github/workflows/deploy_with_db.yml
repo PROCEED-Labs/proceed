@@ -139,7 +139,7 @@ jobs:
       - run: ssh $ENV 'sudo docker exec ${{vars.DB_CONTAINER_NAME}} psql -U ${{secrets.DB_USER}} -d ${{vars.DB_DEFAULT_DB}} -c "DROP DATABASE IF EXISTS ${{ steps.gen-db-name.outputs.DB_NAME }};"'
 
   create-db:
-    # needs: [generate-db-name]
+    needs: [generate-db-name]
     runs-on: ubuntu-latest
     outputs:
       database_url: ${{ steps.set-db-url.outputs.DATABASE_URL }}

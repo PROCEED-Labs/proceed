@@ -5,7 +5,7 @@ import { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import { DeployedProcessInfo } from '@/lib/engines/deployment';
+import { DeployedProcessInfo, removeDeployment } from '@/lib/engines/deployment';
 import SpaceLink from '@/components/space-link';
 import processListStyles from '@/components/process-icon-list.module.scss';
 
@@ -132,7 +132,13 @@ const DeploymentsList = ({
             responsive: ['xl'],
             render: (id, record) => {
               return (
-                <Button style={{ float: 'right' }} type="text">
+                <Button
+                  style={{ float: 'right' }}
+                  type="text"
+                  onClick={() => {
+                    removeDeployment(record.definitionId);
+                  }}
+                >
                   <DeleteOutlined color="red" />
                 </Button>
               );

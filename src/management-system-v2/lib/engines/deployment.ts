@@ -11,7 +11,7 @@ import {
 import { Machine, getMachines } from './machines';
 import * as endpoints from './http-endpoints';
 import { prepareExport } from '../process-export/export-preparation';
-import { Prettify } from '../typescript-utils';
+import { Prettify, truthyFilter } from '../typescript-utils';
 
 // TODO: better error handling
 
@@ -274,4 +274,33 @@ export async function getDeployments() {
     .filter((result) => result.status === 'fulfilled')
     .map((result) => (result.status === 'fulfilled' ? result.value : null))
     .flat(1) as DeployedProcessInfo[];
+}
+
+export async function removeDeployment(processDefinitionsId: string) {
+  const machines = (await getMachines()).filter((m) => m.status === 'CONNECTED');
+
+  const deployedTo = (
+    await Promise.allSettled(
+      machines.map(async (machine) => {
+        const result = await endpoints.getDeploymentFromMachine(
+          machine,
+          'definitionId,versions,instances(processInstanceId,processVersion,instanceState,globalStartTime)',
+        );
+
+        const deployments = (await result.json()) as DeployedProcessInfo[];
+
+        return deployments.some((deployment) => deployment.definitionId === processDefinitionsId)
+          ? machine
+          : null;
+      }),
+    )
+  )
+    .map((result) => (result.status === 'fulfilled' ? result.value : null))
+    .filter(truthyFilter);
+
+  await Promise.all(
+    deployedTo.map((machine) =>
+      endpoints.removeDeploymentFromMachines(machine, processDefinitionsId),
+    ),
+  );
 }

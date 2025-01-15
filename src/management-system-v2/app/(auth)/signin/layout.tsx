@@ -18,7 +18,6 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
           {
             key: 'processes-group',
             label: 'Processes',
-            type: 'group',
             children: [
               {
                 key: 'processes',
@@ -31,10 +30,6 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
                 icon: <AiOutlineProfile />,
               },
             ],
-          },
-          {
-            key: 'divider-processes',
-            type: 'divider',
           },
         ]}
       >

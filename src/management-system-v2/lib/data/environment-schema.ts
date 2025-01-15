@@ -22,7 +22,7 @@ export const UserOrganizationEnvironmentInputSchema = z.object({
 
     return z.NEVER;
   }),
-  logoUrl: z.string().url().optional(),
+  logo: z.string().url().optional(),
 });
 
 export const OrganizationEnvironmentSchema = z.union([

@@ -11,6 +11,7 @@ const environmentVariables = {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     ENABLE_MACHINE_CONFIG: z.string().optional(), // NOTE: Not sure if it should be optional
     NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
+    NEXT_PUBLIC_NEW_LAYOUT: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     SHARING_ENCRYPTION_SECRET: z.string(),
     INVITATION_ENCRYPTION_SECRET: z.string(),

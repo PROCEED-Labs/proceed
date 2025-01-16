@@ -194,19 +194,16 @@ await init();
  */
 function nestedParametersFromStorage(parameterIds: string[]) {
   const parameters: Record<string, Parameter> = {};
-  // console.log('getting parameters for parameter IDs: ', parameterIds); //TODO remove
 
   parameterIds.forEach((id) => {
     const storedParameter = storedData.parameters[id];
-    // TODO remove
-    if (true || (storedParameter && storedParameter.key)) {
+    if (storedParameter && storedParameter.key) {
       parameters[storedParameter.key] = {
         ...storedParameter,
         parameters: nestedParametersFromStorage(storedParameter.parameters),
       };
     }
   });
-  // console.log('returning: ', parameters);  //TODO remove
 
   return parameters;
 }
@@ -566,7 +563,6 @@ export async function addParentConfig(
     return metadata;
   } catch (e: unknown) {
     const error = e as Error;
-    // console.log(error.message);
     return userError(error.message ?? "Couldn't create Machine Config");
   }
 }

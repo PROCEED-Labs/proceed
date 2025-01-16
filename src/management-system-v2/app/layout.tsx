@@ -5,9 +5,9 @@ import { Inter } from 'next/font/google';
 import localFont from 'next/font/local';
 import { FC, PropsWithChildren } from 'react';
 import App from '@/components/app';
-import { ConfigProvider } from 'antd';
 
 import classNames from 'classnames';
+import { publicEnv } from '@/lib/env-vars';
 
 const inter = Inter({ subsets: ['latin'], variable: '--inter' });
 
@@ -24,7 +24,7 @@ const RootLayout: FC<RootLayoutProps> = ({ children }) => {
   return (
     <html lang="en">
       <body className={classNames(inter.variable, myFont.variable)}>
-        <App>{children}</App>
+        <App env={publicEnv}>{children}</App>
       </body>
     </html>
   );

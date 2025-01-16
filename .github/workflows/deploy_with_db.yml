@@ -196,7 +196,7 @@ jobs:
       MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
       SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public
+      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:UiIpWxw8Usegfsl7LP8%2FuWrKiCyJbU2nLE9wBvW7gSE%3D@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public
     steps:
       - uses: 'google-github-actions/auth@v2'
         with:
@@ -225,7 +225,7 @@ jobs:
           image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
           region: 'europe-west1'
-          env_vars: '{"DATABASE_URL": "test"}'
+          env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}"}'
 
   githubEnvironment:
     runs-on: ubuntu-latest

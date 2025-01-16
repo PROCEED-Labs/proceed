@@ -7,7 +7,7 @@ import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
@@ -18,6 +18,8 @@ import { ColorOptions, applyColors, colorOptions, flushPreviousStyling } from '.
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { startInstance } from '@/lib/engines/deployment';
+
+import useTokens from './use-tokens';
 
 function getVersionInstances(process: DeployedProcessInfo, version?: string) {
   const instances = process.instances.map((instance, idx) => {
@@ -122,13 +124,22 @@ function ProcessDeploymentView({
     ? instances.find((i) => i.processInstanceId === selectedInstanceId)
     : undefined;
 
-  let selectedBpmn;
-  if (selectedInstance)
-    selectedBpmn = selectedProcess.versions.find(
-      (v) => v.versionId === selectedInstance.processVersion,
-    )!;
-  else if (selectedVersion) selectedBpmn = selectedVersion;
-  else selectedBpmn = getLatestVersion(selectedProcess);
+  const currentVersionId = useMemo(() => {
+    if (selectedInstance) {
+      return selectedInstance.processVersion;
+    } else if (selectedVersion) {
+      return selectedVersion.versionId;
+    }
+
+    return getLatestVersion(selectedProcess).versionId;
+  }, [selectedInstance, selectedVersion, selectedProcess]);
+
+  const selectedBpmn = useMemo(() => {
+    const version = selectedProcess.versions.find((v) => v.versionId === currentVersionId);
+    return { bpmn: version!.bpmn };
+  }, [currentVersionId]);
+
+  useTokens(selectedInstance || null, canvasRef.current);
 
   // When selected coloring changes, this function will change
   // That in turn will trigger the useEffect inside the BPMNCanvas
@@ -136,17 +147,16 @@ function ProcessDeploymentView({
   // only this time because of the bpmn change
   // NOTE: selectedColoring is not part of the dependencies to avoid re-rendering
   // the component on a case where it isn't necessary
-  const applyColoring = useCallback(
-    (coloring?: ColorOptions | ElementLike) => {
-      if (!selectedInstance || !canvasRef.current) return;
-      applyColors(
-        canvasRef.current,
-        selectedInstance,
-        typeof coloring === 'string' ? coloring : selectedColoring,
-      );
-    },
-    [selectedInstance, canvasRef],
-  );
+  const applyColoring = useCallback((coloring?: ColorOptions | ElementLike) => {
+    if (!selectedInstance || !canvasRef.current) return;
+    applyColors(
+      canvasRef.current,
+      selectedInstance,
+      typeof coloring === 'string' ? coloring : selectedColoring,
+    );
+    // TODO: handle this correctly without triggering a reimport of the bpmn when it is not
+    // necessary which breaks the tokens
+  }, []);
 
   return (
     <Content compact wrapperClass={contentStyles.Content}>
@@ -203,11 +213,11 @@ function ProcessDeploymentView({
                       },
                       ...(selectedVersion
                         ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,

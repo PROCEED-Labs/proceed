@@ -192,6 +192,7 @@ jobs:
       id-token: write
       pull-requests: write
       issues: write
+    environment: Research
     env:
       MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}

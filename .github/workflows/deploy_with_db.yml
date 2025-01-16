@@ -226,7 +226,7 @@ jobs:
           image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
           region: 'europe-west1'
-          env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}"}'
+          env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local"}'
 
   githubEnvironment:
     runs-on: ubuntu-latest

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -31,6 +31,7 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -39,7 +40,7 @@ type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  versions: { id: string; name: string; description: string }[];
+  versions: { id: string; name: string; description: string; createdOn: Date }[];
 };
 const ModelerToolbar = ({
   processId,
@@ -51,6 +52,7 @@ const ModelerToolbar = ({
   const router = useRouter();
   const environment = useEnvironment();
   const { message } = App.useApp();
+  const env = use(EnvVarsContext);
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
@@ -280,12 +282,11 @@ const ModelerToolbar = ({
 
           <ToolbarGroup>
             {selectedElement &&
-              ((process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
-                bpmnIs(selectedElement, 'bpmn:UserTask') && (
-                  <Tooltip title="Edit User Task Form">
-                    <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
-                  </Tooltip>
-                )) ||
+              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
+                <Tooltip title="Edit User Task Form">
+                  <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+                </Tooltip>
+              )) ||
                 (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
                   <Tooltip title="Open Subprocess">
                     <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
@@ -293,7 +294,7 @@ const ModelerToolbar = ({
                     </Button>
                   </Tooltip>
                 )) ||
-                (process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION &&
                   bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
                     <Tooltip title="Edit Script Task">
                       <Button
@@ -317,6 +318,7 @@ const ModelerToolbar = ({
               <ModelerShareModalButton
                 onExport={handleProcessExportModalToggle}
                 onExportMobile={handleProcessExportModalToggleMobile}
+                versions={versions}
               />
               <Tooltip title="Open Documentation">
                 <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
@@ -368,7 +370,7 @@ const ModelerToolbar = ({
         preselectedExportType={preselectedExportType}
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
-      {process.env.NEXT_PUBLIC_ENABLE_EXECUTION && (
+      {env.PROCEED_PUBLIC_ENABLE_EXECUTION && (
         <>
           <UserTaskBuilder
             processId={processId}

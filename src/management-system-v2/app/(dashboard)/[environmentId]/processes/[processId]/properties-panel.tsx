@@ -10,9 +10,13 @@ import { Input, ColorPicker, Space, Grid, Divider, Modal } from 'antd';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
+  getElementById,
   getMetaDataFromElement,
   setDefinitionsName,
+  setMetaData,
   setProceedElement,
+  toBpmnObject,
+  deepCopyElementById,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -118,27 +122,25 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     });
   };
 
-  const updateMetaData = (
+  const updateMetaData = async (
     name: string,
     value: any,
     attributes?: { [key: string]: any },
     oldAttributes?: { [key: string]: any },
   ) => {
     const modeling = modeler!.getModeling();
+    const bpmn = await modeler!.getXML();
+
+    // create deep copy of selected element and set proceed element in this object so that bpmn.js event system can recognise changes in object
+    const selectedElementCopy = (await deepCopyElementById(bpmn!, selectedElement.id)) as any;
 
     if (name === 'property') {
-      setProceedElement(
-        selectedElement.businessObject,
-        name,
-        value.value,
-        value.attributes,
-        oldAttributes,
-      );
+      setProceedElement(selectedElementCopy, name, value.value, value.attributes, oldAttributes);
     } else {
-      setProceedElement(selectedElement.businessObject, name, value ? value : null, attributes, {});
+      setProceedElement(selectedElementCopy, name, value ? value : null, attributes);
     }
     modeling.updateProperties(selectedElement as any, {
-      extensionElements: selectedElement.businessObject.extensionElements,
+      extensionElements: selectedElementCopy.extensionElements,
     });
   };
 

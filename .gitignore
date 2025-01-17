@@ -2,6 +2,7 @@ node_modules/
 .yarn-cache/
 /*.zip
 coverage/
+FeatureFlags.js
 
 # PROCEED files
 src/engine/native/node/**/data_files

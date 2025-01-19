@@ -3,6 +3,7 @@
   "include": ["./**/*"],
   "compilerOptions": {
     "declarationDir": "./@types",
+    "outDir": "./@types",
     "emitDeclarationOnly": true
   }
 }

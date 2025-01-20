@@ -82,7 +82,7 @@ Both users actually have the same privileges by default, but the first one loggi
 `yarn dev-ms-db-delete <--all | --branch <branch-name> >` : delete db \
 `yarn dev-ms-db-migrate`: create new prisma migration based on changes made to `schema.prisma` file \
 `yarn dev-ms-db-deploy` : deploys the migrations to db \
-`yarn dev-ms-db-deploy` : run this command to generate prisma client manually, if not generated automatically on `yarn install``
+`yarn dev-ms-db-generate` : run this command to generate prisma client manually, if not generated automatically on `yarn install``
 
 # Contributions
 

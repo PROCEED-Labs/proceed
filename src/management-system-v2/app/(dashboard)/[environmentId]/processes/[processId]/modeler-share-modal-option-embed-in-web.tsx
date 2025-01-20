@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { CopyOutlined } from '@ant-design/icons';
-import { Button, Input, Checkbox, App, Select, Space, Result } from 'antd';
+import { Button, Input, Checkbox, App, Select, Space, Result, message } from 'antd';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
   generateSharedViewerUrl,
@@ -9,6 +9,8 @@ import {
 } from '@/lib/sharing/process-sharing';
 import { useEnvironment } from '@/components/auth-can';
 import { Process } from '@/lib/data/process-schema';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 const { TextArea } = Input;
 
@@ -25,10 +27,10 @@ const ModelerShareModalOptionEmdedInWeb = ({
   refresh,
   processVersions,
 }: ModelerShareModalOptionEmdedInWebProps) => {
+  const app = App.useApp();
   const { processId } = useParams();
   const environment = useEnvironment();
   const [embeddingUrl, setEmbeddingUrl] = useState('');
-  const { message } = App.useApp();
 
   const query = useSearchParams();
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(() => {
@@ -39,68 +41,69 @@ const ModelerShareModalOptionEmdedInWeb = ({
   });
 
   useEffect(() => {
-    const initialize = async () => {
-      if (allowIframeTimestamp > 0 && selectedVersionId) {
-        try {
-          // generate an url with a token that contains the currently active embedding timestamp
-          const url = await generateSharedViewerUrl(
+    if (allowIframeTimestamp > 0 && selectedVersionId) {
+      wrapServerCall({
+        fn: () =>
+          generateSharedViewerUrl(
             {
               processId,
               embeddedMode: true,
               timestamp: allowIframeTimestamp,
             },
             selectedVersionId,
-          );
-          setEmbeddingUrl(url);
-        } catch (error) {
-          console.error('Error while generating the url for embedding:', error);
-        }
-      }
-    };
-    initialize();
-  }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs, selectedVersionId]);
+          ),
+        onSuccess: (url) => setEmbeddingUrl(url),
+        app,
+      });
+    }
+  }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs, selectedVersionId, app]);
 
   const handleAllowEmbeddingChecked = async (e: {
     target: { checked: boolean | ((prevState: boolean) => boolean) };
   }) => {
     const isChecked = e.target.checked;
     if (isChecked) {
-      try {
-        const timestamp = Date.now();
-        // generate an url containing a token with the newly generated timestamp
-        const url = await generateSharedViewerUrl(
-          {
+      // create embedding
+      const timestamp = Date.now();
+      await wrapServerCall({
+        fn: async () => {
+          const url = await generateSharedViewerUrl(
+            {
+              processId,
+              embeddedMode: true,
+              timestamp,
+            },
+            selectedVersionId!,
+          );
+          if (isUserErrorResponse(url)) return url;
+
+          const accessUpdateResult = await updateProcessGuestAccessRights(
             processId,
-            embeddedMode: true,
-            timestamp,
-          },
-          selectedVersionId!,
-        );
-        setEmbeddingUrl(url);
-        // activate embedding for that specific timestamp
-        await updateProcessGuestAccessRights(
-          processId,
-          {
-            sharedAs: 'public',
-            allowIframeTimestamp: timestamp,
-          },
-          environment.spaceId,
-        );
-      } catch (err) {
-        message.error('An error occurred while enabling embedding.');
-      }
+            {
+              sharedAs: 'public',
+              allowIframeTimestamp: timestamp,
+            },
+            environment.spaceId,
+          );
+          if (isUserErrorResponse(accessUpdateResult)) return accessUpdateResult;
+
+          return url;
+        },
+        onSuccess: (url) => setEmbeddingUrl(url),
+        app,
+      });
     } else {
       // deactivate embedding
-      try {
-        await updateProcessGuestAccessRights(
-          processId,
-          { allowIframeTimestamp: 0 },
-          environment.spaceId,
-        );
-        setEmbeddingUrl('');
-      } catch (err) {
-        message.error('An error occurred while disabling embedding.');
-      }
+      await wrapServerCall({
+        fn: () =>
+          updateProcessGuestAccessRights(
+            processId,
+            { allowIframeTimestamp: 0 },
+            environment.spaceId,
+          ),
+        onSuccess: () => setEmbeddingUrl(''),
+        app,
+      });
     }
     refresh();
   };

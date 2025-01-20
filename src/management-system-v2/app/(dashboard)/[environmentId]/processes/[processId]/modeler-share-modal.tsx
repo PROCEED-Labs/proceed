@@ -359,24 +359,24 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         >
           {breakpoint.lg
             ? optionsDesktop.map((option, index) => (
-              <ModelerShareModalOption
-                key={index}
-                optionIcon={option.optionIcon}
-                optionName={option.optionName}
-                optionTitle={option.optionTitle}
-                optionOnClick={option.optionOnClick}
-                isActive={index === activeIndex}
-              />
-            ))
+                <ModelerShareModalOption
+                  key={index}
+                  optionIcon={option.optionIcon}
+                  optionName={option.optionName}
+                  optionTitle={option.optionTitle}
+                  optionOnClick={option.optionOnClick}
+                  isActive={index === activeIndex}
+                />
+              ))
             : optionsMobile.map((option, index) => (
-              <ModelerShareModalOption
-                key={index}
-                optionIcon={option.optionIcon}
-                optionName={option.optionName}
-                optionTitle={option.optionTitle}
-                optionOnClick={option.optionOnClick}
-              />
-            ))}
+                <ModelerShareModalOption
+                  key={index}
+                  optionIcon={option.optionIcon}
+                  optionName={option.optionName}
+                  optionTitle={option.optionTitle}
+                  optionOnClick={option.optionOnClick}
+                />
+              ))}
         </Space>
 
         {breakpoint.lg && activeIndex !== null && optionsDesktop[activeIndex].subOption && (

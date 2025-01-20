@@ -29,7 +29,12 @@ const ModelerShareModalOptionPublicLink = ({
 }: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
   const query = useSearchParams();
-  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(query.get('version'));
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(() => {
+    const queryVersion = query.get('version');
+    if (queryVersion && processVersions.find((version) => version.id === queryVersion))
+      return queryVersion;
+    else return processVersions[0]?.id;
+  });
   const environment = useEnvironment();
 
   const [shareLink, setShareLink] = useState('');

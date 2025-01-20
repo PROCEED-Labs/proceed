@@ -18,155 +18,163 @@ env:
   OUTPUT_PATH_ENGINE_NODE: './build/engine/'
   OUTPUT_PATH_MS_SERVER: './src/management-system-v2/.next/'
   DOCKER_PATH_MS_SERVER: './src/management-system-v2'
-
+  DB_CONTAINER: ${{ vars.DB_CONTAINER_NAME }}
+  DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
 jobs:
-  # install:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #         check-latest: true
-  #         cache: 'yarn'
-
-  #     - run: yarn install --frozen-lockfile --ignore-engines
-
-  #     - uses: actions/cache@v4
-  #       timeout-minutes: 2
-  #       id: cache-install
-  #       with:
-  #         path: ./*
-  #         key: ${{ github.sha }}-${{ github.run_number }}
-
-  # lint:
-  #   runs-on: ubuntu-latest
-  #   needs: install
-  #   steps:
-  #     - uses: actions/cache@v4
-  #       timeout-minutes: 2
-  #       id: restore-install
-  #       with:
-  #         path: ./*
-  #         key: ${{ github.sha }}-${{ github.run_number }}
-
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #         check-latest: true
-  #         cache: 'yarn'
-
-  #     - run: yarn prettier --check .
-
-  # buildMS:
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
-  #   outputs:
-  #     tag: ${{ steps.set_tag.outputs.tag }}
-  #   needs: lint
-  #   steps:
-  #     - uses: actions/cache@v4
-  #       timeout-minutes: 2
-  #       id: restore-install
-  #       with:
-  #         path: ./*
-  #         key: ${{ github.sha }}-${{ github.run_number }}
-
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #         check-latest: true
-  #         cache: 'yarn'
-
-  #     - run: yarn build-ms
-
-  #     - id: set_tag
-  #       run: |
-  #         TAG=$(git describe --tags --always --dirty --abbrev=7)
-  #         if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-  #           echo "tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
-  #         else
-  #           echo "tag=$TAG" >> $GITHUB_OUTPUT
-  #         fi
-
-  #     - name: Kaniko build
-  #       uses: aevea/action-kaniko@master
-  #       with:
-  #         image: proceed/ms-server
-  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
-  #         path: ${{ env.DOCKER_PATH_MS_SERVER }}
-  #         tag: ${{ steps.set_tag.outputs.tag }}
-
-  check-migration-files:
+  install:
     runs-on: ubuntu-latest
-    #needs: buildMS
-    outputs:
-      main_diff: ${{ steps.compare-migration-main.outputs.diff }}
-      branch_diff: ${{ steps.check-migration-changes.outputs.diff }}
     steps:
-      - name: Checkout the Repository
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile --ignore-engines
+
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: cache-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn prettier --check .
+
+  buildMS:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
+    needs: lint
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn build-ms
+
+      - id: set_tag
+        run: |
+          TAG=$(git describe --tags --always --dirty --abbrev=7)
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            echo "tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Kaniko build
+        uses: aevea/action-kaniko@master
+        with:
+          image: proceed/ms-server
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          path: ${{ env.DOCKER_PATH_MS_SERVER }}
+          tag: ${{ steps.set_tag.outputs.tag }}
+
+  validate-migrations:
+    runs-on: ubuntu-latest
+    needs: buildMS
+    outputs:
+      main_diff: ${{ steps.migration-diff-main.outputs.diff }}
+      branch_diff: ${{ steps.migration-diff-branch.outputs.diff }}
+    steps:
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: Check migration changes with main
-        id: check-migration-changes-main
+      - name: Fetch main branch
+        run: git fetch origin main:main
+
+      - name: Compare migrations with main
+        id: migration-diff-main
         run: |
-          git fetch origin main:main
+          MIGRATIONS_PATH="src/management-system-v2/prisma/migrations"
 
-          # Get migration files from main and current branch
-          MAIN_MIGRATIONS=$(git ls-tree -r main --name-only src/management-system-v2/prisma/migrations/ | grep '\.sql$' || echo "")
-          CURRENT_MIGRATIONS=$(git ls-tree -r HEAD --name-only src/management-system-v2/prisma/migrations/ | grep '\.sql$' || echo "")
+          # Use arrays for better handling of filenames with spaces
+          readarray -t MAIN_MIGRATIONS < <(git ls-tree -r main --name-only "$MIGRATIONS_PATH" | grep '\.sql$' || echo "")
+          readarray -t CURRENT_MIGRATIONS < <(git ls-tree -r HEAD --name-only "$MIGRATIONS_PATH" | grep '\.sql$' || echo "")
 
-          if [ "$MAIN_MIGRATIONS" != "$CURRENT_MIGRATIONS" ]; then
-            echo "diff detected between main and branch"
-            echo "diff=true" >> $GITHUB_OUTPUT
+          # Compare arrays and handle empty cases
+          if [ "${#MAIN_MIGRATIONS[@]}" -ne "${#CURRENT_MIGRATIONS[@]}" ] || \
+             [ -n "$(diff <(printf "%s\n" "${MAIN_MIGRATIONS[@]}") <(printf "%s\n" "${CURRENT_MIGRATIONS[@]}"))" ]; then
+            echo "Migration differences detected between main and current branch"
+            echo "diff=true" >> "$GITHUB_OUTPUT"
           else
-            echo "NO diff detected between main and branch"
-            echo "diff=false" >> $GITHUB_OUTPUT
+            echo "No migration differences detected between main and current branch"
+            echo "diff=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check migration changes within branch
-        id: check-migration-changes-branch
+      - name: Check branch-specific migration changes
+        id: migration-diff-branch
         run: |
-          if git diff --name-only HEAD~1 HEAD | grep 'src/management-system-v2/prisma/migrations/.*\.sql'; then
-            echo "diff detected within branch"
-            echo "diff=true" >> $GITHUB_OUTPUT
+          if git diff --name-only HEAD~1 HEAD | grep -q 'src/management-system-v2/prisma/migrations/.*\.sql$'; then
+            echo "Branch-specific migration changes detected"
+            echo "diff=true" >> "$GITHUB_OUTPUT"
           else
-            echo "NO diff detected within branch"
-            echo "diff=false" >> $GITHUB_OUTPUT
+            echo "No branch-specific migration changes"
+            echo "diff=false" >> "$GITHUB_OUTPUT"
           fi
 
-  generate-db-name:
+  generate-database-name:
+    needs: [validate-migrations]
     runs-on: ubuntu-latest
-    needs: [check-migration-files]
-    outputs:
-      dbname: ${{ steps.gen-db-name.outputs.DB_NAME }}
     environment: Research
     env:
       ENV: Research
+    outputs:
+      db_name: ${{ steps.generate-name.outputs.DB_NAME }}
     steps:
-      - name: Generate database name
-        id: gen-db-name
+      - name: Generate sanitized database name
+        id: generate-name
         run: |
+          # Sanitize branch name for database naming
           BRANCH_NAME="${{ github.ref_name }}"
-          BRANCH_NAME_SANITIZED=$(echo "$BRANCH_NAME" | sed 's|/|_|g')
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed -E 's/[^a-zA-Z0-9]/_/g' | tr '[:upper:]' '[:lower:]')
 
-          if [ "${{ needs.check-migration-files.outputs.main_diff }}" = "false" ]; then
-            # No changes between main and branch - use main suffix
-            DB_NAME="proceed_db_${BRANCH_NAME_SANITIZED}_main"
+          # Determine suffix based on migration differences
+          if [ "${{ needs.validate-migrations.outputs.main_diff }}" = "false" ]; then
+            DB_NAME="proceed_db_${SANITIZED_BRANCH}_main"
           else
-            # Changes exist - use branch name
-            DB_NAME="proceed_db_${BRANCH_NAME_SANITIZED}"
+            DB_NAME="proceed_db_${SANITIZED_BRANCH}"
           fi
 
-          echo "DB_NAME=$DB_NAME" >> $GITHUB_OUTPUT
+          DB_NAME="${DB_NAME:0:63}"
+          echo "Generated database name: $DB_NAME"
+          echo "DB_NAME=$DB_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Configure SSH
         run: |
@@ -185,29 +193,35 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
-      - name: Check and handle database
+      - name: Manage database lifecycle
         run: |
-          DB_EXISTS=$(ssh $ENV "sudo docker exec ${{vars.DB_CONTAINER_NAME}} psql -U ${{secrets.DB_USER}} -d ${{vars.DB_DEFAULT_DB}} -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.gen-db-name.outputs.DB_NAME }}'\"")
+          DB_EXISTS=$(ssh $ENV "docker exec ${{ env.DB_CONTAINER }} \
+             psql -U ${{ secrets.DB_USER }} \
+             -d ${{ env.DEFAULT_DB }} \
+             -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
 
-          if [ "${{ needs.check-migration-files.outputs.main_diff }}" = "true" ] && [ "${{ needs.check-migration-files.outputs.branch_diff }}" = "true" ]; then
-            # Changes detected - drop existing DB if it exists
-            ssh $ENV 'sudo docker exec ${{vars.DB_CONTAINER_NAME}} psql -U ${{secrets.DB_USER}} -d ${{vars.DB_DEFAULT_DB}} -c "DROP DATABASE IF EXISTS ${{ steps.gen-db-name.outputs.DB_NAME }};"'
-          elif [ "$DB_EXISTS" != "1" ]; then
-            # DB doesn't exist - no action needed (will be created in create-db job)
-            echo "Database doesn't exist, will be created in next step"
-          else
-            # DB exists and no changes detected - keep existing DB
+          if [[ "${{ needs.validate-migrations.outputs.main_diff }}" = "true" && \
+                "${{ needs.validate-migrations.outputs.branch_diff }}" = "true" ]]; then
+            echo "Dropping existing database due to migration changes"
+            ssh $ENV \
+              "docker exec ${{ env.DB_CONTAINER }} \
+               psql -U ${{ secrets.DB_USER }} \
+               -d ${{ env.DEFAULT_DB }} \
+               -c 'DROP DATABASE IF EXISTS \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
+          elif [ "$DB_EXISTS" = "1" ]; then
             echo "Reusing existing database"
+          else
+            echo "Database will be created in subsequent step"
           fi
 
-  create-db:
-    needs: [generate-db-name, check-migration-files]
+  deploy-database:
+    needs: [generate-database-name, validate-migrations]
     runs-on: ubuntu-latest
-    outputs:
-      database_url: ${{ steps.set-db-url.outputs.DATABASE_URL }}
     environment: Research
     env:
       ENV: Research
+    outputs:
+      database_url: ${{ steps.configure-connection.outputs.DATABASE_URL }}
     steps:
       - name: Configure SSH
         run: |
@@ -226,24 +240,31 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
-      - name: Check if database needs to be created
-        id: check-db
+      - name: Verify database status
+        id: db-status
         run: |
-          DB_EXISTS=$(ssh $ENV "sudo docker exec ${{vars.DB_CONTAINER_NAME}} psql -U ${{secrets.DB_USER}} -d ${{vars.DB_DEFAULT_DB}} -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ needs.generate-db-name.outputs.dbname }}'\"")
-          if [ "$DB_EXISTS" != "1" ]; then
-            echo "create_db=true" >> $GITHUB_OUTPUT
-          else
-            echo "create_db=false" >> $GITHUB_OUTPUT
-          fi
+          DB_EXISTS=$(ssh $ENV \
+            "docker exec ${{ env.DB_CONTAINER }} \
+             psql -U ${{ secrets.DB_USER }} \
+             -d ${{ env.DEFAULT_DB }} \
+             -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ needs.generate-database-name.outputs.db_name }}'\"")
+          echo "create_db=$([[ "$DB_EXISTS" != "1" ]] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
 
       - name: Create database if needed
-        if: steps.check-db.outputs.create_db == 'true'
+        if: steps.db-status.outputs.create_db == 'true'
         run: |
-          ssh $ENV 'sudo docker exec ${{vars.DB_CONTAINER_NAME}} psql -U ${{secrets.DB_USER}} -d ${{vars.DB_DEFAULT_DB}} -c "CREATE DATABASE ${{ needs.generate-db-name.outputs.dbname }};"'
+          ssh $ENV \
+            "docker exec ${{ env.DB_CONTAINER }} \
+             psql -U ${{ secrets.DB_USER }} \
+             -d ${{ env.DEFAULT_DB }} \
+             -c 'CREATE DATABASE \"${{ needs.generate-database-name.outputs.db_name }}\"'"
 
-      - name: Set DATABASE_URL as an output
-        id: set-db-url
-        run: echo "DATABASE_URL=postgresql://${{secrets.DB_USER}}:UiIpWxw8Usegfsl7LP8%2FuWrKiCyJbU2nLE9wBvW7gSE%3D@${{secrets.SSH_HOST}}:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public" >> $GITHUB_OUTPUT
+      - name: Configure database connection
+        id: configure-connection
+        run: |
+          # URL encode the password, replace later with secret
+          ENCODED_PASSWORD="UiIpWxw8Usegfsl7LP8%2FuWrKiCyJbU2nLE9wBvW7gSE%3D"
+          echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${ENCODED_PASSWORD}@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-database-name.outputs.db_name }}?schema=public" >> "$GITHUB_OUTPUT"
 
       - name: Restore Cache
         uses: actions/cache@v4
@@ -254,62 +275,62 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
       - name: Apply Prisma Migrations
-        if: steps.check-db.outputs.create_db == 'true'
+        if: steps.db-status.outputs.create_db == 'true'
         env:
-          DATABASE_URL: ${{ steps.set-db-url.outputs.DATABASE_URL }}
+          DATABASE_URL: ${{ steps.configure-connection.outputs.DATABASE_URL }}
         run: |
           yarn dev-ms-db-deploy
 
-  # deploy:
-  #   runs-on: ubuntu-latest
-  #   needs: [buildMS, create-db, generate-db-name]
-  #   permissions:
-  #     contents: read
-  #     id-token: write
-  #     pull-requests: write
-  #     issues: write
-  #   environment: Research
-  #   env:
-  #     MS_TAG: ${{ needs.buildMS.outputs.tag }}
-  #     SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
-  #     SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-  #     DATABASE_URL: postgresql://${{ secrets.DB_USER }}:UiIpWxw8Usegfsl7LP8%2FuWrKiCyJbU2nLE9wBvW7gSE%3D@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public
-  #   steps:
-  #     - uses: 'google-github-actions/auth@v2'
-  #       with:
-  #         project_id: 'proceed-bpms'
-  #         workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
-  #         service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [buildMS, deploy-database]
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+      issues: write
+    environment: Research
+    env:
+      MS_TAG: ${{ needs.buildMS.outputs.tag }}
+      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
+      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
+      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:UiIpWxw8Usegfsl7LP8%2FuWrKiCyJbU2nLE9wBvW7gSE%3D@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public
+    steps:
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: 'proceed-bpms'
+          workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
+          service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
 
-  #     - id: 'deploy'
-  #       if: ${{ github.ref == 'refs/heads/main' }}
-  #       uses: 'google-github-actions/deploy-cloudrun@v2'
-  #       with:
-  #         service: ${{ env.SERVICE_NAME }}
-  #         image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
-  #         env_vars: |
-  #           NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
-  #           DATABASE_URL=${{ env.DATABASE_URL }}
-  #         region: 'europe-west1'
-  #         revision_traffic: LATEST=100
+      - id: 'deploy'
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
+          env_vars: |
+            NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
+            DATABASE_URL=${{ env.DATABASE_URL }}
+          region: 'europe-west1'
+          revision_traffic: LATEST=100
 
-  #     - id: 'deploy-preview'
-  #       if: ${{ github.event_name == 'pull_request' }}
-  #       name: Preview Cloud Run Deployment
-  #       uses: anishsapkota/preview-cloudrun@main
-  #       with:
-  #         service: ${{ env.SERVICE_NAME }}
-  #         image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
-  #         token: ${{ secrets.GITHUB_TOKEN }}
-  #         region: 'europe-west1'
-  #         env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
+      - id: 'deploy-preview'
+        if: ${{ github.event_name == 'pull_request' }}
+        name: Preview Cloud Run Deployment
+        uses: anishsapkota/preview-cloudrun@main
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          region: 'europe-west1'
+          env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
 
-  # githubEnvironment:
-  #   runs-on: ubuntu-latest
-  #   needs: deploy
-  #   if: ${{ github.ref == 'refs/heads/main' }}
-  #   environment:
-  #     name: ${{ inputs.environment || 'Staging' }}
-  #     url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
-  #   steps:
-  #     - run: echo "${{ inputs.environment || 'Staging' }}"
+  githubEnvironment:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ github.ref == 'refs/heads/main' }}
+    environment:
+      name: ${{ inputs.environment || 'Staging' }}
+      url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
+    steps:
+      - run: echo "${{ inputs.environment || 'Staging' }}"

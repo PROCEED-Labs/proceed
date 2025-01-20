@@ -118,6 +118,8 @@ jobs:
       - name: Check migration changes with main
         id: check-migration-changes-main
         run: |
+          git fetch origin main:main
+
           # Get migration files from main and current branch
           MAIN_MIGRATIONS=$(git ls-tree -r main --name-only src/management-system-v2/prisma/migrations/ | grep '\.sql$' || echo "")
           CURRENT_MIGRATIONS=$(git ls-tree -r HEAD --name-only src/management-system-v2/prisma/migrations/ | grep '\.sql$' || echo "")

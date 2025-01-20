@@ -283,7 +283,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [buildMS, deploy-database]
+    needs: [buildMS, generate-database-name, deploy-database]
     permissions:
       contents: read
       id-token: write
@@ -294,7 +294,7 @@ jobs:
       MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
       SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:UiIpWxw8Usegfsl7LP8%2FuWrKiCyJbU2nLE9wBvW7gSE%3D@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-db-name.outputs.dbname }}?schema=public
+      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:UiIpWxw8Usegfsl7LP8%2FuWrKiCyJbU2nLE9wBvW7gSE%3D@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-database-name.outputs.db_name }}?schema=public
     steps:
       - uses: 'google-github-actions/auth@v2'
         with:

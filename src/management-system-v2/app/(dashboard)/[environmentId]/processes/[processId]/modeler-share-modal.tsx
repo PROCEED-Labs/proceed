@@ -337,6 +337,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
             Close
           </Button>
         }
+        destroyOnClose
       >
         <Space
           style={{

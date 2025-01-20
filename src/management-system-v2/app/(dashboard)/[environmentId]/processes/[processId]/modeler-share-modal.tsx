@@ -300,6 +300,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
           sharedAs={sharedAs as SharedAsType}
           allowIframeTimestamp={allowIframeTimestamp}
           refresh={checkIfProcessShared}
+          processVersions={processVersions}
         />
       ),
     },

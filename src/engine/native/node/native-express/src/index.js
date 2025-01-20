@@ -102,6 +102,7 @@ class NativeExpress extends NativeModule {
             query: req.query,
             path: req.path,
             body: req.body,
+            headers: req.headers,
             files,
           };
 

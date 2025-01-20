@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -30,15 +30,17 @@ import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
+import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
+const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   processId: string;
   onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  versions: { version: number; name: string; description: string }[];
+  versions: { id: string; name: string; description: string; createdOn: Date }[];
 };
 const ModelerToolbar = ({
   processId,
@@ -50,10 +52,12 @@ const ModelerToolbar = ({
   const router = useRouter();
   const environment = useEnvironment();
   const { message } = App.useApp();
+  const env = use(EnvVarsContext);
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
+  const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
@@ -209,8 +213,7 @@ const ModelerToolbar = ({
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   const selectedVersion =
-    versions.find((version) => version.version === parseInt(selectedVersionId ?? '-1')) ??
-    LATEST_VERSION;
+    versions.find((version) => version.id === (selectedVersionId ?? '-1')) ?? LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
 
@@ -232,15 +235,12 @@ const ModelerToolbar = ({
               placeholder="Select Version"
               showSearch
               filterOption={filterOption}
-              value={{
-                value: selectedVersion.version,
-                label: selectedVersion.name,
-              }}
-              onSelect={(_, option) => {
+              value={selectedVersion.id}
+              onChange={(value) => {
                 // change the version info in the query but keep other info (e.g. the currently open subprocess)
                 const searchParams = new URLSearchParams(query);
-                if (!option.value || option.value === -1) searchParams.delete('version');
-                else searchParams.set(`version`, `${option.value}`);
+                if (!value || value === '-1') searchParams.delete('version');
+                else searchParams.set(`version`, `${value}`);
                 router.push(
                   spaceURL(
                     environment,
@@ -250,8 +250,8 @@ const ModelerToolbar = ({
                   ),
                 );
               }}
-              options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({
-                value: version,
+              options={[LATEST_VERSION].concat(versions ?? []).map(({ id, name }) => ({
+                value: id,
                 label: name,
               }))}
             />
@@ -282,19 +282,27 @@ const ModelerToolbar = ({
 
           <ToolbarGroup>
             {selectedElement &&
-              ((process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
-                bpmnIs(selectedElement, 'bpmn:UserTask') && (
-                  <Tooltip title="Edit User Task Form">
-                    <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
-                  </Tooltip>
-                )) ||
+              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
+                <Tooltip title="Edit User Task Form">
+                  <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+                </Tooltip>
+              )) ||
                 (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
                   <Tooltip title="Open Subprocess">
                     <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
                       Open Subprocess
                     </Button>
                   </Tooltip>
-                )))}
+                )) ||
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+                  bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
+                    <Tooltip title="Edit Script Task">
+                      <Button
+                        icon={<FormOutlined />}
+                        onClick={() => setShowScriptTaskEditor(true)}
+                      />
+                    </Tooltip>
+                  )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -310,6 +318,7 @@ const ModelerToolbar = ({
               <ModelerShareModalButton
                 onExport={handleProcessExportModalToggle}
                 onExportMobile={handleProcessExportModalToggleMobile}
+                versions={versions}
               />
               <Tooltip title="Open Documentation">
                 <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
@@ -361,12 +370,21 @@ const ModelerToolbar = ({
         preselectedExportType={preselectedExportType}
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
-      {process.env.NEXT_PUBLIC_ENABLE_EXECUTION && (
-        <UserTaskBuilder
-          processId={processId}
-          open={showUserTaskEditor}
-          onClose={() => setShowUserTaskEditor(false)}
-        />
+      {env.PROCEED_PUBLIC_ENABLE_EXECUTION && (
+        <>
+          <UserTaskBuilder
+            processId={processId}
+            open={showUserTaskEditor}
+            onClose={() => setShowUserTaskEditor(false)}
+          />
+
+          <ScriptEditor
+            processId={processId}
+            open={showScriptTaskEditor}
+            onClose={() => setShowScriptTaskEditor(false)}
+            selectedElement={selectedElement}
+          />
+        </>
       )}
     </>
   );

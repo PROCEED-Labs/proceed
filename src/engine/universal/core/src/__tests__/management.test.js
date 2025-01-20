@@ -151,11 +151,11 @@ describe('Management', () => {
     jest.spyOn(Engine.prototype, 'deployProcessVersion');
     jest.spyOn(Engine.prototype, 'startProcessVersion');
     distribution.db.isProcessVersionValid.mockResolvedValue(true);
-    const instanceId = await management.createInstance(0, 123, {});
+    const instanceId = await management.createInstance('0', '123', {});
     expect(management.getEngineWithID(instanceId)).toBeInstanceOf(Engine);
-    expect(Engine.prototype.deployProcessVersion).toHaveBeenCalledWith(0, 123);
+    expect(Engine.prototype.deployProcessVersion).toHaveBeenCalledWith('0', '123');
     expect(Engine.prototype.startProcessVersion).toHaveBeenCalledWith(
-      123,
+      '123',
       {},
       undefined,
       undefined,
@@ -166,9 +166,9 @@ describe('Management', () => {
   it('reuses an existing ProceedEngine instance when there is one for the given definitionsId to start an instance', async () => {
     jest.spyOn(Engine.prototype, 'deployProcessVersion');
     jest.spyOn(Engine.prototype, 'startProcessVersion');
-    const firstInstanceId = await management.createInstance(0, 123, {});
+    const firstInstanceId = await management.createInstance('0', '123', {});
 
-    const secondInstanceId = await management.createInstance(0, 123, {});
+    const secondInstanceId = await management.createInstance('0', '123', {});
 
     const firstEngine = management.getEngineWithID(firstInstanceId);
     expect(management.getEngineWithID(firstInstanceId)).toBe(
@@ -183,7 +183,7 @@ describe('Management', () => {
 
     const instance = {
       processId: '0',
-      processVersion: 789,
+      processVersion: '789',
       processInstanceId: '0-123',
       tokens: [
         {
@@ -213,11 +213,11 @@ describe('Management', () => {
     };
 
     // try to continue instance which was never started on this engine
-    const engine = await management.continueInstance(0, instance);
+    const engine = await management.continueInstance('0', instance);
     expect(engine).toBeInstanceOf(Engine);
-    expect(Engine.prototype.deployProcessVersion).toHaveBeenCalledWith(0, 789);
+    expect(Engine.prototype.deployProcessVersion).toHaveBeenCalledWith('0', '789');
     expect(Engine.prototype.startProcessVersion).toHaveBeenCalledWith(
-      789,
+      '789',
       {},
       startingInstanceInfo,
       expect.any(Function),
@@ -252,13 +252,13 @@ describe('Management', () => {
     });
     distribution.db.getProcessVersion.mockReturnValue(testBPMN);
     distribution.db.isProcessVersionValid.mockResolvedValue(true);
-    await management.createInstance(0, 123, {});
+    await management.createInstance('0', '123', {});
 
     // distribution.db.getProcess.mockResolvedValueOnce(testBPMN);
-    await management.createInstance(1, 456, {});
+    await management.createInstance('1', '456', {});
 
     // distribution.db.getProcess.mockResolvedValueOnce(testBPMN);
-    await management.createInstance(2, 789, {});
+    await management.createInstance('2', '789', {});
 
     await new Promise((resolve) => {
       setTimeout(() => {
@@ -271,9 +271,9 @@ describe('Management', () => {
 
   it('remove process engine', async () => {
     jest.spyOn(Engine.prototype, 'startProcessVersion');
-    await management.createInstance(0, 123, {});
-    expect(management.getEngineWithDefinitionId(0)).toBeInstanceOf(Engine);
-    management.removeProcessEngine(0);
-    expect(management.getEngineWithDefinitionId(0)).toBeUndefined();
+    await management.createInstance('0', '123', {});
+    expect(management.getEngineWithDefinitionId('0')).toBeInstanceOf(Engine);
+    management.removeProcessEngine('0');
+    expect(management.getEngineWithDefinitionId('0')).toBeUndefined();
   });
 });

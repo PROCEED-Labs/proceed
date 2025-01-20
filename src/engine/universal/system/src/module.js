@@ -13,6 +13,7 @@ const Discovery = require('./discovery');
 const Timer = require('./timer.ts').default;
 const Messaging = require('./messaging');
 const { setIPC } = require('./system.ts');
+const ScriptExecutor = require('./script-execution');
 
 /**
  * Detects the environment and sets the `environment` property accordingly.
@@ -40,6 +41,8 @@ const environment = detectEnvironment();
 
 const messaging = new Messaging();
 
+const network = new Network(environment, messaging);
+
 /**
  * @module @proceed/system
  */
@@ -48,7 +51,7 @@ const system = {
   /**
    * @returns {module:@proceed/system.Network}
    */
-  network: new Network(environment, messaging),
+  network,
 
   /**
    * @returns {module:@proceed/system.Messaging}
@@ -88,6 +91,12 @@ const system = {
 
   setIPC(ipc) {
     setIPC(ipc, environment);
+  },
+
+  setupScriptExecutor(port) {
+    const scriptExecutor = new ScriptExecutor({ network });
+    scriptExecutor.setupRouter(port);
+    return scriptExecutor;
   },
 };
 

@@ -9,6 +9,8 @@ import {
   SetStateAction,
   Key,
   ReactElement,
+  useEffect,
+  useState,
 } from 'react';
 import {
   CopyOutlined,
@@ -35,6 +37,7 @@ import FavouriteStar from './favouriteStar';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
 import classNames from 'classnames';
+import { set } from 'zod';
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -400,6 +403,14 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
   const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
 
+  const [scrollY, setScrollY] = useState('400px');
+  useEffect(() => {
+    if (window)
+      setScrollY(
+        `${window.innerHeight - 32 /* Footer */ - 64 /* Header */ - 82 /* Table-Search etc */ - 60 /* Table-head */ - 60 /* Table-Footer / Pagination */}px`,
+      );
+  }, []);
+
   return (
     <BaseProcessList
       data={data}
@@ -409,7 +420,10 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
       onExportProcess={onExportProcess}
       processActions={processActions}
       tableProps={{
-        scroll: { x: metaPanelisOpened ? '71vw' : '85.5vw' },
+        scroll: {
+          y: scrollY,
+        },
+        pagination: { position: ['bottomCenter'], pageSize: 20 },
         onRow: (item) => ({
           // onDoubleClick: () =>
           //   router.push(

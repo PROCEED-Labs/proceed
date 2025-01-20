@@ -11,7 +11,7 @@ const monitoring = require('@proceed/monitoring');
 const management = require('./management.js');
 const { setup5thIndustryEndpoints } = require('./engine/5thIndustry.js');
 const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
-const { setupMessaging } = require('./messaging-setup.js');
+const { setupMessaging, setupMonitoringAndLogging } = require('./messaging-setup.js');
 const { enableMessaging, enable5thIndustryIntegration } = require('../../../../../FeatureFlags.js');
 
 const configObject = {
@@ -54,6 +54,7 @@ module.exports = {
 
     if (enableMessaging) {
       await setupMessaging(system.messaging, config, machineInformation, logger);
+      await setupMonitoringAndLogging(system.messaging, config, machineInformation, logger);
     }
 
     if (!options.silentMode) {
@@ -68,6 +69,12 @@ module.exports = {
   },
 
   provideScriptExecutor(scriptExecutor) {
+    management.provideScriptExecutor(scriptExecutor);
+  },
+
+  async setupSubProcessScriptExecution() {
+    const machinePort = await config.readConfig('machine.port');
+    const scriptExecutor = system.setupScriptExecutor(machinePort);
     management.provideScriptExecutor(scriptExecutor);
   },
 

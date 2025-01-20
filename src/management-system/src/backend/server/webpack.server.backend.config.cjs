@@ -137,9 +137,6 @@ module.exports = {
   ],
   externals: [
     {
-      vm2: "require('vm2')",
-    },
-    {
       puppeteer: "require('puppeteer')",
     },
   ],

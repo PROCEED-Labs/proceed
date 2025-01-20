@@ -91,6 +91,7 @@
     "sass": "1.75.0",
     "ts-node": "10.9.2",
     "typescript": "5.4.5",
-    "@types/react-resizable": "^3.0.7"
+    "@types/react-resizable": "^3.0.7",
+    "execa": "9.5.2"
   }
 }

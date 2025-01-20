@@ -50,7 +50,7 @@
     "dev-ms-old-iam": "cd src/management-system && yarn web:dev-iam",
     "dev-web": "yarn build && cd src/engine/native/web/server && yarn serve",
     "dev-many": "node src/engine/e2e_tests/process/deployment/startEngines.js",
-    "build": "cd src/engine/native/node && webpack --config webpack.native.config.js && webpack --config webpack.injector.config.ts && ts-node ./build-injector.js && cd ../../universal && NODE_OPTIONS=--openssl-legacy-provider webpack --config webpack.universal.config.js",
+    "build": "cd src/engine/native/node && webpack --config webpack.native.config.js && webpack --config webpack.injector.config.ts && cd ../../universal && NODE_OPTIONS=--openssl-legacy-provider webpack --config webpack.universal.config.js",
     "build-engine-types": "turbo build --filter \"./src/engine/**/\"",
     "build-ms": "cd src/management-system-v2 && yarn build",
     "build-web": "yarn build && cd src/engine/native/web/server && yarn build",

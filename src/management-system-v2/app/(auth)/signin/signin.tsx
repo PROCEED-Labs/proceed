@@ -58,9 +58,13 @@ const signInTitle = (
 const SignIn: FC<{
   providers: ExtractedProvider[];
   userType: 'guest' | 'user' | 'none';
-}> = ({ providers, userType }) => {
+  guestReferenceToken?: string;
+}> = ({ providers, userType, guestReferenceToken }) => {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? undefined;
+  const callbackUrlWithGuestRef = guestReferenceToken
+    ? `/transfer-processes?referenceToken=${guestReferenceToken}&callbackUrl=${callbackUrl}`
+    : callbackUrl;
   const authError = searchParams.get('error');
 
   const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
@@ -150,7 +154,9 @@ const SignIn: FC<{
             if (provider.type === 'credentials') {
               return (
                 <Form
-                  onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
+                  onFinish={(values) =>
+                    signIn(provider.id, { ...values, callbackUrl: callbackUrlWithGuestRef })
+                  }
                   key={provider.id}
                   layout="vertical"
                 >
@@ -168,7 +174,9 @@ const SignIn: FC<{
               return (
                 <>
                   <Form
-                    onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
+                    onFinish={(values) =>
+                      signIn(provider.id, { ...values, callbackUrl: callbackUrlWithGuestRef })
+                    }
                     key={provider.id}
                     layout="vertical"
                   >
@@ -211,7 +219,7 @@ const SignIn: FC<{
                       style={{ width: '1.5rem', height: 'auto' }}
                     />
                   }
-                  onClick={() => signIn(provider.id, { callbackUrl })}
+                  onClick={() => signIn(provider.id, { callbackUrl: callbackUrlWithGuestRef })}
                 />
               </Tooltip>
             );

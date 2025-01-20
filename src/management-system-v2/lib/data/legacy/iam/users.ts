@@ -7,6 +7,8 @@ import {
   OauthAccount,
   AuthenticatedUser,
   AuthenticatedUserSchema,
+  GuestUser,
+  GuestUserSchema,
 } from '../../user-schema';
 import { addEnvironment, deleteEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';

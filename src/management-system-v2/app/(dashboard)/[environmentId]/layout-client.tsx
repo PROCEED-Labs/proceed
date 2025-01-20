@@ -1,15 +1,7 @@
 'use client';
 
 import styles from './layout.module.scss';
-import {
-  FC,
-  PropsWithChildren,
-  createContext,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
 import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
 import { AppstoreOutlined } from '@ant-design/icons';
 import Image from 'next/image';
@@ -87,7 +79,6 @@ const Layout: FC<
         {
           label: 'Profile',
           key: 'profile-settings',
-          type: 'group',
           children: [
             {
               key: 'profile',
@@ -96,9 +87,9 @@ const Layout: FC<
               icon: <FaUserEdit />,
             },
             {
-              key: 'environments',
+              key: 'spaces',
               title: 'My Spaces',
-              label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+              label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
               icon: <AppstoreOutlined />,
             },
           ],
@@ -117,7 +108,6 @@ const Layout: FC<
 
   const menu = (
     <Menu
-      theme="light"
       style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
       mode="inline"
       items={layoutMenuItems}
@@ -166,40 +156,64 @@ const Layout: FC<
                   backgroundColor: '#fff',
                   borderRight: '1px solid #eee',
                   display: modelerIsFullScreen ? 'none' : 'block',
+                  overflow: 'auto',
                 }}
                 className={cn(styles.Sider)}
                 collapsible
                 collapsed={collapsed}
                 onCollapse={(collapsed) => setCollapsed(collapsed)}
-                collapsedWidth={breakpoint.xs ? '0' : '100'}
+                collapsedWidth={breakpoint.xs ? '0' : '75'}
                 breakpoint="xl"
-                trigger={null}
+                theme="light"
               >
-                <Link className={styles.LogoContainer} href={spaceURL(activeSpace, `/processes`)}>
-                  <Image
-                    src={imageSource}
-                    alt="PROCEED Logo"
-                    className={cn(styles.Logo, {
-                      [styles.collapsed]: collapsed,
-                    })}
-                    width={160}
-                    height={63}
-                    priority
-                  />
-                </Link>
-
-                {loggedIn ? menu : null}
+                <div
+                  style={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '8px',
+                        height: '64px',
+                      }}
+                    >
+                      <Link
+                        className={styles.LogoContainer}
+                        href={spaceURL(activeSpace, `/processes`)}
+                      >
+                        <Image
+                          src={imageSource}
+                          alt="PROCEED Logo"
+                          className={cn(styles.Logo, {
+                            [styles.collapsed]: collapsed,
+                          })}
+                          width={160}
+                          height={63}
+                          priority
+                        />
+                      </Link>
+                    </div>
+                    {loggedIn ? menu : null}
+                  </div>
+                  <AntLayout.Footer
+                    style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+                    className={cn(styles.Footer)}
+                  >
+                    PROCEED Labs GmbH
+                  </AntLayout.Footer>
+                </div>
               </AntLayout.Sider>
             )}
 
             <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
           </AntLayout>
-          <AntLayout.Footer
-            style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
-            className={cn(styles.Footer)}
-          >
-            © 2024 PROCEED Labs GmbH
-          </AntLayout.Footer>
         </AntLayout>
 
         <Drawer

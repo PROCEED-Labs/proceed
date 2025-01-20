@@ -57,19 +57,26 @@ export function getProcessMetaObjects() {
   return processMetaObjects;
 }
 
-/** Returns all processes for a user */
-export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
-  const processes = Object.values(processMetaObjects);
+function parseDates<T extends ProcessMetadata>(process: T) {
+  // The type says these fields are dates, but they're turned into a string when stored
+  process.lastEditedOn = new Date(process.lastEditedOn);
+  process.createdOn = new Date(process.createdOn);
 
-  const userProcesses = await Promise.all(
-    ability
-      .filter('view', 'Process', processes)
-      .map(async (process) =>
-        !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
-      ),
+  return process;
+}
+
+/** Returns all processes for a user */
+export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
+  const spaceProcesses = Object.values(processMetaObjects).filter(
+    (process) => process.environmentId === environmentId,
   );
 
-  return userProcesses;
+  const processes = (
+    ability ? ability.filter('view', 'Process', spaceProcesses) : spaceProcesses
+  ).map(parseDates);
+
+  if (!includeBPMN) return processes;
+  return processes.map((process) => ({ ...process, bpmn: getProcessBpmn(process.id) }));
 }
 
 export async function getProcess(processDefinitionsId: string, includeBPMN = false) {
@@ -79,7 +86,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   }
 
   const bpmn = includeBPMN ? await getProcessBpmn(processDefinitionsId) : null;
-  return { ...process, bpmn };
+  return parseDates({ ...process, bpmn });
 }
 
 /**
@@ -213,7 +220,7 @@ export function moveProcess({
 
   if (!dontUpdateOldFolder) {
     const oldFolder = foldersMetaObject.folders[process.folderId];
-    if (!oldFolder) throw new Error("Consistensy Error: Process' folder not found");
+    if (!oldFolder) throw new Error("Consistency Error: Process' folder not found");
     const processOldFolderIdx = oldFolder.children.findIndex(
       (item) => 'type' in item && item.type === 'process' && item.id === processDefinitionsId,
     );
@@ -239,7 +246,7 @@ export async function updateProcessMetaData(
 
   const newMetaData = {
     ...processMetaObjects[processDefinitionsId],
-    lastEdited: new Date().toUTCString(),
+    lastEditedOn: new Date(),
   };
 
   mergeIntoObject(newMetaData, metaChanges, true, true, true);
@@ -316,7 +323,7 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
 
   await saveProcessVersion(processDefinitionsId, versionCreatedOn, bpmn);
 
-  // add information about the new version to the meta information and inform others about its existance
+  // add information about the new version to the meta information and inform others about its existence
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
   newVersions.push({

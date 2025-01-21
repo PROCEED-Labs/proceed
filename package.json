@@ -45,6 +45,7 @@
     "dev-ms-db-migrate": "cd src/management-system-v2 && yarn prisma migrate dev",
     "dev-ms-db-use": "cd src/management-system-v2 && tsx scripts/db-helper.mts --use",
     "dev-ms-db-delete": "cd src/management-system-v2 && tsx scripts/db-helper.mts --delete",
+    "dev-ms-db-generate": "cd src/management-system-v2 && yarn prisma generate",
     "dev-ms": "cd src/management-system-v2 && yarn dev",
     "dev-ms-old": "cd src/management-system && yarn web:dev",
     "dev-ms-old-iam": "cd src/management-system && yarn web:dev-iam",

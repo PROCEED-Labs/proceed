@@ -20,6 +20,8 @@ export async function httpRequest(
   const url = new URL(endpoint, machineAddress).toString();
   const response = await fetch(url, options);
 
+  if (!response.ok) throw new Error(`HTTP request failed with status ${response.status}`);
+
   const contentType = response.headers.get('content-type') || '';
 
   if (response.headers.get('content-type')?.includes('application/json')) {

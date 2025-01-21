@@ -113,5 +113,5 @@ export async function waitForHydration(page: Page) {
     .waitFor({ state: 'visible' });
   // move the mouse away from the button to close the menu and go into a "clean" state for further testing
   await page.mouse.move(0, 0);
-  await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'hidden' });
+  await page.getByRole('menuitem', { name: 'Profile Settings' }).waitFor({ state: 'hidden' });
 }

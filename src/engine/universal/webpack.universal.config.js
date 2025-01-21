@@ -21,7 +21,7 @@ module.exports = {
             loader: 'ts-loader',
             options: {
               compilerOptions: {
-                emitDeclarationOnly: false,
+                outDir: '@types', // do to the tsconfigs ts-loader inevitably emits js files, we put them in the @types so that they are ignored
               },
             },
           },

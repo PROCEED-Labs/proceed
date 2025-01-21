@@ -158,23 +158,24 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const storeBlocklyScript = async () => {
     if (filename && isScriptValid && blocklyRef.current) {
       const blocklyCode = blocklyRef.current.getCode();
-      await deleteProcessScriptTask(processId, filename, 'ts', environment.spaceId).then(
-        (res) => res && console.error(res.error),
-      );
-      await saveProcessScriptTask(
-        processId,
-        filename,
-        'xml',
-        blocklyCode.xml,
-        environment.spaceId,
-      ).then((res) => res && console.error(res.error));
-      await saveProcessScriptTask(
-        processId,
-        filename,
-        'js',
-        blocklyCode.js,
-        environment.spaceId,
-      ).then((res) => res && console.error(res.error));
+
+      const scriptTaskStoragePromises = [
+        deleteProcessScriptTask(processId, filename, 'ts', environment.spaceId),
+        saveProcessScriptTask(processId, filename, 'xml', blocklyCode.xml, environment.spaceId),
+        saveProcessScriptTask(processId, filename, 'js', blocklyCode.js, environment.spaceId),
+      ];
+
+      return Promise.allSettled(scriptTaskStoragePromises).then((results) => {
+        results.forEach((res) => {
+          if (res.status === 'fulfilled' && res.value) {
+            console.error(res.value.error);
+          }
+
+          if (res.status === 'rejected') {
+            console.error(res.reason);
+          }
+        });
+      });
     }
   };
 

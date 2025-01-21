@@ -15,12 +15,12 @@ type ActionButtonsProps = {
 const ActionButtons: React.FC<ActionButtonsProps> = ({ editable, options, actions }) => {
   return (
     <Space.Compact className={styles.ActionButtons} size="small">
-      {options.includes('copy') && (
+      {editable && options.includes('copy') && (
         <Tooltip title="Copy">
           <Button icon={<CopyOutlined />} type="text" onClick={actions?.copy} />
         </Tooltip>
       )}
-      {options.includes('edit') && (
+      {editable && options.includes('edit') && (
         <Tooltip title="Edit">
           <Button icon={<EditOutlined />} type="text" onClick={actions?.edit} />
         </Tooltip>

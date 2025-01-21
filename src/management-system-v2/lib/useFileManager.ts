@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
 import {
@@ -9,9 +9,9 @@ import {
 } from './data/file-manager-facade';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
-const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
 
 interface FileManagerHookProps {
   entityType: EntityType;
@@ -27,6 +27,8 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
   const queryClient = useQueryClient();
   const { spaceId } = useEnvironment();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const env = use(EnvVarsContext);
+  const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
 
   // Upload Mutation
   const uploadMutation = useMutation<

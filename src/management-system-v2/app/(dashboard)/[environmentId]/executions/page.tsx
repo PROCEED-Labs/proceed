@@ -28,7 +28,7 @@ function getDeploymentNames(deployments: DeployedProcessInfo[]) {
 }
 
 export default async function ExecutionsPage({ params }: { params: { environmentId: string } }) {
-  if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) {
+  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 

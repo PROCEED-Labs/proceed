@@ -430,7 +430,7 @@ javascriptGenerator.forBlock['variables_set'] = function (block) {
     BlocklyJavaScript.Order.ATOMIC,
   );
 
-  const code = `variable.set("${variableName}", ${variableValue});\n`;
+  const code = `variable.set("${variableName}", ${variableValue || null});\n`;
   return code;
 };
 

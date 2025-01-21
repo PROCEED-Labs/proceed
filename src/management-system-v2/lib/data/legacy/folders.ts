@@ -109,13 +109,19 @@ export async function getFolderById(folderId: string, ability?: Ability) {
   return folderData.folder as Folder;
 }
 
-export function getFolders(spaceId?: string) {
-  const folders = Object.values(foldersMetaObject.folders);
-  const selection = spaceId
-    ? folders.filter((folder) => folder?.folder.environmentId === spaceId)
-    : folders;
+export function getFolders(environmentId?: string, ability?: Ability) {
+  const _folders = environmentId
+    ? Object.values(foldersMetaObject.folders).filter(
+        (folder) => folder?.folder.environmentId === environmentId,
+      )
+    : Object.values(foldersMetaObject.folders);
 
-  return selection.map((folder) => folder!.folder);
+  const folders = _folders.map((f) => f!.folder);
+
+  if (ability)
+    return folders.filter((folder) => ability.can('view', toCaslResource('Folder', folder)));
+
+  return folders;
 }
 
 export async function getFolderChildren(folderId: string, ability?: Ability) {
@@ -243,7 +249,7 @@ function _deleteFolder(
 
 export async function updateFolderMetaData(
   folderId: string,
-  newMetaDataInput: Partial<FolderUserInput>,
+  newMetaDataInput: Partial<Omit<FolderInput, 'parentId'>>,
   ability?: Ability,
 ) {
   const folderData = foldersMetaObject.folders[folderId];
@@ -252,12 +258,15 @@ export async function updateFolderMetaData(
   if (ability && !ability.can('update', toCaslResource('Folder', folderData.folder)))
     throw new UnauthorizedError();
 
-  const newMetaData = FolderUserInputSchema.partial().parse(newMetaDataInput);
-  if (
-    newMetaDataInput.environmentId &&
-    newMetaDataInput.environmentId != folderData.folder.environmentId
-  )
-    throw new Error('environmentId cannot be changed');
+  const newMetaData = FolderSchema.omit({
+    parentId: true,
+    id: true,
+    // if there is an ability, we interpret this as a user updating the folder
+    environmentId: ability ? true : undefined,
+    createdBy: ability ? true : undefined,
+  })
+    .partial()
+    .parse(newMetaDataInput);
 
   const newFolder: Folder = {
     ...folderData.folder,
@@ -295,7 +304,8 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
   const newParentData = foldersMetaObject.folders[newParentId];
   if (!newParentData) throw new Error('New parent folder not found');
 
-  if (newParentData.folder.environmentId !== folderData.folder.environmentId)
+  // only perform this check when an ability is present (it means that a user is moving the folder)
+  if (ability && newParentData.folder.environmentId !== folderData.folder.environmentId)
     throw new Error('Cannot move folder to a different environment');
 
   const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
@@ -326,6 +336,7 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
   store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
   folderData.folder.parentId = newParentId;
+  folderData.folder.environmentId = newParentData.folder.environmentId;
   newParentData.children.push({ type: 'folder', id: folderData.folder.id });
   newParentData.folder.lastEditedOn = new Date();
   store.update('folders', newParentData.folder.id, newParentData.folder);

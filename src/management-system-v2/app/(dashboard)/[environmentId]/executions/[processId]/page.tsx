@@ -14,15 +14,11 @@ import { getCurrentEnvironment } from '@/components/auth';
 // TODO: use something like Promise.any to resolve when we find the process
 async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
   const [deployedInProceed, deployedInSpaceEngines] = await Promise.all([
-    (async () => {
-      const engines = await getProceedEngines();
-      return await getDeployments(engines);
-    })(),
-    (async () => {
-      const spaceEngines = await getSpaceEngines(spaceId);
+    getProceedEngines().then(engines => getDeployments(engines)),
+    getSpaceEngines(spaceId).then(spaceEngines => {
       if (isUserErrorResponse(spaceEngines)) return [];
       return await getDeployedProcessesFromSpaceEngines(spaceEngines);
-    })(),
+    }),
   ]);
 
   const deployments = deployedInProceed.concat(deployedInSpaceEngines);

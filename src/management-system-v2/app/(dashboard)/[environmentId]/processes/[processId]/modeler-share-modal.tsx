@@ -1,6 +1,6 @@
 'use client';
 import React, { FC, useState } from 'react';
-import { Modal, Button, Tooltip, Space, Divider, message, Grid, App } from 'antd';
+import { Modal, Button, Tooltip, Space, Divider, Grid, App, Spin } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -9,7 +9,6 @@ import {
   RightOutlined,
   CopyOutlined,
   FileImageOutlined,
-  FilePdfOutlined,
 } from '@ant-design/icons';
 import useModelerStateStore from './use-modeler-state-store';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
@@ -27,7 +26,6 @@ import { getProcess } from '@/lib/data/processes';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
-import { set } from 'zod';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -54,18 +52,21 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
   const { message } = App.useApp();
   const [processData, setProcessData] = useState<Omit<ProcessMetadata, 'bpmn'>>();
+  const [checkingIfProcessShared, setCheckingIfProcessShared] = useState(false);
 
   const checkIfProcessShared = async () => {
-    const res = await getProcess(processId as string, environment.spaceId);
-    if ('error' in res) {
-      console.log('Failed to fetch process');
-    } else {
-      const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
-      setSharedAs(sharedAs as SharedAsType);
-      setShareToken(shareToken);
-      setShareTimestamp(shareTimestamp);
-      setAllowIframeTimestamp(allowIframeTimestamp);
-    }
+    try {
+      setCheckingIfProcessShared(true);
+      const res = await getProcess(processId as string, environment.spaceId);
+      if (!('error' in res)) {
+        const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
+        setSharedAs(sharedAs as SharedAsType);
+        setShareToken(shareToken);
+        setShareTimestamp(shareTimestamp);
+        setAllowIframeTimestamp(allowIframeTimestamp);
+      }
+    } catch (_) {}
+    setCheckingIfProcessShared(false);
   };
 
   const getProcessData = () => {
@@ -370,10 +371,10 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         </Space>
 
         {breakpoint.lg && activeIndex !== null && optionsDesktop[activeIndex].subOption && (
-          <>
+          <Spin spinning={checkingIfProcessShared}>
             <Divider style={{ backgroundColor: '#000' }} />
             {optionsDesktop[activeIndex].subOption}
-          </>
+          </Spin>
         )}
       </Modal>
       <Tooltip title="Share">

@@ -135,7 +135,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
         checked={embeddingUrl.length > 0 && allowIframeTimestamp > 0}
         onChange={(e) => handleAllowEmbeddingChecked(e)}
       >
-        Allow iframe Embedding
+        Enable iFrame Embedding
       </Checkbox>
       {embeddingUrl.length > 0 ? (
         <>

@@ -2,12 +2,14 @@
   "name": "web",
   "version": "0.0.1",
   "description": "Native part of PROCEED engine for web browser.",
-  "main": "index.js",
+  "main": "./src/index.js",
+  "types": "./@types/src/index.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "serve": "webpack --config webpack.config.js && node server.js"
+    "build": "webpack --config webpack.config.js && tsc",
+    "serve": "webpack --config webpack.config.js && node server.js",
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "@proceed/native-capabilities": "^1.0.0",

@@ -2,12 +2,15 @@
   "name": "@proceed/decider",
   "version": "1.0.0",
   "description": "This module handles the evaluations of task, process, user and environment constraints",
-  "main": "module.js",
+  "main": "./module.js",
+  "types": "./@types/module.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "scripts": {
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "@proceed/capabilities": "^1.0.0",

@@ -2,7 +2,8 @@
   "name": "@proceed/native-koa",
   "version": "1.0.0",
   "description": "Native module that implements the `serve` and `respond` commands.",
-  "main": "src/index.js",
+  "main": "./src/index.js",
+  "types": "./@types/index.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {
@@ -13,5 +14,9 @@
     "koa-bodyparser": "^4.2.1",
     "busboy": "0.3.1",
     "stoppable": "^1.1.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   }
 }

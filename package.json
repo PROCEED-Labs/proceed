@@ -1,5 +1,6 @@
 {
   "private": true,
+  "name": "PROCEED",
   "workspaces": {
     "packages": [
       "src/engine/universal/*",
@@ -51,6 +52,7 @@
     "dev-web": "yarn build && cd src/engine/native/web/server && yarn serve",
     "dev-many": "node src/engine/e2e_tests/process/deployment/startEngines.js",
     "build": "cd src/engine/native/node && webpack --config webpack.native.config.js && webpack --config webpack.injector.config.ts && cd ../../universal && NODE_OPTIONS=--openssl-legacy-provider webpack --config webpack.universal.config.js",
+    "build-engine-types": "turbo build --filter \"./src/engine/**/\"",
     "build-ms": "cd src/management-system-v2 && yarn build",
     "build-web": "yarn build && cd src/engine/native/web/server && yarn build",
     "docker:run": "docker container run --publish 33029:33029 --rm --network host --detach --name engine proceed/engine:latest",
@@ -65,6 +67,7 @@
     "jsdoc": "jsdoc -c ./jsdoc.config.json --pedantic",
     "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",
     "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug",
+    "postinstall": "yarn build && yarn build-engine-types",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -73,7 +76,8 @@
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
-      "pre-push": "yarn test-engine && yarn test-ms"
+      "pre-push": "yarn test-engine && yarn test-ms",
+      "post-merge": "yarn build && yarn build-engine-types"
     }
   },
   "devDependencies": {
@@ -122,6 +126,7 @@
     "tsx": "4.19.2"
   },
   "dependencies": {
-    "react-resizable": "^3.0.5"
+    "react-resizable": "^3.0.5",
+    "turbo": "2.1.1"
   }
 }

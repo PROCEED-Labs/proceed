@@ -2,11 +2,14 @@
   "name": "@proceed/machine",
   "version": "1.0.0",
   "description": "monitoring and configuration",
-  "main": "module.js",
+  "main": "./module.js",
+  "types": "./@types/module.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "@proceed/system": "^1.0.0"

@@ -8,5 +8,9 @@
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
     "isolated-vm": "^5.0.1"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   }
 }

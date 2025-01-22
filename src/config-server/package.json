@@ -6,6 +6,7 @@
   "description": "The central storage server for advanced use cases in the PROCEED project. It mainly stores config data used for multiple companies to cooperate",
   "license": "MIT",
   "main": "./configServer.js",
+  "types": "./@types/configServer.d.ts",
   "scripts": {
     "dev": "node ./configServer.js"
   },
@@ -26,5 +27,8 @@
     "express": "^4.17.1",
     "request": "^2.88.0"
   },
-  "devDependencies": {}
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  }
 }

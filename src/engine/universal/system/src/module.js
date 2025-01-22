@@ -1,11 +1,15 @@
 const Network = require('./network');
 const HTTP = require('./http');
 const Data = require('./data');
+/** @type{import('./capability.ts').default} */
 const Capability = require('./capability.ts').default;
+/** @type{import('./console.ts').default} */
 const Console = require('./console.ts').default;
+/** @type{import('./config.ts').default} */
 const Config = require('./config.ts').default;
 const Machine = require('./machine');
 const Discovery = require('./discovery');
+/** @type{import('./timer.ts').default} */
 const Timer = require('./timer.ts').default;
 const Messaging = require('./messaging');
 const { setIPC } = require('./system.ts');

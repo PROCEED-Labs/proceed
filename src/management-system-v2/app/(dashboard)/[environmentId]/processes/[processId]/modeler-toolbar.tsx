@@ -118,7 +118,9 @@ const ModelerToolbar = ({
           await modeler?.loadBPMN(newBpmn);
         }
       }
+
       router.refresh();
+      message.success('Version Created');
     } catch (_) {
       message.error('Something went wrong');
     }

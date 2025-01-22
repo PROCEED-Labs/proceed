@@ -1,5 +1,4 @@
-import { ButtonProps } from '@react-email/components';
-import { FormInstance, Form, Button } from 'antd';
+import { FormInstance, Form, Button, ButtonProps } from 'antd';
 import React, { useState } from 'react';
 
 const FormSubmitButton = <TData = any,>({
@@ -44,8 +43,8 @@ const FormSubmitButton = <TData = any,>({
       type="primary"
       htmlType="submit"
       disabled={!submittable}
-      onClick={() => {
-        onSubmit?.(values);
+      onClick={async () => {
+        await onSubmit?.(values);
         form.resetFields();
       }}
     >

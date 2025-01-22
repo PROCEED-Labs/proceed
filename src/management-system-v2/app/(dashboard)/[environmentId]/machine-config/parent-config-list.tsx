@@ -18,7 +18,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
 import { useCallback, useState } from 'react';
-import { ParameterContent, ParentConfig } from '@/lib/data/machine-config-schema';
+import { ConfigCategories, ParameterContent, ParentConfig } from '@/lib/data/machine-config-schema';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
@@ -51,6 +51,7 @@ import { generateDateString } from '@/lib/utils';
 import ConfigModal from '@/components/config-modal';
 import { defaultParameter } from './configuration-helper';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { validate } from 'uuid';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;
@@ -224,7 +225,13 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
    * @param values List of Value-objects, each containing an ID of a config from which values are to be copied
    */
   async function handleCopy(
-    values: { name: string; description: string; originalId: string }[],
+    values: {
+      name: string;
+      shortname: string;
+      categories: Array<ConfigCategories>;
+      description: string;
+      originalId: string;
+    }[],
   ): Promise<void> {
     await asyncForEach(values, async (valueFromModal) => {
       copyParentConfig(
@@ -234,6 +241,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
           metadata: {
             description: defaultParameter('description', valueFromModal.description),
           },
+          categories: [],
         },
         space.spaceId,
       );
@@ -245,10 +253,11 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
   const importItems = async (file: File) => {
     try {
       const text = await file.text();
-      const importedData: ParentConfig[] = JSON.parse(text);
+      const importedData: ParentConfig[] = JSON.parse(text); //TODO PARSE SCHEMA
 
       await asyncForEach(importedData, async (item) => {
-        const add_return = await addParentConfig(item, space.spaceId, item);
+        if (validate(item.id)) throw new Error('Invalid UUID.');
+        const add_return = await addParentConfig(item, space.spaceId);
         if ('error' in add_return) {
           throw add_return.error.message;
         }
@@ -449,6 +458,8 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
         onCancel={() => setOpenCopyModal(false)}
         initialData={copySelection.map((config) => ({
           name: `${config.name.value} (Copy)`,
+          shortname: `${config.shortname} (Copy)`,
+          categories: config.categories,
           description: config.metadata.description?.content[0].value ?? '',
           originalId: config.id,
         }))}

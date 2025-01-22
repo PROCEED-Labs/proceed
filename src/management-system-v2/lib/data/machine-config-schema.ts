@@ -15,6 +15,12 @@ export const CategoriesZod = z.enum([
   'Category7',
   'Category8',
 ]);
+
+export const categoriesList = CategoriesZod.options.map((v) => ({
+  label: v,
+  value: v,
+}));
+
 export type ConfigCategories = z.infer<typeof CategoriesZod>;
 
 // =============== schemas ===============

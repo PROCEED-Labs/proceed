@@ -1,11 +1,9 @@
-//TODO
-
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, Checkbox } from 'antd';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Checkbox, Select } from 'antd';
 import { UserError } from '@/lib/user-error';
-import { useAddControlCallback } from '@/lib/controls-store';
+import { categoriesList } from '@/lib/data/machine-config-schema';
 
 type ConfigModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -138,6 +136,27 @@ const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInpu
         rules={[{ required: true, message: 'Please fill out the Configuration Name' }]}
       >
         <Input />
+      </Form.Item>
+      <Form.Item
+        name={[index, 'shortname']}
+        label="ID"
+        rules={[{ required: true, message: 'Please fill out the ID' }]}
+      >
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name={[index, 'categories']}
+        label="Categories"
+        rules={[{ required: true, message: 'Please select a Category' }]}
+      >
+        <Select
+          mode="multiple"
+          allowClear
+          style={{ width: '100%' }}
+          placeholder="Please select"
+          defaultValue={[]}
+          options={categoriesList}
+        />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}

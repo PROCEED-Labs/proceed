@@ -72,13 +72,15 @@ export function defaultConfiguration(
 }
 
 export const defaultParentConfiguration = (
-  environmentId: string,
-  name: string,
-  description: string,
   folderId: string,
+  environmentId: string,
+  name?: string,
+  shortname?: string,
+  categories?: Array<ConfigCategories>,
+  description?: string,
 ): ParentConfig => {
   return {
-    ...defaultConfiguration(environmentId, name, description),
+    ...defaultConfiguration(environmentId, name, shortname, categories, description),
     type: 'config',
     folderId,
     targetConfig: undefined,

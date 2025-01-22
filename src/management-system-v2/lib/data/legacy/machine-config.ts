@@ -19,7 +19,7 @@ import {
 } from '../machine-config-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { UserErrorType, userError } from '@/lib/user-error';
-import { v4 } from 'uuid';
+import { v4, validate } from 'uuid';
 import eventHandler from './eventHandler.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
@@ -506,62 +506,31 @@ export async function copyParentConfig(
 
 /*************************** Element Addition *****************************/
 
-export async function addParentConfig(
-  machineConfigInput: ParentConfig,
-  environmentId: string,
-  base?: ParentConfig,
-) {
+export async function addParentConfig(machineConfigInput: ParentConfig, environmentId: string) {
   try {
-    const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
-    const date = new Date();
-    const metadata: ParentConfig = {
-      ...({
-        id: v4(),
-        type: 'config',
-        name: 'Default Parent Configuration',
-        categories: [],
-        variables: [],
-        createdBy: environmentId,
-        lastEditedBy: environmentId,
-        metadata: {},
-        departments: [],
-        inEditingBy: [],
-        createdOn: date,
-        lastEditedOn: date,
-        sharedAs: 'protected',
-        shareTimestamp: 0,
-        allowIframeTimestamp: 0,
-        versions: [],
-        folderId: '',
-        targetConfig: undefined,
-        machineConfigs: [],
-        environmentId: environmentId,
-      } as ParentConfig),
-      ...parentConfigData,
-      ...(base ? base : {}),
-    };
+    const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput) as ParentConfig;
 
-    metadata.folderId = (await getRootFolder(environmentId)).id;
-    metadata.environmentId = environmentId;
+    parentConfigData.folderId = (await getRootFolder(environmentId)).id;
+    parentConfigData.environmentId = environmentId;
 
-    const folderData = foldersMetaObject.folders[metadata.folderId];
+    const folderData = foldersMetaObject.folders[parentConfigData.folderId];
     if (!folderData) throw new Error('Folder not found');
     let idCollision = false;
-    const { id: parentConfigId } = metadata;
-    if (storedData.parentConfigs[parentConfigId]) {
+    const { id: parentConfigId } = parentConfigData;
+    if (storedData.parentConfigs[parentConfigId] || !validate(parentConfigId)) {
       // throw new Error(`A parent configuration with the id ${parentConfigId} already exists!`);
       idCollision = true;
     }
 
-    parentConfigToStorage(metadata, idCollision);
+    parentConfigToStorage(parentConfigData, idCollision);
     store.set('techData', 'parentConfigs', storedData.parentConfigs);
     store.set('techData', 'machineConfigs', storedData.machineConfigs);
     store.set('techData', 'targetConfigs', storedData.targetConfigs);
     store.set('techData', 'parameters', storedData.parameters);
 
-    eventHandler.dispatch('machineConfigAdded', { machineConfig: metadata });
+    eventHandler.dispatch('machineConfigAdded', { machineConfig: parentConfigData });
 
-    return metadata;
+    return parentConfigData;
   } catch (e: unknown) {
     const error = e as Error;
     return userError(error.message ?? "Couldn't create Machine Config");

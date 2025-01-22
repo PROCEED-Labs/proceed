@@ -10,6 +10,7 @@ import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 import { defaultParentConfiguration } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { ConfigCategories } from '@/lib/data/machine-config-schema';
 
 type ConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -31,14 +32,23 @@ export const ConfigCreationModal: React.FC<
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
 
-  const createNewConfig = async (values: { name: string; description: string }[]) => {
+  const createNewConfig = async (
+    values: {
+      name: string;
+      shortname: string;
+      categories: Array<ConfigCategories>;
+      description: string;
+    }[], //TODO - I don't REALLY know why this is an array
+  ) => {
     const config = await (customAction?.(values[0]) ??
       addParentConfig(
         defaultParentConfiguration(
+          folderId,
           environment.spaceId,
           values[0].name,
+          values[0].shortname,
+          values[0].categories,
           values[0].description,
-          folderId,
         ),
         environment.spaceId,
       ).then((res) => (Array.isArray(res) ? res[0] : res)));

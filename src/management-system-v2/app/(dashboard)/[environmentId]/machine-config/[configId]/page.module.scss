@@ -4,6 +4,13 @@
   display: flex;
   flex-direction: row;
 
+  .NestingCard {
+    padding-right: 0;
+    :global(.ant-card-body) {
+      padding-right: 0;
+    }
+  }
+
   .CustomBox {
     padding: 0;
     border-radius: 8px;

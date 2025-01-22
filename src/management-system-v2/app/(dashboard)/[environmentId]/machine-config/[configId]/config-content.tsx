@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { KeyOutlined, EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import { Button, Input, Col, Row, Tooltip, Select, SelectProps, Tag, Space } from 'antd';
+import { Button, Input, Col, Row, Tooltip, Space, Select, SelectProps, Tag } from 'antd';
 import { defaultParameter } from '../configuration-helper';
 import AddButton from './add-button';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
@@ -42,8 +42,9 @@ const Content: React.FC<MachineDataViewProps> = ({
   const addParameter = async (values: CreateParameterModalReturnType[]) => {
     const valuesFromModal = values[0];
     const newParameter = defaultParameter(
-      valuesFromModal.displayName,
+      valuesFromModal.key ?? '',
       valuesFromModal.value,
+      valuesFromModal.displayName,
       valuesFromModal.language,
       valuesFromModal.unit,
     );
@@ -65,6 +66,7 @@ const Content: React.FC<MachineDataViewProps> = ({
   return (
     <>
       {(idVisible || editable) && contentType === 'metadata' && (
+        // Row: ID
         <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
           <Col span={3} className="gutter-row">
             Internal ID
@@ -74,14 +76,14 @@ const Content: React.FC<MachineDataViewProps> = ({
           </Col>
           {editable && (
             <Col span={1}>
-              <Tooltip title="Hide Internal ID">
+              <Tooltip title={idVisible ? 'Hide Internal ID' : 'Show Internal ID'}>
                 <Button
                   size="small"
                   disabled={!editable}
                   onClick={() => {
                     setIdVisible(!idVisible);
                   }}
-                  icon={idVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                  icon={idVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
                   type="text"
                 />
               </Tooltip>
@@ -90,35 +92,39 @@ const Content: React.FC<MachineDataViewProps> = ({
         </Row>
       )}
 
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-        {categories &&
-          categories.map((cat) => (
-            <Space>
-              <Tag color="orange">{cat}</Tag>
-            </Space>
-          ))}
-      </Row>
-
-      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
-        <Col span={3} className="gutter-row">
-          ID
-        </Col>
-        <Col span={21} className="gutter-row">
-          {shortname}
-        </Col>
-      </Row>
-      {Object.entries(data).map(([key, val]) => (
-        <CustomField
-          parentConfig={parentConfig}
-          key={key}
-          keyId={key}
-          parameter={val}
-          editable={editable}
-        />
-      ))}
-      {editable && (
+      <Space direction="vertical" style={{ display: 'flex' }}>
         <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-          {/* <Col span={3} className="gutter-row" /> */}
+          {categories &&
+            categories.map((cat) => (
+              <Space>
+                <Tag color="orange">{cat}</Tag>
+              </Space>
+            ))}
+        </Row>
+
+        <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
+          <Col span={3} className="gutter-row">
+            ID
+          </Col>
+          <Col span={21} className="gutter-row">
+            {shortname}
+          </Col>
+        </Row>
+        {Object.entries(data).map(([key, val]) => (
+          // Rows: Metadata, Parameter, Nested Parameters, Linked Parameter
+          <CustomField
+            parentConfig={parentConfig}
+            key={key}
+            keyId={key}
+            parameter={val}
+            editable={editable}
+          />
+        ))}
+      </Space>
+
+      {editable && (
+        // Row: Add Meta/Parameter
+        <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
           <Col span={21} className="gutter-row">
             <AddButton label={addButtonTitle} onClick={() => setCreateFieldOpen(true)} />
           </Col>

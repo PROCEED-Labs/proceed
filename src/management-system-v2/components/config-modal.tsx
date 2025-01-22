@@ -3,23 +3,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Modal,
-  Form,
-  Input,
-  App,
-  Collapse,
-  CollapseProps,
-  Typography,
-  Checkbox,
-  Select,
-  SelectProps,
-} from 'antd';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, Checkbox } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
-import { CategoriesZod } from '@/lib/data/machine-config-schema';
 
-type MachineConfigModalProps<T extends { name: string; description: string }> = {
+type ConfigModalProps<T extends { name: string; description: string }> = {
   open: boolean;
   title: string;
   okText?: string;
@@ -30,7 +18,7 @@ type MachineConfigModalProps<T extends { name: string; description: string }> = 
   targetConfigExists?: boolean;
 };
 
-const MachineConfigModal = <T extends { name: string; description: string }>({
+const ConfigModal = <T extends { name: string; description: string }>({
   open,
   title,
   okText,
@@ -39,7 +27,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   initialData,
   configType,
   targetConfigExists,
-}: MachineConfigModalProps<T>) => {
+}: ConfigModalProps<T>) => {
   const [form] = Form.useForm();
   const formRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
@@ -56,7 +44,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   const items: CollapseProps['items'] = initialData?.length
     ? initialData?.map((data, index) => ({
         label: data.name,
-        children: <MachineConfigInputs index={index} />,
+        children: <ConfigInputs index={index} />,
       }))
     : undefined;
 
@@ -114,7 +102,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         form={form}
         ref={formRef}
         layout="vertical"
-        name="machine_config_form"
+        name="config_form"
         initialValues={
           initialData ?? (configType === 'machine' && targetConfigExists)
             ? [{ copyTarget: true }]
@@ -126,11 +114,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <MachineConfigInputs
-            index={0}
-            configType={configType}
-            targetConfigExists={targetConfigExists}
-          />
+          <ConfigInputs index={0} configType={configType} targetConfigExists={targetConfigExists} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -139,25 +123,13 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   );
 };
 
-type MachineConfigInputsProps = {
+type ConfigModalInputsProps = {
   index: number;
   configType?: string;
   targetConfigExists?: boolean;
 };
 
-const MachineConfigInputs = ({
-  index,
-  configType,
-  targetConfigExists,
-}: MachineConfigInputsProps) => {
-  const options: SelectProps['options'] = [];
-  CategoriesZod.options.forEach((v) => {
-    options.push({
-      label: v,
-      value: v,
-    });
-  });
-
+const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInputsProps) => {
   return (
     <>
       <Form.Item
@@ -166,27 +138,6 @@ const MachineConfigInputs = ({
         rules={[{ required: true, message: 'Please fill out the Configuration Name' }]}
       >
         <Input />
-      </Form.Item>
-      <Form.Item
-        name={[index, 'shortname']}
-        label="ID"
-        rules={[{ required: true, message: 'Please fill out the ID' }]}
-      >
-        <Input />
-      </Form.Item>
-      <Form.Item
-        name={[index, 'categories']}
-        label="Categories"
-        rules={[{ required: true, message: 'Please select a Category' }]}
-      >
-        <Select
-          mode="multiple"
-          allowClear
-          style={{ width: '100%' }}
-          placeholder="Please select"
-          defaultValue={[]}
-          options={options}
-        />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
@@ -211,4 +162,4 @@ const MachineConfigInputs = ({
   );
 };
 
-export default MachineConfigModal;
+export default ConfigModal;

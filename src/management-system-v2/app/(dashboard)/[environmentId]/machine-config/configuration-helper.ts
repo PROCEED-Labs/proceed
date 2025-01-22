@@ -12,15 +12,16 @@ import { v4 } from 'uuid';
 export function defaultParameter(
   key: string,
   val?: string,
+  disName?: string,
   language?: Localization,
   unit?: string,
 ): Parameter {
   return {
     id: v4(),
-    type: 'https://schema.org/' + key,
+    type: 'https://schema.org/' + disName,
     content: [
       {
-        displayName: key[0].toUpperCase() + key.slice(1),
+        displayName: disName ?? 'New ' + key + ' entry',
         value: val ?? '',
         language: language ?? 'en',
         unit: unit ?? '',
@@ -28,6 +29,7 @@ export function defaultParameter(
     ],
     linkedParameters: [],
     parameters: {},
+    key: key,
   };
 }
 
@@ -69,8 +71,19 @@ export function defaultConfiguration(
   return config;
 }
 
-export const generateUniqueId = (): string => {
-  return '_' + Math.random().toString(36).substr(2, 9);
+export const defaultParentConfiguration = (
+  environmentId: string,
+  name: string,
+  description: string,
+  folderId: string,
+): ParentConfig => {
+  return {
+    ...defaultConfiguration(environmentId, name, description),
+    type: 'config',
+    folderId,
+    targetConfig: undefined,
+    machineConfigs: [],
+  };
 };
 
 export const defaultMachineConfiguration = (

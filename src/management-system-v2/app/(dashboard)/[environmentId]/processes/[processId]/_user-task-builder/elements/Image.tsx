@@ -2,13 +2,14 @@ import { useEditor, useNode, UserComponent, Node } from '@craftjs/core';
 
 import { InputNumber } from 'antd';
 
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import { ContextMenu, Setting } from './utils';
 import ImageUpload from '@/components/image-upload';
+import BuilderContext from '../BuilderContext';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { enableUseFileManager } from 'FeatureFlags';
@@ -19,7 +20,29 @@ type ImageProps = {
   width?: number;
 };
 
-const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
+// How the image should be rendered for use outside of the MS (mainly for use on the engine)
+export const ExportImage: UserComponent<ImageProps> = ({ src, width }) => {
+  if (src) {
+    // transform the url used inside the MS into the one expected on the engine
+    // cannot use useParams and useEnvironment since this will not be used inside the context in
+    // which they are defined
+    const msUrl = src.split('/');
+    const filename = msUrl.pop();
+    msUrl.pop();
+    const definitionId = msUrl.pop();
+
+    src = `/resources/process/${definitionId}/images/${filename}`;
+  }
+
+  return (
+    <div className="user-task-form-image">
+      <img style={{ width: width && `${width}%` }} src={src ? `${src}` : fallbackImage} />
+    </div>
+  );
+};
+
+// the Image component to use in the Editor
+export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
   const { query } = useEditor();
 
   const [showResize, setShowResize] = useState(false);
@@ -36,13 +59,15 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
 
     return { isHovered: !!parent && parent.events.hovered };
   });
-  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
+
+  const { editingEnabled } = useContext(BuilderContext);
 
   const {
     fileUrl: imageUrl,
     download: getImageUrl,
     remove,
   } = useFileManager({ entityType: EntityType.PROCESS });
+
   const params = useParams<{ processId: string }>();
   const environment = useEnvironment();
 
@@ -184,7 +209,6 @@ export const ImageSettings = () => {
     width: node.data.props.width,
     dom: node.dom,
   }));
-  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   const [currentWidth, setCurrentWidth] = useState<number | null>(null);
 
@@ -213,7 +237,7 @@ export const ImageSettings = () => {
         label="Width"
         control={
           <InputNumber
-            disabled={!editingEnabled || !src}
+            disabled={!src}
             value={currentWidth}
             min={1}
             max={100}
@@ -231,7 +255,7 @@ export const ImageSettings = () => {
   );
 };
 
-Image.craft = {
+EditImage.craft = {
   rules: {
     canDrag: () => false,
   },
@@ -257,5 +281,3 @@ Image.craft = {
     },
   },
 };
-
-export default Image;

@@ -3,6 +3,7 @@ import { VersionedObject } from './versioned-object-schema';
 import { Prettify, WithRequired } from '../typescript-utils';
 import { LocalizationZod } from './locale';
 
+// =============== schemas ===============
 const ParameterContentZod = z.object({
   value: z.string(),
   displayName: z.string(),
@@ -16,6 +17,7 @@ const ParameterZod = z.object({
   content: z.array(ParameterContentZod),
   linkedParameters: z.array(z.string()),
   parameters: z.record(z.string(), z.any()),
+  key: z.string(),
 });
 
 export const AbstractConfigInputSchema = z.object({
@@ -26,59 +28,57 @@ export const AbstractConfigInputSchema = z.object({
   version: z.string().optional(),
 });
 
-export const StoredParameterZod = ParameterZod.extend({
-  parameters: z.array(z.string()),
-  key: z.string(),
-  parentId: z.string(),
-  // TODO: change parent-config type to config
-  parentType: z.enum(['parameter', 'machine-config', 'target-config', 'parent-config']),
-});
-const StoredAbstractConfigInputSchema = AbstractConfigInputSchema.extend({
-  metadata: z.array(z.string()),
-});
-
-export type AbstractConfigInput = z.infer<typeof AbstractConfigInputSchema>;
-export type StoredAbstractConfigInput = z.infer<typeof StoredAbstractConfigInputSchema>;
-
-const AbstractConfigServerInputSchema = AbstractConfigInputSchema.extend({
-  environmentId: z.string(),
-});
-export type AbstractConfigServerInput = z.infer<typeof AbstractConfigServerInputSchema>;
-
-const StoredAbstractConfigServerInputSchema = StoredAbstractConfigInputSchema.extend({
-  environmentId: z.string(),
-});
-export type StoredAbstractConfigServerInput = z.infer<typeof StoredAbstractConfigServerInputSchema>;
-
-export type Metadata = {
+type Metadata = {
   createdOn: Date;
   createdBy: string;
   lastEditedBy: string;
   lastEditedOn: Date;
 };
 
+// =============== types ===============
+export type AbstractConfigInput = z.infer<typeof AbstractConfigInputSchema>;
 export type ParameterContent = z.infer<typeof ParameterContentZod>;
-
 export type Parameter = z.infer<typeof ParameterZod>;
-export type StoredParameter = z.infer<typeof StoredParameterZod>;
 
-export type AbstractConfigMetadata = Prettify<
+const AbstractConfigServerInputSchema = AbstractConfigInputSchema.extend({
+  environmentId: z.string(),
+});
+type AbstractConfigServerInput = z.infer<typeof AbstractConfigServerInputSchema>;
+export type AbstractConfig = Prettify<
   WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
     Metadata &
     VersionedObject<'config' | 'target-config' | 'machine-config'>
 >;
-export type StoredAbstractConfigMetaData = WithRequired<
-  StoredAbstractConfigServerInput,
-  'id' | 'name' | 'folderId'
-> &
-  Metadata &
-  VersionedObject<'config' | 'target-config' | 'machine-config'>;
 
 type WithParameters = {
   parameters: {
     [key: string]: Parameter;
   };
 };
+
+export type MachineConfig = Prettify<
+  AbstractConfig & WithParameters & VersionedObject<'machine-config'>
+>;
+
+export type TargetConfig = Prettify<
+  AbstractConfig & WithParameters & VersionedObject<'target-config'>
+>;
+
+export type ParentConfig = Prettify<
+  AbstractConfig & {
+    targetConfig: TargetConfig | undefined;
+    machineConfigs: MachineConfig[];
+  } & VersionedObject<'config'>
+>;
+
+// =============== schemas and types for storage ===============
+
+export const StoredParameterZod = ParameterZod.extend({
+  parameters: z.array(z.string()),
+  parentId: z.string(),
+  // TODO: change parent-config type to config
+  parentType: z.enum(['parameter', 'machine-config', 'target-config', 'parent-config']),
+});
 
 type WithParameterReferences = {
   parameters: string[];
@@ -88,101 +88,36 @@ type WithParentReference = {
   parentId: string;
 };
 
-export type MachineConfigMetadata = Prettify<
-  AbstractConfigMetadata & WithParameters & VersionedObject<'machine-config'>
->;
-export type StoredMachineConfigdata = Prettify<
+export type StoredParameter = z.infer<typeof StoredParameterZod>;
+
+const StoredAbstractConfigServerInputSchema = AbstractConfigInputSchema.extend({
+  metadata: z.array(z.string()),
+  environmentId: z.string(),
+});
+type StoredAbstractConfigServerInput = z.infer<typeof StoredAbstractConfigServerInputSchema>;
+type StoredAbstractConfigMetaData = WithRequired<
+  StoredAbstractConfigServerInput,
+  'id' | 'name' | 'folderId'
+> &
+  Metadata &
+  VersionedObject<'config' | 'target-config' | 'machine-config'>;
+
+export type StoredMachineConfig = Prettify<
   StoredAbstractConfigMetaData &
     WithParameterReferences &
     WithParentReference &
     VersionedObject<'machine-config'>
 >;
-
-export type TargetConfigMetadata = Prettify<
-  AbstractConfigMetadata & WithParameters & VersionedObject<'target-config'>
->;
-export type StoredTargetConfigMetadata = Prettify<
+export type StoredTargetConfig = Prettify<
   StoredAbstractConfigMetaData &
     WithParameterReferences &
     WithParentReference &
     VersionedObject<'target-config'>
 >;
 
-export type ParentConfigMetadata = Prettify<
-  AbstractConfigMetadata & {
-    targetConfig: TargetConfigMetadata | undefined;
-    machineConfigs: MachineConfigMetadata[];
-  } & VersionedObject<'config'>
->;
-export type StoredParentConfigMetadata = Prettify<
+export type StoredParentConfig = Prettify<
   StoredAbstractConfigMetaData & {
     targetConfig: string | undefined;
     machineConfigs: string[];
   } & VersionedObject<'config'>
 >;
-
-export type AbstractConfig = Prettify<AbstractConfigMetadata>;
-export type MachineConfig = MachineConfigMetadata;
-export type TargetConfig = TargetConfigMetadata;
-export type ParentConfig = Prettify<ParentConfigMetadata>;
-
-export type StoredAbstractConfig = Prettify<StoredAbstractConfigMetaData>;
-export type StoredMachineConfig = Prettify<StoredMachineConfigdata>;
-export type StoredTargetConfig = Prettify<StoredTargetConfigMetadata>;
-export type StoredParentConfig = Prettify<StoredParentConfigMetadata>;
-
-//Ideal Schema (actual Metadata is missing)
-/*
-Configuration:
-{
-  id: string,                 //added
-	metaData: {
-		<Parameter>,
-		<Parameter>,
-		...
-	},
-	targetConfiguration: {
-    <Child Configuration>
-	},
-	machineConfigurations: [
-		<Child Configuration>,
-    <Child Configuration>,
-		...
-	]
-}
-
-Child Configuration:
-{
-    id: string,               //added
-		metaData: {
-			<Parameter>,
-			<Parameter>,
-			...
-		},
-		parameters: {
-			<Parameter>,
-			<Parameter>,
-			...
-		}
-},
-
-Parameter:
-<key>: { 			              //unique on this level
-	id: string 		            //unique for on all levels -> used for linking
-	type: string	            //schema.org - we probably won’t really do anything with this
-	content: [
-		{
-			displayName: string   //default: key
-			value: string
-			unit: string
-			language: enum        //for the dropdown
-		},
-		...
-	],
-	linkedParameters: [ids]
-	parameters: {
-		<Parameter>,
-		<Parameter>,
-		...
-	}
-} */

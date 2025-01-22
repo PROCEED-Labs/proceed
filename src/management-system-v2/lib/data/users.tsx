@@ -53,7 +53,12 @@ export async function deleteUser() {
           <ul>
             {conflictingOrgsNames.map((name, idx) => (
               <li>
-                {name}: <Link href={`/${e.conflictingOrgs[idx]}/iam/roles`}>manage roles here</Link>
+                {name}:{' '}
+                <Link
+                  href={`/${(e as UserHasToDeleteOrganizationsError).conflictingOrgs[idx]}/iam/roles`}
+                >
+                  manage roles here
+                </Link>
               </li>
             ))}
           </ul>
@@ -73,10 +78,15 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 
   try {
     const { userId } = await getCurrentUser();
+    const user = await getUserById(userId);
+
+    if (user?.isGuest) {
+      return userError('Guest users cannot be updated');
+    }
 
     const newUserData = AuthenticatedUserDataSchema.parse(newUserDataInput);
 
-    _updateUser(userId, newUserData);
+    _updateUser(userId, { ...newUserData });
   } catch (_) {
     return userError('Error updating user');
   }

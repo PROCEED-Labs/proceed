@@ -1,9 +1,12 @@
 import { getFolderById } from './folders';
 import eventHandler from '../legacy/eventHandler.js';
 import logger from '../legacy/logging.js';
-
 import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
-import { getDefinitionsVersionInformation } from '@proceed/bpmn-helper';
+import {
+  getDefinitionsVersionInformation,
+  getMetaDataFromElement,
+  getAllElements,
+} from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
@@ -21,11 +24,14 @@ import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { copyFile } from '../file-manager/file-manager';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 
-/** Returns all processes for a user */
-export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
-  const userProcesses = await db.process.findMany({
+/**
+ * Returns all processes in an environment
+ * If you want the processes for a specific user, you have to provide his ability
+ * */
+export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
+  const spaceProcesses = await db.process.findMany({
     where: {
-      creatorId: userId,
+      environmentId,
     },
     select: {
       id: true,
@@ -50,10 +56,9 @@ export async function getProcesses(userId: string, ability: Ability, includeBPMN
     },
   });
 
-  //TODO: ability check ? is it really necessary in this case?
   //TODO: add pagination
 
-  return userProcesses;
+  return ability ? ability.filter('view', 'Process', spaceProcesses) : spaceProcesses;
 }
 
 export async function getProcess(processDefinitionsId: string, includeBPMN = false) {
@@ -130,7 +135,10 @@ export async function checkIfProcessExists(processDefinitionsId: string) {
 }
 
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
-export async function addProcess(processInput: ProcessServerInput & { bpmn: string }) {
+export async function addProcess(
+  processInput: ProcessServerInput & { bpmn: string },
+  referencedProcessId?: string,
+) {
   const { bpmn } = processInput;
 
   const processData = ProcessServerInputSchema.parse(processInput);
@@ -194,11 +202,19 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
     console.error('Error adding new process: ', error);
   }
 
-  moveProcess({
+  await moveProcess({
     processDefinitionsId,
     newFolderId: metadata.folderId,
     dontUpdateOldFolder: true,
   });
+
+  //if referencedProcessId is present, the process was copied from a shared process
+  if (referencedProcessId) {
+    await db.artifact.updateMany({
+      where: { processReferences: { some: { id: referencedProcessId } } },
+      data: { refCounter: { increment: 1 } },
+    });
+  }
 
   eventHandler.dispatch('processAdded', { process: metadata });
 
@@ -344,11 +360,17 @@ export async function updateProcessMetaData(
 export async function removeProcess(processDefinitionsId: string) {
   const process = await db.process.findUnique({
     where: { id: processDefinitionsId },
+    include: { artifactProcessReferences: { include: { artifact: true } } },
   });
 
   if (!process) {
     throw new Error(`Process with id: ${processDefinitionsId} not found`);
   }
+  await Promise.all(
+    process.artifactProcessReferences.map((artifactRef) =>
+      deleteProcessArtifact(artifactRef.artifact.filePath, true),
+    ),
+  );
 
   // Remove from database
   await db.process.delete({ where: { id: processDefinitionsId } });

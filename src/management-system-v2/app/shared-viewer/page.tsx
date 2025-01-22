@@ -19,6 +19,7 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 
 import { SettingsOption } from './settings-modal';
 import { env } from '@/lib/env-vars';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 interface PageProps {
   searchParams: {
@@ -54,7 +55,7 @@ const getProcessInfo = async (
     const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
-    const ownedProcesses = await getProcesses(userId, ability);
+    const ownedProcesses = await getProcesses(spaceId, ability);
     // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
     isOwner = ownedProcesses.some((process) => process.id === definitionId);
   }
@@ -131,11 +132,10 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
 
   const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
-    return await getEnvironmentById(environmentId);
-  });
 
-  const orgEnvironments = await Promise.all(orgEnvironmentsPromises);
+  const orgEnvironments = await asyncMap(userOrgEnvs, (environmentId) =>
+    getEnvironmentById(environmentId),
+  );
 
   userEnvironments.push(...orgEnvironments);
 
@@ -211,6 +211,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
             >
               <BPMNSharedViewer
                 isOwner={isOwner}
+                userWorkspaces={userEnvironments}
                 processData={processData!}
                 defaultSettings={defaultSettings}
                 availableImports={availableImports}

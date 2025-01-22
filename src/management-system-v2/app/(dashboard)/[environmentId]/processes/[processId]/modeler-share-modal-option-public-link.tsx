@@ -8,8 +8,8 @@ import {
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 import { useEnvironment } from '@/components/auth-can';
+import { IoOpenOutline } from 'react-icons/io5';
 
-import styles from './modeler-share-modal-option-public-link.module.scss';
 import { Process } from '@/lib/data/process-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { isUserErrorResponse } from '@/lib/user-error';
@@ -164,7 +164,7 @@ const ModelerShareModalOptionPublicLink = ({
   const handleQRCodeAction = async (action: 'download' | 'copy') => {
     try {
       if (action === 'copy') {
-        const item = new ClipboardItem({ 'image/png': getQRCodeBlob() });
+        const item = new ClipboardItem({ 'image/png': await getQRCodeBlob() });
         await navigator.clipboard.write([item]);
         app.message.success('QR Code copied as PNG');
       } else if (action === 'download') {
@@ -225,15 +225,24 @@ const ModelerShareModalOptionPublicLink = ({
             </Checkbox>
           </Flex>
         </Col>
-        <Col span={18}>
+
+        <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+          <Button
+            onClick={handleOpenSharedPage}
+            disabled={isShareLinkEmpty}
+            icon={<IoOpenOutline />}
+          >
+            Open Preview
+          </Button>
           <Input
             type={'text'}
             value={shareLink}
             disabled={isShareLinkEmpty}
             name="generated share link"
-            style={{ border: '1px solid #000' }}
+            style={{ flexGrow: 1 }}
           />
-        </Col>
+        </div>
+
         <Col span={12}>
           <Flex
             vertical={false}
@@ -248,7 +257,6 @@ const ModelerShareModalOptionPublicLink = ({
                     border: '1px solid #000',
                   }}
                   value={shareLink}
-                  size={130}
                 />
               </div>
             )}
@@ -256,24 +264,12 @@ const ModelerShareModalOptionPublicLink = ({
         </Col>
         <Col span={6} style={{ paddingTop: '10px' }}>
           <Flex vertical gap={10}>
-            <Button
-              className={styles.OptionButton}
-              onClick={handleCopyLink}
-              disabled={isShareLinkEmpty}
-            >
+            <Button onClick={handleCopyLink} disabled={isShareLinkEmpty}>
               Copy link
-            </Button>
-            <Button
-              className={styles.OptionButton}
-              onClick={handleOpenSharedPage}
-              disabled={isShareLinkEmpty}
-            >
-              Open
             </Button>
             <Button
               icon={<DownloadOutlined />}
               title="Save as PNG"
-              className={styles.OptionButton}
               hidden={isShareLinkEmpty}
               onClick={() => handleQRCodeAction('download')}
               disabled={isShareLinkEmpty}
@@ -283,7 +279,6 @@ const ModelerShareModalOptionPublicLink = ({
             <Button
               icon={<CopyOutlined />}
               title="Copy as PNG"
-              className={styles.OptionButton}
               hidden={isShareLinkEmpty}
               onClick={() => handleQRCodeAction('copy')}
               disabled={isShareLinkEmpty}

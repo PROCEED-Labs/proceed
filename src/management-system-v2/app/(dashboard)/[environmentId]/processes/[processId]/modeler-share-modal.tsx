@@ -1,6 +1,6 @@
 'use client';
-import React, { FC, useState } from 'react';
-import { Modal, Button, Tooltip, Space, Divider, Grid, App, Spin } from 'antd';
+import { FC, useState } from 'react';
+import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -20,7 +20,6 @@ import {
 } from '@/lib/sharing/process-sharing';
 import { useParams } from 'next/navigation';
 import { shareProcessImage } from '@/lib/process-export/copy-process-image';
-import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
@@ -67,7 +66,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         setShareTimestamp(shareTimestamp);
         setAllowIframeTimestamp(allowIframeTimestamp);
       }
-    } catch (_) {}
+    } catch (_) { }
     setCheckingIfProcessShared(false);
   };
 
@@ -344,43 +343,54 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         closeIcon={false}
         onCancel={handleClose}
         zIndex={200}
-        footer={
-          <Button onClick={handleClose} style={{ border: '1px solid black' }}>
-            Close
-          </Button>
-        }
+        footer={<Button onClick={handleClose}>Close</Button>}
         destroyOnClose
       >
-        <Space
+        <div
           style={{
             display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: breakpoint.lg ? 'center' : 'space-evenly',
+            flexDirection: breakpoint.lg ? 'row' : 'column',
+            flexWrap: breakpoint.lg ? 'nowrap' : 'wrap',
+            alignItems: '',
+            justifyContent: 'center',
             gap: 10,
+            width: '100%',
           }}
         >
-          {breakpoint.lg
-            ? optionsDesktop.map((option, index) => (
-                <ModelerShareModalOption
-                  key={index}
-                  optionIcon={option.optionIcon}
-                  optionName={option.optionName}
-                  optionTitle={option.optionTitle}
-                  optionOnClick={option.optionOnClick}
-                  isActive={index === activeIndex}
-                />
-              ))
-            : optionsMobile.map((option, index) => (
-                <ModelerShareModalOption
-                  key={index}
-                  optionIcon={option.optionIcon}
-                  optionName={option.optionName}
-                  optionTitle={option.optionTitle}
-                  optionOnClick={option.optionOnClick}
-                />
-              ))}
-        </Space>
+          {(breakpoint.lg ? optionsDesktop : optionsMobile).map((option, index) => (
+            <Button
+              key={index}
+              style={{
+                flex: '1 1 0', // evenly fill container
+                height: 'auto', // Allow for vertical stretching
+                minHeight: 'min-content',
+                padding: '.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'hidden',
+                whiteSpace: 'normal',
+                textOverflow: 'ellipsis',
+              }}
+              color={index === activeIndex ? 'primary' : 'default'}
+              variant="outlined"
+              onClick={option.optionOnClick}
+            >
+              {option.optionIcon}
+              <Typography.Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: '0.75rem',
+                }}
+              >
+                <Tooltip title={breakpoint.lg ? option.optionTitle : ''}>
+                  {option.optionName}
+                </Tooltip>
+              </Typography.Text>
+            </Button>
+          ))}
+        </div>
 
         {breakpoint.lg && activeIndex !== null && optionsDesktop[activeIndex].subOption && (
           <Spin spinning={checkingIfProcessShared}>

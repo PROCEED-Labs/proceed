@@ -139,14 +139,8 @@ const ModelerShareModalOptionEmdedInWeb = ({
       </Checkbox>
       {embeddingUrl.length > 0 ? (
         <>
-          <div>
-            <Button
-              icon={<CopyOutlined />}
-              style={{ border: '1px solid black', float: 'right' }}
-              onClick={handleCopyCodeSection}
-              title="copy code"
-            />
-          </div>
+          <Button icon={<CopyOutlined />} onClick={handleCopyCodeSection} title="copy code" />
+
           <div className="code">
             <TextArea
               rows={2}

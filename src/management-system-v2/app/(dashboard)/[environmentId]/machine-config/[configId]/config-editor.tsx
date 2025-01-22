@@ -218,7 +218,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           configId={selectedConfig.id}
           configType={selectedConfig.type === 'config' ? 'parent-config' : selectedConfig.type}
           parentConfig={parentConfig}
+          shortname={selectedConfig.shortname}
           data={selectedConfig.metadata}
+          categories={selectedConfig.categories}
           editingEnabled={editable}
         />
       ),
@@ -251,7 +253,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             editingEnabled={editable}
             configId={currentConfig.id}
             configType={currentConfig.type}
+            shortname={currentConfig.shortname}
             data={currentConfig.parameters}
+            categories={[]}
             parentConfig={parentConfig}
           />,
         ],

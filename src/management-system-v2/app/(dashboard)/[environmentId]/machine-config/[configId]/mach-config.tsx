@@ -128,7 +128,9 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
             <Content
               contentType="metadata"
               editingEnabled={editingEnabled}
+              shortname={config.shortname}
               data={config.metadata}
+              categories={[]}
               configId={config.id}
               configType="machine-config"
               parentConfig={parentConfig}
@@ -147,7 +149,9 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
               editingEnabled={editingEnabled}
               configId={config.id}
               configType="machine-config"
+              shortname={config.shortname}
               data={config.parameters}
+              categories={[]}
               parentConfig={parentConfig}
             />,
           ],

@@ -180,11 +180,11 @@ jobs:
           fetch-depth: 2
 
       - name: Fetch main branch
-        if: github.ref != 'refs/heads/main'
+        if: ${{github.ref != 'refs/heads/main'}}
         run: git fetch origin main:main
 
       - name: Compare migrations with main
-        if: github.ref != 'refs/heads/main'
+        if: ${{github.ref != 'refs/heads/main'}}
         id: migration-diff-main
         run: |
           MIGRATIONS_PATH="src/management-system-v2/prisma/migrations"
@@ -214,7 +214,7 @@ jobs:
             echo "diff=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Set default outputs for main
-        if: github.ref == 'refs/heads/main'
+        if: ${{github.ref != 'refs/heads/main'}}
         run: |
           # setting it true to skip the if in next step, so that it main uses branch specific db name 
           echo "main_diff=true" >> "$GITHUB_OUTPUT"
@@ -379,6 +379,8 @@ jobs:
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
             DATABASE_URL=${{ env.DATABASE_URL }}
+            PROCEED_PUBLIC_DEPLOYMENT_ENV=local
+            PROCEED_PUBLIC_ENABLE_EXECUTION=true
           region: 'europe-west1'
           revision_traffic: LATEST=100
 

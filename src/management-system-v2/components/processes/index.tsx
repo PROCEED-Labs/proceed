@@ -1,7 +1,16 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useRef, useState, useTransition } from 'react';
+import {
+  ComponentProps,
+  Dispatch,
+  Key,
+  ReactNode,
+  SetStateAction,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge } from 'antd';
 import {
   CopyOutlined,
@@ -13,8 +22,9 @@ import {
   FolderOutlined,
   FileOutlined,
 } from '@ant-design/icons';
+import { BiShow } from 'react-icons/bi';
 import IconView from '@/components/process-icon-list';
-import ProcessList from '@/components/process-list';
+import { ProcessManagementList, ProcessReadOnlyList } from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
 import ProcessExportModal from '@/components/process-export';
 import Bar from '@/components/bar';
@@ -49,6 +59,7 @@ import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { spaceURL } from '@/lib/utils';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -71,17 +82,38 @@ export type ProcessActions = {
   moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
 };
 
+type ProcessVersion = {
+  id: string;
+  name: string;
+  description: string;
+  versionBasedOn?: string;
+  createdOn: Date;
+};
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
+
+function ConditionalWrapper({
+  condition,
+  wrapper,
+  children,
+}: {
+  condition: boolean;
+  wrapper: (children: ReactNode) => ReactNode;
+  children: ReactNode;
+}) {
+  return condition ? wrapper(children) : children;
+}
 
 const Processes = ({
   processes,
   favourites,
   folder,
+  readOnly = false,
 }: {
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
+  readOnly?: boolean;
 }) => {
   if (folder.parentId)
     processes = [
@@ -111,9 +143,12 @@ const Processes = ({
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
   const canDeleteSelected =
-    !!selectedRowElements.length && canDoActionOnResource(selectedRowElements, 'delete', ability);
-  const canCreateProcess = ability.can('create', 'Process');
-  const canEditSelected = canDoActionOnResource(selectedRowElements, 'update', ability);
+    !readOnly &&
+    !!selectedRowElements.length &&
+    canDoActionOnResource(selectedRowElements, 'delete', ability);
+  const canCreateProcess = !readOnly && ability.can('create', 'Process');
+  const canEditSelected =
+    !readOnly && canDoActionOnResource(selectedRowElements, 'update', ability);
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
@@ -335,7 +370,7 @@ const Processes = ({
               leftNode={
                 <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    {!breakpoint.xs && (
+                    {!breakpoint.xs && !readOnly && (
                       <Space>
                         <Dropdown.Button
                           menu={{
@@ -382,6 +417,55 @@ const Processes = ({
                         ></Button>
                       </Tooltip>
                       {/* Edit (only if one selected) */}
+
+                      {selectedRowKeys.length === 1 && selectedRowElements[0].type !== 'folder' && (
+                        <Tooltip placement="top" title={'Open Viewer'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<BiShow className={styles.Icon} />}
+                            onClick={() => {
+                              const selectedRowElement = selectedRowElements[0];
+                              if (selectedRowElement.type !== 'folder') {
+                                const latestVersion =
+                                  selectedRowElement.versions[
+                                    selectedRowElement.versions.length - 1
+                                  ];
+                                router.push(
+                                  spaceURL(
+                                    space,
+                                    `/processes/${selectedRowElement.id}?version=${latestVersion.id}`,
+                                  ),
+                                );
+                              }
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                      {selectedRowKeys.length === 1 && selectedRowElements[0].type !== 'folder' && (
+                        <Tooltip placement="top" title={'Open Viewer in new Tab'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<BiShow className={styles.Icon} />}
+                            onClick={() => {
+                              const selectedRowElement = selectedRowElements[0];
+                              if (selectedRowElement.type !== 'folder') {
+                                const latestVersion =
+                                  selectedRowElement.versions[
+                                    selectedRowElement.versions.length - 1
+                                  ];
+                                window.open(
+                                  spaceURL(
+                                    space,
+                                    `/processes/${selectedRowElement.id}?version=${latestVersion.id}`,
+                                  ),
+                                );
+                              }
+                            }}
+                          />
+                        </Tooltip>
+                      )}
 
                       {selectedRowKeys.length === 1 && canEditSelected && (
                         <Tooltip placement="top" title={'Edit'}>
@@ -440,54 +524,64 @@ const Processes = ({
               }}
             />
 
-            <DraggableContext
-              dragOverlay={(itemId) => {
-                const item = processes.find(({ id }) => id === itemId);
-                const icon = item?.type === 'folder' ? <FolderOutlined /> : <FileOutlined />;
-                return (
-                  <Badge
-                    count={selectedRowElements.length > 1 ? selectedRowElements.length : undefined}
-                  >
-                    <Card
-                      style={{
-                        cursor: 'move',
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 'fit-content',
-                          display: 'block',
-                          whiteSpace: 'nowrap',
-                          textOverflow: 'ellipsis',
-                          overflow: 'hidden',
-                          maxWidth: '40ch',
-                        }}
+            {/* Use conditional wrapper to only use draggableContext functionality if not in readOnly mode. See: https://dev.to/dailydevtips1/conditional-wrapping-in-react-46o5 */}
+            <ConditionalWrapper
+              condition={!readOnly}
+              wrapper={(children) => (
+                <DraggableContext
+                  dragOverlay={(itemId) => {
+                    const item = processes.find(({ id }) => id === itemId);
+                    const icon = item?.type === 'folder' ? <FolderOutlined /> : <FileOutlined />;
+                    return (
+                      <Badge
+                        count={
+                          selectedRowElements.length > 1 ? selectedRowElements.length : undefined
+                        }
                       >
-                        {icon} {item?.name}
-                      </span>
-                    </Card>
-                  </Badge>
-                );
-              }}
-              onItemDropped={(itemId: string, droppedOnId: string) => {
-                const active = processes.find(({ id }) => id === itemId);
-                const over = processes.find(({ id }) => id === droppedOnId);
+                        <Card
+                          style={{
+                            cursor: 'move',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 'fit-content',
+                              display: 'block',
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis',
+                              overflow: 'hidden',
+                              maxWidth: '40ch',
+                            }}
+                          >
+                            {icon} {item?.name}
+                          </span>
+                        </Card>
+                      </Badge>
+                    );
+                  }}
+                  onItemDropped={(itemId: string, droppedOnId: string) => {
+                    const active = processes.find(({ id }) => id === itemId);
+                    const over = processes.find(({ id }) => id === droppedOnId);
 
-                if (!active || !over || over.type !== 'folder') return;
+                    if (!active || !over || over.type !== 'folder') return;
 
-                // don't allow to move selected items into themselves
-                if (selectedRowKeys.length > 0 && selectedRowKeys.includes(over.id)) return;
+                    // don't allow to move selected items into themselves
+                    if (selectedRowKeys.length > 0 && selectedRowKeys.includes(over.id)) return;
 
-                const items =
-                  selectedRowKeys.length > 0
-                    ? selectedRowElements.map((element) => ({
-                        type: element.type,
-                        id: element.id,
-                      }))
-                    : [{ type: active.type, id: active.id }];
+                    const items =
+                      selectedRowKeys.length > 0
+                        ? selectedRowElements.map((element) => ({
+                            type: element.type,
+                            id: element.id,
+                          }))
+                        : [{ type: active.type, id: active.id }];
 
-                moveItems(items, over.id);
-              }}
+                    moveItems(items, over.id);
+                  }}
+                >
+                  {children}
+                </DraggableContext>
+              )}
             >
               {/* <Spin spinning={loading}> */}
               <ProceedLoadingIndicator
@@ -516,26 +610,43 @@ const Processes = ({
                         : '100%',
                     }}
                   >
-                    <ProcessList
-                      data={filteredData}
-                      folder={folder}
-                      selection={selectedRowKeys}
-                      setSelectionElements={setSelectedRowElements}
-                      selectedElements={selectedRowElements}
-                      // TODO: Replace with server component loading state
-                      //isLoading={isLoading}
-                      onExportProcess={(id) => {
-                        setSelectedRowElements([id]);
-                        setOpenExportModal(true);
-                      }}
-                      setShowMobileMetaData={setShowMobileMetaData}
-                      processActions={processActions}
-                    />
+                    {readOnly ? (
+                      <ProcessReadOnlyList
+                        data={filteredData}
+                        folder={folder}
+                        selection={selectedRowKeys}
+                        setSelectionElements={setSelectedRowElements}
+                        selectedElements={selectedRowElements}
+                        // TODO: Replace with server component loading state
+                        //isLoading={isLoading}
+                        onExportProcess={(process) => {
+                          setSelectedRowElements([process]);
+                          setOpenExportModal(true);
+                        }}
+                        setShowMobileMetaData={setShowMobileMetaData}
+                      />
+                    ) : (
+                      <ProcessManagementList
+                        data={filteredData}
+                        folder={folder}
+                        selection={selectedRowKeys}
+                        setSelectionElements={setSelectedRowElements}
+                        selectedElements={selectedRowElements}
+                        // TODO: Replace with server component loading state
+                        //isLoading={isLoading}
+                        onExportProcess={(id) => {
+                          setSelectedRowElements([id]);
+                          setOpenExportModal(true);
+                        }}
+                        setShowMobileMetaData={setShowMobileMetaData}
+                        processActions={processActions}
+                      />
+                    )}
                   </div>
                 )}
               </ProceedLoadingIndicator>
               {/* </Spin> */}
-            </DraggableContext>
+            </ConditionalWrapper>
           </div>
 
           {/*Meta Data Panel*/}

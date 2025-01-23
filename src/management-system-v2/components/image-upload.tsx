@@ -23,6 +23,7 @@ interface ImageUploadProps {
     useDefaultRemoveFunction: boolean; //set true if delete should be automatically handled by file maanger
     fileName?: string;
   };
+  readOnly?: boolean;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -32,6 +33,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   onReload,
   endpoints,
   config,
+  readOnly = false,
 }) => {
   const { upload, remove, replace } = useFileManager({ entityType: config.entityType });
 
@@ -119,8 +121,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             onUploadFail?.();
           }
         }}
+        disabled={readOnly}
       >
-        <Button type="default" ghost>
+        <Button type="default" ghost disabled={readOnly}>
           {imageExists ? <EditOutlined /> : 'Add Image'}
         </Button>
       </Upload>
@@ -146,6 +149,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           }}
           type="default"
           ghost
+          disabled={readOnly}
         >
           <DeleteOutlined />
         </Button>

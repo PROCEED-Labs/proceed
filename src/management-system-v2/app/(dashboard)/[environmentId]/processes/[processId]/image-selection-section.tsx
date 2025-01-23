@@ -14,6 +14,7 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 type ImageSelectionSectionProperties = {
   imageFileName?: string;
   onImageUpdate: (imageFileName?: string) => void;
+  readOnly?: boolean;
 };
 
 export const fallbackImage =
@@ -22,6 +23,7 @@ export const fallbackImage =
 const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   imageFileName,
   onImageUpdate,
+  readOnly = false,
 }) => {
   const { processId } = useParams();
   const { fileUrl: imageUrlfm, download: getImageURL } = useFileManager({
@@ -85,6 +87,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
                 useDefaultRemoveFunction: true,
                 fileName: imageFileName,
               }}
+              readOnly={readOnly}
             />
           ),
         }}

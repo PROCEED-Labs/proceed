@@ -16,7 +16,7 @@ import Icon, {
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -50,6 +50,7 @@ const ModelerToolbar = ({
   versions,
 }: ModelerToolbarProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const environment = useEnvironment();
   const { message } = App.useApp();
   const env = use(EnvVarsContext);
@@ -66,6 +67,9 @@ const ModelerToolbar = ({
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
+
+  const processContextPath = pathname.split('/').slice(0, -1).join('/'); // Component can be used in /processes/list or /processes/editor route
+  const isReadOnlyListView = processContextPath.includes('/list');
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -244,16 +248,18 @@ const ModelerToolbar = ({
                 router.push(
                   spaceURL(
                     environment,
-                    `/processes/${processId as string}${
+                    `${processContextPath}/${processId as string}${
                       searchParams.size ? '?' + searchParams.toString() : ''
                     }`,
                   ),
                 );
               }}
-              options={[LATEST_VERSION].concat(versions ?? []).map(({ id, name }) => ({
-                value: id,
-                label: name,
-              }))}
+              options={(isReadOnlyListView ? [] : [LATEST_VERSION])
+                .concat(versions ?? [])
+                .map(({ id, name }) => ({
+                  value: id,
+                  label: name,
+                }))}
             />
             {!showMobileView && (
               <>
@@ -261,6 +267,7 @@ const ModelerToolbar = ({
                   <VersionCreationButton
                     icon={<PlusOutlined />}
                     createVersion={createProcessVersion}
+                    disabled={isReadOnlyListView}
                   ></VersionCreationButton>
                 </Tooltip>
                 <Tooltip title="Back to parent">
@@ -282,11 +289,13 @@ const ModelerToolbar = ({
 
           <ToolbarGroup>
             {selectedElement &&
-              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
-                <Tooltip title="Edit User Task Form">
-                  <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
-                </Tooltip>
-              )) ||
+              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+                bpmnIs(selectedElement, 'bpmn:UserTask') &&
+                !isReadOnlyListView && (
+                  <Tooltip title="Edit User Task Form">
+                    <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+                  </Tooltip>
+                )) ||
                 (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
                   <Tooltip title="Open Subprocess">
                     <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
@@ -295,7 +304,8 @@ const ModelerToolbar = ({
                   </Tooltip>
                 )) ||
                 (env.PROCEED_PUBLIC_ENABLE_EXECUTION &&
-                  bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
+                  bpmnIs(selectedElement, 'bpmn:ScriptTask') &&
+                  !isReadOnlyListView && (
                     <Tooltip title="Edit Script Task">
                       <Button
                         icon={<FormOutlined />}
@@ -346,6 +356,7 @@ const ModelerToolbar = ({
                 isOpen={showPropertiesPanel}
                 close={handlePropertiesPanelToggle}
                 selectedElement={selectedElement}
+                readOnly={isReadOnlyListView}
               />
             )}
           </Space>

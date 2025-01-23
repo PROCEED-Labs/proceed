@@ -508,29 +508,29 @@ export async function copyParentConfig(
 
 export async function addParentConfig(machineConfigInput: ParentConfig, environmentId: string) {
   try {
-    const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput) as ParentConfig;
+    AbstractConfigInputSchema.parse(machineConfigInput);
 
-    parentConfigData.folderId = (await getRootFolder(environmentId)).id;
-    parentConfigData.environmentId = environmentId;
+    machineConfigInput.folderId = (await getRootFolder(environmentId)).id;
+    machineConfigInput.environmentId = environmentId;
 
-    const folderData = foldersMetaObject.folders[parentConfigData.folderId];
+    const folderData = foldersMetaObject.folders[machineConfigInput.folderId];
     if (!folderData) throw new Error('Folder not found');
     let idCollision = false;
-    const { id: parentConfigId } = parentConfigData;
+    const { id: parentConfigId } = machineConfigInput;
     if (storedData.parentConfigs[parentConfigId] || !validate(parentConfigId)) {
       // throw new Error(`A parent configuration with the id ${parentConfigId} already exists!`);
       idCollision = true;
     }
 
-    parentConfigToStorage(parentConfigData, idCollision);
+    parentConfigToStorage(machineConfigInput, idCollision);
     store.set('techData', 'parentConfigs', storedData.parentConfigs);
     store.set('techData', 'machineConfigs', storedData.machineConfigs);
     store.set('techData', 'targetConfigs', storedData.targetConfigs);
     store.set('techData', 'parameters', storedData.parameters);
 
-    eventHandler.dispatch('machineConfigAdded', { machineConfig: parentConfigData });
+    eventHandler.dispatch('machineConfigAdded', { machineConfig: machineConfigInput });
 
-    return parentConfigData;
+    return machineConfigInput;
   } catch (e: unknown) {
     const error = e as Error;
     return userError(error.message ?? "Couldn't create Machine Config");

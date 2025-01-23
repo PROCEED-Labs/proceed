@@ -3,7 +3,7 @@
 import React, { ComponentProps, ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
-import MachineConfigModal from './config-modal'; //TODO refactoring not using term "machine config"
+import ConfigModal from './config-modal';
 import { addParentConfig } from '@/lib/data/legacy/machine-config'; //TODO refactoring not using term "machine config"
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
@@ -22,7 +22,7 @@ type ConfigCreationButtonProps = ButtonProps & {
  * Button to create Configs including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
  */
 export const ConfigCreationModal: React.FC<
-  Partial<ComponentProps<typeof MachineConfigModal>> & {
+  Partial<ComponentProps<typeof ConfigModal>> & {
     open: boolean;
     setOpen: (open: boolean) => void;
     customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -78,7 +78,7 @@ export const ConfigCreationModal: React.FC<
   );
 
   return (
-    <MachineConfigModal
+    <ConfigModal
       open={open}
       title="Create Configuration"
       okText="Create"

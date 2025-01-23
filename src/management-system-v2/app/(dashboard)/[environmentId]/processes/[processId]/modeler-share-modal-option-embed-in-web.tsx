@@ -126,11 +126,6 @@ const ModelerShareModalOptionEmdedInWeb = ({
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <Select
-        defaultValue={selectedVersionId}
-        options={processVersions.map((version) => ({ value: version.id, label: version.name }))}
-        onChange={(value) => setSelectedVersionId(value)}
-      />
       <Checkbox
         checked={embeddingUrl.length > 0 && allowIframeTimestamp > 0}
         onChange={(e) => handleAllowEmbeddingChecked(e)}
@@ -139,6 +134,13 @@ const ModelerShareModalOptionEmdedInWeb = ({
       </Checkbox>
       {embeddingUrl.length > 0 ? (
         <>
+          <Select
+            defaultValue={selectedVersionId}
+            options={processVersions.map((version) => ({ value: version.id, label: version.name }))}
+            onChange={(value) => setSelectedVersionId(value)}
+            style={{ width: '35%' }}
+          />
+
           <Button icon={<CopyOutlined />} onClick={handleCopyCodeSection} title="copy code" />
 
           <div className="code">

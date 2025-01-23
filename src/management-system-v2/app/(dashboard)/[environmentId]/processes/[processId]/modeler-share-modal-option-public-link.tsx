@@ -196,98 +196,95 @@ const ModelerShareModalOptionPublicLink = ({
   };
 
   return (
-    <Space direction="vertical">
-      <Select
-        defaultValue={selectedVersionId || '-1'}
-        options={[
-          { value: '-1', label: 'Latest Version' },
-          ...processVersions.map((version) => ({ value: version.id, label: version.name })),
-        ]}
-        onChange={(value) => {
-          setSelectedVersionId(value === '-1' ? null : value);
-        }}
-      />
+    <Space direction="vertical" style={{ gap: '1rem', width: '100%' }}>
+      <Checkbox checked={isShareLinkChecked} onChange={handleShareLinkChecked}>
+        Share Process with Public Link
+      </Checkbox>
 
-      <div>
-        <Checkbox checked={isShareLinkChecked} onChange={handleShareLinkChecked}>
-          Share Process with Public Link
-        </Checkbox>
-      </div>
-      <Row>
-        <Col span={18} style={{ paddingBottom: '10px', paddingLeft: '25px' }}>
-          <Flex vertical gap="small" justify="left" align="left">
-            <Checkbox
-              checked={registeredUsersonlyChecked}
-              onChange={handlePermissionChanged}
-              disabled={isShareLinkEmpty}
-            >
-              Visible only for registered user
-            </Checkbox>
-          </Flex>
-        </Col>
+      <Checkbox
+        checked={registeredUsersonlyChecked}
+        onChange={handlePermissionChanged}
+        disabled={isShareLinkEmpty}
+      >
+        Visible only for registered user
+      </Checkbox>
 
-        <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
-          <Button
-            onClick={handleOpenSharedPage}
-            disabled={isShareLinkEmpty}
-            icon={<IoOpenOutline />}
-          >
+      {isShareLinkChecked && (
+        <div style={{ display: 'flex', gap: '.5rem' }}>
+          <Select
+            defaultValue={selectedVersionId || '-1'}
+            options={[
+              { value: '-1', label: 'Latest Version' },
+              ...processVersions.map((version) => ({ value: version.id, label: version.name })),
+            ]}
+            onChange={(value) => {
+              setSelectedVersionId(value === '-1' ? null : value);
+            }}
+            style={{ width: '35 %' }}
+          />
+          <Button onClick={handleOpenSharedPage} icon={<IoOpenOutline />}>
             Open Preview
           </Button>
-          <Input
-            type={'text'}
-            value={shareLink}
-            disabled={isShareLinkEmpty}
-            name="generated share link"
-            style={{ flexGrow: 1 }}
-          />
         </div>
+      )}
 
-        <Col span={12}>
-          <Flex
-            vertical={false}
-            style={{ paddingTop: '10px', flexWrap: 'wrap-reverse' }}
-            justify="center"
-            align="center"
+      {isShareLinkChecked && (
+        <div style={{ display: 'flex', gap: '.5rem' }}>
+          <Button
+            onClick={handleCopyLink}
+            icon={<CopyOutlined />}
+            style={{ justifyContent: 'start' }}
           >
-            {isShareLinkChecked && (
-              <div id="qrcode" ref={canvasRef}>
-                <QRCode
-                  style={{
-                    border: '1px solid #000',
-                  }}
-                  value={shareLink}
-                />
-              </div>
-            )}
-          </Flex>
-        </Col>
-        <Col span={6} style={{ paddingTop: '10px' }}>
-          <Flex vertical gap={10}>
-            <Button onClick={handleCopyLink} disabled={isShareLinkEmpty}>
-              Copy link
-            </Button>
-            <Button
-              icon={<DownloadOutlined />}
-              title="Save as PNG"
-              hidden={isShareLinkEmpty}
-              onClick={() => handleQRCodeAction('download')}
-              disabled={isShareLinkEmpty}
+            Copy Link
+          </Button>
+          <Input type={'text'} value={shareLink} style={{ flexGrow: 1 }} />
+        </div>
+      )}
+
+      {isShareLinkChecked && (
+        <div style={{ display: 'flex', width: '100%', gap: '.5rem', alignItems: 'center' }}>
+          <QRCode value={shareLink} type="svg" bordered={false} icon="/proceed-icon.png" />
+          {/** svg looks has better resolution, but is way harder to copy to the clipboard, that's why we have a hidden qr code */}
+          <div id="qrcode" ref={canvasRef} style={{ display: 'none' }}>
+            <QRCode
+              size={300}
+              value={shareLink}
+              type="canvas"
+              bordered={false}
+              icon="/proceed-icon.png"
+            />
+          </div>
+
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                width: 'min-content',
+                gap: '0.5rem',
+              }}
             >
-              Save QR Code
-            </Button>
-            <Button
-              icon={<CopyOutlined />}
-              title="Copy as PNG"
-              hidden={isShareLinkEmpty}
-              onClick={() => handleQRCodeAction('copy')}
-              disabled={isShareLinkEmpty}
-            >
-              Copy QR Code
-            </Button>
-          </Flex>
-        </Col>
-      </Row>
+              <Button
+                icon={<DownloadOutlined />}
+                title="Save as PNG"
+                onClick={() => handleQRCodeAction('download')}
+                disabled={isShareLinkEmpty}
+              >
+                Save QR Code
+              </Button>
+              <Button
+                icon={<CopyOutlined />}
+                title="Copy as PNG"
+                onClick={() => handleQRCodeAction('copy')}
+                disabled={isShareLinkEmpty}
+              >
+                Copy QR Code
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Space>
   );
 };

@@ -1,4 +1,4 @@
-import { InstanceInfo } from '@/lib/engines/deployment';
+import { DeployedProcessInfo, InstanceInfo } from '@/lib/engines/deployment';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
@@ -130,4 +130,33 @@ export function getPlanDelays({
   };
 
   return { plan, delays };
+}
+
+export function getVersionInstances(process: DeployedProcessInfo, version?: string) {
+  const instances = process.instances;
+
+  if (!version) return instances;
+  return instances.filter((instance) => instance.processVersion === version);
+}
+
+export function getNewestDeployment(process: DeployedProcessInfo) {
+  let latest = process.versions.length - 1;
+  for (let i = process.versions.length - 2; i >= 0; i--) {
+    // TODO: this is actually the last version that was deployed since there is no version creation
+    // information stored on the engine (do we keep this, store the creation time on the engine or
+    // parse the creation time from the bpmn?)
+    if (process.versions[i].deploymentDate > process.versions[latest].deploymentDate) latest = i;
+  }
+
+  return process.versions[latest];
+}
+
+export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
+  if (instances.length === 0) return undefined;
+
+  let firstInstance = 0;
+  for (let i = 0; i < instances.length; i++) {
+    if (instances[i].globalStartTime < instances[firstInstance].globalStartTime) firstInstance = i;
+  }
+  return instances[firstInstance];
 }

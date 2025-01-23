@@ -15,9 +15,11 @@ export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, '
 const DeploymentsList = ({
   processes,
   tableProps,
+  onRefetchData,
 }: {
   processes: DeployedProcessListProcess[];
   tableProps?: TableProps;
+  onRefetchData: () => void;
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
@@ -135,8 +137,9 @@ const DeploymentsList = ({
                 <Button
                   style={{ float: 'right' }}
                   type="text"
-                  onClick={() => {
-                    removeDeployment(record.definitionId);
+                  onClick={async () => {
+                    await removeDeployment(record.definitionId);
+                    onRefetchData();
                   }}
                 >
                   <DeleteOutlined color="red" />

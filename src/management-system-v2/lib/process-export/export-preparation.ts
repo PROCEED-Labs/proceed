@@ -396,7 +396,6 @@ export async function prepareExport(
       for (const filename of allRequiredUserTaskFiles) {
         const json = await getProcessUserTaskData(definitionId, filename, spaceId);
         const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
-        console.log(html);
 
         if (typeof json !== 'string') {
           throw json!.error;

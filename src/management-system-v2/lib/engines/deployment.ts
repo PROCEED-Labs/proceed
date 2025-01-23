@@ -106,8 +106,8 @@ async function dynamicDeployment(
   }
 
   try {
-    deployProcessToMachines([preferredMachine], processesExportData);
-  } catch (error) {}
+    await deployProcessToMachines([preferredMachine], processesExportData);
+  } catch (error) { }
 }
 
 async function staticDeployment(

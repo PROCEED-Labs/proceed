@@ -8,56 +8,24 @@ import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
+import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
-import { MdColorLens, MdOutlineColorLens } from 'react-icons/md';
-import { ColorOptions, applyColors, colorOptions, flushPreviousStyling } from './instance-coloring';
+import { MdOutlineColorLens } from 'react-icons/md';
+import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { startInstance } from '@/lib/engines/deployment';
 
 import useTokens from './use-tokens';
+import useColors from './use-colors';
 
-function getVersionInstances(process: DeployedProcessInfo, version?: string) {
-  const instances = process.instances.map((instance, idx) => {
-    const name = `${idx + 1}. Instance: ${new Date(instance.globalStartTime).toLocaleString()}`;
-    // @ts-ignore
-    instance.label = name;
-
-    return instance;
-  }) as (InstanceInfo & { label: string })[];
-
-  if (!version) return instances;
-  return instances.filter((instance) => instance.processVersion === version);
-}
-
-function getLatestVersion(process: DeployedProcessInfo) {
-  let latest = process.versions.length - 1;
-  for (let i = process.versions.length - 2; i >= 0; i--) {
-    // TODO: this is actually the last version that was deployed since there is no version creation
-    // information stored on the engine (do we keep this, store the creation time on the engine or
-    // parse the creation time from the bpmn?)
-    if (process.versions[i].deploymentDate > process.versions[latest].deploymentDate) latest = i;
-  }
-
-  return process.versions[latest];
-}
-
-function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
-  if (instances.length === 0) return undefined;
-
-  let firstInstance = 0;
-  for (let i = 0; i < instances.length; i++) {
-    if (instances[i].globalStartTime < instances[firstInstance].globalStartTime) firstInstance = i;
-  }
-  return instances[firstInstance];
-}
+import { getNewestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
 
 export default function Page({ params: { processId } }: { params: { processId: string } }) {
-  const { data: deployedProcesses, isLoading, isError } = useDeployments();
+  const { data: deployedProcesses, isLoading, isError, refetch } = useDeployments();
 
   // TODO: better loading animation
   if (isLoading)
@@ -83,15 +51,17 @@ export default function Page({ params: { processId } }: { params: { processId: s
       </Content>
     );
 
-  return <ProcessDeploymentView selectedProcess={selectedProcess} />;
+  return <ProcessDeploymentView selectedProcess={selectedProcess} onRefetchData={refetch} />;
 }
 
 function ProcessDeploymentView({
   selectedProcess,
+  onRefetchData,
 }: {
   selectedProcess: DeployedProcessInfo & { name: string };
+  onRefetchData: () => Promise<any>;
 }) {
-  const [selectedVersion, setSelectedVersion] = useState<VersionInfo | undefined>();
+  const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
   const [selectedElement, setSelectedElement] = useState<ElementLike | undefined>();
@@ -99,64 +69,42 @@ function ProcessDeploymentView({
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
-  function selectNewBpmn(type: 'version' | 'instance', identifier: string) {
-    if (type == 'instance') {
-      setSelectedInstanceId(identifier as string);
-    } else if (type == 'version') {
-      const version = selectedProcess!.versions.find((v) => v.versionId === identifier);
-      setSelectedVersion(version);
+  const { selectedVersion, instances, selectedInstance, currentVersion } = useMemo(() => {
+    const selectedVersion = selectedProcess.versions.find((v) => v.versionId === selectedVersionId);
 
-      const instances = getVersionInstances(
-        selectedProcess!,
-        version ? version.versionId : undefined,
-      );
-      const youngestInstance = getYoungestInstance(instances);
-      setSelectedInstanceId(youngestInstance?.processInstanceId);
-    }
+    const instances = getVersionInstances(selectedProcess, selectedVersionId);
+    const selectedInstance = selectedInstanceId
+      ? instances.find((i) => i.processInstanceId === selectedInstanceId)
+      : undefined;
 
-    // This is necessary, because bpmn-js throws an error if you try to remove a marker
-    // from an element that doesn't exist
-    flushPreviousStyling();
-  }
-
-  const instances = getVersionInstances(selectedProcess, selectedVersion?.versionId);
-  const selectedInstance = selectedInstanceId
-    ? instances.find((i) => i.processInstanceId === selectedInstanceId)
-    : undefined;
-
-  const currentVersionId = useMemo(() => {
+    let currentVersionId = getNewestDeployment(selectedProcess).versionId;
     if (selectedInstance) {
-      return selectedInstance.processVersion;
-    } else if (selectedVersion) {
-      return selectedVersion.versionId;
+      currentVersionId = selectedInstance.processVersion;
+    } else if (selectedVersionId) {
+      currentVersionId = selectedVersionId;
     }
+    const currentVersion = selectedProcess.versions.find(
+      (version) => version.versionId === currentVersionId,
+    );
 
-    return getLatestVersion(selectedProcess).versionId;
-  }, [selectedInstance, selectedVersion, selectedProcess]);
+    return { selectedVersion, instances, selectedInstance, currentVersion };
+  }, [selectedProcess, selectedVersionId, selectedInstanceId]);
 
   const selectedBpmn = useMemo(() => {
-    const version = selectedProcess.versions.find((v) => v.versionId === currentVersionId);
-    return { bpmn: version!.bpmn };
-  }, [currentVersionId]);
+    return { bpmn: currentVersion!.bpmn };
+  }, [currentVersion]);
 
-  useTokens(selectedInstance || null, canvasRef.current);
-
-  // When selected coloring changes, this function will change
-  // That in turn will trigger the useEffect inside the BPMNCanvas
-  // If a new instance is selected, the same useEffect will be triggered,
-  // only this time because of the bpmn change
-  // NOTE: selectedColoring is not part of the dependencies to avoid re-rendering
-  // the component on a case where it isn't necessary
-  const applyColoring = useCallback((coloring?: ColorOptions | ElementLike) => {
-    if (!selectedInstance || !canvasRef.current) return;
-    applyColors(
-      canvasRef.current,
-      selectedInstance,
-      typeof coloring === 'string' ? coloring : selectedColoring,
-    );
-    // TODO: handle this correctly without triggering a reimport of the bpmn when it is not
-    // necessary which breaks the tokens
-  }, []);
+  const { refreshTokens } = useTokens(selectedInstance || null, canvasRef);
+  const { refreshColoring } = useColors(
+    selectedBpmn,
+    selectedColoring,
+    selectedInstance,
+    canvasRef,
+  );
+  const refreshVisuals = useCallback(() => {
+    refreshTokens();
+    refreshColoring();
+  }, [refreshTokens, refreshColoring]);
 
   return (
     <Content compact wrapperClass={contentStyles.Content}>
@@ -182,10 +130,10 @@ function ProcessDeploymentView({
                     ? selectedInstance.processInstanceId
                     : undefined
                 }
-                onSelect={(value) => selectNewBpmn('instance', value)}
-                options={instances.map((instance) => ({
+                onSelect={(value) => setSelectedInstanceId(value)}
+                options={instances.map((instance, idx) => ({
                   value: instance.processInstanceId,
-                  label: instance.label,
+                  label: `${idx + 1}. Instance: ${new Date(instance.globalStartTime).toLocaleString()}`,
                 }))}
                 placeholder="Select an instance"
               />
@@ -193,11 +141,12 @@ function ProcessDeploymentView({
                 <Button
                   icon={<PlusOutlined />}
                   onClick={async () => {
-                    const version = selectedVersion
-                      ? selectedVersion.versionId
-                      : getLatestVersion(selectedProcess).versionId;
-                    const instanceId = await startInstance(selectedProcess.definitionId, version);
-                    selectNewBpmn('instance', instanceId);
+                    const instanceId = await startInstance(
+                      selectedProcess.definitionId,
+                      currentVersion!.versionId,
+                    );
+                    await onRefetchData();
+                    setSelectedInstanceId(instanceId);
                   }}
                 />
               </Tooltip>
@@ -211,13 +160,13 @@ function ProcessDeploymentView({
                         label: 'Select a version',
                         disabled: true,
                       },
-                      ...(selectedVersion
+                      ...(selectedVersionId
                         ? [
-                          {
-                            label: '<none>',
-                            key: '-2',
-                          },
-                        ]
+                            {
+                              label: '<none>',
+                              key: '-2',
+                            },
+                          ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
@@ -226,8 +175,17 @@ function ProcessDeploymentView({
                       })),
                     ],
                     selectable: true,
-                    onSelect: (item) => selectNewBpmn('version', item.key),
-                    selectedKeys: selectedVersion ? [`${selectedVersion.versionId}`] : [],
+                    onSelect: ({ key }) => {
+                      const versionId = key === '-2' ? undefined : key;
+                      setSelectedVersionId(versionId);
+
+                      const instances = getVersionInstances(selectedProcess, versionId);
+                      if (!instances.some((i) => i.processInstanceId === selectedInstanceId)) {
+                        const youngestInstance = getYoungestInstance(instances);
+                        setSelectedInstanceId(youngestInstance?.processInstanceId);
+                      }
+                    },
+                    selectedKeys: selectedVersionId ? [selectedVersionId] : [],
                   }}
                 >
                   <Button icon={<FilterOutlined />}>
@@ -245,7 +203,6 @@ function ProcessDeploymentView({
                     selectable: true,
                     onSelect: (item) => {
                       setSelectedColoring(item.key as ColorOptions);
-                      applyColoring(item.key as ColorOptions);
                     },
                     selectedKeys: [selectedColoring],
                   }}
@@ -299,7 +256,7 @@ function ProcessDeploymentView({
               setSelectedElement(element ?? canvasRef.current?.getCurrentRoot());
               setInfoPanelOpen(true);
             }}
-            onRootChange={applyColoring}
+            onRootChange={refreshVisuals}
           />
         </div>
       </div>

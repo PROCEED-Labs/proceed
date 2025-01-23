@@ -2,16 +2,17 @@
 
 import { App, Button } from 'antd';
 import { useState, useTransition } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+
 import DeploymentsModal from './deployments-modal';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
 import DeploymentsList from './deployments-list';
 import { Folder } from '@/lib/data/folder-schema';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
-import { useQuery } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
 import { processHasChangesSinceLastVersion } from '@/lib/data/processes';
-import { DeployedProcessInfo, deployProcess, getDeployments } from '@/lib/engines/deployment';
+import { deployProcess } from '@/lib/engines/deployment';
 import useDeployments from './deployments-hook';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
@@ -28,6 +29,8 @@ const DeploymentsView = ({
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const { message } = App.useApp();
   const space = useEnvironment();
+
+  const queryClient = useQueryClient();
 
   const {
     data: deployedProcesses,
@@ -71,6 +74,7 @@ const DeploymentsView = ({
         }
 
         await deployProcess(process.id, v.id, space.spaceId, 'dynamic');
+
         refetchDeployedProcesses();
       } catch (e) {
         message.error("Something wen't wrong");
@@ -101,7 +105,11 @@ const DeploymentsView = ({
         }}
       />
 
-      <DeploymentsList processes={filteredData} tableProps={{ loading }}></DeploymentsList>
+      <DeploymentsList
+        processes={filteredData}
+        tableProps={{ loading }}
+        onRefetchData={refetchDeployedProcesses}
+      ></DeploymentsList>
 
       <DeploymentsModal
         open={modalIsOpen}

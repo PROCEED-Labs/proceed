@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   if (entityType === EntityType.PROCESS) {
     let canAccess = false;
 
-    const processMeta = await getProcess(entityId, environmentId);
+    const processMeta = await getProcess(entityId, environmentId, true); // true --> skip the validity check as it will be done below
     if (!processMeta || 'error' in processMeta) {
       return new NextResponse(null, {
         status: 404,

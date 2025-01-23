@@ -28,19 +28,30 @@ import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { set } from 'zod';
+import type BPMNModeler from 'bpmn-js/lib/Modeler';
+import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+import type { ButtonProps } from 'antd';
 
-type ShareModalProps = {
+type ShareModalProps = ButtonProps & {
   onExport: () => void;
   onExportMobile: (type: ProcessExportOptions['type']) => void;
+  modeler: BPMNCanvasRef | null;
+  processId: string;
 };
 type SharedAsType = 'public' | 'protected';
 
-const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
-  const { processId } = useParams();
+const ModelerShareModalButton: FC<ShareModalProps> = ({
+  onExport,
+  onExportMobile,
+  modeler,
+  processId,
+  ...props
+}) => {
+  // const { processId } = useParams();
   const environment = useEnvironment();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
-  const modeler = useModelerStateStore((state) => state.modeler);
+  // const modeler = useModelerStateStore((state) => state.modeler);
   const breakpoint = Grid.useBreakpoint();
   const [sharedAs, setSharedAs] = useState<SharedAsType>('public');
   const [isSharing, setIsSharing] = useState(false);
@@ -82,12 +93,10 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleCopyXMLToClipboard = async () => {
-    if (modeler) {
-      const xml = await modeler.getXML();
-      if (xml) {
-        navigator.clipboard.writeText(xml);
-        message.success('Copied to clipboard');
-      }
+    const processXML = modeler ? await modeler.getXML() : '';
+    if (processXML) {
+      navigator.clipboard.writeText(processXML);
+      message.success('Copied to clipboard');
     }
   };
 
@@ -371,7 +380,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         )}
       </Modal>
       <Tooltip title="Share">
-        <Button icon={<ShareAltOutlined />} onClick={() => handleShareButtonClick()} />
+        <Button {...props} icon={<ShareAltOutlined />} onClick={() => handleShareButtonClick()} />
       </Tooltip>
     </>
   );

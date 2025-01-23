@@ -2,6 +2,7 @@ import { TableColumnsType, TableProps, Tooltip } from 'antd';
 import React, {
   FC,
   PropsWithChildren,
+  ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -12,6 +13,7 @@ import { useUserPreferences } from './user-preferences';
 import { Resizable } from 'react-resizable';
 import styles from './useColumnWidth.module.scss';
 import classNames from 'classnames';
+import { generateDateString } from './utils';
 
 export const useResizeableColumnWidth = (
   columns: NonNullable<TableProps['columns']>,
@@ -238,11 +240,23 @@ export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']
               ? text
               : 'Missing-Display-Name'; /* In case fuzzy-search is used */
           const newRender = column.render
-            ? () => column.render(text, record, rowIndex)
+            ? // column.title === 'Last Edited' || column.title === 'Created On'
+              //   ? () => generateDateString(text, true)
+              //   :
+              () => column.render(text, record, rowIndex)
             : () => fallBackText;
           return (
             <>
-              <TruncatedCell width={column.width} innerRender={newRender}></TruncatedCell>
+              <TruncatedCell
+                width={column.width}
+                innerRender={newRender}
+                tooltip={
+                  // If any other columns should have other date display, add them here
+                  column.title === 'Last Edited' || column.title === 'Created On'
+                    ? /* generateDateString(text, true) */ undefined
+                    : undefined
+                }
+              />
             </>
           );
         },
@@ -256,9 +270,10 @@ export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']
 type TruncateType = {
   width: number | string;
   innerRender: () => React.ReactNode;
+  tooltip?: string;
 };
 
-const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
+const TruncatedCell: FC<TruncateType> = ({ width, innerRender, tooltip }) => {
   const [overFlowing, setOverFlowing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -266,10 +281,11 @@ const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
     if (!containerRef.current || typeof width !== 'number') return;
 
     const widths = getWidthsOfInnerElements(containerRef.current);
+    // console.log(widths);
     const innerWidth =
       containerRef.current.getClientRects()[0]
         .width; /* This is the widht, without padding and border (i.e. the actual width its children can fill) */
-
+    // console.log(innerWidth);
     if (widths.some((w) => w > innerWidth)) {
       setOverFlowing(true);
     } else {
@@ -277,11 +293,43 @@ const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
     }
   }, [width, innerRender]);
 
+  // Function to recursively remove wrapping/truncating styles from elements
+  const removeTextWrap = (element: string | ReactNode): ReactNode => {
+    if (typeof element === 'string') {
+      return element;
+    }
+
+    if (React.isValidElement(element)) {
+      const elementProps = element.props;
+      const newStyle = { ...elementProps.style };
+
+      // Remove styles related to text wrapping or truncation
+      delete newStyle.overflow;
+      delete newStyle.textOverflow;
+      delete newStyle.whiteSpace;
+      delete newStyle.maxWidth;
+
+      // Recursively process children
+      const children = React.Children.map(elementProps.children, (child) => removeTextWrap(child));
+
+      // Return the new element with updated styles and children
+      return React.cloneElement(element, {
+        ...elementProps,
+        style: newStyle,
+        children,
+      });
+    }
+
+    return element;
+  };
+
+  const renderedContent = innerRender();
+  const tooltipTitle = tooltip ? tooltip : removeTextWrap(renderedContent);
   return (
     <>
       <div ref={containerRef}>
         {overFlowing ? (
-          <Tooltip title={innerRender()} overlayStyle={{ maxWidth: width }} autoAdjustOverflow>
+          <Tooltip title={tooltipTitle} overlayStyle={{ maxWidth: width }} autoAdjustOverflow>
             <div
               style={{
                 overflow: 'hidden',
@@ -310,16 +358,50 @@ const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
   );
 };
 
-function getWidthsOfInnerElements(element: HTMLElement | Element) {
+function getWidthsOfInnerElements(element: HTMLElement | Element): number[] {
+  if (typeof window === 'undefined' || !document) {
+    // Return an empty array if executed on the server
+    return [];
+  }
+
+  // https://stackoverflow.com/questions/118241/calculate-text-width-with-javascript
   const widths: number[] = [];
-  /*  Get width of direct children */
+  const context = document.createElement('canvas').getContext('2d');
+
+  if (!context) {
+    return widths;
+  }
+
+  // Get the computed style for the font properties of the element
+  const getFontStyle = (el: Element) => {
+    const styles = getComputedStyle(el);
+    return `${styles.fontStyle} ${styles.fontVariant} ${styles.fontWeight} ${styles.fontSize}/${styles.lineHeight} ${styles.fontFamily}`;
+  };
+
+  // Measure text width
+  const getTextWidth = (el: Element): number => {
+    const text = el.textContent || '';
+    if (!text) return 0;
+
+    context.font = getFontStyle(el); // Set canvas font to element's font
+    return context.measureText(text).width; // Measure the text width
+  };
+
+  // Measure each child's widths
   const children = Array.from(element.children);
   children.forEach((child) => {
-    widths.push(child.getBoundingClientRect().width);
+    const childElement = child as HTMLElement;
+
+    // Add the computed width of the element
+    widths.push(childElement.getBoundingClientRect().width);
+
+    if (context) {
+      // Add the text width of the element
+      widths.push(getTextWidth(childElement));
+    }
   });
 
-  /* Check is child elements are displayed next to each other */
-  /* If they are displayed next to each other, add the sum of their width to widths */
+  // Measure inline children combined width
   const inlineChildrenWidth = children.reduce((acc, child) => {
     const childStyles = getComputedStyle(child);
     if (
@@ -329,14 +411,14 @@ function getWidthsOfInnerElements(element: HTMLElement | Element) {
       childStyles.display === 'inline-grid' ||
       childStyles.display === 'inline-table'
     ) {
-      return acc + child.getBoundingClientRect().width;
+      return acc + Math.max(child.getBoundingClientRect().width, getTextWidth(child));
     }
     return acc;
   }, 0);
-  /* Append width of elements, that are next to each other */
+
   widths.push(inlineChildrenWidth);
 
-  /* Append nested children recursivly */
+  // Recursively add nested children's widths
   children.forEach((child) => {
     widths.push(...getWidthsOfInnerElements(child));
   });

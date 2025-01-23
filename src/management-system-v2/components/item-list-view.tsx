@@ -104,6 +104,7 @@ const ElementList = <T extends { id: string }>({
       title: ColumnDropdown,
     });
   }
+  console.log(columns.filter((col) => col.defaultSortOrder));
 
   const selectedElementsKeys = elementSelection?.selectedElements.map(({ id }) => id);
   const { components } = tableProps || {};

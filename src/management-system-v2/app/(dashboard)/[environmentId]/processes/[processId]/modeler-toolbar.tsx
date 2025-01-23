@@ -31,6 +31,7 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import { handleOpenDocumentation } from '../processes-helper';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -192,20 +193,20 @@ const ModelerToolbar = ({
     }
   };
 
-  const handleOpenDocumentation = async () => {
-    // the timestamp does not matter here since it is overridden by the user being an owner of the process
-    try {
-      const url = await generateSharedViewerUrl(
-        { processId, timestamp: 0 },
-        selectedVersionId || undefined,
-      );
+  // const handleOpenDocumentation = async () => {
+  //   // the timestamp does not matter here since it is overridden by the user being an owner of the process
+  //   try {
+  //     const url = await generateSharedViewerUrl(
+  //       { processId, timestamp: 0 },
+  //       selectedVersionId || undefined,
+  //     );
 
-      // open the documentation page in a new tab (unless it is already open in which case just show the tab)
-      window.open(url, `${processId}-${selectedVersionId}-tab`);
-    } catch (err) {
-      message.error('Failed to open the documentation page.');
-    }
-  };
+  //     // open the documentation page in a new tab (unless it is already open in which case just show the tab)
+  //     window.open(url, `${processId}-${selectedVersionId}-tab`);
+  //   } catch (err) {
+  //     message.error('Failed to open the documentation page.');
+  //   }
+  // };
 
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
@@ -317,9 +318,16 @@ const ModelerToolbar = ({
               <ModelerShareModalButton
                 onExport={handleProcessExportModalToggle}
                 onExportMobile={handleProcessExportModalToggleMobile}
+                modeler={modeler}
+                processId={processId}
               />
               <Tooltip title="Open Documentation">
-                <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
+                <Button
+                  icon={<FilePdfOutlined />}
+                  onClick={() => {
+                    handleOpenDocumentation(processId, selectedVersionId);
+                  }}
+                />
               </Tooltip>
               {!showMobileView && (
                 <>

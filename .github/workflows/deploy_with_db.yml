@@ -180,9 +180,11 @@ jobs:
           fetch-depth: 2
 
       - name: Fetch main branch
+        if: github.ref != 'refs/heads/main'
         run: git fetch origin main:main
 
       - name: Compare migrations with main
+        if: github.ref != 'refs/heads/main'
         id: migration-diff-main
         run: |
           MIGRATIONS_PATH="src/management-system-v2/prisma/migrations"
@@ -211,6 +213,11 @@ jobs:
             echo "No branch-specific migration changes"
             echo "diff=false" >> "$GITHUB_OUTPUT"
           fi
+      - name: Set default outputs for main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # setting it true to skip the if in next step, so that it main uses branch specific db name 
+          echo "main_diff=true" >> "$GITHUB_OUTPUT"
 
   generate-database-name:
     needs: [validate-migrations]

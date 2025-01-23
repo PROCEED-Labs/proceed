@@ -213,11 +213,6 @@ jobs:
             echo "No branch-specific migration changes"
             echo "diff=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Set default outputs for main
-        if: ${{github.ref != 'refs/heads/main'}}
-        run: |
-          # setting it true to skip the if in next step, so that it main uses branch specific db name 
-          echo "main_diff=true" >> "$GITHUB_OUTPUT"
 
   generate-database-name:
     needs: [validate-migrations]

@@ -466,8 +466,9 @@ export async function copyParentConfig(
       createdBy: environmentId,
       createdOn: date,
       lastEditedOn: date,
-      ...parentConfigData,
-      name: parentConfigData.name || `${originalConfig.name} (Copy)`,
+      ...machineConfigInput,
+      name: machineConfigInput.name || `${originalConfig.name} (Copy)`,
+      shortname: machineConfigInput.shortname || `${originalConfig.shortname} (Copy)`,
       metadata: await asyncMap(originalConfig.metadata, (id) => copyParameter(id, newId)),
       targetConfig:
         originalConfig.targetConfig &&
@@ -477,6 +478,8 @@ export async function copyParentConfig(
       ),
       originalId,
     };
+    // TODO
+    // copy.metadata['description'] = machineConfigInput.metadata['description'];
 
     // if no folder ID is given, set ID to root folder's
     if (!copy.folderId) {

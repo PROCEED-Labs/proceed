@@ -238,10 +238,11 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
         valueFromModal.originalId,
         {
           name: valueFromModal.name,
+          shortname: valueFromModal.shortname,
           metadata: {
             description: defaultParameter('description', valueFromModal.description),
           },
-          categories: [],
+          categories: valueFromModal.categories,
         },
         space.spaceId,
       );
@@ -256,7 +257,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       const importedData: ParentConfig[] = JSON.parse(text); //TODO PARSE SCHEMA
 
       await asyncForEach(importedData, async (item) => {
-        if (validate(item.id)) throw new Error('Invalid UUID.');
+        if (!validate(item.id)) throw new Error(`Invalid UUID: ${item.id}`);
         const add_return = await addParentConfig(item, space.spaceId);
         if ('error' in add_return) {
           throw add_return.error.message;

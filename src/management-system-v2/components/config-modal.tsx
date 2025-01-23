@@ -154,7 +154,6 @@ const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInpu
           allowClear
           style={{ width: '100%' }}
           placeholder="Please select"
-          defaultValue={[]}
           options={categoriesList}
         />
       </Form.Item>

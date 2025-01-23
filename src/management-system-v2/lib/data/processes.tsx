@@ -159,12 +159,17 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionCrea
   return userError(`Access Denied: Process is not shared`, UserErrorType.PermissionError);
 };
 
-export const getProcess = async (definitionId: string, spaceId: string) => {
+export const getProcess = async (
+  definitionId: string,
+  spaceId: string,
+  skipValidityCheck = false,
+) => {
   await loadModules();
+  if (!skipValidityCheck) {
+    const error = await checkValidity(definitionId, 'view', spaceId);
 
-  const error = await checkValidity(definitionId, 'view', spaceId);
-
-  if (error) return error;
+    if (error) return error;
+  }
   const result = await _getProcess(definitionId);
   return result as Process;
 };

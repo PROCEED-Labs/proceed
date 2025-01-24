@@ -220,8 +220,6 @@ const ModelerToolbar = ({
   const showMobileView = useMobileModeler();
   const timelineViewFeatureEnabled = process.env.NEXT_PUBLIC_TIMELINE_VIEW === 'true';
 
-  console.log('ENV', process.env.NEXT_PUBLIC_TIMELINE_VIEW);
-
   return (
     <>
       <Toolbar className={styles.Toolbar}>

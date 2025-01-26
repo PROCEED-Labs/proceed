@@ -14,7 +14,11 @@ module.exports = (path) => {
 
     await db.saveScriptString(definitionId, fileName, script);
 
-    return '';
+    return {
+      statusCode: 200,
+      mimeType: 'text/javascript',
+      response: script,
+    };
   });
 
   network.get(`${path}/:definitionId/script-tasks/:fileName`, { cors: true }, async (req) => {

@@ -808,11 +808,9 @@ export async function deleteProcessUserTask(
     let isDeleted = false;
 
     if (res?.json) {
-      console.log('user task json exists', userTaskFileName);
       isDeleted = await deleteProcessArtifact(res.json.filePath, true);
     }
     if (res?.html) {
-      console.log('user task html exists', userTaskFileName);
       isDeleted = (await deleteProcessArtifact(res.html.filePath, true)) || isDeleted;
     }
 
@@ -831,7 +829,6 @@ export async function deleteProcessScriptTask(
   try {
     const res = await checkIfScriptTaskFileExists(processDefinitionsId, taskFileNameWithExtension);
     if (res) {
-      console.log('script task file exists', taskFileNameWithExtension);
       return await deleteProcessArtifact(res.filePath, true);
     }
   } catch (err) {

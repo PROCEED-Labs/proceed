@@ -24,8 +24,6 @@ let updateProcess: TProcessModule['updateProcess'];
 let getProcessBpmn: TProcessModule['getProcessBpmn'];
 let deleteProcessUserTask: TProcessModule['deleteProcessUserTask'];
 let getProcessUserTaskHtml: TProcessModule['getProcessUserTaskHtml'];
-let getProcessUserTasksHtml: TProcessModule['getProcessUserTasksHtml'];
-let getProcessUserTasksJSON: TProcessModule['getProcessUserTasksJSON'];
 let saveProcessUserTask: TProcessModule['saveProcessUserTask'];
 let getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
 
@@ -44,8 +42,6 @@ const loadModules = async () => {
     getProcessBpmn,
     deleteProcessUserTask,
     getProcessUserTaskHtml,
-    getProcessUserTasksHtml,
-    getProcessUserTasksJSON,
     saveProcessUserTask,
     getProcessUserTaskJSON,
     getProcessScriptTaskScript,
@@ -156,43 +152,14 @@ export async function versionUserTasks(
 ) {
   const htmlMapping = await getUserTaskFileNameMapping(bpmnObj);
   const versionedUserTaskFilenames: string[] = [];
-  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const { versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   for (let userTaskId in htmlMapping) {
     const { fileName, implementation } = htmlMapping[userTaskId];
 
     // only version user tasks that use html
     if (fileName && implementation === getUserTaskImplementationString()) {
-      const userTaskHtml = await getProcessUserTaskHtml(processInfo.id, fileName);
       let versionFileName = `${fileName}-${newVersion}`;
-
-      // get the html of the user task in the based on version (if there is one and it is locally known)
-      const basedOnBPMN =
-        versionBasedOn !== undefined
-          ? await getLocalVersionBpmn(processInfo, versionBasedOn!)
-          : undefined;
-
-      // check if there is a preceding version and if the html of the user task actually changed from that version
-      let userTaskHtmlAlreadyExisting = false;
-      if (basedOnBPMN) {
-        const basedOnVersionHtmlMapping = await getUserTaskFileNameMapping(basedOnBPMN);
-
-        // check if the user task existed and if it had the same html
-        const basedOnVersionFileInfo = basedOnVersionHtmlMapping[userTaskId];
-
-        if (basedOnVersionFileInfo && basedOnVersionFileInfo.fileName) {
-          const basedOnVersionUserTaskHtml = await getProcessUserTaskHtml(
-            processInfo.id,
-            basedOnVersionFileInfo.fileName,
-          );
-
-          if (basedOnVersionUserTaskHtml === userTaskHtml) {
-            // reuse the html of the previous version
-            userTaskHtmlAlreadyExisting = true;
-            versionFileName = basedOnVersionFileInfo.fileName;
-          }
-        }
-      }
 
       // make sure the user task is using the correct data
       await setUserTaskData(
@@ -202,8 +169,8 @@ export async function versionUserTasks(
         getUserTaskImplementationString(),
       );
 
-      // store the user task version if it didn't exist before
-      if (!dryRun && !userTaskHtmlAlreadyExisting) {
+      if (!dryRun) {
+        const userTaskHtml = await getProcessUserTaskHtml(processInfo.id, fileName);
         const userTaskData = await getProcessUserTaskJSON(processInfo.id, fileName);
         await saveProcessUserTask(
           processInfo.id,
@@ -231,58 +198,23 @@ export async function versionScriptTasks(
 ) {
   const scriptMapping = await getScriptTaskFileNameMapping(bpmnObj);
   const versionedScriptTaskFilenames: string[] = [];
-  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const { versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   for (let scriptTaskId in scriptMapping) {
     const { fileName } = scriptMapping[scriptTaskId];
 
     // only handle script tasks that reference a file
     if (fileName) {
-      const scriptTaskJS = await getProcessScriptTaskScript(processInfo.id, fileName + '.js');
-      const scriptTaskTS = await getProcessScriptTaskScript(processInfo.id, fileName + '.ts');
-
       let versionFileName = `${fileName}-${newVersion}`;
-
-      // get the script of the script task in the based on version (if there is one and it is locally known)
-      const basedOnBPMN =
-        versionBasedOn !== undefined
-          ? await getLocalVersionBpmn(processInfo, versionBasedOn)
-          : undefined;
-
-      // check if there is a preceding version and if the script of the script task actually changed from that version
-      let scriptTaskScriptAlreadyExisting = false;
-      if (basedOnBPMN) {
-        const basedOnVersionScriptMapping = await getScriptTaskFileNameMapping(basedOnBPMN);
-
-        // check if the script task existed and if it had the same script
-        const basedOnVersionFileInfo = basedOnVersionScriptMapping[scriptTaskId];
-
-        if (basedOnVersionFileInfo && basedOnVersionFileInfo.fileName) {
-          const basedOnVersionScriptTaskJS = await getProcessScriptTaskScript(
-            processInfo.id,
-            basedOnVersionFileInfo.fileName + '.js',
-          );
-          const basedOnVersionScriptTaskTS = await getProcessScriptTaskScript(
-            processInfo.id,
-            basedOnVersionFileInfo.fileName + '.ts',
-          );
-
-          if (
-            basedOnVersionScriptTaskJS === scriptTaskJS &&
-            basedOnVersionScriptTaskTS === scriptTaskTS
-          ) {
-            // reuse the script of the previous version
-            scriptTaskScriptAlreadyExisting = true;
-            versionFileName = basedOnVersionFileInfo.fileName;
-          }
-        }
-      }
 
       // make sure the script task is using the correct data
       await setScriptTaskData(bpmnObj, scriptTaskId, versionFileName);
 
       // store the script task version if it didn't exist before
-      if (!dryRun && !scriptTaskScriptAlreadyExisting) {
+      if (!dryRun) {
+        const scriptTaskJS = await getProcessScriptTaskScript(processInfo.id, fileName + '.js');
+        const scriptTaskTS = await getProcessScriptTaskScript(processInfo.id, fileName + '.ts');
+
         await saveProcessScriptTask(
           processInfo.id,
           versionFileName + '.js',

@@ -12,11 +12,9 @@ import {
   deleteImage,
   getUserTaskIds,
   getUserTaskHTML,
-  getUserTasksHTML,
   saveUserTaskHTML,
   deleteUserTaskHTML,
   getUserTaskJSON,
-  getUserTasksJSON,
   saveUserTaskJSON,
   deleteUserTaskJSON,
   getBPMN,
@@ -26,7 +24,6 @@ import {
   getImageFileNames,
   saveScriptTaskScript,
   getScriptTaskScript,
-  getScriptTasksScript,
   deleteScriptTaskScript,
 } from './fileHandling.js';
 import { mergeIntoObject } from '../../helpers/javascriptHelpers';
@@ -402,30 +399,6 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
   }
 }
 
-/** Return object mapping from user tasks fileNames to their form data */
-export async function getProcessUserTasksJSON(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    return getUserTasksJSON(processDefinitionsId);
-  } catch (err) {
-    logger.debug(`Error getting user task data. Reason:\n${err}`);
-    throw new Error('Failed getting data for all user tasks');
-  }
-}
-
-/** Return object mapping from user tasks fileNames to their html */
-export async function getProcessUserTasksHtml(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    return await getUserTasksHTML(processDefinitionsId);
-  } catch (err) {
-    logger.debug(`Error getting user task html. Reason:\n${err}`);
-    throw new Error('Failed getting html for all user tasks');
-  }
-}
-
 export async function saveProcessUserTask(
   processDefinitionsId: string,
   userTaskFileName: string,
@@ -470,18 +443,6 @@ export async function getProcessScriptTaskScript(
   } catch (err) {
     logger.debug(`Error getting data of script task. Reason:\n${err}`);
     throw new Error('Unable to get data for script task!');
-  }
-}
-
-/** Return object mapping from script tasks fileNames to their script */
-export async function getProcessScriptTasksScript(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    return getScriptTasksScript(processDefinitionsId);
-  } catch (err) {
-    logger.debug(`Error getting script task data. Reason:\n${err}`);
-    throw new Error('Failed getting data for all script tasks');
   }
 }
 

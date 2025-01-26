@@ -570,57 +570,6 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, userT
   }
 }
 
-/** Return object mapping from user tasks fileNames to their form data */
-export async function getProcessUserTasksJSON(processDefinitionsId: string, versionId?: string) {
-  try {
-    const res = await db.artifact.findMany({
-      where: {
-        OR: [
-          {
-            processReferences: {
-              some: {
-                processId: processDefinitionsId,
-              },
-            },
-          },
-          {
-            versionReferences: {
-              some: {
-                versionId: versionId,
-              },
-            },
-          },
-        ],
-        artifactType: 'user-tasks',
-      },
-      select: {
-        filePath: true,
-        fileName: true,
-      },
-    });
-
-    if (res) {
-      let userTaskJsons: Record<string, string> = {};
-      await Promise.all(
-        res.map(async (task) => {
-          const jsonAsBuffer = (await retrieveProcessArtifact(
-            processDefinitionsId,
-            task.filePath,
-            true,
-            false,
-          )) as Buffer;
-          const taskId = task.fileName.split('.').shift();
-          userTaskJsons[taskId!] = jsonAsBuffer.toString('utf8');
-        }),
-      );
-      return userTaskJsons;
-    }
-  } catch (error) {
-    logger.debug(`Error getting data of user task. Reason:\n${error}`);
-    throw new Error('Unable to get data for user task!');
-  }
-}
-
 export async function checkIfUserTaskExists(processDefinitionsId: string, userTaskId: string) {
   try {
     // const artifact = await db.artifact.findFirst({
@@ -701,6 +650,20 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
     const res = await db.artifact.findFirst({
       where: {
         fileName: `${taskFileName}.html`,
+        OR: [
+          {
+            processReferences: {
+              some: {
+                processId: processDefinitionsId,
+              },
+            },
+          },
+          {
+            versionReferences: {
+              some: { version: { processId: processDefinitionsId } },
+            },
+          },
+        ],
       },
       select: {
         filePath: true,
@@ -725,7 +688,23 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
   checkIfProcessExists(processDefinitionsId);
   try {
     const res = await db.artifact.findFirst({
-      where: { fileName },
+      where: {
+        fileName,
+        OR: [
+          {
+            processReferences: {
+              some: {
+                processId: processDefinitionsId,
+              },
+            },
+          },
+          {
+            versionReferences: {
+              some: { version: { processId: processDefinitionsId } },
+            },
+          },
+        ],
+      },
       select: {
         filePath: true,
       },
@@ -988,98 +967,6 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
   } catch (err) {
     logger.debug(`Error getting image. Reason:\n${err}`);
     throw new Error('Unable to get image!');
-  }
-}
-
-/** Return object mapping from user tasks fileNames to their html */
-export async function getProcessUserTasksHtml(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    const res = await db.artifact.findMany({
-      where: {
-        OR: [
-          {
-            processReferences: {
-              some: {
-                processId: processDefinitionsId,
-              },
-            },
-          },
-        ],
-        artifactType: 'user-tasks',
-      },
-      select: {
-        filePath: true,
-        fileName: true,
-      },
-    });
-
-    if (res) {
-      let userTaskHTMLs: Record<string, string> = {};
-      await Promise.all(
-        res.map(async (task) => {
-          const htmlAsBuffer = (await retrieveProcessArtifact(
-            processDefinitionsId,
-            task.filePath,
-            true,
-            false,
-          )) as Buffer;
-          const taskId = task.fileName.split('.').shift();
-          userTaskHTMLs[taskId!] = htmlAsBuffer.toString('utf8');
-        }),
-      );
-      return userTaskHTMLs;
-    }
-  } catch (err) {
-    logger.debug(`Error getting user task html. Reason:\n${err}`);
-    throw new Error('Failed getting html for all user tasks');
-  }
-}
-
-/** Return object mapping from script tasks fileNames to their script */
-export async function getProcessScriptTasksScript(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    const res = await db.artifact.findMany({
-      where: {
-        OR: [
-          {
-            processReferences: {
-              some: {
-                processId: processDefinitionsId,
-              },
-            },
-          },
-        ],
-        artifactType: 'script-tasks',
-      },
-      select: {
-        filePath: true,
-        fileName: true,
-      },
-    });
-
-    if (res) {
-      let scriptTaskScripts: Record<string, string> = {};
-      await Promise.all(
-        res.map(async (task) => {
-          const scriptAsBuffer = (await retrieveProcessArtifact(
-            processDefinitionsId,
-            task.filePath,
-            true,
-            false,
-          )) as Buffer;
-          const taskId = task.fileName.split('.').shift();
-          scriptTaskScripts[taskId!] = scriptAsBuffer.toString('utf8');
-        }),
-      );
-      return scriptTaskScripts;
-    }
-  } catch (err) {
-    logger.debug(`Error getting script task data. Reason:\n${err}`);
-    throw new Error('Failed getting data for all script tasks');
   }
 }
 

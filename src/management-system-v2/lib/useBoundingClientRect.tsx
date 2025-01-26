@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 type DOMRectKeyType = 'x' | 'y' | 'bottom' | 'top' | 'left' | 'right' | 'width' | 'height';
 
@@ -19,7 +19,7 @@ function useBoundingClientRect<T extends ReadonlyArray<DOMRectKeyType>>(
 ): PartialDOMRect<T> {
   const [boundingBox, setBoundingBox] = useState(new DOMRect());
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (el) {
       const bb = el.getBoundingClientRect();
       setBoundingBox(bb);

@@ -157,7 +157,15 @@ class TaskListTab extends DisplayItem {
         const entries = data.entries();
         let entry = entries.next();
         while (!entry.done) {
-          [, variables[entry.value[0]]] = entry.value;
+          const [key, value] = entry.value;
+          if (variables[key]) {
+            if (!Array.isArray(variables[key])) {
+              variables[key] = [variables[key]]; 
+            }
+            variables[key].push(value);
+          } else {
+            variables[key] = value; 
+          }
           entry = entries.next();
         }
 

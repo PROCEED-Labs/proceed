@@ -250,13 +250,13 @@ export const schema = {
       ],
     },
     {
-      name: 'version',
+      name: 'versionId',
       extends: ['bpmn:Definitions', 'bpmn:Import'],
       properties: [
         {
-          name: 'version',
+          name: 'versionId',
           isAttr: true,
-          type: 'Number',
+          type: 'string',
         },
       ],
     },
@@ -288,6 +288,17 @@ export const schema = {
       properties: [
         {
           name: 'versionBasedOn',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'versionCreatedOn',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'versionCreatedOn',
           isAttr: true,
           type: 'String',
         },
@@ -453,6 +464,43 @@ export const schema = {
           name: 'external',
           isAttr: true,
           type: 'Boolean',
+        },
+      ],
+    },
+    {
+      name: 'Performer',
+      superClass: ['bpmn:Artifact'],
+      properties: [
+        {
+          name: 'name',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'HumanPerformer',
+      superClass: ['Performer'],
+    },
+    {
+      name: 'MachinePerformer',
+      superClass: ['Performer'],
+      properties: [
+        {
+          name: 'machineType',
+          isAttr: true,
+          type: 'MachinePerformerType',
+        },
+      ],
+    },
+    {
+      name: 'PerformableNode',
+      extends: ['bpmn:Activity', 'bpmn:Event', 'bpmn:Gateway'],
+      properties: [
+        {
+          name: 'Performers',
+          type: 'PerformerAssociation',
+          isMany: true,
         },
       ],
     },
@@ -1196,7 +1244,25 @@ export const schema = {
   xml: {
     tagAlias: 'lowerCase',
   },
-  emumerations: [],
+  emumerations: [
+    {
+      name: 'MachinePerformerTypes',
+      literalValues: [
+        {
+          name: 'Screen',
+        },
+        {
+          name: 'Laptop',
+        },
+        {
+          name: 'Robot',
+        },
+        {
+          name: 'Server',
+        },
+      ],
+    },
+  ],
   associations: [],
 };
 

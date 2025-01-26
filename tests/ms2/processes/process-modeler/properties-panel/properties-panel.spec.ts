@@ -16,6 +16,10 @@ test('open properties panel for process and fill property values', async ({
   const exampleImageURL = new RegExp(
     `.*\\/api\\/private\\/[a-zA-Z0-9-_]+\\/processes\\/${definitionId}\\/images\\/[a-zA-Z0-9-_]+\\.jpg\\?\\d+$`,
   );
+  const exampleImageURLFileManager = new RegExp(
+    `^/api/private/file-manager\\?environmentId=[a-f0-9-]+&entityId=${definitionId}&entityType=PROCESS&fileName=[a-zA-Z0-9-_]+\\.jpg&shareToken=[a-zA-Z0-9-_]*$`,
+  );
+
   await expect(
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
   ).toHaveAttribute('src', placeholderImageURL);
@@ -24,7 +28,10 @@ test('open properties panel for process and fill property values', async ({
   await expect(propertiesPanelPage.imageSection.getByLabel('delete')).toBeVisible();
   await expect(
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
-  ).toHaveAttribute('src', exampleImageURL);
+  ).toHaveAttribute(
+    'src',
+    new RegExp(`${exampleImageURL.source}|${exampleImageURLFileManager.source}`),
+  );
   await propertiesPanelPage.imageSection.getByLabel('delete').click();
   await expect(propertiesPanelPage.imageSection).toHaveText('Add Image');
   await expect(
@@ -150,6 +157,9 @@ test('open properties panel for element and fill property values', async ({
   const exampleImageURL = new RegExp(
     `.*\\/api\\/private\\/[a-zA-Z0-9-_]+\\/processes\\/${definitionId}\\/images\\/[a-zA-Z0-9-_]+\\.jpg\\?\\d+$`,
   );
+  const exampleImageURLFileManager = new RegExp(
+    `^/api/private/file-manager\\?environmentId=[a-f0-9-]+&entityId=${definitionId}&entityType=PROCESS&fileName=[a-zA-Z0-9-_]+\\.jpg&shareToken=[a-zA-Z0-9-_]*$`,
+  );
   await expect(
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
   ).toHaveAttribute('src', placeholderImageURL);
@@ -158,7 +168,11 @@ test('open properties panel for element and fill property values', async ({
   await expect(propertiesPanelPage.imageSection.getByLabel('delete')).toBeVisible();
   await expect(
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
-  ).toHaveAttribute('src', exampleImageURL);
+  ).toHaveAttribute(
+    'src',
+    new RegExp(`${exampleImageURL.source}|${exampleImageURLFileManager.source}`),
+  );
+
   await propertiesPanelPage.imageSection.getByLabel('delete').click();
   await expect(propertiesPanelPage.imageSection).toHaveText('Add Image');
   await expect(

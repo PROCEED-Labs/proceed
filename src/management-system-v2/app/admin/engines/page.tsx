@@ -27,7 +27,7 @@ async function Engines() {
 }
 
 export default function EnginesPage() {
-  if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) return notFound();
+  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
   if (!env.MQTT_SERVER_ADDRESS)
     return <Result status="500" title="Error" subTitle="No MQTT server address configured" />;

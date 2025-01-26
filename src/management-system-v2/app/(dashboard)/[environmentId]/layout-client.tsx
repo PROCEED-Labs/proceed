@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useState } from 'react';
+import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
 import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
 import { AppstoreOutlined } from '@ant-design/icons';
 import Image from 'next/image';
@@ -16,6 +16,9 @@ import useModelerStateStore from './processes/[processId]/use-modeler-state-stor
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
 import { FaUserEdit } from 'react-icons/fa';
+import { useFileManager } from '@/lib/useFileManager';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { enableUseFileManager } from 'FeatureFlags';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -54,7 +57,9 @@ const Layout: FC<
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
-
+  const { download: getLogo, fileUrl: logoUrl } = useFileManager({
+    entityType: EntityType.ORGANIZATION,
+  });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
 
@@ -74,7 +79,6 @@ const Layout: FC<
         {
           label: 'Profile',
           key: 'profile-settings',
-          type: 'group',
           children: [
             {
               key: 'profile',
@@ -83,9 +87,9 @@ const Layout: FC<
               icon: <FaUserEdit />,
             },
             {
-              key: 'environments',
+              key: 'spaces',
               title: 'My Spaces',
-              label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+              label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
               icon: <AppstoreOutlined />,
             },
           ],
@@ -95,12 +99,15 @@ const Layout: FC<
     }
   }
 
+  useEffect(() => {
+    if (enableUseFileManager && customLogo) getLogo(activeSpace.spaceId, '');
+  }, [activeSpace, customLogo]);
+
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (customLogo) imageSource = customLogo;
+  if (customLogo) imageSource = logoUrl ?? customLogo;
 
   const menu = (
     <Menu
-      theme="light"
       style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
       mode="inline"
       items={layoutMenuItems}
@@ -149,40 +156,64 @@ const Layout: FC<
                   backgroundColor: '#fff',
                   borderRight: '1px solid #eee',
                   display: modelerIsFullScreen ? 'none' : 'block',
+                  overflow: 'auto',
                 }}
                 className={cn(styles.Sider)}
                 collapsible
                 collapsed={collapsed}
                 onCollapse={(collapsed) => setCollapsed(collapsed)}
-                collapsedWidth={breakpoint.xs ? '0' : '100'}
+                collapsedWidth={breakpoint.xs ? '0' : '75'}
                 breakpoint="xl"
-                trigger={null}
+                theme="light"
               >
-                <Link className={styles.LogoContainer} href={spaceURL(activeSpace, `/processes`)}>
-                  <Image
-                    src={imageSource}
-                    alt="PROCEED Logo"
-                    className={cn(styles.Logo, {
-                      [styles.collapsed]: collapsed,
-                    })}
-                    width={160}
-                    height={63}
-                    priority
-                  />
-                </Link>
-
-                {loggedIn ? menu : null}
+                <div
+                  style={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '8px',
+                        height: '64px',
+                      }}
+                    >
+                      <Link
+                        className={styles.LogoContainer}
+                        href={spaceURL(activeSpace, `/processes`)}
+                      >
+                        <Image
+                          src={imageSource}
+                          alt="PROCEED Logo"
+                          className={cn(styles.Logo, {
+                            [styles.collapsed]: collapsed,
+                          })}
+                          width={160}
+                          height={63}
+                          priority
+                        />
+                      </Link>
+                    </div>
+                    {loggedIn ? menu : null}
+                  </div>
+                  <AntLayout.Footer
+                    style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+                    className={cn(styles.Footer)}
+                  >
+                    PROCEED Labs GmbH
+                  </AntLayout.Footer>
+                </div>
               </AntLayout.Sider>
             )}
 
             <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
           </AntLayout>
-          <AntLayout.Footer
-            style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
-            className={cn(styles.Footer)}
-          >
-            © 2024 PROCEED Labs GmbH
-          </AntLayout.Footer>
         </AntLayout>
 
         <Drawer

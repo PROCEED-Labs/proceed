@@ -2,6 +2,9 @@ import { getProviders } from '@/app/api/auth/[...nextauth]/auth-options';
 import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';
 import SignIn from './signin';
+import { generateGuestReferenceToken } from '@/lib/reference-guest-user-token';
+
+const dayInMS = 1000 * 60 * 60 * 24;
 
 // take in search query
 const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
@@ -12,6 +15,11 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
     const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/processes`;
     redirect(callbackUrl);
   }
+
+  // NOTE: expiration should be the same as the expiration for sign in mails
+  const guestReferenceToken = isGuest
+    ? generateGuestReferenceToken({ guestId: session.user.id }, new Date(Date.now() + dayInMS))
+    : undefined;
 
   let providers = getProviders();
 
@@ -37,7 +45,9 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
   if (!session) userType = 'none' as const;
   else userType = isGuest ? ('guest' as const) : ('user' as const);
 
-  return <SignIn providers={providers} userType={userType} />;
+  return (
+    <SignIn providers={providers} userType={userType} guestReferenceToken={guestReferenceToken} />
+  );
 };
 
 export default SignInPage;

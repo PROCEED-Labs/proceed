@@ -5,7 +5,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { z } from 'zod';
 import { getUserById } from './users';
 import { getEnvironmentById } from './environments';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 
 const RoleMappingInputSchema = z.object({

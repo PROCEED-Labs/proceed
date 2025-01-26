@@ -126,9 +126,9 @@ const HeaderActions: FC = () => {
 
     avatarDropdownItems.push(
       {
-        key: 'environments',
+        key: 'spaces',
         title: 'My Spaces',
-        label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+        label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
         icon: <AppstoreOutlined />,
       },
       {

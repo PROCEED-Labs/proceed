@@ -64,27 +64,28 @@ async function getDefinitionsName(bpmn) {
  * Returns the version information of the given bpmn process definition
  *
  * @param {string|object} bpmn - the process definition as XML string or BPMN-moddle Object
- * @returns {(Promise.<{version?: number, name?: string, description?: string, versionBasedOn?: number}>)} - The version information if it exists
+ * @returns {(Promise.<{versionId?: string, name?: string, description?: string, versionBasedOn?: string, versionCreatedOn?: string }>)} - The version information if it exists
  * @throws {Error} will throw if the definition contains a version that is not a number
  */
 async function getDefinitionsVersionInformation(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
-  if (bpmnObj.version && isNaN(bpmnObj.version)) {
-    throw new Error('The process version has to be a number (time in ms since 1970)');
-  }
+  // if (bpmnObj.versionId && isNaN(bpmnObj.versionId)) {
+  //   throw new Error('The process version has to be a number (time in ms since 1970)');
+  // }
 
-  if (!bpmnObj.version) {
+  if (!bpmnObj.versionId) {
     return {
       versionBasedOn: bpmnObj.versionBasedOn,
     };
   }
 
   return {
-    version: parseInt(bpmnObj.version),
+    versionId: bpmnObj.versionId,
     name: bpmnObj.versionName,
     description: bpmnObj.versionDescription,
     versionBasedOn: bpmnObj.versionBasedOn,
+    versionCreatedOn: bpmnObj.versionCreatedOn,
   };
 }
 
@@ -443,7 +444,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
     );
   }
 
-  const version = importElement.version || importElement.$attrs['proceed:version'];
+  const version = importElement.versionId || importElement.$attrs['proceed:versionId'];
 
   if (!version) {
     throw new Error(
@@ -454,7 +455,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
   return {
     definitionId: importElement.location,
     processId,
-    version: version && parseInt(version),
+    versionId: version,
   };
 }
 
@@ -463,7 +464,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {boolean} [dontThrow] - whether to throw errors or not in retrieving process ids in call activities
- * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, version: number }}> } an object (a map) with all callActivityIds as keys
+ * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, versionId: string }}> } an object (a map) with all callActivityIds as keys
  * @throws see function: {@link getTargetDefinitionsAndProcessIdForCallActivityByObject}
  */
 async function getDefinitionsAndProcessIdForEveryCallActivity(bpmn, dontThrow = false) {

@@ -6,7 +6,7 @@ import styles from './index.module.scss';
 import useBuilderStateStore from '../use-builder-state-store';
 
 export const Settings: React.FC = () => {
-  const { settings, selectedNodeId, query } = useEditor((state) => {
+  const { settings, selectedNodeId } = useEditor((state) => {
     const currentColumn = Array.from(state.events.selected)
       .map((id) => state.nodes[id])
       .find((node) => node && node.data.name === 'Column');

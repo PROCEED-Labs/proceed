@@ -4,21 +4,31 @@ import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
 import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
 import { MenuProps } from 'antd';
+
 import {
-  FileOutlined,
-  UnlockOutlined,
+  PartitionOutlined,
+  TeamOutlined,
   UserOutlined,
+  BarChartOutlined,
+  EditOutlined,
+  SnippetsOutlined,
+  CopyOutlined,
+  CheckSquareOutlined,
+  HistoryOutlined,
+  NodeExpandOutlined,
+  PlaySquareOutlined,
+  LaptopOutlined,
   SettingOutlined,
-  ControlOutlined,
+  ToolOutlined,
+  SolutionOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
+
 import Link from 'next/link';
 import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
-import { LuBoxes, LuTable2 } from 'react-icons/lu';
-import { MdOutlineComputer } from 'react-icons/md';
-import { GoOrganization } from 'react-icons/go';
-import { FaList } from 'react-icons/fa';
+import { LuTable2 } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import { env } from '@/lib/env-vars';
@@ -43,82 +53,81 @@ const DashboardLayout = async ({
     ? (adminRules as RemoveReadOnly<typeof adminRules>)
     : await getUserRules(userId, activeEnvironment.spaceId);
 
-  const layoutMenuItems: MenuProps['items'] = [];
+  let layoutMenuItems: MenuProps['items'] = [];
 
-  if (systemAdmin)
-    layoutMenuItems.push({
-      key: 'ms-admin',
-      label: 'System Admin',
-      type: 'group',
-      children: [
-        {
-          key: 'admin-dashboard',
-          label: <Link href="/admin">System dashboard</Link>,
-          icon: <ControlOutlined />,
-        },
-      ],
+  if (can('view', 'Process')) {
+    let children: MenuProps['items'] = [];
+    children.push({
+      key: 'processes-editor',
+      label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
+      icon: <EditOutlined />,
     });
 
-  if (can('view', 'Process') || can('view', 'Template')) {
-    const children: MenuProps['items'] = [];
-
-    if (can('view', 'Process'))
-      children.push({
-        key: 'processes',
-        label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Process List</Link>,
-        icon: <FileOutlined />,
-      });
-
-    // if (can('view', 'Template'))
-    //   children.push({
-    //     key: 'templates',
-    //     label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
-    //     icon: <ProfileOutlined />,
-    //   });
+    children = [
+      {
+        key: 'processes-list',
+        label: <Link href={spaceURL(activeEnvironment, `/processes`)}>List</Link>,
+        icon: <CopyOutlined />,
+      },
+      ...children,
+      {
+        key: 'processes-templates',
+        label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Templates</Link>,
+        icon: <SnippetsOutlined />,
+      },
+    ];
 
     layoutMenuItems.push({
       key: 'processes-group',
       label: 'Processes',
-      type: 'group',
+      icon: <PartitionOutlined />,
       children,
     });
-
-    layoutMenuItems.push({
-      key: 'divider-processes',
-      type: 'divider',
-    });
   }
-  if (env.NEXT_PUBLIC_ENABLE_EXECUTION) {
-    const children: MenuProps['items'] = [];
+
+  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+    let children: MenuProps['items'] = [];
 
     children.push({
       key: 'executions',
-      label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Instances</Link>,
-      icon: <LuBoxes />,
+      label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Executions</Link>,
+      icon: <NodeExpandOutlined />,
     });
 
     children.push({
-      key: 'engines',
-      label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Engines</Link>,
-      icon: <MdOutlineComputer />,
+      key: 'machines',
+      label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Machines</Link>,
+      icon: <LaptopOutlined />,
     });
 
-    children.push({
-      key: 'tasklist',
-      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Tasklist</Link>,
-      icon: <FaList />,
-    });
+    layoutMenuItems = [
+      {
+        key: 'tasklist',
+        label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Your Tasks</Link>,
+        icon: <CheckSquareOutlined />,
+      },
+      ...layoutMenuItems,
+    ];
+
+    children = [
+      {
+        key: 'dashboard',
+        label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
+        icon: <BarChartOutlined />,
+      },
+      {
+        key: 'projects',
+        label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Projects</Link>,
+        icon: <HistoryOutlined />,
+      },
+      ...children,
+    ];
 
     layoutMenuItems.push({
-      key: 'executions-group',
-      label: 'Executions',
-      type: 'group',
+      key: 'automations-group',
+      label: 'Automations',
+      icon: <PlaySquareOutlined />,
       children,
-    });
-
-    layoutMenuItems.push({
-      key: 'divider-executions',
-      type: 'divider',
     });
   }
 
@@ -126,12 +135,7 @@ const DashboardLayout = async ({
     layoutMenuItems.push({
       key: 'machine-config',
       label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,
-      icon: <LuTable2 />,
-    });
-
-    layoutMenuItems.push({
-      key: 'divider-machine-config',
-      type: 'divider',
+      icon: <ToolOutlined />,
     });
   }
 
@@ -141,6 +145,13 @@ const DashboardLayout = async ({
     ability.can('manage', 'Role')
   ) {
     const children: MenuProps['items'] = [];
+
+    if (can('update', 'Environment') || can('delete', 'Environment'))
+      children.push({
+        key: 'organization-settings',
+        label: <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>Settings</Link>,
+        icon: <SettingOutlined />,
+      });
 
     if (can('manage', 'User'))
       children.push({
@@ -153,50 +164,22 @@ const DashboardLayout = async ({
       children.push({
         key: 'roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,
-        icon: <UnlockOutlined />,
+        icon: <TeamOutlined />,
       });
 
     layoutMenuItems.push({
       key: 'iam-group',
-      label: 'IAM',
-      type: 'group',
+      label: 'Organization',
+      icon: <HomeOutlined />,
       children,
-    });
-
-    layoutMenuItems.push({
-      key: 'divider-iam',
-      type: 'divider',
     });
   }
 
-  if (can('view', 'Setting') || can('manage', 'Environment')) {
-    const children: MenuProps['items'] = [];
-
-    if (can('update', 'Environment') || can('delete', 'Environment'))
-      children.push({
-        key: 'organization-settings',
-        label: (
-          <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>
-            Organization Settings
-          </Link>
-        ),
-        icon: <GoOrganization />,
-      });
-
-    if (can('view', 'Setting'))
-      children.push({
-        key: 'general-settings',
-        label: (
-          <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
-        ),
-        icon: <SettingOutlined />,
-      });
-
+  if (systemAdmin) {
     layoutMenuItems.push({
-      key: 'settings-group',
-      label: 'Settings',
-      type: 'group',
-      children,
+      key: 'ms-admin',
+      label: <Link href="/admin">Administration</Link>,
+      icon: <SolutionOutlined />,
     });
   }
 

@@ -250,11 +250,11 @@ module.exports = {
         });
         // we are starting a new local instance to continue an instance started on another machine
       }
+
       engine.instanceIDs.push(newInstance.id);
 
       const state = newInstance.getState();
-      const processId = state.processId.substring(0, state.processId.lastIndexOf('-'));
-      const processVersion = state.processId.substring(processId.length + 1);
+      const processVersion = state.processId.substring(engine.definitionId.length + 1);
 
       engine._instanceIdProcessMapping[newInstance.id] =
         engine._versionProcessMapping[processVersion];

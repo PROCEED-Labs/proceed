@@ -29,6 +29,17 @@ export function toBpmnObject(xml: string, typename?: string): Promise<object>;
  */
 export function toBpmnXml(obj: any): Promise<string>;
 /**
+ * Creates a deep copy of an element
+ *
+ * @param {string|object} bpmn traversable object representation or bpmn XML
+ * @param {string} id the id of the element to be copied
+ * @returns {Promise<object|undefined>} - returns the copied object or undefined when no matching object was found
+ */
+export function deepCopyElementById(
+  bpmn: string | object,
+  elemId: any,
+): Promise<object | undefined>;
+/**
  * Finds all kinds of childnodes in a given node
  *
  * @param {object} travObj object of which we want to know the childnodes

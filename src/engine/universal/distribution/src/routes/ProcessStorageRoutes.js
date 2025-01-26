@@ -31,8 +31,8 @@ module.exports = (path, management) => {
   network.post(`${path}/`, { cors: true }, async (req) => {
     const { body } = req;
     const { bpmn } = body;
-    const { definitionId, version } = await db.saveProcessVersionDefinition(bpmn);
-    log.info(`Process version deployed (id: ${definitionId}, version: ${version})`);
+    const { definitionId, versionId } = await db.saveProcessVersionDefinition(bpmn);
+    log.info(`Process version deployed (id: ${definitionId}, version: ${versionId})`);
     return JSON.stringify(bpmn);
   });
 
@@ -52,7 +52,7 @@ module.exports = (path, management) => {
 
     try {
       const process = await db.getProcessInfo(definitionId);
-      return JSON.stringify(process.versions.map(({ version }) => version));
+      return JSON.stringify(process.versions.map(({ versionId }) => versionId));
     } catch ({ message }) {
       throw new APIError(404, message);
     }

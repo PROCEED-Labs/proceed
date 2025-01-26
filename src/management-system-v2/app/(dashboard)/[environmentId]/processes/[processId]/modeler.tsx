@@ -8,19 +8,26 @@ import useModelerStateStore from './use-modeler-state-store';
 import { debounce, spaceURL } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { updateProcess } from '@/lib/data/processes';
-import { App } from 'antd';
+import { getProcessUserTaskFileMetaData, updateProcess } from '@/lib/data/processes';
+import { App, message } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
 import styles from './modeler.module.scss';
 import ModelerZoombar from './modeler-zoombar';
 import { useAddControlCallback } from '@/lib/controls-store';
+import { getMetaDataFromElement } from '@proceed/bpmn-helper';
+import {
+  revertSoftDeleteProcessUserTask,
+  softDeleteProcessUserTask,
+  updateFileDeletableStatus,
+} from '@/lib/data/file-manager-facade';
+import { useSession } from 'next-auth/react';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: { name: string; id: string; bpmn: string };
-  versions: { version: number; name: string; description: string }[];
+  versions: { id: string; name: string; description: string; createdOn: Date }[];
 };
 
 const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
@@ -221,6 +228,32 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     }
   }, [messageApi, subprocessId]);
 
+  const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
+    const metaData = getMetaDataFromElement(element.businessObject);
+    if (element.type === 'bpmn:UserTask' && element.businessObject.fileName) {
+      softDeleteProcessUserTask(process.id, element.businessObject.fileName);
+    }
+    if (!metaData.overviewImage) {
+      return;
+    } else {
+      updateFileDeletableStatus(metaData.overviewImage, true, process.id);
+    }
+  }, []);
+
+  const onShapeRemoveUndo = useCallback<Required<BPMNCanvasProps>['onShapeRemoveUndo']>(
+    (element) => {
+      if (element.$type === 'bpmn:UserTask' && element.fileName) {
+        revertSoftDeleteProcessUserTask(process.id, element.fileName);
+      }
+
+      const metaData = getMetaDataFromElement(element);
+      if (!metaData.overviewImage) {
+        return;
+      } else updateFileDeletableStatus(metaData.overviewImage, false, process.id);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (modeler.current) {
       const canvas = modeler.current.getCanvas();
@@ -312,6 +345,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         onChange={canEdit ? onChange : undefined}
         onSelectionChange={onSelectionChange}
         onZoom={onZoom}
+        onShapeRemove={onShapeRemove}
+        onShapeRemoveUndo={onShapeRemoveUndo}
       />
     </div>
   );

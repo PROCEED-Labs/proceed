@@ -15,8 +15,9 @@ import cn from 'classnames';
 
 import EditableText from '../_utils/EditableText';
 import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from './utils';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import BuilderContext from '../BuilderContext';
 
 const defaultHeaderContent =
   '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Header Cell</strong></b>';
@@ -51,6 +52,8 @@ const TableCell: React.FC<
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
+  const { editingEnabled } = useContext(BuilderContext);
+
   return React.createElement(
     type,
     {
@@ -64,7 +67,7 @@ const TableCell: React.FC<
       onMouseEnter: () => setHovered(true),
     },
     <Overlay
-      show={!textEditing && hovered}
+      show={editingEnabled && !textEditing && hovered}
       onHide={() => setHovered(false)}
       controls={[
         {
@@ -138,9 +141,7 @@ const Table: UserComponent<TableProps> = ({
     [defaultContent, defaultContent],
   ],
 }) => {
-  const { query, editingEnabled } = useEditor((state) => ({
-    editingEnabled: state.options.enabled,
-  }));
+  const { query } = useEditor();
 
   const {
     connectors: { connect },
@@ -161,6 +162,8 @@ const Table: UserComponent<TableProps> = ({
       setHoveredAction(undefined);
     }
   }, [isSelected]);
+
+  const { editingEnabled } = useContext(BuilderContext);
 
   const addRow = (index: number) => {
     if (!editingEnabled) return;

@@ -12,7 +12,7 @@ import { OptionalKeys } from '@/lib/typescript-utils.js';
 import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
@@ -87,7 +87,7 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
     console.error('Error adding new user: ', error);
   }
 
-  if ((await getSystemAdmins()).length === 0)
+  if ((await getSystemAdmins()).length === 0 && !user.isGuest)
     addSystemAdmin({
       role: 'admin',
       userId: user.id,

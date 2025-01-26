@@ -6,6 +6,7 @@ import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type ElementFactory from 'diagram-js/lib/core/ElementFactory';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import Modeling from 'diagram-js/lib/features/modeling/Modeling';
+import AutoPlace from 'diagram-js/lib/features/auto-place/AutoPlace';
 import { useEnvironment } from './auth-can';
 import { Element, Parent } from 'diagram-js/lib/model/Types';
 import { useEffect, useRef, useState } from 'react';
@@ -50,6 +51,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     const modeling: Modeling = bpmnjsModeler.get('modeling');
     const elementFactory: ElementFactory = bpmnjsModeler.get('elementFactory');
     const elementRegistry: ElementRegistry = bpmnjsModeler.get('elementRegistry');
+    const autoPlace: AutoPlace = bpmnjsModeler.get('autoPlace');
 
     const processElement = bpmnjsModeler.get<Canvas>('canvas').getRootElement();
 
@@ -62,9 +64,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
 
     const task = elementFactory.createShape({ type: 'bpmn:Task', id: 'Task_1' });
 
-    modeling.createShape(task, { x: 200, y: 0 }, processElement as Parent);
-
-    modeling.connect(startEvent as Element, task, { type: 'bpmn:SequenceFlow' });
+    autoPlace.append(startEvent as any, task);
 
     const data = await bpmnjsModeler.saveXML({ format: true });
     try {

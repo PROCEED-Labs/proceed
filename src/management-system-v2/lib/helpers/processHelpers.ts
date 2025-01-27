@@ -20,6 +20,8 @@ import {
   setDefinitionsVersionInformation,
   getUserTaskFileNameMapping,
   setUserTaskData,
+  getScriptTaskFileNameMapping,
+  setScriptTaskData,
 } from '@proceed/bpmn-helper';
 import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
@@ -214,6 +216,24 @@ export async function updateUserTaskFileName(
   await asyncForEach(Object.entries(fileNameMapping), async ([userTaskId, { fileName }]) => {
     if (fileName === oldFilename.split('.')[0]) {
       await setUserTaskData(bpmnObj, userTaskId, newFilename.split('.')[0]);
+    }
+  });
+
+  return { bpmn: await toBpmnXml(bpmnObj), newFilename };
+}
+
+export async function updateScriptTaskFileName(
+  bpmn: string,
+  oldFilename: string,
+  newFilename: string,
+) {
+  let bpmnObj = await toBpmnObject(bpmn);
+
+  const fileNameMapping = await getScriptTaskFileNameMapping(bpmnObj);
+
+  await asyncForEach(Object.entries(fileNameMapping), async ([scriptTaskId, { fileName }]) => {
+    if (fileName === oldFilename.split('.')[0]) {
+      await setScriptTaskData(bpmnObj, scriptTaskId, newFilename.split('.')[0]);
     }
   });
 

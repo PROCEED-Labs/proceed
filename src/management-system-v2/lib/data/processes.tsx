@@ -13,13 +13,19 @@ import {
   toBpmnObject,
   toBpmnXml,
 } from '@proceed/bpmn-helper';
-import { createProcess, getFinalBpmn, updateUserTaskFileName } from '../helpers/processHelpers';
+import {
+  createProcess,
+  getFinalBpmn,
+  updateScriptTaskFileName,
+  updateUserTaskFileName,
+} from '../helpers/processHelpers';
 import { UserErrorType, userError } from '../user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
   selectAsLatestVersion,
   updateProcessVersionBasedOn,
+  versionScriptTasks,
   versionUserTasks,
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
@@ -29,16 +35,7 @@ import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
-import {
-  checkIfUserTaskExists,
-  copyProcessArtifactReferences,
-  copyProcessFiles,
-} from './db/process';
-import {
-  getProcessScriptTaskScript as _getProcessScriptTaskScript,
-  saveProcessScriptTask as _saveProcessScriptTask,
-  deleteProcessScriptTask as _deleteProcessScriptTask,
-} from './legacy/_process';
+import { copyProcessArtifactReferences, copyProcessFiles } from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
 
@@ -57,6 +54,9 @@ let _getProcessBpmn: TProcessModule['getProcessBpmn'];
 let _saveProcessUserTask: TProcessModule['saveProcessUserTask'];
 let _getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
 let _getProcessUserTaskHtml: TProcessModule['getProcessUserTaskHtml'];
+let _saveProcessScriptTask: TProcessModule['saveProcessScriptTask'];
+let _deleteProcessScriptTask: TProcessModule['deleteProcessScriptTask'];
+let _getProcessScriptTaskScript: TProcessModule['getProcessScriptTaskScript'];
 
 const loadModules = async () => {
   const moduleImport = await (enableUseDB ? import('./db/process') : import('./legacy/_process'));
@@ -74,6 +74,9 @@ const loadModules = async () => {
     getProcessUserTaskJSON: _getProcessUserTaskJSON,
     getProcessImage: _getProcessImage,
     getProcessUserTaskHtml: _getProcessUserTaskHtml,
+    saveProcessScriptTask: _saveProcessScriptTask,
+    deleteProcessScriptTask: _deleteProcessScriptTask,
+    getProcessScriptTaskScript: _getProcessScriptTaskScript,
   } = moduleImport);
 };
 
@@ -346,7 +349,7 @@ export const copyProcesses = async (
       : await _getProcessBpmn(copyProcess.originalId);
 
     // TODO: Does createProcess() do the same as this function?
-    const newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
+    let newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
 
     // TODO: include variables in copy?
     const newProcess = {
@@ -371,23 +374,28 @@ export const copyProcesses = async (
 
       const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
       if (copiedFiles) {
-        const res = await Promise.all(
-          copiedFiles.map((e) => {
-            switch (e?.artifactType) {
-              case 'user-tasks': {
-                return updateUserTaskFileName(
-                  newBpmn,
-                  e.mapping.oldFilename,
-                  e.mapping.newFilename,
-                );
-              }
-              // TODO extend for other artifacts like script task
+        // TODO: check if this works
+        // TODO: possibly optimize this by parsing and serializing the bpmn once instead of on every invocation of the updateXTaskFileName functions
+        for (const file of copiedFiles) {
+          switch (file?.artifactType) {
+            case 'user-tasks': {
+              ({ bpmn: newBpmn } = await updateUserTaskFileName(
+                newBpmn,
+                file.mapping.oldFilename,
+                file.mapping.newFilename,
+              ));
             }
-          }),
-        );
+            case 'script-tasks': {
+              ({ bpmn: newBpmn } = await updateScriptTaskFileName(
+                newBpmn,
+                file.mapping.oldFilename,
+                file.mapping.newFilename,
+              ));
+            }
+          }
+        }
 
-        const updatedBpmn = res[res.length - 1]?.bpmn;
-        await _updateProcess(newProcess.definitionId, { bpmn: updatedBpmn });
+        await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
       }
     }
     copiedProcesses.push({ ...process, bpmn: newBpmn });
@@ -412,7 +420,7 @@ export const processHasChangesSinceLastVersion = async (processId: string, space
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
   const basedOnBPMN =
     versionBasedOn !== undefined
-      ? await getLocalVersionBpmn(process as Process, versionCreatedOn)
+      ? await getLocalVersionBpmn(process as Process, versionBasedOn)
       : undefined;
 
   const versionsAreEqual = basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN));
@@ -450,6 +458,8 @@ export const createVersion = async (
   const process = (await _getProcess(processId)) as Process;
 
   const versionedUserTaskFilenames = await versionUserTasks(process, versionId, bpmnObj);
+  const versionedScriptTaskFilenames = await versionScriptTasks(process, versionId, bpmnObj);
+
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
@@ -461,7 +471,12 @@ export const createVersion = async (
   }
 
   // send final process version bpmn to the backend
-  addProcessVersion(processId, versionedBpmn, versionedUserTaskFilenames);
+  addProcessVersion(
+    processId,
+    versionedBpmn,
+    versionedUserTaskFilenames,
+    versionedScriptTaskFilenames,
+  );
 
   await updateProcessVersionBasedOn({ ...process, bpmn }, versionId);
 
@@ -495,24 +510,6 @@ export const getProcessUserTaskData = async (
     return await _getProcessUserTaskJSON(definitionId, taskFileName);
   } catch (err) {
     return userError('Unable to get the requested User Task data.', UserErrorType.NotFoundError);
-  }
-};
-
-export const getProcessUserTaskFileMetaData = async (
-  processDefinitionsId: string,
-  userTaskId: string,
-  spaceId: string,
-) => {
-  const error = await checkValidity(processDefinitionsId, 'view', spaceId);
-  if (error) return error;
-  try {
-    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
-    return res;
-  } catch (error) {
-    return userError(
-      'Unable to get the requested User Task metadata.',
-      UserErrorType.NotFoundError,
-    );
   }
 };
 

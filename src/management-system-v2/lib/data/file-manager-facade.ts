@@ -24,6 +24,8 @@ const ALLOWED_CONTENT_TYPES = [
   'image/svg+xml',
   'text/html',
   'application/pdf',
+  'application/javascript',
+  'application/xml',
 ];
 
 const isContentTypeAllowed = (mimeType: string): boolean => {
@@ -155,7 +157,13 @@ export async function saveProcessArtifact(
 
   const newFileName = generateNewFileName ? getNewFileName(fileName) : fileName;
   const artifactType = context ? context : getFileCategory(fileName, mimeType);
-  const filePath = generateProcessFilePath(newFileName, processId, mimeType, versionCreatedOn);
+  const filePath = generateProcessFilePath(
+    newFileName,
+    processId,
+    mimeType,
+    versionCreatedOn,
+    artifactType,
+  );
 
   const usePresignedUrl = ['images', 'others'].includes(artifactType);
 
@@ -388,6 +396,30 @@ export async function softDeleteProcessUserTask(processId: string, userTaskFilen
   }
 }
 
+// Soft delete a user task and its associated artifacts
+export async function softDeleteProcessScriptTask(processId: string, scriptTaskFileName: string) {
+  const referencedArtifactFilenames = [
+    `${scriptTaskFileName}.js`,
+    `${scriptTaskFileName}.ts`,
+    `${scriptTaskFileName}.xml`,
+  ];
+
+  const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+    getArtifactMetaData(filename, false),
+  );
+
+  for (const artifact of artifacts) {
+    if (artifact) {
+      await db.artifactProcessReference.deleteMany({
+        where: {
+          artifactId: artifact.id,
+          processId,
+        },
+      });
+    }
+  }
+}
+
 // Revert soft deletion of a user task and restore its artifacts
 export async function revertSoftDeleteProcessUserTask(processId: string, userTaskFilename: string) {
   const res = await getProcessUserTaskJSON(processId, userTaskFilename);
@@ -410,6 +442,33 @@ export async function revertSoftDeleteProcessUserTask(processId: string, userTas
           },
         });
       }
+    }
+  }
+}
+
+// Revert soft deletion of a user task and restore its artifacts
+export async function revertSoftDeleteProcessScriptTask(
+  processId: string,
+  scriptTaskFileName: string,
+) {
+  const referencedArtifactFilenames = [
+    `${scriptTaskFileName}.js`,
+    `${scriptTaskFileName}.ts`,
+    `${scriptTaskFileName}.xml`,
+  ];
+
+  const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+    getArtifactMetaData(filename, false),
+  );
+
+  for (const artifact of artifacts) {
+    if (artifact) {
+      await db.artifactProcessReference.create({
+        data: {
+          artifactId: artifact.id,
+          processId,
+        },
+      });
     }
   }
 }

@@ -128,6 +128,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
     const modeler = useRef<ModelerType | NavigatedViewerType | null>(null);
     const unloadPromise = useRef<Promise<void> | undefined>();
 
+    const loadingXML = useRef(false);
+
     // Expose explicit methods to the parent component.
     useImperativeHandle(ref, () => ({
       fitViewport: () => {
@@ -184,7 +186,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       loadBPMN: async (bpmn: string) => {
         // Note: No onUnload here, because this is only meant as a XML "change"
         // to the same process. Like a user modeling reguraly with the UI.
+        loadingXML.current = true;
         await modeler.current!.importXML(bpmn);
+        loadingXML.current = false;
         fitViewport(modeler.current!);
       },
       activateKeyboard: () => {
@@ -273,7 +277,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current!.on('commandStack.changed', commandStackChanged);
 
         modeler.current!.on('shape.remove', (event: { element: Element }) => {
-          onShapeRemove?.(event.element);
+          if (!loadingXML.current) onShapeRemove?.(event.element);
         });
 
         // Undo fires commandStack.revert
@@ -328,8 +332,12 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           return;
         }
 
+        loadingXML.current = true;
+
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
+
+        loadingXML.current = false;
 
         if (m !== modeler.current) {
           // The modeler was reset in the meantime.

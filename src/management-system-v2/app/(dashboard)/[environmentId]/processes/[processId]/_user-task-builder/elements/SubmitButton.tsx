@@ -3,11 +3,13 @@ import { useNode, UserComponent, useEditor } from '@craftjs/core';
 import { EditOutlined } from '@ant-design/icons';
 
 import EditableText from '../_utils/EditableText';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Overlay, Setting } from './utils';
 
 import cn from 'classnames';
 import { Checkbox, Select } from 'antd';
+
+import BuilderContext from '../BuilderContext';
 
 type SubmitButtonProps = React.PropsWithChildren & {
   title?: string;
@@ -28,6 +30,8 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
   const [textEditing, setTextEditing] = useState(false);
   const [hovered, setHovered] = useState(false);
 
+  const { editingEnabled } = useContext(BuilderContext);
+
   return (
     <div>
       <button
@@ -40,7 +44,7 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
         }}
       >
         <Overlay
-          show={hovered && !textEditing}
+          show={editingEnabled && hovered && !textEditing}
           onHide={() => setHovered(false)}
           controls={[
             {

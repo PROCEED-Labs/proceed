@@ -221,7 +221,7 @@ export async function versionScriptTasks(
             scriptTaskJS,
             versionCreatedOn,
           );
-        } catch (err) { }
+        } catch (err) {}
 
         try {
           const scriptTaskTS = await getProcessScriptTaskScript(processInfo.id, fileName + '.ts');
@@ -232,7 +232,7 @@ export async function versionScriptTasks(
             scriptTaskTS,
             versionCreatedOn,
           );
-        } catch (err) { }
+        } catch (err) {}
 
         try {
           const scriptTaskXML = await getProcessScriptTaskScript(processInfo.id, fileName + '.xml');
@@ -243,7 +243,7 @@ export async function versionScriptTasks(
             scriptTaskXML,
             versionCreatedOn,
           );
-        } catch (err) { }
+        } catch (err) {}
       }
 
       // update ref for the artifacts referenced by the versioned script task
@@ -324,7 +324,7 @@ export async function selectAsLatestVersion(processId: string, versionId: string
       try {
         const fileContent = await getProcessScriptTaskScript(processId, oldName + '.' + type);
         await saveProcessScriptTask(processId, newName + '.' + type, fileContent);
-      } catch (err) { }
+      } catch (err) {}
     }
   });
 

@@ -377,7 +377,7 @@ export const INITIAL_TOOLBOX_JSON = {
 };
 
 Blockly.Blocks['console_log'] = {
-  init: function(this: Blockly.Block) {
+  init: function (this: Blockly.Block) {
     this.jsonInit({
       message0: 'print %1',
       args0: [
@@ -394,14 +394,14 @@ Blockly.Blocks['console_log'] = {
   },
 };
 
-javascriptGenerator.forBlock['console_log'] = function(block) {
+javascriptGenerator.forBlock['console_log'] = function (block) {
   const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
 
   return `console.log(${value});\n`;
 };
 
 Blockly.Blocks['variables_get'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField('Variable')
       .appendField(new Blockly.FieldTextInput('variableName'), 'name');
@@ -412,14 +412,14 @@ Blockly.Blocks['variables_get'] = {
   },
 };
 
-javascriptGenerator.forBlock['variables_get'] = function(block) {
+javascriptGenerator.forBlock['variables_get'] = function (block) {
   const variableName = block.getFieldValue('name');
   const code = `variable.get("${variableName}")`;
   return [code, BlocklyJavaScript.Order.ATOMIC];
 };
 
 Blockly.Blocks['variables_set'] = {
-  init: function() {
+  init: function () {
     this.appendValueInput('value')
       .appendField('Set variable')
       .appendField(new Blockly.FieldTextInput('variableName'), 'name')
@@ -433,7 +433,7 @@ Blockly.Blocks['variables_set'] = {
   },
 };
 
-javascriptGenerator.forBlock['variables_set'] = function(block) {
+javascriptGenerator.forBlock['variables_set'] = function (block) {
   const variableName = block.getFieldValue('name');
   const variableValue = javascriptGenerator.valueToCode(
     block,
@@ -446,7 +446,7 @@ javascriptGenerator.forBlock['variables_set'] = function(block) {
 };
 
 Blockly.Blocks['progress'] = {
-  init: function() {
+  init: function () {
     this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
     this.setInputsInline(true);
     this.setTooltip('');
@@ -457,7 +457,7 @@ Blockly.Blocks['progress'] = {
   },
 };
 
-javascriptGenerator.forBlock['progress'] = function(block) {
+javascriptGenerator.forBlock['progress'] = function (block) {
   const progressValue =
     javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC) || 0;
 
@@ -467,7 +467,7 @@ javascriptGenerator.forBlock['progress'] = function(block) {
 };
 
 Blockly.Blocks['throw_error'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField('Throw')
       .appendField(
@@ -495,7 +495,7 @@ Blockly.Blocks['throw_error'] = {
   },
 };
 
-javascriptGenerator.forBlock['throw_error'] = function(block) {
+javascriptGenerator.forBlock['throw_error'] = function (block) {
   const errorType = block.getFieldValue('name');
   const reference = block.getFieldValue('reference');
   const explanation = block.getFieldValue('explanation');

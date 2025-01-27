@@ -178,7 +178,7 @@ const DashboardLayout = async ({
   if (systemAdmin) {
     layoutMenuItems.push({
       key: 'ms-admin',
-      label: <Link href="/admin">Administration</Link>,
+      label: <Link href="/admin">MS Administration</Link>,
       icon: <SolutionOutlined />,
     });
   }

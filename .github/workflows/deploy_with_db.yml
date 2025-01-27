@@ -375,7 +375,6 @@ jobs:
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
             DATABASE_URL=${{ env.DATABASE_URL }}
             PROCEED_PUBLIC_DEPLOYMENT_ENV=local
-            PROCEED_PUBLIC_ENABLE_EXECUTION=true
           region: 'europe-west1'
           revision_traffic: LATEST=100
 

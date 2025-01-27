@@ -7,7 +7,6 @@ import AddUserControls from '@/components/add-user-controls';
 import { getProcess, getProcesses } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
 import BPMNTimeline from '@/components/bpmn-timeline';
-import { env } from '@/lib/env-vars';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 
 type ProcessProps = {

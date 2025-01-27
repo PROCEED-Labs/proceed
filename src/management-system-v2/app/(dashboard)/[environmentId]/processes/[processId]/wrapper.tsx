@@ -57,7 +57,6 @@ const Wrapper = ({ processName, processes, modelerComponent, timelineComponent }
   const rootElement = useModelerStateStore((state) => state.rootElement);
   const [editingName, setEditingName] = useState<null | string>(null);
   const timelineViewActive = useTimelineViewStore((state) => state.timelineViewActive);
-  const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
 
   const {
     token: { fontSizeHeading1 },

@@ -8,7 +8,7 @@ import type Canvas from 'diagram-js/lib/core/Canvas';
 import Modeling from 'diagram-js/lib/features/modeling/Modeling';
 import AutoPlace from 'diagram-js/lib/features/auto-place/AutoPlace';
 import { useEnvironment } from './auth-can';
-import { Element, Parent } from 'diagram-js/lib/model/Types';
+import { Parent } from 'diagram-js/lib/model/Types';
 import { useEffect, useRef, useState } from 'react';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 
@@ -24,23 +24,25 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const hasMountedRef = useRef(false);
 
   useEffect(() => {
-    console.log('init BPMNTimeline');
+    console.debug('init BPMNTimeline');
     const bpmnjsModeler = new Modeler();
     bpmnjsModelerRef.current = bpmnjsModeler;
 
     bpmnjsModeler.importXML(process.bpmn).then(() => {
-      console.log('modeler ready');
+      console.debug('modeler ready');
     });
+  }, [process.bpmn]);
 
+  useEffect(() => {
     return () => {
-      if (hasMountedRef.current) {
-        console.log('reset BPMNTimelineView on unmount');
-        disableTimelineView(); // Reset the timeline view store
-      } else {
+      if (!hasMountedRef.current) {
         hasMountedRef.current = true;
+      } else {
+        console.debug('disabled BPMNTimeline on unmount');
+        disableTimelineView(); // Reset the timeline view store on unmount
       }
     };
-  }, [process.bpmn]);
+  }, []);
 
   const [status, setStatus] = useState<string | null>(null);
 
@@ -71,7 +73,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
       updateProcess(process.id, environment.spaceId, data.xml, undefined, undefined, true);
       setStatus('Element created successfully');
     } catch (error) {
-      console.log('update process error', error);
+      console.debug('update process error', error);
       setStatus('Failed to create element');
     }
   }

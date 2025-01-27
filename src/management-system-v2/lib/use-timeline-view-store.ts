@@ -3,16 +3,16 @@ import { immer } from 'zustand/middleware/immer';
 
 type TimelineViewStateStore = {
   timelineViewActive: boolean;
-  toggleTimelineView: () => void;
+  enableTimelineView: () => void;
   disableTimelineView: () => void;
 };
 
 const useTimelineViewStore = create<TimelineViewStateStore>()(
   immer((set) => ({
     timelineViewActive: false,
-    toggleTimelineView: () =>
+    enableTimelineView: () =>
       set((state) => {
-        state.timelineViewActive = !state.timelineViewActive;
+        state.timelineViewActive = true;
       }),
     disableTimelineView: () =>
       set((state) => {

@@ -1,4 +1,4 @@
-import React, { use, useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -13,7 +13,7 @@ import Icon, {
   FilePdfOutlined,
   FormOutlined,
 } from '@ant-design/icons';
-import { SvgXML } from '@/components/svg';
+import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -65,7 +65,7 @@ const ModelerToolbar = ({
     ProcessExportTypes | undefined
   >();
 
-  const toggleTimelineView = useTimelineViewStore((state) => state.toggleTimelineView);
+  const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -344,10 +344,10 @@ const ModelerToolbar = ({
                     ></Button>
                   </Tooltip>
                   {timelineViewFeatureEnabled && (
-                    <Tooltip title="Switch edit mode">
+                    <Tooltip title="Switch to timeline mode">
                       <Button
-                        icon={<Icon aria-label="xml-sign" component={SvgXML} />}
-                        onClick={toggleTimelineView}
+                        icon={<Icon aria-label="xml-sign" component={SvgGantt} />}
+                        onClick={enableTimelineView}
                       ></Button>
                     </Tooltip>
                   )}

@@ -86,13 +86,14 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       ({ milestones, meta, description } = importedProcess);
     }
     const newImageUrl = enableUseFileManager
-      ? await new Promise<string>((resolve) => {
+      ? image &&
+        (await new Promise<string>((resolve) => {
           getImage(processData.id, image, shareToken, {
             onSuccess(data) {
               resolve(data.fileUrl!);
             },
           });
-        })
+        }))
       : null;
 
     let imageURL =

@@ -221,6 +221,7 @@ declare const _exports: {
   ensureCorrectProceedNamespace(xml: string): string;
   toBpmnObject(xml: string, typename?: string): Promise<object>;
   toBpmnXml(obj: any): Promise<string>;
+  deepCopyElementById(bpmn: string | object, elemId: any): Promise<object>;
   getChildren(travObj: object): any[];
   getElementsByTagName(travObj: object, tagname: string): any[];
   getAllElements(travObj: object): any[];

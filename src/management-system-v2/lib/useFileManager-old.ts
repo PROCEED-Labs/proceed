@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, use } from 'react';
 import { useEnvironment } from '@/components/auth-can';
 import {
   deleteEntityFile,
@@ -8,6 +8,7 @@ import {
 } from './data/file-manager-facade';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
 
@@ -35,13 +36,13 @@ interface UseFileManagerReturn {
   fileUrl: string | null;
 }
 
-const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
-
 export function useFileManager(entityType: EntityType): UseFileManagerReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const { spaceId } = useEnvironment();
+  const env = use(EnvVarsContext);
+  const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
 
   const performFileOperation = useCallback(
     async (
@@ -67,7 +68,7 @@ export function useFileManager(entityType: EntityType): UseFileManagerReturn {
         return { ok: true, fileName: result.fileName, fileUrl: result.fileUrl };
       } catch (err: any) {
         message.error(err.message);
-        setError(err.message || '| Blob operation failed');
+        setError(err.message || '| Blob operation failed');
         return { ok: false };
       } finally {
         setIsLoading(false);

@@ -44,6 +44,7 @@
     "dev-ms-db-migrate": "cd src/management-system-v2 && yarn prisma migrate dev",
     "dev-ms-db-use": "cd src/management-system-v2 && tsx scripts/db-helper.mts --use",
     "dev-ms-db-delete": "cd src/management-system-v2 && tsx scripts/db-helper.mts --delete",
+    "dev-ms-db-generate": "cd src/management-system-v2 && yarn prisma generate",
     "dev-ms": "cd src/management-system-v2 && yarn dev",
     "dev-ms-old": "cd src/management-system && yarn web:dev",
     "dev-ms-old-iam": "cd src/management-system && yarn web:dev-iam",
@@ -64,7 +65,8 @@
     "jsdoc": "jsdoc -c ./jsdoc.config.json --pedantic",
     "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",
     "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "cd src/management-system-v2 && yarn prisma generate"
   },
   "lint-staged": {
     "*": "prettier --check --ignore-path .eslintignore"

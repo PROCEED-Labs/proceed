@@ -54,13 +54,23 @@ export function getProcessMetaObjects() {
   return processMetaObjects;
 }
 
+function parseDates<T extends ProcessMetadata>(process: T) {
+  // The type says these fields are dates, but they're turned into a string when stored
+  process.lastEditedOn = new Date(process.lastEditedOn);
+  process.createdOn = new Date(process.createdOn);
+
+  return process;
+}
+
 /** Returns all processes for a user */
 export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
   const spaceProcesses = Object.values(processMetaObjects).filter(
     (process) => process.environmentId === environmentId,
   );
 
-  const processes = ability ? ability.filter('view', 'Process', spaceProcesses) : spaceProcesses;
+  const processes = (
+    ability ? ability.filter('view', 'Process', spaceProcesses) : spaceProcesses
+  ).map(parseDates);
 
   if (!includeBPMN) return processes;
   return processes.map((process) => ({ ...process, bpmn: getProcessBpmn(process.id) }));
@@ -73,7 +83,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   }
 
   const bpmn = includeBPMN ? await getProcessBpmn(processDefinitionsId) : null;
-  return { ...process, bpmn };
+  return parseDates({ ...process, bpmn });
 }
 
 /**
@@ -233,7 +243,7 @@ export async function updateProcessMetaData(
 
   const newMetaData = {
     ...processMetaObjects[processDefinitionsId],
-    lastEdited: new Date().toUTCString(),
+    lastEditedOn: new Date(),
   };
 
   mergeIntoObject(newMetaData, metaChanges, true, true, true);

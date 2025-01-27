@@ -105,6 +105,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   const convertedProcess = {
     ...process,
     //versions: convertedVersions,
+    bpmn: `<?xml version="1.0" encoding="UTF-8"?>${process.bpmn}`,
     shareTimestamp:
       typeof process.shareTimestamp === 'bigint'
         ? Number(process.shareTimestamp)
@@ -530,7 +531,7 @@ export async function getProcessBpmn(processDefinitionsId: string) {
         bpmn: true,
       },
     });
-    return process?.bpmn;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n${process?.bpmn}`;
   } catch (err) {
     logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
     throw new Error('Unable to find process bpmn!');

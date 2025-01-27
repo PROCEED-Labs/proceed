@@ -212,21 +212,38 @@ export async function versionScriptTasks(
 
       // store the script task version if it didn't exist before
       if (!dryRun) {
-        const scriptTaskJS = await getProcessScriptTaskScript(processInfo.id, fileName + '.js');
-        const scriptTaskTS = await getProcessScriptTaskScript(processInfo.id, fileName + '.ts');
+        try {
+          const scriptTaskJS = await getProcessScriptTaskScript(processInfo.id, fileName + '.js');
 
-        await saveProcessScriptTask(
-          processInfo.id,
-          versionFileName + '.js',
-          scriptTaskJS,
-          versionCreatedOn,
-        );
-        await saveProcessScriptTask(
-          processInfo.id,
-          versionFileName + '.ts',
-          scriptTaskTS,
-          versionCreatedOn,
-        );
+          await saveProcessScriptTask(
+            processInfo.id,
+            versionFileName + '.js',
+            scriptTaskJS,
+            versionCreatedOn,
+          );
+        } catch (err) { }
+
+        try {
+          const scriptTaskTS = await getProcessScriptTaskScript(processInfo.id, fileName + '.ts');
+
+          await saveProcessScriptTask(
+            processInfo.id,
+            versionFileName + '.ts',
+            scriptTaskTS,
+            versionCreatedOn,
+          );
+        } catch (err) { }
+
+        try {
+          const scriptTaskXML = await getProcessScriptTaskScript(processInfo.id, fileName + '.xml');
+
+          await saveProcessScriptTask(
+            processInfo.id,
+            versionFileName + '.xml',
+            scriptTaskXML,
+            versionCreatedOn,
+          );
+        } catch (err) { }
       }
 
       // update ref for the artifacts referenced by the versioned script task
@@ -307,7 +324,7 @@ export async function selectAsLatestVersion(processId: string, versionId: string
       try {
         const fileContent = await getProcessScriptTaskScript(processId, oldName + '.' + type);
         await saveProcessScriptTask(processId, newName + '.' + type, fileContent);
-      } catch (err) {}
+      } catch (err) { }
     }
   });
 

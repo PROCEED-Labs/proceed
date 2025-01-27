@@ -5,11 +5,12 @@ import fse from 'fs-extra';
 import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
+import { env } from '@/lib/env-vars';
 
 // Constants
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10 MB
-const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
-const BUCKET_NAME = process.env.GOOGLE_CLOUD_BUCKET_NAME || '';
+const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
+const BUCKET_NAME = env.GOOGLE_CLOUD_BUCKET_NAME || '';
 const cache = new LRUCache<string, Buffer>({
   maxSize: 100,
   ttl: 60 * 60 * 1000, // 1 hour TTL

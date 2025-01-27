@@ -6,6 +6,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
 import { getProcess, getProcesses } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
+import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
@@ -24,7 +25,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   const processes = await getProcesses(activeEnvironment.spaceId, ability, false);
 
   if (!ability.can('view', toCaslResource('Process', process))) {
-    throw new Error('Forbidden.');
+    throw new UnauthorizedError();
   }
 
   const selectedVersionBpmn = selectedVersionId

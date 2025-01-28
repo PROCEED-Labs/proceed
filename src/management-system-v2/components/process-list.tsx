@@ -98,7 +98,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const processContextPath = decodeURIComponent(pathname); // Component can be used in /processes/list or /processes/editor route
-  const readOnlyListView = processContextPath.includes('/list');
+  const isReadOnlyListView = processContextPath.includes('/list');
 
   const breakpoint = Grid.useBreakpoint();
 
@@ -155,7 +155,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                 type="text"
                 icon={<BiShow />}
                 onClick={() => {
-                  if (readOnlyListView) {
+                  if (isReadOnlyListView) {
                     const latestVersion = record.versions[record.versions.length - 1];
                     router.push(
                       spaceURL(
@@ -205,6 +205,22 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     [copyItem, deleteItems, editItem, onExportProcess],
   );
 
+  const createRecordUrl = (record: ProcessListProcess, readOnly = false) => {
+    let recordUrl;
+    if (record.type === 'folder') {
+      recordUrl = readOnly
+        ? `/processes/list/folder/${record.id}`
+        : `/processes/editor/folder/${record.id}`;
+    } else {
+      const latestVersion = record.versions[record.versions.length - 1];
+      recordUrl = readOnly
+        ? `/processes/list/${record.id}?version=${latestVersion.id}`
+        : `/processes/editor/${record.id}`;
+    }
+
+    return recordUrl;
+  };
+
   let columns: TableColumnsType<ProcessListProcess> = [
     {
       title: <StarOutlined />,
@@ -229,11 +245,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
       render: (_, record) => (
         <SpaceLink
-          href={
-            record.type === 'folder'
-              ? `/processes/editor/folder/${record.id}`
-              : `/processes/${record.id}`
-          }
+          href={createRecordUrl(record, isReadOnlyListView)}
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
@@ -271,11 +283,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       key: 'Description',
       render: (_, record) => (
         <SpaceLink
-          href={
-            record.type === 'folder'
-              ? `/processes/editor/folder/${record.id}`
-              : `/processes/${record.id}`
-          }
+          href={createRecordUrl(record, isReadOnlyListView)}
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
@@ -429,7 +437,7 @@ type ProcessManagementListProps = PropsWithChildren<{
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  processActions: ProcessActions;
+  processActions?: ProcessActions;
 }>;
 
 const ProcessManagementList: FC<ProcessManagementListProps> = ({
@@ -463,155 +471,6 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
       setShowMobileMetaData={setShowMobileMetaData}
       onExportProcess={onExportProcess}
       processActions={processActions}
-      tableProps={{
-        scroll: {
-          y: scrollY,
-        },
-        pagination: { position: ['bottomCenter'], pageSize: 20 },
-        onRow: (item) => ({
-          // onDoubleClick: () =>
-          //   router.push(
-          //     item.type === 'folder'
-          //       ? `/${space.spaceId}/processes/folder/${item.id}`
-          //       : `/${space.spaceId}/processes/${item.id}`,
-          //   ),
-          onContextMenu: () => {
-            if (selection.includes(item.id)) {
-              setContextMenuItem(selectedElements);
-            } else {
-              setSelectionElements([item]);
-              setContextMenuItem([item]);
-            }
-          },
-        }),
-        components: {
-          body: {
-            row: DraggableRow,
-          },
-        },
-      }}
-    ></BaseProcessList>
-  );
-};
-
-type ProcessReadOnlyListProps = PropsWithChildren<{
-  data: ProcessListProcess[];
-  folder: Folder;
-  selection: Key[];
-  selectedElements: ProcessListProcess[];
-  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
-  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
-  onExportProcess: (process: ProcessListProcess) => void;
-}>;
-
-const ProcessReadOnlyList: FC<ProcessReadOnlyListProps> = ({
-  data,
-  folder,
-  selection,
-  selectedElements,
-  setSelectionElements,
-  setShowMobileMetaData,
-  onExportProcess,
-}) => {
-  const breakpoint = Grid.useBreakpoint();
-
-  const setContextMenuItem = contextMenuStore((store) => store.setSelected);
-  const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
-
-  const [scrollY, setScrollY] = useState('400px');
-  useEffect(() => {
-    if (window)
-      setScrollY(
-        `${window.innerHeight - 32 /* Footer */ - 64 /* Header */ - 82 /* Table-Search etc */ - 60 /* Table-head */ - 60 /* Table-Footer / Pagination */}px`,
-      );
-  }, []);
-
-  const createRecordUrl = (record: ProcessListProcess) => {
-    let recordUrl;
-    if (record.type === 'folder') {
-      recordUrl = `/processes/list/folder/${record.id}`;
-    } else {
-      const latestVersion = record.versions[record.versions.length - 1];
-      recordUrl = `/processes/list/${record.id}?version=${latestVersion.id}`;
-    }
-
-    return recordUrl;
-  };
-
-  return (
-    <BaseProcessList
-      data={data}
-      folder={folder}
-      elementSelection={{ selectedElements, setSelectionElements }}
-      setShowMobileMetaData={setShowMobileMetaData}
-      onExportProcess={onExportProcess}
-      columnCustomRenderer={{
-        ['Name']: (_, record) => {
-          const recordUrl = createRecordUrl(record);
-
-          return (
-            <SpaceLink
-              href={recordUrl}
-              style={{
-                color: 'inherit' /* or any color you want */,
-                textDecoration: 'none' /* removes underline */,
-                display: 'block',
-                // whiteSpace: 'nowrap',
-                // textOverflow: 'ellipsis',
-              }}
-            >
-              <div
-                className={
-                  breakpoint.xs
-                    ? styles.MobileTitleTruncation
-                    : breakpoint.xl
-                      ? styles.TitleTruncation
-                      : styles.TabletTitleTruncation
-                }
-                style={{
-                  // overflow: 'hidden',
-                  // whiteSpace: 'nowrap',
-                  // textOverflow: 'ellipsis',
-                  // TODO: color
-                  color: record.id === folder.parentId ? 'grey' : undefined,
-                  fontStyle: record.id === folder.parentId ? 'italic' : undefined,
-                }}
-              >
-                <ProcessListItemIcon item={record} /> {record.name.highlighted}
-              </div>
-            </SpaceLink>
-          );
-        },
-        ['Description']: (_, record) => {
-          const recordUrl = createRecordUrl(record);
-
-          return (
-            <SpaceLink
-              href={recordUrl}
-              style={{
-                color: 'inherit' /* or any color you want */,
-                textDecoration: 'none' /* removes underline */,
-                display: 'block',
-              }}
-            >
-              {/* <div
-              style={{
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis',
-              }}
-            > */}
-              {(record.description.value ?? '').length == 0 ? (
-                <>&emsp;</>
-              ) : (
-                record.description.highlighted
-              )}
-              {/* Makes the link-cell clickable, when there is no description */}
-              {/* </div> */}
-            </SpaceLink>
-          );
-        },
-      }}
       tableProps={{
         scroll: {
           y: scrollY,
@@ -719,6 +578,6 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
   );
 };
 
-export { ProcessManagementList, ProcessDeploymentList, ProcessReadOnlyList };
+export { ProcessManagementList, ProcessDeploymentList };
 
 export default ProcessManagementList;

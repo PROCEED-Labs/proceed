@@ -24,7 +24,7 @@ import {
 } from '@ant-design/icons';
 import { BiShow } from 'react-icons/bi';
 import IconView from '@/components/process-icon-list';
-import { ProcessManagementList, ProcessReadOnlyList } from '@/components/process-list';
+import ProcessManagementList from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
 import ProcessExportModal from '@/components/process-export';
 import Bar from '@/components/bar';
@@ -610,38 +610,21 @@ const Processes = ({
                         : '100%',
                     }}
                   >
-                    {readOnly ? (
-                      <ProcessReadOnlyList
-                        data={filteredData}
-                        folder={folder}
-                        selection={selectedRowKeys}
-                        setSelectionElements={setSelectedRowElements}
-                        selectedElements={selectedRowElements}
-                        // TODO: Replace with server component loading state
-                        //isLoading={isLoading}
-                        onExportProcess={(process) => {
-                          setSelectedRowElements([process]);
-                          setOpenExportModal(true);
-                        }}
-                        setShowMobileMetaData={setShowMobileMetaData}
-                      />
-                    ) : (
-                      <ProcessManagementList
-                        data={filteredData}
-                        folder={folder}
-                        selection={selectedRowKeys}
-                        setSelectionElements={setSelectedRowElements}
-                        selectedElements={selectedRowElements}
-                        // TODO: Replace with server component loading state
-                        //isLoading={isLoading}
-                        onExportProcess={(id) => {
-                          setSelectedRowElements([id]);
-                          setOpenExportModal(true);
-                        }}
-                        setShowMobileMetaData={setShowMobileMetaData}
-                        processActions={processActions}
-                      />
-                    )}
+                    <ProcessManagementList
+                      data={filteredData}
+                      folder={folder}
+                      selection={selectedRowKeys}
+                      setSelectionElements={setSelectedRowElements}
+                      selectedElements={selectedRowElements}
+                      // TODO: Replace with server component loading state
+                      //isLoading={isLoading}
+                      onExportProcess={(id) => {
+                        setSelectedRowElements([id]);
+                        setOpenExportModal(true);
+                      }}
+                      setShowMobileMetaData={setShowMobileMetaData}
+                      processActions={readOnly ? undefined : processActions}
+                    />
                   </div>
                 )}
               </ProceedLoadingIndicator>

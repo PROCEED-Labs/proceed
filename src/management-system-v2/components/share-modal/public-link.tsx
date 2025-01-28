@@ -12,7 +12,6 @@ import { IoOpenOutline } from 'react-icons/io5';
 
 import { Process } from '@/lib/data/process-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { isUserErrorResponse } from '@/lib/user-error';
 import useProcessVersion from './use-process-version';
 import { updateShare } from './share-helpers';
 

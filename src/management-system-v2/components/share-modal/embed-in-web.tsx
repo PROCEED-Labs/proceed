@@ -12,15 +12,11 @@ import {
   message,
   CheckboxChangeEvent,
 } from 'antd';
-import { useParams, useSearchParams } from 'next/navigation';
-import {
-  generateSharedViewerUrl,
-  updateProcessGuestAccessRights,
-} from '@/lib/sharing/process-sharing';
+import { useParams } from 'next/navigation';
+import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { useEnvironment } from '@/components/auth-can';
 import { Process } from '@/lib/data/process-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { isUserErrorResponse } from '@/lib/user-error';
 import useProcessVersion from './use-process-version';
 import { updateShare } from './share-helpers';
 

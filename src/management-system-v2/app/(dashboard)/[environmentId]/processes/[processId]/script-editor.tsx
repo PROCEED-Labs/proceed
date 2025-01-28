@@ -269,9 +269,6 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                   <Tooltip title="Open Script Task API for further reference">
                     <Button> Open Script Task API </Button>
                   </Tooltip>
-                  <Tooltip title="Copy to Clipboard">
-                    <Button icon={<CopyOutlined />} onClick={handleCopyToClipboard} />
-                  </Tooltip>
                 </Space>
                 <div
                   style={{

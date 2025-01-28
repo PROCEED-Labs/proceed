@@ -102,35 +102,28 @@ const DashboardLayout = async ({
       icon: <LaptopOutlined />,
     });
 
-    if (env.PROCEED_PUBLIC_NEW_LAYOUT) {
-      layoutMenuItems = [
-        {
-          key: 'tasklist',
-          label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Your Tasks</Link>,
-          icon: <CheckSquareOutlined />,
-        },
-        ...layoutMenuItems,
-      ];
+    layoutMenuItems = [
+      {
+        key: 'tasklist',
+        label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Your Tasks</Link>,
+        icon: <CheckSquareOutlined />,
+      },
+      ...layoutMenuItems,
+    ];
 
-      children = [
-        {
-          key: 'dashboard',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
-          icon: <BarChartOutlined />,
-        },
-        {
-          key: 'projects',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Projects</Link>,
-          icon: <HistoryOutlined />,
-        },
-        ...children,
-        {
-          key: 'config-server',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Config Server</Link>,
-          icon: <ToolOutlined />,
-        },
-      ];
-    }
+    children = [
+      {
+        key: 'dashboard',
+        label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
+        icon: <BarChartOutlined />,
+      },
+      {
+        key: 'projects',
+        label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Projects</Link>,
+        icon: <HistoryOutlined />,
+      },
+      ...children,
+    ];
 
     layoutMenuItems.push({
       key: 'automations-group',
@@ -144,7 +137,7 @@ const DashboardLayout = async ({
     layoutMenuItems.push({
       key: 'machine-config',
       label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,
-      icon: <LuTable2 />,
+      icon: <ToolOutlined />,
     });
   }
 
@@ -187,7 +180,7 @@ const DashboardLayout = async ({
   if (systemAdmin) {
     layoutMenuItems.push({
       key: 'ms-admin',
-      label: <Link href="/admin">Administration</Link>,
+      label: <Link href="/admin">MS Administration</Link>,
       icon: <SolutionOutlined />,
     });
   }

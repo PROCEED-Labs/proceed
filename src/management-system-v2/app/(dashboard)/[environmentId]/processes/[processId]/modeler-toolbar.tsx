@@ -23,7 +23,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
-import ModelerShareModalButton from './modeler-share-modal';
+import ModelerShareModalButton from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';

@@ -10,10 +10,10 @@ import {
   CopyOutlined,
   FileImageOutlined,
 } from '@ant-design/icons';
-import useModelerStateStore from './use-modeler-state-store';
+// import useModelerStateStore from './use-modeler-state-store';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
-import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-public-link';
-import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
+import ModelerShareModalOptionPublicLink from './public-link';
+import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
 import {
   generateSharedViewerUrl,
   updateProcessGuestAccessRights,
@@ -49,7 +49,8 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
-  const modeler = useModelerStateStore((state) => state.modeler);
+  // TODO
+  // const modeler = useModelerStateStore((state) => state.modeler);
   const [sharedAs, setSharedAs] = useState<SharedAsType>('public');
   const isSharing = useRef(false);
 
@@ -63,6 +64,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     try {
       setCheckingIfProcessShared(true);
       const res = await getProcess(processId as string, environment.spaceId);
+      console.log('res checkIfProcessShared ', res);
       if (!('error' in res)) {
         const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
         setSharedAs(sharedAs as SharedAsType);
@@ -70,18 +72,18 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         setShareTimestamp(shareTimestamp);
         setAllowIframeTimestamp(allowIframeTimestamp);
       }
-    } catch (_) { }
+    } catch (_) {}
     setCheckingIfProcessShared(false);
   };
 
   const close = () => setIsOpen(false);
 
   const handleCopyXMLToClipboard = async () => {
-    const xml = await modeler?.getXML();
-    if (xml) {
-      navigator.clipboard.writeText(xml);
-      app.message.success('Copied to clipboard');
-    }
+    // const xml = await modeler?.getXML();
+    // if (xml) {
+    //   navigator.clipboard.writeText(xml);
+    //   app.message.success('Copied to clipboard');
+    // }
   };
 
   const shareWrapper = async (fn: (args: any) => Promise<void>, args: any) => {
@@ -145,6 +147,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   };
 
   const openShareModal = async () => setIsOpen(true);
+
   useAddControlCallback('modeler', 'shift+enter', openShareModal, {
     dependencies: [],
   });
@@ -175,7 +178,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       optionTitle: 'Share Process as Image',
       key: 'share-process-as-image',
       children: null,
-      optionOnClick: () => shareWrapper(shareProcessImage, modeler),
+      // optionOnClick: () => shareWrapper(shareProcessImage, modeler),
     },
   ];
 
@@ -253,8 +256,8 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       children: null,
       onClick: async () => {
         try {
-          if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
-          else app.message.info('ClipboardAPI not supported in your browser');
+          // if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
+          // else app.message.info('ClipboardAPI not supported in your browser');
         } catch (err) {
           app.message.error(`${err}`);
         }

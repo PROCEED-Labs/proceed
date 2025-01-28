@@ -1,8 +1,8 @@
 'use client';
-import { App, Button, Checkbox, Col, Flex, Input, QRCode, Row, Select, Space } from 'antd';
+import { App, Button, Checkbox, CheckboxChangeEvent, Input, QRCode, Select, Space } from 'antd';
 import { DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   generateSharedViewerUrl,
   updateProcessGuestAccessRights,
@@ -13,6 +13,8 @@ import { IoOpenOutline } from 'react-icons/io5';
 import { Process } from '@/lib/data/process-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { isUserErrorResponse } from '@/lib/user-error';
+import useProcessVersion from './use-process-version';
+import { updateShare } from './share-helpers';
 
 type ModelerShareModalOptionPublicLinkProps = {
   sharedAs: 'public' | 'protected';
@@ -27,15 +29,10 @@ const ModelerShareModalOptionPublicLink = ({
   refresh,
   processVersions,
 }: ModelerShareModalOptionPublicLinkProps) => {
-  const { processId } = useParams();
-  const query = useSearchParams();
-  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(() => {
-    const queryVersion = query.get('version');
-    if (queryVersion && processVersions.find((version) => version.id === queryVersion))
-      return queryVersion;
-    else return processVersions[0]?.id;
-  });
+  const processId = useParams().processId as string;
   const environment = useEnvironment();
+
+  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(processVersions);
 
   const [shareLink, setShareLink] = useState('');
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
@@ -70,10 +67,8 @@ const ModelerShareModalOptionPublicLink = ({
     }
   };
 
-  const handlePermissionChanged = async (e: {
-    target: { checked: boolean | ((prevState: boolean) => boolean) };
-  }) => {
-    const isChecked = e.target.checked as boolean;
+  const handlePermissionChanged = async (e: CheckboxChangeEvent) => {
+    const isChecked = e.target.checked;
     setRegisteredUsersonlyChecked(isChecked);
     if (isShareLinkChecked) {
       const sharedAsValue = isChecked ? 'protected' : 'public';
@@ -88,54 +83,20 @@ const ModelerShareModalOptionPublicLink = ({
     refresh();
   };
 
-  const handleShareLinkChecked = async (e: {
-    target: { checked: boolean | ((prevState: boolean) => boolean) };
-  }) => {
-    const isChecked = e.target.checked;
-
-    if (isChecked) {
-      // share process
-      const timestamp = Date.now();
-      await wrapServerCall({
-        fn: async () => {
-          const url = generateSharedViewerUrl(
-            { processId: processId, timestamp },
-            // if there is a specific process version open in the modeler then link to that version (otherwise latest will be shown)
-            selectedVersionId || undefined,
-          );
-          if (isUserErrorResponse(url)) return url;
-
-          const updateRightsResult = await updateProcessGuestAccessRights(
-            processId,
-            {
-              sharedAs: 'public',
-              shareTimestamp: timestamp,
-            },
-            environment.spaceId,
-          );
-          if (isUserErrorResponse(updateRightsResult)) return updateRightsResult;
-
-          return url;
-        },
-        onSuccess: (url) => {
-          setShareLink(url);
-          app.message.success('Process shared');
-        },
+  const handleShareLinkChecked = async (e: CheckboxChangeEvent) => {
+    await updateShare(
+      {
+        processId,
+        versionId: selectedVersionId || undefined,
+        spaceId: environment.spaceId,
+        unshare: !e.target.checked,
+      },
+      {
         app,
-      });
-    } else {
-      // deactivate sharing
-      await wrapServerCall({
-        fn: () =>
-          updateProcessGuestAccessRights(processId, { shareTimestamp: 0 }, environment.spaceId),
-        onSuccess: () => {
-          setRegisteredUsersonlyChecked(false);
-          setShareLink('');
-          app.message.success('Process unshared');
-        },
-        app,
-      });
-    }
+        onSuccess: (url) => setShareLink(url ?? ''),
+      },
+    );
+
     refresh();
   };
 
@@ -144,16 +105,10 @@ const ModelerShareModalOptionPublicLink = ({
   const getQRCodeBlob = async () => {
     try {
       const canvas = canvasRef.current?.querySelector<HTMLCanvasElement>('canvas');
-
-      if (!canvas) {
-        throw new Error('QR Code canvas not found');
-      }
+      if (!canvas) throw new Error('QR Code canvas not found');
 
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-
-      if (!blob) {
-        throw new Error('Failed to create PNG blob');
-      }
+      if (!blob) throw new Error('Failed to create PNG blob');
 
       return blob;
     } catch (err) {

@@ -417,56 +417,6 @@ const Processes = ({
                         ></Button>
                       </Tooltip>
                       {/* Edit (only if one selected) */}
-
-                      {selectedRowKeys.length === 1 && selectedRowElements[0].type !== 'folder' && (
-                        <Tooltip placement="top" title={'Open Viewer'}>
-                          <Button
-                            // className={classNames(styles.ActionButton)}
-                            type="text"
-                            icon={<BiShow className={styles.Icon} />}
-                            onClick={() => {
-                              const selectedRowElement = selectedRowElements[0];
-                              if (selectedRowElement.type !== 'folder') {
-                                const latestVersion =
-                                  selectedRowElement.versions[
-                                    selectedRowElement.versions.length - 1
-                                  ];
-                                router.push(
-                                  spaceURL(
-                                    space,
-                                    `/processes/${selectedRowElement.id}?version=${latestVersion.id}`,
-                                  ),
-                                );
-                              }
-                            }}
-                          />
-                        </Tooltip>
-                      )}
-                      {selectedRowKeys.length === 1 && selectedRowElements[0].type !== 'folder' && (
-                        <Tooltip placement="top" title={'Open Viewer in new Tab'}>
-                          <Button
-                            // className={classNames(styles.ActionButton)}
-                            type="text"
-                            icon={<BiShow className={styles.Icon} />}
-                            onClick={() => {
-                              const selectedRowElement = selectedRowElements[0];
-                              if (selectedRowElement.type !== 'folder') {
-                                const latestVersion =
-                                  selectedRowElement.versions[
-                                    selectedRowElement.versions.length - 1
-                                  ];
-                                window.open(
-                                  spaceURL(
-                                    space,
-                                    `/processes/${selectedRowElement.id}?version=${latestVersion.id}`,
-                                  ),
-                                );
-                              }
-                            }}
-                          />
-                        </Tooltip>
-                      )}
-
                       {selectedRowKeys.length === 1 && canEditSelected && (
                         <Tooltip placement="top" title={'Edit'}>
                           <Button

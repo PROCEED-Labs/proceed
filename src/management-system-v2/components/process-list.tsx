@@ -148,29 +148,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
             </Tooltip>
           )}
 
-          {record.type !== 'folder' && (
-            <Tooltip placement="top" title={'Open Viewer'}>
-              <Button
-                className={classNames(styles.ActionButton)}
-                type="text"
-                icon={<BiShow />}
-                onClick={() => {
-                  if (isReadOnlyListView) {
-                    const latestVersion = record.versions[record.versions.length - 1];
-                    router.push(
-                      spaceURL(
-                        space,
-                        `${processContextPath}/${record.id}?version=${latestVersion.id}`,
-                      ),
-                    );
-                  } else {
-                    router.push(spaceURL(space, `${processContextPath}/${record.id}`));
-                  }
-                }}
-              />
-            </Tooltip>
-          )}
-
           {processActions && (
             <AuthCan {...resource} update>
               <Tooltip placement="top" title={'Edit'}>

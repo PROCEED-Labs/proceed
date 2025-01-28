@@ -102,9 +102,8 @@ const ConfigModal = <T extends { name: string; description: string }>({
         layout="vertical"
         name="config_form"
         initialValues={
-          initialData ?? (configType === 'machine' && targetConfigExists)
-            ? [{ copyTarget: true }]
-            : undefined
+          initialData ??
+          (configType === 'machine' && targetConfigExists ? [{ copyTarget: true }] : undefined)
         }
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
@@ -144,19 +143,21 @@ const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInpu
       >
         <Input />
       </Form.Item>
-      <Form.Item
-        name={[index, 'categories']}
-        label="Categories"
-        rules={[{ required: true, message: 'Please select a Category' }]}
-      >
-        <Select
-          mode="multiple"
-          allowClear
-          style={{ width: '100%' }}
-          placeholder="Please select"
-          options={categoriesList}
-        />
-      </Form.Item>
+      {!configType && (
+        <Form.Item
+          name={[index, 'categories']}
+          label="Categories"
+          rules={[{ required: false, message: 'Please select a Category' }]}
+        >
+          <Select
+            mode="multiple"
+            allowClear
+            style={{ width: '100%' }}
+            placeholder="Please select"
+            options={categoriesList}
+          />
+        </Form.Item>
+      )}
       <Form.Item
         name={[index, 'description']}
         label="Configuration Description"

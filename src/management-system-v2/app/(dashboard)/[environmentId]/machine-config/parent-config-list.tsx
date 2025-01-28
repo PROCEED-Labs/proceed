@@ -212,10 +212,25 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     setOpenEditModal(true);
   }
 
-  async function handleEdit(values: { id: string; name: string; description: string }[]) {
-    const { id, name } = values[0];
+  async function handleEdit(
+    values: {
+      id: string;
+      name: string;
+      shortname: string;
+      categories: Array<ConfigCategories>;
+      description: string;
+    }[],
+  ) {
+    const { id, name, shortname, categories, description } = values[0];
+    await updateParentConfig(id, { name, shortname, categories });
     // TODO: handle the description update in the backend (the description is actually a content entry in a metadata entry)
-    await updateParentConfig(id, { name });
+    // currently overwriting content array and possibly deleting other entries of the description.
+    if (editingItem?.metadata['description'].id)
+      await updateParameter(editingItem?.metadata['description'].id, {
+        content: [
+          { displayName: 'Description', value: description, unit: undefined, language: 'en' },
+        ],
+      });
     setOpenEditModal(false);
     router.refresh();
   }
@@ -446,6 +461,8 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
                 {
                   id: editingItem.id,
                   name: editingItem.name.value ?? '',
+                  shortname: editingItem.shortname ?? '',
+                  categories: editingItem.categories,
                   description: editingItem.metadata.description?.content[0].value ?? '',
                 },
               ]
@@ -458,6 +475,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
         title={`Copy Machine Config${selectedRowKeys.length > 1 ? 'urations' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={copySelection.map((config) => ({
+          id: config.id,
           name: `${config.name.value} (Copy)`,
           shortname: `${config.shortname} (Copy)`,
           categories: config.categories,

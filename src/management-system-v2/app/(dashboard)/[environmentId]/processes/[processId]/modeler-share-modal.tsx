@@ -1,6 +1,6 @@
 'use client';
-import { FC, useState } from 'react';
-import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography } from 'antd';
+import { FC, useEffect, useRef, useState } from 'react';
+import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography, Tabs } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -31,6 +31,7 @@ import { isUserErrorResponse } from '@/lib/user-error';
 type ShareModalProps = {
   onExport: () => void;
   onExportMobile: (type: ProcessExportOptions['type']) => void;
+  process: { name: string; id: string; bpmn: string };
   versions: Process['versions'];
 };
 type SharedAsType = 'public' | 'protected';
@@ -39,20 +40,23 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   onExport,
   onExportMobile,
   versions: processVersions,
+  process,
 }) => {
   const { processId } = useParams();
   const environment = useEnvironment();
+  const app = App.useApp();
+  const breakpoint = Grid.useBreakpoint();
+
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const modeler = useModelerStateStore((state) => state.modeler);
-  const breakpoint = Grid.useBreakpoint();
   const [sharedAs, setSharedAs] = useState<SharedAsType>('public');
-  const [isSharing, setIsSharing] = useState(false);
+  const isSharing = useRef(false);
+
   const [shareToken, setShareToken] = useState('');
   const [shareTimestamp, setShareTimestamp] = useState(0);
   const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
-  const app = App.useApp();
-  const [processData, setProcessData] = useState<Omit<ProcessMetadata, 'bpmn'>>();
+
   const [checkingIfProcessShared, setCheckingIfProcessShared] = useState(false);
 
   const checkIfProcessShared = async () => {
@@ -70,43 +74,25 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     setCheckingIfProcessShared(false);
   };
 
-  const getProcessData = () => {
-    return getProcess(processId as string, environment.spaceId)
-      .then((res) => {
-        if ('error' in res) {
-        } else {
-          setProcessData(res as any);
-        }
-      })
-      .catch((error) => {
-        console.error('Error fetching process data:', error);
-      });
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-    setActiveIndex(0);
-  };
+  const close = () => setIsOpen(false);
 
   const handleCopyXMLToClipboard = async () => {
-    if (modeler) {
-      const xml = await modeler.getXML();
-      if (xml) {
-        navigator.clipboard.writeText(xml);
-        app.message.success('Copied to clipboard');
-      }
+    const xml = await modeler?.getXML();
+    if (xml) {
+      navigator.clipboard.writeText(xml);
+      app.message.success('Copied to clipboard');
     }
   };
 
   const shareWrapper = async (fn: (args: any) => Promise<void>, args: any) => {
     try {
-      if (isSharing) return;
-      setIsSharing(true);
+      if (isSharing.current) return;
+      isSharing.current = true;
       await fn(args);
     } catch (error) {
       console.error('Sharing failed:', error);
     } finally {
-      setIsSharing(false);
+      isSharing.current = false;
     }
   };
 
@@ -142,7 +128,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${processData?.name} | PROCEED`,
+          title: `${process.name} | PROCEED`,
           text: 'Here is a shared process for you',
           url,
         });
@@ -158,107 +144,56 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     checkIfProcessShared();
   };
 
-  const handleShareButtonClick = async () => {
-    setIsOpen(true);
-    getProcessData();
-    checkIfProcessShared();
-  };
-
-  useAddControlCallback('modeler', 'shift+enter', handleShareButtonClick, {
+  const openShareModal = async () => setIsOpen(true);
+  useAddControlCallback('modeler', 'shift+enter', openShareModal, {
     dependencies: [],
   });
+
+  useEffect(() => {
+    checkIfProcessShared();
+  }, []);
 
   const optionsMobile = [
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Share Process with Public Link',
+      label: 'Share Process with Public Link',
       optionTitle: 'Share Process with Public Link',
+      key: 'share-public-link',
+      children: null,
       optionOnClick: () => shareWrapper(handleShareMobile, 'public'),
     },
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Share Process for Registered Users',
+      label: 'Share Process for Registered Users',
       optionTitle: 'Share Process for Registered Users',
+      key: 'share-protected-link',
       optionOnClick: () => handleShareMobile('protected'),
     },
     {
       optionIcon: <FileImageOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Share Process as Image',
+      label: 'Share Process as Image',
       optionTitle: 'Share Process as Image',
+      key: 'share-process-as-image',
+      children: null,
       optionOnClick: () => shareWrapper(shareProcessImage, modeler),
     },
   ];
 
-  const actionClickOptions = [
-    async () => {
-      setActiveIndex(0);
-    },
-    async () => {
-      setActiveIndex(1);
-    },
-    async () => {
-      setActiveIndex(2);
-      try {
-        if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
-        else app.message.info('ClipboardAPI not supported in your browser');
-      } catch (err) {
-        app.message.error(`${err}`);
-      }
-      setActiveIndex(null);
-    },
-    () => {
-      setActiveIndex(3);
-      handleCopyXMLToClipboard();
-      setActiveIndex(null);
-    },
-    () => {
-      setActiveIndex(4);
-      onExport();
-      setActiveIndex(null);
-    },
-  ];
-
-  useAddControlCallback(
-    'modeler',
-    'control+enter',
-    () => {
-      if (isOpen && activeIndex != null) actionClickOptions[activeIndex]();
-    },
-    { dependencies: [isOpen, activeIndex], level: 2, blocking: isOpen },
-  );
-  useAddControlCallback(
-    'modeler',
-    'left',
-    () => {
-      if (isOpen) {
-        setActiveIndex((prev) => (prev == null || prev == 0 ? 0 : prev - 1));
-      }
-    },
-    { dependencies: [isOpen, activeIndex] },
-  );
-  useAddControlCallback(
-    'modeler',
-    'right',
-    () => {
-      if (isOpen) {
-        setActiveIndex((prev) =>
-          prev == null || prev == optionsDesktop.length - 1 ? optionsDesktop.length - 1 : prev + 1,
-        );
-      }
-    },
-    { dependencies: [isOpen, activeIndex] },
-  );
-
+  // TODO
+  // useAddControlCallback(
+  //   'modeler',
+  //   'control+enter',
+  //   () => {
+  //     if (isOpen && activeIndex != null) actionClickOptions[activeIndex]();
+  //   },
+  //   { dependencies: [isOpen, activeIndex], level: 2, blocking: isOpen },
+  // );
   // useAddControlCallback(
   //   'modeler',
   //   'left',
   //   () => {
   //     if (isOpen) {
-  //       if (activeIndex === null || activeIndex === 0) {
-  //         actionClickOptions[0]();
-  //       } else {
-  //         actionClickOptions[activeIndex - 1]();
-  //       }
+  //       setActiveIndex((prev) => (prev == null || prev == 0 ? 0 : prev - 1));
   //     }
   //   },
   //   { dependencies: [isOpen, activeIndex] },
@@ -268,13 +203,9 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   //   'right',
   //   () => {
   //     if (isOpen) {
-  //       if (activeIndex === null) {
-  //         actionClickOptions[0]();
-  //       } else if (activeIndex === actionClickOptions.length - 1) {
-  //         actionClickOptions[actionClickOptions.length - 1]();
-  //       } else {
-  //         actionClickOptions[activeIndex + 1]();
-  //       }
+  //       setActiveIndex((prev) =>
+  //         prev == null || prev == optionsDesktop.length - 1 ? optionsDesktop.length - 1 : prev + 1,
+  //       );
   //     }
   //   },
   //   { dependencies: [isOpen, activeIndex] },
@@ -283,10 +214,10 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   const optionsDesktop = [
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Share Public Link',
+      label: 'Share Public Link',
       optionTitle: 'Share Public Link',
-      optionOnClick: actionClickOptions[0],
-      subOption: (
+      key: 'share-public-link',
+      children: (
         <ModelerShareModalOptionPublicLink
           sharedAs={sharedAs as SharedAsType}
           shareTimestamp={shareTimestamp}
@@ -302,10 +233,10 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
           <RightOutlined style={{ fontSize: '24px' }} />
         </span>
       ),
-      optionName: 'Embed in Website',
+      label: 'Embed in Website',
       optionTitle: 'Embed in Website',
-      optionOnClick: actionClickOptions[1],
-      subOption: (
+      key: 'embed-in-website',
+      children: (
         <ModelerShareModalOptionEmdedInWeb
           sharedAs={sharedAs as SharedAsType}
           allowIframeTimestamp={allowIframeTimestamp}
@@ -317,22 +248,36 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     {
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
       optionTitle: 'Copy Diagram to Clipboard (PNG)',
-      optionName: 'Copy Diagram as PNG',
-      optionOnClick: actionClickOptions[2],
+      label: 'Copy Diagram as PNG',
+      key: 'copy-diagram-as-png',
+      children: null,
+      onClick: async () => {
+        try {
+          if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
+          else app.message.info('ClipboardAPI not supported in your browser');
+        } catch (err) {
+          app.message.error(`${err}`);
+        }
+      },
     },
     {
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Copy Diagram as XML',
+      label: 'Copy Diagram as XML',
       optionTitle: 'Copy BPMN to Clipboard (XML)',
-      optionOnClick: actionClickOptions[3],
+      key: 'copy-diagram-as-xml',
+      children: null,
+      onClick: handleCopyXMLToClipboard,
     },
     {
       optionIcon: <ExportOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Export as file',
+      label: 'Export as file',
       optionTitle: 'Export as file',
-      optionOnClick: actionClickOptions[4],
+      key: 'export-as-file',
+      onClick: onExport,
     },
   ];
+
+  const tabs = breakpoint.lg ? optionsDesktop : optionsMobile;
 
   return (
     <>
@@ -341,66 +286,76 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         open={isOpen}
         width={breakpoint.lg ? 750 : 320}
         closeIcon={false}
-        onCancel={handleClose}
+        onCancel={close}
         zIndex={200}
-        footer={<Button onClick={handleClose}>Close</Button>}
-        destroyOnClose
+        footer={<Button onClick={close}>Close</Button>}
       >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: breakpoint.lg ? 'row' : 'column',
-            flexWrap: breakpoint.lg ? 'nowrap' : 'wrap',
-            alignItems: '',
-            justifyContent: 'center',
-            gap: 10,
-            width: '100%',
-          }}
-        >
-          {(breakpoint.lg ? optionsDesktop : optionsMobile).map((option, index) => (
-            <Button
-              key={index}
-              style={{
-                flex: '1 1 0', // evenly fill container
-                height: 'auto', // Allow for vertical stretching
-                minHeight: 'min-content',
-                padding: '.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                overflow: 'hidden',
-                whiteSpace: 'normal',
-                textOverflow: 'ellipsis',
-              }}
-              color={index === activeIndex ? 'primary' : 'default'}
-              variant="outlined"
-              onClick={option.optionOnClick}
-            >
-              {option.optionIcon}
-              <Typography.Text
-                style={{
-                  textAlign: 'center',
-                  fontSize: '0.75rem',
-                }}
-              >
-                <Tooltip title={breakpoint.lg ? option.optionTitle : ''}>
-                  {option.optionName}
-                </Tooltip>
-              </Typography.Text>
-            </Button>
-          ))}
-        </div>
+        <Spin spinning={checkingIfProcessShared}>
+          {/* The Tabs might seem unnecessary, but they keep the state of the components avoiding unnecessary fetches */}
+          <Tabs
+            items={tabs.map((t, idx) => ({ ...t, key: idx.toString() }))}
+            renderTabBar={() => (
+              <>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: breakpoint.lg ? 'row' : 'column',
+                    flexWrap: breakpoint.lg ? 'nowrap' : 'wrap',
+                    alignItems: '',
+                    justifyContent: 'center',
+                    gap: 10,
+                    width: '100%',
+                  }}
+                >
+                  {tabs.map((option, index) => (
+                    <Button
+                      key={index}
+                      style={{
+                        flex: '1 1 0', // evenly fill container
+                        height: 'auto', // Allow for vertical stretching
+                        minHeight: 'min-content',
+                        padding: '.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        overflow: 'hidden',
+                        whiteSpace: 'normal',
+                        textOverflow: 'ellipsis',
+                      }}
+                      color={index === activeIndex ? 'primary' : 'default'}
+                      variant="outlined"
+                      onClick={() => {
+                        setActiveIndex(index);
+                        if ('onClick' in option && option.onClick) option.onClick();
+                      }}
+                    >
+                      {option.optionIcon}
+                      <Typography.Text
+                        style={{
+                          textAlign: 'center',
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        <Tooltip title={breakpoint.lg ? option.optionTitle : ''}>
+                          {option.label}
+                        </Tooltip>
+                      </Typography.Text>
+                    </Button>
+                  ))}
+                </div>
 
-        {breakpoint.lg && activeIndex !== null && optionsDesktop[activeIndex].subOption && (
-          <Spin spinning={checkingIfProcessShared}>
-            <Divider style={{ backgroundColor: '#000' }} />
-            {optionsDesktop[activeIndex].subOption}
-          </Spin>
-        )}
+                {breakpoint.lg && activeIndex !== null && optionsDesktop[activeIndex].children && (
+                  <Divider />
+                )}
+              </>
+            )}
+            activeKey={activeIndex?.toString()}
+          />
+        </Spin>
       </Modal>
       <Tooltip title="Share">
-        <Button icon={<ShareAltOutlined />} onClick={() => handleShareButtonClick()} />
+        <Button icon={<ShareAltOutlined />} onClick={() => openShareModal()} />
       </Tooltip>
     </>
   );

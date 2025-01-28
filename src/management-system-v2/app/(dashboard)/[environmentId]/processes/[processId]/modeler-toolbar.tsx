@@ -37,19 +37,21 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
-  processId: string;
+  process: { name: string; id: string; bpmn: string };
   onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
   versions: { id: string; name: string; description: string; createdOn: Date }[];
 };
 const ModelerToolbar = ({
-  processId,
+  process,
   onOpenXmlEditor,
   canUndo,
   canRedo,
   versions,
 }: ModelerToolbarProps) => {
+  const processId = process.id;
+
   const router = useRouter();
   const environment = useEnvironment();
   const app = App.useApp();
@@ -317,6 +319,7 @@ const ModelerToolbar = ({
                 onExport={handleProcessExportModalToggle}
                 onExportMobile={handleProcessExportModalToggleMobile}
                 versions={versions}
+                process={process}
               />
               <Tooltip title="Open Documentation">
                 <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />

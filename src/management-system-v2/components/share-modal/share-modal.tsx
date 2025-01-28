@@ -1,5 +1,5 @@
 'use client';
-import { FC, useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState, JSX } from 'react';
 import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography, Tabs } from 'antd';
 import {
   ShareAltOutlined,
@@ -49,7 +49,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const close = () => setIsOpen(false);
   const openShareModal = () => setIsOpen(true);
-  const [activeIndex, setActiveIndex] = useState<number | null>(0);
+  const [activeIndex, setActiveIndex] = useState<number>(0);
   const isSharing = useRef(false);
 
   const [sharedAs, setSharedAs] = useState<SharedAsType>('public');
@@ -126,6 +126,8 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   };
 
   const mobileShareProcessImage = async () => {
+    // NOTE: If a modeler happened to be open and the share modal was opened for another process,
+    // this would export the wrong process image, however this is currently not possible in the UI
     const result = modeler
       ? await shareProcessImage(modeler)
       : await shareProcessImageFromXml(process.bpmn);
@@ -167,38 +169,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       onClick: () => mobileShareWrapper(mobileShareProcessImage),
     },
   ];
-
-  // TODO
-  // useAddControlCallback(
-  //   'modeler',
-  //   'control+enter',
-  //   () => {
-  //     if (isOpen && activeIndex != null) actionClickOptions[activeIndex]();
-  //   },
-  //   { dependencies: [isOpen, activeIndex], level: 2, blocking: isOpen },
-  // );
-  // useAddControlCallback(
-  //   'modeler',
-  //   'left',
-  //   () => {
-  //     if (isOpen) {
-  //       setActiveIndex((prev) => (prev == null || prev == 0 ? 0 : prev - 1));
-  //     }
-  //   },
-  //   { dependencies: [isOpen, activeIndex] },
-  // );
-  // useAddControlCallback(
-  //   'modeler',
-  //   'right',
-  //   () => {
-  //     if (isOpen) {
-  //       setActiveIndex((prev) =>
-  //         prev == null || prev == optionsDesktop.length - 1 ? optionsDesktop.length - 1 : prev + 1,
-  //       );
-  //     }
-  //   },
-  //   { dependencies: [isOpen, activeIndex] },
-  // );
 
   const optionsDesktop = [
     {
@@ -269,7 +239,46 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     },
   ];
 
-  const tabs = breakpoint.lg ? optionsDesktop : optionsMobile;
+  const tabs: {
+    optionIcon: JSX.Element;
+    label: string;
+    optionTitle: string;
+    key: string;
+    children?: JSX.Element | null;
+    onClick?: () => any;
+  }[] = breakpoint.lg ? optionsDesktop : optionsMobile;
+
+  useAddControlCallback(
+    'modeler',
+    'control+enter',
+    () => {
+      const option = tabs[activeIndex];
+      if (isOpen && option?.onClick) option.onClick();
+    },
+    { dependencies: [isOpen, activeIndex], level: 2, blocking: isOpen },
+  );
+  useAddControlCallback(
+    'modeler',
+    'left',
+    () => {
+      if (isOpen) {
+        setActiveIndex((prev) =>
+          prev - 1 < 0 ? tabs.length - 1 : Math.min(prev - 1, tabs.length),
+        );
+      }
+    },
+    { dependencies: [isOpen, activeIndex] },
+  );
+  useAddControlCallback(
+    'modeler',
+    'right',
+    () => {
+      if (isOpen) {
+        setActiveIndex((prev) => (prev + 1) % tabs.length);
+      }
+    },
+    { dependencies: [isOpen, activeIndex] },
+  );
 
   return (
     <>

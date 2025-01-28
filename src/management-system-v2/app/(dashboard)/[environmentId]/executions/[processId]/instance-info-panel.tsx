@@ -8,7 +8,7 @@ import { ElementStatus } from './element-status';
 
 export type RelevantInstanceInfo = {
   instance?: InstanceInfo;
-  process: DeployedProcessInfo & { name: string };
+  process: DeployedProcessInfo;
   element: ElementLike;
   version: VersionInfo;
 };

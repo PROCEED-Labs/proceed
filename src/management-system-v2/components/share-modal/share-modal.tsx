@@ -10,23 +10,21 @@ import {
   CopyOutlined,
   FileImageOutlined,
 } from '@ant-design/icons';
-// import useModelerStateStore from './use-modeler-state-store';
-import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOptionPublicLink from './public-link';
 import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
-import {
-  generateSharedViewerUrl,
-  updateProcessGuestAccessRights,
-} from '@/lib/sharing/process-sharing';
 import { useParams } from 'next/navigation';
-import { shareProcessImage } from '@/lib/process-export/copy-process-image';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
-import { Process, ProcessMetadata } from '@/lib/data/process-schema';
+import { Process } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
-import { wrapServerCall } from '@/lib/wrap-server-call';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { updateShare } from './share-helpers';
+import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
+import {
+  copyProcessImage,
+  shareProcessImage,
+  shareProcessImageFromXml,
+} from '@/lib/process-export/copy-process-image';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -42,29 +40,28 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   versions: processVersions,
   process,
 }) => {
-  const { processId } = useParams();
+  const processId = useParams().processId as string;
   const environment = useEnvironment();
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
+  const modeler = useModelerStateStore((state) => state.modeler);
 
   const [isOpen, setIsOpen] = useState(false);
+  const close = () => setIsOpen(false);
+  const openShareModal = () => setIsOpen(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
-  // TODO
-  // const modeler = useModelerStateStore((state) => state.modeler);
-  const [sharedAs, setSharedAs] = useState<SharedAsType>('public');
   const isSharing = useRef(false);
 
+  const [sharedAs, setSharedAs] = useState<SharedAsType>('public');
   const [shareToken, setShareToken] = useState('');
   const [shareTimestamp, setShareTimestamp] = useState(0);
   const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
 
   const [checkingIfProcessShared, setCheckingIfProcessShared] = useState(false);
-
   const checkIfProcessShared = async () => {
     try {
       setCheckingIfProcessShared(true);
       const res = await getProcess(processId as string, environment.spaceId);
-      console.log('res checkIfProcessShared ', res);
       if (!('error' in res)) {
         const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
         setSharedAs(sharedAs as SharedAsType);
@@ -76,54 +73,39 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     setCheckingIfProcessShared(false);
   };
 
-  const close = () => setIsOpen(false);
-
   const handleCopyXMLToClipboard = async () => {
-    // const xml = await modeler?.getXML();
-    // if (xml) {
-    //   navigator.clipboard.writeText(xml);
-    //   app.message.success('Copied to clipboard');
-    // }
-  };
-
-  const shareWrapper = async (fn: (args: any) => Promise<void>, args: any) => {
-    try {
-      if (isSharing.current) return;
-      isSharing.current = true;
-      await fn(args);
-    } catch (error) {
-      console.error('Sharing failed:', error);
-    } finally {
-      isSharing.current = false;
+    const xml = await modeler?.getXML();
+    if (xml) {
+      navigator.clipboard.writeText(xml);
+      app.message.success('Copied to clipboard');
     }
   };
 
-  const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
+  const mobileShareWrapper = async <T extends (...args: any[]) => any>(
+    fn: T,
+    args?: Parameters<T>,
+  ) => {
+    // Avoid two simultaneous shares
+    if (isSharing.current) return;
+    isSharing.current = true;
+    await fn(...(args ? args : []));
+    isSharing.current = false;
+  };
+
+  const shareProcess = async (sharedAs: 'public' | 'protected') => {
     let url: string | null = null;
-    let timestamp = shareTimestamp ? shareTimestamp : Date.now();
-    await wrapServerCall({
-      fn: async () => {
-        const url = await generateSharedViewerUrl({
-          processId,
-          timestamp,
-        });
-        if (isUserErrorResponse(url)) return url;
-
-        const accessUpdateResult = await updateProcessGuestAccessRights(
-          processId,
-          {
-            sharedAs: 'public',
-            allowIframeTimestamp: timestamp,
-          },
-          environment.spaceId,
-        );
-        if (isUserErrorResponse(accessUpdateResult)) return accessUpdateResult;
-
-        return url;
+    await updateShare(
+      {
+        processId,
+        spaceId: environment.spaceId,
+        sharedAs,
       },
-      onSuccess: (url) => (url = url),
-      app,
-    });
+      {
+        app,
+        onSuccess: (_url) => (url = _url ?? null),
+      },
+    );
+    isSharing.current = false;
 
     if (!url) return;
 
@@ -134,19 +116,23 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
           text: 'Here is a shared process for you',
           url,
         });
-      } catch (err: any) {
-        if (!err.toString().includes('AbortError')) {
-          console.error(err);
-        }
-      }
+      } catch (_) {}
     } else {
       navigator.clipboard.writeText(url);
       app.message.success('Copied to clipboard');
     }
+
     checkIfProcessShared();
   };
 
-  const openShareModal = async () => setIsOpen(true);
+  const mobileShareProcessImage = async () => {
+    const result = modeler
+      ? await shareProcessImage(modeler)
+      : await shareProcessImageFromXml(process.bpmn);
+
+    if (typeof result === 'string') app.message.success(result);
+    else if (result === false) app.message.error('Error sharing process as image');
+  };
 
   useAddControlCallback('modeler', 'shift+enter', openShareModal, {
     dependencies: [],
@@ -163,14 +149,14 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       optionTitle: 'Share Process with Public Link',
       key: 'share-public-link',
       children: null,
-      optionOnClick: () => shareWrapper(handleShareMobile, 'public'),
+      onClick: () => mobileShareWrapper(shareProcess, ['public']),
     },
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
       label: 'Share Process for Registered Users',
       optionTitle: 'Share Process for Registered Users',
       key: 'share-protected-link',
-      optionOnClick: () => handleShareMobile('protected'),
+      onClick: () => mobileShareWrapper(shareProcess, ['protected']),
     },
     {
       optionIcon: <FileImageOutlined style={{ fontSize: '24px' }} />,
@@ -178,7 +164,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       optionTitle: 'Share Process as Image',
       key: 'share-process-as-image',
       children: null,
-      // optionOnClick: () => shareWrapper(shareProcessImage, modeler),
+      onClick: () => mobileShareWrapper(mobileShareProcessImage),
     },
   ];
 
@@ -256,8 +242,11 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       children: null,
       onClick: async () => {
         try {
-          // if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
-          // else app.message.info('ClipboardAPI not supported in your browser');
+          if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
+          else
+            app.message.info(
+              'ClipboardAPI not supported in your browser, download the image instead',
+            );
         } catch (err) {
           app.message.error(`${err}`);
         }
@@ -314,7 +303,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
                     <Button
                       key={index}
                       style={{
-                        flex: '1 1 0', // evenly fill container
+                        flex: breakpoint.lg ? '1 1 0' : '', // evenly fill container
                         height: 'auto', // Allow for vertical stretching
                         minHeight: 'min-content',
                         padding: '.5rem',

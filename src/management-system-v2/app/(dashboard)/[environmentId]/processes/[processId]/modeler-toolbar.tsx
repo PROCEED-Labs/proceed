@@ -1,4 +1,4 @@
-import React, { use, useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -13,7 +13,7 @@ import Icon, {
   FilePdfOutlined,
   FormOutlined,
 } from '@ant-design/icons';
-import { SvgXML } from '@/components/svg';
+import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -31,6 +31,7 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { EnvVarsContext } from '@/components/env-vars-context';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
@@ -63,6 +64,8 @@ const ModelerToolbar = ({
   const [preselectedExportType, setPreselectedExportType] = useState<
     ProcessExportTypes | undefined
   >();
+
+  const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -218,6 +221,7 @@ const ModelerToolbar = ({
     versions.find((version) => version.id === (selectedVersionId ?? '-1')) ?? LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
+  const timelineViewFeatureEnabled = process.env.NEXT_PUBLIC_TIMELINE_VIEW === 'true';
 
   return (
     <>
@@ -339,6 +343,14 @@ const ModelerToolbar = ({
                       onClick={handleProcessExportModalToggle}
                     ></Button>
                   </Tooltip>
+                  {timelineViewFeatureEnabled && (
+                    <Tooltip title="Switch to timeline mode">
+                      <Button
+                        icon={<Icon aria-label="xml-sign" component={SvgGantt} />}
+                        onClick={enableTimelineView}
+                      ></Button>
+                    </Tooltip>
+                  )}
                 </>
               )}
             </ToolbarGroup>

@@ -212,7 +212,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       open={open}
       centered
       width="90vw"
-      styles={{ body: { height: '85vh' }, header: { margin: 0 } }}
+      styles={{ body: { height: '85vh', marginTop: '0.5rem' }, header: { margin: 0 } }}
       title={<span style={{ fontSize: '1.5rem' }}>Edit Script Task</span>}
       onCancel={onClose}
       footer={
@@ -229,21 +229,10 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
           <div
             style={{
               display: 'flex',
-              justifyContent: 'end',
-              marginBottom: '0.5rem',
+              justifyContent: 'space-between',
+              marginBottom: '0.25rem',
             }}
           >
-            {isScriptValid ? (
-              <Tag icon={<CheckCircleOutlined></CheckCircleOutlined>} color="success">
-                Script is valid
-              </Tag>
-            ) : (
-              <Tag icon={<ExclamationCircleOutlined />} color="warning">
-                Script is not valid. The script contains loosely arranged blocks. Connect these to
-                continue.
-              </Tag>
-            )}
-
             {selectedEditor === 'blockly' && (
               <Popconfirm
                 placement="bottomLeft"
@@ -251,19 +240,24 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                 description="Your blocks will be transformed to JS Code. This can not be reverted!"
                 onConfirm={() => transformToCode()}
               >
-                <Button
-                  icon={
-                    <MdOutlineTransform
-                      style={{ transform: 'translateY(2px)' }}
-                    ></MdOutlineTransform>
-                  }
-                  disabled={!isScriptValid}
-                  size="small"
-                  danger
-                >
+                <Button disabled={!isScriptValid} size="small" danger>
                   Switch to JavaScript Editor
                 </Button>
               </Popconfirm>
+            )}
+            {isScriptValid ? (
+              <Tag
+                icon={<CheckCircleOutlined></CheckCircleOutlined>}
+                style={{ marginRight: 0 }}
+                color="success"
+              >
+                Script is valid
+              </Tag>
+            ) : (
+              <Tag icon={<ExclamationCircleOutlined />} style={{ marginRight: 0 }} color="warning">
+                Script is not valid. The script contains loosely arranged blocks. Connect these to
+                continue.
+              </Tag>
             )}
           </div>
         )}

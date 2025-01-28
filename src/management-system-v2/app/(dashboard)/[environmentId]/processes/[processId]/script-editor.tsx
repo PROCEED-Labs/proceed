@@ -72,7 +72,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     setInitialScript('');
     setSelectedEditor(null);
     if (filename && open) {
-      // Check if script is stored in JS or blockly and set script and selected editor accordingly
+      // Check if script is stored in TS/JS or blockly and set script and selected editor accordingly
       getProcessScriptTaskData(processId, filename, 'ts', environment.spaceId).then((res) => {
         if (typeof res === 'string') {
           setInitialScript(res);
@@ -141,16 +141,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       await saveProcessScriptTask(
         processId,
         filename,
-        'ts',
-        typescriptCode,
         environment.spaceId,
-      ).then((res) => res && console.error(res.error));
-      await saveProcessScriptTask(
-        processId,
-        filename,
-        'js',
         javascriptCode,
-        environment.spaceId,
+        typescriptCode,
       ).then((res) => res && console.error(res.error));
     }
   };
@@ -161,8 +154,14 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
       const scriptTaskStoragePromises = [
         deleteProcessScriptTask(processId, filename, 'ts', environment.spaceId),
-        saveProcessScriptTask(processId, filename, 'xml', blocklyCode.xml, environment.spaceId),
-        saveProcessScriptTask(processId, filename, 'js', blocklyCode.js, environment.spaceId),
+        saveProcessScriptTask(
+          processId,
+          filename,
+          environment.spaceId,
+          blocklyCode.js,
+          undefined,
+          blocklyCode.xml,
+        ),
       ];
 
       return Promise.allSettled(scriptTaskStoragePromises).then((results) => {

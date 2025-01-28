@@ -223,14 +223,18 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
   ) {
     const { id, name, shortname, categories, description } = values[0];
     await updateParentConfig(id, { name, shortname, categories });
-    // TODO: handle the description update in the backend (the description is actually a content entry in a metadata entry)
-    // currently overwriting content array and possibly deleting other entries of the description.
-    if (editingItem?.metadata['description'].id)
+    if (editingItem?.metadata['description'].id) {
+      let previousContent = editingItem?.metadata['description'].content;
+      previousContent[0] = {
+        displayName: 'Description',
+        value: description,
+        unit: undefined,
+        language: 'en',
+      };
       await updateParameter(editingItem?.metadata['description'].id, {
-        content: [
-          { displayName: 'Description', value: description, unit: undefined, language: 'en' },
-        ],
+        content: previousContent,
       });
+    }
     setOpenEditModal(false);
     router.refresh();
   }

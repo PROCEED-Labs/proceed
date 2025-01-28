@@ -261,7 +261,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                   size="small"
                   danger
                 >
-                  Switch to JS Editor
+                  Switch to JavaScript Editor
                 </Button>
               </Popconfirm>
             )}
@@ -372,16 +372,16 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                   border: '1px dashed grey',
                 }}
               >
-                <Button icon={<FormOutlined size={15} />} onClick={() => setSelectedEditor('JS')}>
-                  JS Editor
-                </Button>
                 <Button
                   icon={
                     <IoExtensionPuzzleOutline style={{ transform: 'translateY(2px)' }} size={15} />
                   }
                   onClick={() => setSelectedEditor('blockly')}
                 >
-                  Blockly Editor
+                  No-Code Block Editor
+                </Button>
+                <Button icon={<FormOutlined size={15} />} onClick={() => setSelectedEditor('JS')}>
+                  JavaScript Editor
                 </Button>
               </Space>
             </div>

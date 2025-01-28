@@ -478,8 +478,21 @@ export async function copyParentConfig(
       ),
       originalId,
     };
-    // TODO
-    // copy.metadata['description'] = machineConfigInput.metadata['description'];
+
+    let parameters = Object.values(nestedParametersFromStorage(copy?.metadata));
+    let parameter = parameters.find((item) => item.key == 'description');
+    let desc = parameter?.content ?? [];
+    desc[0] = {
+      displayName: 'Description',
+      value: machineConfigInput.metadata['description'].content[0].value,
+      unit: undefined,
+      language: 'en',
+    };
+    if (parameter?.id) {
+      updateParameter(parameter.id, {
+        content: desc,
+      });
+    }
 
     // if no folder ID is given, set ID to root folder's
     if (!copy.folderId) {

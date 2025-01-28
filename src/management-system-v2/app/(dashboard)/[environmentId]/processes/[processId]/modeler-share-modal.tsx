@@ -26,6 +26,8 @@ import { getProcess } from '@/lib/data/processes';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -50,7 +52,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   const [shareToken, setShareToken] = useState('');
   const [shareTimestamp, setShareTimestamp] = useState(0);
   const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
-  const { message } = App.useApp();
+  const app = App.useApp();
   const [processData, setProcessData] = useState<Omit<ProcessMetadata, 'bpmn'>>();
   const [checkingIfProcessShared, setCheckingIfProcessShared] = useState(false);
 
@@ -92,7 +94,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       const xml = await modeler.getXML();
       if (xml) {
         navigator.clipboard.writeText(xml);
-        message.success('Copied to clipboard');
+        app.message.success('Copied to clipboard');
       }
     }
   };
@@ -110,41 +112,49 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    let link: string;
-    try {
-      let timestamp = shareTimestamp ? shareTimestamp : Date.now();
+    let url: string | null = null;
+    let timestamp = shareTimestamp ? shareTimestamp : Date.now();
+    await wrapServerCall({
+      fn: async () => {
+        const url = await generateSharedViewerUrl({
+          processId,
+          timestamp,
+        });
+        if (isUserErrorResponse(url)) return url;
 
-      link = await generateSharedViewerUrl({ processId, timestamp });
-      await updateProcessGuestAccessRights(
-        processId,
-        {
-          sharedAs: sharedAs,
-          shareTimestamp: timestamp,
-        },
-        environment.spaceId,
-      );
-    } catch (err) {
-      message.error('Failed to generate the sharing url for the process.');
-      return;
-    }
+        const accessUpdateResult = await updateProcessGuestAccessRights(
+          processId,
+          {
+            sharedAs: 'public',
+            allowIframeTimestamp: timestamp,
+          },
+          environment.spaceId,
+        );
+        if (isUserErrorResponse(accessUpdateResult)) return accessUpdateResult;
 
-    const shareObject = {
-      title: `${processData?.name} | PROCEED`,
-      text: 'Here is a shared process for you',
-      url: `${link}`,
-    };
+        return url;
+      },
+      onSuccess: (url) => (url = url),
+      app,
+    });
+
+    if (!url) return;
 
     if (navigator.share) {
       try {
-        await navigator.share(shareObject);
+        await navigator.share({
+          title: `${processData?.name} | PROCEED`,
+          text: 'Here is a shared process for you',
+          url,
+        });
       } catch (err: any) {
         if (!err.toString().includes('AbortError')) {
           console.error(err);
         }
       }
     } else {
-      navigator.clipboard.writeText(shareObject.url);
-      message.success('Copied to clipboard');
+      navigator.clipboard.writeText(url);
+      app.message.success('Copied to clipboard');
     }
     checkIfProcessShared();
   };
@@ -190,10 +200,10 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     async () => {
       setActiveIndex(2);
       try {
-        if (await copyProcessImage(modeler!)) message.success('Copied to clipboard');
-        else message.info('ClipboardAPI not supported in your browser');
+        if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
+        else app.message.info('ClipboardAPI not supported in your browser');
       } catch (err) {
-        message.error(`${err}`);
+        app.message.error(`${err}`);
       }
       setActiveIndex(null);
     },
@@ -301,6 +311,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
           sharedAs={sharedAs as SharedAsType}
           allowIframeTimestamp={allowIframeTimestamp}
           refresh={checkIfProcessShared}
+          processVersions={processVersions}
         />
       ),
     },
@@ -338,6 +349,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
             Close
           </Button>
         }
+        destroyOnClose
       >
         <Space
           style={{

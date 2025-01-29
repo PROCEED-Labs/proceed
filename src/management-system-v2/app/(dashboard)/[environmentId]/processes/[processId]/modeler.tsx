@@ -313,7 +313,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         <>
           {loaded && (
             <ModelerToolbar
-              processId={process.id}
+              process={process}
               onOpenXmlEditor={handleOpenXmlEditor}
               versions={versions}
               canRedo={canRedo}

@@ -1,0 +1,132 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { CopyOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Input,
+  Checkbox,
+  App,
+  Select,
+  Space,
+  Result,
+  message,
+  CheckboxChangeEvent,
+} from 'antd';
+import { useParams } from 'next/navigation';
+import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
+import { useEnvironment } from '@/components/auth-can';
+import { Process } from '@/lib/data/process-schema';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import useProcessVersion from './use-process-version';
+import { updateShare } from './share-helpers';
+
+const { TextArea } = Input;
+
+type ModelerShareModalOptionEmdedInWebProps = {
+  sharedAs: 'public' | 'protected';
+  allowIframeTimestamp: number;
+  refresh: () => void;
+  processVersions: Process['versions'];
+};
+
+const ModelerShareModalOptionEmdedInWeb = ({
+  sharedAs,
+  allowIframeTimestamp,
+  refresh,
+  processVersions,
+}: ModelerShareModalOptionEmdedInWebProps) => {
+  const app = App.useApp();
+  const processId = useParams().processId as string;
+  const environment = useEnvironment();
+  const [embeddingUrl, setEmbeddingUrl] = useState('');
+
+  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(processVersions);
+
+  useEffect(() => {
+    if (allowIframeTimestamp > 0 && selectedVersionId) {
+      wrapServerCall({
+        fn: () =>
+          generateSharedViewerUrl(
+            {
+              processId,
+              embeddedMode: true,
+              timestamp: allowIframeTimestamp,
+            },
+            selectedVersionId,
+          ),
+        onSuccess: (url) => {
+          setEmbeddingUrl(url);
+        },
+        app,
+      });
+    }
+  }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs, selectedVersionId, app]);
+
+  async function handleAllowEmbeddingChecked(e: CheckboxChangeEvent) {
+    await updateShare(
+      {
+        processId,
+        versionId: selectedVersionId || undefined,
+        spaceId: environment.spaceId,
+        embeddedMode: true,
+        unshare: !e.target.checked,
+      },
+      {
+        app,
+        onSuccess: (url) => setEmbeddingUrl(url ?? ''),
+      },
+    );
+    refresh();
+  }
+
+  const iframeCode = `<iframe src='${embeddingUrl}' height="100%" width="100%"></iframe>`;
+
+  const handleCopyCodeSection = async () => {
+    await navigator.clipboard.writeText(iframeCode);
+    message.success('Code copied to you clipboard');
+  };
+
+  if (processVersions.length === 0)
+    return (
+      <Result
+        status="warning"
+        title="No Process Versions"
+        subTitle="You can only embed process versions"
+      />
+    );
+
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Checkbox
+        checked={embeddingUrl.length > 0 && allowIframeTimestamp > 0}
+        onChange={handleAllowEmbeddingChecked}
+      >
+        Enable iFrame Embedding
+      </Checkbox>
+
+      <Select
+        defaultValue={selectedVersionId}
+        options={processVersions.map((version) => ({ value: version.id, label: version.name }))}
+        onChange={setSelectedVersionId}
+        style={{ width: '35%' }}
+      />
+
+      {embeddingUrl.length > 0 ? (
+        <>
+          <Button icon={<CopyOutlined />} onClick={handleCopyCodeSection} title="copy code" />
+
+          <div className="code">
+            <TextArea
+              rows={2}
+              value={iframeCode}
+              // @ts-expect-error fieldSizing works but isn't recognized as a valid field
+              style={{ backgroundColor: 'rgb(245,245,245)', fieldSizing: 'content' }}
+            />
+          </div>
+        </>
+      ) : null}
+    </Space>
+  );
+};
+
+export default ModelerShareModalOptionEmdedInWeb;

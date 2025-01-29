@@ -1,12 +1,12 @@
-name: Build, test, and deploy
+name: Build and deploy with Database
 
 on:
-  # push:
-  #   branches:
-  #     - main
-  # pull_request:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -21,21 +21,13 @@ env:
   DOCKER_PATH_MS_SERVER: './src/management-system-v2'
   FILE_NAME_NODE_ENGINE: 'PROCEED-Engine-0.1.0.zip'
   FILE_NAME_ANDROID: 'PROCEED-Engine-0.1.0.apk'
-
+  DB_CONTAINER: ${{ vars.DB_CONTAINER_NAME }}
+  DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
 jobs:
   install:
     runs-on: ubuntu-latest
-    # outputs:
-    #   compose: ${{ steps.changes.outputs.compose }}
     steps:
       - uses: actions/checkout@v4
-
-      # - uses: dorny/paths-filter@v3
-      #   id: changes
-      #   with:
-      #     filters: |
-      #       compose:
-      #         - 'docker-compose.yml'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -44,9 +36,8 @@ jobs:
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn install --frozen-lockfile --ignore-engines # Remove once node-ipc is removed
+      - run: yarn install --frozen-lockfile --ignore-engines
 
-      # Cache for this workflow run.
       - uses: actions/cache@v4
         timeout-minutes: 2
         id: cache-install
@@ -134,78 +125,13 @@ jobs:
 
       - run: yarn test-ms --ci
 
-  buildEngine:
-    runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
-    needs:
-      - lint
-      - testEngine
-      - testEngineE2E
-      - testMS
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
-
-      - run: yarn build
-
-      - name: Upload engine build
-        uses: actions/upload-artifact@v4
-        with:
-          name: PROCEED_Engine
-          path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
-  #  buildEngineAndroid:
-  #    runs-on: ubuntu-latest
-  #    if: ${{ github.ref == 'refs/heads/main' }}
-  #    needs:
-  #      - lint
-  #      - testEngine
-  #      - testEngineE2E
-  # steps:
-  #   - uses: actions/cache@v4
-  #     timeout-minutes: 2
-  #     id: restore-install
-  #     with:
-  #       path: ./*
-  #       key: ${{ github.sha }}-${{ github.run_number }}
-  #
-  #   - name: Set up Node.js
-  #     uses: actions/setup-node@v4
-  #     with:
-  #       node-version: 20
-  #       check-latest: true
-  #       cache: 'yarn'
-  #
-  #   - run: yarn build-android
-  #   - run: cp ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/app-debug.apk ${{ env.BUILD_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
-  #
-  #   - name: Upload android engine build
-  #     uses: actions/upload-artifact@v3
-  #     with:
-  #       name: PROCEED_Engine_Android
-  #       path: ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
-
   buildMS:
     runs-on: ubuntu-latest
     env:
       IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
     outputs:
       tag: ${{ steps.set_tag.outputs.tag }}
-    needs:
-      - lint
-      - testEngine
-      - testEngineE2E
-      - testMS
+    needs: lint
     steps:
       - uses: actions/cache@v4
         timeout-minutes: 2
@@ -223,8 +149,6 @@ jobs:
 
       - run: yarn build-ms
 
-      # Get the tag for the image, either var for staging/production or branch
-      # name for PRs. Taken from https://github.com/aevea/action-kaniko/blob/master/entrypoint.sh
       - id: set_tag
         run: |
           TAG=$(git describe --tags --always --dirty --abbrev=7)
@@ -243,32 +167,198 @@ jobs:
           path: ${{ env.DOCKER_PATH_MS_SERVER }}
           tag: ${{ steps.set_tag.outputs.tag }}
 
-  deploy:
+  validate-migrations:
     runs-on: ubuntu-latest
     needs: buildMS
-    permissions:
-      contents: read
-      id-token: write
-      pull-requests: write
-      issues: write
-    #strategy:
-    #  matrix:
-    #    # Run a job each for the engine and MS server images
-    #    include:
-    #      - serviceName: engine
-    #      - serviceName: management_system
-    env:
-      MS_TAG: ${{ needs.buildMS.outputs.tag }}
-      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
-      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
+    outputs:
+      main_diff: ${{ steps.migration-diff-main.outputs.diff }}
+      branch_diff: ${{ steps.migration-diff-branch.outputs.diff }}
     steps:
-      - uses: actions/cache@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Fetch main branch
+        if: ${{github.ref != 'refs/heads/main'}}
+        run: git fetch origin main:main
+
+      - name: Compare migrations with main
+        if: ${{github.ref != 'refs/heads/main'}}
+        id: migration-diff-main
+        run: |
+          MIGRATIONS_PATH="src/management-system-v2/prisma/migrations"
+
+          # Use arrays for better handling of filenames with spaces
+          readarray -t MAIN_MIGRATIONS < <(git ls-tree -r main --name-only "$MIGRATIONS_PATH" | grep '\.sql$' || echo "")
+          readarray -t CURRENT_MIGRATIONS < <(git ls-tree -r HEAD --name-only "$MIGRATIONS_PATH" | grep '\.sql$' || echo "")
+
+          # Compare arrays and handle empty cases
+          if [ "${#MAIN_MIGRATIONS[@]}" -ne "${#CURRENT_MIGRATIONS[@]}" ] || \
+             [ -n "$(diff <(printf "%s\n" "${MAIN_MIGRATIONS[@]}") <(printf "%s\n" "${CURRENT_MIGRATIONS[@]}"))" ]; then
+            echo "Migration differences detected between main and current branch"
+            echo "diff=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No migration differences detected between main and current branch"
+            echo "diff=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check branch-specific migration changes
+        id: migration-diff-branch
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q 'src/management-system-v2/prisma/migrations/.*\.sql$'; then
+            echo "Branch-specific migration changes detected"
+            echo "diff=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No branch-specific migration changes"
+            echo "diff=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  generate-database-name:
+    needs: [validate-migrations]
+    runs-on: ubuntu-latest
+    environment: Research
+    env:
+      ENV: Research
+    outputs:
+      db_name: ${{ steps.generate-name.outputs.DB_NAME }}
+    steps:
+      - name: Generate sanitized database name
+        id: generate-name
+        run: |
+          # Sanitize branch name for database naming
+          BRANCH_NAME="${{ github.ref_name }}"
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed -E 's/[^a-zA-Z0-9]/_/g' | tr '[:upper:]' '[:lower:]')
+
+          # Determine suffix based on migration differences
+          if [ "${{ needs.validate-migrations.outputs.main_diff }}" = "false" ]; then
+            DB_NAME="proceed_db_${SANITIZED_BRANCH}_main"
+          else
+            DB_NAME="proceed_db_${SANITIZED_BRANCH}"
+          fi
+
+          DB_NAME="${DB_NAME:0:63}"
+          echo "Generated database name: $DB_NAME"
+          echo "DB_NAME=$DB_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      - name: Manage database lifecycle
+        run: |
+          DB_EXISTS=$(ssh $ENV "docker exec ${{ env.DB_CONTAINER }} \
+             psql -U ${{ secrets.DB_USER }} \
+             -d ${{ env.DEFAULT_DB }} \
+             -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
+
+          if [[ "${{ needs.validate-migrations.outputs.main_diff }}" = "true" && \
+                "${{ needs.validate-migrations.outputs.branch_diff }}" = "true" ]]; then
+            echo "Dropping existing database due to migration changes"
+            ssh $ENV \
+              "docker exec ${{ env.DB_CONTAINER }} \
+               psql -U ${{ secrets.DB_USER }} \
+               -d ${{ env.DEFAULT_DB }} \
+               -c 'DROP DATABASE IF EXISTS \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
+          elif [ "$DB_EXISTS" = "1" ]; then
+            echo "Reusing existing database"
+          else
+            echo "Database will be created in subsequent step"
+          fi
+
+  deploy-database:
+    needs: [generate-database-name, validate-migrations]
+    runs-on: ubuntu-latest
+    environment: Research
+    env:
+      ENV: Research
+    outputs:
+      database_url: ${{ steps.configure-connection.outputs.DATABASE_URL }}
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      - name: Verify database status
+        id: db-status
+        run: |
+          DB_EXISTS=$(ssh $ENV \
+            "docker exec ${{ env.DB_CONTAINER }} \
+             psql -U ${{ secrets.DB_USER }} \
+             -d ${{ env.DEFAULT_DB }} \
+             -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ needs.generate-database-name.outputs.db_name }}'\"")
+          echo "create_db=$([[ "$DB_EXISTS" != "1" ]] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+
+      - name: Create database if needed
+        if: steps.db-status.outputs.create_db == 'true'
+        run: |
+          ssh $ENV \
+            "docker exec ${{ env.DB_CONTAINER }} \
+             psql -U ${{ secrets.DB_USER }} \
+             -d ${{ env.DEFAULT_DB }} \
+             -c 'CREATE DATABASE \"${{ needs.generate-database-name.outputs.db_name }}\"'"
+
+      - name: Configure database connection
+        id: configure-connection
+        run: |
+          echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-database-name.outputs.db_name }}?schema=public" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Cache
+        uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
+      - name: Apply Prisma Migrations
+        if: steps.db-status.outputs.create_db == 'true'
+        env:
+          DATABASE_URL: ${{ steps.configure-connection.outputs.DATABASE_URL }}
+        run: |
+          yarn dev-ms-db-deploy
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [buildMS, generate-database-name, deploy-database]
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+      issues: write
+    environment: Research
+    env:
+      MS_TAG: ${{ needs.buildMS.outputs.tag }}
+      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
+      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
+      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-database-name.outputs.db_name }}?schema=public
+    steps:
       - uses: 'google-github-actions/auth@v2'
         with:
           project_id: 'proceed-bpms'
@@ -283,30 +373,22 @@ jobs:
           image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
+            DATABASE_URL=${{ env.DATABASE_URL }}
+            PROCEED_PUBLIC_DEPLOYMENT_ENV=local
           region: 'europe-west1'
           revision_traffic: LATEST=100
-
-      # The traffic update has to be its own step, as it needs to run after
-      # the deployment.
-      #- id: 'update-traffic'
-      #  if: ${{ github.ref == 'refs/heads/main' }}
-      #  uses: 'google-github-actions/deploy-cloudrun@v2'
-      #  with:
-      #    service: ${{ env.SERVICE_NAME }}
-      #   region: 'europe-west1'
-      #   revision_traffic: LATEST=100
 
       - id: 'deploy-preview'
         if: ${{ github.event_name == 'pull_request' }}
         name: Preview Cloud Run Deployment
-        uses: OhKai/preview-cloudrun@main
+        uses: anishsapkota/preview-cloudrun@main
         with:
           service: ${{ env.SERVICE_NAME }}
           image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
           region: 'europe-west1'
+          env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
 
-  # Extra job to show environments in GitHub without failing deploy on PRs.
   githubEnvironment:
     runs-on: ubuntu-latest
     needs: deploy
@@ -314,7 +396,6 @@ jobs:
     environment:
       name: ${{ inputs.environment || 'Staging' }}
       url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
-      # NOOP job to show environment in GitHub
     steps:
       - run: echo "${{ inputs.environment || 'Staging' }}"
 

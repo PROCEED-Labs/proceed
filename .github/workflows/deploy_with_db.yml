@@ -24,152 +24,152 @@ env:
   DB_CONTAINER: ${{ vars.DB_CONTAINER_NAME }}
   DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
 jobs:
-  install:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # install:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn install --frozen-lockfile --ignore-engines
+  #     - run: yarn install --frozen-lockfile --ignore-engines
 
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: cache-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: cache-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-  lint:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn prettier --check .
+  #     - run: yarn prettier --check .
 
-  testEngine:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testEngine:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn test-engine --ci
+  #     - run: yarn test-engine --ci
 
-  testEngineE2E:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testEngineE2E:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn test-e2e --ci
+  #     - run: yarn test-e2e --ci
 
-  testMS:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testMS:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn test-ms --ci
+  #     - run: yarn test-ms --ci
 
-  buildMS:
-    runs-on: ubuntu-latest
-    env:
-      IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
-    outputs:
-      tag: ${{ steps.set_tag.outputs.tag }}
-    needs: lint
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # buildMS:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
+  #   outputs:
+  #     tag: ${{ steps.set_tag.outputs.tag }}
+  #   needs: lint
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn build-ms
+  #     - run: yarn build-ms
 
-      - id: set_tag
-        run: |
-          TAG=$(git describe --tags --always --dirty --abbrev=7)
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            echo "tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
-          fi
+  #     - id: set_tag
+  #       run: |
+  #         TAG=$(git describe --tags --always --dirty --abbrev=7)
+  #         if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+  #           echo "tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+  #         else
+  #           echo "tag=$TAG" >> $GITHUB_OUTPUT
+  #         fi
 
-      - name: Kaniko build
-        uses: aevea/action-kaniko@master
-        with:
-          image: proceed/ms-server
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          path: ${{ env.DOCKER_PATH_MS_SERVER }}
-          tag: ${{ steps.set_tag.outputs.tag }}
+  #     - name: Kaniko build
+  #       uses: aevea/action-kaniko@master
+  #       with:
+  #         image: proceed/ms-server
+  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+  #         path: ${{ env.DOCKER_PATH_MS_SERVER }}
+  #         tag: ${{ steps.set_tag.outputs.tag }}
 
   validate-migrations:
     runs-on: ubuntu-latest
-    needs: buildMS
+    #needs: buildMS
     outputs:
       main_diff: ${{ steps.migration-diff-main.outputs.diff }}
       branch_diff: ${{ steps.migration-diff-branch.outputs.diff }}
@@ -179,9 +179,9 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Fetch main branch
-        if: ${{github.ref != 'refs/heads/main'}}
-        run: git fetch origin main:main
+      # - name: Fetch main branch
+      #   if: ${{github.ref != 'refs/heads/main'}}
+      #   run: git fetch origin main:main
 
       - name: Compare migrations with main
         if: ${{github.ref != 'refs/heads/main'}}
@@ -214,15 +214,22 @@ jobs:
             echo "diff=false" >> "$GITHUB_OUTPUT"
           fi
 
-  generate-database-name:
-    needs: [validate-migrations]
+  deploy:
     runs-on: ubuntu-latest
+    needs: [validate-migrations]
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+      issues: write
     environment: Research
     env:
+      # MS_TAG: ${{ needs.buildMS.outputs.tag }}
+      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
+      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
       ENV: Research
-    outputs:
-      db_name: ${{ steps.generate-name.outputs.DB_NAME }}
     steps:
+      # Database name generation step
       - name: Generate sanitized database name
         id: generate-name
         run: |
@@ -241,6 +248,7 @@ jobs:
           echo "Generated database name: $DB_NAME"
           echo "DB_NAME=$DB_NAME" >> "$GITHUB_OUTPUT"
 
+      # SSH Configuration step
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/
@@ -258,61 +266,37 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
+      # Database lifecycle management step
       - name: Manage database lifecycle
         run: |
           DB_EXISTS=$(ssh $ENV "docker exec ${{ env.DB_CONTAINER }} \
-             psql -U ${{ secrets.DB_USER }} \
-             -d ${{ env.DEFAULT_DB }} \
-             -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
 
           if [[ "${{ needs.validate-migrations.outputs.main_diff }}" = "true" && \
                 "${{ needs.validate-migrations.outputs.branch_diff }}" = "true" ]]; then
             echo "Dropping existing database due to migration changes"
             ssh $ENV \
               "docker exec ${{ env.DB_CONTAINER }} \
-               psql -U ${{ secrets.DB_USER }} \
-               -d ${{ env.DEFAULT_DB }} \
-               -c 'DROP DATABASE IF EXISTS \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
+                psql -U ${{ secrets.DB_USER }} \
+                -d ${{ env.DEFAULT_DB }} \
+                -c 'DROP DATABASE IF EXISTS \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
           elif [ "$DB_EXISTS" = "1" ]; then
             echo "Reusing existing database"
           else
             echo "Database will be created in subsequent step"
           fi
 
-  deploy-database:
-    needs: [generate-database-name, validate-migrations]
-    runs-on: ubuntu-latest
-    environment: Research
-    env:
-      ENV: Research
-    outputs:
-      database_url: ${{ steps.configure-connection.outputs.DATABASE_URL }}
-    steps:
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/$ENV.key
-          chmod 600 ~/.ssh/$ENV.key
-          cat >>~/.ssh/config <<END
-          Host $ENV
-            HostName $SSH_HOST
-            User $SSH_USER
-            IdentityFile ~/.ssh/$ENV.key
-            StrictHostKeyChecking no
-          END
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-
+      # Database deployment steps
       - name: Verify database status
         id: db-status
         run: |
           DB_EXISTS=$(ssh $ENV \
             "docker exec ${{ env.DB_CONTAINER }} \
-             psql -U ${{ secrets.DB_USER }} \
-             -d ${{ env.DEFAULT_DB }} \
-             -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ needs.generate-database-name.outputs.db_name }}'\"")
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
           echo "create_db=$([[ "$DB_EXISTS" != "1" ]] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
 
       - name: Create database if needed
@@ -320,158 +304,143 @@ jobs:
         run: |
           ssh $ENV \
             "docker exec ${{ env.DB_CONTAINER }} \
-             psql -U ${{ secrets.DB_USER }} \
-             -d ${{ env.DEFAULT_DB }} \
-             -c 'CREATE DATABASE \"${{ needs.generate-database-name.outputs.db_name }}\"'"
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -c 'CREATE DATABASE \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
 
       - name: Configure database connection
         id: configure-connection
         run: |
-          echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-database-name.outputs.db_name }}?schema=public" >> "$GITHUB_OUTPUT"
+          echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ steps.generate-name.outputs.DB_NAME }}?schema=public" >> "$GITHUB_OUTPUT"
 
-      - name: Restore Cache
-        uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  #     - name: Restore Cache
+  #       uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Apply Prisma Migrations
-        if: steps.db-status.outputs.create_db == 'true'
-        env:
-          DATABASE_URL: ${{ steps.configure-connection.outputs.DATABASE_URL }}
-        run: |
-          yarn dev-ms-db-deploy
+  #     - name: Apply Prisma Migrations
+  #       if: steps.db-status.outputs.create_db == 'true'
+  #       env:
+  #         DATABASE_URL: ${{ steps.configure-connection.outputs.DATABASE_URL }}
+  #       run: |
+  #         yarn dev-ms-db-deploy
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [buildMS, generate-database-name, deploy-database]
-    permissions:
-      contents: read
-      id-token: write
-      pull-requests: write
-      issues: write
-    environment: Research
-    env:
-      MS_TAG: ${{ needs.buildMS.outputs.tag }}
-      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
-      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-database-name.outputs.db_name }}?schema=public
-    steps:
-      - uses: 'google-github-actions/auth@v2'
-        with:
-          project_id: 'proceed-bpms'
-          workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
-          service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
+  #     - uses: 'google-github-actions/auth@v2'
+  #       with:
+  #         project_id: 'proceed-bpms'
+  #         workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
+  #         service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
 
-      - id: 'deploy'
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: 'google-github-actions/deploy-cloudrun@v2'
-        with:
-          service: ${{ env.SERVICE_NAME }}
-          image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
-          env_vars: |
-            NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
-            DATABASE_URL=${{ env.DATABASE_URL }}
-            PROCEED_PUBLIC_DEPLOYMENT_ENV=local
-          region: 'europe-west1'
-          revision_traffic: LATEST=100
+  #     - id: 'deploy'
+  #       if: ${{ github.ref == 'refs/heads/main' }}
+  #       uses: 'google-github-actions/deploy-cloudrun@v2'
+  #       with:
+  #         service: ${{ env.SERVICE_NAME }}
+  #         image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
+  #         env_vars: |
+  #           NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
+  #           DATABASE_URL=${{ env.DATABASE_URL }}
+  #           PROCEED_PUBLIC_DEPLOYMENT_ENV=local
+  #         region: 'europe-west1'
+  #         revision_traffic: LATEST=100
 
-      - id: 'deploy-preview'
-        if: ${{ github.event_name == 'pull_request' }}
-        name: Preview Cloud Run Deployment
-        uses: anishsapkota/preview-cloudrun@main
-        with:
-          service: ${{ env.SERVICE_NAME }}
-          image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          region: 'europe-west1'
-          env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
+  #     - id: 'deploy-preview'
+  #       if: ${{ github.event_name == 'pull_request' }}
+  #       name: Preview Cloud Run Deployment
+  #       uses: anishsapkota/preview-cloudrun@main
+  #       with:
+  #         service: ${{ env.SERVICE_NAME }}
+  #         image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+  #         region: 'europe-west1'
+  #         env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
 
-  githubEnvironment:
-    runs-on: ubuntu-latest
-    needs: deploy
-    if: ${{ github.ref == 'refs/heads/main' }}
-    environment:
-      name: ${{ inputs.environment || 'Staging' }}
-      url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
-    steps:
-      - run: echo "${{ inputs.environment || 'Staging' }}"
+  # githubEnvironment:
+  #   runs-on: ubuntu-latest
+  #   needs: deploy
+  #   if: ${{ github.ref == 'refs/heads/main' }}
+  #   environment:
+  #     name: ${{ inputs.environment || 'Staging' }}
+  #     url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
+  #   steps:
+  #     - run: echo "${{ inputs.environment || 'Staging' }}"
 
-  testE2E:
-    needs: deploy
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    if: ${{ inputs.environment != 'Production' }}
-    strategy:
-      matrix:
-        shard: [1, 2, 3, 4]
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testE2E:
+  #   needs: deploy
+  #   timeout-minutes: 60
+  #   runs-on: ubuntu-latest
+  #   if: ${{ inputs.environment != 'Production' }}
+  #   strategy:
+  #     matrix:
+  #       shard: [1, 2, 3, 4]
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      # TODO: cache these?
-      - name: Install Playwright Browsers
-        run: yarn playwright install --with-deps
+  #     # TODO: cache these?
+  #     - name: Install Playwright Browsers
+  #       run: yarn playwright install --with-deps
 
-      - name: Run Playwright tests
-        run: yarn playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
-        env:
-          PLAYWRIGHT_TEST_BASE_URL: ${{ github.event_name == 'pull_request' && format('https://pr-{0}---ms-server-staging-c4f6qdpj7q-ew.a.run.app', github.event.number) || 'https://staging.proceed-labs.org' }}
+  #     - name: Run Playwright tests
+  #       run: yarn playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+  #       env:
+  #         PLAYWRIGHT_TEST_BASE_URL: ${{ github.event_name == 'pull_request' && format('https://pr-{0}---ms-server-staging-c4f6qdpj7q-ew.a.run.app', github.event.number) || 'https://staging.proceed-labs.org' }}
 
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: all-blob-reports-${{ matrix.shard }}
-          path: blob-report
-          retention-days: 1
+  #     - uses: actions/upload-artifact@v4
+  #       if: ${{ !cancelled() }}
+  #       with:
+  #         name: all-blob-reports-${{ matrix.shard }}
+  #         path: blob-report
+  #         retention-days: 1
 
-  create-report:
-    name: 📔 Create test report
-    if: always()
-    needs: [testE2E]
+  # create-report:
+  #   name: 📔 Create test report
+  #   if: always()
+  #   needs: [testE2E]
 
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: all-blob-reports-*
-          merge-multiple: true
-          path: all-blob-reports
+  #     - name: Download blob reports from GitHub Actions Artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: all-blob-reports-*
+  #         merge-multiple: true
+  #         path: all-blob-reports
 
-      - name: Merge into HTML Report
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+  #     - name: Merge into HTML Report
+  #       run: npx playwright merge-reports --reporter html ./all-blob-reports
 
-      - name: Upload HTML report
-        uses: actions/upload-artifact@v4
-        with:
-          name: html-report--attempt-${{ github.run_attempt }}
-          path: playwright-report
-          retention-days: 7
+  #     - name: Upload HTML report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: html-report--attempt-${{ github.run_attempt }}
+  #         path: playwright-report
+  #         retention-days: 7

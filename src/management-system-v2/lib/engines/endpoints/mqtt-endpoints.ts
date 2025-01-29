@@ -1,5 +1,6 @@
 import mqtt from 'mqtt';
 import { env } from '@/lib/env-vars';
+import { on } from 'events';
 
 const mqttTimeout = 1000;
 
@@ -69,7 +70,16 @@ export async function mqttRequest(
       return;
 
     if ('error' in message) return rej(message.error);
-    res(JSON.parse(message.body));
+
+    let result: string | object;
+
+    try {
+      result = JSON.parse(message.body);
+    } catch (err) {
+      result = message.body;
+    }
+
+    res(result);
   }
   client.on('message', handler);
 

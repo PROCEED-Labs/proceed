@@ -33,10 +33,12 @@ import {
   checkIfUserTaskExists,
   copyProcessArtifactReferences,
   copyProcessFiles,
+} from './db/process';
+import {
+  getProcessScriptTaskScript as _getProcessScriptTaskScript,
   saveProcessScriptTask as _saveProcessScriptTask,
   deleteProcessScriptTask as _deleteProcessScriptTask,
-  getProcessScriptTaskScript as _getProcessScriptTaskScript,
-} from './db/process';
+} from './legacy/_process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
 
@@ -569,10 +571,9 @@ export const getProcessScriptTaskData = async (
 export const saveProcessScriptTask = async (
   definitionId: string,
   taskFileName: string,
+  fileExtension: 'js' | 'ts' | 'xml',
+  script: string,
   spaceId: string,
-  js: string,
-  ts?: string,
-  xml?: string,
 ) => {
   const error = await checkValidity(definitionId, 'update', spaceId);
 
@@ -584,7 +585,7 @@ export const saveProcessScriptTask = async (
       UserErrorType.ConstraintError,
     );
 
-  await _saveProcessScriptTask(definitionId, taskFileName, js, ts, xml);
+  await _saveProcessScriptTask(definitionId, `${taskFileName}.${fileExtension}`, script);
 };
 
 export const deleteProcessScriptTask = async (

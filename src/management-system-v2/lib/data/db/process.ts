@@ -663,28 +663,6 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
   }
 }
 
-export async function getProcessScriptTaskScript(
-  processDefinitionsId: string,
-  taskFileName: string,
-) {
-  checkIfProcessExists(processDefinitionsId);
-  try {
-    const res = await db.artifact.findUnique({ where: { fileName: taskFileName } });
-    if (!res) {
-      throw new Error('Unable to get script for script task!');
-    }
-
-    const script = (
-      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
-    ).toString('utf-8');
-
-    return script;
-  } catch (err) {
-    logger.debug(`Error getting script of script task. Reason:\n${err}`);
-    throw new Error('Unable to get script for script task!');
-  }
-}
-
 export async function saveProcessUserTask(
   processDefinitionsId: string,
   userTaskId: string,
@@ -737,130 +715,11 @@ export async function deleteProcessUserTask(
   try {
     const res = await checkIfUserTaskExists(processDefinitionsId, userTaskFileName);
     if (res) {
+      console.log('user task exists', userTaskFileName);
       return await deleteProcessArtifact(res.filePath, true);
     }
   } catch (err) {
     logger.debug(`Error removing user task data. Reason:\n${err}`);
-  }
-}
-
-export async function saveProcessScriptTask(
-  processDefinitionsId: string,
-  scriptTaskId: string,
-  js: string,
-  ts?: string,
-  xml?: string,
-  versionCreatedOn?: string,
-) {
-  checkIfProcessExists(processDefinitionsId);
-  try {
-    const existingJsFile = await checkIfScriptTaskExists(
-      processDefinitionsId,
-      `${scriptTaskId}.js`,
-    );
-    const { fileName } = await saveProcessArtifact(
-      processDefinitionsId,
-      `${scriptTaskId}.js`,
-      'application/javascript',
-      new TextEncoder().encode(js),
-      {
-        generateNewFileName: false,
-        versionCreatedOn: versionCreatedOn,
-        replaceFileContentOnly: existingJsFile?.filePath ? true : false,
-        context: 'script-tasks',
-      },
-    );
-
-    if (ts) {
-      const existingTsFile = await checkIfScriptTaskExists(
-        processDefinitionsId,
-        `${scriptTaskId}.ts`,
-      );
-      await saveProcessArtifact(
-        processDefinitionsId,
-        `${scriptTaskId}.ts`,
-        'application/x-typescript',
-        new TextEncoder().encode(ts),
-        {
-          generateNewFileName: false,
-          versionCreatedOn: versionCreatedOn,
-          replaceFileContentOnly: existingTsFile?.filePath ? true : false,
-          context: 'script-tasks',
-        },
-      );
-    } else {
-      const existingXmlFile = await checkIfScriptTaskExists(
-        processDefinitionsId,
-        `${scriptTaskId}.xml`,
-      );
-      await saveProcessArtifact(
-        processDefinitionsId,
-        `${scriptTaskId}.xml`,
-        'application/xml',
-        new TextEncoder().encode(xml),
-        {
-          generateNewFileName: false,
-          versionCreatedOn: versionCreatedOn,
-          replaceFileContentOnly: existingXmlFile?.filePath ? true : false,
-          context: 'script-tasks',
-        },
-      );
-    }
-
-    return fileName;
-  } catch (err) {
-    logger.debug(`Error storing script task data. Reason:\n${err}`);
-    throw new Error('Failed to store the script task data');
-  }
-}
-
-export async function checkIfScriptTaskExists(
-  processDefinitionsId: string,
-  scriptTaskFileName: string,
-) {
-  try {
-    // const artifact = await db.artifact.findFirst({
-    //   where: {
-    //     artifactType: 'user-tasks',
-    //     fileName: `${userTaskId}.json`,
-    //     references: {
-    //       some: {
-    //         processId: processDefinitionsId,
-    //       },
-    //     },
-    //   },
-    //   include: {
-    //     references: {
-    //       where: {
-    //         processId: processDefinitionsId,
-    //       },
-    //       select: {
-    //         id: true,
-    //         processId: true,
-    //       },
-    //     },
-    //   },
-    // });
-    const artifact = await db.artifact.findUnique({ where: { fileName: scriptTaskFileName } });
-    return artifact;
-  } catch (error) {
-    console.error('Error checking if script task exists:', error);
-    throw new Error('Failed to check if script task exists.');
-  }
-}
-
-export async function deleteProcessScriptTask(
-  processDefinitionsId: string,
-  scriptTaskFileName: string,
-) {
-  checkIfProcessExists(processDefinitionsId);
-  try {
-    const res = await checkIfScriptTaskExists(processDefinitionsId, scriptTaskFileName);
-    if (res) {
-      return await deleteProcessArtifact(res.filePath, true);
-    }
-  } catch (err) {
-    logger.debug(`Error removing script task data. Reason:\n${err}`);
   }
 }
 

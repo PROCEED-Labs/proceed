@@ -19,6 +19,7 @@ const EnginesPage = async ({ params }: { params: { environmentId: string } }) =>
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
     return notFound();
   }
+
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
 
   return (

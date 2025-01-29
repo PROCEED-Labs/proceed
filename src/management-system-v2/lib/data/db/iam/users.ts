@@ -87,7 +87,7 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
     console.error('Error adding new user: ', error);
   }
 
-  if ((await getSystemAdmins()).length === 0)
+  if ((await getSystemAdmins()).length === 0 && !user.isGuest)
     addSystemAdmin({
       role: 'admin',
       userId: user.id,

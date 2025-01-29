@@ -65,7 +65,8 @@
     "jsdoc": "jsdoc -c ./jsdoc.config.json --pedantic",
     "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",
     "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "cd src/management-system-v2 && yarn prisma generate"
   },
   "lint-staged": {
     "*": "prettier --check --ignore-path .eslintignore"

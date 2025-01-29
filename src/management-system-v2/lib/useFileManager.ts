@@ -227,16 +227,16 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
     shareToken?: string | null,
   ): Promise<{ fileUrl?: string }> => {
     const url = `/api/private/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
+    return { fileUrl: url };
+    // const response = await fetch(url, { method: 'GET' });
 
-    const response = await fetch(url, { method: 'GET' });
+    // if (response.status === 200) {
+    //   const blob = await response.blob();
+    //   const downloadUrl = URL.createObjectURL(blob);
 
-    if (response.status === 200) {
-      const blob = await response.blob();
-      const downloadUrl = URL.createObjectURL(blob);
-      return { fileUrl: downloadUrl };
-    } else {
-      throw new Error('Local download failed');
-    }
+    // } else {
+    //   throw new Error('Local download failed');
+    // }
   };
 
   return {

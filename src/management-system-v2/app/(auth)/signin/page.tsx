@@ -7,12 +7,18 @@ import { generateGuestReferenceToken } from '@/lib/reference-guest-user-token';
 const dayInMS = 1000 * 60 * 60 * 24;
 
 // take in search query
-const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
-  const { session } = await getCurrentUser();
+const SignInPage = async ({ searchParams }: AsyncPageProps) => {
+  const [{ session }, { callbackUrl }] = await Promise.all([
+    await getCurrentUser(),
+    await searchParams,
+  ]);
+
   const isGuest = session?.user.isGuest;
 
+  const paramsCallbackUrl = typeof callbackUrl === 'string' ? callbackUrl : callbackUrl?.[0];
+
   if (session?.user && !isGuest) {
-    const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/processes`;
+    const callbackUrl = paramsCallbackUrl ?? `/${session.user.id}/processes`;
     redirect(callbackUrl);
   }
 

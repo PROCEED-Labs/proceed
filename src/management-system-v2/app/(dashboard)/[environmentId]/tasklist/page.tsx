@@ -5,12 +5,13 @@ import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 import { env } from '@/lib/env-vars';
 
-const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
+const TasklistPage = async ({ params }: AsyncPageProps) => {
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 
-  const { ability } = await getCurrentEnvironment(params.environmentId);
+  const { environmentId } = await params;
+  const { ability } = await getCurrentEnvironment(environmentId);
 
   const generateMockDataUserTasks = () => {
     const availableStatus = ['READY', 'ACTIVE', 'COMPLETED', 'PAUSED'];

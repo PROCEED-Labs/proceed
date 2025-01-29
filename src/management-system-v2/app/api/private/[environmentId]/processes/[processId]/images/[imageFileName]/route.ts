@@ -17,9 +17,11 @@ import { v4 } from 'uuid';
 export async function GET(
   request: NextRequest,
   {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+    params,
+  }: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
+  const { environmentId, processId, imageFileName } = await params;
+
   const processMetaObjects = getProcessMetaObjects();
   const processMeta = processMetaObjects[processId];
 
@@ -79,10 +81,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+  { params }: { params: Promise<{ environmentId: string; processId: string }> },
 ) {
+  const { environmentId, processId } = await params;
+
   const { ability } = await getCurrentEnvironment(environmentId);
 
   const processMetaObjects: any = getProcessMetaObjects();
@@ -116,11 +118,13 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _: NextRequest,
   {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+    params,
+  }: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
+  const { environmentId, processId, imageFileName } = await params;
+
   const { ability } = await getCurrentEnvironment(environmentId);
 
   const processMetaObjects = getProcessMetaObjects();

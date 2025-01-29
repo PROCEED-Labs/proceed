@@ -21,12 +21,6 @@ import { SettingsOption } from './settings-modal';
 import { env } from '@/lib/env-vars';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
-interface PageProps {
-  searchParams: {
-    [key: string]: string[] | string | undefined;
-  };
-}
-
 /**
  * Will return the process meta data and bpmn for the requested process if possible (process is shared or it is accessible by the logged in user)
  *
@@ -123,8 +117,8 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
   }
 };
 
-const SharedViewer = async ({ searchParams }: PageProps) => {
-  const { token, version, settings } = searchParams;
+const SharedViewer = async ({ searchParams }: AsyncPageProps) => {
+  const { token, version, settings } = await searchParams;
   const { session, userId } = await getCurrentUser();
   if (typeof token !== 'string') {
     return <ErrorMessage message="Invalid Token " />;
@@ -190,7 +184,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     processData!.sharedAs === 'protected' &&
     !session?.user.id
   ) {
-    const callbackUrl = `/shared-viewer?token=${searchParams.token}`;
+    const callbackUrl = `/shared-viewer?token=${token}`;
     const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
     redirect(loginPath);
   }

@@ -22,7 +22,8 @@ const ModelerShareModalOptionEmdedInWeb = ({
   allowIframeTimestamp,
   refresh,
 }: ModelerShareModalOptionEmdedInWebProps) => {
-  const { processId } = useParams();
+  let { processId } = useParams();
+  processId = typeof processId === 'string' ? processId : '';
   const environment = useEnvironment();
   const [embeddingUrl, setEmbeddingUrl] = useState('');
   const { message } = App.useApp();
@@ -79,7 +80,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
           environment.spaceId,
         );
       } catch (err) {
-        message.error('An error occured while enabling embedding.');
+        message.error('An error occurred while enabling embedding.');
       }
     } else {
       // deactivate embedding
@@ -91,7 +92,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
         );
         setEmbeddingUrl('');
       } catch (err) {
-        message.error('An error occured while disabling embedding.');
+        message.error('An error occurred while disabling embedding.');
       }
     }
     refresh();

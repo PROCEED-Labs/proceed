@@ -7,8 +7,9 @@ import { getUserById } from '@/lib/data/DTOs';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+const Page = async ({ params }: AsyncPageProps) => {
+  const { environmentId } = await params;
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
   if (!ability.can('manage', 'User')) return <UnauthorizedFallback />;
 
   const memberships = await getMembers(activeEnvironment.spaceId, ability);

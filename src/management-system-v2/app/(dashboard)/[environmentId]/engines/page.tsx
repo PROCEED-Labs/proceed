@@ -15,12 +15,13 @@ const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ab
   return <SavedEnginesList savedEngines={engines} />;
 };
 
-const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
+const EnginesPage = async ({ params }: AsyncPageProps) => {
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
     return notFound();
   }
 
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const { environmentId } = await params;
+  const { activeEnvironment, ability } = await getCurrentEnvironment(environmentId);
 
   return (
     <Content title="Engines">

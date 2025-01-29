@@ -10,11 +10,11 @@ import { v4 } from 'uuid';
 import { invalidRequest, readImage } from '../../../image-helpers';
 
 export async function GET(
-  request: NextRequest,
-  {
-    params: { environmentId, processId },
-  }: { params: { environmentId: string; processId: string } },
+  _: NextRequest,
+  { params }: { params: Promise<{ environmentId: string; processId: string }> },
 ) {
+  const { environmentId, processId } = await params;
+
   const { ability } = await getCurrentEnvironment(environmentId);
 
   const processMetaObjects = getProcessMetaObjects();
@@ -41,10 +41,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  {
-    params: { environmentId, processId },
-  }: { params: { environmentId: string; processId: string } },
+  { params }: { params: Promise<{ environmentId: string; processId: string }> },
 ) {
+  const { environmentId, processId } = await params;
+
   const isInvalidRequest = invalidRequest(request);
   if (isInvalidRequest) return isInvalidRequest;
 

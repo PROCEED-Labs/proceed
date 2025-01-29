@@ -10,8 +10,8 @@ import Content from '@/components/content';
 
 const searchParamsSchema = z.object({ email: z.string().email(), token: z.string() });
 
-export default async function ChangeEmailPage({ searchParams }: { searchParams: unknown }) {
-  const parsedSearchParams = searchParamsSchema.safeParse(searchParams);
+export default async function ChangeEmailPage({ searchParams }: AsyncPageProps) {
+  const parsedSearchParams = searchParamsSchema.safeParse(await searchParams);
   if (!parsedSearchParams.success) redirect('/');
   const { email, token } = parsedSearchParams.data;
 

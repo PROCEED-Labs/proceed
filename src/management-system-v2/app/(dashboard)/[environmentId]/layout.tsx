@@ -28,20 +28,20 @@ import Link from 'next/link';
 import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
-import { LuTable2 } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import { env } from '@/lib/env-vars';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
 
-const DashboardLayout = async ({
+export default async function DashboardLayout({
   children,
   params,
-}: PropsWithChildren<{ params: { environmentId: string } }>) => {
+}: PropsWithChildren<{ params: Promise<{ [slug: string]: string }> }>) {
+  const { environmentId } = await params;
   const { userId, systemAdmin } = await getCurrentUser();
 
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const { activeEnvironment, ability } = await getCurrentEnvironment(environmentId);
   const can = ability.can.bind(ability);
   const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
@@ -205,6 +205,4 @@ const DashboardLayout = async ({
       </Layout>
     </>
   );
-};
-
-export default DashboardLayout;
+}

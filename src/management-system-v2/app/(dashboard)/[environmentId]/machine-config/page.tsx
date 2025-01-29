@@ -1,6 +1,4 @@
 import Content from '@/components/content';
-import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
-import { ComponentProps } from 'react';
 import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
@@ -11,16 +9,13 @@ import { env } from '@/lib/env-vars';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 export type ListItem = ParentConfig;
 
-const MachineConfigPage = async ({
-  params,
-}: {
-  params: { environmentId: string; folderId?: string };
-}) => {
+const MachineConfigPage = async ({ params }: AsyncPageProps) => {
   if (!env.ENABLE_MACHINE_CONFIG) {
     return notFound();
   }
 
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const { environmentId } = await params;
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   if (!ability.can('view', 'MachineConfig')) return <UnauthorizedFallback />;
 
@@ -28,7 +23,6 @@ const MachineConfigPage = async ({
     activeEnvironment.spaceId,
     ability,
   )) satisfies ListItem[];
-  const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
 
   return (
     <>

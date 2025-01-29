@@ -10,8 +10,9 @@ import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import DeleteOrganizationButton from './delete-organization-button';
 import { AuthCan } from '@/components/auth-can';
 
-const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+const GeneralSettingsPage = async ({ params }: AsyncPageProps) => {
+  const { environmentId } = await params;
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
   if (!activeEnvironment.isOrganization || !ability.can('manage', 'Environment'))
     return redirect('/');
 

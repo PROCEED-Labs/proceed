@@ -14,11 +14,9 @@ import { AuthenticatedUser } from '@/lib/data/user-schema';
 import SpaceLink from '@/components/space-link';
 import { getFolderById } from '@/lib/data/legacy/folders';
 
-const Page = async ({
-  params: { roleId, environmentId },
-}: {
-  params: { roleId: string; environmentId: string };
-}) => {
+const Page = async ({ params }: AsyncPageProps) => {
+  const { environmentId, roleId } = await params;
+
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
   const role = await getRoleById(roleId, ability);
   if (role && !ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;

@@ -7,7 +7,7 @@ import { Environment } from '../data/environment-schema';
 import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
 import { env } from '@/lib/env-vars';
 import { asyncMap } from '../helpers/javascriptHelpers';
-import Ability, { UnauthorizedError } from '../ability/abilityHelper';
+import Ability from '../ability/abilityHelper';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -48,7 +48,7 @@ export async function generateSharedViewerUrl(
 ) {
   const token = generateProcessShareToken(payload);
 
-  const header = headers();
+  const header = await headers();
   const host = header.get('host');
   const scheme = header.get('referer')?.split('://')[0];
 

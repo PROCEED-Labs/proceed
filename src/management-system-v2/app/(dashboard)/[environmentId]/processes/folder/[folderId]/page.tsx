@@ -18,20 +18,16 @@ import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/DTOs';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
-const ProcessesPage = async ({
-  params,
-}: {
-  params: { environmentId: string; folderId?: string };
-}) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+const ProcessesPage = async ({ params }: AsyncPageProps) => {
+  const { environmentId, folderId } = await params;
+
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   const favs = await getUsersFavourites();
 
   const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
 
-  const folder = await getFolderById(
-    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
-  );
+  const folder = await getFolderById(folderId ? decodeURIComponent(folderId) : rootFolder.id);
 
   const folderContents = await getFolderContents(folder.id, ability);
 

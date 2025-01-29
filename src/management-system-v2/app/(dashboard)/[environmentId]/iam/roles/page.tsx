@@ -6,8 +6,9 @@ import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { ComponentProps } from 'react';
 import { getUserById } from '@/lib/data/DTOs';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+const Page = async ({ params }: AsyncPageProps) => {
+  const { environmentId } = await params;
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   if (!ability.can('manage', 'Role')) return <UnauthorizedFallback />;
 

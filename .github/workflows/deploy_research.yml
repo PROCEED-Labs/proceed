@@ -44,7 +44,8 @@ jobs:
 
       # Remove the container
       - run: ssh $ENV "sudo docker rm $SERVICE_NAME || true"
-
+      # Replicate main branch db for research
+      - run: ssh $ENV "./scripts/replicate_db.sh"
       # Restart the container with the new image
       - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.research -v /opt/proceed-ms-server:/app/volume proceed/ms-server:$MS_TAG"
 

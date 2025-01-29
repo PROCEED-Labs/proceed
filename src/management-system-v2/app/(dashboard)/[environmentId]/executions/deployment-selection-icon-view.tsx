@@ -4,15 +4,18 @@ import { ProcessListProcess } from './deployments-modal';
 import { Button, Card } from 'antd';
 import Viewer from '@/components/bpmn-viewer';
 import { FolderOutlined } from '@ant-design/icons';
+import { HTMLAttributes } from 'react';
 
 const ProcessIconView = ({
   data: filteredData,
   openFolder,
   selectProcess,
+  containerProps,
 }: {
   data: ProcessListProcess[];
   openFolder: (id: string) => void;
   selectProcess: (process: ProcessListProcess) => void;
+  containerProps?: HTMLAttributes<HTMLDivElement>;
 }) => {
   const folders = filteredData.filter((item) => item.type === 'folder');
   const processesData = filteredData.filter((item) => item.type !== 'folder');
@@ -58,6 +61,7 @@ const ProcessIconView = ({
         tabCardPropsGenerator={tabCardPropGenerator}
         data={filteredData}
         divisions={[folders, processesData]}
+        containerProps={containerProps}
       />
     </ScrollBar>
   );

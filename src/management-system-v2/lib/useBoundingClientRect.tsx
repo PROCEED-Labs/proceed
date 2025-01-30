@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 type DOMRectKeyType = 'x' | 'y' | 'bottom' | 'top' | 'left' | 'right' | 'width' | 'height';
 
@@ -14,14 +14,14 @@ type PartialDOMRect<T extends ReadonlyArray<DOMRectKeyType>> = Pick<FullDOMRect,
  * @returns the current value of the watched DOMRect properties
  */
 function useBoundingClientRect<T extends ReadonlyArray<DOMRectKeyType>>(
-  ref: React.RefObject<HTMLElement>,
+  el: HTMLElement | undefined,
   toWatch: T,
 ): PartialDOMRect<T> {
   const [boundingBox, setBoundingBox] = useState(new DOMRect());
 
-  useEffect(() => {
-    if (ref.current) {
-      const bb = ref.current.getBoundingClientRect();
+  useLayoutEffect(() => {
+    if (el) {
+      const bb = el.getBoundingClientRect();
       setBoundingBox(bb);
 
       let currentBB = bb;
@@ -39,11 +39,11 @@ function useBoundingClientRect<T extends ReadonlyArray<DOMRectKeyType>>(
         }
       });
 
-      observer.observe(ref.current);
+      observer.observe(el);
 
       () => observer.disconnect();
     }
-  }, [ref.current]);
+  }, [el]);
 
   return boundingBox;
 }

@@ -27,6 +27,8 @@
     "/process/:definitionId/instance/:instanceID": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/user-tasks": {},
+    "/process/:definitionId/script-tasks/:fileName": {},
+    "/process/:definitionId/script-tasks": {},
     "/status/": {},
     "/resources/process/:definitionId/images/:fileName": {},
     "/resources/process/:definitionId/images/": {}
@@ -52,6 +54,7 @@
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId/currentFlowNodeState": {},
     "/process/:definitionId/user-tasks/:fileName": {},
+    "/process/:definitionId/script-tasks/:fileName": {},
     "/resources/process/:definitionId/images/:fileName": {}
   },
   "delete": {

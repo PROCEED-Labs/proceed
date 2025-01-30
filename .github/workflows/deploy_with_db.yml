@@ -342,7 +342,7 @@ jobs:
           image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
-            DATABASE_URL=${{ env.DATABASE_URL }}
+            DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ steps.generate-name.outputs.DB_NAME }}?schema=public
             PROCEED_PUBLIC_DEPLOYMENT_ENV=local
           region: 'europe-west1'
           revision_traffic: LATEST=100
@@ -356,7 +356,7 @@ jobs:
           image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
           region: 'europe-west1'
-          env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
+          env_vars: '{"DATABASE_URL": "${{ steps.configure-connection.outputs.DATABASE_URL }}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
 
   githubEnvironment:
     runs-on: ubuntu-latest

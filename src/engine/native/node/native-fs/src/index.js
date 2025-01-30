@@ -138,6 +138,8 @@ class NativeFS extends NativeModule {
             file = JSON.parse(data);
           } else if (key.indexOf('.bpmn') !== -1) {
             file = file.toString();
+          } else if (key.indexOf('.js') !== -1) {
+            file = file.toString();
           }
 
           succeed([file]);

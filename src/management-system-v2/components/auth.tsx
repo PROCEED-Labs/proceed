@@ -1,8 +1,6 @@
 import { cache } from 'react';
-import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
-import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
 import { getSystemAdminByUserId } from '@/lib/data/DTOs';
 import Ability from '@/lib/ability/abilityHelper';
@@ -11,9 +9,10 @@ import {
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
+import { auth } from '@/lib/auth';
 
 export const getCurrentUser = cache(async () => {
-  const session = await getServerSession(nextAuthOptions);
+  const session = await auth();
   const userId = session?.user.id || '';
   const systemAdmin = await getSystemAdminByUserId(userId);
 

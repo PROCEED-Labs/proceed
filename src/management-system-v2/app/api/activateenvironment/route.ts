@@ -1,14 +1,13 @@
-import { getServerSession } from 'next-auth/next';
-import nextAuthOptions from '../auth/[...nextauth]/auth-options';
 import { activateEnvrionment } from '@/lib/data/legacy/iam/environments';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 
 // TODO: prohibit already active users from using this route
 export const GET = async (req: Request) => {
   let activationId;
   try {
-    const session = await getServerSession(nextAuthOptions);
+    const session = await auth();
     if (!session) throw new UnauthorizedError();
 
     const { searchParams } = new URL(req.url);

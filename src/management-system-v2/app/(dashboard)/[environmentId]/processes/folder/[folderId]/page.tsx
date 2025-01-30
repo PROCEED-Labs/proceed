@@ -1,7 +1,7 @@
 import Processes from '@/components/processes';
 import Content from '@/components/content';
 import { Button, Space } from 'antd';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 // This is a workaround to enable the Server Actions in that file to return any
 // client components. This is not possible with the current nextjs compiler
 // otherwise. It might be possible in the future with turbopack without this

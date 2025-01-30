@@ -6,25 +6,24 @@ import { redirect } from 'next/navigation';
 import ProcessTransferButtons from './transfer-processes-confirmation-buttons';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
 
-export default async function TransferProcessesPage({
-  searchParams,
-}: {
-  searchParams: {
-    callbackUrl?: string;
-    referenceToken?: string;
-  };
-}) {
+export default async function TransferProcessesPage({ searchParams }: AsyncPageProps) {
   const { userId, session } = await getCurrentUser();
   if (!session) redirect('api/auth/signin');
   if (session.user.isGuest) redirect('/');
 
-  const callbackUrl = decodeURIComponent(searchParams.callbackUrl || '/');
+  let { callbackUrl, referenceToken } = await searchParams;
+  callbackUrl = decodeURIComponent(
+    typeof callbackUrl === 'string' ? callbackUrl : callbackUrl?.[0] ?? '',
+  );
+  referenceToken = decodeURIComponent(
+    typeof referenceToken === 'string' ? referenceToken : referenceToken?.[0] ?? '',
+  );
 
-  const token = decodeURIComponent(searchParams.referenceToken || '');
-  const referenceToken = getGuestReference(token);
-  if ('error' in referenceToken) {
+  const token = getGuestReference(callbackUrl);
+
+  if ('error' in token) {
     let message = 'Invalid link';
-    if (referenceToken.error === 'TokenExpiredError') message = 'Link expired';
+    if (token.error === 'TokenExpiredError') message = 'Link expired';
 
     return (
       <Content title="Transfer Processes">
@@ -36,7 +35,7 @@ export default async function TransferProcessesPage({
       </Content>
     );
   }
-  const guestId = referenceToken.guestId;
+  const guestId = token.guestId;
 
   // guestId === userId if the user signed in with a non existing account, and the guest user was
   // turned into an authenticated user
@@ -64,7 +63,7 @@ export default async function TransferProcessesPage({
         Your guest account had {guestProcesses.length} process{guestProcesses.length !== 1 && 'es'}.
         <br />
         Would you like to transfer them to your account?
-        <ProcessTransferButtons referenceToken={token} callbackUrl={callbackUrl} />
+        <ProcessTransferButtons referenceToken={referenceToken} callbackUrl={callbackUrl} />
       </Card>
     </Content>
   );

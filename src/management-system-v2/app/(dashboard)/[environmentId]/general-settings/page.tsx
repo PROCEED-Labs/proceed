@@ -6,8 +6,9 @@ import SettingsForm from './settings-form';
 import Title from 'antd/es/typography/Title';
 import { redirect } from 'next/navigation';
 
-const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
-  const { ability } = await getCurrentEnvironment(params.environmentId);
+const GeneralSettingsPage = async ({ params }: AsyncPageProps) => {
+  const { environmentId } = await params;
+  const { ability } = await getCurrentEnvironment(environmentId);
   if (!ability.can('view', 'Setting')) return redirect('/');
 
   const updateSettings = async (newSettings: Object) => {

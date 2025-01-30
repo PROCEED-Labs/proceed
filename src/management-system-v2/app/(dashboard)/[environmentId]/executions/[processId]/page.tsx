@@ -34,13 +34,11 @@ async function Deployment({ processId, spaceId }: { processId: string; spaceId: 
   return <ProcessDeploymentView selectedProcess={selectedProcess} />;
 }
 
-export default async function Page({
-  params,
-}: {
-  params: { processId: string; environmentId: string };
-}) {
+export default async function Page({ params }: AsyncPageProps) {
+  const { environmentId, processId } = await params;
+
   //TODO: authentication + authorization
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const { activeEnvironment, ability } = await getCurrentEnvironment(environmentId);
 
   return (
     <Suspense
@@ -50,10 +48,7 @@ export default async function Page({
         </Content>
       }
     >
-      <Deployment
-        processId={decodeURIComponent(params.processId)}
-        spaceId={activeEnvironment.spaceId}
-      />
+      <Deployment processId={decodeURIComponent(processId)} spaceId={activeEnvironment.spaceId} />
     </Suspense>
   );
 }

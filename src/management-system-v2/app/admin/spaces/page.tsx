@@ -23,7 +23,7 @@ async function deleteSpace(spaceIds: string[]) {
 }
 export type deleteSpace = typeof deleteSpace;
 
-export default async function SysteAdminDashboard({ params }: { params?: { userId: string } }) {
+export default async function SysteAdminDashboard({ params }: AsyncPageProps) {
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
   const adminData = getSystemAdminByUserId(user.userId);
@@ -32,8 +32,8 @@ export default async function SysteAdminDashboard({ params }: { params?: { userI
   let spacesTableRepresentation;
   let title: ReactNode = 'MS Spaces';
 
-  if (params?.userId) {
-    const userId = decodeURIComponent(params.userId);
+  const userId = decodeURIComponent((await params).userId);
+  if (userId) {
     const user = await getUserById(userId, { throwIfNotFound: false });
     if (!user) redirect('/admin/spaces');
 

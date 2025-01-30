@@ -11,8 +11,9 @@ import { saveLogo } from '@/lib/data/legacy/fileHandling';
 
 export async function GET(
   _: NextRequest,
-  { params: { environmentId } }: { params: { environmentId: string } },
+  segmentData: { params: Promise<{ environmentId: string }> },
 ) {
+  const { environmentId } = await segmentData.params;
   const organization = await getEnvironmentById(environmentId);
   if (!organization)
     return new NextResponse(null, {
@@ -64,8 +65,9 @@ export async function GET(
 
 async function updateOrgLogo(
   request: NextRequest,
-  { params: { environmentId } }: { params: { environmentId: string } },
+  segmentData: { params: Promise<{ environmentId: string }> },
 ) {
+  const { environmentId } = await segmentData.params;
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   if (!activeEnvironment.isOrganization)
@@ -96,8 +98,9 @@ export { updateOrgLogo as POST, updateOrgLogo as PUT };
 
 export async function DELETE(
   _: NextRequest,
-  { params: { environmentId } }: { params: { environmentId: string } },
+  segmentData: { params: Promise<{ environmentId: string }> },
 ) {
+  const { environmentId } = await segmentData.params;
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   if (!activeEnvironment.isOrganization)

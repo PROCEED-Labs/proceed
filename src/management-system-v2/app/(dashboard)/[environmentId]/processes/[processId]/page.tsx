@@ -8,17 +8,17 @@ import { getProcess, getProcesses } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 
-type ProcessProps = {
-  params: { processId: string; environmentId: string };
-  searchParams: { version?: string };
-};
-
-const Process = async ({ params: { processId, environmentId }, searchParams }: ProcessProps) => {
+const Process = async ({ params, searchParams }: AsyncPageProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   //console.log('processId', processId);
   //console.log('query', searchParams);
-  const selectedVersionId = searchParams.version ? searchParams.version : undefined;
+  let { version: selectedVersionId } = await searchParams;
+  selectedVersionId =
+    typeof selectedVersionId === 'string' ? selectedVersionId : selectedVersionId?.[0];
+
+  const { environmentId, processId } = await params;
+
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
   // Only load bpmn if no version selected.
   const process = await getProcess(processId, !selectedVersionId);

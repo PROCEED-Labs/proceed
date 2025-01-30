@@ -39,7 +39,8 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   onExportMobile,
   versions: processVersions,
 }) => {
-  const { processId } = useParams();
+  let { processId } = useParams();
+  processId = typeof processId === 'string' ? processId : processId?.[0] ?? '';
   const environment = useEnvironment();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);

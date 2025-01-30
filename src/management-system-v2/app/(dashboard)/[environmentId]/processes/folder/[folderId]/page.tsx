@@ -1,7 +1,7 @@
 import Processes from '@/components/processes';
 import Content from '@/components/content';
 import { Button, Space } from 'antd';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 // This is a workaround to enable the Server Actions in that file to return any
 // client components. This is not possible with the current nextjs compiler
 // otherwise. It might be possible in the future with turbopack without this
@@ -18,20 +18,16 @@ import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/DTOs';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
-const ProcessesPage = async ({
-  params,
-}: {
-  params: { environmentId: string; folderId?: string };
-}) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+const ProcessesPage = async ({ params }: AsyncPageProps) => {
+  const { environmentId, folderId } = await params;
+
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   const favs = await getUsersFavourites();
 
   const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
 
-  const folder = await getFolderById(
-    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
-  );
+  const folder = await getFolderById(folderId ? decodeURIComponent(folderId) : rootFolder.id);
 
   const folderContents = await getFolderContents(folder.id, ability);
 

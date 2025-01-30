@@ -17,14 +17,17 @@ function Error(props: ResultProps) {
   );
 }
 
-export default async function IvitationPage({ searchParams }: { searchParams: { token: string } }) {
+export default async function IvitationPage({ searchParams }: AsyncPageProps) {
+  let { token } = await searchParams;
+  token = typeof token === 'string' ? token : token?.[0] ?? '';
+
   const { session } = await getCurrentUser();
   if (!session)
     redirect(
-      `/api/auth/signin?callbackUrl=${encodeURIComponent('/accept-invitation?token=' + searchParams.token)}`,
+      `/api/auth/signin?callbackUrl=${encodeURIComponent('/accept-invitation?token=' + token)}`,
     );
 
-  const invite = getInvitationFromToken(decodeURIComponent(searchParams.token));
+  const invite = getInvitationFromToken(decodeURIComponent(token));
 
   if ('error' in invite) {
     let tokenError = 'Wrong invitation';

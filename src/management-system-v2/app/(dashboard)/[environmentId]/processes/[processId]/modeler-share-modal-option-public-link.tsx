@@ -25,7 +25,8 @@ const ModelerShareModalOptionPublicLink = ({
   refresh,
   processVersions,
 }: ModelerShareModalOptionPublicLinkProps) => {
-  const { processId } = useParams();
+  let { processId } = useParams();
+  processId = typeof processId === 'string' ? processId : processId?.[0] ?? '';
   const query = useSearchParams();
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(query.get('version'));
   const environment = useEnvironment();

@@ -5,8 +5,9 @@ import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { redirect } from 'next/navigation';
 
-const Projects = async ({ params }: { params: { environmentId: string } }) => {
-  const { ability } = await getCurrentEnvironment(params.environmentId);
+const Projects = async ({ params }: AsyncPageProps) => {
+  const { environmentId } = await params;
+  const { ability } = await getCurrentEnvironment(environmentId);
   if (!ability.can('view', 'Setting')) return redirect('/');
 
   return (

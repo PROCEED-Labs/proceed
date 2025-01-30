@@ -27,12 +27,13 @@ function getDeploymentNames(deployments: DeployedProcessInfo[]) {
   return deployments as (DeployedProcessInfo & { name: string })[];
 }
 
-export default async function ExecutionsPage({ params }: { params: { environmentId: string } }) {
+export default async function ExecutionsPage({ params }: AsyncPageProps) {
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const { environmentId } = await params;
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   // TODO: check ability
 

@@ -21,12 +21,13 @@ import {
   InfoCircleOutlined,
   FolderOutlined as FolderFilled,
   FileOutlined as FileFilled,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import styles from './item-list-view.module.scss';
 import { generateDateString, generateTableDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan } from '@/components/auth-can';
-import { ProcessActions, ProcessListProcess } from './processes';
+import { ProcessActions, ProcessListProcess, rowActions } from './processes';
 import ConfirmationButton from './confirmation-button';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
@@ -39,6 +40,10 @@ import { DraggableElementGenerator } from './processes/draggable-element';
 import classNames from 'classnames';
 import { set } from 'zod';
 import { getUserById } from '@/lib/data/db/iam/users';
+import { GrDocumentUser } from 'react-icons/gr';
+import { PiNotePencil } from 'react-icons/pi';
+import { LuNotebookPen } from 'react-icons/lu';
+import { BsFileEarmarkCheck } from 'react-icons/bs';
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -71,7 +76,7 @@ type BaseProcessListProps = PropsWithChildren<{
   setShowMobileMetaData?: Dispatch<SetStateAction<boolean>>;
   onExportProcess?: (process: ProcessListProcess) => void;
   tableProps?: TableProps<ProcessListProcess>;
-  processActions?: ProcessActions;
+  processActions?: rowActions;
   columnCustomRenderer?: {
     [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => JSX.Element;
   };
@@ -84,10 +89,15 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   elementSelection,
   onExportProcess = () => {},
   tableProps,
-  processActions: { deleteItems, editItem, copyItem } = {
-    deleteItems: () => {},
-    editItem: () => {},
-    copyItem: () => {},
+  processActions: { viewDocumentation, openEditor, changeMetaData, releaseProcess, share } = {
+    // deleteItems: () => {},
+    // editItem: () => {},
+    // copyItem: () => {},
+    viewDocumentation: () => {},
+    openEditor: () => {},
+    changeMetaData: () => {},
+    releaseProcess: () => {},
+    share: () => {},
   },
   setShowMobileMetaData,
   columnCustomRenderer = {},
@@ -125,60 +135,122 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     (record: ProcessListProcess) => {
       const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
       return (
-        // View Process Documentation, Open Editor, Change Meta Data, Release Process, Share
-
         <>
+          {/* // View Process Documentation, */}
           {record.type !== 'folder' && (
-            <AuthCan {...resource} create>
-              <Tooltip placement="top" title={'Copy'}>
-                <Button
-                  className={classNames(styles.ActionButton)}
-                  type="text"
-                  icon={<CopyOutlined />}
-                  onClick={() => copyItem([record])}
-                />
-              </Tooltip>
-            </AuthCan>
+            <>
+              <AuthCan {...resource} view>
+                <Tooltip placement="top" title={'View Documentation'}>
+                  <Button
+                    className={classNames(styles.ActionButton)}
+                    type="text"
+                    icon={<GrDocumentUser />}
+                    onClick={() => viewDocumentation(record)}
+                  />
+                </Tooltip>
+              </AuthCan>
+              {/* // Open Editor, */}
+              <AuthCan {...resource} update>
+                <Tooltip placement="top" title={'Open Editor'}>
+                  <Button
+                    className={classNames(styles.ActionButton)}
+                    type="text"
+                    icon={<PiNotePencil />}
+                    onClick={() => openEditor(record)}
+                  />
+                </Tooltip>
+              </AuthCan>
+              {/* // Change Meta Data, */}
+              <AuthCan {...resource} update>
+                <Tooltip placement="top" title={'Change Meta Data'}>
+                  <Button
+                    className={classNames(styles.ActionButton)}
+                    type="text"
+                    icon={<LuNotebookPen />}
+                    onClick={() => changeMetaData(record)}
+                  />
+                </Tooltip>
+              </AuthCan>
+              {/* // Release Process, */}
+              <AuthCan {...resource} update>
+                <Tooltip placement="top" title={'Release Process'}>
+                  <Button
+                    className={classNames(styles.ActionButton)}
+                    type="text"
+                    icon={<BsFileEarmarkCheck />}
+                    onClick={() => releaseProcess(record)}
+                  />
+                </Tooltip>
+              </AuthCan>
+              {/* // Share, */}
+              <AuthCan {...resource} update>
+                <Tooltip placement="top" title={'Share'}>
+                  <Button
+                    className={classNames(styles.ActionButton)}
+                    type="text"
+                    icon={<ShareAltOutlined />}
+                    onClick={() => share(record)}
+                  />
+                </Tooltip>
+              </AuthCan>
+            </>
           )}
-          {record.type !== 'folder' && (
-            <Tooltip placement="top" title={'Export'}>
-              <Button
-                className={classNames(styles.ActionButton)}
-                type="text"
-                icon={<ExportOutlined />}
-                onClick={() => onExportProcess(record)}
-              />
-            </Tooltip>
-          )}
-
-          <AuthCan {...resource} update>
-            <Tooltip placement="top" title={'Edit'}>
-              <Button
-                className={classNames(styles.ActionButton)}
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => editItem(record)}
-              />
-            </Tooltip>
-          </AuthCan>
-
-          <AuthCan delete {...resource}>
-            <ConfirmationButton
-              tooltip="Delete"
-              title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-              description="Are you sure you want to delete the selected process?"
-              onConfirm={() => deleteItems([record])}
-              buttonProps={{
-                icon: <DeleteOutlined />,
-                type: 'text',
-                className: styles.ActionButton,
-              }}
-            />
-          </AuthCan>
         </>
+
+        // <>
+        //   {record.type !== 'folder' && (
+        //     <AuthCan {...resource} create>
+        //       <Tooltip placement="top" title={'Copy'}>
+        //         <Button
+        //           className={classNames(styles.ActionButton)}
+        //           type="text"
+        //           icon={<CopyOutlined />}
+        //           onClick={() => copyItem([record])}
+        //         />
+        //       </Tooltip>
+        //     </AuthCan>
+        //   )}
+        //   {record.type !== 'folder' && (
+        //     <Tooltip placement="top" title={'Export'}>
+        //       <Button
+        //         className={classNames(styles.ActionButton)}
+        //         type="text"
+        //         icon={<ExportOutlined />}
+        //         onClick={() => onExportProcess(record)}
+        //       />
+        //     </Tooltip>
+        //   )}
+
+        //   <AuthCan {...resource} update>
+        //     <Tooltip placement="top" title={'Edit'}>
+        //       <Button
+        //         className={classNames(styles.ActionButton)}
+        //         type="text"
+        //         icon={<EditOutlined />}
+        //         onClick={() => editItem(record)}
+        //       />
+        //     </Tooltip>
+        //   </AuthCan>
+
+        //   <AuthCan delete {...resource}>
+        //     <ConfirmationButton
+        //       tooltip="Delete"
+        //       title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
+        //       description="Are you sure you want to delete the selected process?"
+        //       onConfirm={() => deleteItems([record])}
+        //       buttonProps={{
+        //         icon: <DeleteOutlined />,
+        //         type: 'text',
+        //         className: styles.ActionButton,
+        //       }}
+        //     />
+        //   </AuthCan>
+        // </>
       );
     },
-    [copyItem, deleteItems, editItem, onExportProcess],
+    [
+      /* copyItem, deleteItems, editItem, onExportProcess */
+    ],
   );
 
   let columns: TableColumnsType<ProcessListProcess> = [
@@ -498,7 +570,7 @@ type ProcessManagementListProps = PropsWithChildren<{
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  processActions: ProcessActions;
+  processActions: rowActions;
 }>;
 
 const ProcessManagementList: FC<ProcessManagementListProps> = ({

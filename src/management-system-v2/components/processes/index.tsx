@@ -78,15 +78,13 @@ import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import {
-  createAndMountModeler,
-  handleOpenDocumentation,
-} from '@/app/(dashboard)/[environmentId]/processes/processes-helper';
+import { handleOpenDocumentation } from '@/app/(dashboard)/[environmentId]/processes/processes-helper';
 import { spaceURL } from '@/lib/utils';
-import VersionCreationButton from '../version-creation-button';
+import VersionCreationButton, { VersionModal } from '../version-creation-button';
 import ModelerShareModalButton from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-share-modal';
 import { getProcess } from '@/lib/data/DTOs';
 import BPMNCanvas, { BPMNCanvasRef } from '../bpmn-canvas';
+import { set } from 'zod';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -107,6 +105,19 @@ export type ProcessActions = {
   copyItem: (items: ProcessListProcess[]) => void;
   editItem: (item: ProcessListProcess) => void;
   moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
+};
+
+export type rowActions = {
+  // View Process Documentation,
+  viewDocumentation: (item: ProcessListProcess) => void;
+  // Open Editor,
+  openEditor: (item: ProcessListProcess) => void;
+  // Change Meta Data,
+  changeMetaData: (item: ProcessListProcess) => void;
+  // Release Process,
+  releaseProcess: (item: ProcessListProcess) => void;
+  // Share
+  share: (item: ProcessListProcess) => void;
 };
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
@@ -180,6 +191,8 @@ const Processes = ({
       new URLSearchParams(document.location.search).has('createprocess'),
   );
   const [openCreateFolderModal, setOpenCreateFolderModal] = useState(false);
+  const [openVersionModal, setOpenVersionModal] = useState(false);
+  const [rowClickedProcess, setRowClickedProcess] = useState<string | undefined>();
 
   const [copySelection, setCopySelection] = useState<ProcessListProcess[]>([]);
 
@@ -396,11 +409,54 @@ const Processes = ({
     });
   };
 
+  const viewDocumentation = (item: ProcessListProcess) => {
+    handleOpenDocumentation(item.id);
+  };
+
+  const openEditor = (item: ProcessListProcess) => {
+    const url = spaceURL(space, `/processes/${item.id}`);
+    router.push(url);
+  };
+
+  const changeMetaData = (item: ProcessListProcess) => {
+    editItem(item);
+  };
+
+  const releaseProcess = (item: ProcessListProcess) => {
+    setRowClickedProcess(item.id);
+    setOpenVersionModal(true);
+  };
+
+  const createVersionFromList = async (values: {
+    versionName: string;
+    versionDescription: string;
+    processId?: string;
+  }) => {
+    await createVersion(
+      values.versionName,
+      values.versionDescription,
+      values.processId ?? selectedRowKeys[0],
+      environment.spaceId,
+    );
+  };
+
+  const share = (item: ProcessListProcess) => {
+    /* TODO */
+  };
+
   const processActions: ProcessActions = {
     deleteItems,
     copyItem,
     editItem,
     moveItems,
+  };
+
+  const rowActions: rowActions = {
+    viewDocumentation,
+    openEditor,
+    changeMetaData,
+    releaseProcess,
+    share,
   };
 
   // Here all the loading states should be ORed together
@@ -437,91 +493,80 @@ const Processes = ({
                         >
                           Create Process
                         </Dropdown.Button>
-                        <ProcessImportButton type="default">
-                          {breakpoint.xl ? 'Import Process' : 'Import'}
-                        </ProcessImportButton>
+                        <ProcessImportButton type="default">Import</ProcessImportButton>
                       </Space>
                     )}
 
                     {/* DIVIDER BLOCK */}
                     <SelectionActions count={selectedRowKeys.length} readOnly={readOnly}>
                       <Space split={<Divider type="vertical" />}>
-                        {selectedRowKeys.length === 1 && (
-                          <div>
-                            {selectedRowElements[0].type == 'process' && (
-                              <>
-                                {/* View Process Documentation, */}
-                                <Tooltip placement="top" title={'View Process Documentation'}>
-                                  <Button
-                                    // className={classNames(styles.ActionButton)}
-                                    type="text"
-                                    icon={<GrDocumentUser className={styles.Icon} />}
-                                    onClick={() => {
-                                      handleOpenDocumentation(selectedRowKeys[0]);
-                                    }}
-                                  />
-                                </Tooltip>
-                              </>
-                            )}
-                            {/* // Open Editor */}
-                            <Tooltip placement="top" title={'Open Editor'}>
-                              <Button
-                                // className={classNames(styles.ActionButton)}
-                                type="text"
-                                icon={<PiNotePencil className={styles.Icon} />}
-                                onClick={() => {
-                                  const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
-                                  router.push(url);
-                                }}
-                              />
-                            </Tooltip>
-                            {/* // Open Editor in new Tab */}
-                            <Tooltip placement="top" title={'Open Editor in new Tab'}>
-                              <Button
-                                // className={classNames(styles.ActionButton)}
-                                type="text"
-                                icon={<IoOpenOutline className={styles.Icon} />}
-                                onClick={() => {
-                                  const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
-                                  window.open(url, '_blank');
-                                }}
-                              />
-                            </Tooltip>
-                            {/* // Change Meta Data */}
-                            {canEditSelected && (
-                              <Tooltip placement="top" title={'Change Meta Data'}>
+                        {selectedRowKeys.length === 1 &&
+                          selectedRowElements[0].type == 'process' && (
+                            <div>
+                              {selectedRowElements[0].type == 'process' && (
+                                <>
+                                  {/* View Process Documentation, */}
+                                  <Tooltip placement="top" title={'View Process Documentation'}>
+                                    <Button
+                                      // className={classNames(styles.ActionButton)}
+                                      type="text"
+                                      icon={<GrDocumentUser className={styles.Icon} />}
+                                      onClick={() => {
+                                        handleOpenDocumentation(selectedRowKeys[0]);
+                                      }}
+                                    />
+                                  </Tooltip>
+                                </>
+                              )}
+                              {/* // Open Editor */}
+                              <Tooltip placement="top" title={'Open Editor'}>
                                 <Button
                                   // className={classNames(styles.ActionButton)}
                                   type="text"
-                                  icon={<LuNotebookPen className={styles.Icon} />}
+                                  icon={<PiNotePencil className={styles.Icon} />}
                                   onClick={() => {
-                                    editItem(selectedRowElements[0]);
+                                    const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
+                                    router.push(url);
                                   }}
                                 />
                               </Tooltip>
-                            )}
-                            {/* // Release Process */}
-                            {canCreateProcess && (
-                              <Tooltip placement="top" title={'Release Process'}>
-                                <VersionCreationButton
+                              {/* // Open Editor in new Tab */}
+                              <Tooltip placement="top" title={'Open Editor in new Tab'}>
+                                <Button
+                                  // className={classNames(styles.ActionButton)}
                                   type="text"
-                                  icon={<BsFileEarmarkCheck />}
-                                  createVersion={async (values: {
-                                    versionName: string;
-                                    versionDescription: string;
-                                  }) => {
-                                    await createVersion(
-                                      values.versionName,
-                                      values.versionDescription,
-                                      selectedRowKeys[0],
-                                      environment.spaceId,
-                                    );
+                                  icon={<IoOpenOutline className={styles.Icon} />}
+                                  onClick={() => {
+                                    const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
+                                    window.open(url, '_blank');
                                   }}
-                                ></VersionCreationButton>
+                                />
                               </Tooltip>
-                            )}
-                          </div>
-                        )}
+                              {/* // Change Meta Data */}
+                              {canEditSelected && (
+                                <Tooltip placement="top" title={'Change Meta Data'}>
+                                  <Button
+                                    // className={classNames(styles.ActionButton)}
+                                    type="text"
+                                    icon={<LuNotebookPen className={styles.Icon} />}
+                                    onClick={() => {
+                                      editItem(selectedRowElements[0]);
+                                    }}
+                                  />
+                                </Tooltip>
+                              )}
+                              {/* // Release Process */}
+                              {canCreateProcess && (
+                                <Tooltip placement="top" title={'Release Process'}>
+                                  <VersionCreationButton
+                                    type="text"
+                                    icon={<BsFileEarmarkCheck />}
+                                    createVersion={createVersionFromList}
+                                  ></VersionCreationButton>
+                                </Tooltip>
+                              )}
+                            </div>
+                          )}
                         {/* 
                             Vertical Bar | ,
                           */}
@@ -580,37 +625,38 @@ const Processes = ({
                           */}
                         <div>
                           {/* // Share */}
-                          {selectedRowKeys.length === 1 && (
-                            <>
-                              <div
-                                style={{
-                                  /* display: 'none'  */ position: 'absolute',
-                                  height: 1,
-                                  width: 1,
-                                  overflow: 'hidden',
-                                }}
-                              >
-                                {shareXML && (
-                                  <BPMNCanvas
-                                    bpmn={{ bpmn: shareXML ?? '' }}
-                                    type="viewer"
-                                    ref={modelerRef}
-                                  />
-                                )}
-                              </div>
-                              <ModelerShareModalButton
-                                type="text"
-                                onExport={() => {
-                                  setOpenExportModal(true);
-                                }}
-                                onExportMobile={() => {
-                                  setOpenExportModal(true);
-                                }}
-                                modeler={modelerRef.current}
-                                processId={selectedRowKeys[0]}
-                              />
-                            </>
-                          )}
+                          {selectedRowKeys.length === 1 &&
+                            selectedRowElements[0].type == 'process' && (
+                              <>
+                                <div
+                                  style={{
+                                    /* display: 'none'  */ position: 'absolute',
+                                    height: 1,
+                                    width: 1,
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  {shareXML && (
+                                    <BPMNCanvas
+                                      bpmn={{ bpmn: shareXML ?? '' }}
+                                      type="viewer"
+                                      ref={modelerRef}
+                                    />
+                                  )}
+                                </div>
+                                <ModelerShareModalButton
+                                  type="text"
+                                  onExport={() => {
+                                    setOpenExportModal(true);
+                                  }}
+                                  onExportMobile={() => {
+                                    setOpenExportModal(true);
+                                  }}
+                                  modeler={modelerRef.current}
+                                  processId={selectedRowKeys[0]}
+                                />
+                              </>
+                            )}
                           {/* // Download */}
                           <Tooltip placement="top" title={'Download'}>
                             <Button
@@ -741,7 +787,7 @@ const Processes = ({
                         setOpenExportModal(true);
                       }}
                       setShowMobileMetaData={setShowMobileMetaData}
-                      processActions={processActions}
+                      processActions={/* processActions */ rowActions}
                     />
                   </div>
                 )}
@@ -835,6 +881,16 @@ const Processes = ({
           onCancel: deleteCreateProcessSearchParams,
           onOk: deleteCreateProcessSearchParams,
         }}
+      />
+      <VersionModal
+        close={(values) => {
+          setOpenVersionModal(false);
+
+          if (values) {
+            createVersionFromList({ ...values, processId: rowClickedProcess });
+          }
+        }}
+        show={openVersionModal}
       />
       <FolderCreationModal
         open={openCreateFolderModal}

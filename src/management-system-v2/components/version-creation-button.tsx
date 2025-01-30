@@ -10,7 +10,7 @@ type VersionModalProps = {
   show: boolean;
   close: (values?: { versionName: string; versionDescription: string }) => void;
 };
-const VersionModal: React.FC<VersionModalProps> = ({ show, close }) => {
+export const VersionModal: React.FC<VersionModalProps> = ({ show, close }) => {
   const [form] = Form.useForm();
 
   return (

@@ -23,7 +23,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
   refresh,
 }: ModelerShareModalOptionEmdedInWebProps) => {
   let { processId } = useParams();
-  processId = typeof processId === 'string' ? processId : '';
+  processId = typeof processId === 'string' ? processId : processId?.[0] ?? '';
   const environment = useEnvironment();
   const [embeddingUrl, setEmbeddingUrl] = useState('');
   const { message } = App.useApp();

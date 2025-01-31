@@ -24,6 +24,8 @@ declare const _exports: {
   validateCalledProcess(xml: string, processId: string): Promise<boolean>;
   setDefinitionsId(bpmn: string | object, id: string): Promise<string | object>;
   setDefinitionsName(bpmn: string | object, name: string): Promise<string | object>;
+  setDefinitionsTemplateId(bpmn: string | object, id: string): Promise<string | object>;
+  setDefinitionsTemplateVersion(bpmn: string | object, id: string): Promise<string | object>;
   setDefinitionsVersionInformation(
     bpmn: string | object,
     {
@@ -147,55 +149,100 @@ declare const _exports: {
       processId: string;
       versionId: string;
     };
-    getMetaData(bpmn: string | object, elId: string): Promise<{
-        [key: string]: any;
-    }>;
-    getMilestonesFromElement(element: object): {
-        id: string;
-        name: string;
-        description?: string;
-    }[];
-    getMilestonesFromElementById(bpmn: string | object, elementId: string): {
-        id: string;
-        name: string;
-        description?: string;
-    }[];
-    getResourcesFromElement(element: object): {
-        consumableMaterial: getters.ResourceInfos[];
-        tool: getters.ResourceInfos[];
-        inspectionInstrument: getters.ResourceInfos[];
+  }>;
+  getStartEvents(bpmn: string | object): Promise<string[]>;
+  getAllBpmnFlowElements(bpmn: string | object): Promise<object[]>;
+  getAllBpmnFlowNodeIds(bpmn: string | object): Promise<string[]>;
+  getAllBpmnFlowElementIds(bpmn: string | object): Promise<string[]>;
+  getChildrenFlowElements(bpmn: string | object, elementId: any): Promise<object[]>;
+  getElementMachineMapping(bpmn: string | object): Promise<{
+    [flowNodeId: string]: {
+      machineAddress?: string;
+      machineId?: string;
     };
-    getLocationsFromElement(element: object): {
-        company: getters.CompanyInfos[];
-        factory: getters.FactoryInfos[];
-        building: getters.BuildingInfos[];
-        area: getters.AreaInfos[];
-        workingPlace: getters.WorkingPlaceInfos[];
+  }>;
+  getTaskConstraintMapping(bpmn: string | object): Promise<{
+    [bpmnElementIds: string]: {
+      hardConstraints: any[];
+      softConstraints: any[];
     };
-    getPerformersFromElement(element: object): any[];
-    getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
-    parseISODuration(isoDuration: string): {
-        years: number;
-        months: number;
-        days: number;
-        hours: number;
-        minutes: number;
-        seconds: number;
-    };
-    convertISODurationToMiliseconds(isoDuration: string): number;
-    ensureCorrectProceedNamespace(xml: string): string;
-    toBpmnObject(xml: string, typename?: string): Promise<object>;
-    toBpmnXml(obj: any): Promise<string>;
-    deepCopyElementById(bpmn: string | object, elemId: any): Promise<object>;
-    getChildren(travObj: object): any[];
-    getElementsByTagName(travObj: object, tagname: string): any[];
-    getAllElements(travObj: object): any[];
-    getElementById(travObj: object, id: string): object;
-    getElementDI(element: object, definitions?: object): any;
-    manipulateElementById(bpmn: string | object, id: string, manipFunc: util.manipulationFunction): Promise<string | object>;
-    manipulateElementsByTagName(bpmn: string | object, tagName: string, manipFunc: util.manipulationFunction): Promise<string | object>;
-    moddle: any;
+  }>;
+  getIdentifyingInfos(bpmn: string | object): Promise<{
+    id: string;
+    originalId?: string;
+    basedOnTemplateId: string;
+    basedOnTemplateVersion: string;
+    processIds: string[];
+    name: string;
+    description: string;
+  }>;
+  getRootFromElement(businessObject: object): object;
+  getMetaDataFromElement(element: object): {
+    [key: string]: any;
+  };
+  getMetaData(
+    bpmn: string | object,
+    elId: string,
+  ): Promise<{
+    [key: string]: any;
+  }>;
+  getMilestonesFromElement(element: object): {
+    id: string;
+    name: string;
+    description?: string;
+  }[];
+  getMilestonesFromElementById(
+    bpmn: string | object,
+    elementId: string,
+  ): {
+    id: string;
+    name: string;
+    description?: string;
+  }[];
+  getResourcesFromElement(element: object): {
+    consumableMaterial: getters.ResourceInfos[];
+    tool: getters.ResourceInfos[];
+    inspectionInstrument: getters.ResourceInfos[];
+  };
+  getLocationsFromElement(element: object): {
+    company: getters.CompanyInfos[];
+    factory: getters.FactoryInfos[];
+    building: getters.BuildingInfos[];
+    area: getters.AreaInfos[];
+    workingPlace: getters.WorkingPlaceInfos[];
+  };
+  getPerformersFromElement(element: object): any[];
+  getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
+  parseISODuration(isoDuration: string): {
+    years: number;
+    months: number;
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  };
+  convertISODurationToMiliseconds(isoDuration: string): number;
+  ensureCorrectProceedNamespace(xml: string): string;
+  toBpmnObject(xml: string, typename?: string): Promise<object>;
+  toBpmnXml(obj: any): Promise<string>;
+  deepCopyElementById(bpmn: string | object, elemId: any): Promise<object>;
+  getChildren(travObj: object): any[];
+  getElementsByTagName(travObj: object, tagname: string): any[];
+  getAllElements(travObj: object): any[];
+  getElementById(travObj: object, id: string): object;
+  getElementDI(element: object, definitions?: object): any;
+  manipulateElementById(
+    bpmn: string | object,
+    id: string,
+    manipFunc: util.manipulationFunction,
+  ): Promise<string | object>;
+  manipulateElementsByTagName(
+    bpmn: string | object,
+    tagName: string,
+    manipFunc: util.manipulationFunction,
+  ): Promise<string | object>;
+  moddle: any;
 };
 export = _exports;
-import getters = require("./src/getters.js");
-import util = require("./src/util.js");
+import getters = require('./src/getters.js');
+import util = require('./src/util.js');

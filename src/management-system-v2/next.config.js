@@ -48,6 +48,7 @@ const nextConfig = {
   rewrites: async () => {
     return [
       'processes',
+      'templates',
       'spaces',
       'executions',
       'engines',

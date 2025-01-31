@@ -1,28 +1,42 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, ModalProps } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  App,
+  Collapse,
+  CollapseProps,
+  Typography,
+  ModalProps,
+  Select,
+} from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 
-type ProcessModalProps<T extends { name: string; description: string }> = {
+type ProcessModalProps<T extends { name: string; description: string; templateId?: string }> = {
   open: boolean;
   title: string;
   okText?: string;
   onCancel: NonNullable<ModalProps['onCancel']>;
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
+  templates?: any[];
   modalProps?: ModalProps;
+  type?: 'process' | 'template';
 };
 
-const ProcessModal = <T extends { name: string; description: string }>({
+const ProcessModal = <T extends { name: string; description: string; templateId?: string }>({
   open,
   title,
   okText,
   onCancel,
   onSubmit,
   initialData,
+  templates = [],
   modalProps,
+  type = 'process',
 }: ProcessModalProps<T>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -138,8 +152,10 @@ const ProcessModal = <T extends { name: string; description: string }>({
         // doesn't work in production, that's why we use the useEffect above)
         preserve={false}
       >
-        {!initialData || initialData.length === 1 ? (
-          <ProcessInputs index={0} />
+        {!initialData ? (
+          <ProcessCreationInputs type={type} index={0} templates={templates} />
+        ) : initialData.length === 1 ? (
+          <ProcessInputs type={type} index={0} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -150,24 +166,63 @@ const ProcessModal = <T extends { name: string; description: string }>({
 
 type ProcessInputsProps = {
   index: number;
+  type?: 'process' | 'template';
 };
 
-const ProcessInputs = ({ index }: ProcessInputsProps) => {
+type ProcessCreationInputsProps = {
+  index: number;
+  type?: 'process' | 'template';
+  templates?: any[];
+};
+
+const ProcessInputs = ({ index, type = 'process' }: ProcessInputsProps) => {
+  const capatilizedType = type.charAt(0).toUpperCase() + type.slice(1); // Process or Template
+
   return (
     <>
       <Form.Item
         name={[index, 'name']}
-        label="Process Name"
-        rules={[{ required: true, message: 'Please fill out the Process name' }]}
+        label={`${capatilizedType} Name`}
+        rules={[
+          {
+            required: true,
+            message: `Please fill out the ${capatilizedType} name`,
+          },
+        ]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
-        label="Process Description"
-        rules={[{ required: false, message: 'Please fill out the Process description' }]}
+        label={`${capatilizedType} Description`}
+        rules={[
+          {
+            required: false,
+            message: `Please fill out the ${capatilizedType} description`,
+          },
+        ]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
+      </Form.Item>
+    </>
+  );
+};
+
+const ProcessCreationInputs = ({ index, type, templates = [] }: ProcessCreationInputsProps) => {
+  const templateOptions = templates.map((template) => ({
+    value: template.id,
+    label: template.name,
+  }));
+
+  return (
+    <>
+      <ProcessInputs index={index} type={type} />
+      <Form.Item
+        name={[index, 'templateId']}
+        label="Template"
+        rules={[{ required: false, message: 'Please select Template' }]}
+      >
+        <Select showSearch options={templateOptions} />
       </Form.Item>
     </>
   );

@@ -23,7 +23,14 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
-import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/processes';
+import {
+  addProcesses,
+  copyProcesses,
+  deleteProcesses,
+  getProcess,
+  getProcessBPMN,
+  updateProcesses,
+} from '@/lib/data/processes';
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
@@ -49,6 +56,15 @@ import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import {
+  generateDefinitionsId,
+  setDefinitionsId,
+  setDefinitionsName,
+  setDefinitionsTemplateId,
+  setDefinitionsTemplateVersion,
+  toBpmnObject,
+  toBpmnXml,
+} from '@proceed/bpmn-helper';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -75,14 +91,20 @@ type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
 
 const Processes = ({
-  processes,
+  processes: unfilteredProcesses,
   favourites,
   folder,
+  type = 'process',
 }: {
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
+  type?: 'process' | 'template';
 }) => {
+  let processes = unfilteredProcesses.filter(
+    (process) => process.type === type || process.type === 'folder',
+  );
+
   if (folder.parentId)
     processes = [
       {
@@ -97,6 +119,8 @@ const Processes = ({
       },
       ...processes,
     ];
+
+  const templates = unfilteredProcesses.filter((process) => process.type === 'template');
 
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
@@ -156,6 +180,9 @@ const Processes = ({
   const selectableElements = useRef(filteredData);
   selectableElements.current = filteredData;
 
+  const creationText = `Create ${type === 'process' ? 'Process' : 'Template'}`;
+  const importText = `Import ${type === 'process' ? 'Process' : 'Template'}`;
+
   useAddControlCallback('process-list', 'selectall', (e) => {
     e.preventDefault();
     setSelectedRowElements(selectableElements.current ?? []);
@@ -213,13 +240,17 @@ const Processes = ({
   }
 
   const defaultDropdownItems = [];
-  if (ability.can('create', 'Process'))
+  if (
+    (type === 'process' && ability.can('create', 'Process')) ||
+    (type === 'template' && ability.can('create', 'Template'))
+  ) {
     defaultDropdownItems.push({
       key: 'create-process',
-      label: 'Create Process',
+      label: creationText,
       icon: <FileOutlined />,
       onClick: () => setOpenCreateProcessModal(true),
     });
+  }
 
   if (ability.can('create', 'Folder'))
     defaultDropdownItems.push({
@@ -347,10 +378,10 @@ const Processes = ({
                           type="primary"
                           onClick={() => setOpenCreateProcessModal(true)}
                         >
-                          Create Process
+                          {creationText}
                         </Dropdown.Button>
                         <ProcessImportButton type="default">
-                          {breakpoint.xl ? 'Import Process' : 'Import'}
+                          {breakpoint.xl ? importText : 'Import'}
                         </ProcessImportButton>
                       </Space>
                     )}
@@ -596,6 +627,7 @@ const Processes = ({
             id: process.id,
             name: process.name.value ?? '',
             description: process.description.value ?? '',
+            templateId: '123',
           }))}
         onSubmit={async (values) => {
           const res = await updateProcesses(values, space.spaceId);
@@ -619,10 +651,42 @@ const Processes = ({
       <ProcessCreationModal
         open={openCreateProcessModal}
         setOpen={setOpenCreateProcessModal}
+        templates={templates}
         modalProps={{
           onCancel: deleteCreateProcessSearchParams,
           onOk: deleteCreateProcessSearchParams,
+          title: creationText,
         }}
+        customAction={async (values) => {
+          let templateProcessBPMN;
+          if (values.templateId) {
+            const templateProcess = templates.find((template) => template.id === values.templateId);
+
+            if (!templateProcess) {
+              throw new Error('Could not find selected template');
+            }
+
+            templateProcessBPMN = await getProcessBPMN(values.templateId, space.spaceId);
+
+            if (typeof templateProcessBPMN === 'object' && 'error' in templateProcessBPMN) {
+              throw new Error('Could not find BPMN of selected template');
+            }
+
+            const bpmnObj = await toBpmnObject(templateProcessBPMN);
+            await setDefinitionsTemplateId(bpmnObj, values.templateId);
+            await setDefinitionsTemplateVersion(bpmnObj, values.templateId);
+            await setDefinitionsId(bpmnObj, generateDefinitionsId());
+            await setDefinitionsName(bpmnObj, values.name);
+            templateProcessBPMN = await toBpmnXml(bpmnObj);
+          }
+
+          const processes = await addProcesses(
+            [{ ...values, bpmn: templateProcessBPMN, folderId: folder.id, type }],
+            space.spaceId,
+          );
+          return Array.isArray(processes) ? processes[0] : processes;
+        }}
+        type={type}
       />
       <FolderCreationModal
         open={openCreateFolderModal}

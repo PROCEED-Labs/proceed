@@ -50,6 +50,30 @@ async function getOriginalDefinitionsId(bpmn) {
 }
 
 /**
+ * Returns the value of the basedOnTemplateId attribute in the given process definition
+ * the basedOnTemplateId is the id the process has which was used as a template
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns {(Promise.<string|undefined>)} The basedOnTemplateId stored in the definitions field of the given bpmn process
+ */
+async function getDefinitionsTemplateId(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  return bpmnObj.basedOnTemplateId;
+}
+
+/**
+ * Returns the value of the basedOnTemplateVersion attribute in the given process definition
+ * the basedOnTemplateVersion is the id the process version has which was used as a template
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns {(Promise.<string|undefined>)} The basedOnTemplateVersion stored in the definitions field of the given bpmn process
+ */
+async function getDefinitionsTemplateVersion(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  return bpmnObj.basedOnTemplateVersion;
+}
+
+/**
  * Returns the name of the given bpmn process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -129,6 +153,8 @@ function getProcessDocumentationByObject(processObject) {
  * @type {object}
  * @property {string} id - definitions id
  * @property {string} [originalId] - definitions original id
+ * @property {string} [basedOnTemplateId] - definitions template id
+ * @property {string} [basedOnTemplateVersion] - definitions template version
  * @property {string} [name] - definitions name
  * @property {string} [exporter] - definitions exporter
  * @property {string} [exporterVersion] - definitions exporterVersion
@@ -146,6 +172,8 @@ async function getDefinitionsInfos(bpmn) {
   return {
     id: await getDefinitionsId(bpmnObj),
     originalId: await getOriginalDefinitionsId(bpmnObj),
+    basedOnTemplateId: await getDefinitionsTemplateId(bpmnObj),
+    basedOnTemplateVersion: await getDefinitionsTemplateVersion(bpmnObj),
     name: await getDefinitionsName(bpmnObj),
     exporter: bpmnObj.exporter,
     exporterVersion: bpmnObj.exporterVersion,
@@ -606,12 +634,13 @@ async function getProcessConstraints(bpmn) {
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, basedOnTemplateId: string, basedOnTemplateVersion: string, processIds: string[], name: string, description: string }> } object containing the identifying information
  */
 async function getIdentifyingInfos(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
-  const { id, originalId, name } = await getDefinitionsInfos(bpmnObj);
+  const { id, originalId, name, basedOnTemplateId, basedOnTemplateVersion } =
+    await getDefinitionsInfos(bpmnObj);
 
   const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
@@ -624,7 +653,15 @@ async function getIdentifyingInfos(bpmn) {
     description = '';
   }
 
-  return { id, originalId, processIds, name, description };
+  return {
+    id,
+    originalId,
+    basedOnTemplateId,
+    basedOnTemplateVersion,
+    processIds,
+    name,
+    description,
+  };
 }
 
 /**

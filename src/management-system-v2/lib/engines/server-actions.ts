@@ -64,6 +64,12 @@ async function getCorrectTargetEngines(
   return { forceEngine, engines };
 }
 
+export async function getAllDeployments(spaceId: string) {
+  const { engines } = await getCorrectTargetEngines(spaceId);
+
+  return await getDeployments(engines);
+}
+
 export async function deployProcess(
   definitionId: string,
   versionId: string,

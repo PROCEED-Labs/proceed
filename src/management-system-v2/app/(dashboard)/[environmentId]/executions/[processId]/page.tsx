@@ -31,7 +31,7 @@ async function Deployment({ processId, spaceId }: { processId: string; spaceId: 
       </Content>
     );
 
-  return <ProcessDeploymentView selectedProcess={selectedProcess} />;
+  return <ProcessDeploymentView processId={processId} />;
 }
 
 export default async function Page({

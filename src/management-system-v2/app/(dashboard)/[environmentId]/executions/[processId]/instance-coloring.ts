@@ -23,28 +23,6 @@ export const colorOptions = [
 ] as const;
 export type ColorOptions = (typeof colorOptions)[number]['key'];
 
-// NOTE: this would break if some of these functions are used somewhere else
-let appliedStyling: { elementId: string; color: string }[] = [];
-
-export function flushPreviousStyling() {
-  appliedStyling = [];
-}
-
-export function applyColors(
-  bpmnViewer: BPMNCanvasRef,
-  instance: InstanceInfo,
-  colors: ColorOptions,
-) {
-  const canvas = bpmnViewer.getCanvas();
-
-  // remove previous styling
-  for (const { elementId, color } of appliedStyling) canvas.removeMarker(elementId, color);
-
-  // apply new styling
-  appliedStyling = flowElementsStyling(bpmnViewer, instance, colors);
-  for (const { elementId, color } of appliedStyling) canvas.addMarker(elementId, color);
-}
-
 function getExecutionColor(executionState: string, wasInterrupted: boolean) {
   switch (executionState) {
     case 'COMPLETED':
@@ -69,7 +47,7 @@ export function progressToColor(
 ) {
   if (planInfo.plan.duration && timeInfo.start) {
     const criticalTime = Math.floor(0.7 * planInfo.plan.duration);
-    const currentDate = Date.now();
+    const currentDate = timeInfo.end ? timeInfo.end.getTime() : Date.now();
 
     if (currentDate < timeInfo.start.getTime() + criticalTime) {
       return 'green';
@@ -89,7 +67,7 @@ export function progressToColor(
   return 'white';
 }
 
-function flowElementsStyling(
+export function flowElementsStyling(
   bpmnViewer: BPMNCanvasRef,
   instance: InstanceInfo,
   colors: ColorOptions,

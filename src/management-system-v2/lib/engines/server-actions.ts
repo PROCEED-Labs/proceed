@@ -104,7 +104,12 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
   }
 }
 
-export async function startInstance(definitionId: string, versionId: string, spaceId: string) {
+export async function startInstance(
+  definitionId: string,
+  versionId: string,
+  spaceId: string,
+  variables: { [key: string]: any } = {},
+) {
   try {
     // TODO: manage permissions for starting an instance
 
@@ -131,7 +136,7 @@ export async function startInstance(definitionId: string, versionId: string, spa
 
     // TODO: if there are multiple possible engines maybe try to find the one that fits the best
     // (e.g. the one with the least load)
-    return await startInstanceOnMachine(definitionId, versionId, engines[0]);
+    return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
   } catch (e) {
     return userError('Something went wrong');
   }

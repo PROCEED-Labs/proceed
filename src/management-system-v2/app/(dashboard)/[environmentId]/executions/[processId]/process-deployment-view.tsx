@@ -16,6 +16,8 @@ import { MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, applyColors, colorOptions, flushPreviousStyling } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { startInstance } from '@/lib/engines/server-actions';
+import { useEnvironment } from '@/components/auth-can';
 
 function getVersionInstances(process: DeployedProcessInfo, version?: number) {
   const instances = process.instances.map((instance, idx) => {
@@ -61,6 +63,8 @@ export default function ProcessDeploymentView({
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
+
+  const { spaceId } = useEnvironment();
 
   function selectNewBpmn(type: 'version' | 'instance', identifier: number | string) {
     if (type == 'instance') {
@@ -146,7 +150,18 @@ export default function ProcessDeploymentView({
               />
               <Tooltip title="Start new instance">
                 {/** TODO: implement start new instance */}
-                <Button icon={<PlusOutlined />} />
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={async () => {
+                    const instanceId = await startInstance(
+                      selectedProcess.definitionId,
+                      getLatestVersion(selectedProcess).versionId,
+                      spaceId,
+                    );
+
+                    console.log(instanceId);
+                  }}
+                />
               </Tooltip>
 
               <Tooltip title="Filter by version">

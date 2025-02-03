@@ -43,6 +43,8 @@ export function getDefaultProcessMetaInfo() {
     environmentId: '',
     type: 'process',
     originalId: '',
+    basedOnTemplateId: '',
+    basedOnTemplateVersion: '',
     name: 'Default Process',
     description: '',
     creatorId: '',

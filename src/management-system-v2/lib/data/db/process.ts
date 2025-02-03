@@ -23,13 +23,24 @@ import { toCustomUTCString } from '@/lib/helpers/timeHelper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { copyFile } from '../file-manager/file-manager';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
+import { Prisma } from '@prisma/client';
+import { DefaultArgs } from '@prisma/client/runtime/library';
+
+// TODO: Find useful return type
+function getProcessDB(type?: 'template' | 'process'): any {
+  if (type === 'template') {
+    return db.templateProcess;
+  }
+
+  return db.process;
+}
 
 /**
  * Returns all processes in an environment
  * If you want the processes for a specific user, you have to provide his ability
  * */
 export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
-  const spaceProcesses = await db.process.findMany({
+  const query = {
     where: {
       environmentId,
     },
@@ -54,18 +65,23 @@ export async function getProcesses(environmentId: string, ability?: Ability, inc
       versions: true,
       bpmn: includeBPMN,
     },
-  });
+  };
+  const spaceProcesses = await getProcessDB('process').findMany(query);
+  const spaceProcessTemplates = await getProcessDB('template').findMany(query);
 
   //TODO: add pagination
 
-  return ability ? ability.filter('view', 'Process', spaceProcesses) : spaceProcesses;
+  return ability
+    ? ability.filter('view', 'Process', [...spaceProcesses, ...spaceProcessTemplates])
+    : [...spaceProcesses, ...spaceProcessTemplates];
 }
 
-export async function getProcess(processDefinitionsId: string, includeBPMN = false) {
-  const process = await db.process.findUnique({
-    where: {
-      id: processDefinitionsId,
-    },
+export async function getProcess(
+  processDefinitionsId: string,
+  includeBPMN = false,
+  queryOptions: any = {},
+) {
+  const defaultQueryOptions = {
     select: {
       id: true,
       originalId: true,
@@ -87,7 +103,25 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       versions: true,
       bpmn: includeBPMN,
     },
-  });
+  };
+
+  const query = {
+    ...defaultQueryOptions,
+    ...queryOptions,
+    where: {
+      id: processDefinitionsId,
+    },
+  };
+
+  const process = await getProcessDB('process')
+    .findUnique(query)
+    .then((result: any) => {
+      if (!result) {
+        return getProcessDB('template').findUnique(query);
+      }
+      return result;
+    });
+
   if (!process) {
     throw new Error(`Process with id ${processDefinitionsId} could not be found!`);
   }
@@ -125,11 +159,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
  * @param {String} processDefinitionsId
  */
 export async function checkIfProcessExists(processDefinitionsId: string) {
-  const existingProcess = await db.process.findUnique({
-    where: {
-      id: processDefinitionsId,
-    },
-  });
+  const existingProcess = await getProcess(processDefinitionsId, false, { select: { id: true } });
   if (!existingProcess) {
     throw new Error(`Process with id ${processDefinitionsId} does not exist!`);
   }
@@ -137,10 +167,10 @@ export async function checkIfProcessExists(processDefinitionsId: string) {
 
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
 export async function addProcess(
-  processInput: ProcessServerInput & { bpmn: string },
+  processInput: ProcessServerInput & { bpmn: string; type?: 'template' | 'process' },
   referencedProcessId?: string,
 ) {
-  const { bpmn } = processInput;
+  const { bpmn, type } = processInput;
 
   const processData = ProcessServerInputSchema.parse(processInput);
 
@@ -153,6 +183,7 @@ export async function addProcess(
     ...getDefaultProcessMetaInfo(),
     ...processData,
     ...(await getProcessInfo(bpmn)),
+    type,
   };
 
   if (!metadata.folderId) {
@@ -167,21 +198,24 @@ export async function addProcess(
   const { id: processDefinitionsId } = metadata;
 
   // check if there is an id collision
-  const existingProcess = await db.process.findUnique({
+  const existingProcess = await getProcessDB(type).findUnique({
     where: {
       id: processDefinitionsId,
     },
   });
+
   if (existingProcess) {
     throw new Error(`Process with id ${processDefinitionsId} already exists!`);
   }
 
   // save process info
   try {
-    await db.process.create({
+    await getProcessDB(type).create({
       data: {
         id: metadata.id,
         originalId: metadata.originalId ?? '',
+        basedOnTemplateId: metadata.basedOnTemplateId,
+        basedOnTemplateVersion: metadata.basedOnTemplateVersion,
         name: metadata.name,
         description: metadata.description,
         createdOn: new Date().toISOString(),
@@ -229,8 +263,8 @@ export async function updateProcess(
 ) {
   const { bpmn: newBpmn } = newInfoInput;
   const newInfo = ProcessServerInputSchema.partial().parse(newInfoInput);
-  checkIfProcessExists(processDefinitionsId);
-  const currentParent = (await getProcess(processDefinitionsId)).folderId;
+  const process = await getProcess(processDefinitionsId);
+  const currentParent = process.folderId;
 
   let metaChanges = {
     ...newInfo,
@@ -253,7 +287,7 @@ export async function updateProcess(
 
   if (newBpmn) {
     try {
-      await db.process.update({
+      await getProcessDB(process.type).update({
         where: { id: processDefinitionsId },
         data: { bpmn: newBpmn },
       });
@@ -283,9 +317,6 @@ export async function moveProcess({
 }) {
   try {
     const process = await getProcess(processDefinitionsId);
-    if (!process) {
-      throw new Error('Process not found');
-    }
 
     const oldFolderId = process.folderId;
     const [oldFolder, newFolder] = await Promise.all([
@@ -319,7 +350,7 @@ export async function moveProcess({
     }
 
     // Update process' folderId in the database
-    const updatedProcess = await db.process.update({
+    const updatedProcess = await getProcessDB(process.type).update({
       where: { id: processDefinitionsId },
       data: {
         folderId: newFolderId,
@@ -337,9 +368,16 @@ export async function updateProcessMetaData(
   processDefinitionsId: string,
   metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
-  checkIfProcessExists(processDefinitionsId);
+  const existingProcess = await getProcess(processDefinitionsId, false, {
+    select: { type: true },
+  });
+
+  if (!existingProcess) {
+    throw new Error('Process trying to update does not exist');
+  }
+
   try {
-    const updatedProcess = await db.process.update({
+    const updatedProcess = await getProcessDB(existingProcess.type).update({
       where: { id: processDefinitionsId },
       data: {
         ...(metaChanges as any),
@@ -359,8 +397,7 @@ export async function updateProcessMetaData(
 
 /** Removes an existing process */
 export async function removeProcess(processDefinitionsId: string) {
-  const process = await db.process.findUnique({
-    where: { id: processDefinitionsId },
+  const process = await getProcess(processDefinitionsId, false, {
     include: { artifactProcessReferences: { include: { artifact: true } } },
   });
 
@@ -368,13 +405,13 @@ export async function removeProcess(processDefinitionsId: string) {
     throw new Error(`Process with id: ${processDefinitionsId} not found`);
   }
   await Promise.all(
-    process.artifactProcessReferences.map((artifactRef) =>
+    process.artifactProcessReferences.map((artifactRef: { artifact: { filePath: string } }) =>
       deleteProcessArtifact(artifactRef.artifact.filePath, true),
     ),
   );
 
   // Remove from database
-  await db.process.delete({ where: { id: processDefinitionsId } });
+  await getProcessDB(process.type).delete({ where: { id: processDefinitionsId } });
 
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
 }
@@ -490,7 +527,7 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
     throw new Error('The process for which you try to get a version does not exist');
   }
   const existingVersion = existingProcess.versions?.find(
-    (existingVersionInfo) => existingVersionInfo.id === versionId,
+    (existingVersionInfo: { id: string }) => existingVersionInfo.id === versionId,
   );
 
   if (!existingVersion) {
@@ -523,14 +560,7 @@ export async function getProcessBpmn(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    const process = await db.process.findUnique({
-      where: {
-        id: processDefinitionsId,
-      },
-      select: {
-        bpmn: true,
-      },
-    });
+    const process = await getProcess(processDefinitionsId, true, { select: { bpmn: true } });
     return `<?xml version="1.0" encoding="UTF-8"?>\n${process?.bpmn}`;
   } catch (err) {
     logger.debug(`Error reading bpmn of process. Reason:\n${err}`);

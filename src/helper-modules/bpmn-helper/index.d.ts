@@ -24,6 +24,8 @@ declare const _exports: {
   validateCalledProcess(xml: string, processId: string): Promise<boolean>;
   setDefinitionsId(bpmn: string | object, id: string): Promise<string | object>;
   setDefinitionsName(bpmn: string | object, name: string): Promise<string | object>;
+  setDefinitionsTemplateId(bpmn: string | object, id: string): Promise<string | object>;
+  setDefinitionsTemplateVersion(bpmn: string | object, id: string): Promise<string | object>;
   setDefinitionsVersionInformation(
     bpmn: string | object,
     {
@@ -168,6 +170,8 @@ declare const _exports: {
   getIdentifyingInfos(bpmn: string | object): Promise<{
     id: string;
     originalId?: string;
+    basedOnTemplateId: string;
+    basedOnTemplateVersion: string;
     processIds: string[];
     name: string;
     description: string;

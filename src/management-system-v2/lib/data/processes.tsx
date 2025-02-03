@@ -7,7 +7,10 @@ import {
   generateDefinitionsId,
   getDefinitionsVersionInformation,
   getUserTaskFileNameMapping,
+  setDefinitionsId,
   setDefinitionsName,
+  setDefinitionsTemplateId,
+  setDefinitionsTemplateVersion,
   setDefinitionsVersionInformation,
   setUserTaskData,
   toBpmnObject,
@@ -200,7 +203,14 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
+  values: {
+    type?: 'process' | 'template';
+    name: string;
+    description: string;
+    bpmn?: string;
+    templateId?: string;
+    folderId?: string;
+  }[],
   spaceId: string,
 ) => {
   await loadModules();
@@ -215,6 +225,8 @@ export const addProcesses = async (
       name: value.name,
       description: value.description,
       bpmn: value.bpmn,
+      basedOnTemplateId: value.templateId,
+      basedOnTemplateVersion: value.templateId,
     });
 
     const newProcess = {
@@ -228,7 +240,11 @@ export const addProcesses = async (
     }
 
     // bpmn prop gets deleted in addProcess()
-    const process = await _addProcess({ ...newProcess, folderId: value.folderId });
+    const process = await _addProcess({
+      ...newProcess,
+      folderId: value.folderId,
+      type: value.type,
+    });
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');

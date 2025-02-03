@@ -8,7 +8,7 @@ import useModelerStateStore from './use-modeler-state-store';
 import { debounce, spaceURL } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { getProcessUserTaskFileMetaData, updateProcess } from '@/lib/data/processes';
+import { updateProcess } from '@/lib/data/processes';
 import { App, message } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
@@ -20,6 +20,8 @@ import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import {
   revertSoftDeleteProcessUserTask,
   softDeleteProcessUserTask,
+  revertSoftDeleteProcessScriptTask,
+  softDeleteProcessScriptTask,
   updateFileDeletableStatus,
 } from '@/lib/data/file-manager-facade';
 import { useSession } from 'next-auth/react';
@@ -235,6 +237,9 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     if (element.type === 'bpmn:UserTask' && element.businessObject.fileName) {
       softDeleteProcessUserTask(process.id, element.businessObject.fileName);
     }
+    if (element.type === 'bpmn:ScriptTask' && element.businessObject.fileName) {
+      softDeleteProcessScriptTask(process.id, element.businessObject.fileName);
+    }
     if (!metaData.overviewImage) {
       return;
     } else {
@@ -246,6 +251,9 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     (element) => {
       if (element.$type === 'bpmn:UserTask' && element.fileName) {
         revertSoftDeleteProcessUserTask(process.id, element.fileName);
+      }
+      if (element.$type === 'bpmn:ScriptTask' && element.fileName) {
+        revertSoftDeleteProcessScriptTask(process.id, element.fileName);
       }
 
       const metaData = getMetaDataFromElement(element);

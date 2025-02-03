@@ -44,6 +44,21 @@ async function deployProcessToMachines(
             }),
           );
 
+          const scripts = exportData.scriptTasks.map((scriptTask) => {
+            if (!scriptTask.js)
+              throw Error(
+                `Missing js for a script task (${scriptTask.filename}) in a process that is being deployed`,
+              );
+
+            engineRequest({
+              method: 'put',
+              endpoint: '/process/:definitionId/script-tasks/:fileName',
+              params: { definitionId: exportData.definitionId, fileName: scriptTask.filename },
+              engine,
+              body: { script: scriptTask.js },
+            });
+          });
+
           const images = exportData.images.map((image) =>
             engineRequest({
               method: 'put',
@@ -56,7 +71,7 @@ async function deployProcessToMachines(
             }),
           );
 
-          await Promise.all([...userTasks, ...images]);
+          await Promise.all([...scripts, ...userTasks, ...images]);
         }),
       );
     });

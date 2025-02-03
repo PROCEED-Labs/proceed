@@ -83,6 +83,8 @@ describe('Test for the module that controlls changes to processes', () => {
       metadata = {
         id: 'testId',
         originalId: undefined,
+        basedOnTemplateId: undefined,
+        basedOnTemplateVersion: undefined,
         type: 'process',
         name: 'testName',
         inEditingBy: [],

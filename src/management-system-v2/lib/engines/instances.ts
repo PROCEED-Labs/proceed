@@ -8,7 +8,7 @@ export async function startInstanceOnMachine(
   versionId: string,
   machine: Engine,
 ) {
-  const instanceId = await engineRequest({
+  const response = await engineRequest({
     method: 'post',
     endpoint: '/process/:definitionId/versions/:version/instance',
     engine: machine,
@@ -16,6 +16,5 @@ export async function startInstanceOnMachine(
     body: { variables: {} },
   });
 
-  console.log(instanceId);
-  return instanceId;
+  return response.instanceId as string;
 }

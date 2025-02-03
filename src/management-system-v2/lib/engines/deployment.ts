@@ -14,8 +14,20 @@ import { Engine } from './machines';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints';
+import { asyncForEach } from '../helpers/javascriptHelpers';
 
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
+
+export async function removeDeploymentFromMachines(machines: Engine[], definitionId: string) {
+  await asyncForEach(machines, async (machine: Engine) => {
+    await engineRequest({
+      method: 'delete',
+      endpoint: '/process/:definitionId',
+      params: { definitionId },
+      engine: machine,
+    });
+  });
+}
 
 async function deployProcessToMachines(
   machines: Engine[],
@@ -79,19 +91,9 @@ async function deployProcessToMachines(
     await Promise.all(allMachineRequests);
   } catch (error) {
     // TODO: don't remove the whole process when deploying a single version fails
-    const removeAllDeployments = Object.values(processesExportData!).map(({ definitionId }) =>
-      Promise.all(
-        machines.map((engine) =>
-          engineRequest({
-            method: 'delete',
-            endpoint: '/process/:definitionId',
-            params: { definitionId },
-            engine,
-          }),
-        ),
-      ),
-    );
-    await Promise.all(removeAllDeployments);
+    await asyncForEach(Object.values(processesExportData), async ({ definitionId }) => {
+      await removeDeploymentFromMachines(machines, definitionId);
+    });
 
     throw error;
   }

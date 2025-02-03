@@ -18,6 +18,8 @@ import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { startInstance } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
+import { useRouter } from 'next/navigation';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 function getVersionInstances(process: DeployedProcessInfo, version?: number) {
   const instances = process.instances.map((instance, idx) => {
@@ -65,6 +67,8 @@ export default function ProcessDeploymentView({
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
   const { spaceId } = useEnvironment();
+
+  const router = useRouter();
 
   function selectNewBpmn(type: 'version' | 'instance', identifier: number | string) {
     if (type == 'instance') {
@@ -152,14 +156,19 @@ export default function ProcessDeploymentView({
                 {/** TODO: implement start new instance */}
                 <Button
                   icon={<PlusOutlined />}
-                  onClick={async () => {
-                    const instanceId = await startInstance(
-                      selectedProcess.definitionId,
-                      getLatestVersion(selectedProcess).versionId,
-                      spaceId,
-                    );
-
-                    console.log(instanceId);
+                  onClick={() => {
+                    wrapServerCall({
+                      fn: () =>
+                        startInstance(
+                          selectedProcess.definitionId,
+                          getLatestVersion(selectedProcess).versionId,
+                          spaceId,
+                        ),
+                      onSuccess: (instanceId) => {
+                        selectNewBpmn('instance', instanceId);
+                        router.refresh();
+                      },
+                    });
                   }}
                 />
               </Tooltip>
@@ -175,11 +184,11 @@ export default function ProcessDeploymentView({
                       },
                       ...(selectedVersion
                         ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,

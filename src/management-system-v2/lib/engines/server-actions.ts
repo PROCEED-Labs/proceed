@@ -1,7 +1,11 @@
 'use server';
 
 import { userError } from '../user-error';
-import { deployProcess as _deployProcess, getDeployments } from './deployment';
+import {
+  deployProcess as _deployProcess,
+  getDeployments,
+  removeDeploymentFromMachines,
+} from './deployment';
 import {
   Engine,
   SpaceEngine,
@@ -75,6 +79,26 @@ export async function deployProcess(
     const { forceEngine, engines } = await getCorrectTargetEngines(spaceId, _forceEngine);
 
     await _deployProcess(definitionId, versionId, spaceId, method, engines, forceEngine);
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+
+export async function removeDeployment(definitionId: string, spaceId: string) {
+  try {
+    if (!enableUseDB) throw new Error('removeDeployment only available with enableUseDB');
+
+    const { engines } = await getCorrectTargetEngines(
+      spaceId,
+      undefined,
+      async (engine: Engine) => {
+        const deployments = await getDeployments([engine]);
+
+        return deployments.some((deployment) => deployment.definitionId === definitionId);
+      },
+    );
+
+    await removeDeploymentFromMachines(engines, definitionId);
   } catch (e) {
     return userError('Something went wrong');
   }

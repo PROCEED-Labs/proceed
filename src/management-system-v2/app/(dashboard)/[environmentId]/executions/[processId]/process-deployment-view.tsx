@@ -1,12 +1,12 @@
 // TODO: remove the use client if this page is used in server
 'use client';
 
-import { Button, Select, Tooltip, Space, Dropdown, Result } from 'antd';
+import { Button, Select, Tooltip, Space, Dropdown, Result, Skeleton } from 'antd';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
-import { useMemo, useRef, useState } from 'react';
+import { Suspense, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
@@ -23,10 +23,9 @@ import useDeployment from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
 
 import useColors from './use-colors';
+import { DeployedProcessInfo } from '@/lib/engines/deployment';
 
-export default function ProcessDeploymentView({ processId }: { processId: string }) {
-  const { data: selectedProcess } = useDeployment(processId);
-
+function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo }) {
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
@@ -40,8 +39,6 @@ export default function ProcessDeploymentView({ processId }: { processId: string
   const router = useRouter();
 
   const { selectedVersion, instances, selectedInstance, currentVersion } = useMemo(() => {
-    if (!selectedProcess) return {};
-
     const selectedVersion = selectedProcess.versions.find((v) => v.versionId === selectedVersionId);
 
     const instances = getVersionInstances(selectedProcess, selectedVersionId);
@@ -72,13 +69,6 @@ export default function ProcessDeploymentView({ processId }: { processId: string
     selectedInstance,
     canvasRef,
   );
-
-  if (!selectedProcess)
-    return (
-      <Content>
-        <Result status="404" title="Process not found" />
-      </Content>
-    );
 
   return (
     <Content compact wrapperClass={contentStyles.Content}>
@@ -242,5 +232,35 @@ export default function ProcessDeploymentView({ processId }: { processId: string
         </div>
       </div>
     </Content>
+  );
+}
+
+function SuspenseWrapper({ processId }: { processId: string }) {
+  const { data } = useDeployment(processId);
+
+  return (
+    <>
+      {data ? (
+        <PageContent selectedProcess={data} />
+      ) : (
+        <Content>
+          <Result status="404" title="Process not found" />
+        </Content>
+      )}
+    </>
+  );
+}
+
+export default function ProcessDeploymentView({ processId }: { processId: string }) {
+  return (
+    <Suspense
+      fallback={
+        <Content>
+          <Skeleton />
+        </Content>
+      }
+    >
+      <SuspenseWrapper processId={processId} />
+    </Suspense>
   );
 }

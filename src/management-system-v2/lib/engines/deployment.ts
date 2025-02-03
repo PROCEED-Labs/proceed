@@ -237,7 +237,7 @@ export type VersionInfo = {
   definitionName: string;
   deploymentMethod: string;
   needs: VersionDependencies;
-  version: number;
+  versionId: string;
   versionName: string;
   versionDescription: string;
 };

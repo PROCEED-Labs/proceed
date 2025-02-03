@@ -15,7 +15,7 @@ function getDeploymentNames(deployments: DeployedProcessInfo[]) {
   for (const deployment of deployments) {
     let latestVesrionIdx = deployment.versions.length - 1;
     for (let i = deployment.versions.length - 2; i >= 0; i--) {
-      if (deployment.versions[i].version > deployment.versions[latestVesrionIdx].version)
+      if (deployment.versions[i].versionId > deployment.versions[latestVesrionIdx].versionId)
         latestVesrionIdx = i;
     }
     const latestVersion = deployment.versions[latestVesrionIdx];

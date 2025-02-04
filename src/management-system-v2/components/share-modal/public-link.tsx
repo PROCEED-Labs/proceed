@@ -166,7 +166,7 @@ const ModelerShareModalOptionPublicLink = ({
       {isShareLinkChecked && (
         <div style={{ display: 'flex', gap: '.5rem' }}>
           <Select
-            defaultValue={selectedVersionId || '-1'}
+            value={selectedVersionId || '-1'}
             options={[
               { value: '-1', label: 'Latest Version' },
               ...processVersions.map((version) => ({ value: version.id, label: version.name })),

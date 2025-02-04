@@ -9,16 +9,19 @@ function getProcessVersion(processVersions: Process['versions'], versionId: stri
 
 /** Reacts to changes in the selected version of a process, but allows to change the state of the
  * version without affecting the query param */
-export default function useProcessVersion(processVersions: Process['versions']) {
+export default function useProcessVersion(
+  processVersions: Process['versions'],
+  defaultVersion?: string,
+) {
   const query = useSearchParams();
 
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(() =>
-    getProcessVersion(processVersions, query.get('version')),
+    getProcessVersion(processVersions, defaultVersion ?? query.get('version')),
   );
 
   useEffect(() => {
-    setSelectedVersionId(getProcessVersion(processVersions, selectedVersionId));
-  }, [selectedVersionId, processVersions]);
+    setSelectedVersionId(getProcessVersion(processVersions, query.get('version')));
+  }, [query, processVersions]);
 
   return [selectedVersionId, setSelectedVersionId] as const;
 }

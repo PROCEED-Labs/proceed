@@ -1,6 +1,6 @@
 'use client';
 import { FC, useEffect, useRef, useState, JSX } from 'react';
-import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography, Tabs } from 'antd';
+import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography, Tabs, Space } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -10,8 +10,6 @@ import {
   CopyOutlined,
   FileImageOutlined,
 } from '@ant-design/icons';
-import ModelerShareModalOptionPublicLink from './public-link';
-import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
 import { useParams } from 'next/navigation';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
@@ -25,6 +23,10 @@ import {
   shareProcessImage,
   shareProcessImageFromXml,
 } from '@/lib/process-export/copy-process-image';
+
+import ModelerShareModalOptionPublicLink from './public-link';
+import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
+import ExportProcess from './export';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -57,6 +59,8 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   const [shareTimestamp, setShareTimestamp] = useState(0);
   const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
 
+  const buttonContainerRef = useRef<HTMLDivElement>(null);
+
   const [checkingIfProcessShared, setCheckingIfProcessShared] = useState(false);
   const checkIfProcessShared = async () => {
     try {
@@ -69,7 +73,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         setShareTimestamp(shareTimestamp);
         setAllowIframeTimestamp(allowIframeTimestamp);
       }
-    } catch (_) {}
+    } catch (_) { }
     setCheckingIfProcessShared(false);
   };
 
@@ -116,7 +120,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
           text: 'Here is a shared process for you',
           url,
         });
-      } catch (_) {}
+      } catch (_) { }
     } else {
       navigator.clipboard.writeText(url);
       app.message.success('Copied to clipboard');
@@ -235,7 +239,20 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       label: 'Export as file',
       optionTitle: 'Export as file',
       key: 'export-as-file',
-      onClick: onExport,
+      children: (
+        <ExportProcess
+          buttonContainerRef={buttonContainerRef}
+          // TODO: don't use magic numbers
+          active={activeIndex === 4}
+          processes={[
+            {
+              definitionId: process.id,
+            },
+          ]}
+        />
+      ),
+      // necessary to reset portal button
+      destroyInactiveTabPane: true,
     },
   ];
 
@@ -289,7 +306,14 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         closeIcon={false}
         onCancel={close}
         zIndex={200}
-        footer={<Button onClick={close}>Close</Button>}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'end' }}>
+            <Button onClick={close} key="close">
+              Close
+            </Button>
+            <div ref={buttonContainerRef} key="open" />
+          </div>
+        }
       >
         <Spin spinning={checkingIfProcessShared}>
           {/* The Tabs might seem unnecessary, but they keep the state of the components avoiding unnecessary fetches */}

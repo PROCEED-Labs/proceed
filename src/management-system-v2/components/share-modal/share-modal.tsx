@@ -265,6 +265,28 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     onClick?: () => any;
   }[] = breakpoint.lg ? optionsDesktop : optionsMobile;
 
+  // block controls when modal is open
+  useAddControlCallback(
+    ['process-list', 'modeler'],
+    [
+      'selectall',
+      'esc',
+      'del',
+      'copy',
+      'paste',
+      'enter',
+      'cut',
+      'export',
+      'import',
+      'shift+enter',
+      'new',
+    ],
+    (e) => {
+      // e.preventDefault();
+    },
+    { level: 1, blocking: isOpen },
+  );
+
   useAddControlCallback(
     'modeler',
     'control+enter',

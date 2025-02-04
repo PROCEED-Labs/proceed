@@ -178,36 +178,23 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
     setIsExporting(false);
   };
 
-  //useAddControlCallback(
-  //  ['process-list' /* , 'processes-page' */],
-  //  // 'process-list',
-  //  [
-  //    'selectall',
-  //    'esc',
-  //    'del',
-  //    'copy',
-  //    'paste',
-  //    'enter',
-  //    'cut',
-  //    'export',
-  //    'import',
-  //    'shift+enter',
-  //    'new',
-  //  ],
-  //  (e) => {
-  //    // e.preventDefault();
-  //  },
-  //  { level: 2, blocking: open },
-  //);
-  //useAddControlCallback(
-  //  ['process-list', 'modeler'],
-  //  // 'process-list',
-  //  'control+enter',
-  //  () => {
-  //    if (selectedType) handleOk();
-  //  },
-  //  { level: 1, blocking: open, dependencies: [selectedType] },
-  // );
+  // level = 2, to skip the block imposed in the share modal
+  useAddControlCallback(
+    'modeler',
+    'control+enter',
+    () => {
+      if (selectedType) handleOk();
+    },
+    { level: 2, blocking: active, dependencies: [selectedType] },
+  );
+  useAddControlCallback(
+    ['process-list', 'modeler'],
+    'control+enter',
+    () => {
+      if (selectedType) handleOk();
+    },
+    { level: 2, blocking: active, dependencies: [selectedType] },
+  );
 
   const typeSelection = (
     <Radio.Group onChange={handleTypeSelectionChange} value={selectedType} style={{ width: '50%' }}>

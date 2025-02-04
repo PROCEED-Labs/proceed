@@ -105,7 +105,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
       </Checkbox>
 
       <Select
-        defaultValue={selectedVersionId}
+        value={selectedVersionId}
         options={processVersions.map((version) => ({ value: version.id, label: version.name }))}
         onChange={setSelectedVersionId}
         style={{ width: '35%' }}

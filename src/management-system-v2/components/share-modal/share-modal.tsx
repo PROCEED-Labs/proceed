@@ -29,19 +29,12 @@ import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
 import ExportProcess from './export';
 
 type ShareModalProps = {
-  onExport: () => void;
-  onExportMobile: (type: ProcessExportOptions['type']) => void;
   process: { name: string; id: string; bpmn: string };
   versions: Process['versions'];
 };
 type SharedAsType = 'public' | 'protected';
 
-const ModelerShareModalButton: FC<ShareModalProps> = ({
-  onExport,
-  onExportMobile,
-  versions: processVersions,
-  process,
-}) => {
+const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersions, process }) => {
   const processId = useParams().processId as string;
   const environment = useEnvironment();
   const app = App.useApp();

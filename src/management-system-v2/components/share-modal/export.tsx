@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import {
-  Modal,
   Checkbox,
   Radio,
   RadioChangeEvent,
@@ -10,10 +9,11 @@ import {
   Divider,
   Tooltip,
   Button,
+  Grid,
 } from 'antd';
 
 import { useEnvironment } from '@/components/auth-can';
-import { exportProcesses } from '@/lib/process-export';
+import { exportProcesses as exportProcessesAsFile } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
 import { useAddControlCallback } from '@/lib/controls-store';
 
@@ -23,8 +23,9 @@ import {
 } from '@/app/shared-viewer/settings-modal';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
+import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -94,30 +95,21 @@ function getSubOptions(giveSelectionOption?: boolean) {
 
 type ProcessExportModalProps = {
   processes: ExportProcessInfo; // the processes to export
-  giveSelectionOption?: boolean; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
-  preselectedExportType?: ProcessExportTypes;
-  resetPreselectedExportType?: () => void;
   buttonContainerRef: React.RefObject<HTMLDivElement>;
   active: boolean;
 };
 
 const ProcessExport: React.FC<ProcessExportModalProps> = ({
   processes = [],
-  giveSelectionOption,
-  preselectedExportType,
-  resetPreselectedExportType,
   buttonContainerRef,
   active,
 }) => {
-  const router = useRouter();
+  const breakpoint = Grid.useBreakpoint();
+  const isMobile = !!breakpoint.xs;
 
-  const [selectedType, setSelectedType] = useState<ProcessExportTypes | undefined>(
-    preselectedExportType,
-  );
+  const [selectedType, setSelectedType] = useState<ProcessExportTypes | undefined>();
 
-  useEffect(() => {
-    setSelectedType(preselectedExportType);
-  }, [preselectedExportType]);
+  const modeler = useModelerStateStore((state) => state.modeler);
 
   const [selectedOptions, setSelectedOptions] = useState<string[]>(['metaData'].concat(pdfOptions));
 
@@ -125,6 +117,24 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
 
   const environment = useEnvironment();
+
+  // TODO: fix this
+  // NOTE: this works, because when the share modal is opened this component is rerendered
+  let selectedElements: string[] | undefined = undefined;
+  let rootSubprocessLayerId: string | undefined = undefined;
+  if (modeler) {
+    // provide additional information for the export that is used if the user decides to only export selected elements (also controls if the option is given in the first place)
+    selectedElements = modeler
+      .getSelection()
+      .get()
+      .map(({ id }) => id);
+
+    // provide additional information for the export so only the parts of the process that can be reached from the currently open layer are exported
+    const currentRootElement = modeler.getCanvas().getRootElement();
+    rootSubprocessLayerId = bpmnIs(currentRootElement, 'bpmn:SubProcess')
+      ? currentRootElement.businessObject?.id
+      : undefined;
+  }
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
     setSelectedType(value);
@@ -134,15 +144,7 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
     setSelectedOptions(checkedValues);
   };
 
-  //const handleClose = () => {
-  //  setIsExporting(false);
-  //  setSelectedOptions(selectedOptions.filter((el) => el !== 'onlySelection'));
-  //  if (preselectedExportType && resetPreselectedExportType) resetPreselectedExportType();
-  //  setSelectedType(undefined);
-  //  onClose();
-  //};
-
-  const handleOk = async () => {
+  async function exportProcesses() {
     setIsExporting(true);
 
     if (selectedType === 'pdf') {
@@ -150,17 +152,27 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
 
       // the timestamp does not matter here since it is overridden by the user being an owner of the process
       await wrapServerCall({
-        fn: () =>
-          generateSharedViewerUrl(
+        fn: () => {
+          debugger;
+          return generateSharedViewerUrl(
             { processId: definitionId, timestamp: 0 },
             processVersion || undefined,
             selectedOptions as string[],
-          ),
-        onSuccess: (url) =>
-          router.push(new URL(url, `${definitionId}-${processVersion}-tab`).toString()),
+          );
+        },
+        onSuccess: (url) => window.open(url, `${definitionId}-${processVersion}-tab`),
       });
     } else {
-      await exportProcesses(
+      // Whenever the modeler is available, there will be only one process in `processes`,
+      // so blindly mapping the info to all processes shouldn't be a problem since there will be
+      // only one process.
+      const processesWithExportInfo = processes.map((process) => ({
+        ...process,
+        selectedElements,
+        rootSubprocessLayerId,
+      }));
+
+      await exportProcessesAsFile(
         {
           type: selectedType!,
           artefacts: selectedOptions.includes('artefacts'),
@@ -168,30 +180,28 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
           imports: selectedOptions.includes('imports'),
           scaling: pngScalingFactor,
           exportSelectionOnly: selectedOptions.includes('onlySelection'),
-          useWebshareApi: preselectedExportType !== undefined,
+          useWebshareApi: isMobile,
         },
-        processes,
+        processesWithExportInfo,
         environment.spaceId,
       );
     }
 
     setIsExporting(false);
-  };
+    // TODO: run these only when the export succeeds
+    setSelectedType(undefined);
+    setSelectedOptions(selectedOptions.filter((el) => el !== 'onlySelection'));
+
+    //  TODO: should we still use this?
+    //  if (preselectedExportType && resetPreselectedExportType) resetPreselectedExportType();
+  }
 
   // level = 2, to skip the block imposed in the share modal
-  useAddControlCallback(
-    'modeler',
-    'control+enter',
-    () => {
-      if (selectedType) handleOk();
-    },
-    { level: 2, blocking: active, dependencies: [selectedType] },
-  );
   useAddControlCallback(
     ['process-list', 'modeler'],
     'control+enter',
     () => {
-      if (selectedType) handleOk();
+      if (selectedType) exportProcesses();
     },
     { level: 2, blocking: active, dependencies: [selectedType] },
   );
@@ -218,15 +228,16 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
         style={{ width: '100%' }}
       >
         <Space direction="vertical">
-          {(selectedType ? getSubOptions(giveSelectionOption)[selectedType] : []).map(
-            ({ label, value, tooltip }) => (
-              <Checkbox value={value} key={label} disabled={disabledPdfExport}>
-                <Tooltip placement="right" title={tooltip}>
-                  {label}
-                </Tooltip>
-              </Checkbox>
-            ),
-          )}
+          {(selectedType
+            ? getSubOptions(selectedElements ? selectedElements.length > 0 : false)[selectedType]
+            : []
+          ).map(({ label, value, tooltip }) => (
+            <Checkbox value={value} key={label} disabled={disabledPdfExport}>
+              <Tooltip placement="right" title={tooltip}>
+                {label}
+              </Tooltip>
+            </Checkbox>
+          ))}
         </Space>
       </Checkbox.Group>
       {selectedType === 'png' && (
@@ -263,7 +274,7 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
   return (
     <>
       <Flex>
-        {preselectedExportType ? null : typeSelection}
+        {typeSelection}
         <Divider type="vertical" style={{ height: 'auto' }} />
         {!!selectedType && optionSelection}
         {active &&
@@ -273,7 +284,7 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
               loading={isExporting}
               type="primary"
               style={{ marginLeft: '.5rem' }}
-              onClick={handleOk}
+              onClick={exportProcesses}
             >
               {disabledPdfExport
                 ? 'PDF export is only available when a single process is selected'

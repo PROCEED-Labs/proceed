@@ -58,15 +58,10 @@ const ModelerToolbar = ({
   const message = app.message;
   const env = use(EnvVarsContext);
 
-  const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
-  const [showProcessExportModal, setShowProcessExportModal] = useState(false);
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
+
+  const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
-  const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
-  const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
-  const [preselectedExportType, setPreselectedExportType] = useState<
-    ProcessExportTypes | undefined
-  >();
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -82,13 +77,13 @@ const ModelerToolbar = ({
   useModelerStateStore((state) => state.changeCounter);
 
   useEffect(() => {
-    if (modeler && (showProcessExportModal || showUserTaskEditor)) {
+    if (modeler && showUserTaskEditor) {
       // TODO: maybe  do this without an effect
       modeler.deactivateKeyboard();
     } else if (modeler) {
       modeler.activateKeyboard();
     }
-  }, [modeler, showProcessExportModal, showUserTaskEditor]);
+  }, [modeler, showUserTaskEditor]);
 
   const selectedVersionId = query.get('version');
 
@@ -132,6 +127,7 @@ const ModelerToolbar = ({
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
+
   useAddControlCallback('modeler', 'control+enter', () => {
     setShowPropertiesPanel(true); /* This does not cause rerenders if it is already set to true */
   });
@@ -139,39 +135,10 @@ const ModelerToolbar = ({
     setShowPropertiesPanel(false);
   });
 
-  const handleProcessExportModalToggle = async () => {
-    if (!showProcessExportModal && modeler) {
-      // provide additional information for the export that is used if the user decides to only export selected elements (also controls if the option is given in the first place)
-      const selectedElementIds = modeler
-        .getSelection()
-        .get()
-        .map(({ id }) => id);
-      setElementsSelectedForExport(selectedElementIds);
-      // provide additional information for the export so only the parts of the process that can be reached from the currently open layer are exported
-      const currentRootElement = modeler.getCanvas().getRootElement();
-      setRootLayerIdForExport(
-        bpmnIs(currentRootElement, 'bpmn:SubProcess')
-          ? currentRootElement.businessObject?.id
-          : undefined,
-      );
-    } else {
-      setElementsSelectedForExport([]);
-      setRootLayerIdForExport(undefined);
-    }
-
-    setShowProcessExportModal(!showProcessExportModal);
-  };
-
-  useAddControlCallback('modeler', 'export', handleProcessExportModalToggle, {
-    dependencies: [modeler, showProcessExportModal],
-  });
-
-  const handleProcessExportModalToggleMobile = async (
-    preselectedExportType: ProcessExportTypes,
-  ) => {
-    setPreselectedExportType(preselectedExportType);
-    setShowProcessExportModal(!showProcessExportModal);
-  };
+  // TODO: re-enable this
+  // useAddControlCallback('modeler', 'export', handleProcessExportModalToggle, {
+  //   dependencies: [modeler, showProcessExportModal],
+  // });
 
   const handleUndo = () => {
     modeler?.undo();
@@ -315,12 +282,7 @@ const ModelerToolbar = ({
                   onClick={handlePropertiesPanelToggle}
                 ></Button>
               </Tooltip>
-              <ModelerShareModalButton
-                onExport={handleProcessExportModalToggle}
-                onExportMobile={handleProcessExportModalToggleMobile}
-                versions={versions}
-                process={process}
-              />
+              <ModelerShareModalButton process={process} versions={versions} />
               <Tooltip title="Open Documentation">
                 <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
               </Tooltip>
@@ -333,10 +295,11 @@ const ModelerToolbar = ({
                     ></Button>
                   </Tooltip>
                   <Tooltip title="Export">
+                    {/** TODO: re-enable this
                     <Button
                       icon={<ExportOutlined />}
                       onClick={handleProcessExportModalToggle}
-                    ></Button>
+                    ></Button> */}
                   </Tooltip>
                 </>
               )}
@@ -352,25 +315,6 @@ const ModelerToolbar = ({
           </Space>
         </Space>
       </Toolbar>
-      <ProcessExportModal
-        open={showProcessExportModal}
-        processes={
-          showProcessExportModal
-            ? [
-                {
-                  definitionId: processId as string,
-                  processVersion: selectedVersionId || undefined,
-                  selectedElements: elementsSelectedForExport,
-                  rootSubprocessLayerId: rootLayerIdForExport,
-                },
-              ]
-            : []
-        }
-        onClose={() => setShowProcessExportModal(false)}
-        giveSelectionOption={!!elementsSelectedForExport.length}
-        preselectedExportType={preselectedExportType}
-        resetPreselectedExportType={() => setPreselectedExportType(undefined)}
-      />
       {env.PROCEED_PUBLIC_ENABLE_EXECUTION && (
         <>
           <UserTaskBuilder

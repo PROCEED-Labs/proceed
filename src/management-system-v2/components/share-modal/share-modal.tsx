@@ -11,7 +11,6 @@ import {
   FileImageOutlined,
 } from '@ant-design/icons';
 import { useParams } from 'next/navigation';
-import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
 import { Process } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
@@ -31,19 +30,23 @@ import ExportProcess from './export';
 type ShareModalProps = {
   process: { name: string; id: string; bpmn: string };
   versions: Process['versions'];
+  open: boolean;
+  close: () => void;
 };
 type SharedAsType = 'public' | 'protected';
 
-const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersions, process }) => {
+export const ShareModal: FC<ShareModalProps> = ({
+  versions: processVersions,
+  process,
+  open,
+  close,
+}) => {
   const processId = useParams().processId as string;
   const environment = useEnvironment();
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const modeler = useModelerStateStore((state) => state.modeler);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const close = () => setIsOpen(false);
-  const openShareModal = () => setIsOpen(true);
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const isSharing = useRef(false);
 
@@ -66,7 +69,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersion
         setShareTimestamp(shareTimestamp);
         setAllowIframeTimestamp(allowIframeTimestamp);
       }
-    } catch (_) { }
+    } catch (_) {}
     setCheckingIfProcessShared(false);
   };
 
@@ -113,7 +116,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersion
           text: 'Here is a shared process for you',
           url,
         });
-      } catch (_) { }
+      } catch (_) {}
     } else {
       navigator.clipboard.writeText(url);
       app.message.success('Copied to clipboard');
@@ -132,10 +135,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersion
     if (typeof result === 'string') app.message.success(result);
     else if (result === false) app.message.error('Error sharing process as image');
   };
-
-  useAddControlCallback('modeler', 'shift+enter', openShareModal, {
-    dependencies: [],
-  });
 
   useEffect(() => {
     checkIfProcessShared();
@@ -278,7 +277,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersion
     (e) => {
       // e.preventDefault();
     },
-    { level: 1, blocking: isOpen },
+    { level: 1, blocking: open },
   );
 
   useAddControlCallback(
@@ -286,38 +285,38 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersion
     'control+enter',
     () => {
       const option = tabs[activeIndex];
-      if (isOpen && option?.onClick) option.onClick();
+      if (open && option?.onClick) option.onClick();
     },
-    { dependencies: [isOpen, activeIndex], level: 2, blocking: isOpen },
+    { dependencies: [open, activeIndex], level: 2, blocking: open },
   );
   useAddControlCallback(
     'modeler',
     'left',
     () => {
-      if (isOpen) {
+      if (open) {
         setActiveIndex((prev) =>
           prev - 1 < 0 ? tabs.length - 1 : Math.min(prev - 1, tabs.length),
         );
       }
     },
-    { dependencies: [isOpen, activeIndex] },
+    { dependencies: [open, activeIndex] },
   );
   useAddControlCallback(
     'modeler',
     'right',
     () => {
-      if (isOpen) {
+      if (open) {
         setActiveIndex((prev) => (prev + 1) % tabs.length);
       }
     },
-    { dependencies: [isOpen, activeIndex] },
+    { dependencies: [open, activeIndex] },
   );
 
   return (
     <>
       <Modal
         title={<div style={{ textAlign: 'center' }}>Share</div>}
-        open={isOpen}
+        open={open}
         width={breakpoint.lg ? 750 : 320}
         closeIcon={false}
         onCancel={close}
@@ -395,11 +394,23 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersion
           />
         </Spin>
       </Modal>
-      <Tooltip title="Share">
-        <Button icon={<ShareAltOutlined />} onClick={() => openShareModal()} />
-      </Tooltip>
     </>
   );
 };
 
-export default ModelerShareModalButton;
+export const ShareModalButton = (props: Omit<ShareModalProps, 'open' | 'close'>) => {
+  const [open, setOpen] = useState(false);
+
+  useAddControlCallback('modeler', 'shift+enter', () => setOpen(true), {
+    dependencies: [],
+  });
+
+  return (
+    <>
+      <ShareModal {...props} open={open} close={() => setOpen(false)} />
+      <Tooltip title="Share">
+        <Button icon={<ShareAltOutlined />} onClick={() => setOpen(true)} />
+      </Tooltip>
+    </>
+  );
+};

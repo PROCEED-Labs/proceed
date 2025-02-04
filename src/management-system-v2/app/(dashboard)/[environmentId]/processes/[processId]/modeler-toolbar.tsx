@@ -1,4 +1,4 @@
-import React, { use, useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -17,15 +17,13 @@ import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
-import ModelerShareModalButton from '@/components/share-modal/share-modal';
+import { ShareModalButton } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
-import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
@@ -282,7 +280,7 @@ const ModelerToolbar = ({
                   onClick={handlePropertiesPanelToggle}
                 ></Button>
               </Tooltip>
-              <ModelerShareModalButton process={process} versions={versions} />
+              <ShareModalButton process={process} versions={versions} />
               <Tooltip title="Open Documentation">
                 <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
               </Tooltip>

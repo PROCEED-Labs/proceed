@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from 'react';
+import React, { ComponentProps, use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -12,6 +12,7 @@ import Icon, {
   ArrowUpOutlined,
   FilePdfOutlined,
   FormOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -22,7 +23,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
-import { ShareModalButton } from '@/components/share-modal/share-modal';
+import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
@@ -60,6 +61,10 @@ const ModelerToolbar = ({
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
+
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareModalDefaultOpenTab, setShareModalDefaultOpenTab] =
+    useState<ComponentProps<typeof ShareModal>['defaultOpenTab']>(undefined);
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -280,7 +285,17 @@ const ModelerToolbar = ({
                   onClick={handlePropertiesPanelToggle}
                 ></Button>
               </Tooltip>
-              <ShareModalButton process={process} versions={versions} />
+              <Tooltip title="Share">
+                <Button
+                  icon={<ShareAltOutlined />}
+                  onClick={() => {
+                    setShareModalOpen(true);
+                    setShareModalDefaultOpenTab((prev) =>
+                      prev === 'export-as-file' ? 'share-public-link' : undefined,
+                    );
+                  }}
+                />
+              </Tooltip>
               <Tooltip title="Open Documentation">
                 <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
               </Tooltip>
@@ -293,11 +308,13 @@ const ModelerToolbar = ({
                     ></Button>
                   </Tooltip>
                   <Tooltip title="Export">
-                    {/** TODO: re-enable this
                     <Button
                       icon={<ExportOutlined />}
-                      onClick={handleProcessExportModalToggle}
-                    ></Button> */}
+                      onClick={() => {
+                        setShareModalOpen(true);
+                        setShareModalDefaultOpenTab('export-as-file');
+                      }}
+                    />
                   </Tooltip>
                 </>
               )}
@@ -313,6 +330,13 @@ const ModelerToolbar = ({
           </Space>
         </Space>
       </Toolbar>
+      <ShareModal
+        process={process}
+        versions={versions}
+        open={shareModalOpen}
+        close={() => setShareModalOpen(false)}
+        defaultOpenTab={shareModalDefaultOpenTab}
+      />
       {env.PROCEED_PUBLIC_ENABLE_EXECUTION && (
         <>
           <UserTaskBuilder

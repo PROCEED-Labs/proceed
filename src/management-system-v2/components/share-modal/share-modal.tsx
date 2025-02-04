@@ -1,6 +1,5 @@
-'use client';
 import { FC, useEffect, useRef, useState, JSX } from 'react';
-import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography, Tabs, Space } from 'antd';
+import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography, Tabs } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -32,6 +31,7 @@ type ShareModalProps = {
   versions: Process['versions'];
   open: boolean;
   close: () => void;
+  defaultOpenTab?: 'export-as-file' | 'share-public-link';
 };
 type SharedAsType = 'public' | 'protected';
 
@@ -40,6 +40,7 @@ export const ShareModal: FC<ShareModalProps> = ({
   process,
   open,
   close,
+  defaultOpenTab,
 }) => {
   const processId = useParams().processId as string;
   const environment = useEnvironment();
@@ -258,6 +259,11 @@ export const ShareModal: FC<ShareModalProps> = ({
     onClick?: () => any;
   }[] = breakpoint.lg ? optionsDesktop : optionsMobile;
 
+  useEffect(() => {
+    const tabIdx = tabs.findIndex((tab) => tab.key === defaultOpenTab);
+    if (tabIdx !== -1) setActiveIndex(tabIdx);
+  }, [defaultOpenTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // block controls when modal is open
   useAddControlCallback(
     ['process-list', 'modeler'],
@@ -385,9 +391,7 @@ export const ShareModal: FC<ShareModalProps> = ({
                   ))}
                 </div>
 
-                {breakpoint.lg && activeIndex !== null && optionsDesktop[activeIndex].children && (
-                  <Divider />
-                )}
+                {breakpoint.lg && activeIndex !== null && tabs[activeIndex].children && <Divider />}
               </>
             )}
             activeKey={activeIndex?.toString()}

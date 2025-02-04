@@ -1,9 +1,27 @@
 'use client';
 
 import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Button, Tooltip, Space, Row, Col, Input, Divider, List } from 'antd';
+import dynamic from 'next/dynamic';
+import {
+  Modal,
+  Button,
+  Tooltip,
+  Space,
+  Row,
+  Col,
+  Input,
+  Divider,
+  List,
+  Tag,
+  Popconfirm,
+} from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { FaArrowRight } from 'react-icons/fa';
+import { CheckCircleOutlined, ExclamationCircleOutlined, FormOutlined } from '@ant-design/icons';
+
+import { MdOutlineTransform } from 'react-icons/md';
+
+import { IoExtensionPuzzleOutline } from 'react-icons/io5';
 
 const { Search } = Input;
 
@@ -11,9 +29,15 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import languageExtension from './languageExtension.js';
 import useModelerStateStore from './use-modeler-state-store';
-import { getProcessScriptTaskData, saveProcessScriptTask } from '@/lib/data/processes';
+import {
+  getProcessScriptTaskData,
+  saveProcessScriptTask,
+  deleteProcessScriptTask,
+} from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
+import { BlocklyEditorRefType } from './blockly-editor';
+const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 
 type ScriptEditorProps = {
   processId: string;
@@ -23,11 +47,17 @@ type ScriptEditorProps = {
 };
 
 const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selectedElement }) => {
-  const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
+  const monacoEditorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
-  const [script, setScript] = useState('');
+  const [initialScript, setInitialScript] = useState('');
+  const [isScriptValid, setIsScriptValid] = useState(true);
   const modeler = useModelerStateStore((state) => state.modeler);
   const environment = useEnvironment();
+  const [selectedEditor, setSelectedEditor] = useState<null | 'JS' | 'blockly'>(null); // JS or blockly
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [modalApi, modalElement] = Modal.useModal();
+
+  const blocklyRef = useRef<BlocklyEditorRefType>(null);
 
   const filename = useMemo(() => {
     if (modeler && selectedElement && selectedElement.type === 'bpmn:ScriptTask') {
@@ -41,19 +71,28 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   }, [modeler, selectedElement]);
 
   useEffect(() => {
+    setHasUnsavedChanges(false);
+    setInitialScript('');
+    setSelectedEditor(null);
     if (filename && open) {
+      // Check if script is stored in JS or blockly and set script and selected editor accordingly
       getProcessScriptTaskData(processId, filename, 'ts', environment.spaceId).then((res) => {
         if (typeof res === 'string') {
-          setScript(res);
-        } else {
-          setScript('');
+          setInitialScript(res);
+          setSelectedEditor('JS');
+        }
+      });
+      getProcessScriptTaskData(processId, filename, 'xml', environment.spaceId).then((res) => {
+        if (typeof res === 'string') {
+          setInitialScript(res);
+          setSelectedEditor('blockly');
         }
       });
     }
   }, [processId, open, filename, environment]);
 
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
-    editorRef.current = editor;
+    monacoEditorRef.current = editor;
     monacoRef.current = monaco;
 
     const defaultOptions =
@@ -70,12 +109,27 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   };
 
   const handleSave = async () => {
-    if (modeler && editorRef.current && monacoRef.current && selectedElement && filename) {
-      const typescriptCode = editorRef.current.getValue();
+    if (modeler && filename && selectedElement) {
+      modeler.getModeling().updateProperties(selectedElement, {
+        fileName: filename,
+      });
+
+      if (selectedEditor === 'JS') {
+        await storeJSScript();
+      } else if (selectedEditor === 'blockly') {
+        await storeBlocklyScript();
+      }
+      setHasUnsavedChanges(false);
+    }
+  };
+
+  const storeJSScript = async () => {
+    if (filename && monacoEditorRef.current && monacoRef.current) {
+      const typescriptCode = monacoEditorRef.current.getValue();
 
       // Transpile TS code to JS
       const typescriptWorker = await monacoRef.current.languages.typescript.getTypeScriptWorker();
-      const editorModel = editorRef.current.getModel();
+      const editorModel = monacoEditorRef.current.getModel();
       if (!editorModel) {
         throw new Error(
           'Could not get model from editor to transpile TypeScript code to JavaScript',
@@ -85,28 +139,73 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       const emitOutput = await client.getEmitOutput(editorModel.uri.toString());
       const javascriptCode = emitOutput.outputFiles[0].text;
 
-      modeler.getModeling().updateProperties(selectedElement, {
-        fileName: filename,
-      });
-
-      saveProcessScriptTask(processId, filename, 'ts', typescriptCode, environment.spaceId).then(
+      await deleteProcessScriptTask(processId, filename, 'xml', environment.spaceId).then(
         (res) => res && console.error(res.error),
       );
-      saveProcessScriptTask(processId, filename, 'js', javascriptCode, environment.spaceId).then(
-        (res) => res && console.error(res.error),
-      );
+      await saveProcessScriptTask(
+        processId,
+        filename,
+        'ts',
+        typescriptCode,
+        environment.spaceId,
+      ).then((res) => res && console.error(res.error));
+      await saveProcessScriptTask(
+        processId,
+        filename,
+        'js',
+        javascriptCode,
+        environment.spaceId,
+      ).then((res) => res && console.error(res.error));
     }
   };
 
-  const handleCopyToClipboard = () => {
-    if (editorRef.current) {
-      navigator.clipboard.writeText(editorRef.current.getValue());
+  const storeBlocklyScript = async () => {
+    if (filename && isScriptValid && blocklyRef.current) {
+      const blocklyCode = blocklyRef.current.getCode();
+
+      const scriptTaskStoragePromises = [
+        deleteProcessScriptTask(processId, filename, 'ts', environment.spaceId),
+        saveProcessScriptTask(processId, filename, 'xml', blocklyCode.xml, environment.spaceId),
+        saveProcessScriptTask(processId, filename, 'js', blocklyCode.js, environment.spaceId),
+      ];
+
+      return Promise.allSettled(scriptTaskStoragePromises).then((results) => {
+        results.forEach((res) => {
+          if (res.status === 'fulfilled' && res.value) {
+            console.error(res.value.error);
+          }
+
+          if (res.status === 'rejected') {
+            console.error(res.reason);
+          }
+        });
+      });
+    }
+  };
+
+  const handleClose = () => {
+    if (!hasUnsavedChanges) {
+      onClose();
+    } else {
+      modalApi.confirm({
+        title: 'You have unsaved changes!',
+        content: 'Are you sure you want to close without saving?',
+        onOk: () => {
+          handleSave();
+          onClose();
+        },
+        okText: 'Save',
+        cancelText: 'Discard',
+        onCancel: () => {
+          onClose();
+        },
+      });
     }
   };
 
   const getEditorPositionRange = () => {
-    if (editorRef.current && monacoRef.current) {
-      const position = editorRef.current.getPosition();
+    if (monacoEditorRef.current && monacoRef.current) {
+      const position = monacoEditorRef.current.getPosition();
       if (position) {
         return new monacoRef.current.Range(
           position.lineNumber,
@@ -119,105 +218,210 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     return null;
   };
 
+  const transformToCode = async () => {
+    if (blocklyRef.current) {
+      const blocklyCode = blocklyRef.current.getCode();
+      setInitialScript(blocklyCode.js);
+      setSelectedEditor('JS');
+    }
+  };
+
   return (
-    <Modal
-      open={open}
-      centered
-      width="90vw"
-      styles={{ body: { height: '85vh' }, header: { margin: 0 } }}
-      title={<span style={{ fontSize: '1.5rem' }}>Edit Script Task</span>}
-      okText="Save"
-      cancelText="Close"
-      onCancel={onClose}
-      onOk={handleSave}
-    >
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Row style={{ paddingBlock: '0.5rem' }}>
-          <Col span={4}></Col>
-          <Col span={20}>
-            <Space style={{ width: '100%', justifyContent: 'end' }}>
-              <Tooltip title="Open Script Task API for further reference">
-                <Button> Open Script Task API </Button>
-              </Tooltip>
-              <Tooltip title="Copy to Clipboard">
-                <Button icon={<CopyOutlined />} onClick={handleCopyToClipboard} />
-              </Tooltip>
-            </Space>
-          </Col>
-        </Row>
-        <Row style={{ flexGrow: 1 }}>
-          <Col span={4}>
+    <>
+      <Modal
+        open={open}
+        centered
+        width="90vw"
+        styles={{ body: { height: '85vh', marginTop: '0.5rem' }, header: { margin: 0 } }}
+        title={<span style={{ fontSize: '1.5rem' }}>Edit Script Task</span>}
+        onCancel={handleClose}
+        footer={
+          <Space>
+            <Button onClick={handleClose}>Close</Button>
+            <Button disabled={!isScriptValid} type="primary" onClick={handleSave}>
+              Save
+            </Button>
+          </Space>
+        }
+      >
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {selectedEditor && (
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                paddingRight: '1.5rem',
+                justifyContent: 'space-between',
+                marginBottom: '0.25rem',
               }}
             >
-              <Divider style={{ margin: '0px' }}>Variables</Divider>
-              <List
-                size="small"
-                header={<Search size="middle" placeholder="Search for variables"></Search>}
-                dataSource={['VariableA', 'VariableB', 'VariableC']}
-                renderItem={(item) => (
-                  <List.Item style={{ padding: '0.75rem 0' }}>
-                    <span>{item}</span>
-                    <Space.Compact size="small">
-                      <Button
-                        icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
-                        onClick={() => {
-                          const editorPositionRange = getEditorPositionRange();
-                          if (editorPositionRange && editorRef.current) {
-                            editorRef.current.executeEdits('', [
-                              {
-                                range: editorPositionRange,
-                                text: `variable.set('${item}', '');\n`,
-                              },
-                            ]);
-                          }
-                        }}
-                      >
-                        SET
-                      </Button>
-                      <Button
-                        icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
-                        onClick={() => {
-                          const editorPositionRange = getEditorPositionRange();
-                          if (editorPositionRange && editorRef.current) {
-                            editorRef.current.executeEdits('', [
-                              {
-                                range: editorPositionRange,
-                                text: `variable.get('${item}');\n`,
-                              },
-                            ]);
-                          }
-                        }}
-                      >
-                        GET
-                      </Button>
-                    </Space.Compact>
-                  </List.Item>
-                )}
-              ></List>
+              {selectedEditor === 'blockly' && (
+                <Popconfirm
+                  placement="bottomLeft"
+                  title="Are you sure you want to switch to JS Editor?"
+                  description="Your blocks will be transformed to JS Code. This can not be reverted!"
+                  onConfirm={() => transformToCode()}
+                >
+                  <Button disabled={!isScriptValid} size="small" danger>
+                    Switch to JavaScript Editor
+                  </Button>
+                </Popconfirm>
+              )}
+              {isScriptValid ? (
+                <Tag
+                  icon={<CheckCircleOutlined></CheckCircleOutlined>}
+                  style={{ marginRight: 0 }}
+                  color="success"
+                >
+                  Script is valid
+                </Tag>
+              ) : (
+                <Tag
+                  icon={<ExclamationCircleOutlined />}
+                  style={{ marginRight: 0 }}
+                  color="warning"
+                >
+                  Script is not valid. The script contains loosely arranged blocks. Connect these to
+                  continue.
+                </Tag>
+              )}
             </div>
-          </Col>
-          <Col span={20} style={{ paddingTop: '0.5rem', border: '2px solid lightgrey' }}>
-            <Editor
-              defaultLanguage="typescript"
-              value={script}
-              options={{
-                wordWrap: 'on',
-                wrappingStrategy: 'advanced',
-                wrappingIndent: 'same',
-              }}
-              onMount={handleEditorMount}
-              className="Hide-Scroll-Bar"
-            />
-          </Col>
-        </Row>
-      </div>
-    </Modal>
+          )}
+          <div style={{ flexGrow: 1 }}>
+            {selectedEditor === 'JS' ? (
+              <Row
+                style={{ paddingBlock: '0.5rem', border: '1px solid lightgrey', height: '100%' }}
+              >
+                <Col span={4}>
+                  <Space
+                    style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}
+                  >
+                    <Tooltip title="Open Script Task API for further reference">
+                      <Button> Open Script Task API </Button>
+                    </Tooltip>
+                  </Space>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Divider style={{ margin: '0px' }}>Variables</Divider>
+                    <List
+                      size="small"
+                      header={<Search size="middle" placeholder="Search for variables"></Search>}
+                      dataSource={['VariableA', 'VariableB', 'VariableC']}
+                      renderItem={(item) => (
+                        <List.Item style={{ padding: '0.75rem 0' }}>
+                          <span>{item}</span>
+                          <Space.Compact size="small">
+                            <Button
+                              icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
+                              onClick={() => {
+                                const editorPositionRange = getEditorPositionRange();
+                                if (editorPositionRange && monacoEditorRef.current) {
+                                  monacoEditorRef.current.executeEdits('', [
+                                    {
+                                      range: editorPositionRange,
+                                      text: `variable.set('${item}', '');\n`,
+                                    },
+                                  ]);
+                                }
+                              }}
+                            >
+                              SET
+                            </Button>
+                            <Button
+                              icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
+                              onClick={() => {
+                                const editorPositionRange = getEditorPositionRange();
+                                if (editorPositionRange && monacoEditorRef.current) {
+                                  monacoEditorRef.current.executeEdits('', [
+                                    {
+                                      range: editorPositionRange,
+                                      text: `variable.get('${item}');\n`,
+                                    },
+                                  ]);
+                                }
+                              }}
+                            >
+                              GET
+                            </Button>
+                          </Space.Compact>
+                        </List.Item>
+                      )}
+                    ></List>
+                  </div>
+                </Col>
+                <Col span={20}>
+                  <Editor
+                    defaultLanguage="typescript"
+                    value={initialScript}
+                    options={{
+                      wordWrap: 'on',
+                      wrappingStrategy: 'advanced',
+                      wrappingIndent: 'same',
+                    }}
+                    onMount={handleEditorMount}
+                    className="Hide-Scroll-Bar"
+                  />
+                </Col>
+              </Row>
+            ) : selectedEditor === 'blockly' ? (
+              <BlocklyEditor
+                editorRef={blocklyRef}
+                initialXml={initialScript}
+                onChange={(
+                  isScriptValid: boolean | ((prevState: boolean) => boolean),
+                  code: any,
+                ) => {
+                  if (
+                    (code.xml && initialScript !== code.xml) ||
+                    (code.ts && initialScript !== code.ts)
+                  ) {
+                    setHasUnsavedChanges(true);
+                  }
+                  setIsScriptValid(isScriptValid);
+                }}
+              ></BlocklyEditor>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+              >
+                <Space
+                  style={{
+                    backgroundColor: '#e0e0e0',
+                    padding: '3rem',
+                    borderRadius: '10px',
+                    border: '1px dashed grey',
+                  }}
+                >
+                  <Button
+                    icon={
+                      <IoExtensionPuzzleOutline
+                        style={{ transform: 'translateY(2px)' }}
+                        size={15}
+                      />
+                    }
+                    onClick={() => setSelectedEditor('blockly')}
+                  >
+                    No-Code Block Editor
+                  </Button>
+                  <Button icon={<FormOutlined size={15} />} onClick={() => setSelectedEditor('JS')}>
+                    JavaScript Editor
+                  </Button>
+                </Space>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+      {modalElement}
+    </>
   );
 };
 

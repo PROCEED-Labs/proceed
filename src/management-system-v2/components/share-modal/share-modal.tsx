@@ -242,6 +242,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ versions: processVersion
               definitionId: process.id,
             },
           ]}
+          processVersions={processVersions}
         />
       ),
       // necessary to reset portal button

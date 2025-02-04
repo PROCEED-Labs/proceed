@@ -10,6 +10,7 @@ import {
   Tooltip,
   Button,
   Grid,
+  Select,
 } from 'antd';
 
 import { useEnvironment } from '@/components/auth-can';
@@ -26,6 +27,8 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import { createPortal } from 'react-dom';
 import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+import { Process } from '@/lib/data/process-schema';
+import useProcessVersion from './use-process-version';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -95,34 +98,36 @@ function getSubOptions(giveSelectionOption?: boolean) {
 
 type ProcessExportModalProps = {
   processes: ExportProcessInfo; // the processes to export
+  processVersions: Process['versions'];
   buttonContainerRef: React.RefObject<HTMLDivElement>;
   active: boolean;
 };
 
 const ProcessExport: React.FC<ProcessExportModalProps> = ({
-  processes = [],
+  processes,
+  processVersions,
   buttonContainerRef,
   active,
 }) => {
-  const breakpoint = Grid.useBreakpoint();
-  const isMobile = !!breakpoint.xs;
+  const onlyOneProcess = processes.length === 1;
+
+  const isMobile = !!Grid.useBreakpoint().xs;
+  const modeler = useModelerStateStore((state) => state.modeler);
+  const environment = useEnvironment();
+
+  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(processVersions);
 
   const [selectedType, setSelectedType] = useState<ProcessExportTypes | undefined>();
-
-  const modeler = useModelerStateStore((state) => state.modeler);
-
   const [selectedOptions, setSelectedOptions] = useState<string[]>(['metaData'].concat(pdfOptions));
-
-  const [isExporting, setIsExporting] = useState(false);
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
 
-  const environment = useEnvironment();
+  const [isExporting, setIsExporting] = useState(false);
 
   // TODO: fix this
   // NOTE: this works, because when the share modal is opened this component is rerendered
   let selectedElements: string[] | undefined = undefined;
   let rootSubprocessLayerId: string | undefined = undefined;
-  if (modeler) {
+  if (modeler && onlyOneProcess) {
     // provide additional information for the export that is used if the user decides to only export selected elements (also controls if the option is given in the first place)
     selectedElements = modeler
       .getSelection()
@@ -150,27 +155,30 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
     if (selectedType === 'pdf') {
       const { definitionId, processVersion } = processes[0];
 
+      let versionId = processVersion;
+      if (onlyOneProcess && selectedVersionId) versionId = selectedVersionId;
+
       // the timestamp does not matter here since it is overridden by the user being an owner of the process
       await wrapServerCall({
         fn: () => {
           debugger;
           return generateSharedViewerUrl(
             { processId: definitionId, timestamp: 0 },
-            processVersion || undefined,
+            versionId,
             selectedOptions as string[],
           );
         },
         onSuccess: (url) => window.open(url, `${definitionId}-${processVersion}-tab`),
       });
     } else {
-      // Whenever the modeler is available, there will be only one process in `processes`,
-      // so blindly mapping the info to all processes shouldn't be a problem since there will be
-      // only one process.
       const processesWithExportInfo = processes.map((process) => ({
-        ...process,
         selectedElements,
         rootSubprocessLayerId,
+        ...process,
       }));
+
+      if (onlyOneProcess && selectedVersionId)
+        processesWithExportInfo[0].processVersion = selectedVersionId;
 
       await exportProcessesAsFile(
         {
@@ -221,58 +229,73 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
   const disabledPdfExport = selectedType === 'pdf' && processes.length > 1;
 
   const optionSelection = (
-    <Space direction="vertical">
-      <Checkbox.Group
-        onChange={handleOptionSelectionChange}
-        value={selectedOptions}
-        style={{ width: '100%' }}
-      >
-        <Space direction="vertical">
-          {(selectedType
-            ? getSubOptions(selectedElements ? selectedElements.length > 0 : false)[selectedType]
-            : []
-          ).map(({ label, value, tooltip }) => (
-            <Checkbox value={value} key={label} disabled={disabledPdfExport}>
-              <Tooltip placement="right" title={tooltip}>
-                {label}
-              </Tooltip>
-            </Checkbox>
-          ))}
-        </Space>
-      </Checkbox.Group>
-      {selectedType === 'png' && (
-        <div style={{ marginTop: '10px' }}>
-          <Tooltip placement="left" title="Export with different image resolutions">
-            <span>Quality:</span>
-          </Tooltip>
+    <>
+      <Space direction="vertical">
+        <Checkbox.Group
+          onChange={handleOptionSelectionChange}
+          value={selectedOptions}
+          style={{ width: '100%' }}
+        >
+          <Space direction="vertical">
+            {(selectedType
+              ? getSubOptions(selectedElements ? selectedElements.length > 0 : false)[selectedType]
+              : []
+            ).map(({ label, value, tooltip }) => (
+              <Checkbox value={value} key={label} disabled={disabledPdfExport}>
+                <Tooltip placement="right" title={tooltip}>
+                  {label}
+                </Tooltip>
+              </Checkbox>
+            ))}
+          </Space>
+        </Checkbox.Group>
+        {selectedType === 'png' && (
+          <div style={{ marginTop: '10px' }}>
+            <Tooltip placement="left" title="Export with different image resolutions">
+              <span>Quality:</span>
+            </Tooltip>
 
-          <Radio.Group
-            onChange={(e) => setPngScalingFactor(e.target.value)}
-            value={pngScalingFactor}
-          >
-            <Radio value={1.5}>
-              <Tooltip placement="bottom" title="Smallest resolution and smallest file size">
-                Normal
-              </Tooltip>
-            </Radio>
-            <Radio value={2.5}>
-              <Tooltip placement="bottom" title="Medium resolution and medium file size">
-                Good
-              </Tooltip>
-            </Radio>
-            <Radio value={4}>
-              <Tooltip placement="bottom" title="Highest resolution and biggest file size">
-                Excellent
-              </Tooltip>
-            </Radio>
-          </Radio.Group>
-        </div>
-      )}
-    </Space>
+            <Radio.Group
+              onChange={(e) => setPngScalingFactor(e.target.value)}
+              value={pngScalingFactor}
+            >
+              <Radio value={1.5}>
+                <Tooltip placement="bottom" title="Smallest resolution and smallest file size">
+                  Normal
+                </Tooltip>
+              </Radio>
+              <Radio value={2.5}>
+                <Tooltip placement="bottom" title="Medium resolution and medium file size">
+                  Good
+                </Tooltip>
+              </Radio>
+              <Radio value={4}>
+                <Tooltip placement="bottom" title="Highest resolution and biggest file size">
+                  Excellent
+                </Tooltip>
+              </Radio>
+            </Radio.Group>
+          </div>
+        )}
+      </Space>
+    </>
   );
 
   return (
-    <>
+    <Space direction="vertical" style={{ gap: '1rem', width: '100%' }}>
+      {onlyOneProcess && (
+        <Select
+          value={selectedVersionId || '-1'}
+          options={[
+            { value: '-1', label: 'Latest Version' },
+            ...processVersions.map((version) => ({ value: version.id, label: version.name })),
+          ]}
+          onChange={(value) => {
+            setSelectedVersionId(value === '-1' ? null : value);
+          }}
+          style={{ width: '35 %' }}
+        />
+      )}
       <Flex>
         {typeSelection}
         <Divider type="vertical" style={{ height: 'auto' }} />
@@ -293,7 +316,7 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
             buttonContainerRef.current!,
           )}
       </Flex>
-    </>
+    </Space>
   );
 };
 

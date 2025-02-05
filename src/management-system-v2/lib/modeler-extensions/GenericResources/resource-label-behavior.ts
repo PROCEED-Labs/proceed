@@ -11,14 +11,14 @@ export default class LabelBehavior extends CommandInterceptor {
     super(eventBus);
 
     // here we intercept some of the editing events in the modeler to inject our logic for label
-    // creation on performer elements or to prevent some default bpmn-js logic to run which would
+    // creation on resource elements or to prevent some default bpmn-js logic to run which would
     // cause errors
 
     this.preExecute('element.updateLabel', (event: any) => {
       const { context } = event;
       const { element, newLabel } = context;
 
-      if (is(element, 'proceed:Performer')) {
+      if (is(element, 'proceed:GenericResource')) {
         if (!isLabel(element)) {
           // ensure that a label is automatically added to an element before we try to change it
           if (newLabel && !element.label) {
@@ -36,7 +36,7 @@ export default class LabelBehavior extends CommandInterceptor {
             );
           }
           // prevent default functionality that cannot find the label on our custom elements
-          // without this the label would be removed if the name of a performer is changed through the properties panel
+          // without this the label would be removed if the name of a resource is changed through the properties panel
           if (element.label) {
             context.element = element.label!;
           }
@@ -47,7 +47,7 @@ export default class LabelBehavior extends CommandInterceptor {
     this.postExecute('element.updateLabel', (event: any) => {
       const { context } = event;
       const { element, newLabel } = context;
-      if (is(element, 'proceed:Performer')) {
+      if (is(element, 'proceed:GenericResource')) {
         if (newLabel !== element.businessObject.name) {
           modeling.updateModdleProperties(element, element.businessObject, { name: newLabel });
         }

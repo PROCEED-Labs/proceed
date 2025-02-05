@@ -31,17 +31,13 @@ export default class CustomPaletteProvider implements PaletteProvider {
   getPaletteEntries(): any {
     const { create, elementFactory } = this;
 
-    function createAction(
-      type: string,
-      group: string,
-      className: string,
-      title?: string,
-      machineType?: string,
-    ) {
+    function createAction(resourceType: string, group: string, className: string, title?: string) {
       function createListener(event: Event) {
-        const shape = elementFactory.createShape(assign({ type: type, width: 50, height: 50 }));
+        const shape = elementFactory.createShape(
+          assign({ type: 'proceed:GenericResource', width: 50, height: 50 }),
+        );
 
-        shape.businessObject.machineType = machineType;
+        shape.businessObject.resourceType = resourceType;
         create.start(event, shape);
       }
 
@@ -66,19 +62,18 @@ export default class CustomPaletteProvider implements PaletteProvider {
           group: 'activity',
           separator: true,
         },
-        // add elements to create our custom performer elements
-        'create.human-performer': createAction(
-          'proceed:HumanPerformer',
-          'perfomer',
+        // add elements to create our custom resource elements
+        'create.human-resource': createAction(
+          'User',
+          'resource',
           'proceed-user-icon',
           'Human Performer',
         ),
-        'create.machine-performer': createAction(
-          'proceed:MachinePerformer',
-          'perfomer',
+        'create.machine-resource': createAction(
+          'Laptop',
+          'resource',
           'proceed-laptop-icon',
           'IT System',
-          'Laptop',
         ),
       };
     };

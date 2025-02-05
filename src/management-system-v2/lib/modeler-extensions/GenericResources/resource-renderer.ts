@@ -22,7 +22,7 @@ import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 
 const HIGH_PRIORITY = 3000;
 
-export default class PerformerRenderer extends BaseRenderer {
+export default class ResourceRenderer extends BaseRenderer {
   bpmnRenderer: BpmnRenderer;
   textRenderer: TextRenderer;
   styles: any;
@@ -58,8 +58,8 @@ export default class PerformerRenderer extends BaseRenderer {
   }
 
   canRender(element: Element): boolean {
-    // tell bpmn-js to render performer elements with this module
-    return is(element, 'proceed:Performer');
+    // tell bpmn-js to render resource elements with this module
+    return is(element, 'proceed:GenericResource');
   }
 
   drawShape(
@@ -109,22 +109,20 @@ export default class PerformerRenderer extends BaseRenderer {
         transform: `translate(${shape.width / 2}, ${shape.height / 2}) scale(${shape.height})`,
       });
     };
-    if (is(shape, 'proceed:MachinePerformer')) {
-      switch (shape.businessObject.machineType) {
-        case 'Robot':
-          return draw(iconPaths.robot);
-        case 'Screen':
-          return draw(iconPaths.screen);
-        case 'Laptop':
-          return draw(iconPaths.laptop);
-        case 'Server':
-          return draw(iconPaths.server);
-        default:
-          throw new Error('Cannot draw unknown performer type');
-      }
+    switch (shape.businessObject.resourceType) {
+      case 'User':
+        return draw(iconPaths.person);
+      case 'Robot':
+        return draw(iconPaths.robot);
+      case 'Screen':
+        return draw(iconPaths.screen);
+      case 'Laptop':
+        return draw(iconPaths.laptop);
+      case 'Server':
+        return draw(iconPaths.server);
+      default:
+        throw new Error('Cannot draw unknown resource type');
     }
-
-    return draw(iconPaths.person);
   }
 
   lineStyle(attrs = {}) {

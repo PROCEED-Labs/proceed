@@ -37,9 +37,9 @@ export default class CustomContextPadProvider implements ContextPadProvider {
     }
 
     const { businessObject } = element;
-    // this tells bpmn-js what it should show in the context menu when one of our performer elements
+    // this tells bpmn-js what it should show in the context menu when one of our resource elements
     // is selected
-    if (isAny(businessObject, ['proceed:Performer']) && !isLabel(element)) {
+    if (isAny(businessObject, ['proceed:GenericResource']) && !isLabel(element)) {
       actions.connect = {
         group: 'connect',
         className: 'bpmn-icon-connection-multi',
@@ -75,7 +75,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
             let position = { x: event.x, y: event.y };
             position = getReplaceMenuPosition(element);
 
-            popupMenu.open(element, 'performer-replace', position, {
+            popupMenu.open(element, 'resource-replace', position, {
               title: 'Change element',
               width: 300,
               search: true,

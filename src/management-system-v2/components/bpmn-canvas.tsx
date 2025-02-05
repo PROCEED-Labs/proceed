@@ -28,6 +28,10 @@ import {
   PerformerContextPadProviderModule,
   PerformerLabelBehaviorModule,
 } from '@/lib/modeler-extensions/Performers';
+import {
+  CustomAnnotationViewModule,
+  CustomAnnotationModelingModule,
+} from '@/lib/modeler-extensions/TextAnnotation';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -207,7 +211,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
       // this will allow any type of viewer or editor we create to render our performer elements
-      const additionalModules: any[] = [PerformerRendererModule];
+      const additionalModules: any[] = [PerformerRendererModule, CustomAnnotationViewModule];
 
       // the modules related to editing can only be registered in modelers since they depend on
       // other modeler modules
@@ -219,6 +223,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           PerformerReplaceModule,
           PerformerRulesModule,
           PerformerLabelBehaviorModule,
+          CustomAnnotationModelingModule,
         );
       }
 

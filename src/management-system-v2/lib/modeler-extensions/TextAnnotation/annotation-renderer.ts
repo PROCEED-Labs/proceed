@@ -1,0 +1,79 @@
+import BaseRenderer, { Element } from 'diagram-js/lib/draw/BaseRenderer';
+
+import { Shape } from 'bpmn-js/lib/model/Types';
+import EventBus from 'diagram-js/lib/core/EventBus';
+import TextRenderer from 'bpmn-js/lib/draw/TextRenderer';
+
+import { is } from 'bpmn-js/lib/util/ModelUtil';
+
+import { getBounds, getSemantic } from 'bpmn-js/lib/draw/BpmnRenderUtil';
+
+import { append as svgAppend, create as svgCreate, classes as svgClasses } from 'tiny-svg';
+
+const HIGH_PRIORITY = 3000;
+
+export default class CustomAnnotationRenderer extends BaseRenderer {
+  textRenderer: TextRenderer;
+  styles: any;
+
+  // this tells bpmn-js which modules need to be passed to the constructor (the order must be the
+  // same as in the constructor!!)
+  static $inject: string[] = ['eventBus', 'styles', 'textRenderer'];
+
+  constructor(eventBus: EventBus, styles: any, textRenderer: TextRenderer) {
+    super(eventBus, HIGH_PRIORITY);
+
+    this.styles = styles;
+    this.textRenderer = textRenderer;
+  }
+
+  canRender(element: Element): boolean {
+    // tell bpmn-js to render text annotations elements with this module
+    return is(element, 'bpmn:TextAnnotation');
+  }
+
+  getBackgroundColor(shape: Shape) {
+    return shape.di.fill || shape.di['background-color'] || 'white';
+  }
+  getBorderColor(shape: Shape) {
+    return shape.di['border-color'] || 'lightgrey';
+  }
+  getTextColor(shape: Shape) {
+    return shape.di.stroke || 'black';
+  }
+
+  drawShape(
+    parentGfx: SVGElement,
+    shape: Shape,
+    attrs: { fill?: string; stroke?: string; width?: string; height?: string } = {},
+  ): SVGElement {
+    const { width, height } = getBounds(shape, attrs);
+    console.log(shape);
+
+    var containerElement = svgCreate('rect', {
+      width,
+      height,
+      style: `fill: ${this.getBackgroundColor(shape)}; stroke: ${this.getBorderColor(shape)}; stroke-width: 1px; filter: drop-shadow(2px 5px 4px #000000);`,
+    });
+    svgAppend(parentGfx, containerElement);
+
+    const semantic = getSemantic(shape);
+    const text = semantic.get('text') || '';
+
+    var textElement = this.textRenderer.createText(text, {
+      align: 'left-top',
+      box: getBounds(shape, attrs),
+      padding: 7,
+      style: {
+        fill: this.getTextColor(shape),
+      },
+      size: { width: 100 },
+    });
+
+    svgClasses(textElement).add('djs-label');
+
+    svgAppend(parentGfx, textElement);
+
+    return containerElement;
+  }
+}

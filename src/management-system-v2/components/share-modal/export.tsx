@@ -159,7 +159,6 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
       // the timestamp does not matter here since it is overridden by the user being an owner of the process
       await wrapServerCall({
         fn: () => {
-          debugger;
           return generateSharedViewerUrl(
             { processId: definitionId, timestamp: 0 },
             versionId,

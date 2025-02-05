@@ -32,23 +32,17 @@ import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { Process } from '@/lib/data/process-schema';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
-  process: { name: string; id: string; bpmn: string };
+  process: Process;
   onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  versions: { id: string; name: string; description: string; createdOn: Date }[];
 };
-const ModelerToolbar = ({
-  process,
-  onOpenXmlEditor,
-  canUndo,
-  canRedo,
-  versions,
-}: ModelerToolbarProps) => {
+const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerToolbarProps) => {
   const processId = process.id;
 
   const router = useRouter();
@@ -183,7 +177,8 @@ const ModelerToolbar = ({
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   const selectedVersion =
-    versions.find((version) => version.id === (selectedVersionId ?? '-1')) ?? LATEST_VERSION;
+    process.versions.find((version) => version.id === (selectedVersionId ?? '-1')) ??
+    LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
 
@@ -214,13 +209,12 @@ const ModelerToolbar = ({
                 router.push(
                   spaceURL(
                     environment,
-                    `/processes/${processId as string}${
-                      searchParams.size ? '?' + searchParams.toString() : ''
+                    `/processes/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
                     }`,
                   ),
                 );
               }}
-              options={[LATEST_VERSION].concat(versions ?? []).map(({ id, name }) => ({
+              options={[LATEST_VERSION].concat(process.versions ?? []).map(({ id, name }) => ({
                 value: id,
                 label: name,
               }))}
@@ -331,8 +325,7 @@ const ModelerToolbar = ({
         </Space>
       </Toolbar>
       <ShareModal
-        process={process}
-        versions={versions}
+        processes={[process]}
         open={shareModalOpen}
         close={() => setShareModalOpen(false)}
         defaultOpenTab={shareModalDefaultOpenTab}

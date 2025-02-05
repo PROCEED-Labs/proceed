@@ -6,7 +6,7 @@ import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
-import { Suspense, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
@@ -23,9 +23,16 @@ import useDeployment from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
 
 import useColors from './use-colors';
+import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 
-function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo }) {
+function PageContent({
+  selectedProcess,
+  refetch,
+}: {
+  selectedProcess: DeployedProcessInfo;
+  refetch: () => Promise<any>;
+}) {
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
@@ -63,12 +70,17 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
     return { bpmn: currentVersion?.bpmn || '' };
   }, [currentVersion]);
 
+  const { refreshTokens } = useTokens(selectedInstance || null, canvasRef);
   const { refreshColoring } = useColors(
     selectedBpmn,
     selectedColoring,
     selectedInstance,
     canvasRef,
   );
+  const refreshVisuals = useCallback(() => {
+    refreshTokens();
+    refreshColoring();
+  }, [refreshTokens, refreshColoring]);
 
   return (
     <Content compact wrapperClass={contentStyles.Content}>
@@ -113,9 +125,9 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
                           getLatestDeployment(selectedProcess).versionId,
                           spaceId,
                         ),
-                      onSuccess: (instanceId) => {
+                      onSuccess: async (instanceId) => {
+                        await refetch();
                         setSelectedInstanceId(instanceId);
-                        router.refresh();
                       },
                     });
                   }}
@@ -133,11 +145,11 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
                       },
                       ...(selectedVersion
                         ? [
-                          {
-                            label: '<none>',
-                            key: '-2',
-                          },
-                        ]
+                            {
+                              label: '<none>',
+                              key: '-2',
+                            },
+                          ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
@@ -227,7 +239,7 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
               setSelectedElement(element ?? canvasRef.current?.getCurrentRoot());
               setInfoPanelOpen(true);
             }}
-            onRootChange={refreshColoring}
+            onRootChange={refreshVisuals}
           />
         </div>
       </div>
@@ -236,12 +248,12 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
 }
 
 function SuspenseWrapper({ processId }: { processId: string }) {
-  const { data } = useDeployment(processId);
+  const { data, refetch } = useDeployment(processId);
 
   return (
     <>
       {data ? (
-        <PageContent selectedProcess={data} />
+        <PageContent selectedProcess={data} refetch={refetch} />
       ) : (
         <Content>
           <Result status="404" title="Process not found" />

@@ -17,6 +17,7 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
+import type Overlays from 'diagram-js/lib/features/overlays/Overlays';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
 import {
@@ -100,6 +101,7 @@ export interface BPMNCanvasRef {
   getZoomScroll: () => ZoomScroll;
   getSelection: () => Selection;
   getModeling: () => Modeling;
+  getOverlays: () => Overlays;
   getFactory: () => BpmnFactory;
   loadBPMN: (bpmn: string) => Promise<void>;
   activateKeyboard: () => void;
@@ -179,6 +181,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       },
       getModeling: () => {
         return modeler.current!.get<Modeling>('modeling');
+      },
+      getOverlays: () => {
+        return modeler.current!.get<Overlays>('overlays');
       },
       getFactory: () => {
         return modeler.current!.get<BpmnFactory>('bpmnFactory');

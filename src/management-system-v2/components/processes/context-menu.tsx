@@ -43,6 +43,22 @@ const ConextMenuArea: FC<
   if (selectedContextMenuItems.length > 0) {
     const children: MenuProps['items'] = [];
 
+    // Process Name,
+    // View Process Documentation,
+    // Open Editor,
+    // Open Editor in new Tab,
+    // Change Meta Data,
+    // Release Process,
+    // Share,
+    // Download,
+    // Move to Folder,
+    // Copy,
+    // Delete,
+    // Horizontal Bar,
+    // Create Process,
+    // Create Folder,
+    // Import Process (not anymore: Copy Process Link)
+
     if (
       selectedContextMenuItems.length === 1 &&
       canDoActionOnResource(selectedContextMenuItems, 'delete', ability)

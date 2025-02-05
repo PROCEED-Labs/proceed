@@ -23,6 +23,7 @@ import { toCustomUTCString } from '@/lib/helpers/timeHelper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { copyFile } from '../file-manager/file-manager';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
+import { Prisma } from '@prisma/client';
 
 /**
  * Returns all processes in an environment
@@ -139,7 +140,13 @@ export async function checkIfProcessExists(processDefinitionsId: string) {
 export async function addProcess(
   processInput: ProcessServerInput & { bpmn: string },
   referencedProcessId?: string,
-) {
+  tx?: Prisma.TransactionClient,
+): Promise<ProcessMetadata> {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await addProcess(processInput, referencedProcessId, trx);
+    });
+  }
   const { bpmn } = processInput;
 
   const processData = ProcessServerInputSchema.parse(processInput);
@@ -178,7 +185,7 @@ export async function addProcess(
 
   // save process info
   try {
-    await db.process.create({
+    await tx.process.create({
       data: {
         id: metadata.id,
         originalId: metadata.originalId ?? '',
@@ -207,14 +214,22 @@ export async function addProcess(
     processDefinitionsId,
     newFolderId: metadata.folderId,
     dontUpdateOldFolder: true,
+    tx,
   });
 
   //if referencedProcessId is present, the process was copied from a shared process
   if (referencedProcessId) {
-    await db.artifact.updateMany({
+    const artifacts = await tx.artifact.findMany({
       where: { processReferences: { some: { id: referencedProcessId } } },
-      data: { refCounter: { increment: 1 } },
     });
+
+    for (const artifact of artifacts) {
+      await tx.artifact.update({
+        where: { id: artifact.id },
+        data: { processReferences: { connect: [{ id: processDefinitionsId }] } },
+      });
+    }
+    throw new Error('Not implemented');
   }
 
   eventHandler.dispatch('processAdded', { process: metadata });
@@ -275,12 +290,15 @@ export async function moveProcess({
   newFolderId,
   ability,
   dontUpdateOldFolder = false,
+  tx,
 }: {
   processDefinitionsId: string;
   newFolderId: string;
   dontUpdateOldFolder?: boolean;
   ability?: Ability;
+  tx?: Prisma.TransactionClient;
 }) {
+  const dbMutator = tx || db;
   try {
     const process = await getProcess(processDefinitionsId);
     if (!process) {
@@ -319,7 +337,7 @@ export async function moveProcess({
     }
 
     // Update process' folderId in the database
-    const updatedProcess = await db.process.update({
+    const updatedProcess = await dbMutator.process.update({
       where: { id: processDefinitionsId },
       data: {
         folderId: newFolderId,
@@ -358,7 +376,13 @@ export async function updateProcessMetaData(
 }
 
 /** Removes an existing process */
-export async function removeProcess(processDefinitionsId: string) {
+export async function removeProcess(processDefinitionsId: string, tx?: Prisma.TransactionClient) {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      await removeProcess(processDefinitionsId, trx);
+    });
+  }
+
   const process = await db.process.findUnique({
     where: { id: processDefinitionsId },
     include: { artifactProcessReferences: { include: { artifact: true } } },
@@ -368,13 +392,13 @@ export async function removeProcess(processDefinitionsId: string) {
     throw new Error(`Process with id: ${processDefinitionsId} not found`);
   }
   await Promise.all(
-    process.artifactProcessReferences.map((artifactRef) =>
-      deleteProcessArtifact(artifactRef.artifact.filePath, true),
-    ),
+    process.artifactProcessReferences.map((artifactRef) => {
+      deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
+    }),
   );
 
   // Remove from database
-  await db.process.delete({ where: { id: processDefinitionsId } });
+  await tx.process.delete({ where: { id: processDefinitionsId } });
 
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
 }

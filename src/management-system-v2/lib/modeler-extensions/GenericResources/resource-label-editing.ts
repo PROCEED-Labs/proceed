@@ -8,6 +8,10 @@ import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 import TextRenderer from 'bpmn-js/lib/draw/TextRenderer';
 
+/**
+ * This module provides functionality that allows label editing on resource elements similar to the
+ * label editing on default bpmn-js elements
+ **/
 export default class ResourceLabelEditingProvider {
   static $inject = [
     'eventBus',

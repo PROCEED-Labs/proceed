@@ -11,6 +11,9 @@ import { Shape } from 'bpmn-js/lib/model/Types';
 import { isArray } from 'min-dash';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 
+/**
+ * This module is responsible for replacing existing resource elements with another type of resource
+ **/
 export default class ResourceReplacementProvider implements PopupMenuProvider {
   modeling: Modeling;
   rules: Rules;

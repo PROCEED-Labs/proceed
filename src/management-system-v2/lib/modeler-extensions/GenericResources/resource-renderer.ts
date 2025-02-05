@@ -22,6 +22,9 @@ import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 
 const HIGH_PRIORITY = 3000;
 
+/**
+ * This module is responsible for rendering our custom resource elements
+ **/
 export default class ResourceRenderer extends BaseRenderer {
   bpmnRenderer: BpmnRenderer;
   textRenderer: TextRenderer;

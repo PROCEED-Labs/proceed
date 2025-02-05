@@ -5,14 +5,14 @@ import { is } from 'bpmn-js/lib/util/ModelUtil';
 import CommandInterceptor from 'diagram-js/lib/command/CommandInterceptor';
 import EventBus from 'diagram-js/lib/core/EventBus';
 
+/**
+ * This module injects our own logic for label creation on resource elements to prevent default
+ * bpmn-js logic from running which would cause errors
+ **/
 export default class LabelBehavior extends CommandInterceptor {
   static $inject = ['eventBus', 'modeling', 'textRenderer'];
   constructor(eventBus: EventBus, modeling: Modeling, textRenderer: TextRenderer) {
     super(eventBus);
-
-    // here we intercept some of the editing events in the modeler to inject our logic for label
-    // creation on resource elements or to prevent some default bpmn-js logic to run which would
-    // cause errors
 
     this.preExecute('element.updateLabel', (event: any) => {
       const { context } = event;

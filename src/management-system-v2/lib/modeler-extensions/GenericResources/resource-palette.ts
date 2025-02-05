@@ -7,6 +7,9 @@ import Create from 'diagram-js/lib/features/create/Create';
 import { assign } from 'min-dash';
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 
+/**
+ * This module adds options to the modelers sidebar that allow the creation of resources
+ **/
 export default class CustomPaletteProvider implements PaletteProvider {
   create: Create;
   elementFactory: ElementFactory;

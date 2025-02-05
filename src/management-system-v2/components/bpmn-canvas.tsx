@@ -20,13 +20,8 @@ import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Mod
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
 import {
-  ResourceRulesModule,
-  ResourceReplaceModule,
-  ResourceRendererModule,
-  ResourceLabelEditingModule,
-  ResourcePaletteProviderModule,
-  ResourceContextPadProviderModule,
-  ResourceLabelBehaviorModule,
+  ResourceViewModule,
+  ResourceModelingModule,
 } from '@/lib/modeler-extensions/GenericResources';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
@@ -207,19 +202,12 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
       // this will allow any type of viewer or editor we create to render our performer elements
-      const additionalModules: any[] = [ResourceRendererModule];
+      const additionalModules: any[] = [ResourceViewModule];
 
       // the modules related to editing can only be registered in modelers since they depend on
       // other modeler modules
       if (type === 'modeler') {
-        additionalModules.push(
-          ResourceContextPadProviderModule,
-          ResourcePaletteProviderModule,
-          ResourceLabelEditingModule,
-          ResourceReplaceModule,
-          ResourceRulesModule,
-          ResourceLabelBehaviorModule,
-        );
+        additionalModules.push(ResourceModelingModule);
       }
 
       modeler.current = new ModelerOrViewer({

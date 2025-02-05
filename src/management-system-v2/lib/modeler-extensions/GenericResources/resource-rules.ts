@@ -17,8 +17,17 @@ export default class CustomRules extends RuleProvider {
   static $inject: string[] = ['eventBus', 'elementRegistry'];
 
   init(): void {
+    this.addRule('shape.append', 1500, (context) => {
+      console.log('Test', context);
+    });
     this.addRule('connection.create', 1500, (context) => {
-      const { source, target } = context;
+      let { source, target } = context;
+
+      if (is(target, 'proceed:GenericResource')) {
+        const tmp = source;
+        source = target;
+        target = tmp;
+      }
 
       const sourceIsResource = is(source, 'proceed:GenericResource');
       const targetCanHaveResource = is(target, 'proceed:PerformableNode');

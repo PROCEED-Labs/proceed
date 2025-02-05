@@ -27,7 +27,7 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import { createPortal } from 'react-dom';
 import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { Process } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import useProcessVersion from './use-process-version';
 
 const exportTypeOptions = [
@@ -97,15 +97,13 @@ function getSubOptions(giveSelectionOption?: boolean) {
 }
 
 type ProcessExportModalProps = {
-  processes: ExportProcessInfo; // the processes to export
-  processVersions: Process['versions'];
+  processes: (ExportProcessInfo[number] & { versions?: ProcessMetadata['versions'] })[]; // the processes to export
   buttonContainerRef: React.RefObject<HTMLDivElement>;
   active: boolean;
 };
 
 const ProcessExport: React.FC<ProcessExportModalProps> = ({
   processes,
-  processVersions,
   buttonContainerRef,
   active,
 }) => {
@@ -115,7 +113,7 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
   const modeler = useModelerStateStore((state) => state.modeler);
   const environment = useEnvironment();
 
-  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(processVersions);
+  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(processes[0]?.versions);
 
   const [selectedType, setSelectedType] = useState<ProcessExportTypes | undefined>();
   const [selectedOptions, setSelectedOptions] = useState<string[]>(['metaData'].concat(pdfOptions));
@@ -288,7 +286,10 @@ const ProcessExport: React.FC<ProcessExportModalProps> = ({
           value={selectedVersionId || '-1'}
           options={[
             { value: '-1', label: 'Latest Version' },
-            ...processVersions.map((version) => ({ value: version.id, label: version.name })),
+            ...(processes[0]?.versions || []).map((version) => ({
+              value: version.id,
+              label: version.name,
+            })),
           ]}
           onChange={(value) => {
             setSelectedVersionId(value === '-1' ? null : value);

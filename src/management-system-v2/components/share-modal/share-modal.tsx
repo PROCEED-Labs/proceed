@@ -1,5 +1,16 @@
 import { FC, useEffect, useRef, useState, JSX } from 'react';
-import { Modal, Button, Tooltip, Divider, Grid, App, Spin, Typography, Tabs } from 'antd';
+import {
+  Modal,
+  Button,
+  Tooltip,
+  Divider,
+  Grid,
+  App,
+  Spin,
+  Typography,
+  Tabs,
+  TabsProps,
+} from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -27,21 +38,14 @@ import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
 import ExportProcess from './export';
 
 type ShareModalProps = {
-  process: { name: string; id: string; bpmn: string };
-  versions: Process['versions'];
+  processes: { id: string; name: string; bpmn?: string; versions?: Process['versions'] }[];
   open: boolean;
   close: () => void;
   defaultOpenTab?: 'export-as-file' | 'share-public-link';
 };
 type SharedAsType = 'public' | 'protected';
 
-export const ShareModal: FC<ShareModalProps> = ({
-  versions: processVersions,
-  process,
-  open,
-  close,
-  defaultOpenTab,
-}) => {
+export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaultOpenTab }) => {
   const processId = useParams().processId as string;
   const environment = useEnvironment();
   const app = App.useApp();
@@ -70,7 +74,7 @@ export const ShareModal: FC<ShareModalProps> = ({
         setShareTimestamp(shareTimestamp);
         setAllowIframeTimestamp(allowIframeTimestamp);
       }
-    } catch (_) {}
+    } catch (_) { }
     setCheckingIfProcessShared(false);
   };
 
@@ -113,11 +117,11 @@ export const ShareModal: FC<ShareModalProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${process.name} | PROCEED`,
+          title: `${processes[0].name} | PROCEED`,
           text: 'Here is a shared process for you',
           url,
         });
-      } catch (_) {}
+      } catch (_) { }
     } else {
       navigator.clipboard.writeText(url);
       app.message.success('Copied to clipboard');
@@ -129,9 +133,9 @@ export const ShareModal: FC<ShareModalProps> = ({
   const mobileShareProcessImage = async () => {
     // NOTE: If a modeler happened to be open and the share modal was opened for another process,
     // this would export the wrong process image, however this is currently not possible in the UI
-    const result = modeler
-      ? await shareProcessImage(modeler)
-      : await shareProcessImageFromXml(process.bpmn);
+    let result;
+    if (modeler) result = await shareProcessImage(modeler);
+    else if (processes[0]?.bpmn) await shareProcessImageFromXml(processes[0].bpmn);
 
     if (typeof result === 'string') app.message.success(result);
     else if (result === false) app.message.error('Error sharing process as image');
@@ -143,7 +147,7 @@ export const ShareModal: FC<ShareModalProps> = ({
 
   const optionsMobile = [
     {
-      optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      icon: <LinkOutlined style={{ fontSize: '24px' }} />,
       label: 'Share Process with Public Link',
       optionTitle: 'Share Process with Public Link',
       key: 'share-public-link',
@@ -151,14 +155,14 @@ export const ShareModal: FC<ShareModalProps> = ({
       onClick: () => mobileShareWrapper(shareProcess, ['public']),
     },
     {
-      optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      icon: <LinkOutlined style={{ fontSize: '24px' }} />,
       label: 'Share Process for Registered Users',
       optionTitle: 'Share Process for Registered Users',
       key: 'share-protected-link',
       onClick: () => mobileShareWrapper(shareProcess, ['protected']),
     },
     {
-      optionIcon: <FileImageOutlined style={{ fontSize: '24px' }} />,
+      icon: <FileImageOutlined style={{ fontSize: '24px' }} />,
       label: 'Share Process as Image',
       optionTitle: 'Share Process as Image',
       key: 'share-process-as-image',
@@ -167,97 +171,93 @@ export const ShareModal: FC<ShareModalProps> = ({
     },
   ];
 
-  const optionsDesktop = [
-    {
-      optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
-      label: 'Share Public Link',
-      optionTitle: 'Share Public Link',
-      key: 'share-public-link',
-      children: (
-        <ModelerShareModalOptionPublicLink
-          sharedAs={sharedAs as SharedAsType}
-          shareTimestamp={shareTimestamp}
-          refresh={checkIfProcessShared}
-          processVersions={processVersions}
-        />
-      ),
-    },
-    {
-      optionIcon: (
-        <span>
-          <LeftOutlined style={{ fontSize: '24px' }} />
-          <RightOutlined style={{ fontSize: '24px' }} />
-        </span>
-      ),
-      label: 'Embed in Website',
-      optionTitle: 'Embed in Website',
-      key: 'embed-in-website',
-      children: (
-        <ModelerShareModalOptionEmdedInWeb
-          sharedAs={sharedAs as SharedAsType}
-          allowIframeTimestamp={allowIframeTimestamp}
-          refresh={checkIfProcessShared}
-          processVersions={processVersions}
-        />
-      ),
-    },
-    {
-      optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
-      optionTitle: 'Copy Diagram to Clipboard (PNG)',
-      label: 'Copy Diagram as PNG',
-      key: 'copy-diagram-as-png',
-      children: null,
-      onClick: async () => {
-        try {
-          if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
-          else
-            app.message.info(
-              'ClipboardAPI not supported in your browser, download the image instead',
-            );
-        } catch (err) {
-          app.message.error(`${err}`);
-        }
-      },
-    },
-    {
-      optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
-      label: 'Copy Diagram as XML',
-      optionTitle: 'Copy BPMN to Clipboard (XML)',
-      key: 'copy-diagram-as-xml',
-      children: null,
-      onClick: handleCopyXMLToClipboard,
-    },
-    {
-      optionIcon: <ExportOutlined style={{ fontSize: '24px' }} />,
-      label: 'Export as file',
-      optionTitle: 'Export as file',
-      key: 'export-as-file',
-      children: (
-        <ExportProcess
-          buttonContainerRef={buttonContainerRef}
-          // TODO: don't use magic numbers
-          active={activeIndex === 4}
-          processes={[
-            {
-              definitionId: process.id,
-            },
-          ]}
-          processVersions={processVersions}
-        />
-      ),
-      // necessary to reset portal button
-      destroyInactiveTabPane: true,
-    },
-  ];
-
-  const tabs: {
-    optionIcon: JSX.Element;
-    label: string;
+  const optionsDesktop: (NonNullable<TabsProps['items']>[number] & {
     optionTitle: string;
-    key: string;
-    children?: JSX.Element | null;
-    onClick?: () => any;
-  }[] = breakpoint.lg ? optionsDesktop : optionsMobile;
+    onClick?: () => void;
+  })[] = [
+      {
+        icon: <ExportOutlined style={{ fontSize: '24px' }} />,
+        label: 'Export as file',
+        optionTitle: 'Export as file',
+        key: 'export-as-file',
+        children: (
+          <ExportProcess
+            buttonContainerRef={buttonContainerRef}
+            // TODO: don't use magic numbers
+            active={activeIndex === 4}
+            processes={processes.map((p) => ({ definitionId: p.id, versions: p.versions }))}
+          />
+        ),
+        // necessary to reset portal button
+        destroyInactiveTabPane: true,
+      },
+    ];
+
+  if (processes.length === 1) {
+    optionsDesktop.unshift(
+      {
+        icon: <LinkOutlined style={{ fontSize: '24px' }} />,
+        label: 'Share Public Link',
+        optionTitle: 'Share Public Link',
+        key: 'share-public-link',
+        children: (
+          <ModelerShareModalOptionPublicLink
+            sharedAs={sharedAs as SharedAsType}
+            shareTimestamp={shareTimestamp}
+            refresh={checkIfProcessShared}
+            process={processes[0]}
+          />
+        ),
+      },
+      {
+        icon: (
+          <span>
+            <LeftOutlined style={{ fontSize: '24px' }} />
+            <RightOutlined style={{ fontSize: '24px' }} />
+          </span>
+        ),
+        label: 'Embed in Website',
+        optionTitle: 'Embed in Website',
+        key: 'embed-in-website',
+        children: (
+          <ModelerShareModalOptionEmdedInWeb
+            sharedAs={sharedAs as SharedAsType}
+            allowIframeTimestamp={allowIframeTimestamp}
+            refresh={checkIfProcessShared}
+            process={processes[0]}
+          />
+        ),
+      },
+      {
+        icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+        optionTitle: 'Copy Diagram to Clipboard (PNG)',
+        label: 'Copy Diagram as PNG',
+        key: 'copy-diagram-as-png',
+        children: null,
+        onClick: async () => {
+          try {
+            if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
+            else
+              app.message.info(
+                'ClipboardAPI not supported in your browser, download the image instead',
+              );
+          } catch (err) {
+            app.message.error(`${err}`);
+          }
+        },
+      },
+      {
+        icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+        label: 'Copy Diagram as XML',
+        optionTitle: 'Copy BPMN to Clipboard (XML)',
+        key: 'copy-diagram-as-xml',
+        children: null,
+        onClick: handleCopyXMLToClipboard,
+      },
+    );
+  }
+
+  const tabs = breakpoint.lg ? optionsDesktop : optionsMobile;
 
   useEffect(() => {
     const tabIdx = tabs.findIndex((tab) => tab.key === defaultOpenTab);
@@ -376,7 +376,7 @@ export const ShareModal: FC<ShareModalProps> = ({
                         if ('onClick' in option && option.onClick) option.onClick();
                       }}
                     >
-                      {option.optionIcon}
+                      {option.icon}
                       <Typography.Text
                         style={{
                           textAlign: 'center',

@@ -12,7 +12,6 @@ import {
   message,
   CheckboxChangeEvent,
 } from 'antd';
-import { useParams } from 'next/navigation';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { useEnvironment } from '@/components/auth-can';
 import { Process } from '@/lib/data/process-schema';
@@ -26,21 +25,24 @@ type ModelerShareModalOptionEmdedInWebProps = {
   sharedAs: 'public' | 'protected';
   allowIframeTimestamp: number;
   refresh: () => void;
-  processVersions: Process['versions'];
+  process: Pick<Process, 'id'> & Partial<Pick<Process, 'versions'>>;
 };
 
 const ModelerShareModalOptionEmdedInWeb = ({
   sharedAs,
   allowIframeTimestamp,
   refresh,
-  processVersions,
+  process,
 }: ModelerShareModalOptionEmdedInWebProps) => {
   const app = App.useApp();
-  const processId = useParams().processId as string;
   const environment = useEnvironment();
   const [embeddingUrl, setEmbeddingUrl] = useState('');
 
-  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(processVersions);
+  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(
+    process.versions,
+    undefined,
+    false,
+  );
 
   useEffect(() => {
     if (allowIframeTimestamp > 0 && selectedVersionId) {
@@ -48,7 +50,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
         fn: () =>
           generateSharedViewerUrl(
             {
-              processId,
+              processId: process.id,
               embeddedMode: true,
               timestamp: allowIframeTimestamp,
             },
@@ -60,12 +62,12 @@ const ModelerShareModalOptionEmdedInWeb = ({
         app,
       });
     }
-  }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs, selectedVersionId, app]);
+  }, [allowIframeTimestamp, environment.spaceId, process, sharedAs, selectedVersionId, app]);
 
   async function handleAllowEmbeddingChecked(e: CheckboxChangeEvent) {
     await updateShare(
       {
-        processId,
+        processId: process.id,
         versionId: selectedVersionId || undefined,
         spaceId: environment.spaceId,
         embeddedMode: true,
@@ -86,7 +88,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
     message.success('Code copied to you clipboard');
   };
 
-  if (processVersions.length === 0)
+  if (process?.versions?.length === 0)
     return (
       <Result
         status="warning"
@@ -106,7 +108,10 @@ const ModelerShareModalOptionEmdedInWeb = ({
 
       <Select
         value={selectedVersionId}
-        options={processVersions.map((version) => ({ value: version.id, label: version.name }))}
+        options={(process.versions || []).map((version) => ({
+          value: version.id,
+          label: version.name,
+        }))}
         onChange={setSelectedVersionId}
         style={{ width: '35%' }}
       />

@@ -1,10 +1,10 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
-import { addMember, isMember } from '@/lib/data/legacy/iam/memberships';
-import { addRoleMappings } from '@/lib/data/legacy/iam/role-mappings';
-import { getRoleById } from '@/lib/data/legacy/iam/roles';
-import { getUserByEmail } from '@/lib/data/legacy/iam/users';
+import { getEnvironmentById } from '@/lib/data/DTOs';
+import { addMember, isMember } from '@/lib/data/db/iam/memberships';
+import { addRoleMappings } from '@/lib/data/db/iam/role-mappings';
+import { getRoleById } from '@/lib/data/db/iam/roles';
+import { getUserByEmail } from '@/lib/data/db/iam/users';
 import { getInvitation as getInvitationFromToken } from '@/lib/invitation-tokens';
 import { Result, ResultProps } from 'antd';
 import { redirect } from 'next/navigation';

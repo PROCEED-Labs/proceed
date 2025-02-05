@@ -408,6 +408,7 @@ export async function addProcessVersion(
   processDefinitionsId: string,
   bpmn: string,
   versionedUserTaskFilenames?: string[],
+  versionedScriptTaskFilenames?: string[],
 ) {
   // get the version from the given bpmn
 
@@ -465,17 +466,31 @@ export async function addProcessVersion(
       },
     });
 
-    if (version && versionedUserTaskFilenames) {
-      await asyncMap(versionedUserTaskFilenames, async (fileName) => {
-        for (const extension of ['.json', '.html']) {
-          const res = await getArtifactMetaData(`${fileName}${extension}`, false);
-          if (res) {
-            await db.artifactVersionReference.create({
-              data: { artifactId: res.id, versionId: version.id },
-            });
+    if (version) {
+      if (versionedUserTaskFilenames) {
+        await asyncMap(versionedUserTaskFilenames, async (fileName) => {
+          for (const extension of ['.json', '.html']) {
+            const res = await getArtifactMetaData(`${fileName}${extension}`, false);
+            if (res) {
+              await db.artifactVersionReference.create({
+                data: { artifactId: res.id, versionId: version.id },
+              });
+            }
           }
-        }
-      });
+        });
+      }
+      if (versionedScriptTaskFilenames) {
+        await asyncMap(versionedScriptTaskFilenames, async (filename) => {
+          for (const extension of ['.js', '.ts', '.xml']) {
+            const res = await getArtifactMetaData(`${filename}${extension}`, false);
+            if (res) {
+              await db.artifactVersionReference.create({
+                data: { artifactId: res.id, versionId: version.id },
+              });
+            }
+          }
+        });
+      }
     }
 
     await versionProcessArtifactRefs(processDefinitionsId, version.id);
@@ -554,6 +569,11 @@ export async function getProcessUserTasks(processDefinitionsId: string) {
   // TODO
 }
 
+/** Returns the filenames of the data for all script tasks in the given process */
+export async function getProcessScriptTasks(processDefinitionsId: string) {
+  // TODO
+}
+
 /** Returns the form data for a specific user task in a process */
 export async function getProcessUserTaskJSON(processDefinitionsId: string, userTaskName: string) {
   checkIfProcessExists(processDefinitionsId);
@@ -571,57 +591,6 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, userT
     }
   } catch (err) {
     logger.debug(`Error getting data of user task. Reason:\n${err}`);
-    throw new Error('Unable to get data for user task!');
-  }
-}
-
-/** Return object mapping from user tasks fileNames to their form data */
-export async function getProcessUserTasksJSON(processDefinitionsId: string, versionId?: string) {
-  try {
-    const res = await db.artifact.findMany({
-      where: {
-        OR: [
-          {
-            processReferences: {
-              some: {
-                processId: processDefinitionsId,
-              },
-            },
-          },
-          {
-            versionReferences: {
-              some: {
-                versionId: versionId,
-              },
-            },
-          },
-        ],
-        artifactType: 'user-tasks',
-      },
-      select: {
-        filePath: true,
-        fileName: true,
-      },
-    });
-
-    if (res) {
-      let userTaskJsons: Record<string, string> = {};
-      await Promise.all(
-        res.map(async (task) => {
-          const jsonAsBuffer = (await retrieveProcessArtifact(
-            processDefinitionsId,
-            task.filePath,
-            true,
-            false,
-          )) as Buffer;
-          const taskId = task.fileName.split('.').shift();
-          userTaskJsons[taskId!] = jsonAsBuffer.toString('utf8');
-        }),
-      );
-      return userTaskJsons;
-    }
-  } catch (error) {
-    logger.debug(`Error getting data of user task. Reason:\n${error}`);
     throw new Error('Unable to get data for user task!');
   }
 }
@@ -650,11 +619,53 @@ export async function checkIfUserTaskExists(processDefinitionsId: string, userTa
     //     },
     //   },
     // });
-    const artifact = await db.artifact.findUnique({ where: { fileName: `${userTaskId}.json` } });
-    return artifact;
+    const jsonArtifact = await db.artifact.findUnique({
+      where: { fileName: `${userTaskId}.json` },
+    });
+    const htmlArtifact = await db.artifact.findUnique({
+      where: { fileName: `${userTaskId}.html` },
+    });
+    return jsonArtifact || htmlArtifact ? { json: jsonArtifact, html: htmlArtifact } : null;
   } catch (error) {
     console.error('Error checking if user task exists:', error);
     throw new Error('Failed to check if user task exists.');
+  }
+}
+
+export async function checkIfScriptTaskFileExists(
+  processDefinitionsId: string,
+  scriptFilenameWithExtension: string,
+) {
+  try {
+    // const artifact = await db.artifact.findFirst({
+    //   where: {
+    //     artifactType: 'user-tasks',
+    //     fileName: `${userTaskId}.json`,
+    //     references: {
+    //       some: {
+    //         processId: processDefinitionsId,
+    //       },
+    //     },
+    //   },
+    //   include: {
+    //     references: {
+    //       where: {
+    //         processId: processDefinitionsId,
+    //       },
+    //       select: {
+    //         id: true,
+    //         processId: true,
+    //       },
+    //     },
+    //   },
+    // });
+    const artifact = await db.artifact.findUnique({
+      where: { fileName: scriptFilenameWithExtension },
+    });
+    return artifact;
+  } catch (error) {
+    console.error('Error checking if script task file exists:', error);
+    throw new Error('Failed to check if script task file exists.');
   }
 }
 
@@ -663,9 +674,20 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
   try {
     const res = await db.artifact.findFirst({
       where: {
-        AND: [
-          { fileName: `${taskFileName}.html` },
-          { processReferences: { some: { processId: processDefinitionsId } } },
+        fileName: `${taskFileName}.html`,
+        OR: [
+          {
+            processReferences: {
+              some: {
+                processId: processDefinitionsId,
+              },
+            },
+          },
+          {
+            versionReferences: {
+              some: { version: { processId: processDefinitionsId } },
+            },
+          },
         ],
       },
       select: {
@@ -684,6 +706,46 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
   } catch (err) {
     logger.debug(`Error getting html of user task. Reason:\n${err}`);
     throw new Error('Unable to get html for user task!');
+  }
+}
+
+export async function getProcessScriptTaskScript(processDefinitionsId: string, fileName: string) {
+  checkIfProcessExists(processDefinitionsId);
+  try {
+    const res = await db.artifact.findFirst({
+      where: {
+        fileName,
+        OR: [
+          {
+            processReferences: {
+              some: {
+                processId: processDefinitionsId,
+              },
+            },
+          },
+          {
+            versionReferences: {
+              some: { version: { processId: processDefinitionsId } },
+            },
+          },
+        ],
+      },
+      select: {
+        filePath: true,
+      },
+    });
+
+    if (!res) {
+      throw new Error('Unable to get script for script task!');
+    }
+
+    const script = (
+      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
+    ).toString('utf-8');
+    return script;
+  } catch (err) {
+    logger.debug(`Error getting script of script task. Reason:\n${err}`);
+    throw new Error('Unable to get script for script task!');
   }
 }
 
@@ -706,7 +768,7 @@ export async function saveProcessUserTask(
       {
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
-        replaceFileContentOnly: res?.filePath ? true : false,
+        replaceFileContentOnly: res?.json?.filePath ? true : false,
         context: 'user-tasks',
       },
     );
@@ -719,7 +781,7 @@ export async function saveProcessUserTask(
       {
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
-        replaceFileContentOnly: res?.filePath ? true : false,
+        replaceFileContentOnly: res?.html?.filePath ? true : false,
         context: 'user-tasks',
       },
     );
@@ -727,6 +789,35 @@ export async function saveProcessUserTask(
   } catch (err) {
     logger.debug(`Error storing user task data. Reason:\n${err}`);
     throw new Error('Failed to store the user task data');
+  }
+}
+
+export async function saveProcessScriptTask(
+  processDefinitionsId: string,
+  filenameWithExtension: string,
+  script: string,
+  versionCreatedOn?: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+  try {
+    const res = await checkIfScriptTaskFileExists(processDefinitionsId, filenameWithExtension);
+
+    await saveProcessArtifact(
+      processDefinitionsId,
+      filenameWithExtension,
+      'application/javascript',
+      new TextEncoder().encode(script),
+      {
+        generateNewFileName: false,
+        versionCreatedOn: versionCreatedOn,
+        replaceFileContentOnly: res?.filePath ? true : false,
+        context: 'script-tasks',
+      },
+    );
+    return filenameWithExtension;
+  } catch (err) {
+    logger.debug(`Error storing script task data. Reason:\n${err}`);
+    throw new Error('Failed to store the script task data');
   }
 }
 
@@ -738,12 +829,35 @@ export async function deleteProcessUserTask(
   checkIfProcessExists(processDefinitionsId);
   try {
     const res = await checkIfUserTaskExists(processDefinitionsId, userTaskFileName);
+
+    let isDeleted = false;
+
+    if (res?.json) {
+      isDeleted = await deleteProcessArtifact(res.json.filePath, true);
+    }
+    if (res?.html) {
+      isDeleted = (await deleteProcessArtifact(res.html.filePath, true)) || isDeleted;
+    }
+
+    return isDeleted;
+  } catch (err) {
+    logger.debug(`Error removing user task data. Reason:\n${err}`);
+  }
+}
+
+/** Removes a stored script task from disk */
+export async function deleteProcessScriptTask(
+  processDefinitionsId: string,
+  taskFileNameWithExtension: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+  try {
+    const res = await checkIfScriptTaskFileExists(processDefinitionsId, taskFileNameWithExtension);
     if (res) {
-      console.log('user task exists', userTaskFileName);
       return await deleteProcessArtifact(res.filePath, true);
     }
   } catch (err) {
-    logger.debug(`Error removing user task data. Reason:\n${err}`);
+    logger.debug(`Error removing script task file. Reason:\n${err}`);
   }
 }
 
@@ -875,52 +989,6 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
   } catch (err) {
     logger.debug(`Error getting image. Reason:\n${err}`);
     throw new Error('Unable to get image!');
-  }
-}
-
-/** Return object mapping from user tasks fileNames to their html */
-export async function getProcessUserTasksHtml(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    const res = await db.artifact.findMany({
-      where: {
-        OR: [
-          {
-            processReferences: {
-              some: {
-                processId: processDefinitionsId,
-              },
-            },
-          },
-        ],
-        artifactType: 'user-tasks',
-      },
-      select: {
-        filePath: true,
-        fileName: true,
-      },
-    });
-
-    if (res) {
-      let userTaskHTMLs: Record<string, string> = {};
-      await Promise.all(
-        res.map(async (task) => {
-          const htmlAsBuffer = (await retrieveProcessArtifact(
-            processDefinitionsId,
-            task.filePath,
-            true,
-            false,
-          )) as Buffer;
-          const taskId = task.fileName.split('.').shift();
-          userTaskHTMLs[taskId!] = htmlAsBuffer.toString('utf8');
-        }),
-      );
-      return userTaskHTMLs;
-    }
-  } catch (err) {
-    logger.debug(`Error getting user task html. Reason:\n${err}`);
-    throw new Error('Failed getting html for all user tasks');
   }
 }
 

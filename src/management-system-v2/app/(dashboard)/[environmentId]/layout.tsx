@@ -63,21 +63,19 @@ const DashboardLayout = async ({
       icon: <EditOutlined />,
     });
 
-    if (env.PROCEED_PUBLIC_NEW_LAYOUT) {
-      children = [
-        {
-          key: 'processes-list',
-          label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
-          icon: <CopyOutlined />,
-        },
-        ...children,
-        {
-          key: 'templates',
-          label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
-          icon: <SnippetsOutlined />,
-        },
-      ];
-    }
+    children = [
+      {
+        key: 'processes-list',
+        label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
+        icon: <CopyOutlined />,
+      },
+      ...children,
+      {
+        key: 'templates',
+        label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
+        icon: <SnippetsOutlined />,
+      },
+    ];
 
     layoutMenuItems.push({
       key: 'processes-group',

@@ -47,7 +47,6 @@ export const saveArtifactToDB = async (
   options: SaveArtifactOptions,
 ) => {
   try {
-    throw new Error('Not implemented');
     const { versionCreatedOn, processId } = options;
     const data = {
       fileName,

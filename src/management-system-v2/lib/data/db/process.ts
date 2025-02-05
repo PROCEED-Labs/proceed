@@ -229,7 +229,6 @@ export async function addProcess(
         data: { processReferences: { connect: [{ id: processDefinitionsId }] } },
       });
     }
-    throw new Error('Not implemented');
   }
 
   eventHandler.dispatch('processAdded', { process: metadata });

@@ -1,6 +1,7 @@
 import Content from '@/components/content';
 //import styles from './page.module.scss';
-import { getDeepParentConfigurationById } from '@/lib/data/legacy/machine-config';
+// import { getDeepParentConfigurationById } from '@/lib/data/legacy/machine-config';
+import { getDeepParentConfigurationById } from '@/lib/data/db/machine-config';
 import ConfigPage from './config-page-content';
 
 type MachineConfigProps = {

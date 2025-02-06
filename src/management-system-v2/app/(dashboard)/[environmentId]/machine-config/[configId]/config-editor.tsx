@@ -49,13 +49,14 @@ import AddButton from './add-button';
 import ConfigModal from '@/components/config-modal';
 import {
   addMachineConfig,
-  addTargetConfig,
+  // addTargetConfig,
   removeTargetConfig,
   updateMachineConfig,
   updateParentConfig,
   updateTargetConfig,
 } from '@/lib/data/legacy/machine-config';
 import ActionButtons from './action-buttons';
+import { addTargetConfig } from '@/lib/data/db/machine-config';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;

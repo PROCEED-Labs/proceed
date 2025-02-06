@@ -1,14 +1,10 @@
-import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 import PopupMenu, {
   PopupMenuProvider,
   PopupMenuEntry,
 } from 'diagram-js/lib/features/popup-menu/PopupMenu';
 import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
-import Replace from 'diagram-js/lib/features/replace/Replace';
-import Rules from 'diagram-js/lib/features/rules/Rules';
 import { Shape } from 'bpmn-js/lib/model/Types';
 
-import { isArray } from 'min-dash';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 
 export default class AnnotationRecolorProvider implements PopupMenuProvider {
@@ -57,9 +53,11 @@ export default class AnnotationRecolorProvider implements PopupMenuProvider {
         di: {
           fill: colors[newColor],
           'background-color': colors[newColor],
-          stroke: newColor === 'Black' ? 'white' : 'black',
-          'border-color': null,
+          'border-color': 'lightgrey',
         },
+      });
+      modeling.updateModdleProperties(target, target.di.label, {
+        color: newColor === 'Black' ? 'white' : 'black',
       });
     };
 

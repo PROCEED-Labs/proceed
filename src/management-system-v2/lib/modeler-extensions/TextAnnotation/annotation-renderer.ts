@@ -9,6 +9,7 @@ import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { getBounds, getSemantic } from 'bpmn-js/lib/draw/BpmnRenderUtil';
 
 import { append as svgAppend, create as svgCreate, classes as svgClasses } from 'tiny-svg';
+import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
 
 const HIGH_PRIORITY = 3000;
 
@@ -32,28 +33,17 @@ export default class CustomAnnotationRenderer extends BaseRenderer {
     return is(element, 'bpmn:TextAnnotation');
   }
 
-  getBackgroundColor(shape: Shape) {
-    return shape.di.fill || shape.di['background-color'] || 'white';
-  }
-  getBorderColor(shape: Shape) {
-    return shape.di['border-color'] || 'lightgrey';
-  }
-  getTextColor(shape: Shape) {
-    return shape.di.stroke || 'black';
-  }
-
   drawShape(
     parentGfx: SVGElement,
     shape: Shape,
     attrs: { fill?: string; stroke?: string; width?: string; height?: string } = {},
   ): SVGElement {
     const { width, height } = getBounds(shape, attrs);
-    console.log(shape);
 
     var containerElement = svgCreate('rect', {
       width,
       height,
-      style: `fill: ${this.getBackgroundColor(shape)}; stroke: ${this.getBorderColor(shape)}; stroke-width: 1px; filter: drop-shadow(2px 5px 4px #000000);`,
+      style: `fill: ${getBackgroundColor(shape)}; stroke: ${getBorderColor(shape)}; stroke-width: 1px; filter: drop-shadow(2px 5px 4px #000000);`,
     });
     svgAppend(parentGfx, containerElement);
 
@@ -65,7 +55,7 @@ export default class CustomAnnotationRenderer extends BaseRenderer {
       box: getBounds(shape, attrs),
       padding: 7,
       style: {
-        fill: this.getTextColor(shape),
+        fill: getTextColor(shape),
       },
       size: { width: 100 },
     });

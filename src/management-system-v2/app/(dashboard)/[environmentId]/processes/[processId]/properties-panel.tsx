@@ -1,7 +1,5 @@
 'use client';
 
-import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
-import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
@@ -10,12 +8,9 @@ import { Input, ColorPicker, Space, Grid, Divider, Modal } from 'antd';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
-  getElementById,
   getMetaDataFromElement,
   setDefinitionsName,
-  setMetaData,
   setProceedElement,
-  toBpmnObject,
   deepCopyElementById,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
@@ -30,9 +25,11 @@ import PlannedCostInput from './planned-cost-input';
 import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
+import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
+import { Shape } from 'bpmn-js/lib/model/Types';
 
 type PropertiesPanelContentProperties = {
-  selectedElement: ElementLike;
+  selectedElement: Shape;
 };
 
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
@@ -41,8 +38,9 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const router = useRouter();
   const { spaceId } = useEnvironment();
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
-  const backgroundColor = getFillColor(selectedElement, '#FFFFFFFF');
-  const strokeColor = getStrokeColor(selectedElement, '#000000FF');
+  const backgroundColor = getBackgroundColor(selectedElement);
+  const textColor = getTextColor(selectedElement);
+  const borderColor = getBorderColor(selectedElement);
 
   const [name, setName] = useState('');
 
@@ -115,10 +113,21 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       fill: backgroundColor,
     });
   };
-  const updateStrokeColor = (frameColor: string) => {
+  const updateTextColor = (textColor: string) => {
     const modeling = modeler!.getModeling();
-    modeling.setColor(selectedElement as any, {
-      stroke: frameColor,
+    // update the text color in the external label if one exists, otherwise update the text inside
+    // the element if possible
+    let element = selectedElement.label || selectedElement;
+    if (element) {
+      modeling.updateModdleProperties(element as any, element.di.label, {
+        color: textColor,
+      });
+    }
+  };
+  const updateBorderColor = (borderColor: string) => {
+    const modeling = modeler!.getModeling();
+    modeling.updateProperties(selectedElement as any, {
+      di: { 'border-color': borderColor },
     });
   };
 
@@ -223,14 +232,14 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             undefined,
             oldName
               ? {
-                  name: oldName,
-                }
+                name: oldName,
+              }
               : undefined,
           );
         }}
       ></CustomPropertySection>
 
-      {selectedElement.type !== 'bpmn:Process' && (
+      {selectedElement.type !== 'bpmn:Process' && selectedElement.type !== 'bpmn:Collaboration' && (
         <Space direction="vertical" style={{ width: '100%' }}>
           <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
           <Space>
@@ -241,18 +250,31 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               value={backgroundColor}
               onChange={(_, hex) => updateBackgroundColor(hex)}
             />
-            <span>Background Colour</span>
+            <span>Background Color</span>
           </Space>
           <Space>
             <ColorPicker
               size="small"
               disabledAlpha
               presets={colorPickerPresets}
-              value={strokeColor}
-              onChange={(_, hex) => updateStrokeColor(hex)}
+              value={borderColor}
+              onChange={(_, hex) => updateBorderColor(hex)}
             />
-            <span>Stroke Colour</span>
+            <span>Border Color</span>
           </Space>
+
+          {selectedElement?.di?.label && (
+            <Space>
+              <ColorPicker
+                size="small"
+                disabledAlpha
+                presets={colorPickerPresets}
+                value={textColor}
+                onChange={(_, hex) => updateTextColor(hex)}
+              />
+              <span>Text Color</span>
+            </Space>
+          )}
         </Space>
       )}
     </Space>
@@ -260,7 +282,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 };
 
 type PropertiesPanelProperties = {
-  selectedElement: ElementLike;
+  selectedElement: Shape;
   isOpen: boolean;
   close: () => void;
 };

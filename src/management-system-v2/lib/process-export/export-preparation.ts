@@ -37,7 +37,7 @@ export type ProcessExportOptions = {
   imports: boolean; // if processes referenced by this process should be exported as well
   scaling: number; // the scaling factor that should be used for png export
   exportSelectionOnly: boolean; // if only selected elements (and their children) should be in the final export
-  useWebshareApi: boolean; // if true, the process is shared using web share api
+  exportMethod?: 'download' | 'clipboard' | 'webshare';
 };
 
 /**

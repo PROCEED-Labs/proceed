@@ -9,6 +9,7 @@ import { getElementsByTagName } from '@proceed/bpmn-helper/src/util';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import { ProcessExportOptions } from './export-preparation';
 
 /**
  * Transforms a definitionName of a process into a valid file path by replacing spaces
@@ -44,6 +45,60 @@ export function downloadFile(filename: string, data: Blob) {
 
   // Release Object URL, so the browser doesn't keep the reference
   URL.revokeObjectURL(objectURL);
+}
+
+/**
+ * Exports a blob with the specified method in ProcessExportOptions
+ */
+export async function handleExportMethod(
+  exportBlob: Promise<{ filename: string; blob: Blob }>,
+  options: ProcessExportOptions,
+) {
+  let fallback = false;
+
+  if (options.exportMethod === 'webshare') {
+    const { filename, blob } = await exportBlob;
+    if ('canShare' in window?.navigator)
+      try {
+        await navigator.share({
+          files: [new File([blob], filename, { type: blob.type })],
+        });
+        return;
+      } catch (_) { }
+
+    fallback = true;
+  }
+
+  if (fallback || options.exportMethod === 'clipboard') {
+    // needed for clipboard export
+    let prematureClipboardTypeIfNotZip;
+    if (options.type === 'bpmn') {
+      prematureClipboardTypeIfNotZip = 'application/xml';
+    } else if (options.type === 'svg') {
+      prematureClipboardTypeIfNotZip = 'image/svg+xml';
+    } else if (options.type === 'png') {
+      prematureClipboardTypeIfNotZip = 'image/png';
+    }
+
+    try {
+      if (!navigator.clipboard) throw false;
+      // TODO: fix this
+      // this is necessary to avoid permission error in safari: can't call await before clipboard.write
+      // https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
+
+      return await navigator.clipboard.write([
+        new ClipboardItem({
+          [prematureClipboardTypeIfNotZip!]: exportBlob.then(({ blob }) => blob),
+        }),
+      ]);
+    } catch (_) { }
+
+    fallback = true;
+  }
+
+  // default mode
+  const { filename, blob } = await exportBlob;
+  downloadFile(`${filename}.zip`, blob);
 }
 
 /**

@@ -19,8 +19,13 @@ import {
   getSpaceEngines as getSpaceEnginesFromDb,
   getSpaceEngineByAddress as getSpaceEngineByAddressFromDb,
 } from '@/lib/data/db/space-engines';
-import { startInstanceOnMachine } from './instances';
-import { asyncFilter } from '../helpers/javascriptHelpers';
+import {
+  pauseInstanceOnMachine,
+  resumeInstanceOnMachine,
+  startInstanceOnMachine,
+  stopInstanceOnMachine,
+} from './instances';
+import { asyncFilter, asyncForEach } from '../helpers/javascriptHelpers';
 
 async function getCorrectTargetEngines(
   spaceId: string,
@@ -143,6 +148,108 @@ export async function startInstance(
     // TODO: if there are multiple possible engines maybe try to find the one that fits the best
     // (e.g. the one with the least load)
     return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+
+export async function resumeInstance(definitionId: string, instanceId: string, spaceId: string) {
+  try {
+    // TODO: manage permissions for starting an instance
+
+    if (!enableUseDB) throw new Error('resumeInstance is only available with enableUseDB');
+
+    const { engines } = await getCorrectTargetEngines(
+      spaceId,
+      undefined,
+      async (engine: Engine) => {
+        const deployments = await getDeployments([engine]);
+
+        // TODO: check if the instance is paused on this machine
+        return deployments.some(
+          (deployment) =>
+            deployment.definitionId === definitionId &&
+            deployment.instances.some((instance) => instance.processInstanceId === instanceId),
+        );
+      },
+    );
+
+    if (engines.length === 0)
+      return userError('Could not find an engine the instance is currently running on.');
+
+    // TODO: if there are multiple possible engines maybe try to find the one that fits the best
+    // (e.g. the one with the least load)
+    await asyncForEach(engines, async (engine) => {
+      resumeInstanceOnMachine(definitionId, instanceId, engine);
+    });
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+
+export async function pauseInstance(definitionId: string, instanceId: string, spaceId: string) {
+  try {
+    // TODO: manage permissions for starting an instance
+
+    if (!enableUseDB) throw new Error('pauseInstance is only available with enableUseDB');
+
+    const { engines } = await getCorrectTargetEngines(
+      spaceId,
+      undefined,
+      async (engine: Engine) => {
+        const deployments = await getDeployments([engine]);
+
+        // TODO: check if the instance is running on this machine
+        return deployments.some(
+          (deployment) =>
+            deployment.definitionId === definitionId &&
+            deployment.instances.some((instance) => instance.processInstanceId === instanceId),
+        );
+      },
+    );
+
+    if (engines.length === 0)
+      return userError('Could not find an engine the instance is currently running on.');
+
+    // TODO: if there are multiple possible engines maybe try to find the one that fits the best
+    // (e.g. the one with the least load)
+    await asyncForEach(engines, async (engine) => {
+      pauseInstanceOnMachine(definitionId, instanceId, engine);
+    });
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+
+export async function stopInstance(definitionId: string, instanceId: string, spaceId: string) {
+  try {
+    // TODO: manage permissions for starting an instance
+
+    if (!enableUseDB) throw new Error('stopInstance is only available with enableUseDB');
+
+    const { engines } = await getCorrectTargetEngines(
+      spaceId,
+      undefined,
+      async (engine: Engine) => {
+        const deployments = await getDeployments([engine]);
+
+        // TODO: check if the instance is still running on this machine
+        return deployments.some(
+          (deployment) =>
+            deployment.definitionId === definitionId &&
+            deployment.instances.some((instance) => instance.processInstanceId === instanceId),
+        );
+      },
+    );
+
+    if (engines.length === 0)
+      return userError('Could not find an engine the instance is currently running on.');
+
+    // TODO: if there are multiple possible engines maybe try to find the one that fits the best
+    // (e.g. the one with the least load)
+    await asyncForEach(engines, async (engine) => {
+      stopInstanceOnMachine(definitionId, instanceId, engine);
+    });
   } catch (e) {
     return userError('Something went wrong');
   }

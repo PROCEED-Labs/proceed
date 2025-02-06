@@ -5,7 +5,14 @@ import { Button, Select, Tooltip, Space, Dropdown, Result, Skeleton } from 'antd
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
-import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  InfoCircleOutlined,
+  FilterOutlined,
+  CaretRightOutlined,
+  PauseOutlined,
+  StopOutlined,
+} from '@ant-design/icons';
 import { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
@@ -15,7 +22,12 @@ import { MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import { startInstance } from '@/lib/engines/server-actions';
+import {
+  pauseInstance,
+  resumeInstance,
+  startInstance,
+  stopInstance,
+} from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -145,11 +157,11 @@ function PageContent({
                       },
                       ...(selectedVersion
                         ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
@@ -195,9 +207,62 @@ function PageContent({
               </Tooltip>
             </ToolbarGroup>
 
+            {selectedInstance && (
+              <ToolbarGroup>
+                <Button
+                  icon={<CaretRightOutlined style={{ color: 'green' }} />}
+                  onClick={() => {
+                    wrapServerCall({
+                      fn: () =>
+                        resumeInstance(
+                          selectedProcess.definitionId,
+                          selectedInstance.processInstanceId,
+                          spaceId,
+                        ),
+                      onSuccess: async () => {
+                        await refetch();
+                      },
+                    });
+                  }}
+                />
+                <Button
+                  icon={<PauseOutlined style={{ color: 'orange' }} />}
+                  onClick={() => {
+                    wrapServerCall({
+                      fn: () =>
+                        pauseInstance(
+                          selectedProcess.definitionId,
+                          selectedInstance.processInstanceId,
+                          spaceId,
+                        ),
+                      onSuccess: async () => {
+                        await refetch();
+                      },
+                    });
+                  }}
+                />
+                <Button
+                  icon={<StopOutlined style={{ color: 'red' }} />}
+                  onClick={() => {
+                    wrapServerCall({
+                      fn: () =>
+                        stopInstance(
+                          selectedProcess.definitionId,
+                          selectedInstance.processInstanceId,
+                          spaceId,
+                        ),
+                      onSuccess: async () => {
+                        await refetch();
+                      },
+                    });
+                  }}
+                />
+              </ToolbarGroup>
+            )}
+
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
-                <Tooltip title="Start new instance">
+                <Tooltip title="Open Info Panel">
                   <Button
                     icon={<InfoCircleOutlined />}
                     onClick={() => setInfoPanelOpen((prev) => !prev)}

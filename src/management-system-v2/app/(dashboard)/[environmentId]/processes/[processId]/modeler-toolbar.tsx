@@ -32,6 +32,7 @@ import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -51,7 +52,8 @@ const ModelerToolbar = ({
 }: ModelerToolbarProps) => {
   const router = useRouter();
   const environment = useEnvironment();
-  const { message } = App.useApp();
+  const app = App.useApp();
+  const message = app.message;
   const env = use(EnvVarsContext);
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
@@ -194,21 +196,15 @@ const ModelerToolbar = ({
     }
   };
 
-  const handleOpenDocumentation = async () => {
+  const handleOpenDocumentation = () => {
     // the timestamp does not matter here since it is overridden by the user being an owner of the process
-    try {
-      const url = await generateSharedViewerUrl(
-        { processId, timestamp: 0 },
-        selectedVersionId || undefined,
-      );
-
-      // open the documentation page in a new tab (unless it is already open in which case just show the tab)
-      window.open(url, `${processId}-${selectedVersionId}-tab`);
-    } catch (err) {
-      message.error('Failed to open the documentation page.');
-    }
+    return wrapServerCall({
+      fn: () =>
+        generateSharedViewerUrl({ processId, timestamp: 0 }, selectedVersionId || undefined),
+      onSuccess: (url) => window.open(url, `${processId}-${selectedVersionId}-tab`),
+      app,
+    });
   };
-
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 

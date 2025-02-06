@@ -74,6 +74,8 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     transformData: (matches) => matches.map((match) => match.item),
   });
 
+  console.log(data);
+
   const { message } = App.useApp();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ParentConfigListConfigs[]>([]);
@@ -320,7 +322,18 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       title: 'Last Edited',
       dataIndex: 'lastEdited',
       key: 'Last Edited',
-      render: (date: Date) => generateDateString(date, true),
+      render: (_, record) => (
+        <SpaceLink
+          href={`/machine-config/${record.id}`}
+          style={{
+            color: 'inherit',
+            textDecoration: 'none',
+            display: 'block',
+          }}
+        >
+          {generateDateString(record.lastEditedOn, true) ?? ''}
+        </SpaceLink>
+      ),
       sorter: (a, b) => new Date(b.lastEditedOn).getTime() - new Date(a.lastEditedOn).getTime(),
       responsive: ['md'],
     },

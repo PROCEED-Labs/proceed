@@ -19,7 +19,6 @@ import { getCurrentUser } from '@/components/auth';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 
-// TODO
 export async function addParentConfig(
   machineConfigInput: ParentConfig,
   environmentId: string,
@@ -102,22 +101,27 @@ export async function addTargetConfig(parentConfigId: string, targetConfig: Targ
   });
 }
 
-//   export async function addMachineConfig(
-//     parentConfigId: string,
-//     machineConfig: MachineConfig,
-//     newId: boolean = false,
-//   ) {
-//     const parentConfig = storedData.parentConfigs[parentConfigId];
-//     if (!parentConfig)
-//       throw new Error(`There is no parent configuration with the id ${parentConfigId}.`);
+export async function addMachineConfig(
+  parentConfigId: string,
+  machineConfig: MachineConfig,
+  newId: boolean = false,
+) {
+  // const parentConfig = storedData.parentConfigs[parentConfigId];
 
-//     machineConfigsToStorage(parentConfigId, [machineConfig], newId);
-//     store.set('techData', 'machineConfigs', storedData.machineConfigs);
-//     store.set('techData', 'parameters', storedData.parameters);
+  const parentConfigResult = await db.config.findUnique({ where: { id: parentConfigId } });
+  const parentConfig = parentConfigResult?.data as unknown as StoredParentConfig;
 
-//     parentConfig.machineConfigs.push(machineConfig.id);
-//     store.set('techData', 'parentConfigs', storedData.parentConfigs);
-//   }
+  if (!parentConfig)
+    throw new Error(`There is no parent configuration with the id ${parentConfigId}.`);
+
+  await machineConfigsToStorage(parentConfigId, [machineConfig], newId);
+
+  parentConfig.machineConfigs.push(machineConfig.id);
+  await db.config.update({
+    where: { id: parentConfig.id },
+    data: { data: { ...parentConfig } },
+  });
+}
 
 //   export async function addParameter(
 //     parentId: string,
@@ -290,11 +294,14 @@ async function parentConfigToStorage(parentConfig: ParentConfig, newId: boolean 
   const { targetConfig, metadata, machineConfigs } = parentConfig;
 
   parentConfig.id = newId ? v4() : parentConfig.id;
+  let currentDate = new Date();
   await db.config.create({
     data: {
       id: parentConfig.id,
       environmentId: parentConfig.environmentId,
       creatorId: parentConfig.createdBy,
+      createdOn: currentDate,
+      // lastEditedOn: currentDate,
       data: {
         ...parentConfig,
         targetConfig: await targetConfigToStorage(parentConfig.id, targetConfig, newId),
@@ -427,17 +434,18 @@ export async function getDeepParentConfigurationById(
   let configInter = configResult?.data ?? {};
   //   let configConvert: StoredParentConfig = JSON.parse(configInter.toString());
   let configConvert = configResult?.data as unknown as StoredParentConfig;
-  console.log('PARENT: \n', configConvert);
+  // console.log('PARENT: \n', configConvert);
 
   // TODO: check if the user can access the config
 
   const parentConfig = {
     ...configConvert,
+    lastEditedOn: configResult?.lastEditedOn,
     metadata: await nestedParametersFromStorage(configConvert.metadata),
     targetConfig: await nestedConfigFromStorage('target-config', configConvert.targetConfig),
     machineConfigs: await nestedMachineConfigsFromStorage(configConvert.machineConfigs),
   } as unknown as ParentConfig;
-  console.log('LOADED: \n', parentConfig);
+  // console.log('LOADED: \n', parentConfig);
 
   if (
     parentConfig &&
@@ -447,3 +455,226 @@ export async function getDeepParentConfigurationById(
 
   return parentConfig;
 }
+
+/** Returns all shallow machineConfigs in form of an array */
+export async function getParentConfigurations(
+  environmentId: string,
+  ability?: Ability,
+): Promise<ParentConfig[]> {
+  // const storedParentConfigs = Object.values(storedData.parentConfigs).filter(
+  //   (config) => config.environmentId === environmentId,
+  // );
+
+  const storedParentConfigs = await db.config.findMany({
+    where: { environmentId: environmentId },
+  });
+
+  // console.log('ID: ', environmentId, '\nAbility: ', ability, '\nstored:\n', storedParentConfigs); //TODO remove
+
+  //TODO remove redundancy
+  const parentConfigs = await asyncMap(storedParentConfigs, ({ id }) =>
+    getDeepParentConfigurationById(id),
+  );
+
+  // TODO: further filtering to only show what the user can see needed?
+
+  return ability
+    ? parentConfigs /*ability.filter('view', 'MachineConfig', machineConfig)*/
+    : parentConfigs;
+}
+
+/********************** Update Elements ****************************/
+
+/**
+ * Stores changes for a given parameter. The changes can be a partial of a parameter.
+ * @param parameterId ID of the parameter that receives changes.
+ * @param changes Partial of a Parameter containing the changes.
+ * @throws {Error} in case:
+ * * parameterId does not exist
+ * * changes contains an ID (IDs must not be changed)
+ */
+// export async function updateParameter(parameterId: string, changes: Partial<StoredParameter>) {
+//   if (!storedData.parameters[parameterId])
+//     throw new Error(`Parameter with id ${parameterId} does not exist!`);
+//   if (changes.id) throw new Error('Invalid attempt to change the id of an existing parameter');
+//   const changed = StoredParameterZod.partial().parse(changes);
+
+//   // overwrite the current values with the changed ones
+//   storedData.parameters[parameterId] = { ...storedData.parameters[parameterId], ...changed };
+//   store.set('techData', 'parameters', storedData.parameters);
+// }
+
+// export async function updateMachineConfig(configId: string, changes: Partial<StoredMachineConfig>) {
+//   if (!storedData.machineConfigs[configId])
+//     throw new Error(`Machine config with id ${configId} does not exist!`);
+//   if (changes.id) throw new Error('Invalid attempt to change the id of an existing machine config');
+
+//   storedData.machineConfigs[configId] = { ...storedData.machineConfigs[configId], ...changes };
+//   store.set('techData', 'machineConfigs', storedData.machineConfigs);
+// }
+
+// export async function updateTargetConfig(configId: string, changes: Partial<StoredTargetConfig>) {
+//   if (!storedData.targetConfigs[configId])
+//     throw new Error(`Target config with id ${configId} does not exist!`);
+//   if (changes.id) throw new Error('Invalid attempt to change the id of an existing target config');
+
+//   storedData.targetConfigs[configId] = { ...storedData.targetConfigs[configId], ...changes };
+//   store.set('techData', 'targetConfigs', storedData.targetConfigs);
+// }
+
+// export async function updateParentConfig(configId: string, changes: Partial<StoredParentConfig>) {
+//   if (!storedData.parentConfigs[configId])
+//     throw new Error(`Parent config with id ${configId} does not exist!`);
+//   if (changes.id) throw new Error('Invalid attempt to change the id of an existing parent config');
+
+//   storedData.parentConfigs[configId] = { ...storedData.parentConfigs[configId], ...changes };
+//   store.set('techData', 'parentConfigs', storedData.parentConfigs);
+// }
+
+/*************************** Element Removal ******************************/
+
+/**
+ * Removes a parameter and all its nested parameters from the store
+ * will also remove the reference to the parameter from its parent element if it still exists
+ *
+ * TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
+ *
+ * @param parameterId the id of the parameter to remove
+ */
+// export async function removeParameter(parameterId: string) {
+//   const parameter = storedData.parameters[parameterId];
+
+//   if (!parameter) return;
+
+//   delete storedData.parameters[parameterId];
+
+//   // remove the reference to the parameter
+//   if (parameter.parentType === 'parameter') {
+//     const parentParameter = storedData.parameters[parameter.parentId];
+
+//     if (parentParameter) {
+//       parentParameter.parameters = parentParameter.parameters.filter((id) => id !== parameterId);
+//     }
+//   } else if (parameter.parentType === 'parent-config') {
+//     const parentConfig = storedData.parentConfigs[parameter.parentId];
+
+//     if (parentConfig) {
+//       parentConfig.metadata = parentConfig.metadata.filter((id) => id !== parameterId);
+//       store.set('techData', 'parentConfigs', storedData.parentConfigs);
+//     }
+//   } else if (parameter.parentType === 'machine-config') {
+//     const parentConfig = storedData.machineConfigs[parameter.parentId];
+//     if (parentConfig) {
+//       parentConfig.metadata = parentConfig.metadata.filter((id) => id !== parameterId);
+//       parentConfig.parameters = parentConfig.parameters.filter((id) => id !== parameterId);
+//       store.set('techData', 'machineConfigs', storedData.machineConfigs);
+//     }
+//   } else if (parameter.parentType === 'target-config') {
+//     const parentConfig = storedData.targetConfigs[parameter.parentId];
+//     if (parentConfig) {
+//       parentConfig.metadata = parentConfig.metadata.filter((id) => id !== parameterId);
+//       parentConfig.parameters = parentConfig.parameters.filter((id) => id !== parameterId);
+//       store.set('techData', 'targetConfigs', storedData.targetConfigs);
+//     }
+//   }
+
+//   // recursively remove all referenced parameters
+//   await asyncForEach(parameter.parameters, async (id) => removeParameter(id));
+
+//   // TODO: remove all backlinks from linked parameters
+
+//   store.set('techData', 'parameters', storedData.parameters);
+// }
+
+/**
+ * Removes a target config and all its nested parameters from the store
+ * will also remove the reference to the target config from its parent config if it still exists
+ *
+ * TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
+ *
+ * @param targetConfigId the id of the target config to remove
+ */
+// export async function removeTargetConfig(targetConfigId: string) {
+//   const targetConfig = storedData.targetConfigs[targetConfigId];
+
+//   if (!targetConfig) return;
+
+//   delete storedData.targetConfigs[targetConfigId];
+
+//   // remove the reference to the target config from its the parent config
+//   const parentConfig = storedData.parentConfigs[targetConfig.parentId];
+//   if (parentConfig) {
+//     parentConfig.targetConfig = undefined;
+//     store.set('techData', 'parentConfigs', storedData.parentConfigs);
+//   }
+
+//   // remove all referenced parameters
+//   await asyncForEach(targetConfig.metadata, async (id) => removeParameter(id));
+//   await asyncForEach(targetConfig.parameters, async (id) => removeParameter(id));
+
+//   // remove the target config from the store
+//   store.set('techData', 'targetConfigs', storedData.targetConfigs);
+// }
+
+// /**
+//  * Removes a machine config and all its nested parameters from the store
+//  * will also remove the reference to the machine config from its parent config if it still exists
+//  *
+//  * TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
+//  *
+//  * @param machineConfigId the id of the machine config to remove
+//  */
+// export async function removeMachineConfig(machineConfigId: string) {
+//   const machineConfig = storedData.machineConfigs[machineConfigId];
+
+//   if (!machineConfig) return;
+
+//   delete storedData.machineConfigs[machineConfigId];
+
+//   // remove the reference to the machine config from its the parent config
+//   const parentConfig = storedData.parentConfigs[machineConfig.parentId];
+//   if (parentConfig) {
+//     parentConfig.machineConfigs = parentConfig.machineConfigs.filter(
+//       (id) => id !== machineConfigId,
+//     );
+//     store.set('techData', 'parentConfigs', storedData.parentConfigs);
+//   }
+
+//   // remove all referenced parameters
+//   await asyncForEach(machineConfig.metadata, async (id) => removeParameter(id));
+//   await asyncForEach(machineConfig.parameters, async (id) => removeParameter(id));
+
+//   // remove the machine config from the store
+//   store.set('techData', 'machineConfigs', storedData.machineConfigs);
+// }
+
+// /**
+//  * Removes an existing parent config for a given ID from store.
+//  *
+//  * @param parentConfigId ID of the ParentConfig that is to be removed.
+//  */
+// export async function removeParentConfiguration(parentConfigId: string) {
+//   const parentConfig = storedData.parentConfigs[parentConfigId];
+
+//   if (!parentConfig) return;
+
+//   delete storedData.parentConfigs[parentConfigId];
+
+//   if (parentConfig.targetConfig) await removeTargetConfig(parentConfig.targetConfig);
+//   await asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id));
+//   await asyncForEach(parentConfig.metadata, (id) => removeParameter(id));
+
+//   // remove parentConfig from folder
+//   foldersMetaObject.folders[parentConfig.folderId]!.children = foldersMetaObject.folders[
+//     parentConfig.folderId
+//   ]!.children.filter((folder) => folder.id !== parentConfigId);
+
+//   // remove from store
+//   store.set('techData', 'parentConfigs', storedData.parentConfigs);
+// }
+
+// export const deleteParentConfigurations = async (definitionIds: string[], spaceId: string) => {
+//   for (const definitionId of definitionIds) {
+//     await removeParentConfiguration(definitionId);
+//   }
+// };

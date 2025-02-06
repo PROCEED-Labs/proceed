@@ -48,7 +48,7 @@ import VersionCreationButton from '@/components/version-creation-button';
 import AddButton from './add-button';
 import ConfigModal from '@/components/config-modal';
 import {
-  addMachineConfig,
+  // addMachineConfig,
   // addTargetConfig,
   removeTargetConfig,
   updateMachineConfig,
@@ -56,7 +56,7 @@ import {
   updateTargetConfig,
 } from '@/lib/data/legacy/machine-config';
 import ActionButtons from './action-buttons';
-import { addTargetConfig } from '@/lib/data/db/machine-config';
+import { addTargetConfig, addMachineConfig } from '@/lib/data/db/machine-config';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;

@@ -56,9 +56,11 @@ export default class AnnotationRecolorProvider implements PopupMenuProvider {
           'border-color': 'lightgrey',
         },
       });
-      modeling.updateModdleProperties(target, target.di.label, {
-        color: newColor === 'Black' ? 'white' : 'black',
-      });
+      if (target.di.label) {
+        modeling.updateModdleProperties(target, target.di.label, {
+          color: newColor === 'Black' ? 'white' : 'black',
+        });
+      }
     };
 
     if (is(businessObject, 'bpmn:TextAnnotation')) {

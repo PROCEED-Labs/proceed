@@ -192,7 +192,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       deactivateKeyboard: () => {
         modeler.current!.get<Keyboard>('keyboard').unbind();
       },
-      removeColors: () => {},
+      removeColors: () => { },
     }));
 
     const [Modeler, NavigatedViewer, Viewer] = use(BPMNJs);
@@ -252,7 +252,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
     useEffect(() => {
       // Store handlers so we can remove them later.
       const _onLoaded = () => onLoaded?.();
-      const commandStackChanged = () => onChange?.();
+      const commandStackChanged = () => {
+        if (!loadingXML.current) onChange?.();
+      };
       const selectionChanged = (event: {
         oldSelection: ElementLike[];
         newSelection: ElementLike[];

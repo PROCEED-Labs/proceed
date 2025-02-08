@@ -59,7 +59,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
           html: `<div style="width: 20px; height: 20px; background-color: ${element.di.fill}; pointer-events: all; border: 1px solid rgb(153, 153, 153);"></div>`,
           title: 'Change color',
           action: {
-            click: function(event: any, element: BaseElement) {
+            click: function (event: any, element: BaseElement) {
               let position = { x: event.x, y: event.y };
               position = getColorMenuPosition(element);
 

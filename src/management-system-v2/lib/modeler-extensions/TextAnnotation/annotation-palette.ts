@@ -40,7 +40,7 @@ export default class CustomPaletteProvider implements PaletteProvider {
 
     // this will insert a text annotation between the tools section and the following sections of
     // the palette
-    return function(entries: {
+    return function (entries: {
       [key: string]: { group: string; className?: string; title?: string; separator?: boolean };
     }) {
       // separate the different groups in the palette

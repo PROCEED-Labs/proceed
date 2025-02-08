@@ -7,7 +7,8 @@ import { Environment } from '../data/environment-schema';
 import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
 import { env } from '@/lib/env-vars';
 import { asyncMap } from '../helpers/javascriptHelpers';
-import Ability, { UnauthorizedError } from '../ability/abilityHelper';
+import Ability from '../ability/abilityHelper';
+import { UserErrorType, userError } from '../user-error';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -46,26 +47,33 @@ export async function generateSharedViewerUrl(
   version?: string,
   settings?: string[],
 ) {
-  const token = generateProcessShareToken(payload);
+  try {
+    if (payload.embeddedMode && !version)
+      return userError('A version is required for embedded mode', UserErrorType.ConstraintError);
 
-  const header = headers();
-  const host = header.get('host');
-  const scheme = header.get('referer')?.split('://')[0];
+    const token = generateProcessShareToken(payload);
 
-  const baseUrl = `${scheme}://${host}`;
-  let url = `${baseUrl}/shared-viewer?token=${token}`;
+    const header = headers();
+    const host = header.get('host');
+    const scheme = header.get('referer')?.split('://')[0];
 
-  if (version) {
-    url += `&version=${version}`;
+    const baseUrl = `${scheme}://${host}`;
+    let url = `${baseUrl}/shared-viewer?token=${token}`;
+
+    if (version) {
+      url += `&version=${version}`;
+    }
+
+    if (settings?.length) {
+      settings.forEach((option) => {
+        url += `&settings=${option}`;
+      });
+    }
+
+    return url;
+  } catch (e) {
+    return userError('Something went wrong');
   }
-
-  if (settings?.length) {
-    settings.forEach((option) => {
-      url += `&settings=${option}`;
-    });
-  }
-
-  return url;
 }
 
 export async function getAllUserWorkspaces(userId: string, ability?: Ability) {

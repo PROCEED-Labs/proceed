@@ -231,8 +231,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             undefined,
             oldName
               ? {
-                name: oldName,
-              }
+                  name: oldName,
+                }
               : undefined,
           );
         }}

@@ -328,6 +328,13 @@ jobs:
         run: |
           yarn dev-ms-db-deploy
 
+      - name: Dump Prisma Migrations to a SQL Script # for research server
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          cd src/management-system-v2
+          cat prisma/migrations/*/migration.sql > db_schema.sql
+          scp db_schema.sql $ENV:/home/${{secrets.SSH_USER}}/sql-schema-dump
+
       - uses: 'google-github-actions/auth@v2'
         with:
           project_id: 'proceed-bpms'

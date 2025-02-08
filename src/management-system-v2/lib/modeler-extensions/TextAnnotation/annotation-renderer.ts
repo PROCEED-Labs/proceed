@@ -57,7 +57,6 @@ export default class CustomAnnotationRenderer extends BaseRenderer {
       style: {
         fill: getTextColor(shape),
       },
-      size: { width: 100 },
     });
 
     svgClasses(textElement).add('djs-label');

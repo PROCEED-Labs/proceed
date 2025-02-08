@@ -5,6 +5,7 @@ import React, { FocusEvent, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
 import { Input, ColorPicker, Space, Grid, Divider, Modal } from 'antd';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
@@ -24,23 +25,21 @@ import DescriptionSection from './description-section';
 import PlannedCostInput from './planned-cost-input';
 import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
-import { useRouter } from 'next/navigation';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
 import { Shape } from 'bpmn-js/lib/model/Types';
 
 type PropertiesPanelContentProperties = {
-  selectedElement: Shape;
+  selectedElement: ElementLike;
 };
 
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
 }) => {
-  const router = useRouter();
   const { spaceId } = useEnvironment();
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
-  const backgroundColor = getBackgroundColor(selectedElement);
-  const textColor = getTextColor(selectedElement);
-  const borderColor = getBorderColor(selectedElement);
+  const backgroundColor = getBackgroundColor(selectedElement as Shape);
+  const textColor = getTextColor(selectedElement as Shape);
+  const borderColor = getBorderColor(selectedElement as Shape);
 
   const [name, setName] = useState('');
 
@@ -232,8 +231,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             undefined,
             oldName
               ? {
-                  name: oldName,
-                }
+                name: oldName,
+              }
               : undefined,
           );
         }}
@@ -282,7 +281,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 };
 
 type PropertiesPanelProperties = {
-  selectedElement: Shape;
+  selectedElement: ElementLike;
   isOpen: boolean;
   close: () => void;
 };

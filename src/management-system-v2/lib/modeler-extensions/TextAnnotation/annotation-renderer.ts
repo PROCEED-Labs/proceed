@@ -51,7 +51,7 @@ export default class CustomAnnotationRenderer extends BaseRenderer {
     const text = semantic.get('text') || '';
 
     var textElement = this.textRenderer.createText(text, {
-      align: 'left-top',
+      align: 'left-top' as any,
       box: getBounds(shape, attrs),
       padding: 7,
       style: {

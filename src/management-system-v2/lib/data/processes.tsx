@@ -84,7 +84,7 @@ loadModules().catch(console.error);
 
 // Import necessary functions from processModule
 
-const checkValidity = async (
+export const checkValidity = async (
   definitionId: string,
   operation: 'view' | 'update' | 'delete',
   spaceId: string,

@@ -4,9 +4,7 @@ import ElementFactory from 'bpmn-js/lib/features/modeling/ElementFactory';
 import Palette from 'diagram-js/lib/features/palette/Palette';
 import Create from 'diagram-js/lib/features/create/Create';
 
-import { assign } from 'min-dash';
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
-import { info } from 'console';
 
 export default class CustomPaletteProvider implements PaletteProvider {
   create: Create;
@@ -33,7 +31,11 @@ export default class CustomPaletteProvider implements PaletteProvider {
     const { create, elementFactory } = this;
 
     function createListener(event: Event) {
-      const shape = elementFactory.createShape({ type: 'bpmn:TextAnnotation' });
+      const shape = elementFactory.createShape({
+        type: 'bpmn:TextAnnotation',
+        width: 100,
+        height: 80,
+      });
 
       create.start(event, shape);
     }

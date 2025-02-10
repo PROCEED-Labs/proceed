@@ -19,6 +19,8 @@ import { getSVGFromBPMN } from '@/lib/process-export/util';
 
 import schema from '@/lib/schema';
 
+import { ResourceViewModule } from '@/lib/modeler-extensions/GenericResources/index';
+
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {
   let name = el.name || `<${el.id}>`;
@@ -127,6 +129,7 @@ export async function getViewer(bpmn: string) {
     moddleExtensions: {
       proceed: schema,
     },
+    additionalModules: [ResourceViewModule],
   });
   await viewer.importXML(bpmn);
 
@@ -186,7 +189,7 @@ export async function getElementSVG(
     try {
       ({ definitionId: importDefinitionId, versionId } =
         getTargetDefinitionsAndProcessIdForCallActivityByObject(getRootFromElement(el), el.id));
-    } catch (err) {}
+    } catch (err) { }
 
     if (
       importDefinitionId &&

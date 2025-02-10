@@ -109,37 +109,37 @@ export default class CustomContextPadProvider implements ContextPadProvider {
       }
 
       const append = autoPlace
-        ? function(_: any, element: Shape) {
-          const businessObject = bpmnFactory.create('proceed:GenericResource', { resourceType });
-          const shape = elementFactory.createShape({
-            type: 'proceed:GenericResource',
-            width: 50,
-            height: 50,
-            businessObject,
-          });
+        ? function (_: any, element: Shape) {
+            const businessObject = bpmnFactory.create('proceed:GenericResource', { resourceType });
+            const shape = elementFactory.createShape({
+              type: 'proceed:GenericResource',
+              width: 50,
+              height: 50,
+              businessObject,
+            });
 
-          autoPlace.append(element, shape, {
-            connection: {
-              type: 'bpmn:Association',
-              associationDirection: 'None',
-            },
-          });
-          appendPreview.cleanUp();
-        }
+            autoPlace.append(element, shape, {
+              connection: {
+                type: 'bpmn:Association',
+                associationDirection: 'None',
+              },
+            });
+            appendPreview.cleanUp();
+          }
         : appendStart;
       const previewAppend = autoPlace
-        ? function(_: any, element: Shape) {
-          const businessObject = bpmnFactory.create('proceed:GenericResource', { resourceType });
-          appendPreview.create(element, 'proceed:GenericResource', {
-            businessObject,
-            width: 50,
-            height: 50,
-          });
+        ? function (_: any, element: Shape) {
+            const businessObject = bpmnFactory.create('proceed:GenericResource', { resourceType });
+            appendPreview.create(element, 'proceed:GenericResource', {
+              businessObject,
+              width: 50,
+              height: 50,
+            });
 
-          return () => {
-            appendPreview.cleanUp();
-          };
-        }
+            return () => {
+              appendPreview.cleanUp();
+            };
+          }
         : null;
 
       return {
@@ -189,7 +189,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
         className: 'bpmn-icon-screw-wrench',
         title: 'Change element',
         action: {
-          click: function(event: any, element: Shape) {
+          click: function (event: any, element: Shape) {
             let position = { x: event.x, y: event.y };
             position = getReplaceMenuPosition(element);
 

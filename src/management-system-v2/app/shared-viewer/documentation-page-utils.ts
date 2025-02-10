@@ -189,7 +189,7 @@ export async function getElementSVG(
     try {
       ({ definitionId: importDefinitionId, versionId } =
         getTargetDefinitionsAndProcessIdForCallActivityByObject(getRootFromElement(el), el.id));
-    } catch (err) { }
+    } catch (err) {}
 
     if (
       importDefinitionId &&

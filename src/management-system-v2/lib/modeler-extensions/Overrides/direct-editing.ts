@@ -1,3 +1,4 @@
+// @ts-ignore
 import DirectEditing from 'diagram-js-direct-editing/lib/DirectEditing';
 import EventBus from 'diagram-js/lib/core/EventBus';
 import Canvas from 'diagram-js/lib/core/Canvas';

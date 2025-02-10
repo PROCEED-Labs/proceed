@@ -56,13 +56,29 @@ function PageContent({
 
   const { spaceId } = useEnvironment();
 
-  const { selectedVersion, instances, selectedInstance, currentVersion } = useMemo(() => {
+  const {
+    selectedVersion,
+    instances,
+    selectedInstance,
+    currentVersion,
+    instanceIsRunning,
+    instanceIsPausing,
+    instanceIsPaused,
+  } = useMemo(() => {
     const selectedVersion = selectedProcess.versions.find((v) => v.versionId === selectedVersionId);
 
     const instances = getVersionInstances(selectedProcess, selectedVersionId);
     const selectedInstance = selectedInstanceId
       ? instances.find((i) => i.processInstanceId === selectedInstanceId)
       : undefined;
+
+    const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
+
+    const instanceIsRunning = selectedInstance?.instanceState.some((state) =>
+      activeStates.includes(state),
+    );
+    const instanceIsPausing = selectedInstance?.instanceState.some((state) => state === 'PAUSING');
+    const instanceIsPaused = selectedInstance?.instanceState.some((state) => state === 'PAUSED');
 
     let currentVersionId = getLatestDeployment(selectedProcess).versionId;
     if (selectedInstance) {
@@ -74,7 +90,15 @@ function PageContent({
       (version) => version.versionId === currentVersionId,
     );
 
-    return { selectedVersion, instances, selectedInstance, currentVersion };
+    return {
+      selectedVersion,
+      instances,
+      selectedInstance,
+      currentVersion,
+      instanceIsRunning,
+      instanceIsPausing,
+      instanceIsPaused,
+    };
   }, [selectedProcess, selectedVersionId, selectedInstanceId]);
 
   const selectedBpmn = useMemo(() => {
@@ -208,54 +232,69 @@ function PageContent({
 
             {selectedInstance && (
               <ToolbarGroup>
-                <Button
-                  icon={<CaretRightOutlined className={styles.PlayIcon} />}
-                  onClick={() => {
-                    wrapServerCall({
-                      fn: () =>
-                        resumeInstance(
-                          selectedProcess.definitionId,
-                          selectedInstance.processInstanceId,
-                          spaceId,
-                        ),
-                      onSuccess: async () => {
-                        await refetch();
-                      },
-                    });
-                  }}
-                />
-                <Button
-                  icon={<PauseOutlined className={styles.PauseIcon} />}
-                  onClick={() => {
-                    wrapServerCall({
-                      fn: () =>
-                        pauseInstance(
-                          selectedProcess.definitionId,
-                          selectedInstance.processInstanceId,
-                          spaceId,
-                        ),
-                      onSuccess: async () => {
-                        await refetch();
-                      },
-                    });
-                  }}
-                />
-                <Button
-                  icon={<StopOutlined className={styles.StopIcon} />}
-                  onClick={() => {
-                    wrapServerCall({
-                      fn: () =>
-                        stopInstance(
-                          selectedProcess.definitionId,
-                          selectedInstance.processInstanceId,
-                          spaceId,
-                        ),
-                      onSuccess: async () => {
-                        await refetch();
-                      },
-                    });
-                  }}
-                />
+                <Tooltip
+                  title={instanceIsPausing ? 'Abort pausing the instance' : 'Resume the instance'}
+                >
+                  <Button
+                    className={styles.PlayIcon}
+                    icon={<CaretRightOutlined />}
+                    disabled={!instanceIsPausing && !instanceIsPaused}
+                    onClick={() => {
+                      wrapServerCall({
+                        fn: () =>
+                          resumeInstance(
+                            selectedProcess.definitionId,
+                            selectedInstance.processInstanceId,
+                            spaceId,
+                          ),
+                        onSuccess: async () => {
+                          await refetch();
+                        },
+                      });
+                    }}
+                  />
+                </Tooltip>
+                <Tooltip title="Pause the instance">
+                  <Button
+                    className={styles.PauseIcon}
+                    icon={<PauseOutlined />}
+                    loading={instanceIsPausing}
+                    disabled={!instanceIsRunning || instanceIsPausing || instanceIsPaused}
+                    onClick={() => {
+                      wrapServerCall({
+                        fn: () =>
+                          pauseInstance(
+                            selectedProcess.definitionId,
+                            selectedInstance.processInstanceId,
+                            spaceId,
+                          ),
+                        onSuccess: async () => {
+                          await refetch();
+                        },
+                      });
+                    }}
+                  />
+                </Tooltip>
+                <Tooltip title="Stop the instance">
+                  <Button
+                    className={styles.StopIcon}
+                    icon={<StopOutlined />}
+                    disabled={!instanceIsRunning}
+                    onClick={() => {
+                      wrapServerCall({
+                        fn: () =>
+                          stopInstance(
+                            selectedProcess.definitionId,
+                            selectedInstance.processInstanceId,
+                            spaceId,
+                          ),
+                        onSuccess: async () => {
+                          await refetch();
+                        },
+                      });
+                    }}
+                  />
+                </Tooltip>
               </ToolbarGroup>
             )}
 

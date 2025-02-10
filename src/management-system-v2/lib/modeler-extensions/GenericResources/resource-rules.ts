@@ -17,9 +17,6 @@ export default class CustomRules extends RuleProvider {
   static $inject: string[] = ['eventBus', 'elementRegistry'];
 
   init(): void {
-    this.addRule('shape.append', 1500, (context) => {
-      console.log('Test', context);
-    });
     this.addRule('connection.create', 1500, (context) => {
       let { source, target } = context;
 

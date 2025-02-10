@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
-import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
+import toolbarStyles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
 import { MdOutlineColorLens } from 'react-icons/md';
@@ -29,7 +29,6 @@ import {
   stopInstance,
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
-import { useRouter } from 'next/navigation';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useDeployment from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
@@ -37,6 +36,8 @@ import { getLatestDeployment, getVersionInstances, getYoungestInstance } from '.
 import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
+
+import styles from './process-deployment-view.module.scss';
 
 function PageContent({
   selectedProcess,
@@ -54,8 +55,6 @@ function PageContent({
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
   const { spaceId } = useEnvironment();
-
-  const router = useRouter();
 
   const { selectedVersion, instances, selectedInstance, currentVersion } = useMemo(() => {
     const selectedVersion = selectedProcess.versions.find((v) => v.versionId === selectedVersionId);
@@ -101,7 +100,7 @@ function PageContent({
           height: '100%',
         }}
       >
-        <Toolbar className={styles.Toolbar}>
+        <Toolbar className={toolbarStyles.Toolbar}>
           <Space
             aria-label="general-modeler-toolbar"
             style={{
@@ -157,11 +156,11 @@ function PageContent({
                       },
                       ...(selectedVersion
                         ? [
-                          {
-                            label: '<none>',
-                            key: '-2',
-                          },
-                        ]
+                            {
+                              label: '<none>',
+                              key: '-2',
+                            },
+                          ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
@@ -210,7 +209,7 @@ function PageContent({
             {selectedInstance && (
               <ToolbarGroup>
                 <Button
-                  icon={<CaretRightOutlined style={{ color: 'green' }} />}
+                  icon={<CaretRightOutlined className={styles.PlayIcon} />}
                   onClick={() => {
                     wrapServerCall({
                       fn: () =>
@@ -226,7 +225,7 @@ function PageContent({
                   }}
                 />
                 <Button
-                  icon={<PauseOutlined style={{ color: 'orange' }} />}
+                  icon={<PauseOutlined className={styles.PauseIcon} />}
                   onClick={() => {
                     wrapServerCall({
                       fn: () =>
@@ -242,7 +241,7 @@ function PageContent({
                   }}
                 />
                 <Button
-                  icon={<StopOutlined style={{ color: 'red' }} />}
+                  icon={<StopOutlined className={styles.StopIcon} />}
                   onClick={() => {
                     wrapServerCall({
                       fn: () =>

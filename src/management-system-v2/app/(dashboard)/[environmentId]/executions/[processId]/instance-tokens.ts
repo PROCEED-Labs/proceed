@@ -109,7 +109,7 @@ function getTokenTooltip(token: InstanceInfo['tokens'][number], instance: Instan
 
 function getTokenColor(token: TokenInfo, instance: InstanceInfo) {
   if (isPausingToken(token, instance)) {
-    return 'yellow';
+    return '#faad14';
   }
 
   switch (token.state) {
@@ -117,7 +117,7 @@ function getTokenColor(token: TokenInfo, instance: InstanceInfo) {
     case 'ERROR-TECHNICAL':
     case 'ERROR-INTERRUPTED':
     case 'ERROR-CONSTRAINT-UNFULFILLED':
-      return 'red';
+      return '#ff4d4f';
     case 'SKIPPED':
       return 'white';
     case 'ABORTED':
@@ -133,19 +133,19 @@ function getTokenColor(token: TokenInfo, instance: InstanceInfo) {
   switch (token.state) {
     case 'READY':
     case 'ENDED':
-      return 'green';
+      return '#52c41a';
     case 'MOVED':
     case 'REMOVED':
     case 'ADDED':
     case 'PAUSED':
     case 'DEPLOYMENT-WAITING':
-      return 'yellow';
+      return '#faad14';
   }
 
   switch (token.currentFlowNodeState) {
     case 'READY':
     case 'ACTIVE':
-      return 'green';
+      return '#52c41a';
   }
 
   return 'white';

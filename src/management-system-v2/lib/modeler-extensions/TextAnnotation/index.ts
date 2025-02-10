@@ -2,6 +2,7 @@ import AnnotationRenderer from './annotation-renderer';
 import AnnotationContextPadProvider from './annotation-context-menu';
 import AnnotationRecolor from './annotation-recolor';
 import AnnotationPaletteProvider from './annotation-palette';
+import AnnotationEditingPreview from './annotation-editing-preview';
 
 /*
  * This module adds a custom visualisation for the default bpmn:TextAnnotation element
@@ -22,4 +23,6 @@ export const CustomAnnotationModelingModule = {
   customAnnotationContextPadProvider: ['type', AnnotationContextPadProvider],
   customAnnotationRecolor: ['type', AnnotationRecolor],
   customAnnotationPalette: ['type', AnnotationPaletteProvider],
+  // override the default modules to prevent default behavior
+  labelEditingPreview: ['type', AnnotationEditingPreview],
 };

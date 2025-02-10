@@ -31,21 +31,37 @@ export default class AnnotationRecolorProvider implements PopupMenuProvider {
 
     const colors = {
       White: 'rgb(255, 255, 255)',
-      'Light Yellow': 'rgb(255, 249, 177)',
-      Yellow: 'rgb(245, 209, 40)',
-      Orange: 'rgb(255, 157, 72)',
-      'Light Green': 'rgb(213, 246, 146)',
-      Green: 'rgb(201, 223, 86)',
-      'Dark Green': 'rgb(147, 210, 117)',
-      Cyan: 'rgb(103, 198, 192)',
-      'Light Pink': 'rgb(255, 206, 224)',
-      Pink: 'rgb(234, 148, 187)',
-      Violet: 'rgb(198, 162, 210)',
-      Red: 'rgb(240, 147, 157)',
-      'Light Blue': 'rgb(166, 204, 245)',
-      Blue: 'rgb(108, 216, 250)',
-      'Dark Blue': 'rgb(158, 169, 255)',
-      Black: 'rgb(0, 0, 0)',
+
+      Yellow: '#f1c40f',
+      'Light Orange': '#f39c12',
+      Orange: '#e67e22',
+      'Dark Orange': '#d35400',
+      'Light Red': '#e74c3c',
+      Red: '#c0392b',
+
+      'Light Teal': '#1abc9c',
+      Teal: '#16a085',
+      'Light Green': '#2ecc71',
+      Green: '#27ae60',
+      'Light Blue': '#3498db',
+      Blue: '#2980b9',
+      'Light Purple': '#9b59b6',
+      Purple: '#8e44ad',
+
+      'Lighter Grey': '#bdc3c7',
+      'Light Grey': '#95a5a6',
+      Grey: '#7f8c8d',
+      'Dark Grey': '#34495e',
+      Black: '#ffffff',
+
+      'Pastel Red': '#ffadad',
+      'Pastel Orange': '#ffd6a5',
+      'Pastel Yellow': '#fdffb6',
+      'Pastel Green': '#caffbf',
+      'Pastel Teal': '#9bf6ff',
+      'Pastel Blue': '#a0c4ff',
+      'Pastel Purple': '#bdb2ff',
+      'Pastel Pink': '#ffc6ff',
     } as const;
 
     const switchColor = (newColor: keyof typeof colors) => {
@@ -58,7 +74,7 @@ export default class AnnotationRecolorProvider implements PopupMenuProvider {
       });
       if (target.di.label) {
         modeling.updateModdleProperties(target, target.di.label, {
-          color: newColor === 'Black' ? 'white' : 'black',
+          color: newColor === 'Black' || newColor === 'Dark Grey' ? 'white' : 'black',
         });
       }
     };

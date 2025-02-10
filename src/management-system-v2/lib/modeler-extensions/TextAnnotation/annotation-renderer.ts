@@ -43,7 +43,7 @@ export default class CustomAnnotationRenderer extends BaseRenderer {
     var containerElement = svgCreate('rect', {
       width,
       height,
-      style: `fill: ${getBackgroundColor(shape)}; stroke: ${getBorderColor(shape)}; stroke-width: 1px; filter: drop-shadow(2px 5px 4px #000000);`,
+      style: `fill: ${getBackgroundColor(shape)}; stroke: ${getBorderColor(shape)}; stroke-width: 1px; filter: drop-shadow(2px 5px 4px #6a6a6a);`,
     });
     svgAppend(parentGfx, containerElement);
 

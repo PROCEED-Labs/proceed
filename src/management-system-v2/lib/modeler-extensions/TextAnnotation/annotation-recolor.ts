@@ -30,7 +30,7 @@ export default class AnnotationRecolorProvider implements PopupMenuProvider {
      **/
 
     const colors = {
-      White: 'rgb(255, 255, 255)',
+      White: '#ffffff',
 
       Yellow: '#f1c40f',
       'Light Orange': '#f39c12',
@@ -52,7 +52,7 @@ export default class AnnotationRecolorProvider implements PopupMenuProvider {
       'Light Grey': '#95a5a6',
       Grey: '#7f8c8d',
       'Dark Grey': '#34495e',
-      Black: '#ffffff',
+      Black: '#000000',
 
       'Pastel Red': '#ffadad',
       'Pastel Orange': '#ffd6a5',

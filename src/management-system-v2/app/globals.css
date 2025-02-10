@@ -149,6 +149,10 @@
   font-size: 24px;
 }
 
+.proceed-user-icon.context-menu-icon::before {
+  font-size: 20px;
+}
+
 .proceed-server-icon::before {
   font-family: var(--custom-icon-font);
   content: 'd';

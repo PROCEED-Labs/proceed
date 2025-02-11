@@ -92,6 +92,7 @@ export async function getExportblob(
     return {
       filename: 'PROCEED_Multiple-Processes_bpmn.zip',
       blob: await zip.generateAsync({ type: 'blob' }),
+      zip: true,
     };
   } else {
     return blob!;

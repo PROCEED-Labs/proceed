@@ -47,58 +47,61 @@ export function downloadFile(filename: string, data: Blob) {
   URL.revokeObjectURL(objectURL);
 }
 
-/**
- * Exports a blob with the specified method in ProcessExportOptions
- */
+// This function can't be async do to safari limitations
+/** Exports a blob with the specified method in ProcessExportOptions */
 export async function handleExportMethod(
-  exportBlob: Promise<{ filename: string; blob: Blob }>,
+  exportBlob: Promise<{ filename: string; blob: Blob } & ({} | { zip: true })>,
   options: ProcessExportOptions,
 ) {
-  let fallback = false;
+  let fallback: string | undefined = undefined;
 
   if (options.exportMethod === 'webshare') {
-    const { filename, blob } = await exportBlob;
     if ('canShare' in window?.navigator)
       try {
-        await navigator.share({
-          files: [new File([blob], filename, { type: blob.type })],
-        });
-        return;
+        await exportBlob.then(({ blob, filename }) =>
+          navigator.share({
+            files: [new File([blob], filename, { type: blob.type })],
+          }),
+        );
+        return fallback;
       } catch (_) { }
 
-    fallback = true;
+    fallback = 'Failed, copied to clipboard instead.';
   }
 
-  if (fallback || options.exportMethod === 'clipboard') {
+  if (!('zip' in exportBlob) && (fallback || options.exportMethod === 'clipboard')) {
     // needed for clipboard export
     let prematureClipboardTypeIfNotZip;
     if (options.type === 'bpmn') {
-      prematureClipboardTypeIfNotZip = 'application/xml';
-    } else if (options.type === 'svg') {
-      prematureClipboardTypeIfNotZip = 'image/svg+xml';
+      prematureClipboardTypeIfNotZip = 'text/plain';
     } else if (options.type === 'png') {
       prematureClipboardTypeIfNotZip = 'image/png';
     }
 
-    try {
-      if (!navigator.clipboard) throw false;
-      // TODO: fix this
-      // this is necessary to avoid permission error in safari: can't call await before clipboard.write
-      // https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
+    if (prematureClipboardTypeIfNotZip) {
+      try {
+        if (!navigator.clipboard) throw false;
 
-      return await navigator.clipboard.write([
-        new ClipboardItem({
-          [prematureClipboardTypeIfNotZip!]: exportBlob.then(({ blob }) => blob),
-        }),
-      ]);
-    } catch (_) { }
+        const item = exportBlob.then(async ({ blob }) => {
+          if (prematureClipboardTypeIfNotZip === 'text/plain') return blob.text();
+          return blob;
+        });
 
-    fallback = true;
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [prematureClipboardTypeIfNotZip!]: item,
+          }),
+        ]);
+        return fallback;
+      } catch (_) { }
+    }
+
+    fallback = 'Failed, downloaded instead.';
   }
 
-  // default mode
-  const { filename, blob } = await exportBlob;
-  downloadFile(`${filename}.zip`, blob);
+  // default method
+  await exportBlob.then(({ blob, filename }) => downloadFile(filename, blob));
+  return fallback;
 }
 
 /**
@@ -121,7 +124,7 @@ export async function getSVGFromBPMN(
     //Creating temporary element for BPMN Viewer
     viewerElement = document.createElement('div');
 
-    //Assiging process id to temp element and append to DOM
+    //Assigning process id to temp element and append to DOM
     viewerElement.id = 'canvas_' + v4();
     document.body.appendChild(viewerElement);
 
@@ -284,7 +287,7 @@ export async function isSelectedOrInsideSelected(
 
   let el = getElementById(bpmnObj, id) as any;
 
-  // this handles all elements that are directly selected or insided a selected subprocess
+  // this handles all elements that are directly selected or inside a selected subprocess
   while (el && !bpmnIs(el, 'bpmn:Process')) {
     if (selectedElementIds.includes(el.id)) return true;
     el = el.$parent;

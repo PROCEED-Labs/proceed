@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useRef, useState, useTransition } from 'react';
+import { ComponentProps, useEffect, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge } from 'antd';
 import {
   CopyOutlined,
@@ -49,6 +49,7 @@ import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { COLLAPSED_SIDER_WIDTH } from '@/app/(dashboard)/[environmentId]/layout-client';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -119,6 +120,12 @@ const Processes = ({
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
   const { open: metaPanelisOpened, width: metaPanelWidth } =
     useUserPreferences.use['process-meta-data']();
+  const { collapsed: layoutMenuSiderCollapsed } = useUserPreferences.use['layout-menu']();
+
+  const siderOpen = !layoutMenuSiderCollapsed;
+  const siderWidth = COLLAPSED_SIDER_WIDTH;
+  const siderOffSet = siderOpen ? 0 : 200 - siderWidth;
+  let tableWidthOffSet = metaPanelWidth - siderOffSet;
 
   const [openExportModal, setOpenExportModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
@@ -511,8 +518,8 @@ const Processes = ({
                     style={{
                       maxWidth: breakpoint.xl
                         ? metaPanelisOpened
-                          ? `calc(87vw - ${metaPanelWidth}px)`
-                          : '85.5vw'
+                          ? `calc(87vw - ${tableWidthOffSet}px)`
+                          : `calc(85.5vw + ${siderOffSet}px)`
                         : '100%',
                     }}
                   >

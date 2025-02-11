@@ -191,7 +191,6 @@ export async function deployProcess(
       artefacts: true,
       scaling: 1,
       exportSelectionOnly: false,
-      useWebshareApi: false,
     },
     [
       {

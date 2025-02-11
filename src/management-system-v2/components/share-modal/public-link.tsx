@@ -17,7 +17,7 @@ type ModelerShareModalOptionPublicLinkProps = {
   sharedAs: 'public' | 'protected';
   shareTimestamp: number;
   refresh: () => void;
-  process: Pick<Process, 'id'> & Partial<Pick<Process, 'versions'>>;
+  process?: { id: string; versions?: Process['versions'] };
 };
 
 const ModelerShareModalOptionPublicLink = ({
@@ -28,7 +28,7 @@ const ModelerShareModalOptionPublicLink = ({
 }: ModelerShareModalOptionPublicLinkProps) => {
   const environment = useEnvironment();
 
-  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(process.versions);
+  const [selectedVersionId, setSelectedVersionId] = useProcessVersion(process?.versions);
 
   const [shareLink, setShareLink] = useState('');
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
@@ -39,12 +39,14 @@ const ModelerShareModalOptionPublicLink = ({
   const isShareLinkChecked = shareTimestamp > 0;
   const isShareLinkEmpty = shareLink.length === 0;
 
+  const optionsDisabled = !process || isShareLinkEmpty;
+
   useEffect(() => {
     if (isShareLinkChecked) {
       wrapServerCall({
         fn: () =>
           generateSharedViewerUrl(
-            { processId: process.id, timestamp: shareTimestamp },
+            { processId: process!.id, timestamp: shareTimestamp },
             selectedVersionId || undefined,
           ),
         onSuccess: (url) => setShareLink(url),
@@ -64,6 +66,8 @@ const ModelerShareModalOptionPublicLink = ({
   };
 
   const handlePermissionChanged = async (e: CheckboxChangeEvent) => {
+    if (!process) return;
+
     const isChecked = e.target.checked;
     setRegisteredUsersonlyChecked(isChecked);
     if (isShareLinkChecked) {
@@ -80,6 +84,7 @@ const ModelerShareModalOptionPublicLink = ({
   };
 
   const handleShareLinkChecked = async (e: CheckboxChangeEvent) => {
+    if (!process) return;
     await updateShare(
       {
         processId: process.id,
@@ -138,24 +143,24 @@ const ModelerShareModalOptionPublicLink = ({
       await wrapServerCall({
         fn: () =>
           generateSharedViewerUrl(
-            { processId: process.id, timestamp: shareTimestamp },
+            { processId: process!.id, timestamp: shareTimestamp },
             selectedVersionId || undefined,
           ),
-        onSuccess: (url) => window.open(url, `${process.id}-${selectedVersionId}-tab`),
+        onSuccess: (url) => window.open(url, `${process!.id}-${selectedVersionId}-tab`),
       });
     }
   };
 
   return (
     <Space direction="vertical" style={{ gap: '1rem', width: '100%' }}>
-      <Checkbox checked={isShareLinkChecked} onChange={handleShareLinkChecked}>
+      <Checkbox checked={isShareLinkChecked} onChange={handleShareLinkChecked} disabled={!process}>
         Share Process with Public Link
       </Checkbox>
 
       <Checkbox
         checked={registeredUsersonlyChecked}
         onChange={handlePermissionChanged}
-        disabled={isShareLinkEmpty}
+        disabled={optionsDisabled}
       >
         Visible only for registered user
       </Checkbox>
@@ -166,7 +171,7 @@ const ModelerShareModalOptionPublicLink = ({
             value={selectedVersionId || '-1'}
             options={[
               { value: '-1', label: 'Latest Version' },
-              ...(process.versions || []).map((version) => ({
+              ...(process?.versions || []).map((version) => ({
                 value: version.id,
                 label: version.name,
               })),

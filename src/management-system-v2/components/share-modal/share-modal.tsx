@@ -1,4 +1,4 @@
-import { FC, useEffect, useRef, useState, JSX } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Button,
@@ -14,31 +14,39 @@ import {
 import {
   ShareAltOutlined,
   LinkOutlined,
-  ExportOutlined,
   LeftOutlined,
   RightOutlined,
   CopyOutlined,
   FileImageOutlined,
 } from '@ant-design/icons';
-import { useParams } from 'next/navigation';
 import { getProcess } from '@/lib/data/processes';
-import { Process } from '@/lib/data/process-schema';
+import { ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { updateShare } from './share-helpers';
 import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
 import {
-  copyProcessImage,
   shareProcessImage,
   shareProcessImageFromXml,
 } from '@/lib/process-export/copy-process-image';
 
 import ModelerShareModalOptionPublicLink from './public-link';
 import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
-import ExportProcess from './export';
+import {
+  ProcessExportOption,
+  ProcessExportSubmitButton,
+  useExportOptionsState,
+  useExportProcess,
+} from './export';
 
 type ShareModalProps = {
-  processes: { id: string; name: string; bpmn?: string; versions?: Process['versions'] }[];
+  processes: {
+    id: string;
+    name: string;
+    environmentId: string;
+    bpmn?: string;
+    versions: ProcessMetadata['versions'];
+  }[];
   open: boolean;
   close: () => void;
   defaultOpenTab?: 'export-as-file' | 'share-public-link';
@@ -46,7 +54,6 @@ type ShareModalProps = {
 type SharedAsType = 'public' | 'protected';
 
 export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaultOpenTab }) => {
-  const processId = useParams().processId as string;
   const environment = useEnvironment();
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
@@ -60,13 +67,21 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
   const [shareTimestamp, setShareTimestamp] = useState(0);
   const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
 
-  const buttonContainerRef = useRef<HTMLDivElement>(null);
+  // The easiest way to have the submit button of the export options in the modal footer, is to keep
+  // the state here and pass it down to the components
+  const [exportState, selectedVersionIdsState] = useExportOptionsState(processes[0]?.versions);
+  const [isExporting, exportProcesses] = useExportProcess(
+    processes.map((p) => ({ definitionId: p.id })),
+    exportState[0],
+    selectedVersionIdsState,
+  );
 
   const [checkingIfProcessShared, setCheckingIfProcessShared] = useState(false);
   const checkIfProcessShared = async () => {
+    if (processes.length !== 1) return;
     try {
       setCheckingIfProcessShared(true);
-      const res = await getProcess(processId as string, environment.spaceId);
+      const res = await getProcess(processes[0].id, processes[0].environmentId);
       if (!('error' in res)) {
         const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
         setSharedAs(sharedAs as SharedAsType);
@@ -76,14 +91,6 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
       }
     } catch (_) { }
     setCheckingIfProcessShared(false);
-  };
-
-  const handleCopyXMLToClipboard = async () => {
-    const xml = await modeler?.getXML();
-    if (xml) {
-      navigator.clipboard.writeText(xml);
-      app.message.success('Copied to clipboard');
-    }
   };
 
   const mobileShareWrapper = async <T extends (...args: any[]) => any>(
@@ -98,10 +105,11 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
   };
 
   const shareProcess = async (sharedAs: 'public' | 'protected') => {
+    if (processes.length !== 1) return;
     let url: string | null = null;
     await updateShare(
       {
-        processId,
+        processId: processes[0].id,
         spaceId: environment.spaceId,
         sharedAs,
       },
@@ -110,7 +118,6 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
         onSuccess: (_url) => (url = _url ?? null),
       },
     );
-    isSharing.current = false;
 
     if (!url) return;
 
@@ -149,7 +156,6 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
     {
       icon: <LinkOutlined style={{ fontSize: '24px' }} />,
       label: 'Share Process with Public Link',
-      optionTitle: 'Share Process with Public Link',
       key: 'share-public-link',
       children: null,
       onClick: () => mobileShareWrapper(shareProcess, ['public']),
@@ -157,14 +163,12 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
     {
       icon: <LinkOutlined style={{ fontSize: '24px' }} />,
       label: 'Share Process for Registered Users',
-      optionTitle: 'Share Process for Registered Users',
       key: 'share-protected-link',
       onClick: () => mobileShareWrapper(shareProcess, ['protected']),
     },
     {
       icon: <FileImageOutlined style={{ fontSize: '24px' }} />,
       label: 'Share Process as Image',
-      optionTitle: 'Share Process as Image',
       key: 'share-process-as-image',
       children: null,
       onClick: () => mobileShareWrapper(mobileShareProcessImage),
@@ -172,33 +176,11 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
   ];
 
   const optionsDesktop: (NonNullable<TabsProps['items']>[number] & {
-    optionTitle: string;
     onClick?: () => void;
   })[] = [
       {
-        icon: <ExportOutlined style={{ fontSize: '24px' }} />,
-        label: 'Export as file',
-        optionTitle: 'Export as file',
-        key: 'export-as-file',
-        children: (
-          <ExportProcess
-            buttonContainerRef={buttonContainerRef}
-            // TODO: don't use magic numbers
-            active={activeIndex === 4}
-            processes={processes.map((p) => ({ definitionId: p.id, versions: p.versions }))}
-          />
-        ),
-        // necessary to reset portal button
-        destroyInactiveTabPane: true,
-      },
-    ];
-
-  if (processes.length === 1) {
-    optionsDesktop.unshift(
-      {
         icon: <LinkOutlined style={{ fontSize: '24px' }} />,
         label: 'Share Public Link',
-        optionTitle: 'Share Public Link',
         key: 'share-public-link',
         children: (
           <ModelerShareModalOptionPublicLink
@@ -217,7 +199,6 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
           </span>
         ),
         label: 'Embed in Website',
-        optionTitle: 'Embed in Website',
         key: 'embed-in-website',
         children: (
           <ModelerShareModalOptionEmdedInWeb
@@ -230,32 +211,61 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
       },
       {
         icon: <CopyOutlined style={{ fontSize: '24px' }} />,
-        optionTitle: 'Copy Diagram to Clipboard (PNG)',
-        label: 'Copy Diagram as PNG',
-        key: 'copy-diagram-as-png',
-        children: null,
-        onClick: async () => {
-          try {
-            if (await copyProcessImage(modeler!)) app.message.success('Copied to clipboard');
-            else
-              app.message.info(
-                'ClipboardAPI not supported in your browser, download the image instead',
-              );
-          } catch (err) {
-            app.message.error(`${err}`);
-          }
-        },
+        label: 'Download Diagram as PDF',
+        key: 'pdf',
+        children: (
+          <ProcessExportOption
+            type="pdf"
+            active
+            exportOptionsState={exportState}
+            versionIdState={selectedVersionIdsState}
+            processes={processes}
+          />
+        ),
       },
       {
         icon: <CopyOutlined style={{ fontSize: '24px' }} />,
-        label: 'Copy Diagram as XML',
-        optionTitle: 'Copy BPMN to Clipboard (XML)',
-        key: 'copy-diagram-as-xml',
-        children: null,
-        onClick: handleCopyXMLToClipboard,
+        label: 'Download Diagram as PNG',
+        key: 'png',
+        children: (
+          <ProcessExportOption
+            type="png"
+            active
+            exportOptionsState={exportState}
+            versionIdState={selectedVersionIdsState}
+            processes={processes}
+          />
+        ),
       },
-    );
-  }
+      {
+        icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+        label: 'Download Diagram as SVG',
+        key: 'svg',
+        children: (
+          <ProcessExportOption
+            type="svg"
+            active
+            exportOptionsState={exportState}
+            versionIdState={selectedVersionIdsState}
+            processes={processes}
+          />
+        ),
+      },
+      {
+        icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+        label: 'Download Diagram as BPMN',
+        key: 'bpmn',
+        children: (
+          <ProcessExportOption
+            type="bpmn"
+            active
+            exportOptionsState={exportState}
+            versionIdState={selectedVersionIdsState}
+            processes={processes}
+          />
+        ),
+      },
+    ];
 
   const tabs = breakpoint.lg ? optionsDesktop : optionsMobile;
 
@@ -319,86 +329,90 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
   );
 
   return (
-    <>
-      <Modal
-        title={<div style={{ textAlign: 'center' }}>Share</div>}
-        open={open}
-        width={breakpoint.lg ? 750 : 320}
-        closeIcon={false}
-        onCancel={close}
-        zIndex={200}
-        footer={
-          <div style={{ display: 'flex', justifyContent: 'end' }}>
-            <Button onClick={close} key="close">
-              Close
-            </Button>
-            <div ref={buttonContainerRef} key="open" />
-          </div>
-        }
-      >
-        <Spin spinning={checkingIfProcessShared}>
-          {/* The Tabs might seem unnecessary, but they keep the state of the components avoiding unnecessary fetches */}
-          <Tabs
-            items={tabs.map((t, idx) => ({ ...t, key: idx.toString() }))}
-            renderTabBar={() => (
-              <>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: breakpoint.lg ? 'row' : 'column',
-                    flexWrap: breakpoint.lg ? 'nowrap' : 'wrap',
-                    alignItems: '',
-                    justifyContent: 'center',
-                    gap: 10,
-                    width: '100%',
-                  }}
-                >
-                  {tabs.map((option, index) => (
-                    <Button
-                      key={index}
+    <Modal
+      title={<div style={{ textAlign: 'center' }}>Share</div>}
+      open={open}
+      width={breakpoint.lg ? 750 : 320}
+      closeIcon={false}
+      onCancel={close}
+      zIndex={200}
+      footer={
+        <div style={{ display: 'flex', gap: '.5rem', justifyContent: 'end' }}>
+          <Button onClick={close} key="close">
+            Close
+          </Button>
+          {['bpmn', 'svg', 'png', 'pdf'].includes(tabs[activeIndex]?.key) && (
+            <ProcessExportSubmitButton
+              type={tabs[activeIndex]?.key as any}
+              exportProcesses={exportProcesses}
+              isExporting={isExporting}
+              moreThanOne={processes.length > 1}
+              state={exportState[0]}
+            />
+          )}
+        </div>
+      }
+    >
+      <Spin spinning={checkingIfProcessShared}>
+        {/* The Tabs might seem unnecessary, but they keep the state of the components avoiding unnecessary fetches */}
+        <Tabs
+          items={tabs.map((t, idx) => ({ ...t, key: idx.toString() }))}
+          renderTabBar={() => (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: breakpoint.lg ? 'row' : 'column',
+                  flexWrap: breakpoint.lg ? 'nowrap' : 'wrap',
+                  alignItems: '',
+                  justifyContent: 'center',
+                  gap: 10,
+                  width: '100%',
+                }}
+              >
+                {tabs.map((option, index) => (
+                  <Button
+                    key={index}
+                    style={{
+                      flex: breakpoint.lg ? '1 1 0' : '', // evenly fill container
+                      height: 'auto', // Allow for vertical stretching
+                      minHeight: 'min-content',
+                      padding: '.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      overflow: 'hidden',
+                      whiteSpace: 'normal',
+                      textOverflow: 'ellipsis',
+                    }}
+                    color={index === activeIndex ? 'primary' : 'default'}
+                    variant="outlined"
+                    onClick={() => {
+                      setActiveIndex(index);
+                      if ('onClick' in option && option.onClick) option.onClick();
+                    }}
+                  >
+                    {option.icon}
+                    <Typography.Text
                       style={{
-                        flex: breakpoint.lg ? '1 1 0' : '', // evenly fill container
-                        height: 'auto', // Allow for vertical stretching
-                        minHeight: 'min-content',
-                        padding: '.5rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        overflow: 'hidden',
-                        whiteSpace: 'normal',
-                        textOverflow: 'ellipsis',
-                      }}
-                      color={index === activeIndex ? 'primary' : 'default'}
-                      variant="outlined"
-                      onClick={() => {
-                        setActiveIndex(index);
-                        if ('onClick' in option && option.onClick) option.onClick();
+                        textAlign: 'center',
+                        fontSize: '0.75rem',
                       }}
                     >
-                      {option.icon}
-                      <Typography.Text
-                        style={{
-                          textAlign: 'center',
-                          fontSize: '0.75rem',
-                        }}
-                      >
-                        <Tooltip title={breakpoint.lg ? option.optionTitle : ''}>
-                          {option.label}
-                        </Tooltip>
-                      </Typography.Text>
-                    </Button>
-                  ))}
-                </div>
+                      <Tooltip title={breakpoint.lg ? option.label : ''}>{option.label}</Tooltip>
+                    </Typography.Text>
+                  </Button>
+                ))}
+              </div>
 
-                {breakpoint.lg && activeIndex !== null && tabs[activeIndex].children && <Divider />}
-              </>
-            )}
-            activeKey={activeIndex?.toString()}
-          />
-        </Spin>
-      </Modal>
-    </>
+              {breakpoint.lg && activeIndex !== null && tabs[activeIndex].children && <Divider />}
+            </>
+          )}
+          activeKey={activeIndex?.toString()}
+        />
+      </Spin>
+    </Modal>
   );
 };
 

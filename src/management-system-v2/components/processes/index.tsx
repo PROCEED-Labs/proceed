@@ -16,7 +16,6 @@ import {
 import IconView from '@/components/process-icon-list';
 import ProcessList from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
-import ProcessExportModal from '@/components/process-export';
 import Bar from '@/components/bar';
 import { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -49,6 +48,7 @@ import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { ShareModal } from '../share-modal/share-modal';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -131,7 +131,7 @@ const Processes = ({
   const [movingItem, startMovingItemTransition] = useTransition();
   const [openCreateProcessModal, setOpenCreateProcessModal] = useState(
     typeof window !== 'undefined' &&
-      new URLSearchParams(document.location.search).has('createprocess'),
+    new URLSearchParams(document.location.search).has('createprocess'),
   );
   const [openCreateFolderModal, setOpenCreateFolderModal] = useState(false);
 
@@ -481,9 +481,9 @@ const Processes = ({
                 const items =
                   selectedRowKeys.length > 0
                     ? selectedRowElements.map((element) => ({
-                        type: element.type,
-                        id: element.id,
-                      }))
+                      type: element.type,
+                      id: element.id,
+                    }))
                     : [{ type: active.type, id: active.id }];
 
                 moveItems(items, over.id);
@@ -557,12 +557,18 @@ const Processes = ({
         </div>
       </ContextMenuArea>
 
-      <ProcessExportModal
-        processes={selectedRowKeys.map((definitionId) => ({
-          definitionId: definitionId as string,
-        }))}
+      <ShareModal
         open={openExportModal}
-        onClose={() => setOpenExportModal(false)}
+        close={() => setOpenExportModal(false)}
+        processes={(
+          selectedRowElements.filter((e) => e.type !== 'folder') as Exclude<
+            ProcessListProcess,
+            { type: 'folder' }
+          >[]
+        ).map((e) => ({
+          ...e,
+          name: e.name.value,
+        }))}
       />
       <ProcessModal
         open={openCopyModal}

@@ -25,7 +25,7 @@ type ModelerShareModalOptionEmdedInWebProps = {
   sharedAs: 'public' | 'protected';
   allowIframeTimestamp: number;
   refresh: () => void;
-  process: Pick<Process, 'id'> & Partial<Pick<Process, 'versions'>>;
+  process?: { id: string; versions: Process['versions'] };
 };
 
 const ModelerShareModalOptionEmdedInWeb = ({
@@ -39,13 +39,13 @@ const ModelerShareModalOptionEmdedInWeb = ({
   const [embeddingUrl, setEmbeddingUrl] = useState('');
 
   const [selectedVersionId, setSelectedVersionId] = useProcessVersion(
-    process.versions,
+    process?.versions,
     undefined,
     false,
   );
 
   useEffect(() => {
-    if (allowIframeTimestamp > 0 && selectedVersionId) {
+    if (process && allowIframeTimestamp > 0 && selectedVersionId) {
       wrapServerCall({
         fn: () =>
           generateSharedViewerUrl(
@@ -65,6 +65,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
   }, [allowIframeTimestamp, environment.spaceId, process, sharedAs, selectedVersionId, app]);
 
   async function handleAllowEmbeddingChecked(e: CheckboxChangeEvent) {
+    if (!process) return;
     await updateShare(
       {
         processId: process.id,
@@ -102,13 +103,14 @@ const ModelerShareModalOptionEmdedInWeb = ({
       <Checkbox
         checked={embeddingUrl.length > 0 && allowIframeTimestamp > 0}
         onChange={handleAllowEmbeddingChecked}
+        disabled={!process}
       >
         Enable iFrame Embedding
       </Checkbox>
 
       <Select
         value={selectedVersionId}
-        options={(process.versions || []).map((version) => ({
+        options={(process?.versions || []).map((version) => ({
           value: version.id,
           label: version.name,
         }))}

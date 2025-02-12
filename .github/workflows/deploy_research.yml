@@ -50,7 +50,7 @@ jobs:
       #- run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.research -v /opt/proceed-ms-server:/app/volume proceed/ms-server:$MS_TAG"
 
       #Apply schema changes
-      - run: ssh $ENV "cd production-deployment && ./deploy_db_schema.sh"
+      - run: ssh $ENV "cd production-deployment && ./deploy_db_schema.sh ../.env.research"
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"

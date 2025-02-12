@@ -233,20 +233,6 @@ export async function getFolders(spaceId: string) {
     : await folderModuleLegacy.getFolders(spaceId);
 }
 
-export async function getSpaceEngines(spaceId: string, ability?: Ability) {
-  // not implemented, return empty array to not throw error while building
-  if (!enableUseDB) return [];
-
-  return await spaceEnginesModuleDB.getDbEngines(spaceId, ability);
-}
-
-export async function getSpaceEngineById(spaceId: string, engineId: string, ability?: Ability) {
-  // not implemented, return empty array to not throw error while building
-  if (!enableUseDB) return undefined;
-
-  return await spaceEnginesModuleDB.getDbEngineById(spaceId, engineId, ability);
-}
-
 export async function getOrganisationLogo(organisationId: string) {
   return enableUseDB
     ? await environmentModuleDB.getOrganizationLogo(organisationId)

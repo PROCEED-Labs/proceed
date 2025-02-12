@@ -2,7 +2,7 @@ import Content from '@/components/content';
 import { Skeleton } from 'antd';
 import { notFound } from 'next/navigation';
 import SavedEnginesList from './saved-engines-list';
-import { getSpaceEngines } from '@/lib/data/DTOs';
+import { getDbEngines } from '@/lib/data/db/engines';
 import { getCurrentEnvironment } from '@/components/auth';
 import Ability from '@/lib/ability/abilityHelper';
 import { Suspense } from 'react';
@@ -10,7 +10,7 @@ import { enableUseDB } from 'FeatureFlags';
 import { env } from '@/lib/env-vars';
 
 const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ability }) => {
-  const engines = await getSpaceEngines(spaceId, ability);
+  const engines = await getDbEngines(spaceId, ability);
 
   return <SavedEnginesList savedEngines={engines} />;
 };

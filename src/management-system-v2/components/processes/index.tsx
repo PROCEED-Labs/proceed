@@ -107,6 +107,25 @@ export type ProcessActions = {
   moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
 };
 
+export type contextAcions = {
+  // View Process Documentation,
+  viewDocumentation: (item: ProcessListProcess) => void;
+  // Change Meta Data,
+  changeMetaData: (item: ProcessListProcess) => void;
+  // Release Process,
+  releaseProcess: (item: ProcessListProcess) => void;
+  // Share,
+  share: (item: ProcessListProcess) => void;
+  // Download,
+  exportProcess: (items: ProcessListProcess[]) => void;
+  // Move to Folder,
+  moveItems: (items: ProcessListProcess[]) => void;
+  // Copy,
+  copyItems: (items: ProcessListProcess[]) => void;
+  // Delete,
+  deleteItems: (items: ProcessListProcess[]) => void;
+};
+
 export type rowActions = {
   // View Process Documentation,
   viewDocumentation: (item: ProcessListProcess) => void;
@@ -186,6 +205,7 @@ const Processes = ({
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
   const [updateFolderModal, setUpdateFolderModal] = useState<Folder | undefined>(undefined);
   const [movingItem, startMovingItemTransition] = useTransition();
+  const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
   const [openCreateProcessModal, setOpenCreateProcessModal] = useState(
     typeof window !== 'undefined' &&
       new URLSearchParams(document.location.search).has('createprocess'),
@@ -314,6 +334,7 @@ const Processes = ({
   }
 
   const defaultDropdownItems = [];
+  // Create Process,
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
@@ -321,13 +342,27 @@ const Processes = ({
       icon: <FileOutlined />,
       onClick: () => setOpenCreateProcessModal(true),
     });
-
+  // Create Folder,
   if (ability.can('create', 'Folder'))
     defaultDropdownItems.push({
       key: 'create-folder',
       label: 'Create Folder',
       onClick: () => setOpenCreateFolderModal(true),
       icon: <FolderOutlined />,
+    });
+  // Import Process
+  if (ability.can('create', 'Process'))
+    defaultDropdownItems.push({
+      key: 'import-process',
+      label: (
+        <>
+          {/* This is a small workaround, because you cant trigger AntDesigns Upload other than a child button */}
+          <ProcessImportButton type="default" className={styles['Process-Import-Context-Menu']}>
+            Import Process
+          </ProcessImportButton>
+        </>
+      ),
+      icon: <PiFolderOpen />,
     });
 
   const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
@@ -441,7 +476,11 @@ const Processes = ({
   };
 
   const share = (item: ProcessListProcess) => {
-    /* TODO */
+    /* TODO: */
+  };
+
+  const openFolderMoveModal = (items: ProcessListProcess[]) => {
+    /* TODO: */
   };
 
   const processActions: ProcessActions = {
@@ -459,13 +498,30 @@ const Processes = ({
     share,
   };
 
+  const contextActions: contextAcions = {
+    viewDocumentation,
+    changeMetaData,
+    releaseProcess,
+    share,
+    exportProcess: (items) => {
+      setSelectedRowElements(items);
+      setOpenExportModal(true);
+    },
+    moveItems: openFolderMoveModal,
+    copyItems: copyItem,
+    deleteItems: (items) => {
+      setSelectedRowElements(items);
+      setOpenDeleteModal(true);
+    },
+  };
+
   // Here all the loading states should be ORed together
   const loading = movingItem;
 
   return (
     <>
       <ContextMenuArea
-        processActions={processActions}
+        processActions={contextActions}
         folder={folder}
         suffix={defaultDropdownItems}
       >
@@ -490,6 +546,7 @@ const Processes = ({
                           }}
                           type="primary"
                           onClick={() => setOpenCreateProcessModal(true)}
+                          trigger={['click']}
                         >
                           Create Process
                         </Dropdown.Button>
@@ -896,6 +953,7 @@ const Processes = ({
         open={openCreateFolderModal}
         close={() => setOpenCreateFolderModal(false)}
       />
+
       <AddUserControls name={'process-list'} />
     </>
   );

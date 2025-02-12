@@ -394,7 +394,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               padding: '5px 0px',
             }}
           >
-            {generateTableDateString(date)},
+            <Tooltip title={generateDateString(date, true)}>
+              {generateTableDateString(date)}
+            </Tooltip>
           </SpaceLink>
         </>
       ),

@@ -39,8 +39,7 @@
   "scripts": {
     "dev": "ts-node src/engine/native/node/index.ts --trace-warnings",
     "dev-ms-db": "cd src/management-system-v2 && docker compose -f docker-compose-dev.yml up -d && tsx scripts/db-helper.mts --init",
-    "dev-ms-db-create": "cd src/management-system-v2 && tsx scripts/db-helper.mts --new",
-    "dev-ms-db-deploy": "cd src/management-system-v2 && yarn prisma migrate deploy",
+    "dev-ms-db-deploy": "cd src/management-system-v2 && tsx scripts/db-helper.mts --new && yarn prisma migrate deploy",
     "dev-ms-db-migrate": "cd src/management-system-v2 && yarn prisma migrate dev",
     "dev-ms-db-use": "cd src/management-system-v2 && tsx scripts/db-helper.mts --use",
     "dev-ms-db-delete": "cd src/management-system-v2 && tsx scripts/db-helper.mts --delete",

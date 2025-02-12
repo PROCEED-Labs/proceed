@@ -8,12 +8,19 @@ import { useMemo, useRef, useState } from 'react';
 import { Collapse, theme, Modal, Form, Input, Typography } from 'antd';
 import ActionButtons from './action-buttons';
 import Content from './config-content';
+// import {
+//   copyConfig,
+//   removeMachineConfig,
+//   updateMachineConfig,
+//   updateParentConfig,
+// } from '@/lib/data/legacy/machine-config';
+
 import {
   copyConfig,
   removeMachineConfig,
   updateMachineConfig,
   updateParentConfig,
-} from '@/lib/data/legacy/machine-config';
+} from '@/lib/data/db/machine-config';
 
 const { Text } = Typography;
 
@@ -96,7 +103,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
     const machineConfig = parentConfig.machineConfigs.find(({ id }) => id === configToCopy);
     if (!machineConfig) return;
 
-    const id = await copyConfig(configToCopy, 'machine-config');
+    const id = await copyConfig(configToCopy, 'machine-config', parentConfig.id);
 
     // TODO: update the copy with the correct name and description
     // the description update should be handled in the backend (its not just a field but a content entry of a metadata entry)

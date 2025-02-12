@@ -10,7 +10,8 @@ import AddButton from './add-button';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 
 import { Parameter, ParameterContent } from '@/lib/data/machine-config-schema';
-import { updateParameter } from '@/lib/data/legacy/machine-config';
+// import { updateParameter } from '@/lib/data/legacy/machine-config';
+import { updateParameter } from '@/lib/data/db/machine-config';
 import { ParamContent, ParameterContentHeader } from './parameter-content';
 
 type MachineDataViewProps = {

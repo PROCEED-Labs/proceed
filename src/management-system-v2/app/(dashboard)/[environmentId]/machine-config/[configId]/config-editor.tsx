@@ -50,13 +50,17 @@ import ConfigModal from '@/components/config-modal';
 import {
   // addMachineConfig,
   // addTargetConfig,
-  removeTargetConfig,
+  // removeTargetConfig,
   updateMachineConfig,
   updateParentConfig,
   updateTargetConfig,
 } from '@/lib/data/legacy/machine-config';
 import ActionButtons from './action-buttons';
-import { addTargetConfig, addMachineConfig } from '@/lib/data/db/machine-config';
+import {
+  addTargetConfig,
+  addMachineConfig,
+  removeTargetConfig,
+} from '@/lib/data/db/machine-config';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;

@@ -34,7 +34,6 @@ import {
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
 import {
-  deleteParentConfigurations,
   addParentConfig,
   copyParentConfig,
   updateParentConfig,

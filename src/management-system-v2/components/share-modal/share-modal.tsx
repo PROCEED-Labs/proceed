@@ -25,10 +25,6 @@ import { useEnvironment } from '@/components/auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { updateShare } from './share-helpers';
 import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
-import {
-  shareProcessImage,
-  shareProcessImageFromXml,
-} from '@/lib/process-export/copy-process-image';
 
 import ModelerShareModalOptionPublicLink from './public-link';
 import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
@@ -89,7 +85,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
         setShareTimestamp(shareTimestamp);
         setAllowIframeTimestamp(allowIframeTimestamp);
       }
-    } catch (_) { }
+    } catch (_) {}
     setCheckingIfProcessShared(false);
   };
 
@@ -128,24 +124,13 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
           text: 'Here is a shared process for you',
           url,
         });
-      } catch (_) { }
+      } catch (_) {}
     } else {
       navigator.clipboard.writeText(url);
       app.message.success('Copied to clipboard');
     }
 
     checkIfProcessShared();
-  };
-
-  const mobileShareProcessImage = async () => {
-    // NOTE: If a modeler happened to be open and the share modal was opened for another process,
-    // this would export the wrong process image, however this is currently not possible in the UI
-    let result;
-    if (modeler) result = await shareProcessImage(modeler);
-    else if (processes[0]?.bpmn) await shareProcessImageFromXml(processes[0].bpmn);
-
-    if (typeof result === 'string') app.message.success(result);
-    else if (result === false) app.message.error('Error sharing process as image');
   };
 
   useEffect(() => {
@@ -171,101 +156,101 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
       label: 'Share Process as Image',
       key: 'share-process-as-image',
       children: null,
-      onClick: () => mobileShareWrapper(mobileShareProcessImage),
+      onClick: () => exportProcesses('png', 'webshare'),
     },
   ];
 
   const optionsDesktop: (NonNullable<TabsProps['items']>[number] & {
     onClick?: () => void;
   })[] = [
-      {
-        icon: <LinkOutlined style={{ fontSize: '24px' }} />,
-        label: 'Share Public Link',
-        key: 'share-public-link',
-        children: (
-          <ModelerShareModalOptionPublicLink
-            sharedAs={sharedAs as SharedAsType}
-            shareTimestamp={shareTimestamp}
-            refresh={checkIfProcessShared}
-            process={processes[0]}
-          />
-        ),
-      },
-      {
-        icon: (
-          <span>
-            <LeftOutlined style={{ fontSize: '24px' }} />
-            <RightOutlined style={{ fontSize: '24px' }} />
-          </span>
-        ),
-        label: 'Embed in Website',
-        key: 'embed-in-website',
-        children: (
-          <ModelerShareModalOptionEmdedInWeb
-            sharedAs={sharedAs as SharedAsType}
-            allowIframeTimestamp={allowIframeTimestamp}
-            refresh={checkIfProcessShared}
-            process={processes[0]}
-          />
-        ),
-      },
-      {
-        icon: <CopyOutlined style={{ fontSize: '24px' }} />,
-        label: 'Download Diagram as PDF',
-        key: 'pdf',
-        children: (
-          <ProcessExportOption
-            type="pdf"
-            active
-            exportOptionsState={exportState}
-            versionIdState={selectedVersionIdsState}
-            processes={processes}
-          />
-        ),
-      },
-      {
-        icon: <CopyOutlined style={{ fontSize: '24px' }} />,
-        label: 'Download Diagram as PNG',
-        key: 'png',
-        children: (
-          <ProcessExportOption
-            type="png"
-            active
-            exportOptionsState={exportState}
-            versionIdState={selectedVersionIdsState}
-            processes={processes}
-          />
-        ),
-      },
-      {
-        icon: <CopyOutlined style={{ fontSize: '24px' }} />,
-        label: 'Download Diagram as SVG',
-        key: 'svg',
-        children: (
-          <ProcessExportOption
-            type="svg"
-            active
-            exportOptionsState={exportState}
-            versionIdState={selectedVersionIdsState}
-            processes={processes}
-          />
-        ),
-      },
-      {
-        icon: <CopyOutlined style={{ fontSize: '24px' }} />,
-        label: 'Download Diagram as BPMN',
-        key: 'bpmn',
-        children: (
-          <ProcessExportOption
-            type="bpmn"
-            active
-            exportOptionsState={exportState}
-            versionIdState={selectedVersionIdsState}
-            processes={processes}
-          />
-        ),
-      },
-    ];
+    {
+      icon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      label: 'Share Public Link',
+      key: 'share-public-link',
+      children: (
+        <ModelerShareModalOptionPublicLink
+          sharedAs={sharedAs as SharedAsType}
+          shareTimestamp={shareTimestamp}
+          refresh={checkIfProcessShared}
+          process={processes[0]}
+        />
+      ),
+    },
+    {
+      icon: (
+        <span>
+          <LeftOutlined style={{ fontSize: '24px' }} />
+          <RightOutlined style={{ fontSize: '24px' }} />
+        </span>
+      ),
+      label: 'Embed in Website',
+      key: 'embed-in-website',
+      children: (
+        <ModelerShareModalOptionEmdedInWeb
+          sharedAs={sharedAs as SharedAsType}
+          allowIframeTimestamp={allowIframeTimestamp}
+          refresh={checkIfProcessShared}
+          process={processes[0]}
+        />
+      ),
+    },
+    {
+      icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      label: 'Download Diagram as PDF',
+      key: 'pdf',
+      children: (
+        <ProcessExportOption
+          type="pdf"
+          active
+          exportOptionsState={exportState}
+          versionIdState={selectedVersionIdsState}
+          processes={processes}
+        />
+      ),
+    },
+    {
+      icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      label: 'Download Diagram as PNG',
+      key: 'png',
+      children: (
+        <ProcessExportOption
+          type="png"
+          active
+          exportOptionsState={exportState}
+          versionIdState={selectedVersionIdsState}
+          processes={processes}
+        />
+      ),
+    },
+    {
+      icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      label: 'Download Diagram as SVG',
+      key: 'svg',
+      children: (
+        <ProcessExportOption
+          type="svg"
+          active
+          exportOptionsState={exportState}
+          versionIdState={selectedVersionIdsState}
+          processes={processes}
+        />
+      ),
+    },
+    {
+      icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      label: 'Download Diagram as BPMN',
+      key: 'bpmn',
+      children: (
+        <ProcessExportOption
+          type="bpmn"
+          active
+          exportOptionsState={exportState}
+          versionIdState={selectedVersionIdsState}
+          processes={processes}
+        />
+      ),
+    },
+  ];
 
   const tabs = breakpoint.lg ? optionsDesktop : optionsMobile;
 

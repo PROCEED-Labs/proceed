@@ -7,7 +7,7 @@ import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/DTOs
 import { getUsersFavourites } from '@/lib/data/users';
 import { DeployedProcessInfo, getDeployments } from '@/lib/engines/deployment';
 import { getProceedEngines } from '@/lib/engines/machines';
-import { getSpaceEngines } from '@/lib/data/space-engines';
+import { getDbEngines } from '@/lib/data/engines';
 import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
 import { isUserErrorResponse } from '@/lib/user-error';
 
@@ -51,7 +51,7 @@ export default async function ExecutionsPage({ params }: { params: { environment
         return await getDeployments(engines);
       })(),
       (async () => {
-        const spaceEngines = await getSpaceEngines(activeEnvironment.spaceId);
+        const spaceEngines = await getDbEngines(activeEnvironment.spaceId);
         if (isUserErrorResponse(spaceEngines)) return [];
         return await getDeployedProcessesFromSpaceEngines(spaceEngines);
       })(),

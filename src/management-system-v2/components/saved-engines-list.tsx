@@ -11,7 +11,8 @@ import { useRouter } from 'next/navigation';
 
 const SavedEnginesList = ({ savedEngines }: { savedEngines: SavedEngine[] }) => {
   const router = useRouter();
-  const space = useEnvironment();
+  const _spaceId = useEnvironment().spaceId;
+  const spaceId = _spaceId === '' ? null : _spaceId;
   const app = App.useApp();
 
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ const SavedEnginesList = ({ savedEngines }: { savedEngines: SavedEngine[] }) => 
   async function deleteEngine(id: string) {
     setLoading(true);
     await wrapServerCall({
-      fn: () => deleteSpaceEngine(id, space.spaceId),
+      fn: () => deleteSpaceEngine(id, spaceId),
       onSuccess: () => {
         app.message.success({ content: 'Engine deleted' });
         router.refresh();
@@ -37,8 +38,8 @@ const SavedEnginesList = ({ savedEngines }: { savedEngines: SavedEngine[] }) => 
     setLoading(true);
     await wrapServerCall({
       fn: (): Promise<any> => {
-        if (editData) return updateDbEngine(editData.id, data, space.spaceId);
-        else return addDbEngines([data], space.spaceId);
+        if (editData) return updateDbEngine(editData.id, data, spaceId);
+        else return addDbEngines([data], spaceId);
       },
       onSuccess: () => {
         app.message.success({ content: editData ? 'Engine updated' : 'Engine added' });

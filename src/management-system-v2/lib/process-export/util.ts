@@ -64,7 +64,7 @@ export async function handleExportMethod(
           }),
         );
         return fallback;
-      } catch (_) { }
+      } catch (_) {}
 
     fallback = 'Failed, copied to clipboard instead.';
   }
@@ -93,7 +93,7 @@ export async function handleExportMethod(
           }),
         ]);
         return fallback;
-      } catch (_) { }
+      } catch (_) {}
     }
 
     fallback = 'Failed, downloaded instead.';

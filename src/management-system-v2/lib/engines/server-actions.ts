@@ -49,9 +49,10 @@ async function getCorrectTargetEngines(
     const spaceEngine = await getSpaceEngineByAddressFromDb(address, spaceId, ability);
     if (!spaceEngine) throw new Error('No matching space engine found');
 
-    const engine = await spaceEnginesToEngines([spaceEngine]);
-    if (engine.length === 0) throw new Error("Engine couldn't be reached");
-    forceEngine = engine[0];
+    let forcedEngines = await spaceEnginesToEngines([spaceEngine]);
+    if (validatorFunc) forcedEngines = await asyncFilter(forcedEngines, validatorFunc);
+    if (forcedEngines.length === 0) throw new Error("Engine couldn't be reached");
+    forceEngine = forcedEngines[0];
   } else if (!_forceEngine && spaceEngines.status === 'fulfilled') {
     // If we don't want to force PROCEEDE engines use space engines if available
     let availableSpaceEngines = await spaceEnginesToEngines(spaceEngines.value);

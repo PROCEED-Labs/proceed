@@ -7,7 +7,7 @@
   "license": "MIT",
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
-    "koa": "^2.11.0",
+    "koa": "^2.15.4",
     "@koa/cors": "^3.0.0",
     "@koa/router": "^8.0.2",
     "koa-bodyparser": "^4.2.1",

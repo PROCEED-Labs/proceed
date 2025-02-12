@@ -77,10 +77,9 @@ Both users actually have the same privileges by default, but the first one loggi
 
 **Local Development with DB : Helper commands** \
 `yarn dev-ms-db` : starts the docker container and setups the default db \
-`yarn dev-ms-db-create`: create a new branch specific database \
 `yarn dev-ms-db-use <branch | default>`: switch between dbs, also creates a branch db if not created already \
 `yarn dev-ms-db-delete <--all | --branch <branch-name> >` : delete db \
-`yarn dev-ms-db-migrate`: create new prisma migration based on changes made to `schema.prisma` file \
+`yarn dev-ms-db-migrate < | --name "what you did">`: creates a new branch db (if does not exist already) & creates new prisma migration based on changes made to `schema.prisma` file, applies the schema to db \
 `yarn dev-ms-db-deploy` : deploys the migrations to db \
 `yarn dev-ms-db-generate` : run this command to generate prisma client manually, if not generated automatically on `yarn install``
 

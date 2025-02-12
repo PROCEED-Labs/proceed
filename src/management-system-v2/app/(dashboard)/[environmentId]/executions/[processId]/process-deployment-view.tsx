@@ -153,7 +153,6 @@ export default function ProcessDeploymentView({
                 placeholder="Select an instance"
               />
               <Tooltip title="Start new instance">
-                {/** TODO: implement start new instance */}
                 <Button
                   icon={<PlusOutlined />}
                   onClick={() => {
@@ -184,11 +183,11 @@ export default function ProcessDeploymentView({
                       },
                       ...(selectedVersion
                         ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,

@@ -222,12 +222,12 @@ jobs:
       id-token: write
       pull-requests: write
       issues: write
-    environment: Research
+    environment: Staging
     env:
       MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
       SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-      ENV: Research
+      ENV: Staging
     steps:
       # Database name generation step
       - name: Generate sanitized database name

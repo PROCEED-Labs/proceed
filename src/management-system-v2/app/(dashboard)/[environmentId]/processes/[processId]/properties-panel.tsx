@@ -3,7 +3,7 @@
 import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
-import React, { FocusEvent, useEffect, useRef, useState } from 'react';
+import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
 import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs } from 'antd';
@@ -32,6 +32,7 @@ import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
 import UserMapping, { UserMappingReadOnly } from './task-user-mapping';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -40,6 +41,9 @@ type PropertiesPanelContentProperties = {
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
 }) => {
+  const env = use(EnvVarsContext);
+  const environment = useEnvironment();
+
   const router = useRouter();
   const { spaceId } = useEnvironment();
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
@@ -156,7 +160,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const tabs: TabsProps['items'] = [
     {
       key: 'Property-Panel-General',
-      label: 'General',
+      label: 'General Properties',
       children: (
         <>
           <Space
@@ -268,9 +272,12 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         </>
       ),
     },
-    {
+  ];
+
+  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+    tabs.push({
       key: 'Property-Panel-Execution',
-      label: 'Execution',
+      label: 'Automation Properties',
       children: (
         <>
           <Space
@@ -279,12 +286,14 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             role="group"
             aria-labelledby="general-title"
           >
-            <UserMapping selectedElement={selectedElement} modeler={modeler} />
+            {environment?.isOrganization && (
+              <UserMapping selectedElement={selectedElement} modeler={modeler} />
+            )}
           </Space>
         </>
       ),
-    },
-  ];
+    });
+  }
   /* ---- */
 
   return (

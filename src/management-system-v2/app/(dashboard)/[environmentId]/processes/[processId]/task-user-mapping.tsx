@@ -8,15 +8,19 @@ import {
   TreeSelect,
   Typography,
   DescriptionsProps,
+  Button,
+  Cascader,
 } from 'antd';
-import { UserOutlined, TeamOutlined } from '@ant-design/icons';
+import { UserOutlined, TeamOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { useEnvironment } from '@/components/auth-can';
 import { getMembers, getRoles, getUserById, getUsers } from '@/lib/data/DTOs';
+// import { getRoles as getRolesDB } from '@/lib/data/db/iam/roles';
 import Ability from '@/lib/ability/abilityHelper';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Role } from '@/lib/data/role-schema';
 import { User } from '@/lib/data/user-schema';
+import type { CascaderProps, GetProp } from 'antd';
 
 const { Text } = Typography;
 
@@ -31,9 +35,43 @@ type TreeData = {
   key?: string;
 }[];
 
+type Option = {
+  value: string;
+  label: string | React.ReactNode;
+  children?: Option[];
+};
+
+type DefaultOptionType = GetProp<CascaderProps, 'options'>[number];
+
 const UserMapping: FC<UserMappingProps> = ({ selectedElement, modeler }) => {
   const ability = useAbilityStore((store) => store.ability);
   const environment = useEnvironment();
+
+  const options: Option[] = [
+    {
+      label: (
+        <>
+          <UserOutlined />
+          User
+        </>
+      ),
+      value: 'all-users',
+      children: [{ label: 'Maxi', value: 'maxi' }],
+    },
+    {
+      label: (
+        <>
+          <TeamOutlined />
+          Roles
+        </>
+      ),
+      value: 'all-roles',
+      children: [{ label: 'Admin', value: 'admin' }],
+    },
+  ];
+
+  const filter = (inputValue: string, path: DefaultOptionType[]) =>
+    path.some((option) => option.value.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
 
   const [executinRoles, setExecutinRoles] = useState<TreeData>([]);
   const [executingUsers, setExecutingUsers] = useState<TreeData>([]);
@@ -45,6 +83,8 @@ const UserMapping: FC<UserMappingProps> = ({ selectedElement, modeler }) => {
     if (!environment) return;
 
     const spaceID = environment.spaceId;
+
+    getRolesAndUsers(spaceID);
 
     getRolesUserColumns(spaceID, ability).then(({ roles, users }) => {
       setExecutinRoles(roles);
@@ -63,18 +103,24 @@ const UserMapping: FC<UserMappingProps> = ({ selectedElement, modeler }) => {
         role="group"
         aria-labelledby="user-task-mapping-title"
       >
-        <Tooltip title={<div>Who executes this task?</div>}>
-          <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-            <span style={{ marginRight: '0.3em' }}>Performer</span>
-          </Divider>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <ResourceTree recources={executinRoles} placeholder="Roles Executing the Task" />
-
-            <ResourceTree recources={executingUsers} placeholder="Users Executing the Task" />
-          </Space>
-        </Tooltip>
+        <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+          <span style={{ marginRight: '0.3em', marginBottom: '0.1rem' }}>Possible Performer</span>
+          <Tooltip title={<div>Who executes this task?</div>}>
+            <Button type="text" icon={<QuestionCircleOutlined />} />
+          </Tooltip>
+        </Divider>
+        {/* <Space direction="vertical" style={{ width: '100%' }}> */}
+        {/* User and Role selection */}
+        <Cascader
+          options={options}
+          placeholder="Select User or Roles that can claim this task"
+          style={{ width: '100%' }}
+          multiple
+          showSearch={{ filter }}
+        />
+        {/* </Space> */}
       </Space>
-      <Space
+      {/* <Space
         direction="vertical"
         style={{ width: '100%' }}
         role="group"
@@ -90,10 +136,18 @@ const UserMapping: FC<UserMappingProps> = ({ selectedElement, modeler }) => {
             <ResourceTree recources={executingUsers} placeholder="Users Rsponsible for the Task" />
           </Space>
         </Tooltip>
-      </Space>
+      </Space> */}
     </>
   );
 };
+
+async function getRolesAndUsers(spaceID: string) {
+  const roles = await getRoles(spaceID);
+  const users = await getUsers();
+
+  console.log('Roles:', roles);
+  console.log('Users:', users);
+}
 
 async function getRolesUserColumns(
   spaceID: string,

@@ -207,8 +207,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                 router.push(
                   spaceURL(
                     environment,
-                    `/processes/${processId as string}${
-                      searchParams.size ? '?' + searchParams.toString() : ''
+                    `/processes/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
                     }`,
                   ),
                 );
@@ -284,7 +283,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                   onClick={() => {
                     setShareModalOpen(true);
                     setShareModalDefaultOpenTab((prev) =>
-                      prev === 'export-as-file' ? 'share-public-link' : undefined,
+                      prev === 'bpmn' ? 'share-public-link' : undefined,
                     );
                   }}
                 />
@@ -305,7 +304,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                       icon={<ExportOutlined />}
                       onClick={() => {
                         setShareModalOpen(true);
-                        setShareModalDefaultOpenTab('export-as-file');
+                        setShareModalDefaultOpenTab('bpmn'); 
                       }}
                     />
                   </Tooltip>

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { CopyOutlined } from '@ant-design/icons';
+import { IoMdCopy } from 'react-icons/io';
 import {
   Button,
   Input,
@@ -120,7 +120,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
 
       {embeddingUrl.length > 0 ? (
         <>
-          <Button icon={<CopyOutlined />} onClick={handleCopyCodeSection} title="copy code" />
+          <Button icon={<IoMdCopy />} onClick={handleCopyCodeSection} title="copy code" />
 
           <div className="code">
             <TextArea

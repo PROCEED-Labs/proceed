@@ -1,5 +1,6 @@
 import { App, Button, Checkbox, CheckboxChangeEvent, Input, QRCode, Select, Space } from 'antd';
-import { DownloadOutlined, CopyOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from '@ant-design/icons';
+import { IoMdCopy } from 'react-icons/io';
 import { useEffect, useRef, useState } from 'react';
 import {
   generateSharedViewerUrl,
@@ -189,11 +190,7 @@ const ModelerShareModalOptionPublicLink = ({
 
       {isShareLinkChecked && (
         <div style={{ display: 'flex', gap: '.5rem' }}>
-          <Button
-            onClick={handleCopyLink}
-            icon={<CopyOutlined />}
-            style={{ justifyContent: 'start' }}
-          >
+          <Button onClick={handleCopyLink} icon={<IoMdCopy />} style={{ justifyContent: 'start' }}>
             Copy Link
           </Button>
           <Input type={'text'} value={shareLink} style={{ flexGrow: 1 }} />
@@ -233,7 +230,7 @@ const ModelerShareModalOptionPublicLink = ({
                 Save QR Code
               </Button>
               <Button
-                icon={<CopyOutlined />}
+                icon={<IoMdCopy />}
                 title="Copy as PNG"
                 onClick={() => handleQRCodeAction('copy')}
                 disabled={isShareLinkEmpty}

@@ -55,7 +55,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal
     .getByPlaceholder('Version Description')
-    .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
+    .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`);
   await expect(page.getByPlaceholder('Version Description')).toHaveText(stringWith150Chars);
   await expect(versionCreationSubmitButton).toBeEnabled();
   await closeModal(modal, () => versionCreationSubmitButton.click());
@@ -100,7 +100,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await processCreationDialog.getByLabel('Process Name').fill('New Process');
   await processCreationDialog
     .getByLabel('Process Description')
-    .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
+    .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`);
   await expect(processCreationDialog.getByLabel('Process Description')).toHaveText(
     stringWith150Chars,
   );
@@ -287,8 +287,8 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   /*************************** Embed in Website ********************************/
 
   await modal.getByRole('button', { name: 'Embed in Website' }).click();
-  await expect(modal.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
-  await modal.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
+  await expect(modal.getByText('Enable iFrame Embedding', { exact: true })).toBeVisible();
+  await modal.getByRole('checkbox', { name: 'Enable iFrame Embedding' }).click();
   await expect(modal.locator('div[class="code"]')).toBeVisible();
   await modal.getByTitle('copy code', { exact: true }).click();
 

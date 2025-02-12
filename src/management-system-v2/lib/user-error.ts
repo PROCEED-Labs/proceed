@@ -13,6 +13,8 @@ export enum UserErrorType {
   LockedResourceError = 'LockedResourceError',
   /** Schema validation failed. */
   SchemaValidationError = 'SchemaValidationError ',
+  /** Unknown error. */
+  UnknownError = 'UnknownError  ',
 }
 
 /**

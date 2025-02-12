@@ -26,7 +26,7 @@ const EnginesList = ({
   engines: SavedEngine[];
   title?: string;
   onAction: (action: ActionType, engineId: string) => void;
-  tableProps?: TableProps;
+  tableProps?: TableProps<SavedEngine>;
 }) => {
   const breakpoint = Grid.useBreakpoint();
 

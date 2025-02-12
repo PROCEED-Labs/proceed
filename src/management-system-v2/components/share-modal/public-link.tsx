@@ -17,7 +17,7 @@ type ModelerShareModalOptionPublicLinkProps = {
   sharedAs: 'public' | 'protected';
   shareTimestamp: number;
   refresh: () => void;
-  process?: { id: string; versions?: Process['versions'] };
+  process?: { id: string; versions: Process['versions'] };
 };
 
 const ModelerShareModalOptionPublicLink = ({

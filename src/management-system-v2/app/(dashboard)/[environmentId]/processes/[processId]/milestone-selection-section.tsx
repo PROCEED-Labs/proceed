@@ -136,9 +136,13 @@ const MilestoneDescriptionViewer: React.FC<MilestoneDescriptionViewerProperties>
 
 type MilestoneSelectionProperties = {
   selectedElement: ElementLike;
+  readOnly?: boolean;
 };
 
-const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedElement }) => {
+const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
+  selectedElement,
+  readOnly = false,
+}) => {
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [initialMilestoneValues, setInitialMilestoneValues] = useState<
     | {
@@ -239,11 +243,13 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
                       onClick={() => {
                         openMilestoneModal(record);
                       }}
+                      disabled={readOnly}
                     />
                     <DeleteOutlined
                       onClick={() => {
                         removeMilestone(record.id);
                       }}
+                      disabled={readOnly}
                     />
                   </Space>
                 ),
@@ -261,6 +267,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
             size="small"
             style={{ fontSize: '0.75rem' }}
             icon={<PlusOutlined />}
+            disabled={readOnly}
           >
             <span>Add Milestone</span>
           </Button>

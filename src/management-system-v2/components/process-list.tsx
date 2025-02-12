@@ -22,10 +22,11 @@ import {
   FolderOutlined as FolderFilled,
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
+import { BiShow } from 'react-icons/bi';
 import styles from './item-list-view.module.scss';
-import { generateDateString } from '@/lib/utils';
+import { generateDateString, spaceURL } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { ProcessActions, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 import { Folder } from '@/lib/data/folder-schema';
@@ -38,6 +39,8 @@ import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
 import classNames from 'classnames';
 import { set } from 'zod';
+import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -81,14 +84,22 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   elementSelection,
   onExportProcess = () => {},
   tableProps,
-  processActions: { deleteItems, editItem, copyItem } = {
-    deleteItems: () => {},
-    editItem: () => {},
-    copyItem: () => {},
-  },
+  processActions,
   setShowMobileMetaData,
   columnCustomRenderer = {},
 }) => {
+  const { deleteItems, editItem, copyItem } = processActions || {
+    deleteItems: () => {},
+    editItem: () => {},
+    copyItem: () => {},
+  };
+
+  const space = useEnvironment();
+  const router = useRouter();
+  const pathname = usePathname();
+  const processContextPath = decodeURIComponent(pathname); // Component can be used in /processes/list or /processes/editor route
+  const isReadOnlyListView = processContextPath.includes('/list');
+
   const breakpoint = Grid.useBreakpoint();
 
   const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
@@ -113,7 +124,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
       return (
         <>
-          {record.type !== 'folder' && (
+          {record.type !== 'folder' && processActions && (
             <AuthCan {...resource} create>
               <Tooltip placement="top" title={'Copy'}>
                 <Button
@@ -137,35 +148,55 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
             </Tooltip>
           )}
 
-          <AuthCan {...resource} update>
-            <Tooltip placement="top" title={'Edit'}>
-              <Button
-                className={classNames(styles.ActionButton)}
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => editItem(record)}
-              />
-            </Tooltip>
-          </AuthCan>
+          {processActions && (
+            <AuthCan {...resource} update>
+              <Tooltip placement="top" title={'Edit'}>
+                <Button
+                  className={classNames(styles.ActionButton)}
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => editItem(record)}
+                />
+              </Tooltip>
+            </AuthCan>
+          )}
 
-          <AuthCan delete {...resource}>
-            <ConfirmationButton
-              tooltip="Delete"
-              title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-              description="Are you sure you want to delete the selected process?"
-              onConfirm={() => deleteItems([record])}
-              buttonProps={{
-                icon: <DeleteOutlined />,
-                type: 'text',
-                className: styles.ActionButton,
-              }}
-            />
-          </AuthCan>
+          {processActions && (
+            <AuthCan delete {...resource}>
+              <ConfirmationButton
+                tooltip="Delete"
+                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
+                description="Are you sure you want to delete the selected process?"
+                onConfirm={() => deleteItems([record])}
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  type: 'text',
+                  className: styles.ActionButton,
+                }}
+              />
+            </AuthCan>
+          )}
         </>
       );
     },
     [copyItem, deleteItems, editItem, onExportProcess],
   );
+
+  const createRecordUrl = (record: ProcessListProcess, readOnly = false) => {
+    let recordUrl;
+    if (record.type === 'folder') {
+      recordUrl = readOnly
+        ? `/processes/list/folder/${record.id}`
+        : `/processes/editor/folder/${record.id}`;
+    } else {
+      const latestVersion = record.versions[record.versions.length - 1];
+      recordUrl = readOnly
+        ? `/processes/list/${record.id}?version=${latestVersion.id}`
+        : `/processes/editor/${record.id}`;
+    }
+
+    return recordUrl;
+  };
 
   let columns: TableColumnsType<ProcessListProcess> = [
     {
@@ -191,9 +222,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
       render: (_, record) => (
         <SpaceLink
-          href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
-          }
+          href={createRecordUrl(record, isReadOnlyListView)}
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
@@ -231,9 +260,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       key: 'Description',
       render: (_, record) => (
         <SpaceLink
-          href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
-          }
+          href={createRecordUrl(record, isReadOnlyListView)}
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
@@ -387,7 +414,7 @@ type ProcessManagementListProps = PropsWithChildren<{
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  processActions: ProcessActions;
+  processActions?: ProcessActions;
 }>;
 
 const ProcessManagementList: FC<ProcessManagementListProps> = ({
@@ -400,6 +427,8 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
   processActions,
   setShowMobileMetaData,
 }) => {
+  const breakpoint = Grid.useBreakpoint();
+
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
   const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
 

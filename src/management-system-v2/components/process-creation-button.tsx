@@ -34,7 +34,7 @@ export const ProcessCreationModal: React.FC<
     setOpen(false);
 
     if (process && 'id' in process) {
-      router.push(spaceURL(environment, `/processes/${process.id}`));
+      router.push(spaceURL(environment, `/processes/editor/${process.id}`));
     } else {
       router.refresh();
     }

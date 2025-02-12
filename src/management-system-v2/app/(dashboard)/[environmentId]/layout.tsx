@@ -59,20 +59,20 @@ const DashboardLayout = async ({
     let children: MenuProps['items'] = [];
     children.push({
       key: 'processes-editor',
-      label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
+      label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
       icon: <EditOutlined />,
     });
 
     children = [
       {
         key: 'processes-list',
-        label: <Link href={spaceURL(activeEnvironment, `/processes`)}>List</Link>,
+        label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
         icon: <CopyOutlined />,
       },
       ...children,
       {
-        key: 'processes-templates',
-        label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Templates</Link>,
+        key: 'templates',
+        label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
         icon: <SnippetsOutlined />,
       },
     ];

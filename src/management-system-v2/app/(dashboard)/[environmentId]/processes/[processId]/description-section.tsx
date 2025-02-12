@@ -9,7 +9,10 @@ import ScrollBar from '@/components/scrollbar';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 const TextEditor = dynamic(() => import('@/components/text-editor'), { ssr: false });
 
-const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
+const DescriptionSection: React.FC<{ selectedElement: any; readOnly?: boolean }> = ({
+  selectedElement,
+  readOnly = false,
+}) => {
   const [description, setDescription] = useState('');
 
   useEffect(() => {
@@ -73,11 +76,19 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <EditOutlined
-              onClick={() => {
-                setShowPopupEditor(true);
-              }}
-            ></EditOutlined>
+            <Button
+              style={{ fontSize: '0.75rem' }}
+              type="text"
+              size="small"
+              icon={
+                <EditOutlined
+                  onClick={() => {
+                    setShowPopupEditor(true);
+                  }}
+                ></EditOutlined>
+              }
+              disabled={readOnly}
+            ></Button>
           </div>
           <ScrollBar>
             <div
@@ -102,6 +113,7 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
             onClick={() => {
               setShowPopupEditor(true);
             }}
+            disabled={readOnly}
           >
             Add Description
           </Button>

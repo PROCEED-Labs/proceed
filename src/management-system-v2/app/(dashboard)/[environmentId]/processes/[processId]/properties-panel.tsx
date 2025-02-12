@@ -33,10 +33,12 @@ import { useRouter } from 'next/navigation';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
+  readOnly?: boolean;
 };
 
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
+  readOnly = false,
 }) => {
   const router = useRouter();
   const { spaceId } = useEnvironment();
@@ -170,6 +172,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           value={name}
           onChange={(e) => setName(e.target.value)}
           onBlur={handleNameChange}
+          disabled={readOnly}
         />
 
         <div
@@ -186,13 +189,20 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             onImageUpdate={(imageFileName) => {
               updateMetaData('overviewImage', imageFileName);
             }}
+            readOnly={readOnly}
           ></ImageSelectionSection>
         </div>
       </Space>
 
-      <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
+      <DescriptionSection
+        selectedElement={selectedElement}
+        readOnly={readOnly}
+      ></DescriptionSection>
 
-      <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
+      <MilestoneSelectionSection
+        selectedElement={selectedElement}
+        readOnly={readOnly}
+      ></MilestoneSelectionSection>
 
       <Space direction="vertical" style={{ width: '100%' }}>
         <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
@@ -205,12 +215,14 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           onInput={({ value, currency }) => {
             updateMetaData('costsPlanned', value, { unit: currency });
           }}
+          readOnly={readOnly}
         ></PlannedCostInput>
         <PlannedDurationInput
           onChange={(changedTimePlannedDuration) => {
             updateMetaData('timePlannedDuration', changedTimePlannedDuration);
           }}
           timePlannedDuration={timePlannedDuration || ''}
+          readOnly={readOnly}
         ></PlannedDurationInput>
       </Space>
 
@@ -228,6 +240,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               : undefined,
           );
         }}
+        readOnly={readOnly}
       ></CustomPropertySection>
 
       {selectedElement.type !== 'bpmn:Process' && (
@@ -240,6 +253,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               presets={colorPickerPresets}
               value={backgroundColor}
               onChange={(_, hex) => updateBackgroundColor(hex)}
+              disabled={readOnly}
             />
             <span>Background Colour</span>
           </Space>
@@ -250,6 +264,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               presets={colorPickerPresets}
               value={strokeColor}
               onChange={(_, hex) => updateStrokeColor(hex)}
+              disabled={readOnly}
             />
             <span>Stroke Colour</span>
           </Space>
@@ -263,12 +278,14 @@ type PropertiesPanelProperties = {
   selectedElement: ElementLike;
   isOpen: boolean;
   close: () => void;
+  readOnly?: boolean;
 };
 
 const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
   selectedElement,
   isOpen,
   close,
+  readOnly = false,
 }) => {
   const [showInfo, setShowInfo] = useState(true);
 
@@ -303,7 +320,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
         title="Properties"
         collapsedWidth="40px"
       >
-        <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
+        <PropertiesPanelContent
+          selectedElement={selectedElement}
+          readOnly={readOnly}
+        ></PropertiesPanelContent>
       </CollapsibleCard>
     </ResizableElement>
   ) : (
@@ -326,7 +346,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
         </div>
       }
     >
-      <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
+      <PropertiesPanelContent
+        selectedElement={selectedElement}
+        readOnly={readOnly}
+      ></PropertiesPanelContent>
     </Modal>
   );
 };

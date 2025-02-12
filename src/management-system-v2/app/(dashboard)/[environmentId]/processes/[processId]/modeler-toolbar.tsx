@@ -1,6 +1,6 @@
 import React, { ComponentProps, use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
+import { App, Tooltip, Button, Space, Select, SelectProps, Divider } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
@@ -207,7 +207,8 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                 router.push(
                   spaceURL(
                     environment,
-                    `/processes/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
+                    `/processes/${processId as string}${
+                      searchParams.size ? '?' + searchParams.toString() : ''
                     }`,
                   ),
                 );
@@ -272,10 +273,19 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
               <Tooltip
                 title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
               >
-                <Button
-                  icon={<InfoCircleOutlined />}
-                  onClick={handlePropertiesPanelToggle}
-                ></Button>
+                <Button icon={<InfoCircleOutlined />} onClick={handlePropertiesPanelToggle} />
+              </Tooltip>
+              {!showMobileView && (
+                <Tooltip title="Show XML">
+                  <Button
+                    icon={<Icon aria-label="xml-sign" component={SvgXML} />}
+                    onClick={onOpenXmlEditor}
+                  />
+                </Tooltip>
+              )}
+              <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
+              <Tooltip title="Open Documentation">
+                <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
               </Tooltip>
               <Tooltip title="Share">
                 <Button
@@ -288,27 +298,16 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                   }}
                 />
               </Tooltip>
-              <Tooltip title="Open Documentation">
-                <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
-              </Tooltip>
               {!showMobileView && (
-                <>
-                  <Tooltip title="Show XML">
-                    <Button
-                      icon={<Icon aria-label="xml-sign" component={SvgXML} />}
-                      onClick={onOpenXmlEditor}
-                    ></Button>
-                  </Tooltip>
-                  <Tooltip title="Export">
-                    <Button
-                      icon={<ExportOutlined />}
-                      onClick={() => {
-                        setShareModalOpen(true);
-                        setShareModalDefaultOpenTab('bpmn'); 
-                      }}
-                    />
-                  </Tooltip>
-                </>
+                <Tooltip title="Download">
+                  <Button
+                    icon={<ExportOutlined />}
+                    onClick={() => {
+                      setShareModalOpen(true);
+                      setShareModalDefaultOpenTab('bpmn');
+                    }}
+                  />
+                </Tooltip>
               )}
             </ToolbarGroup>
 

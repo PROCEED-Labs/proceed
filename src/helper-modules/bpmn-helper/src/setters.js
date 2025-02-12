@@ -59,28 +59,27 @@ async function setDefinitionsName(bpmn, name) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {object} versionInformation - the version information to set in the definitions object
- * @param {(string|number)} [versionInformation.version] - the version number (a time since epoch string or number)
+ * @param {(string)} [versionInformation.versionId] - the versionId (a uuid assigned to a version)
  * @param {string} [versionInformation.versionName] - a human readable name for the version
  * @param {string} [versionInformation.versionDescription] - a longer description of the version
- * @param {(string|number)} [versionInformation.versionBasedOn] - a reference to the version this one is based on
+ * @param {(string)} [versionInformation.versionBasedOn] - a reference to the version this one is based on
+ * @param {(string)} [versionInformation.versionCreatedOn] - a timestamp (UTC) when the version was created
  * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 async function setDefinitionsVersionInformation(
   bpmn,
-  { version, versionName, versionDescription, versionBasedOn },
+  { versionId, versionName, versionDescription, versionBasedOn, versionCreatedOn },
 ) {
-  if (version && isNaN(version)) {
-    throw new Error('The process version has to be a number (time in ms since 1970)');
-  }
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    definitions.version = version;
+    definitions.versionId = versionId;
     definitions.versionName = versionName;
     definitions.versionDescription = versionDescription;
     definitions.versionBasedOn = versionBasedOn;
+    definitions.versionCreatedOn = versionCreatedOn;
 
     // make sure that the targetnamespace is unique for the new version
     definitions.targetNamespace = generateTargetNamespace(
-      `${definitions.id}${version ? `#${version}` : ''}`,
+      `${definitions.id}${versionCreatedOn ? `#${versionCreatedOn}` : ''}`,
     );
   });
 }
@@ -226,6 +225,20 @@ async function setUserTaskData(
   return await manipulateElementById(bpmn, userTaskId, (userTask) => {
     userTask.fileName = newFileName;
     userTask.implementation = newImplementation;
+  });
+}
+
+/**
+ * Sets the 'fileName' attributes of a ScriptTask with new values.
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} scriptTaskId - the scriptTaskId to look for
+ * @param {string} newFileName - the new value of 'fileName' attribute
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
+ */
+async function setScriptTaskData(bpmn, scriptTaskId, newFileName) {
+  return await manipulateElementById(bpmn, scriptTaskId, (scriptTask) => {
+    scriptTask.fileName = newFileName;
   });
 }
 
@@ -573,6 +586,7 @@ module.exports = {
   setDeploymentMethod,
   setMachineInfo,
   setUserTaskData,
+  setScriptTaskData,
   addConstraintsToElementById,
   addCallActivityReference,
   removeCallActivityReference,

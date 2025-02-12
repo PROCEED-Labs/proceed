@@ -70,8 +70,6 @@ context.global.setSync('_stdout_log', function (...args) {
 // TODO: pass these in as a process argument
 
 // TODO: setProgress(<number between 0 - 100>)
-// TODO: getService('capabilities')
-// TODO: getService('network')
 
 const structure = {
   log: ['get'],
@@ -88,7 +86,7 @@ for (const objName of Object.keys(structure)) {
   for (const functionName of functionNames) {
     context.evalClosureSync(
       `globalThis["${objName}"]["${functionName}"] = function (...args) {
-        return $0.applySyncPromise(null, [JSON.stringify(args)], {}).copyInto();
+        return $0.applySyncPromise(null, [JSON.stringify(args)], {});
       }`,
       [
         new ivm.Reference(async function (args) {
@@ -97,12 +95,44 @@ for (const objName of Object.keys(structure)) {
             args: JSON.parse(args),
           });
 
-          return new ivm.ExternalCopy(result);
+          return new ivm.ExternalCopy(result).copyInto({ release: true, transferIn: true });
         }),
       ],
     );
   }
 }
+
+function _callToService(serviceName, method, args) {
+  /**@type {import('isolated-vm').Reference} */
+  const call = $0;
+  return call.apply(null, [serviceName, method, JSON.stringify(args)], {
+    result: { promise: true, copy: true },
+  });
+}
+function _getService(serviceName) {
+  return new Proxy(
+    {},
+    {
+      get: function (_, method) {
+        return (...args) => callToService(serviceName, method, args);
+      },
+    },
+  );
+}
+context.evalClosureSync(
+  `
+  ${_callToService.toString()}; globalThis["callToService"] = _callToService;
+  ${_getService.toString()}; globalThis["getService"] = _getService;
+  `,
+  [
+    new ivm.Reference(function (serviceName, method, args) {
+      return callToExecutor('call', {
+        functionName: `getService.${serviceName}.${method}`,
+        args: [processId, processInstanceId, tokenId, ...JSON.parse(args)],
+      });
+    }),
+  ],
+);
 
 const errorClasses = ['BpmnError', 'BpmnEscalation'];
 

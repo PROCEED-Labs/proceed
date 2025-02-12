@@ -22,24 +22,27 @@ export function setDefinitionsName(bpmn: string | object, name: string): Promise
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {object} versionInformation - the version information to set in the definitions object
- * @param {(string|number)} [versionInformation.version] - the version number (a time since epoch string or number)
+ * @param {(string)} [versionInformation.versionId] - the versionId (a uuid assigned to a version)
  * @param {string} [versionInformation.versionName] - a human readable name for the version
  * @param {string} [versionInformation.versionDescription] - a longer description of the version
- * @param {(string|number)} [versionInformation.versionBasedOn] - a reference to the version this one is based on
+ * @param {(string)} [versionInformation.versionBasedOn] - a reference to the version this one is based on
+ * @param {(string)} [versionInformation.versionCreatedOn] - a timestamp (UTC) when the version was created
  * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 export function setDefinitionsVersionInformation(
   bpmn: string | object,
   {
-    version,
+    versionId,
     versionName,
     versionDescription,
     versionBasedOn,
+    versionCreatedOn,
   }: {
-    version?: string | number;
+    versionId?: string;
     versionName?: string;
     versionDescription?: string;
-    versionBasedOn?: string | number;
+    versionBasedOn?: string;
+    versionCreatedOn?: string;
   },
 ): Promise<string | object>;
 /**
@@ -121,6 +124,19 @@ export function setUserTaskData(
   userTaskId: string,
   newFileName: string,
   newImplementation?: string,
+): Promise<string | object>;
+/**
+ * Sets the 'fileName' attributes of a ScriptTask with new values.
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} scriptTaskId - the scriptTaskId to look for
+ * @param {string} newFileName - the new value of 'fileName' attribute
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
+ */
+export function setScriptTaskData(
+  bpmn: string | object,
+  scriptTaskId: string,
+  newFileName: string,
 ): Promise<string | object>;
 /**
  * Adds the given constraints to the bpmn element with the given id
@@ -212,4 +228,4 @@ export function updatePerformersOnElementById(
   bpmn: string | object,
   elementId: string,
   performers: any[],
-): Promise<any>;
+): Promise<string | object>;

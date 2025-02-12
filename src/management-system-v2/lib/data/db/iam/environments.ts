@@ -14,7 +14,8 @@ import {
 import { createFolder } from '../folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { enableUseDB } from 'FeatureFlags';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
+import { Prisma } from '@prisma/client';
 
 export async function getEnvironments() {
   //TODO : Ability check
@@ -62,55 +63,88 @@ export async function activateEnvrionment(environmentId: string, userId: string)
   ]);
 }
 
-export async function addEnvironment(environmentInput: EnvironmentInput, ability?: Ability) {
+export async function addEnvironment(
+  environmentInput: EnvironmentInput,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+): Promise<Environment> {
+  // If `tx` is provided, use it; otherwise, start a new transaction
+  if (!tx) {
+    return db.$transaction(async (trx) => {
+      return await addEnvironment(environmentInput, ability, trx);
+    });
+  }
+
+  const dbMutator = tx;
+
   const newEnvironment = environmentSchema.parse(environmentInput);
   const id = newEnvironment.isOrganization ? v4() : newEnvironment.ownerId;
 
   if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
 
   const newEnvironmentWithId = { ...newEnvironment, id };
-  await db.space.create({ data: { ...newEnvironmentWithId } });
+  await dbMutator.space.create({ data: { ...newEnvironmentWithId } });
 
   if (newEnvironment.isOrganization) {
-    const adminRole = await addRole({
-      environmentId: id,
-      name: '@admin',
-      default: true,
-      permissions: { All: adminPermissions },
-    });
-    await addRole({
-      environmentId: id,
-      name: '@guest',
-      default: true,
-      permissions: {},
-    });
-    await addRole({
-      environmentId: id,
-      name: '@everyone',
-      default: true,
-      permissions: {},
-    });
+    const adminRole = await addRole(
+      {
+        environmentId: id,
+        name: '@admin',
+        default: true,
+        permissions: { All: adminPermissions },
+      },
+      undefined,
+      tx,
+    );
+    await addRole(
+      {
+        environmentId: id,
+        name: '@guest',
+        default: true,
+        permissions: {},
+      },
+      undefined,
+      tx,
+    );
+    await addRole(
+      {
+        environmentId: id,
+        name: '@everyone',
+        default: true,
+        permissions: {},
+      },
+      undefined,
+      tx,
+    );
 
     if (newEnvironment.isActive) {
-      await addMember(id, newEnvironment.ownerId);
+      await addMember(id, newEnvironment.ownerId, undefined, tx);
 
-      await addRoleMappings([
-        {
-          environmentId: id,
-          roleId: adminRole.id,
-          userId: newEnvironment.ownerId,
-        },
-      ]);
+      await addRoleMappings(
+        [
+          {
+            environmentId: id,
+            roleId: adminRole.id,
+            userId: newEnvironment.ownerId,
+          },
+        ],
+        undefined,
+        tx,
+      );
     }
   }
 
   // add root folder
-  await createFolder({
-    environmentId: id,
-    name: '',
-    parentId: null,
-    createdBy: null,
-  });
+  await createFolder(
+    {
+      environmentId: id,
+      name: '',
+      parentId: null,
+      createdBy: null,
+    },
+    undefined,
+    tx,
+  );
 
   return newEnvironmentWithId;
 }
@@ -184,19 +218,21 @@ export async function getOrganizationLogo(organizationId: string) {
   if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
 
   try {
-    //return getLogo(organizationId);
+    return await db.space.findUnique({ where: { id: organizationId }, select: { logo: true } });
   } catch (err) {
     return undefined;
   }
 }
 
 export async function organizationHasLogo(organizationId: string) {
-  const organization = await getEnvironmentById(organizationId, undefined, {
-    throwOnNotFound: true,
+  const res = await db.space.findUnique({
+    where: { id: organizationId },
+    select: { logo: true },
   });
-  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
-
-  return false; //hasLogo(organizationId);
+  if (res?.logo) {
+    return true;
+  }
+  return false;
 }
 
 export async function deleteOrganizationLogo(organizationId: string) {

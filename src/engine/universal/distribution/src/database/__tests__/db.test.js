@@ -12,8 +12,10 @@ jest.mock('@proceed/system', () => {
       delete: jest.fn(),
       writeProcessVersionBpmn: original.data.writeProcessVersionBpmn,
       writeUserTaskHTML: original.data.writeUserTaskHTML,
+      writeScriptTaskScript: original.data.writeScriptTaskScript,
       readProcessVersionBpmn: original.data.readProcessVersionBpmn,
       getAllUserTasks: original.data.getAllUserTasks,
+      getAllScriptTasks: () => [],
       readImages: original.data.readImages,
     },
   };
@@ -53,6 +55,10 @@ const TwoProcessesDefinition = fs.readFileSync(
 );
 const OneUserTaskDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/OneUserTask.xml'),
+  'utf-8',
+);
+const FileRefScriptTaskDefinition = fs.readFileSync(
+  path.resolve(__dirname, 'data/FileRefScriptTask.xml'),
   'utf-8',
 );
 const MissingHtmlDefinition = fs.readFileSync(
@@ -97,7 +103,7 @@ describe('Tests for the functions in the database module', () => {
   });
   describe('isProcessVersionExisting', () => {
     it('returns false if the process does not exist', async () => {
-      const result = await db.isProcessVersionExisting('testFile', 123);
+      const result = await db.isProcessVersionExisting('testFile', 'abc');
 
       expect(result).toBe(false);
       expect(data.read).toHaveBeenCalledWith('processes.json/testFile');
@@ -105,11 +111,11 @@ describe('Tests for the functions in the database module', () => {
     it('returns false if the specific version of the process does not exist', async () => {
       data.read.mockResolvedValueOnce(
         JSON.stringify({
-          123: {},
+          abc: {},
         }),
       );
 
-      const result = await db.isProcessVersionExisting('testFile', 456);
+      const result = await db.isProcessVersionExisting('testFile', 'def');
 
       expect(result).toBe(false);
       expect(data.read).toHaveBeenCalledWith('processes.json/testFile');
@@ -117,11 +123,11 @@ describe('Tests for the functions in the database module', () => {
     it('returns true if the process version exists', async () => {
       data.read.mockResolvedValueOnce(
         JSON.stringify({
-          123: {},
+          abc: {},
         }),
       );
 
-      const result = await db.isProcessVersionExisting('testFile', 123);
+      const result = await db.isProcessVersionExisting('testFile', 'abc');
 
       expect(result).toBe(true);
       expect(data.read).toHaveBeenCalledWith('processes.json/testFile');
@@ -136,22 +142,22 @@ describe('Tests for the functions in the database module', () => {
         'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
-        123: {
+        abc: {
           deploymentDate: expect.any(Number),
           processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-          needs: { html: [], imports: [], images: [] },
+          needs: { html: [], imports: [], images: [], scripts: [] },
           validated: false,
         },
       });
       expect(data.write.mock.calls[1][0]).toEqual(
-        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn',
+        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-abc.bpmn',
       );
       expect(data.write.mock.calls[1][1]).toEqual(OneProcessDefinition);
     });
     it('will save the information of the new version alongside the ones for existing versions', async () => {
       data.read.mockResolvedValueOnce(
         JSON.stringify({
-          456: 'otherVersionInformation',
+          def: 'otherVersionInformation',
         }),
       );
 
@@ -162,16 +168,16 @@ describe('Tests for the functions in the database module', () => {
         'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
-        123: {
+        abc: {
           deploymentDate: expect.any(Number),
           processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-          needs: { html: [], imports: [], images: [] },
+          needs: { html: [], imports: [], images: [], scripts: [] },
           validated: false,
         },
-        456: 'otherVersionInformation',
+        def: 'otherVersionInformation',
       });
       expect(data.write.mock.calls[1][0]).toEqual(
-        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn',
+        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-abc.bpmn',
       );
       expect(data.write.mock.calls[1][1]).toEqual(OneProcessDefinition);
     });
@@ -183,17 +189,37 @@ describe('Tests for the functions in the database module', () => {
         'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
+        abc: {
+          deploymentDate: expect.any(Number),
+          processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
+          needs: { html: ['User_Task_1'], imports: [], images: [], scripts: [] },
+          validated: false,
+        },
+      });
+      expect(data.write.mock.calls[1][0]).toEqual(
+        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-abc.bpmn',
+      );
+      expect(data.write.mock.calls[1][1]).toEqual(OneUserTaskDefinition);
+    });
+    it('will calculate process fragments (scripts) the given process depends on', async () => {
+      await db.saveProcessVersionDefinition(FileRefScriptTaskDefinition);
+
+      expect(data.write).toHaveBeenCalledTimes(2);
+      expect(data.write.mock.calls[0][0]).toEqual(
+        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
+      );
+      expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
         123: {
           deploymentDate: expect.any(Number),
           processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-          needs: { html: ['User_Task_1'], imports: [], images: [] },
+          needs: { html: [], imports: [], images: [], scripts: ['Script_Task_1'] },
           validated: false,
         },
       });
       expect(data.write.mock.calls[1][0]).toEqual(
         '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn',
       );
-      expect(data.write.mock.calls[1][1]).toEqual(OneUserTaskDefinition);
+      expect(data.write.mock.calls[1][1]).toEqual(FileRefScriptTaskDefinition);
     });
     it('will calculate process fragments (imports) the given process depends on', async () => {
       await db.saveProcessVersionDefinition(OneImportDefinition);
@@ -203,7 +229,7 @@ describe('Tests for the functions in the database module', () => {
         'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
-        789: {
+        ghi: {
           deploymentDate: expect.any(Number),
           processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
           needs: {
@@ -212,16 +238,17 @@ describe('Tests for the functions in the database module', () => {
               {
                 definitionId: '_a04f4854-6e50-408f-8ec5-18f4541c32e9',
                 processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-                version: 123,
+                versionId: 'abc',
               },
             ],
             images: [],
+            scripts: [],
           },
           validated: false,
         },
       });
       expect(data.write.mock.calls[1][0]).toEqual(
-        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-789.bpmn',
+        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-ghi.bpmn',
       );
       expect(data.write.mock.calls[1][1]).toEqual(OneImportDefinition);
     });
@@ -240,6 +267,7 @@ describe('Tests for the functions in the database module', () => {
             html: [],
             imports: [],
             images: ['Activity_08fwikp_image123e6803-63a8-4cf1-9596-2999fdd016a7.png'],
+            scripts: [],
           },
           validated: false,
         },
@@ -259,10 +287,10 @@ describe('Tests for the functions in the database module', () => {
     it('saves the html of an user task into the file the process containing it is stored in', async () => {
       data.read.mockResolvedValueOnce(
         JSON.stringify({
-          123: {
+          abc: {
             deploymentDate: expect.any(Number),
             processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-            needs: { html: [], imports: [], images: [] },
+            needs: { html: [], imports: [], images: [], scripts: [] },
             validated: false,
           },
         }),
@@ -281,22 +309,22 @@ describe('Tests for the functions in the database module', () => {
     it('parses image dependencies from the html and adds them to process versions that use the user task', async () => {
       data.read.mockResolvedValueOnce(
         JSON.stringify({
-          123: {
+          abc: {
             deploymentDate: expect.any(Number),
             processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-            needs: { html: [], imports: [], images: [] },
+            needs: { html: [], imports: [], images: [], scripts: [] },
             validated: false,
           },
-          456: {
+          def: {
             deploymentDate: expect.any(Number),
             processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-            needs: { html: ['taskFileName'], imports: [], images: [] },
+            needs: { html: ['taskFileName'], imports: [], images: [], scripts: [] },
             validated: false,
           },
           678: {
             deploymentDate: expect.any(Number),
             processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-            needs: { html: ['taskFileName'], imports: [], images: [] },
+            needs: { html: ['taskFileName'], imports: [], images: [], scripts: [] },
             validated: false,
           },
         }),
@@ -315,19 +343,20 @@ describe('Tests for the functions in the database module', () => {
       expect(data.write).toHaveBeenCalledWith(
         'processes.json/processDefinitionId',
         JSON.stringify({
-          123: {
+          abc: {
             deploymentDate: expect.any(Number),
             processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-            needs: { html: [], imports: [], images: [] },
+            needs: { html: [], imports: [], images: [], scripts: [] },
             validated: false,
           },
-          456: {
+          def: {
             deploymentDate: expect.any(Number),
             processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
             needs: {
               html: ['taskFileName'],
               imports: [],
               images: ['taskFileName_image72fe83de-2c44-4d1f-ae71-6b323bee7f1c.png'],
+              scripts: [],
             },
             validated: false,
           },
@@ -338,6 +367,7 @@ describe('Tests for the functions in the database module', () => {
               html: ['taskFileName'],
               imports: [],
               images: ['taskFileName_image72fe83de-2c44-4d1f-ae71-6b323bee7f1c.png'],
+              scripts: [],
             },
             validated: false,
           },
@@ -350,6 +380,36 @@ describe('Tests for the functions in the database module', () => {
     });
   });
 
+  describe('saveScriptString', () => {
+    it('saves the script of a script task into the file the process containing it is stored in', async () => {
+      data.read.mockResolvedValueOnce(
+        JSON.stringify({
+          123: {
+            deploymentDate: expect.any(Number),
+            processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
+            needs: { html: [], imports: [], images: [], scripts: [] },
+            validated: false,
+          },
+        }),
+      );
+      const script = 'console.log("Hello World");';
+      await db.saveScriptString('processDefinitionId', 'taskFileName', script);
+
+      expect(data.write).toHaveBeenCalledTimes(1);
+      expect(data.write).toHaveBeenCalledWith(
+        'processDefinitionId/script-tasks/taskFileName.js',
+        script,
+        undefined,
+      );
+    });
+
+    it('rejects on missing script', async () => {
+      await expect(
+        db.saveScriptString('processDefinitionId', 'taskFileName'),
+      ).rejects.toThrowError();
+    });
+  });
+
   describe('getter functions', () => {
     describe('getProcessInfo', () => {
       beforeEach(() => {
@@ -358,10 +418,10 @@ describe('Tests for the functions in the database module', () => {
             return OneProcessDefinition;
           } else {
             return JSON.stringify({
-              123: {
+              abc: {
                 deploymentDate: 1337,
                 processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-                needs: { html: [], imports: [], images: [] },
+                needs: { html: [], imports: [], images: [], scripts: [] },
                 validated: false,
               },
             });
@@ -379,8 +439,8 @@ describe('Tests for the functions in the database module', () => {
               deploymentDate: 1337,
               definitionName: 'OneProcess',
               deploymentMethod: 'dynamic',
-              needs: { html: [], imports: [], images: [] },
-              version: 123,
+              needs: { html: [], imports: [], images: [], scripts: [] },
+              versionId: 'abc',
               versionName: 'Version 1',
               versionDescription: 'This is the first version',
               basedOnVersion: undefined,
@@ -413,6 +473,7 @@ describe('Tests for the functions in the database module', () => {
         html: [],
         imports: [],
         images: [],
+        scripts: [],
       });
     });
 
@@ -425,6 +486,20 @@ describe('Tests for the functions in the database module', () => {
         html: ['User_Task_1'],
         imports: [],
         images: [],
+        scripts: [],
+      });
+    });
+
+    it('returns information about required scripts if a script task is referencing any', async () => {
+      const bpmnObj = await toBpmnObject(FileRefScriptTaskDefinition);
+
+      const result = await getRequiredProcessFragments(bpmnObj);
+
+      expect(result).toEqual({
+        html: [],
+        imports: [],
+        images: [],
+        scripts: ['Script_Task_1'],
       });
     });
 
@@ -439,10 +514,11 @@ describe('Tests for the functions in the database module', () => {
           {
             definitionId: '_a04f4854-6e50-408f-8ec5-18f4541c32e9',
             processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
-            version: 123,
+            versionId: 'abc',
           },
         ],
         images: [],
+        scripts: [],
       });
     });
 
@@ -461,6 +537,7 @@ describe('Tests for the functions in the database module', () => {
           html: [],
           imports: [],
           images: [],
+          scripts: [],
         });
       });
     }
@@ -486,6 +563,7 @@ describe('Tests for the functions in the database module', () => {
         html: ['User_Task_2'],
         imports: [],
         images: [],
+        scripts: [],
       });
     });
   });
@@ -493,7 +571,7 @@ describe('Tests for the functions in the database module', () => {
   describe('isProcessVersionValid', () => {
     it('returns true for a process without any user tasks and imports and sets validated flag in file', async () => {
       data.read.mockImplementation(async (path) => {
-        if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'Something';
         } else if (path === 'processDefinitionId/user-tasks/') {
           return [];
@@ -501,26 +579,26 @@ describe('Tests for the functions in the database module', () => {
           return [];
         } else {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: false,
-              needs: { html: [], imports: [], images: [] },
+              needs: { html: [], imports: [], images: [], scripts: [] },
               processId: 'someId',
             },
           });
         }
       });
 
-      const result = await db.isProcessVersionValid('processDefinitionId', 123);
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
 
       expect(result).toBe(true);
       expect(data.write).toHaveBeenCalledWith(
         'processes.json/processDefinitionId',
         JSON.stringify({
-          123: {
+          abc: {
             deploymentDate: 1337,
             validated: true,
-            needs: { html: [], imports: [], images: [] },
+            needs: { html: [], imports: [], images: [], scripts: [] },
             processId: 'someId',
           },
         }),
@@ -528,28 +606,28 @@ describe('Tests for the functions in the database module', () => {
     });
     it('returns true immediately when validated flag is set in the process file', async () => {
       data.read.mockImplementation(async (path) => {
-        if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'Something';
         } else {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: true,
-              needs: { html: [], imports: [], images: [] },
+              needs: { html: [], imports: [], images: [], scripts: [] },
               processId: 'someId',
             },
           });
         }
       });
 
-      const result = await db.isProcessVersionValid('processDefinitionId', 123);
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
 
       expect(result).toBe(true);
       expect(data.write).toBeCalledTimes(0);
     });
     it('returns false for missing user task html', async () => {
       data.read.mockImplementation(async (path) => {
-        if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'someBpmn';
         } else if (path === 'processDefinitionId/user-tasks/') {
           return [];
@@ -557,10 +635,10 @@ describe('Tests for the functions in the database module', () => {
           return [];
         } else {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: false,
-              needs: { html: ['html1'], imports: [], images: [] },
+              needs: { html: ['html1'], imports: [], images: [], scripts: [] },
               processId: 'someId',
             },
           });
@@ -571,9 +649,33 @@ describe('Tests for the functions in the database module', () => {
 
       expect(result).toBe(false);
     });
-    it('returns true for process with user task and existing html', async () => {
+    it('returns false for missing script task script', async () => {
       data.read.mockImplementation(async (path) => {
         if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+          return 'someBpmn';
+        } else if (path === 'processDefinitionId/script-tasks/') {
+          return [];
+        } else if (path === 'processDefinitionId/images/') {
+          return [];
+        } else {
+          return JSON.stringify({
+            123: {
+              deploymentDate: 1337,
+              validated: false,
+              needs: { html: [], imports: [], images: [], scripts: ['someScript'] },
+              processId: 'someId',
+            },
+          });
+        }
+      });
+
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
+
+      expect(result).toBe(false);
+    });
+    it('returns true for process with user task and existing html', async () => {
+      data.read.mockImplementation(async (path) => {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'someBpmn';
         } else if (path === 'processDefinitionId/user-tasks/') {
           return ['html1'];
@@ -583,33 +685,34 @@ describe('Tests for the functions in the database module', () => {
           return [];
         } else {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: false,
-              needs: { html: ['html1'], imports: [], images: [] },
+              needs: { html: ['html1'], imports: [], images: [], scripts: [] },
               processId: 'someId',
             },
           });
         }
       });
 
-      const result = await db.isProcessVersionValid('processDefinitionId', 123);
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
 
       expect(result).toBe(true);
     });
     it('returns false for missing definition of imported process', async () => {
       data.read.mockImplementation(async (path) => {
-        if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'someBpmn';
         } else if (path === 'processes.json/processDefinitionId') {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: false,
               needs: {
                 html: [],
-                imports: [{ definitionId: 'otherProcessDefinitionId', version: 456 }],
+                imports: [{ definitionId: 'otherProcessDefinitionId', versionId: 'def' }],
                 images: [],
+                scripts: [],
               },
               processId: 'someId',
             },
@@ -619,25 +722,25 @@ describe('Tests for the functions in the database module', () => {
         }
       });
 
-      const result = await db.isProcessVersionValid('processDefinitionId', 123);
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
 
       expect(result).toBe(false);
     });
     it('returns true for existing imported process with existing user task html', async () => {
       data.read.mockImplementation(async (path) => {
-        if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'someBpmn';
         } else if (path === 'processDefinitionId/user-tasks/') {
           return [];
         } else if (path === 'processDefinitionId/images/') {
           return [];
-        } else if (path === 'otherProcessDefinitionId/otherProcessDefinitionId-456.bpmn') {
+        } else if (path === 'otherProcessDefinitionId/otherProcessDefinitionId-def.bpmn') {
           return 'someBpmn';
         } else if (path === 'otherProcessDefinitionId/user-tasks/') {
           return ['html2'];
         } else if (path === 'processes.json/processDefinitionId') {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: false,
               needs: {
@@ -645,78 +748,84 @@ describe('Tests for the functions in the database module', () => {
                 imports: [
                   {
                     definitionId: 'otherProcessDefinitionId',
-                    version: 456,
+                    versionId: 'def',
                     processId: 'someOtherId',
                   },
                 ],
                 images: [],
+                scripts: [],
               },
               processId: 'someId',
             },
           });
         } else {
           return JSON.stringify({
-            456: {
+            def: {
               deploymentDate: 1337,
               validated: false,
-              needs: { html: ['html2'], imports: [], images: [] },
+              needs: { html: ['html2'], imports: [], images: [], scripts: [] },
               processId: 'someOtherId',
             },
           });
         }
       });
 
-      const result = await db.isProcessVersionValid('processDefinitionId', 123);
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
 
       expect(result).toBe(true);
     });
     it("returns false if the process id referenced in the importing definitions doesn't match the process id in the referenced definitions", async () => {
       data.read.mockImplementation(async (path) => {
-        if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'someBpmn';
         } else if (path === 'processDefinitionId/user-tasks/') {
           return [];
         } else if (path === 'processDefinitionId/images/') {
           return [];
-        } else if (path === 'otherProcessDefinitionId/otherProcessDefinitionId-456.bpmn') {
+        } else if (path === 'otherProcessDefinitionId/otherProcessDefinitionId-def.bpmn') {
           return 'someBpmn';
         } else if (path === 'otherProcessDefinitionId/user-tasks/') {
           return ['html2.html'];
         } else if (path === 'processes.json/processDefinitionId') {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: false,
               needs: {
                 html: [],
                 imports: [
-                  { definitionId: 'otherProcessDefinitionId', version: 456, processId: 'someId' },
+                  {
+                    definitionId: 'otherProcessDefinitionId',
+                    versionId: 'def',
+                    processId: 'someId',
+                  },
                 ],
                 images: [],
+                scripts: [],
               },
               processId: 'someId',
             },
           });
         } else {
           return JSON.stringify({
-            456: {
+            def: {
               deploymentDate: 1337,
               validated: false,
-              needs: { html: ['html2'], imports: [], images: [] },
+              needs: { html: ['html2'], imports: [], images: [], scripts: [] },
               processId: 'someOtherId',
             },
           });
         }
       });
 
-      const result = await db.isProcessVersionValid('processDefinitionId', 123);
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
 
       expect(result).toBe(false);
     });
 
     it('returns false for missing image', async () => {
       data.read.mockImplementation(async (path) => {
-        if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'someBpmn';
         } else if (path === 'processDefinitionId/user-tasks/') {
           return [];
@@ -724,23 +833,23 @@ describe('Tests for the functions in the database module', () => {
           return [];
         } else {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: false,
-              needs: { html: [], imports: [], images: ['someImage'] },
+              needs: { html: [], imports: [], images: ['someImage'], scripts: [] },
               processId: 'someId',
             },
           });
         }
       });
 
-      const result = await db.isProcessVersionValid('processDefinitionId', 123);
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
 
       expect(result).toBe(false);
     });
     it('returns true for process with existing image', async () => {
       data.read.mockImplementation(async (path) => {
-        if (path === 'processDefinitionId/processDefinitionId-123.bpmn') {
+        if (path === 'processDefinitionId/processDefinitionId-abc.bpmn') {
           return 'someBpmn';
         } else if (path === 'processDefinitionId/user-tasks/') {
           return [];
@@ -748,17 +857,17 @@ describe('Tests for the functions in the database module', () => {
           return ['someImage'];
         } else {
           return JSON.stringify({
-            123: {
+            abc: {
               deploymentDate: 1337,
               validated: false,
-              needs: { html: [], imports: [], images: ['someImage'] },
+              needs: { html: [], imports: [], images: ['someImage'], scripts: [] },
               processId: 'someId',
             },
           });
         }
       });
 
-      const result = await db.isProcessVersionValid('processDefinitionId', 123);
+      const result = await db.isProcessVersionValid('processDefinitionId', 'abc');
 
       expect(result).toBe(true);
     });

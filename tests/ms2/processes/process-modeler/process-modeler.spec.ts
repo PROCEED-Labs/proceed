@@ -3,6 +3,7 @@ import { test, expect } from '../processes.fixtures';
 import { openModal, closeModal } from '../../testUtils';
 
 test('process modeler', async ({ processModelerPage, processListPage }) => {
+  test.slow();
   const { page } = processModelerPage;
   const definitionId = await processListPage.createProcess({ processName: 'Process Name' });
 
@@ -65,7 +66,9 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(page.getByRole('option', { name: 'Latest Version' })).toBeVisible();
   await expect(page.getByRole('option', { name: 'Version 1' })).toBeVisible();
   await page.getByRole('option', { name: 'Version 1' }).click();
-  const expectedURLWithVersion = new RegExp(`\\/processes\\/${definitionId}\\?version=\\d+$`);
+  const expectedURLWithVersion = new RegExp(
+    `\\/processes\\/${definitionId}\\?version=[a-zA-Z0-9-_]+$`,
+  );
   await page.waitForURL(expectedURLWithVersion);
   expect(expectedURLWithVersion.test(page.url())).toBeTruthy();
 
@@ -256,6 +259,25 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
+  // create new process version - Needed for embed
+  const openVersionCreationDialog = page
+    .getByLabel('general-modeler-toolbar')
+    .getByRole('button', { name: 'plus' });
+  let versionModal = await openModal(page, () => openVersionCreationDialog.click());
+  const versionCreationDialog = page.getByRole('dialog', {
+    name: 'Create New Version',
+  });
+  await expect(versionCreationDialog).toBeVisible();
+
+  // Fill version creation dialog and create new version
+  const versionCreationSubmitButton = versionModal.getByRole('button', {
+    name: 'Create Version',
+  });
+  await versionModal.getByPlaceholder('Version Name').fill('Version 1');
+  await versionModal.getByPlaceholder('Version Description').fill('description');
+  await closeModal(versionModal, () => versionCreationSubmitButton.click());
+
+  //Open share modal
   const modal = await openModal(page, () =>
     page.getByRole('button', { name: 'share-alt' }).click(),
   );
@@ -273,7 +295,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   clipboardData = await ms2Page.readClipboard(true);
 
   const regex =
-    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
+    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+\&version=[a-zA-Z0-9._-]+)'/;
   expect(clipboardData).toMatch(regex);
 
   /*************************** Copy Diagram As PNG ********************************/
@@ -330,7 +352,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   // Add the shared process to the workspace
   await openModal(newPage, async () => {
-    await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
+    await newPage.getByRole('button', { name: 'edit' }).click();
     await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
   });
 
@@ -338,11 +360,15 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
 
   await newPage.getByRole('button', { name: 'My Space' }).click();
+
+  await newPage.getByText('root', { exact: true }).click();
+  await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
   const newProcessId = newPage.url().split('/processes/').pop();
 
-  await newPage.getByRole('link', { name: 'process list' }).click();
+  await newPage.getByRole('menuitem', { name: 'Processes' }).click();
+  await newPage.getByRole('link', { name: 'Editor' }).click();
   await newPage.waitForURL(/processes/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });

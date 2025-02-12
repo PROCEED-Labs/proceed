@@ -12,6 +12,7 @@ import jwt from 'jsonwebtoken';
 
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { invalidRequest, readImage } from '../../../../image-helpers';
+import { v4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
@@ -107,9 +108,11 @@ export async function PUT(
   const readImageResult = await readImage(request);
   if (readImageResult.error) return readImageResult.error;
 
-  await saveProcessImage(processId, imageFileName, readImageResult.buffer);
+  const newImageFileName = `_image${v4()}.${readImageResult.fileType.ext}`;
 
-  return new NextResponse(null, { status: 200, statusText: 'OK' });
+  await saveProcessImage(processId, newImageFileName, readImageResult.buffer);
+
+  return new NextResponse(newImageFileName, { status: 201, statusText: 'Created' });
 }
 
 export async function DELETE(

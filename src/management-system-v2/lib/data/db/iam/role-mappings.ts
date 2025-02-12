@@ -5,7 +5,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { z } from 'zod';
 import { getUserById } from './users';
 import { getEnvironmentById } from './environments';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 
 const RoleMappingInputSchema = z.object({
@@ -97,7 +97,13 @@ export async function getRoleMappingByUserId(
 
 // TODO: also check if user exists?
 /** Adds a user role mapping */
-export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?: Ability) {
+export async function addRoleMappings(
+  roleMappingsInput: RoleMappingInput[],
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx ? tx : db;
+
   const roleMappings = roleMappingsInput.map((roleMappingInput) =>
     RoleMappingInputSchema.parse(roleMappingInput),
   );
@@ -109,13 +115,20 @@ export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], abi
   for (const roleMapping of allowedRoleMappings) {
     const { roleId, userId, environmentId } = roleMapping;
 
-    const environment = await getEnvironmentById(environmentId);
-    if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
-    if (!environment.isOrganization)
-      throw new Error('Cannot add role mapping to personal environment');
+    /* 
+       Check for role and environment, only if not in transaction
+       Reason: if the transaction was stared by another function,
+       for eg: add User, the values like environment, user from previous tx queries are not available until the tx is comitted. 
+    */
+    if (!tx) {
+      const environment = await getEnvironmentById(environmentId);
+      if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
+      if (!environment.isOrganization)
+        throw new Error('Cannot add role mapping to personal environment');
 
-    const role = await getRoleById(roleId);
-    if (!role) throw new Error('Role not found');
+      const role = await getRoleById(roleId);
+      if (!role) throw new Error('Role not found');
+    }
 
     const user = await getUserById(userId);
     if (!user) throw new Error('User not found');
@@ -134,12 +147,10 @@ export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], abi
       environmentId,
       roleId,
       userId,
-      expiration: roleMapping.expiration,
       createdOn,
-      roleName: role.name,
     };
 
-    await db.roleMember.create({
+    await dbMutator.roleMember.create({
       data: {
         id: newRoleMapping.id,
         roleId: newRoleMapping.roleId,

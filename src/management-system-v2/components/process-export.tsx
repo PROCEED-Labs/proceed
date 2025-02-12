@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 
 import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider, Tooltip } from 'antd';
-import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { useEnvironment } from './auth-can';
 import { exportProcesses } from '@/lib/process-export';
@@ -15,6 +14,8 @@ import {
   settingsOptions as pdfOptions,
 } from '@/app/shared-viewer/settings-modal';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import { useRouter } from 'next/navigation';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -99,6 +100,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   preselectedExportType,
   resetPreselectedExportType,
 }) => {
+  const router = useRouter();
+
   const [selectedType, setSelectedType] = useState<ProcessExportTypes | undefined>(
     preselectedExportType,
   );
@@ -107,9 +110,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     setSelectedType(preselectedExportType);
   }, [preselectedExportType]);
 
-  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(
-    ['metaData'].concat(pdfOptions),
-  );
+  const [selectedOptions, setSelectedOptions] = useState<string[]>(['metaData'].concat(pdfOptions));
 
   const [isExporting, setIsExporting] = useState(false);
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
@@ -120,7 +121,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     setSelectedType(value);
   };
 
-  const handleOptionSelectionChange = (checkedValues: CheckboxValueType[]) => {
+  const handleOptionSelectionChange = (checkedValues: string[]) => {
     setSelectedOptions(checkedValues);
   };
 
@@ -138,18 +139,17 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     if (selectedType === 'pdf') {
       const { definitionId, processVersion } = processes[0];
 
-      // the timestamp does not matter here since it is overriden by the user being an owner of the process
-      const url = await generateSharedViewerUrl(
-        {
-          processId: definitionId,
-          timestamp: 0,
-        },
-        processVersion ? `${processVersion}` : undefined,
-        selectedOptions as string[],
-      );
-
-      // open the documentation page in a new tab (the print menu will be opened automatically)
-      window.open(url, `${definitionId}-${processVersion}-tab`);
+      // the timestamp does not matter here since it is overridden by the user being an owner of the process
+      await wrapServerCall({
+        fn: () =>
+          generateSharedViewerUrl(
+            { processId: definitionId, timestamp: 0 },
+            processVersion || undefined,
+            selectedOptions as string[],
+          ),
+        onSuccess: (url) =>
+          router.push(new URL(url, `${definitionId}-${processVersion}-tab`).toString()),
+      });
     } else {
       await exportProcesses(
         {

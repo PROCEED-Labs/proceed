@@ -6,10 +6,10 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import { getParentConfigurations } from '@/lib/data/legacy/machine-config';
 import ParentConfigList from './parent-config-list';
-import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
+import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { env } from '@/lib/env-vars';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
-export type ListItem = ParentConfigMetadata;
+export type ListItem = ParentConfig;
 
 const MachineConfigPage = async ({
   params,

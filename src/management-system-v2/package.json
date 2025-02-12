@@ -22,10 +22,11 @@
     "@dnd-kit/core": "6.1.0",
     "@dnd-kit/modifiers": "7.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@google-cloud/storage": "^7.12.0",
     "@lexical/html": "^0.17.0",
     "@lexical/react": "^0.17.0",
     "@monaco-editor/react": "4.6.0",
-    "@prisma/client": "^5.15.0",
+    "@prisma/client": "^6.2.1",
     "@proceed/bpmn-helper": "1.0.0",
     "@react-email/components": "^0.0.15",
     "@tanstack/react-query": "5.29.2",
@@ -38,6 +39,7 @@
     "bpmn-js-differ": "2.0.2",
     "classnames": "2.5.1",
     "conf": "6.2.4",
+    "dotenv": "^16.4.5",
     "env-paths": "^2.2.0",
     "file-type": "19.0.0",
     "fs-extra": "^10.1.0",
@@ -53,9 +55,11 @@
     "monaco-editor": "0.47.0",
     "next": "14.2.3",
     "next-auth": "4.24.7",
+    "node-cron": "^3.0.3",
     "nodemailer": "6.9.13",
     "openapi-fetch": "0.8.2",
     "react": "18.2.0",
+    "react-blockly": "9.0.0",
     "react-contenteditable": "^3.3.7",
     "react-dom": "18.2.0",
     "react-frame-component": "^5.2.6",
@@ -67,7 +71,8 @@
     "yup": "^0.32.9",
     "zod": "3.22.4",
     "zustand": "4.5.2",
-    "react-resizable": "^3.0.5"
+    "react-resizable": "^3.0.5",
+    "mqtt": "^5.10.1"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "5.28.11",
@@ -83,10 +88,11 @@
     "eslint-config-prettier": "9.1.0",
     "openapi-typescript": "6.7.4",
     "prettier": "3.2.5",
-    "prisma": "^5.15.0",
+    "prisma": "^6.2.1",
     "sass": "1.75.0",
     "ts-node": "10.9.2",
     "typescript": "5.4.5",
-    "@types/react-resizable": "^3.0.7"
+    "@types/react-resizable": "^3.0.7",
+    "execa": "9.5.2"
   }
 }

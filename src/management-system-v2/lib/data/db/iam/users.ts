@@ -12,7 +12,7 @@ import { OptionalKeys } from '@/lib/typescript-utils.js';
 import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
@@ -76,22 +76,26 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
   try {
     const userExists = await db.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
-    await db.user.create({
-      data: {
-        ...user,
-        isGuest: user.isGuest,
-      },
+    await db.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.user.create({
+        data: {
+          ...user,
+          isGuest: user.isGuest,
+        },
+      });
+      await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+      if ((await getSystemAdmins()).length === 0 && !user.isGuest)
+        await addSystemAdmin(
+          {
+            role: 'admin',
+            userId: user.id!,
+          },
+          tx,
+        );
     });
-    await addEnvironment({ ownerId: user.id, isOrganization: false });
   } catch (error) {
     console.error('Error adding new user: ', error);
   }
-
-  if ((await getSystemAdmins()).length === 0)
-    addSystemAdmin({
-      role: 'admin',
-      userId: user.id,
-    });
 
   return user as User;
 }
@@ -106,7 +110,15 @@ export class UserHasToDeleteOrganizationsError extends Error {
   }
 }
 
-export async function deleteUser(userId: string) {
+export async function deleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<User> {
+  // if no tx, start own transaction
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await deleteUser(userId, trx);
+    });
+  }
+
+  const dbMutator = tx;
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User doesn't exist");
 
@@ -124,19 +136,32 @@ export async function deleteUser(userId: string) {
     if (!adminRole)
       throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
 
-    if (adminRole.members.length === 1) orgsWithNoNextAdmin.push(environmentId);
+    if (adminRole.members.length === 1) {
+      orgsWithNoNextAdmin.push(environmentId);
+    } else {
+      /* make the next available admin the owner of the organization, because once the user is deleted, 
+      the space that the user owns will be deleted: ON DELETE CASCADE */
+      await dbMutator.space.update({
+        where: { id: environmentId },
+        data: { ownerId: adminRole.members.find((member) => member.userId !== userId)?.userId },
+      });
+    }
 
     if (orgsWithNoNextAdmin.length > 0)
       throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
   }
 
-  await db.space.deleteMany({ where: { ownerId: userId } });
-  await db.user.delete({ where: { id: userId } });
+  await dbMutator.user.delete({ where: { id: userId } });
 
-  return user;
+  return user as User;
 }
 
-export async function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
+export async function updateUser(
+  userId: string,
+  inputUser: Partial<AuthenticatedUser>,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
   const user = await getUserById(userId, { throwIfNotFound: true });
   const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user?.isGuest;
   let updatedUser: Prisma.UserUpdateInput;
@@ -158,7 +183,10 @@ export async function updateUser(userId: string, inputUser: Partial<Authenticate
     updatedUser = { ...user, ...newUserData };
   }
 
-  const updatedUserFromDB = await db.user.update({ where: { id: userId }, data: updatedUser });
+  const updatedUserFromDB = await dbMutator.user.update({
+    where: { id: userId },
+    data: updatedUser,
+  });
 
   return updatedUserFromDB;
 }

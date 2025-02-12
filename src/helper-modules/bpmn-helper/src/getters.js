@@ -64,27 +64,28 @@ async function getDefinitionsName(bpmn) {
  * Returns the version information of the given bpmn process definition
  *
  * @param {string|object} bpmn - the process definition as XML string or BPMN-moddle Object
- * @returns {(Promise.<{version?: number, name?: string, description?: string, versionBasedOn?: number}>)} - The version information if it exists
+ * @returns {(Promise.<{versionId?: string, name?: string, description?: string, versionBasedOn?: string, versionCreatedOn?: string }>)} - The version information if it exists
  * @throws {Error} will throw if the definition contains a version that is not a number
  */
 async function getDefinitionsVersionInformation(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
-  if (bpmnObj.version && isNaN(bpmnObj.version)) {
-    throw new Error('The process version has to be a number (time in ms since 1970)');
-  }
+  // if (bpmnObj.versionId && isNaN(bpmnObj.versionId)) {
+  //   throw new Error('The process version has to be a number (time in ms since 1970)');
+  // }
 
-  if (!bpmnObj.version) {
+  if (!bpmnObj.versionId) {
     return {
       versionBasedOn: bpmnObj.versionBasedOn,
     };
   }
 
   return {
-    version: parseInt(bpmnObj.version),
+    versionId: bpmnObj.versionId,
     name: bpmnObj.versionName,
     description: bpmnObj.versionDescription,
     versionBasedOn: bpmnObj.versionBasedOn,
+    versionCreatedOn: bpmnObj.versionCreatedOn,
   };
 }
 
@@ -198,6 +199,25 @@ async function getUserTaskFileNameMapping(bpmn) {
     mapping[task.id] = {
       fileName: task.fileName,
       implementation: task.implementation,
+    };
+  });
+  return mapping;
+}
+
+/**
+ * Get all fileName for all scriptTasks,
+ * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [scriptTaskId: string]: { fileName?: string }}> } an object (a map) with all scriptTaskIds as keys
+ */
+async function getScriptTaskFileNameMapping(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const scriptTasks = getElementsByTagName(bpmnObj, 'bpmn:ScriptTask');
+  const mapping = {};
+  scriptTasks.forEach((task) => {
+    mapping[task.id] = {
+      fileName: task.fileName,
     };
   });
   return mapping;
@@ -396,7 +416,7 @@ async function getChildrenFlowElements(bpmn, elementId) {
  *
  * @param {object} bpmnObj - The BPMN XML as converted bpmn-moddle object with toBpmnObject
  * @param {string} callActivityId - The id of the callActivity
- * @returns { { definitionId: string, processId: string, version: number } } An Object with the definition, process id and version
+ * @returns { { definitionId: string, processId: string, versionId: string } } An Object with the definition, process id and version
  * @throws An Error if the callActivity id does not exist
  * @throws If the callActivity has no 'calledElement' attribute
  * @throws If the targetNamespace for a callActivity could not be found
@@ -443,7 +463,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
     );
   }
 
-  const version = importElement.version || importElement.$attrs['proceed:version'];
+  const version = importElement.versionId || importElement.$attrs['proceed:versionId'];
 
   if (!version) {
     throw new Error(
@@ -454,7 +474,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
   return {
     definitionId: importElement.location,
     processId,
-    version: version && parseInt(version),
+    versionId: version,
   };
 }
 
@@ -463,7 +483,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {boolean} [dontThrow] - whether to throw errors or not in retrieving process ids in call activities
- * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, version: number }}> } an object (a map) with all callActivityIds as keys
+ * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, versionId: string }}> } an object (a map) with all callActivityIds as keys
  * @throws see function: {@link getTargetDefinitionsAndProcessIdForCallActivityByObject}
  */
 async function getDefinitionsAndProcessIdForEveryCallActivity(bpmn, dontThrow = false) {
@@ -1159,6 +1179,9 @@ module.exports = {
   // userTasks
   getUserTaskFileNameMapping,
   getAllUserTaskFileNamesAndUserTaskIdsMapping,
+
+  // scriptTasks
+  getScriptTaskFileNameMapping,
 
   // sub-process related
   getSubprocess,

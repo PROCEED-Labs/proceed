@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -15,11 +15,16 @@ import { ActiveSettings } from './settings-modal';
 import TableOfContents, { ElementInfo } from './table-of-content';
 
 import { useEnvironment } from '@/components/auth-can';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
+import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 
 export type VersionInfo = {
-  id?: number;
+  id?: string;
   name?: string;
   description?: string;
+  versionCreatedOn?: string;
 };
 
 type ProcessDocumentProps = {
@@ -45,10 +50,13 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   const query = useSearchParams();
   const shareToken = query.get('token');
 
+  const { download: getImage } = useFileManager({ entityType: EntityType.PROCESS });
+  const [processPages, setProcessPages] = useState<React.JSX.Element[]>([]);
+
   /**
    * Transforms the hierarchical information about a process' elements into markup
    */
-  function getContent(hierarchyElement: ElementInfo, pages: React.JSX.Element[]) {
+  async function getContent(hierarchyElement: ElementInfo, currentPages: React.JSX.Element[]) {
     // hide the element if there is no information and the respective option is selected
     if (
       settings.hideEmpty &&
@@ -77,14 +85,25 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       elementLabel = importedProcess.name!;
       ({ milestones, meta, description } = importedProcess);
     }
+    const newImageUrl = enableUseFileManager
+      ? image &&
+        (await new Promise<string>((resolve) => {
+          getImage(processData.id, image, shareToken, {
+            onSuccess(data) {
+              resolve(data.fileUrl!);
+            },
+          });
+        }))
+      : null;
 
-    const imageURL =
+    let imageURL =
       image &&
-      `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${
-        processData.id
-      }/images/${image}?shareToken=${shareToken}`;
+      (newImageUrl ??
+        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${
+          processData.id
+        }/images/${image}?shareToken=${shareToken}`);
 
-    pages.push(
+    currentPages.push(
       <div
         key={`element_${hierarchyElement.id}_page`}
         className={cn(styles.ElementPage, { [styles.ContainerPage]: isContainer })}
@@ -103,7 +122,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
             ></div>
           )}
         </div>
-        {settings.importedProcesses && importedProcess && importedProcess.version && (
+        {settings.importedProcesses && importedProcess && importedProcess.versionId && (
           <div className={styles.MetaInformation}>
             <Title level={3} id={`${hierarchyElement.id}_version_page`}>
               Version Information
@@ -119,7 +138,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               </p>
             )}
             <p>
-              <b>Creation Time:</b> {new Date(importedProcess.version).toUTCString()}
+              <b>Creation Time:</b> {new Date(importedProcess.versionId).toUTCString()}
             </p>
           </div>
         )}
@@ -207,19 +226,30 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       (settings.nestedSubprocesses || !hierarchyElement.nestedSubprocess) &&
       (settings.importedProcesses || !hierarchyElement.importedProcess)
     ) {
-      hierarchyElement.children?.forEach((child) => getContent(child, pages));
+      if (hierarchyElement.children) {
+        for (const child of hierarchyElement.children) {
+          await getContent(child, currentPages);
+        }
+      }
     }
   }
 
   // transform the document data into the respective pages of the document
-  const processPages: React.JSX.Element[] = [];
-  processHierarchy && getContent(processHierarchy, processPages);
+  useEffect(() => {
+    const updateProcessPages = async () => {
+      const newProcessPages: React.JSX.Element[] = [];
+      processHierarchy && (await getContent(processHierarchy, newProcessPages));
+      setProcessPages(newProcessPages);
+    };
+
+    updateProcessPages();
+  }, [processHierarchy, settings]);
 
   return (
     <>
       <div className={styles.ProcessDocument}>
         {!processHierarchy ? (
-          <Spin tip="Loading" size="large" style={{ top: '50px' }}>
+          <Spin tip="Loading process data" size="large" style={{ top: '50px' }}>
             <div></div>
           </Spin>
         ) : (
@@ -238,7 +268,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
                 <Title>{processData.name}</Title>
                 <div className={styles.TitleInfos}>
-                  <div>Owner: {processData.creatorId.split('|').pop()}</div>
+                  <div>Owner: {processData.creatorId?.split('|').pop()}</div>
                   {version.id ? (
                     <>
                       <div>Version: {version.name || version.id}</div>
@@ -250,7 +280,12 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                     <div>Version: Latest</div>
                   )}
                   {version.id ? (
-                    <div>Creation Time: {new Date(version.id).toUTCString()}</div>
+                    <div>
+                      Creation Time:{' '}
+                      {version.versionCreatedOn
+                        ? fromCustomUTCString(version.versionCreatedOn).toUTCString()
+                        : 'Unknown'}
+                    </div>
                   ) : (
                     <div>Last Edit: {processData.lastEditedOn.toUTCString()}</div>
                   )}

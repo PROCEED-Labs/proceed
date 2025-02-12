@@ -12,11 +12,9 @@ import {
   deleteImage,
   getUserTaskIds,
   getUserTaskHTML,
-  getUserTasksHTML,
   saveUserTaskHTML,
   deleteUserTaskHTML,
   getUserTaskJSON,
-  getUserTasksJSON,
   saveUserTaskJSON,
   deleteUserTaskJSON,
   getBPMN,
@@ -26,7 +24,6 @@ import {
   getImageFileNames,
   saveScriptTaskScript,
   getScriptTaskScript,
-  getScriptTasksScript,
   deleteScriptTaskScript,
 } from './fileHandling.js';
 import { mergeIntoObject } from '../../helpers/javascriptHelpers';
@@ -37,6 +34,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import { fromCustomUTCString, toCustomUTCString } from '@/lib/helpers/timeHelper';
 
 let firstInit = false;
 // @ts-ignore
@@ -56,19 +54,26 @@ export function getProcessMetaObjects() {
   return processMetaObjects;
 }
 
-/** Returns all processes for a user */
-export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
-  const processes = Object.values(processMetaObjects);
+function parseDates<T extends ProcessMetadata>(process: T) {
+  // The type says these fields are dates, but they're turned into a string when stored
+  process.lastEditedOn = new Date(process.lastEditedOn);
+  process.createdOn = new Date(process.createdOn);
 
-  const userProcesses = await Promise.all(
-    ability
-      .filter('view', 'Process', processes)
-      .map(async (process) =>
-        !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
-      ),
+  return process;
+}
+
+/** Returns all processes for a user */
+export async function getProcesses(environmentId: string, ability?: Ability, includeBPMN = false) {
+  const spaceProcesses = Object.values(processMetaObjects).filter(
+    (process) => process.environmentId === environmentId,
   );
 
-  return userProcesses;
+  const processes = (
+    ability ? ability.filter('view', 'Process', spaceProcesses) : spaceProcesses
+  ).map(parseDates);
+
+  if (!includeBPMN) return processes;
+  return processes.map((process) => ({ ...process, bpmn: getProcessBpmn(process.id) }));
 }
 
 export async function getProcess(processDefinitionsId: string, includeBPMN = false) {
@@ -78,7 +83,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   }
 
   const bpmn = includeBPMN ? await getProcessBpmn(processDefinitionsId) : null;
-  return { ...process, bpmn };
+  return parseDates({ ...process, bpmn });
 }
 
 /**
@@ -212,7 +217,7 @@ export function moveProcess({
 
   if (!dontUpdateOldFolder) {
     const oldFolder = foldersMetaObject.folders[process.folderId];
-    if (!oldFolder) throw new Error("Consistensy Error: Process' folder not found");
+    if (!oldFolder) throw new Error("Consistency Error: Process' folder not found");
     const processOldFolderIdx = oldFolder.children.findIndex(
       (item) => 'type' in item && item.type === 'process' && item.id === processDefinitionsId,
     );
@@ -238,7 +243,7 @@ export async function updateProcessMetaData(
 
   const newMetaData = {
     ...processMetaObjects[processDefinitionsId],
-    lastEdited: new Date().toUTCString(),
+    lastEditedOn: new Date(),
   };
 
   mergeIntoObject(newMetaData, metaChanges, true, true, true);
@@ -301,39 +306,51 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
   }
 
   // don't add a version a second time
-  if (existingProcess.versions.some(({ version }) => version == versionInformation.version)) {
+  if (
+    existingProcess.versions.some(
+      ({ createdOn }) => toCustomUTCString(createdOn) == versionInformation.versionCreatedOn,
+    )
+  ) {
     return;
   }
 
   // save the new version in the directory of the process
 
-  await saveProcessVersion(processDefinitionsId, versionInformation.version || 0, bpmn);
+  const versionCreatedOn = versionInformation.versionCreatedOn || toCustomUTCString(new Date());
 
-  // add information about the new version to the meta information and inform others about its existance
+  await saveProcessVersion(processDefinitionsId, versionCreatedOn, bpmn);
+
+  // add information about the new version to the meta information and inform others about its existence
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
-  //@ts-ignore
-  newVersions.push(versionInformation);
-  newVersions.sort((a, b) => b.version - a.version);
+  newVersions.push({
+    id: versionInformation.versionId!,
+    createdOn: fromCustomUTCString(versionCreatedOn),
+    description: versionInformation.description!,
+    name: versionInformation.name!,
+    versionBasedOn: versionInformation.versionBasedOn,
+  });
+  newVersions.sort((a, b) => (b.createdOn > a.createdOn ? 1 : -1));
 
   await updateProcessMetaData(processDefinitionsId, { versions: newVersions });
 }
 
 /** Returns the bpmn of a specific process version */
-export function getProcessVersionBpmn(processDefinitionsId: string, version: number) {
+export function getProcessVersionBpmn(processDefinitionsId: string, versionId: string) {
   let existingProcess = processMetaObjects[processDefinitionsId];
   if (!existingProcess) {
     throw new Error('The process for which you try to get a version does not exist');
   }
 
-  if (
-    !existingProcess.versions ||
-    !existingProcess.versions.some((existingVersionInfo) => existingVersionInfo.version == version)
-  ) {
+  const existingVersion = existingProcess.versions?.find(
+    (existingVersionInfo) => existingVersionInfo.id === versionId,
+  );
+
+  if (!existingVersion) {
     throw new Error('The version you are trying to get does not exist');
   }
 
-  return getProcessVersion(processDefinitionsId, version);
+  return getProcessVersion(processDefinitionsId, toCustomUTCString(existingVersion.createdOn));
 }
 
 /** Removes information from the meta data that would not be correct after a restart */
@@ -392,30 +409,6 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
   }
 }
 
-/** Return object mapping from user tasks fileNames to their form data */
-export async function getProcessUserTasksJSON(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    return getUserTasksJSON(processDefinitionsId);
-  } catch (err) {
-    logger.debug(`Error getting user task data. Reason:\n${err}`);
-    throw new Error('Failed getting data for all user tasks');
-  }
-}
-
-/** Return object mapping from user tasks fileNames to their html */
-export async function getProcessUserTasksHtml(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    return await getUserTasksHTML(processDefinitionsId);
-  } catch (err) {
-    logger.debug(`Error getting user task html. Reason:\n${err}`);
-    throw new Error('Failed getting html for all user tasks');
-  }
-}
-
 export async function saveProcessUserTask(
   processDefinitionsId: string,
   userTaskFileName: string,
@@ -460,18 +453,6 @@ export async function getProcessScriptTaskScript(
   } catch (err) {
     logger.debug(`Error getting data of script task. Reason:\n${err}`);
     throw new Error('Unable to get data for script task!');
-  }
-}
-
-/** Return object mapping from script tasks fileNames to their script */
-export async function getProcessScriptTasksScript(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    return getScriptTasksScript(processDefinitionsId);
-  } catch (err) {
-    logger.debug(`Error getting script task data. Reason:\n${err}`);
-    throw new Error('Failed getting data for all script tasks');
   }
 }
 

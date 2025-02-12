@@ -16,7 +16,7 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
-import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
+import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
 import {
@@ -72,6 +72,10 @@ export type BPMNCanvasProps = {
   onSelectionChange?: (oldSelection: ElementLike[], newSelection: ElementLike[]) => void;
   /** Called when the zoom level changed */
   onZoom?: (zoomLevel: number) => void;
+  /** Called when a shape is removed from modeler */
+  onShapeRemove?: (element: Element) => void;
+  /** Called when a shape is removed and undo is done */
+  onShapeRemoveUndo?: (element: Element) => void;
   /** Wether the modeler should fit the viewport if it resizes.  */
   resizeWithContainer?: boolean;
   className?: string;
@@ -90,6 +94,7 @@ export interface BPMNCanvasRef {
   undo: () => void;
   redo: () => void;
   getElement: (id: string) => Element | undefined;
+  getAllElements: () => ElementLike[];
   getCurrentRoot: () => Element | undefined;
   getCanvas: () => Canvas;
   getZoomScroll: () => ZoomScroll;
@@ -112,6 +117,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       onRootChange,
       onSelectionChange,
       onZoom,
+      onShapeRemove,
+      onShapeRemoveUndo,
       resizeWithContainer,
       className,
     },
@@ -120,6 +127,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
     const canvas = useRef<HTMLDivElement>(null);
     const modeler = useRef<ModelerType | NavigatedViewerType | null>(null);
     const unloadPromise = useRef<Promise<void> | undefined>();
+
+    const loadingXML = useRef(false);
 
     // Expose explicit methods to the parent component.
     useImperativeHandle(ref, () => ({
@@ -144,6 +153,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       },
       getElement: (id: string) => {
         return modeler.current!.get<ElementRegistry>('elementRegistry').get(id) as Element;
+      },
+      getAllElements: () => {
+        return modeler.current!.get<ElementRegistry>('elementRegistry').getAll();
       },
       getCurrentRoot: () => {
         if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
@@ -174,7 +186,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       loadBPMN: async (bpmn: string) => {
         // Note: No onUnload here, because this is only meant as a XML "change"
         // to the same process. Like a user modeling reguraly with the UI.
+        loadingXML.current = true;
         await modeler.current!.importXML(bpmn);
+        loadingXML.current = false;
         fitViewport(modeler.current!);
       },
       activateKeyboard: () => {
@@ -183,6 +197,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       deactivateKeyboard: () => {
         modeler.current!.get<Keyboard>('keyboard').unbind();
       },
+      removeColors: () => {},
     }));
 
     const [Modeler, NavigatedViewer, Viewer] = use(BPMNJs);
@@ -260,6 +275,28 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
       if (type === 'modeler') {
         modeler.current!.on('commandStack.changed', commandStackChanged);
+
+        modeler.current!.on('shape.remove', (event: { element: Element }) => {
+          if (!loadingXML.current) onShapeRemove?.(event.element);
+        });
+
+        // Undo fires commandStack.revert
+        modeler.current!.on(
+          'commandStack.revert',
+          (event: { command: string; context: { element: Element; id: string } }) => {
+            if (event.command === 'id.updateClaim') {
+              onShapeRemoveUndo?.(event.context.element);
+            }
+          },
+        );
+
+        // Redo recreates the deleted shape
+        modeler.current!.on(
+          'commandStack.shape.create.executed',
+          (event: { context: { shape: Shape } }) => {
+            onShapeRemoveUndo?.(event.context.shape.businessObject);
+          },
+        );
       }
 
       modeler.current!.on('import.done', _onLoaded);
@@ -295,8 +332,12 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           return;
         }
 
+        loadingXML.current = true;
+
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
+
+        loadingXML.current = false;
 
         if (m !== modeler.current) {
           // The modeler was reset in the meantime.

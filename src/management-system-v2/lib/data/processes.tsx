@@ -6,18 +6,26 @@ import {
   addDocumentation,
   generateDefinitionsId,
   getDefinitionsVersionInformation,
+  getUserTaskFileNameMapping,
   setDefinitionsName,
   setDefinitionsVersionInformation,
+  setUserTaskData,
   toBpmnObject,
   toBpmnXml,
 } from '@proceed/bpmn-helper';
-import { createProcess, getFinalBpmn } from '../helpers/processHelpers';
+import {
+  createProcess,
+  getFinalBpmn,
+  updateScriptTaskFileName,
+  updateUserTaskFileName,
+} from '../helpers/processHelpers';
 import { UserErrorType, userError } from '../user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
   selectAsLatestVersion,
   updateProcessVersionBasedOn,
+  versionScriptTasks,
   versionUserTasks,
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
@@ -25,17 +33,11 @@ import {
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
-import { enableUseDB } from 'FeatureFlags';
+import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
-import {
-  getProcessUserTaskJSON as _getProcessUserTaskJSON,
-  getProcessUserTaskHtml as _getProcessUserTaskHtml,
-  getProcessImage as _getProcessImage,
-  saveProcessUserTask as _saveProcessUserTask,
-  getProcessScriptTaskScript as _getProcessScriptTaskScript,
-  saveProcessScriptTask as _saveProcessScriptTask,
-  deleteProcessScriptTask as _deleteProcessScriptTask,
-} from './legacy/_process';
+import { copyProcessArtifactReferences, copyProcessFiles } from './db/process';
+import { v4 } from 'uuid';
+import { toCustomUTCString } from '../helpers/timeHelper';
 
 // Declare variables to hold the process module functions
 let removeProcess: TProcessModule['removeProcess'];
@@ -47,7 +49,14 @@ let addProcessVersion: TProcessModule['addProcessVersion'];
 
 let updateProcessMetaData: TProcessModule['updateProcessMetaData'];
 
+let _getProcessImage: TProcessModule['getProcessImage'];
 let _getProcessBpmn: TProcessModule['getProcessBpmn'];
+let _saveProcessUserTask: TProcessModule['saveProcessUserTask'];
+let _getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
+let _getProcessUserTaskHtml: TProcessModule['getProcessUserTaskHtml'];
+let _saveProcessScriptTask: TProcessModule['saveProcessScriptTask'];
+let _deleteProcessScriptTask: TProcessModule['deleteProcessScriptTask'];
+let _getProcessScriptTaskScript: TProcessModule['getProcessScriptTaskScript'];
 
 const loadModules = async () => {
   const moduleImport = await (enableUseDB ? import('./db/process') : import('./legacy/_process'));
@@ -61,6 +70,13 @@ const loadModules = async () => {
     addProcessVersion,
     updateProcessMetaData,
     getProcessBpmn: _getProcessBpmn,
+    saveProcessUserTask: _saveProcessUserTask,
+    getProcessUserTaskJSON: _getProcessUserTaskJSON,
+    getProcessImage: _getProcessImage,
+    getProcessUserTaskHtml: _getProcessUserTaskHtml,
+    saveProcessScriptTask: _saveProcessScriptTask,
+    deleteProcessScriptTask: _deleteProcessScriptTask,
+    getProcessScriptTaskScript: _getProcessScriptTaskScript,
   } = moduleImport);
 };
 
@@ -68,7 +84,7 @@ loadModules().catch(console.error);
 
 // Import necessary functions from processModule
 
-const checkValidity = async (
+export const checkValidity = async (
   definitionId: string,
   operation: 'view' | 'update' | 'delete',
   spaceId: string,
@@ -101,13 +117,15 @@ const checkValidity = async (
   }
 };
 
-const getBpmnVersion = async (definitionId: string, versionId?: number) => {
+const getBpmnVersion = async (definitionId: string, versionId?: string) => {
   await loadModules();
 
   const process = await _getProcess(definitionId);
 
   if (versionId) {
-    if (!process.versions.some((version: { version: number }) => version.version === versionId)) {
+    const version = process.versions.find((version) => version.id === versionId);
+
+    if (!version) {
       return userError(
         `The requested version does not exist for the requested process.`,
         UserErrorType.NotFoundError,
@@ -120,7 +138,7 @@ const getBpmnVersion = async (definitionId: string, versionId?: number) => {
   }
 };
 
-export const getSharedProcessWithBpmn = async (definitionId: string, versionId?: number) => {
+export const getSharedProcessWithBpmn = async (definitionId: string, versionCreatedOn?: string) => {
   await loadModules();
 
   const processMetaObj = await _getProcess(definitionId);
@@ -130,7 +148,7 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionId?:
   }
 
   if (processMetaObj.shareTimestamp > 0 || processMetaObj.allowIframeTimestamp > 0) {
-    const bpmn = await getBpmnVersion(definitionId, versionId);
+    const bpmn = await getBpmnVersion(definitionId, versionCreatedOn);
 
     // check if getBpmnVersion returned an error that should be shown to the user instead of the bpmn
     if (typeof bpmn === 'object') {
@@ -144,17 +162,22 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionId?:
   return userError(`Access Denied: Process is not shared`, UserErrorType.PermissionError);
 };
 
-export const getProcess = async (definitionId: string, spaceId: string) => {
+export const getProcess = async (
+  definitionId: string,
+  spaceId: string,
+  skipValidityCheck = false,
+) => {
   await loadModules();
+  if (!skipValidityCheck) {
+    const error = await checkValidity(definitionId, 'view', spaceId);
 
-  const error = await checkValidity(definitionId, 'view', spaceId);
-
-  if (error) return error;
+    if (error) return error;
+  }
   const result = await _getProcess(definitionId);
   return result as Process;
 };
 
-export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: number) => {
+export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: string) => {
   await loadModules();
 
   const error = await checkValidity(definitionId, 'view', spaceId);
@@ -308,6 +331,8 @@ export const copyProcesses = async (
     folderId?: string;
   }[],
   spaceId: string,
+  destinationfolderId?: string,
+  referencedProcessId?: string,
 ) => {
   await loadModules();
 
@@ -320,11 +345,11 @@ export const copyProcesses = async (
     const newId = generateDefinitionsId();
     // Copy either a process or a specific version.
     const originalBpmn = copyProcess.originalVersion
-      ? await getProcessVersionBpmn(copyProcess.originalId, +copyProcess.originalVersion)
+      ? await getProcessVersionBpmn(copyProcess.originalId, copyProcess.originalVersion)
       : await _getProcessBpmn(copyProcess.originalId);
 
     // TODO: Does createProcess() do the same as this function?
-    const newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
+    let newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
 
     // TODO: include variables in copy?
     const newProcess = {
@@ -332,17 +357,47 @@ export const copyProcesses = async (
       definitionId: newId,
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,
+      folderId: destinationfolderId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
       return userError('Not allowed to create this process', UserErrorType.PermissionError);
     }
-    const process = await _addProcess(newProcess);
+    const process = await _addProcess(newProcess, referencedProcessId);
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');
     }
 
+    if (enableUseDB && enableUseFileManager) {
+      await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
+
+      const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
+      if (copiedFiles) {
+        // TODO: check if this works
+        // TODO: possibly optimize this by parsing and serializing the bpmn once instead of on every invocation of the updateXTaskFileName functions
+        for (const file of copiedFiles) {
+          switch (file?.artifactType) {
+            case 'user-tasks': {
+              ({ bpmn: newBpmn } = await updateUserTaskFileName(
+                newBpmn,
+                file.mapping.oldFilename,
+                file.mapping.newFilename,
+              ));
+            }
+            case 'script-tasks': {
+              ({ bpmn: newBpmn } = await updateScriptTaskFileName(
+                newBpmn,
+                file.mapping.oldFilename,
+                file.mapping.newFilename,
+              ));
+            }
+          }
+        }
+
+        await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
+      }
+    }
     copiedProcesses.push({ ...process, bpmn: newBpmn });
   }
 
@@ -358,7 +413,7 @@ export const processHasChangesSinceLastVersion = async (processId: string, space
   if (!process) return userError('Process not found', UserErrorType.NotFoundError);
 
   const bpmnObj = await toBpmnObject(process.bpmn!);
-  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
@@ -389,44 +444,51 @@ export const createVersion = async (
   const bpmnObj = await toBpmnObject(bpmn);
 
   const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
-
+  const versionCreatedOn = toCustomUTCString(new Date());
   // add process version to bpmn
-  const epochTime = +new Date();
+  const versionId = `_${v4()}`;
   await setDefinitionsVersionInformation(bpmnObj, {
-    version: epochTime,
+    versionId: versionId,
     versionName,
     versionDescription,
     versionBasedOn,
+    versionCreatedOn,
   });
 
   const process = (await _getProcess(processId)) as Process;
 
-  await versionUserTasks(process, epochTime, bpmnObj);
+  const versionedUserTaskFilenames = await versionUserTasks(process, versionId, bpmnObj);
+  const versionedScriptTaskFilenames = await versionScriptTasks(process, versionId, bpmnObj);
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
   const basedOnBPMN =
-    versionBasedOn !== undefined ? await getLocalVersionBpmn(process, versionBasedOn) : undefined;
+    versionBasedOn !== undefined ? await getLocalVersionBpmn(process, versionCreatedOn) : undefined;
 
   if (basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN))) {
     return versionBasedOn;
   }
 
   // send final process version bpmn to the backend
-  addProcessVersion(processId, versionedBpmn);
+  addProcessVersion(
+    processId,
+    versionedBpmn,
+    versionedUserTaskFilenames,
+    versionedScriptTaskFilenames,
+  );
 
-  await updateProcessVersionBasedOn({ ...process, bpmn }, epochTime);
+  await updateProcessVersionBasedOn({ ...process, bpmn }, versionId);
 
-  return epochTime;
+  return versionId;
 };
 
-export const setVersionAsLatest = async (processId: string, version: number, spaceId: string) => {
+export const setVersionAsLatest = async (processId: string, versionId: string, spaceId: string) => {
   const error = await checkValidity(processId, 'update', spaceId);
 
   if (error) return error;
 
-  await selectAsLatestVersion(processId, version);
+  await selectAsLatestVersion(processId, versionId);
 };
 
 export const getFavouritesProcessIds = async () => {
@@ -483,7 +545,6 @@ export const saveProcessUserTask = async (
       'Illegal attempt to overwrite a user task version!',
       UserErrorType.ConstraintError,
     );
-
   await _saveProcessUserTask!(definitionId, taskFileName, json, html);
 };
 

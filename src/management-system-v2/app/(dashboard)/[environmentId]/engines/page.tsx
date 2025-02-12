@@ -1,53 +1,32 @@
 import Content from '@/components/content';
-import { Space } from 'antd';
+import { Skeleton } from 'antd';
 import { notFound } from 'next/navigation';
-import EnginesView from './engines-view';
-import { DiscoveredEngine, SavedEngine } from './engines-list';
-import { v4 } from 'uuid';
+import SavedEnginesList from './saved-engines-list';
+import { getSpaceEngines } from '@/lib/data/DTOs';
+import { getCurrentEnvironment } from '@/components/auth';
+import Ability from '@/lib/ability/abilityHelper';
+import { Suspense } from 'react';
+import { enableUseDB } from 'FeatureFlags';
+import { env } from '@/lib/env-vars';
+
+const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ability }) => {
+  const engines = await getSpaceEngines(spaceId, ability);
+
+  return <SavedEnginesList savedEngines={engines} />;
+};
 
 const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!process.env.NEXT_PUBLIC_ENABLE_EXECUTION) {
+  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
     return notFound();
   }
 
-  const generateMockEngines = () => {
-    const discoveredEngines: DiscoveredEngine[] = [];
-    const savedEngines: SavedEngine[] = [];
-
-    for (let i = 0; i < 8; i++) {
-      if (i % 3 === 0) {
-        savedEngines.push({
-          id: v4(),
-          name: `Engine ${i}`,
-          hostname: `Host Engine ${i}`,
-          address: `123.123.123.12${i}`,
-          ownName: `My Engine ${i}`,
-          description: `This is a mocked engine`,
-        });
-      } else {
-        discoveredEngines.push({
-          id: v4(),
-          name: `Engine ${i}`,
-          hostname: `Host Engine ${i}`,
-          address: `123.123.123.12${i}`,
-          ownName: `My Engine ${i}`,
-          description: `This is a mocked engine`,
-          discoveryTechnology: 'Discovery Technology A',
-        });
-      }
-    }
-
-    return { discoveredEngines, savedEngines };
-  };
-
-  const engines = generateMockEngines();
+  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
 
   return (
     <Content title="Engines">
-      <EnginesView
-        discoveredEngines={engines.discoveredEngines}
-        savedEngines={engines.savedEngines}
-      ></EnginesView>
+      <Suspense fallback={<Skeleton />}>
+        <SavedEngines spaceId={activeEnvironment.spaceId} ability={ability} />
+      </Suspense>
     </Content>
   );
 };

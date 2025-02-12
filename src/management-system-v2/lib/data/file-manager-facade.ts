@@ -13,6 +13,9 @@ import db from '@/lib/data/db';
 import { getProcessUserTaskJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
 import { env } from '../env-vars';
+import { Prisma } from '@prisma/client';
+import { use } from 'react';
+import { checkValidity } from './processes';
 
 const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
 
@@ -24,6 +27,8 @@ const ALLOWED_CONTENT_TYPES = [
   'image/svg+xml',
   'text/html',
   'application/pdf',
+  'application/javascript',
+  'application/xml',
 ];
 
 const isContentTypeAllowed = (mimeType: string): boolean => {
@@ -35,7 +40,7 @@ interface SaveArtifactOptions {
   processId: string;
 }
 
-const saveArtifactToDB = async (
+export const saveArtifactToDB = async (
   fileName: string,
   filePath: string,
   artifactType: ArtifactType,
@@ -47,21 +52,64 @@ const saveArtifactToDB = async (
       fileName,
       filePath,
       artifactType,
-      // if versionCreatedOn is provided we are creating null f_key_reference as the version is not created yet, it is updated later by addProcessVersion
       ...(versionCreatedOn ? undefined : { processReferences: { create: { processId } } }),
     };
 
-    return await db.artifact.create({ data });
+    const artifact = await db.artifact.create({ data });
+
+    return artifact;
   } catch (error) {
-    console.error('Error saving artifact to DB:', error);
-    throw error;
+    console.error(`Error saving artifact to DB for file: ${fileName}, rolling back...`, error);
+
+    // Rollback: Delete the uploaded file if DB operation fails
+    try {
+      await deleteFile(filePath);
+      console.info(`Rollback successful: Deleted file ${filePath}`);
+    } catch (fsError) {
+      console.error(`Rollback failed: Could not delete file ${filePath}`, fsError);
+    }
+
+    throw new Error(`Failed to save artifact metadata, rollback completed for file: ${fileName}`);
   }
 };
 
-const removeArtifactFromDB = async (filePath: string) => {
-  return db.artifact.delete({
+const removeArtifactFromDB = async (filePath: string, tx?: Prisma.TransactionClient) => {
+  const dbMutator = tx || db;
+  return dbMutator.artifact.delete({
     where: { filePath },
   });
+};
+
+export const cleanUpFailedUploadEntry = async (
+  spaceId: string,
+  entityId: string,
+  entityType: EntityType,
+  fileName: string,
+) => {
+  if (EntityType.ORGANIZATION === entityType) {
+    // Maybe add ability check here, if the user is admin of the organisation
+    try {
+      await db.space.update({ where: { id: entityId }, data: { logo: null } });
+      return true;
+    } catch (error) {
+      console.error('Failed to clean up failed upload entry:', error);
+      return false;
+    }
+  } else if (EntityType.PROCESS === entityType) {
+    const ability = await checkValidity(entityId, 'delete', spaceId);
+    if (ability?.error) {
+      throw new Error('User does not have permission to delete the file');
+    }
+    try {
+      const artifact = await db.artifact.findUnique({ where: { fileName } });
+      await db.artifactProcessReference.deleteMany({ where: { artifactId: artifact?.id } });
+      await db.artifact.delete({ where: { fileName } });
+      return true;
+    } catch (error) {
+      console.error('Failed to clean up failed upload entry:', error);
+      return false;
+    }
+  }
 };
 
 export async function getArtifactMetaData(fileNameOrPath: string, isFilePath: boolean) {
@@ -120,7 +168,7 @@ export async function deleteEntityFile(
   switch (entityType) {
     case EntityType.PROCESS:
       if (!fileName) throw new Error('File name is required for process artifacts');
-      return deleteProcessArtifact(fileName);
+      return deleteProcessArtifact(fileName, false, entityId);
     case EntityType.ORGANIZATION:
       return deleteOrganizationLogo(entityId);
     // Extend for other entity types if needed
@@ -154,31 +202,36 @@ export async function saveProcessArtifact(
   } = options;
 
   const newFileName = generateNewFileName ? getNewFileName(fileName) : fileName;
-  const artifactType = context ? context : getFileCategory(fileName, mimeType);
+  const artifactType = context || getFileCategory(fileName, mimeType);
   const filePath = generateProcessFilePath(newFileName, processId, mimeType, versionCreatedOn);
-
   const usePresignedUrl = ['images', 'others'].includes(artifactType);
 
-  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent, usePresignedUrl);
+  try {
+    // Save the file (local or presigned URL)
+    const { presignedUrl, status } = await saveFile(
+      filePath,
+      mimeType,
+      fileContent,
+      usePresignedUrl,
+    );
 
-  if (replaceFileContentOnly) {
-    //skip db update
-    return { presignedUrl, status };
+    // If only replacing file content, skip DB update
+    if (replaceFileContentOnly) {
+      return { presignedUrl, status };
+    }
+
+    if (useDefaultArtifactsTable) {
+      await saveArtifactToDB(newFileName, filePath, artifactType, {
+        processId,
+        versionCreatedOn,
+      });
+    }
+
+    return { presignedUrl, fileName: newFileName };
+  } catch (error) {
+    console.error('Failed to save process artifact:', error);
+    return { presignedUrl: null, fileName: null };
   }
-
-  if (!status) {
-    await deleteFile(filePath);
-    throw new Error('Failed to save file');
-  }
-
-  if (useDefaultArtifactsTable) {
-    await saveArtifactToDB(newFileName, filePath, artifactType, {
-      processId,
-      versionCreatedOn,
-    });
-  }
-
-  return { presignedUrl, fileName: newFileName };
 }
 
 // Retrieve a process artifact
@@ -196,19 +249,25 @@ export async function retrieveProcessArtifact(
 export async function deleteProcessArtifact(
   fileNameOrPath: string,
   isFilePath = false,
+  processId?: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<boolean> {
+  const dbMutator = tx ? tx : db;
+
   const artifact = await getArtifactMetaData(fileNameOrPath, isFilePath);
   if (!artifact) {
     throw new Error(`Artifact "${fileNameOrPath}" not found`);
   }
 
-  // Remove the reference between artifact and process
-  await db.artifactProcessReference.deleteMany({
-    where: {
-      artifactId: artifact.id,
-    },
-  });
-
+  if (processId) {
+    // Remove the reference between artifact and process
+    await dbMutator.artifactProcessReference.deleteMany({
+      where: {
+        artifactId: artifact.id,
+        processId: processId,
+      },
+    });
+  }
   // Check if there are any remaining references
   const remainingReferencesCount = await db.artifactProcessReference.count({
     where: { artifactId: artifact.id },
@@ -222,7 +281,7 @@ export async function deleteProcessArtifact(
   if (remainingReferencesCount === 0 && remainingVersionReferencesCount === 0) {
     const isDeleted = await deleteFile(artifact.filePath);
     if (isDeleted) {
-      await removeArtifactFromDB(artifact.filePath);
+      await removeArtifactFromDB(artifact.filePath, tx);
     }
     return isDeleted;
   }
@@ -388,6 +447,30 @@ export async function softDeleteProcessUserTask(processId: string, userTaskFilen
   }
 }
 
+// Soft delete a user task and its associated artifacts
+export async function softDeleteProcessScriptTask(processId: string, scriptTaskFileName: string) {
+  const referencedArtifactFilenames = [
+    `${scriptTaskFileName}.js`,
+    `${scriptTaskFileName}.ts`,
+    `${scriptTaskFileName}.xml`,
+  ];
+
+  const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+    getArtifactMetaData(filename, false),
+  );
+
+  for (const artifact of artifacts) {
+    if (artifact) {
+      await db.artifactProcessReference.deleteMany({
+        where: {
+          artifactId: artifact.id,
+          processId,
+        },
+      });
+    }
+  }
+}
+
 // Revert soft deletion of a user task and restore its artifacts
 export async function revertSoftDeleteProcessUserTask(processId: string, userTaskFilename: string) {
   const res = await getProcessUserTaskJSON(processId, userTaskFilename);
@@ -410,6 +493,33 @@ export async function revertSoftDeleteProcessUserTask(processId: string, userTas
           },
         });
       }
+    }
+  }
+}
+
+// Revert soft deletion of a user task and restore its artifacts
+export async function revertSoftDeleteProcessScriptTask(
+  processId: string,
+  scriptTaskFileName: string,
+) {
+  const referencedArtifactFilenames = [
+    `${scriptTaskFileName}.js`,
+    `${scriptTaskFileName}.ts`,
+    `${scriptTaskFileName}.xml`,
+  ];
+
+  const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
+    getArtifactMetaData(filename, false),
+  );
+
+  for (const artifact of artifacts) {
+    if (artifact) {
+      await db.artifactProcessReference.create({
+        data: {
+          artifactId: artifact.id,
+          processId,
+        },
+      });
     }
   }
 }

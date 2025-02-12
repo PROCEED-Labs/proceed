@@ -32,6 +32,25 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
   }
 
   if (zipFolder) {
+    // export the script tasks of the process
+    if (processData.scriptTasks.length) {
+      const scriptTaskFolder = zipFolder.folder('script-tasks');
+      for (const { filename, js, ts, xml } of processData.scriptTasks) {
+        if (js) {
+          const jsBlob = new Blob([js], { type: 'application/javascript' });
+          scriptTaskFolder?.file(filename + '.js', jsBlob);
+        }
+        if (ts) {
+          const tsBlob = new Blob([ts], { type: 'application/javascript' });
+          scriptTaskFolder?.file(filename + '.ts', tsBlob);
+        }
+        if (xml) {
+          const xmlBlob = new Blob([xml], { type: 'application/xml' });
+          scriptTaskFolder?.file(filename + '.xml', xmlBlob);
+        }
+      }
+    }
+
     // export the user tasks of the process
     if (processData.userTasks.length) {
       const userTaskFolder = zipFolder.folder('user-tasks');
@@ -62,7 +81,10 @@ export async function getExportblob(
   const numProcesses = exportData.length;
   // the following cases are only relevant if there is only one process to export (in any other case needsZip becomes true anyway)
   const hasMulitpleVersions = Object.keys(exportData[0].versions).length > 1;
-  const hasArtefacts = !!exportData[0].userTasks.length || !!exportData[0].images.length;
+  const hasArtefacts =
+    !!exportData[0].userTasks.length ||
+    !!exportData[0].scriptTasks.length ||
+    !!exportData[0].images.length;
   // this becomes relevant if there is only one version (otherwise hasMultipleVersions will lead to needsZip being true anyway)
   const withSubprocesses = Object.values(exportData[0].versions)[0].layers.length > 1;
 

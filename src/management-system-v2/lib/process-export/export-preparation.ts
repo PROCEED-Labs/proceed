@@ -4,6 +4,7 @@ import {
   getProcessUserTaskHTML,
   getProcessUserTaskData,
   getProcessImage,
+  getProcessScriptTaskData,
 } from '@/lib/data/processes';
 
 import {
@@ -16,6 +17,7 @@ import {
   getElementDI,
   getDefinitionsVersionInformation,
   getDefinitionsAndProcessIdForEveryCallActivity,
+  getScriptTaskFileNameMapping,
 } from '@proceed/bpmn-helper';
 
 import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
@@ -23,9 +25,10 @@ import { getImageDimensions, getSVGFromBPMN, isSelectedOrInsideSelected } from '
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
-import { ArrayEntryType } from '../typescript-utils';
+import { ArrayEntryType, truthyFilter } from '../typescript-utils';
 
 import { SerializedNode } from '@craftjs/core';
+import { UserError } from '../user-error';
 
 /**
  * The options that can be used to select what should be exported
@@ -67,6 +70,12 @@ export type ProcessExportData = {
       selectedElements?: string[];
     };
   };
+  scriptTasks: {
+    filename: string;
+    js?: string;
+    ts?: string;
+    xml?: string;
+  }[];
   userTasks: {
     filename: string;
     json: string;
@@ -162,6 +171,12 @@ type ExportMap = {
         selectedElements?: string[];
       };
     };
+    scriptTasks: {
+      filename: string;
+      js?: string;
+      ts?: string;
+      xml?: string;
+    }[];
     userTasks: {
       filename: string;
       json: string;
@@ -222,6 +237,7 @@ async function ensureProcessInfo(
       definitionName: process.name,
       isImport,
       versions: {},
+      scriptTasks: [],
       userTasks: [],
       images: [],
     };
@@ -381,22 +397,56 @@ export async function prepareExport(
 
     // fetch data for additional artefacts if requested in the options
     if (options.artefacts) {
+      const allRequiredScriptTaskFiles: Set<string> = new Set();
       const allRequiredUserTaskFiles: Set<string> = new Set();
       const allRequiredImageFiles: Set<string> = new Set();
-      // determine the user task files that are need per version and across all versions
+
+      // determine the script task and user task files that are needed per version and across all versions
       for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
         const versionUserTasks = Object.keys(
           await getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn),
         );
 
         for (const filename of versionUserTasks) allRequiredUserTaskFiles.add(filename);
+
+        const versionScripts = Object.values(await getScriptTaskFileNameMapping(bpmn))
+          .map(({ fileName }) => fileName)
+          .filter(truthyFilter);
+
+        for (const filename of versionScripts) allRequiredScriptTaskFiles.add(filename);
+      }
+
+      for (const filename of allRequiredScriptTaskFiles) {
+        let js: string | { error: UserError } | undefined = await getProcessScriptTaskData(
+          definitionId,
+          filename,
+          'js',
+          spaceId,
+        );
+        let ts: string | { error: UserError } | undefined = await getProcessScriptTaskData(
+          definitionId,
+          filename,
+          'ts',
+          spaceId,
+        );
+        let xml: string | { error: UserError } | undefined = await getProcessScriptTaskData(
+          definitionId,
+          filename,
+          'xml',
+          spaceId,
+        );
+
+        if (typeof js !== 'string') js = undefined;
+        if (typeof ts !== 'string') ts = undefined;
+        if (typeof xml !== 'string') xml = undefined;
+
+        exportData[definitionId].scriptTasks.push({ filename, js, ts, xml });
       }
 
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
         const json = await getProcessUserTaskData(definitionId, filename, spaceId);
         const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
-        console.log(html);
 
         if (typeof json !== 'string') {
           throw json!.error;

@@ -1,6 +1,6 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getRoleById } from '@/lib/data/legacy/iam/roles';
+import { getRoleById } from '@/lib/data/DTOs';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { getMembers } from '@/lib/data/DTOs';
@@ -12,7 +12,7 @@ import RolePermissions from './rolePermissions';
 import RoleMembers from './role-members';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import SpaceLink from '@/components/space-link';
-import { getFolderById } from '@/lib/data/legacy/folders';
+import { getFolderById } from '@/lib/data/db/folders';
 
 const Page = async ({
   params: { roleId, environmentId },

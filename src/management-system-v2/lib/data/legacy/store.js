@@ -59,6 +59,7 @@ if (!global.stores) {
       machineConfigs: {},
       targetConfigs: {},
       parameters: {},
+      versionedParentConfigs: {},
     }),
   };
   stores.systemAdmins = { store: getStore('systemAdmins') };

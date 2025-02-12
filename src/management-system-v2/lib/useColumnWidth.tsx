@@ -268,7 +268,9 @@ const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
     const widths = getWidthsOfInnerElements(containerRef.current);
     const innerWidth =
       containerRef.current.getClientRects()[0]
-        .width; /* This is the width, without padding and border (i.e. the actual width its children can fill) */
+        ?.width; /* This is the width, without padding and border (i.e. the actual width its children can fill) */
+
+    if (innerWidth === undefined) return;
 
     if (widths.some((w) => w > innerWidth)) {
       setOverFlowing(true);

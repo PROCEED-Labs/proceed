@@ -182,6 +182,7 @@ export async function addParentConfig(
   environmentId: string,
   base?: ParentConfig,
 ) {
+  console.log('\n\nIN ADD PARENT\n', machineConfigInput, '\n');
   const { userId } = await getCurrentUser();
   const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
   const date = new Date();
@@ -211,6 +212,7 @@ export async function addParentConfig(
     ...(base ? base : {}),
   };
 
+  newConfig.createdBy = userId;
   newConfig.folderId = (await getRootFolder(environmentId)).id;
   newConfig.environmentId = environmentId;
 
@@ -367,7 +369,6 @@ async function parametersToStorage(
       },
     });
   });
-
   return Object.values(parameters).map(({ id }) => id as string);
 }
 
@@ -380,7 +381,7 @@ async function parametersToStorage(
  */
 async function targetConfigToStorage(
   parentId: string,
-  targetConfig?: TargetConfig,
+  targetConfig: TargetConfig,
   newId: boolean = false,
 ) {
   if (targetConfig) {
@@ -458,19 +459,20 @@ function machineConfigsToStorage(
  */
 async function parentConfigToStorage(parentConfig: ParentConfig, newId: boolean = false) {
   const { targetConfig, metadata, machineConfigs } = parentConfig;
-
   parentConfig.id = newId ? v4() : parentConfig.id;
-  let currentDate = new Date();
+  let creationDate = new Date(parentConfig.createdOn);
   await db.config.create({
     data: {
       id: parentConfig.id,
       environmentId: parentConfig.environmentId,
       creatorId: parentConfig.createdBy,
-      createdOn: currentDate,
+      createdOn: creationDate,
       // lastEditedOn: currentDate,
       data: {
         ...parentConfig,
-        targetConfig: await targetConfigToStorage(parentConfig.id, targetConfig, newId),
+        targetConfig: targetConfig
+          ? await targetConfigToStorage(parentConfig.id, targetConfig, newId)
+          : undefined,
         machineConfigs: await machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
         metadata: await parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
       },

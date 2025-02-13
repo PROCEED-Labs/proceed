@@ -33,6 +33,14 @@ import {
   EditOutlined,
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
+// import {
+//   addParentConfig,
+//   copyParentConfig,
+//   updateParentConfig,
+//   updateParameter,
+//   addParameter,
+//   removeParentConfiguration,
+// } from '@/lib/data/legacy/machine-config';
 import {
   addParentConfig,
   copyParentConfig,
@@ -40,7 +48,7 @@ import {
   updateParameter,
   addParameter,
   removeParentConfiguration,
-} from '@/lib/data/legacy/machine-config';
+} from '@/lib/data/db/machine-config';
 
 import AddUserControls from '@/components/add-user-controls';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -247,6 +255,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     try {
       const text = await file.text();
       const importedData: ParentConfig[] = JSON.parse(text);
+      console.log(importedData);
 
       await asyncForEach(importedData, async (item) => {
         const add_return = await addParentConfig(item, space.spaceId, item);

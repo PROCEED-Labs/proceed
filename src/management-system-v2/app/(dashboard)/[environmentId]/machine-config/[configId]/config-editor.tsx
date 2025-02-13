@@ -81,6 +81,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   const query = useSearchParams();
 
   const currentNameRef = useRef(selectedConfig.name);
+  console.log(parentConfig);
 
   useEffect(() => {
     if (selectedConfig.name !== currentNameRef.current)

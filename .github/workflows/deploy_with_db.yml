@@ -34,7 +34,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -70,7 +70,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -99,7 +99,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -128,7 +128,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -157,7 +157,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -190,7 +190,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -380,7 +380,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -452,7 +452,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -498,7 +498,7 @@ jobs:
       - name: Install yarn
         run: |-
           curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.19/yarn-1.22.19.js
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
           chmod +x $HOME/bin/yarn
           echo "$HOME/bin" >> $GITHUB_PATH
 

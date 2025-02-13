@@ -1,69 +1,26 @@
-import React, { FC, use, useCallback, useEffect, useState } from 'react';
+import React, { FC } from 'react';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import {
-  Descriptions,
-  Divider,
-  Space,
-  Tooltip,
-  TreeSelect,
-  Typography,
-  DescriptionsProps,
-  Button,
-  Cascader,
-} from 'antd';
+import { Divider, Space, Tooltip, Button, Cascader } from 'antd';
 import { UserOutlined, TeamOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { useAbilityStore } from '@/lib/abilityStore';
-import { useEnvironment } from '@/components/auth-can';
-import { getMembers, getRoles, getUserById, getUsers } from '@/lib/data/DTOs';
-// import { getRoles as getRolesDB } from '@/lib/data/db/iam/roles';
-import Ability from '@/lib/ability/abilityHelper';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
-import { Role } from '@/lib/data/role-schema';
-import { User } from '@/lib/data/user-schema';
 import type { CascaderProps, GetProp } from 'antd';
-import usePotentialOwnerStore from './use-potentialOwner-store';
-
-const { Text } = Typography;
+import usePotentialOwnerStore, { RoleType, UserType } from './use-potentialOwner-store';
 
 type PotentialOwnerProps = {
   selectedElement: ElementLike;
   modeler: BPMNCanvasRef | null;
 };
 
-type TreeData = {
-  title: string | JSX.Element;
-  value: string;
-  key?: string;
-}[];
-
-type Option = {
+export type Option = {
   value: string;
   label: string | React.ReactNode;
   children?: Option[];
 };
 
-type DefaultOptionType = GetProp<CascaderProps, 'options'>[number];
+export type DefaultOptionType = GetProp<CascaderProps, 'options'>[number];
 
-const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) => {
-  const { user, roles } = usePotentialOwnerStore();
-
-  const selectedUser: string[][] = [];
-  const selectedRoles: string[][] = [];
-  selectedElement?.businessObject?.resources?.forEach((resource: any) => {
-    if (
-      resource.$type === 'bpmn:PotentialOwner' &&
-      resource.resourceAssignmentExpression?.expression?.body
-    ) {
-      const { user, roles } = JSON.parse(resource.resourceAssignmentExpression.expression.body) as {
-        user: string[];
-        roles: string[];
-      };
-      user.forEach((id) => selectedUser.push(['all-user', `user|${id}`]));
-      roles.forEach((id) => selectedRoles.push(['all-roles', `roles|${id}`]));
-    }
-  });
-
-  const options: Option[] = [
+export function generateOptions(user: UserType, roles: RoleType): Option[] {
+  return [
     {
       label: (
         <>
@@ -93,6 +50,41 @@ const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) =
       })),
     },
   ];
+}
+
+export function getSelectedUserAndRoles(
+  selectedElement: ElementLike,
+  resourcetype: 'bpmn:PotentialOwner' | 'bpmn:Performer',
+) {
+  const user: string[][] = [],
+    roles: string[][] = [];
+  selectedElement?.businessObject?.resources?.forEach((resource: any) => {
+    if (
+      resource.$type === resourcetype &&
+      resource.resourceAssignmentExpression?.expression?.body
+    ) {
+      const { user: _user, roles: _roles } = JSON.parse(
+        resource.resourceAssignmentExpression.expression.body,
+      ) as {
+        user: string[];
+        roles: string[];
+      };
+      _user.forEach((id) => user.push(['all-user', `user|${id}`]));
+      _roles.forEach((id) => roles.push(['all-roles', `roles|${id}`]));
+    }
+  });
+  return { user, roles };
+}
+
+const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) => {
+  const { user, roles } = usePotentialOwnerStore();
+
+  const { user: selectedUser, roles: selectedRoles } = getSelectedUserAndRoles(
+    selectedElement,
+    'bpmn:PotentialOwner',
+  );
+
+  const options: Option[] = generateOptions(user, roles);
 
   const filter = (inputValue: string, path: DefaultOptionType[]) =>
     path.some((option) => option.value.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
@@ -133,8 +125,7 @@ const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) =
         });
         potentialOwners = [potentialOwner];
       }
-      // @ts-ignore
-      modeling.updateModdleProperties(selectedElement, selectedElement.businessObject, {
+      modeling.updateModdleProperties(selectedElement as any, selectedElement.businessObject, {
         resources: potentialOwners,
       });
     }
@@ -146,7 +137,7 @@ const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) =
         direction="vertical"
         style={{ width: '100%' }}
         role="group"
-        aria-labelledby="user-task-mapping-title"
+        aria-labelledby="user-task-performer-selection"
       >
         {selectedElement.type === 'bpmn:UserTask' && (
           <>
@@ -154,7 +145,14 @@ const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) =
               <span style={{ marginRight: '0.3em', marginBottom: '0.1rem' }}>
                 Possible Performer
               </span>
-              <Tooltip title={<div>Who executes this task?</div>}>
+              <Tooltip
+                title={
+                  <div>
+                    Select User and Roles who will see this User-Task in their Tasklist. They can
+                    claim and work on it.
+                  </div>
+                }
+              >
                 <Button type="text" icon={<QuestionCircleOutlined />} />
               </Tooltip>
             </Divider>

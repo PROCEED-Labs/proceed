@@ -110,6 +110,12 @@ function initXml(
       xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
       xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
   >
+    <resource id="resource_user" name="User">
+      <resourceParameter id="user_id" isRequired="true" name="id"/>
+    </resource>
+    <resource id="resource_role" name="Role">
+      <resourceParameter id="role_id" isRequired="true" name="id"/>
+    </resource> 
     <Process id="${processId}" name="PROCEED Main Process" processType="Private" isExecutable="true">
       <startEvent id="${startEventId}"/>
     </Process>

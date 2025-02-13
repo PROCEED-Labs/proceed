@@ -258,7 +258,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       console.log(importedData);
 
       await asyncForEach(importedData, async (item) => {
-        const add_return = await addParentConfig(item, space.spaceId, item);
+        const add_return = await addParentConfig(item, space.spaceId);
         if ('error' in add_return) {
           throw add_return.error.message;
         }

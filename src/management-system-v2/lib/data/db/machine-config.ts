@@ -177,57 +177,51 @@ export async function copyParentConfig(
 
 /*************************** Element Addition *****************************/
 
-export async function addParentConfig(
-  machineConfigInput: ParentConfig,
-  environmentId: string,
-  base?: ParentConfig,
-) {
-  console.log('\n\nIN ADD PARENT\n', machineConfigInput, '\n');
-  const { userId } = await getCurrentUser();
-  const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
-  const date = new Date();
-  const newConfig: ParentConfig = {
-    ...({
-      id: v4(),
-      type: 'config',
-      name: 'Default Parent Configuration',
-      variables: [],
-      createdBy: userId,
-      lastEditedBy: userId,
-      metadata: {},
-      departments: [],
-      inEditingBy: [],
-      createdOn: date,
-      lastEditedOn: date,
-      sharedAs: 'protected',
-      shareTimestamp: 0,
-      allowIframeTimestamp: 0,
-      versions: [],
-      folderId: '',
-      targetConfig: undefined,
-      machineConfigs: [],
-      environmentId: environmentId,
-    } as ParentConfig),
-    ...parentConfigData,
-    ...(base ? base : {}),
-  };
-
-  newConfig.createdBy = userId;
-  newConfig.folderId = (await getRootFolder(environmentId)).id;
-  newConfig.environmentId = environmentId;
-
-  const folderData = await getFolderById(newConfig.folderId);
-  if (!folderData) throw new Error('Folder not found');
-  let idCollision = false;
-  const { id: parentConfigId } = newConfig;
-
-  const existingConfig = await db.config.findUnique({ where: { id: parentConfigId } });
-  if (existingConfig) {
-    //   throw new Error(`Config with id ${parentConfigId} already exists!`);
-    idCollision = true;
-  }
-
+export async function addParentConfig(machineConfigInput: ParentConfig, environmentId: string) {
   try {
+    const { userId } = await getCurrentUser();
+    AbstractConfigInputSchema.parse(machineConfigInput);
+    const date = new Date();
+    const newConfig: ParentConfig = {
+      ...({
+        id: v4(),
+        type: 'config',
+        name: 'Default Parent Configuration',
+        variables: [],
+        createdBy: userId,
+        lastEditedBy: userId,
+        metadata: {},
+        departments: [],
+        inEditingBy: [],
+        createdOn: date,
+        lastEditedOn: date,
+        sharedAs: 'protected',
+        shareTimestamp: 0,
+        allowIframeTimestamp: 0,
+        versions: [],
+        folderId: '',
+        targetConfig: undefined,
+        machineConfigs: [],
+        environmentId: environmentId,
+      } as ParentConfig),
+      ...machineConfigInput,
+    };
+
+    newConfig.createdBy = userId;
+    newConfig.folderId = (await getRootFolder(environmentId)).id;
+    newConfig.environmentId = environmentId;
+
+    const folderData = await getFolderById(newConfig.folderId);
+    if (!folderData) throw new Error('Folder not found');
+    let idCollision = false;
+    const { id: parentConfigId } = newConfig;
+
+    const existingConfig = await db.config.findUnique({ where: { id: parentConfigId } });
+    if (existingConfig) {
+      //   throw new Error(`Config with id ${parentConfigId} already exists!`);
+      idCollision = true;
+    }
+
     await parentConfigToStorage(newConfig, idCollision);
     // eventHandler.dispatch('machineConfigAdded', { machineConfig: newConfig });
 

@@ -15,6 +15,7 @@ import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import useProcessVersion from './use-process-version';
 import { UserError, UserErrorType } from '@/lib/user-error';
+import { FaRegQuestionCircle } from 'react-icons/fa';
 
 export type ProcessExportTypes = ProcessExportOptions['type'] | 'pdf';
 
@@ -328,7 +329,9 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
             {getSubOptions(hasSelection)[type].map(({ label, value, tooltip }) => (
               <Checkbox value={value} key={label} disabled={disabledPdfExport}>
                 <Tooltip placement="right" title={tooltip}>
-                  {label}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                    {label} <FaRegQuestionCircle style={{ verticalAlign: 'center' }} />
+                  </div>
                 </Tooltip>
               </Checkbox>
             ))}

@@ -17,7 +17,7 @@ const DeploymentsList = ({
   tableProps,
 }: {
   processes: DeployedProcessListProcess[];
-  tableProps?: TableProps;
+  tableProps?: TableProps<DeployedProcessListProcess>;
 }) => {
   const breakpoint = Grid.useBreakpoint();
 

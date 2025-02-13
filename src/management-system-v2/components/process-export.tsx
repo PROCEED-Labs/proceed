@@ -159,7 +159,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
           imports: selectedOptions.includes('imports'),
           scaling: pngScalingFactor,
           exportSelectionOnly: selectedOptions.includes('onlySelection'),
-          useWebshareApi: preselectedExportType !== undefined,
+          exportMethod: preselectedExportType !== undefined ? 'webshare' : undefined,
         },
         processes,
         environment.spaceId,

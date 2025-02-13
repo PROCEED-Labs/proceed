@@ -336,7 +336,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
-
         loadingXML.current = false;
 
         if (m !== modeler.current) {

@@ -31,7 +31,7 @@ import PlannedCostInput from './planned-cost-input';
 import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
-import UserMapping, { UserMappingReadOnly } from './task-user-mapping';
+import PotentialOwner from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 
 type PropertiesPanelContentProperties = {
@@ -204,11 +204,11 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             </div>
           </Space>
           <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
-          <UserMappingReadOnly
+          {/* <UserMappingReadOnly
             selectedElement={selectedElement}
             modeler={modeler}
             onClick={() => changeToTab('Property-Panel-Execution')}
-          />
+          /> */}
           <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
           <Space direction="vertical" style={{ width: '100%' }}>
             <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
@@ -287,7 +287,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             aria-labelledby="general-title"
           >
             {environment?.isOrganization && (
-              <UserMapping selectedElement={selectedElement} modeler={modeler} />
+              <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
             )}
           </Space>
         </>

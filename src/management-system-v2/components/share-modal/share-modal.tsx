@@ -11,14 +11,17 @@ import {
   Tabs,
   TabsProps,
 } from 'antd';
-import {
+import Icon, {
   ShareAltOutlined,
   LinkOutlined,
   LeftOutlined,
   RightOutlined,
   CopyOutlined,
   FileImageOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
+import { SvgXML } from '@/components/svg';
+import { TbFileTypePng, TbFileTypeSvg } from 'react-icons/tb';
 import { getProcess } from '@/lib/data/processes';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
@@ -195,7 +198,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
       ),
     },
     {
-      icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      icon: <FilePdfOutlined style={{ fontSize: '24px' }} />,
       label: 'Download Diagram as PDF',
       key: 'pdf',
       children: (
@@ -209,7 +212,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
       ),
     },
     {
-      icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      icon: <TbFileTypePng style={{ fontSize: '24px' }} />,
       label: 'Download Diagram as PNG',
       key: 'png',
       children: (
@@ -223,7 +226,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
       ),
     },
     {
-      icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      icon: <TbFileTypeSvg style={{ fontSize: '24px' }} />,
       label: 'Download Diagram as SVG',
       key: 'svg',
       children: (
@@ -237,7 +240,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
       ),
     },
     {
-      icon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      icon: <Icon aria-label="xml-sign" component={SvgXML} />,
       label: 'Download Diagram as BPMN',
       key: 'bpmn',
       children: (

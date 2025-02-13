@@ -8,7 +8,7 @@
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
     "machine-uuid": "^1.2.0",
-    "systeminformation": "^4.30.1",
+    "systeminformation": "^5.23.8",
     "ping": "^0.3.0"
   }
 }

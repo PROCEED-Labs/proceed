@@ -35,19 +35,21 @@ function getSubOptions(giveSelectionOption?: boolean) {
         tooltip:
           'Also export html and images used in User-Tasks and images used for other process elements',
       },
-      {
-        label: 'with referenced processes',
-        value: 'imports',
-        tooltip: 'Also export all referenced processes used in call-activities',
-      },
+      // NOTE: not supported yet
+      // {
+      //   label: 'with referenced processes',
+      //   value: 'imports',
+      //   tooltip: 'Also export all referenced processes used in call-activities',
+      // },
     ],
     pdf: pdfSettings,
     svg: [
-      {
-        label: 'with referenced processes',
-        value: 'imports',
-        tooltip: 'Also export all referenced processes used in call-activities',
-      },
+      // NOTE: not supported yet
+      // {
+      //   label: 'with referenced processes',
+      //   value: 'imports',
+      //   tooltip: 'Also export all referenced processes used in call-activities',
+      // },
       {
         label: 'with collapsed subprocesses',
         value: 'subprocesses',
@@ -55,11 +57,12 @@ function getSubOptions(giveSelectionOption?: boolean) {
       },
     ],
     png: [
-      {
-        label: 'with referenced processes',
-        value: 'imports',
-        tooltip: 'Also export all referenced processes used in call-activities',
-      },
+      // NOTE: not supported yet
+      //{
+      //  label: 'with referenced processes',
+      //  value: 'imports',
+      //  tooltip: 'Also export all referenced processes used in call-activities',
+      //},
       {
         label: 'with collapsed subprocesses',
         value: 'subprocesses',

@@ -13,15 +13,15 @@ import { isUserErrorResponse } from '@/lib/user-error';
 
 function getDeploymentNames(deployments: DeployedProcessInfo[]) {
   for (const deployment of deployments) {
-    let latestVesrionIdx = deployment.versions.length - 1;
+    let latestDeploymentIdx = deployment.versions.length - 1;
     for (let i = deployment.versions.length - 2; i >= 0; i--) {
-      if (deployment.versions[i].version > deployment.versions[latestVesrionIdx].version)
-        latestVesrionIdx = i;
+      if (deployment.versions[i].versionId > deployment.versions[latestDeploymentIdx].versionId)
+        latestDeploymentIdx = i;
     }
-    const latestVersion = deployment.versions[latestVesrionIdx];
+    const latestDeployment = deployment.versions[latestDeploymentIdx];
 
     // @ts-ignore
-    deployment.name = latestVersion.definitionName || latestVersion.versionName;
+    deployment.name = latestDeployment.definitionName || latestDeployment.versionName;
   }
 
   return deployments as (DeployedProcessInfo & { name: string })[];

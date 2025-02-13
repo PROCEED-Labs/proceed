@@ -170,7 +170,9 @@
     },
     {
       "name": "Meta",
-      "superClass": ["Element"],
+      "superClass": [
+        "Element"
+      ],
       "properties": [
         {
           "name": "values",
@@ -251,7 +253,10 @@
     },
     {
       "name": "versionId",
-      "extends": ["bpmn:Definitions", "bpmn:Import"],
+      "extends": [
+        "bpmn:Definitions",
+        "bpmn:Import"
+      ],
       "properties": [
         {
           "name": "versionId",
@@ -262,7 +267,9 @@
     },
     {
       "name": "versionName",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "versionName",
@@ -273,7 +280,9 @@
     },
     {
       "name": "versionDescription",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "versionDescription",
@@ -284,7 +293,9 @@
     },
     {
       "name": "versionBasedOn",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "versionBasedOn",
@@ -295,7 +306,9 @@
     },
     {
       "name": "versionCreatedOn",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "versionCreatedOn",
@@ -306,7 +319,9 @@
     },
     {
       "name": "creatorEnvironmentId",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "creatorEnvironmentId",
@@ -317,7 +332,9 @@
     },
     {
       "name": "creatorEnvironmentName",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "creatorEnvironmentName",
@@ -328,7 +345,9 @@
     },
     {
       "name": "templateId",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "templateId",
@@ -339,7 +358,9 @@
     },
     {
       "name": "originalId",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "originalId",
@@ -350,7 +371,9 @@
     },
     {
       "name": "originalExporter",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "originalExporter",
@@ -361,7 +384,9 @@
     },
     {
       "name": "originalExporterVersion",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "originalExporterVersion",
@@ -372,7 +397,9 @@
     },
     {
       "name": "originalTargetNamespace",
-      "extends": ["bpmn:Definitions"],
+      "extends": [
+        "bpmn:Definitions"
+      ],
       "properties": [
         {
           "name": "originalTargetNamespace",
@@ -383,7 +410,9 @@
     },
     {
       "name": "deploymentMethod",
-      "extends": ["bpmn:Process"],
+      "extends": [
+        "bpmn:Process"
+      ],
       "properties": [
         {
           "name": "deploymentMethod",
@@ -394,7 +423,9 @@
     },
     {
       "name": "machineId",
-      "extends": ["bpmn:FlowNode"],
+      "extends": [
+        "bpmn:FlowNode"
+      ],
       "properties": [
         {
           "name": "machineId",
@@ -405,7 +436,9 @@
     },
     {
       "name": "machineAddress",
-      "extends": ["bpmn:FlowNode"],
+      "extends": [
+        "bpmn:FlowNode"
+      ],
       "properties": [
         {
           "name": "machineAddress",
@@ -416,7 +449,9 @@
     },
     {
       "name": "fileName",
-      "extends": ["bpmn:FlowNode"],
+      "extends": [
+        "bpmn:FlowNode"
+      ],
       "properties": [
         {
           "name": "fileName",
@@ -427,7 +462,9 @@
     },
     {
       "name": "LinkProcessNode",
-      "extends": ["bpmn:FlowNode"],
+      "extends": [
+        "bpmn:FlowNode"
+      ],
       "properties": [
         {
           "name": "sourceProcess",
@@ -458,7 +495,9 @@
     },
     {
       "name": "external",
-      "extends": ["bpmn:Task"],
+      "extends": [
+        "bpmn:Task"
+      ],
       "properties": [
         {
           "name": "external",
@@ -468,8 +507,30 @@
       ]
     },
     {
+      "name": "ResponsibleParty",
+      "superClass": [
+        "bpmn:ResourceRole"
+      ]
+    },
+    {
+      "name": "ResposibilityElements",
+      "extends": [
+        "bpmn:Gateway",
+        "bpmn:Event"
+      ],
+      "properties": [
+        {
+          "name": "resources",
+          "type": "ResourceRole",
+          "isMany": true
+        }
+      ]
+    },
+    {
       "name": "placeholder",
-      "extends": ["bpmn:Task"],
+      "extends": [
+        "bpmn:Task"
+      ],
       "properties": [
         {
           "name": "placeholder",
@@ -480,7 +541,9 @@
     },
     {
       "name": "manualInterruptionHandling",
-      "extends": ["bpmn:FlowElement"],
+      "extends": [
+        "bpmn:FlowElement"
+      ],
       "properties": [
         {
           "name": "manualInterruptionHandling",
@@ -491,7 +554,9 @@
     },
     {
       "name": "Script",
-      "superClass": ["InputOutputParameterDefinition"],
+      "superClass": [
+        "InputOutputParameterDefinition"
+      ],
       "properties": [
         {
           "name": "scriptFormat",
@@ -512,7 +577,9 @@
     },
     {
       "name": "ProcessConstraints",
-      "superClass": ["Element"],
+      "superClass": [
+        "Element"
+      ],
       "properties": [
         {
           "name": "hardConstraints",
@@ -756,7 +823,9 @@
     },
     {
       "name": "capabilities",
-      "superClass": ["Element"],
+      "superClass": [
+        "Element"
+      ],
       "properties": [
         {
           "name": "capability",
@@ -777,7 +846,9 @@
     },
     {
       "name": "Resources",
-      "superClass": ["Element"],
+      "superClass": [
+        "Element"
+      ],
       "properties": [
         {
           "name": "consumableMaterial",
@@ -933,7 +1004,9 @@
     },
     {
       "name": "Locations",
-      "superClass": ["Element"],
+      "superClass": [
+        "Element"
+      ],
       "properties": [
         {
           "name": "company",
@@ -1114,7 +1187,9 @@
     },
     {
       "name": "Milestones",
-      "superClass": ["Element"],
+      "superClass": [
+        "Element"
+      ],
       "properties": [
         {
           "name": "milestone",

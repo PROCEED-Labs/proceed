@@ -222,12 +222,12 @@ jobs:
       id-token: write
       pull-requests: write
       issues: write
-    environment: Research
+    environment: Staging
     env:
       MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
       SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-      ENV: Research
+      ENV: Staging
     steps:
       # Database name generation step
       - name: Generate sanitized database name
@@ -327,6 +327,13 @@ jobs:
           DATABASE_URL: ${{ steps.configure-connection.outputs.DATABASE_URL }}
         run: |
           yarn dev-ms-db-deploy
+
+      - name: Dump Prisma Migrations to a SQL Script # for research server
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          cd src/management-system-v2
+          cat prisma/migrations/*/migration.sql > db_schema.sql
+          scp db_schema.sql $ENV:/home/${{secrets.SSH_USER}}/sql-schema-dump
 
       - uses: 'google-github-actions/auth@v2'
         with:

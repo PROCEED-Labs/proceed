@@ -31,9 +31,8 @@ import PlannedCostInput from './planned-cost-input';
 import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
-import PotentialOwner from './potential-owner';
+import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import ResponisbilitySelection from './responsibility';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -206,7 +205,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           </Space>
           <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
           {/* Responsibility */}
-          <ResponisbilitySelection selectedElement={selectedElement} modeler={modeler} />
+          <ResponsibleParty selectedElement={selectedElement} modeler={modeler} />
           <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
           <Space direction="vertical" style={{ width: '100%' }}>
             <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>

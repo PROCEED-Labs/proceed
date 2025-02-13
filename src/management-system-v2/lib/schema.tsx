@@ -468,6 +468,21 @@ export const schema = {
       ],
     },
     {
+      name: 'ResponsibleParty',
+      superClass: ['bpmn:ResourceRole'],
+    },
+    {
+      name: 'ResposibilityElements',
+      extends: ['bpmn:Gateway', 'bpmn:Event'],
+      properties: [
+        {
+          name: 'resources',
+          type: 'ResourceRole',
+          isMany: true,
+        },
+      ],
+    },
+    {
       name: 'Performer',
       superClass: ['bpmn:Artifact'],
       properties: [

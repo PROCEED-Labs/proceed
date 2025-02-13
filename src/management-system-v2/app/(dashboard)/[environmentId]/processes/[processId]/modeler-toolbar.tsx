@@ -277,7 +277,8 @@ const ModelerToolbar = ({
           </ToolbarGroup>
 
           <ToolbarGroup>
-            {selectedElement &&
+            {selectedElementId &&
+              selectedElement &&
               ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
                 <Tooltip title="Edit User Task Form">
                   <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />

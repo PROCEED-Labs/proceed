@@ -25,7 +25,7 @@ env:
   DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
 jobs:
   install:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -46,7 +46,7 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -66,7 +66,7 @@ jobs:
       - run: yarn prettier --check .
 
   testEngine:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -86,7 +86,7 @@ jobs:
       - run: yarn test-engine --ci
 
   testEngineE2E:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -106,7 +106,7 @@ jobs:
       - run: yarn test-e2e --ci
 
   testMS:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -126,7 +126,7 @@ jobs:
       - run: yarn test-ms --ci
 
   buildMS:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
     outputs:
@@ -168,7 +168,7 @@ jobs:
           tag: ${{ steps.set_tag.outputs.tag }}
 
   validate-migrations:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: buildMS
     outputs:
       main_diff: ${{ steps.migration-diff-main.outputs.diff }}
@@ -215,7 +215,7 @@ jobs:
           fi
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [buildMS, validate-migrations]
     permissions:
       contents: read
@@ -359,7 +359,7 @@ jobs:
           env_vars: '{"DATABASE_URL": "${{ steps.configure-connection.outputs.DATABASE_URL }}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
 
   githubEnvironment:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: deploy
     if: ${{ github.ref == 'refs/heads/main' }}
     environment:
@@ -371,7 +371,7 @@ jobs:
   testE2E:
     needs: deploy
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: ${{ inputs.environment != 'Production' }}
     strategy:
       matrix:
@@ -412,7 +412,7 @@ jobs:
     if: always()
     needs: [testE2E]
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/cache@v4
         timeout-minutes: 2

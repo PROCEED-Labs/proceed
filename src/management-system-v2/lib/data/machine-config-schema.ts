@@ -25,6 +25,7 @@ export const AbstractConfigInputSchema = z.object({
   name: z.string().optional(),
   metadata: z.record(z.string(), ParameterZod),
   folderId: z.string().optional(),
+  version: z.string().optional(),
 });
 
 type Metadata = {

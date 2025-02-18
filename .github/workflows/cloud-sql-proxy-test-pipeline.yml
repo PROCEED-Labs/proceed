@@ -26,6 +26,8 @@ jobs:
       SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
       ENV: Staging
     steps:
+      - uses: actions/checkout@v4
+
       - uses: 'google-github-actions/auth@v2'
         with:
           export_environment_variables: true # Exports the service account key as GOOGLE_APPLICATION_CREDENTIALS, we need this for cloud sql auth proxy
@@ -36,4 +38,5 @@ jobs:
       - name: Configure Cloud SQL Auth Proxy Docker
         run: |
           cat $GOOGLE_APPLICATION_CREDENTIALS > /tmp/key.json
-          docker run -d --name cloud-sql-auth-proxy -v /cloudsql:/cloudsql -v /tmp/key.json:/tmp/key.json gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --unix-socket=/cloudsql --credentials-file /tmp/key.json proceed-bpms:europe-west1:ms-db-staging
+          docker run --name cloud-sql-auth-proxy -v /cloudsql:/cloudsql -v /tmp/key.json:/tmp/key.json gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --unix-socket=/cloudsql --credentials-file /tmp/key.json proceed-bpms:europe-west1:ms-db-staging
+          ls /cloudsql

@@ -1,0 +1,39 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+      issues: write
+    environment: Staging
+    env:
+      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
+      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
+      ENV: Staging
+    steps:
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          export_environment_variables: true # Exports the service account key as GOOGLE_APPLICATION_CREDENTIALS, we need this for cloud sql auth proxy
+          project_id: 'proceed-bpms'
+          workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
+          service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
+
+      - name: Configure Cloud SQL Auth Proxy Docker
+        run: |
+          cat $GOOGLE_APPLICATION_CREDENTIALS > /tmp/key.json
+          docker run -d --name cloud-sql-auth-proxy -v /cloudsql:/cloudsql -v /tmp/key.json:/tmp/key.json gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --unix-socket=/cloudsql --credentials-file /tmp/key.json proceed-bpms:europe-west1:ms-db-staging

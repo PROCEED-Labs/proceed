@@ -1,12 +1,12 @@
 name: Build and deploy with Database
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
+  # pull_request:
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       environment:
@@ -337,6 +337,7 @@ jobs:
 
       - uses: 'google-github-actions/auth@v2'
         with:
+          export_environment_variables: true # Exports the service account key as GOOGLE_APPLICATION_CREDENTIALS, we need this for cloud sql auth proxy
           project_id: 'proceed-bpms'
           workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
           service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'

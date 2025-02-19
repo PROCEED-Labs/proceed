@@ -210,13 +210,6 @@ export async function addProcess(
     console.error('Error adding new process: ', error);
   }
 
-  await moveProcess({
-    processDefinitionsId,
-    newFolderId: metadata.folderId,
-    dontUpdateOldFolder: true,
-    tx,
-  });
-
   //if referencedProcessId is present, the process was copied from a shared process
   if (referencedProcessId) {
     const artifacts = await tx.artifact.findMany({

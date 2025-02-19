@@ -31,6 +31,7 @@ async function getCurrentBranch(): Promise<string> {
     const result = execSync('git rev-parse --abbrev-ref HEAD', {
       encoding: 'utf-8',
     });
+    console.log(`Current branch: ${result}`);
     return result.trim();
   } catch (error) {
     console.error('Failed to get current git branch:', error);
@@ -234,7 +235,7 @@ async function main() {
 
   await updateEnvFile(dbName, config.envFile);
 
-  if (options.init) {
+  if (options.init && (await getCurrentBranch()) === 'main') {
     await applyPrismaSchema();
   }
 }

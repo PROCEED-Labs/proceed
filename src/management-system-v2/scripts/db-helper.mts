@@ -39,7 +39,7 @@ async function getCurrentBranch(): Promise<string> {
 }
 
 function sanitizeBranchName(branchName: string): string {
-  return branchName.replace(/[-/]/g, '_');
+  return branchName.replace(/[-/]/g, '_').toLowerCase();
 }
 
 async function updateEnvFile(dbName: string, envFile: string): Promise<void> {
@@ -234,7 +234,7 @@ async function main() {
 
   await updateEnvFile(dbName, config.envFile);
 
-  if (options.new || options.init) {
+  if (options.init) {
     await applyPrismaSchema();
   }
 }

@@ -371,11 +371,15 @@ export async function updateProcessMetaData(
 export async function removeProcess(processDefinitionsId: string, tx?: Prisma.TransactionClient) {
   if (!tx) {
     return await db.$transaction(async (trx: Prisma.TransactionClient) => {
-      await removeProcess(processDefinitionsId, trx);
+      try {
+        await removeProcess(processDefinitionsId, trx);
+      } catch (error) {
+        throw error;
+      }
     });
   }
 
-  const process = await db.process.findUnique({
+  const process = await tx.process.findUnique({
     where: { id: processDefinitionsId },
     include: { artifactProcessReferences: { include: { artifact: true } } },
   });
@@ -383,16 +387,20 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
   if (!process) {
     throw new Error(`Process with id: ${processDefinitionsId} not found`);
   }
-  await Promise.all(
-    process.artifactProcessReferences.map((artifactRef) => {
-      deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
-    }),
-  );
 
-  // Remove from database
-  await tx.process.delete({ where: { id: processDefinitionsId } });
+  try {
+    await Promise.all(
+      process.artifactProcessReferences.map((artifactRef) => {
+        return deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
+      }),
+    );
 
-  eventHandler.dispatch('processRemoved', { processDefinitionsId });
+    await tx.process.delete({ where: { id: processDefinitionsId } });
+
+    eventHandler.dispatch('processRemoved', { processDefinitionsId });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /** Stores a new version of an existing process */

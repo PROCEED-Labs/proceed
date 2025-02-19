@@ -32,12 +32,23 @@ jobs:
 
       - name: Check feature flags are disabled
         run: |
-          if grep -Ei 'export const enable[a-z0-9_]+ = true;' path/to/feature-flags.ts | grep -Evi 'export const (enableMessaging|enableUseDB|enableUseFileManager) = true;'; then
-            echo "❌ Feature flags must be set to false before merging!"
-            exit 1
-          else
-            echo "✅ All feature flags are correctly set to false."
-          fi
+          FILE="FeatureFlags.js"
+
+          # Define exempted flags
+          EXEMPTED_FLAGS=("enableMessaging" "enableUseDB" "enableUseFileManager")
+
+          # Find all flags set to `true`
+          FLAGS_WITH_TRUE=$(grep -E '^\s*enable[a-zA-Z0-9_]+\s*:\s*true' "$FILE" | awk -F: '{print $1}' | tr -d ' ')
+
+          # Check each flag
+          for FLAG in $FLAGS_WITH_TRUE; do
+            if [[ ! " ${EXEMPTED_FLAGS[@]} " =~ " $FLAG " ]]; then
+              echo "❌ Feature flag $FLAG must be set to false before merging!"
+              exit 1
+            fi
+          done
+
+          echo "✅ All feature flags (except exemptions) are correctly set to false."
 
   install:
     runs-on: ubuntu-latest

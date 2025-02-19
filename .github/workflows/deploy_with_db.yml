@@ -24,6 +24,21 @@ env:
   DB_CONTAINER: ${{ vars.DB_CONTAINER_NAME }}
   DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
 jobs:
+  check-feature-flags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check feature flags are disabled
+        run: |
+          if grep -Ei 'export const enable[a-z0-9_]+ = true;' path/to/feature-flags.ts | grep -Evi 'export const (enableMessaging|enableUseDB|enableUseFileManager) = true;'; then
+            echo "❌ Feature flags must be set to false before merging!"
+            exit 1
+          else
+            echo "✅ All feature flags are correctly set to false."
+          fi
+
   install:
     runs-on: ubuntu-latest
     steps:

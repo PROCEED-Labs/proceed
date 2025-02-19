@@ -31,7 +31,6 @@ async function getCurrentBranch(): Promise<string> {
     const result = execSync('git rev-parse --abbrev-ref HEAD', {
       encoding: 'utf-8',
     });
-    console.log(`Current branch: ${result}`);
     return result.trim();
   } catch (error) {
     console.error('Failed to get current git branch:', error);
@@ -235,8 +234,23 @@ async function main() {
 
   await updateEnvFile(dbName, config.envFile);
 
-  if (options.init && (await getCurrentBranch()) === 'main') {
-    await applyPrismaSchema();
+  async function checkIfDefaultDBHasSchema() {
+    const result = await executePostgresCommand(
+      `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '_prisma_migrations');`,
+    );
+    return result === 't';
+  }
+
+  if (options.init) {
+    const isMainBranch = (await getCurrentBranch()) === 'main';
+    const defaultDbHasSchema = await checkIfDefaultDBHasSchema();
+    if (isMainBranch || (!isMainBranch && !defaultDbHasSchema)) {
+      await applyPrismaSchema();
+    } else {
+      console.log(
+        'Skipping Prisma schema update for default db from non-main branch.',
+      );
+    }
   }
 }
 

@@ -12,6 +12,7 @@ import Icon, {
   ArrowUpOutlined,
   FilePdfOutlined,
   FormOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -33,6 +34,8 @@ import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { enableBPMNChatbot } from 'FeatureFlags';
+import ChatbotDialog from '@/components/bpmn-chatbot';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -212,6 +215,7 @@ const ModelerToolbar = ({
     versions.find((version) => version.id === (selectedVersionId ?? '-1')) ?? LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
+  const [showChatbotDialog, setShowChatbotDialog] = useState(false);
 
   return (
     <>
@@ -335,6 +339,14 @@ const ModelerToolbar = ({
                   </Tooltip>
                 </>
               )}
+              {enableBPMNChatbot && (
+                <Tooltip title={showChatbotDialog ? 'Close Chatbot' : 'Open Chatbot'}>
+                  <Button
+                    icon={<RobotOutlined></RobotOutlined>}
+                    onClick={() => setShowChatbotDialog(!showChatbotDialog)}
+                  ></Button>
+                </Tooltip>
+              )}
             </ToolbarGroup>
 
             {showPropertiesPanel && selectedElement && (
@@ -343,6 +355,9 @@ const ModelerToolbar = ({
                 close={handlePropertiesPanelToggle}
                 selectedElement={selectedElement}
               />
+            )}
+            {enableBPMNChatbot && (
+              <ChatbotDialog show={showChatbotDialog} modeler={modeler}></ChatbotDialog>
             )}
           </Space>
         </Space>

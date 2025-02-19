@@ -229,13 +229,8 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
 
   return (
     <>
-      <Card
-        title="Chatbot"
-        size="small"
-        style={{ width: 400, height: 'calc(100vh - 88px)' }}
-        hidden={!show}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 150px)' }}>
+      <Card title="Chatbot" size="small" style={{ width: 400 }} hidden={!show}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 190px)' }}>
           <div style={{ overflow: 'auto', flex: 1 }} ref={listRef}>
             <List
               size="small"

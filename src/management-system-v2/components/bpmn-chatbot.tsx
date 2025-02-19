@@ -1,6 +1,6 @@
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Button, Card, Form, Input, List, Space, Tag, Tooltip } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { ReactNode, useRef, useState } from 'react';
 import { getNewShapePosition } from 'bpmn-js/lib/features/auto-place/BpmnAutoPlaceUtil';
 import { Element, Shape } from 'bpmn-js/lib/model/Types';
 import { FileOutlined, MessageOutlined, SendOutlined } from '@ant-design/icons';
@@ -18,7 +18,7 @@ type FieldType = {
 
 const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   const [lastPrompts, setLastPrompts] = useState<
-    { message: string; isUser: boolean; bpmn?: string }[]
+    { message: ReactNode; isUser: boolean; bpmn?: string }[]
   >([]);
   const [waitForResponse, setWaitForResponse] = useState(false);
   const [prompt, setPrompt] = useState('');

@@ -18,11 +18,11 @@ type GetParamsFromString<
   Params extends unknown[] = [],
 > = Str extends `${infer Start}:${string}/${infer Rest}`
   ? Str extends `${Start}:${infer Param}/${Rest}`
-  ? GetParamsFromString<Rest, [...Params, Param]>
-  : Params
+    ? GetParamsFromString<Rest, [...Params, Param]>
+    : Params
   : Str extends `${string}:${infer End}`
-  ? [...Params, End]
-  : Params;
+    ? [...Params, End]
+    : Params;
 
 type _EndpointParams<ParamsArray extends string[]> = ParamsArray extends []
   ? never
@@ -68,10 +68,17 @@ export function _endpointBuilder(
   endpoint: string,
   options?: { pathParams?: Record<string, string>; queryParams?: Record<string, string> },
 ) {
-  return endpoint.replace(
+  let builtEndpoint = endpoint.replace(
     /:([^/]+)/g,
     (_, capture_group) => options?.pathParams?.[capture_group] || '',
   );
+
+  if (options?.queryParams && Object.keys(options.queryParams).length > 0) {
+    const searchParams = new URLSearchParams(options.queryParams);
+    builtEndpoint += `?${searchParams.toString()}`;
+  }
+
+  return builtEndpoint;
 }
 
 export default function endpointBuilder<

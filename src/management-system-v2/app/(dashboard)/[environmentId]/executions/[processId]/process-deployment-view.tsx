@@ -16,8 +16,12 @@ import { MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, applyColors, colorOptions, flushPreviousStyling } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { startInstance } from '@/lib/engines/server-actions';
+import { useEnvironment } from '@/components/auth-can';
+import { useRouter } from 'next/navigation';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
-function getVersionInstances(process: DeployedProcessInfo, version?: number) {
+function getVersionInstances(process: DeployedProcessInfo, versionId?: string) {
   const instances = process.instances.map((instance, idx) => {
     const name = `${idx + 1}. Instance: ${new Date(instance.globalStartTime).toLocaleString()}`;
     // @ts-ignore
@@ -26,14 +30,14 @@ function getVersionInstances(process: DeployedProcessInfo, version?: number) {
     return instance;
   }) as (InstanceInfo & { label: string })[];
 
-  if (!version) return instances;
-  return instances.filter((instance) => +instance.processVersion === version);
+  if (!versionId) return instances;
+  return instances.filter((instance) => instance.processVersion === versionId);
 }
 
-function getLatestVersion(process: DeployedProcessInfo) {
+function getLatestDeployment(process: DeployedProcessInfo) {
   let latest = process.versions.length - 1;
   for (let i = process.versions.length - 2; i >= 0; i--) {
-    if (process.versions[i].version > process.versions[latest].version) latest = i;
+    if (process.versions[i].deploymentDate > process.versions[latest].deploymentDate) latest = i;
   }
 
   return process.versions[latest];
@@ -62,16 +66,20 @@ export default function ProcessDeploymentView({
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
+  const { spaceId } = useEnvironment();
+
+  const router = useRouter();
+
   function selectNewBpmn(type: 'version' | 'instance', identifier: number | string) {
     if (type == 'instance') {
       setSelectedInstanceId(identifier as string);
     } else if (type == 'version') {
-      const version = selectedProcess!.versions.find((v) => v.version === identifier);
+      const version = selectedProcess!.versions.find((v) => v.versionId === identifier);
       setSelectedVersion(version);
 
       const instances = getVersionInstances(
         selectedProcess!,
-        version ? version.version : undefined,
+        version ? version.versionId : undefined,
       );
       const youngestInstance = getYoungestInstance(instances);
       setSelectedInstanceId(youngestInstance?.processInstanceId);
@@ -82,7 +90,7 @@ export default function ProcessDeploymentView({
     flushPreviousStyling();
   }
 
-  const instances = getVersionInstances(selectedProcess, selectedVersion?.version);
+  const instances = getVersionInstances(selectedProcess, selectedVersion?.versionId);
   const selectedInstance = selectedInstanceId
     ? instances.find((i) => i.processInstanceId === selectedInstanceId)
     : undefined;
@@ -90,10 +98,10 @@ export default function ProcessDeploymentView({
   let selectedBpmn;
   if (selectedInstance)
     selectedBpmn = selectedProcess.versions.find(
-      (v) => v.version === +selectedInstance.processVersion,
+      (v) => v.versionId === selectedInstance.processVersion,
     )!;
   else if (selectedVersion) selectedBpmn = selectedVersion;
-  else selectedBpmn = getLatestVersion(selectedProcess);
+  else selectedBpmn = getLatestDeployment(selectedProcess);
 
   // When selected coloring changes, this function will change
   // That in turn will trigger the useEffect inside the BPMNCanvas
@@ -145,8 +153,23 @@ export default function ProcessDeploymentView({
                 placeholder="Select an instance"
               />
               <Tooltip title="Start new instance">
-                {/** TODO: implement start new instance */}
-                <Button icon={<PlusOutlined />} />
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    wrapServerCall({
+                      fn: () =>
+                        startInstance(
+                          selectedProcess.definitionId,
+                          getLatestDeployment(selectedProcess).versionId,
+                          spaceId,
+                        ),
+                      onSuccess: (instanceId) => {
+                        selectNewBpmn('instance', instanceId);
+                        router.refresh();
+                      },
+                    });
+                  }}
+                />
               </Tooltip>
 
               <Tooltip title="Filter by version">
@@ -168,13 +191,13 @@ export default function ProcessDeploymentView({
                         : []),
                       ...selectedProcess.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
-                        key: `${version.version}`,
+                        key: `${version.versionId}`,
                         disabled: false,
                       })),
                     ],
                     selectable: true,
-                    onSelect: (item) => selectNewBpmn('version', +item.key),
-                    selectedKeys: selectedVersion ? [`${selectedVersion.version}`] : [],
+                    onSelect: (item) => selectNewBpmn('version', item.key),
+                    selectedKeys: selectedVersion ? [`${selectedVersion.versionId}`] : [],
                   }}
                 >
                   <Button icon={<FilterOutlined />}>

@@ -235,9 +235,7 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if correct modal opened */
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
-    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
-      /export/i,
-    );
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/Share/i);
 
     /* Close Modal */
     // await page.locator('body').press('Escape');
@@ -297,38 +295,6 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   const regex =
     /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+\&version=[a-zA-Z0-9._-]+)'/;
   expect(clipboardData).toMatch(regex);
-
-  /*************************** Copy Diagram As PNG ********************************/
-  //if (page.context().browser().browserType() !== firefox) {
-  await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click();
-  await page.waitForTimeout(100);
-  clipboardData = await ms2Page.readClipboard(false);
-  await expect(clipboardData).toMatch('image/png');
-  /*} else {
-    // download as fallback
-    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-      async () => await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
-      'string',
-    );
-
-    expect(pngFilename).toMatch(/.png$/);
-  }*/
-
-  /*************************** Copy Diagram As XML ********************************/
-
-  await modal.getByTitle('Copy Diagram as XML', { exact: true }).click();
-
-  clipboardData = await ms2Page.readClipboard(true);
-
-  const xmlRegex = /<([a-zA-Z0-9\-:_]+)[^>]*>[\s\S]*?<\/\1>/g;
-  await expect(clipboardData).toMatch(xmlRegex);
-
-  /*************************** Export as File ********************************/
-  const exportModal = await openModal(page, () =>
-    modal.getByTitle('Export as file', { exact: true }).click(),
-  );
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await closeModal(exportModal, () => exportModal.getByRole('button', { name: 'cancel' }).click());
 
   /*************************** Share Process with link ********************************/
   await modal.getByRole('button', { name: 'Share Public Link' }).click();

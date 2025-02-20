@@ -193,7 +193,12 @@ const ModelerShareModalOptionPublicLink = ({
           <Button onClick={handleCopyLink} icon={<IoMdCopy />} style={{ justifyContent: 'start' }}>
             Copy Link
           </Button>
-          <Input type={'text'} value={shareLink} style={{ flexGrow: 1 }} />
+          <Input
+            type={'text'}
+            value={shareLink}
+            style={{ flexGrow: 1 }}
+            name="generated share link"
+          />
         </div>
       )}
 

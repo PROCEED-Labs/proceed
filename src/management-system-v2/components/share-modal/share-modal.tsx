@@ -16,7 +16,6 @@ import Icon, {
   LinkOutlined,
   LeftOutlined,
   RightOutlined,
-  CopyOutlined,
   FileImageOutlined,
   FilePdfOutlined,
 } from '@ant-design/icons';
@@ -47,12 +46,12 @@ type ShareModalProps = {
     versions: ProcessMetadata['versions'];
   }[];
   open: boolean;
-  close: () => void;
+  setOpen: (state: boolean) => void;
   defaultOpenTab?: 'bpmn' | 'share-public-link';
 };
 type SharedAsType = 'public' | 'protected';
 
-export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaultOpenTab }) => {
+export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defaultOpenTab }) => {
   const environment = useEnvironment();
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
@@ -285,7 +284,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
   );
 
   useAddControlCallback(
-    'modeler',
+    ['process-list', 'modeler'],
     'control+enter',
     () => {
       const option = tabs[activeIndex];
@@ -294,7 +293,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
     { dependencies: [open, activeIndex], level: 2, blocking: open },
   );
   useAddControlCallback(
-    'modeler',
+    ['process-list', 'modeler'],
     'left',
     () => {
       if (open) {
@@ -306,7 +305,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
     { dependencies: [open, activeIndex] },
   );
   useAddControlCallback(
-    'modeler',
+    ['process-list', 'modeler'],
     'right',
     () => {
       if (open) {
@@ -322,11 +321,11 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
       open={open}
       width={breakpoint.lg ? 750 : 320}
       closeIcon={false}
-      onCancel={close}
+      onCancel={() => setOpen(false)}
       zIndex={200}
       footer={
         <div style={{ display: 'flex', gap: '.5rem', justifyContent: 'end' }}>
-          <Button onClick={close} key="close">
+          <Button onClick={() => setOpen(false)} key="close">
             Close
           </Button>
           {['bpmn', 'svg', 'png', 'pdf'].includes(tabs[activeIndex]?.key) && (
@@ -336,10 +335,12 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
               isExporting={isExporting}
               moreThanOne={processes.length > 1}
               state={exportState[0]}
+              closeModal={() => setOpen(false)}
             />
           )}
         </div>
       }
+      data-testid="Share Modal"
     >
       <Spin spinning={checkingIfProcessShared}>
         {/* The Tabs might seem unnecessary, but they keep the state of the components avoiding unnecessary fetches */}
@@ -407,13 +408,9 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, close, defaul
 export const ShareModalButton = (props: Omit<ShareModalProps, 'open' | 'close'>) => {
   const [open, setOpen] = useState(false);
 
-  useAddControlCallback('modeler', 'shift+enter', () => setOpen(true), {
-    dependencies: [],
-  });
-
   return (
     <>
-      <ShareModal {...props} open={open} close={() => setOpen(false)} />
+      <ShareModal {...props} open={open} setOpen={setOpen} />
       <Tooltip title="Share">
         <Button icon={<ShareAltOutlined />} onClick={() => setOpen(true)} />
       </Tooltip>

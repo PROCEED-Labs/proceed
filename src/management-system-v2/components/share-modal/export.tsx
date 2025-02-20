@@ -213,12 +213,14 @@ export function ProcessExportSubmitButton({
   exportProcesses,
   moreThanOne,
   isExporting,
+  closeModal,
 }: {
   type: ProcessExportTypes;
   state: ExportOptionState;
   exportProcesses: ExportProcessesFunction;
   moreThanOne: boolean;
   isExporting: ExportingState;
+  closeModal?: () => void;
 }) {
   return (
     <>
@@ -227,7 +229,10 @@ export function ProcessExportSubmitButton({
           loading={isExporting === 'copying'}
           disabled={state[type].selectedOptions.length > 0 || !!isExporting}
           type="primary"
-          onClick={() => exportProcesses(type, 'clipboard')}
+          onClick={async () => {
+            await exportProcesses(type, 'clipboard');
+            closeModal?.();
+          }}
         >
           Copy To Clipboard
         </Button>
@@ -236,7 +241,10 @@ export function ProcessExportSubmitButton({
         loading={isExporting === 'exporting'}
         disabled={!!isExporting || (type === 'pdf' && moreThanOne)}
         type="primary"
-        onClick={() => exportProcesses(type, 'download')}
+        onClick={async () => {
+          await exportProcesses(type, 'download');
+          closeModal?.();
+        }}
       >
         Download
       </Button>

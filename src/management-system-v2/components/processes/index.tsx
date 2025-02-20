@@ -559,7 +559,7 @@ const Processes = ({
 
       <ShareModal
         open={openExportModal}
-        close={() => setOpenExportModal(false)}
+        setOpen={setOpenExportModal}
         processes={(
           selectedRowElements.filter((e) => e.type !== 'folder') as Exclude<
             ProcessListProcess,

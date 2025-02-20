@@ -130,10 +130,15 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
     setShowPropertiesPanel(false);
   });
 
-  // TODO: re-enable this
-  // useAddControlCallback('modeler', 'export', handleProcessExportModalToggle, {
-  //   dependencies: [modeler, showProcessExportModal],
-  // });
+  useAddControlCallback(
+    'modeler',
+    'export',
+    () => {
+      setShareModalOpen(true);
+      setShareModalDefaultOpenTab((prev) => (prev === 'bpmn' ? prev : 'bpmn'));
+    },
+    {},
+  );
 
   const handleUndo = () => {
     modeler?.undo();
@@ -324,7 +329,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
       <ShareModal
         processes={[process]}
         open={shareModalOpen}
-        close={() => setShareModalOpen(false)}
+        setOpen={setShareModalOpen}
         defaultOpenTab={shareModalDefaultOpenTab}
       />
       {env.PROCEED_PUBLIC_ENABLE_EXECUTION && (

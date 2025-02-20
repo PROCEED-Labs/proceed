@@ -23,6 +23,11 @@ import {
   ResourceViewModule,
   ResourceModelingModule,
 } from '@/lib/modeler-extensions/GenericResources';
+import {
+  CustomAnnotationViewModule,
+  CustomAnnotationModelingModule,
+} from '@/lib/modeler-extensions/TextAnnotation';
+import { ModelingOverrideModule } from '@/lib/modeler-extensions/Overrides';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -202,12 +207,16 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
       // this will allow any type of viewer or editor we create to render our performer elements
-      const additionalModules: any[] = [ResourceViewModule];
+      const additionalModules: any[] = [ResourceViewModule, CustomAnnotationViewModule];
 
       // the modules related to editing can only be registered in modelers since they depend on
       // other modeler modules
       if (type === 'modeler') {
-        additionalModules.push(ResourceModelingModule);
+        additionalModules.push(
+          ResourceModelingModule,
+          CustomAnnotationModelingModule,
+          ModelingOverrideModule,
+        );
       }
 
       modeler.current = new ModelerOrViewer({

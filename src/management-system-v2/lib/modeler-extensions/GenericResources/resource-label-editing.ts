@@ -142,6 +142,7 @@ export default class ResourceLabelEditingProvider {
   // this function is called by the direct-editing module and should return information about the editing box
   // to display for direct editing
   activate(element: Shape) {
+    if (!is(element, 'proceed:GenericResource')) return;
     const { canvas, textRenderer } = this;
 
     const target = isLabel(element) ? element : element.label!;

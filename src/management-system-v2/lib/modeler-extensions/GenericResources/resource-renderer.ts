@@ -19,6 +19,7 @@ import { append as svgAppend, create as svgCreate, classes as svgClasses } from 
 
 import iconPaths from './iconPaths';
 import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
+import { getTextColor } from '@/lib/helpers/bpmn-js-helpers';
 
 const HIGH_PRIORITY = 3000;
 
@@ -88,12 +89,7 @@ export default class ResourceRenderer extends BaseRenderer {
         size: { width: 100 },
         style: {
           ...this.textRenderer.getExternalStyle(),
-          fill: getLabelColor(
-            shape,
-            this.config.defaultLabelColor,
-            this.config.defaultStrokeColor,
-            attrs.stroke,
-          ),
+          fill: getTextColor(shape),
         },
       };
       const text = this.textRenderer.createText(shape.businessObject.name || '', textAttrs);

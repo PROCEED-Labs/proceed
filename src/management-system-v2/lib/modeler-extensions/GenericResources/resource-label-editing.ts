@@ -8,7 +8,11 @@ import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 import TextRenderer from 'bpmn-js/lib/draw/TextRenderer';
 
-export default class PerformerLabelEditingProvider {
+/**
+ * This module provides functionality that allows label editing on resource elements similar to the
+ * label editing on default bpmn-js elements
+ **/
+export default class ResourceLabelEditingProvider {
   static $inject = [
     'eventBus',
     'modeling',
@@ -40,7 +44,7 @@ export default class PerformerLabelEditingProvider {
         context: { shape },
       } = event;
 
-      if (isLabel(shape) && is(shape, 'proceed:Performer') && shape.businessObject) {
+      if (isLabel(shape) && is(shape, 'proceed:GenericResource') && shape.businessObject) {
         shape.oldBusinessObject = shape.businessObject;
         shape.businessObject = undefined;
         return false;
@@ -54,7 +58,7 @@ export default class PerformerLabelEditingProvider {
         context: { shape },
       } = event;
 
-      if (isLabel(shape) && is(shape, 'proceed:Performer') && !shape.businessObject) {
+      if (isLabel(shape) && is(shape, 'proceed:GenericResource') && !shape.businessObject) {
         const businessObject = shape.oldBusinessObject;
         modeling.removeElements([shape]);
 
@@ -79,11 +83,12 @@ export default class PerformerLabelEditingProvider {
 
     directEditing.registerProvider(this);
 
-    const onPerformerDoubleClick: EventBusEventCallback<{ element: Shape }> = (event) => {
+    const onResourceDoubleClick: EventBusEventCallback<{ element: Shape }> = (event) => {
       let { element } = event;
-      if (is(element, 'proceed:Performer') && !isLabel(element)) {
+      if (is(element, 'proceed:GenericResource') && !isLabel(element)) {
         if (!element.label) {
-          // create a label that we can target with direct editing when a user double clicks a performer that does not have a label
+          // create a label that we can target with direct editing when a user double clicks a resource
+          // that does not have a label
           modeling.createLabel(
             element,
             {
@@ -102,11 +107,11 @@ export default class PerformerLabelEditingProvider {
       }
     };
 
-    eventBus.on('element.dblclick', 1500, onPerformerDoubleClick);
+    eventBus.on('element.dblclick', 1500, onResourceDoubleClick);
 
     const postAdd: EventBusEventCallback<{ element: Shape }> = ({ element }) => {
       if (
-        is(element, 'proceed:Performer') &&
+        is(element, 'proceed:GenericResource') &&
         !isLabel(element) &&
         !element.label &&
         element.di &&
@@ -137,6 +142,7 @@ export default class PerformerLabelEditingProvider {
   // this function is called by the direct-editing module and should return information about the editing box
   // to display for direct editing
   activate(element: Shape) {
+    if (!is(element, 'proceed:GenericResource')) return;
     const { canvas, textRenderer } = this;
 
     const target = isLabel(element) ? element : element.label!;

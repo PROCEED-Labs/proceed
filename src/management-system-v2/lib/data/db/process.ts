@@ -6,6 +6,8 @@ import {
   getDefinitionsVersionInformation,
   getMetaDataFromElement,
   getAllElements,
+  generateUserTaskFileName,
+  generateScriptTaskFileName,
 } from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
@@ -22,7 +24,7 @@ import {
 import { toCustomUTCString } from '@/lib/helpers/timeHelper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { copyFile } from '../file-manager/file-manager';
-import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
+import { ArtifactType, generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -922,15 +924,20 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
   const oldNewFilenameMapping = await asyncMap(refs, async (ref) => {
     const { artifactId, artifact } = ref;
     const sourceFilePath = artifact.filePath;
+    const ext = sourceFilePath.split('.').pop();
     const destinationFilePath = generateProcessFilePath(artifact.fileName, destinationProcessId);
+    type typesWithFilename = Extract<ArtifactType, 'user-tasks' | 'script-tasks'>;
+    const filenameGenerators: Record<typesWithFilename, () => string> = {
+      'user-tasks': generateUserTaskFileName,
+      'script-tasks': generateScriptTaskFileName,
+    };
+
+    const generateFilename = filenameGenerators[artifact.artifactType as typesWithFilename];
     const { status, newFilename, newFilepath } = await copyFile(
       sourceFilePath,
       destinationFilePath,
-      {
-        newFilename: `${destinationProcessId}-${artifact.fileName}`,
-      },
+      { newFilename: generateFilename ? `${generateFilename()}.${ext}` : undefined },
     );
-
     if (status) {
       try {
         const { id: newArtifactId } = await db.artifact.create({

@@ -5,6 +5,8 @@ import { toCaslResource } from '../ability/caslAbility';
 import {
   addDocumentation,
   generateDefinitionsId,
+  generateScriptTaskFileName,
+  generateUserTaskFileName,
   getDefinitionsVersionInformation,
   getUserTaskFileNameMapping,
   setDefinitionsName,
@@ -35,9 +37,12 @@ import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
-import { copyProcessArtifactReferences, copyProcessFiles } from './db/process';
+import { copyProcessArtifactReferences, copyProcessFiles, saveProcessImage } from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
+import { ProcessData } from '@/components/process-import';
+import { saveProcessArtifact } from './file-manager-facade';
+import { error } from 'console';
 
 // Declare variables to hold the process module functions
 let removeProcess: TProcessModule['removeProcess'];
@@ -202,6 +207,7 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 export const addProcesses = async (
   values: { name: string; description: string; bpmn?: string; folderId?: string }[],
   spaceId: string,
+  generateNewId: boolean = false,
 ) => {
   await loadModules();
 
@@ -211,6 +217,15 @@ export const addProcesses = async (
   const newProcesses: Process[] = [];
 
   for (const value of values) {
+    // new ID is required for imported processes
+    if (generateNewId) {
+      value.bpmn = await getFinalBpmn({
+        id: generateDefinitionsId(),
+        name: value.name,
+        description: value.description,
+        bpmn: value.bpmn ?? '',
+      });
+    }
     const { bpmn } = await createProcess({
       name: value.name,
       description: value.description,
@@ -320,6 +335,100 @@ export const updateProcesses = async (
   const firstError = res.find((r) => r && 'error' in r);
 
   return firstError ?? res;
+};
+
+export const importProcesses = async (processData: ProcessData[], spaceId: string) => {
+  await loadModules();
+
+  const importedProcesses = await addProcesses(processData, spaceId, true);
+
+  if ('error' in importedProcesses) {
+    return importedProcesses;
+  }
+
+  for (let idx = 0; idx < importedProcesses.length; idx++) {
+    const process = importedProcesses[idx];
+    const artefacts = processData[idx].artefacts;
+    const fileNameMapping = {
+      'user-tasks': new Map<string, string>(),
+      'script-tasks': new Map<string, string>(),
+    };
+    // Handle script tasks
+    if (artefacts?.scriptTasks) {
+      for (const script of artefacts.scriptTasks) {
+        const [baseName, ext] = script.name.split('.');
+        const newScriptFileName =
+          fileNameMapping['script-tasks'].get(baseName) || generateScriptTaskFileName();
+        fileNameMapping['script-tasks'].set(baseName, newScriptFileName);
+        await _saveProcessScriptTask(process.id, `${newScriptFileName}.${ext}`, script.content);
+      }
+    }
+
+    // Handle user tasks
+    if (artefacts?.userTasks) {
+      // Group user tasks by base name
+      const userTaskGroups = artefacts.userTasks.reduce((groups, file) => {
+        const [baseName, ext] = file.name.split(/\.(?=[^.]+$)/);
+        const group = groups.get(baseName) || { json: null, html: null };
+
+        if (ext === 'json') group.json = file.content;
+        if (ext === 'html') group.html = file.content;
+
+        groups.set(baseName, group);
+        return groups;
+      }, new Map<string, { json: string | null; html: string | null }>());
+
+      // Process grouped user tasks
+      for (const [baseName, { json, html }] of userTaskGroups) {
+        if (!json || !html) {
+          console.warn(`Incomplete user task pair for ${baseName}`);
+          continue;
+        }
+        const newUserTaskFileName =
+          fileNameMapping['user-tasks'].get(baseName) || generateUserTaskFileName();
+        fileNameMapping['user-tasks'].set(baseName, newUserTaskFileName);
+        try {
+          await _saveProcessUserTask(process.id, newUserTaskFileName, json, html);
+        } catch (error) {
+          console.error(`Error processing user task ${newUserTaskFileName}:`, error);
+        }
+      }
+    }
+
+    // update mapped filenames in bpmn
+    let newBpmn = process.bpmn;
+    for (const [type, mapping] of Object.entries(fileNameMapping)) {
+      for (const [oldFilename, newFilename] of mapping) {
+        switch (type) {
+          case 'user-tasks': {
+            ({ bpmn: newBpmn } = await updateUserTaskFileName(newBpmn, oldFilename, newFilename));
+            break;
+          }
+          case 'script-tasks': {
+            ({ bpmn: newBpmn } = await updateScriptTaskFileName(newBpmn, oldFilename, newFilename));
+            break;
+          }
+        }
+      }
+    }
+
+    await _updateProcess(process.id, { bpmn: newBpmn });
+
+    // Handle images
+    if (artefacts?.images) {
+      for (const image of artefacts.images) {
+        await saveProcessArtifact(
+          process.id,
+          image.name,
+          `image/${image.name.split('.').pop()}`,
+          Buffer.from(image.content, 'base64'),
+          { generateNewFileName: false },
+        );
+      }
+    }
+  }
+
+  return importedProcesses;
 };
 
 export const copyProcesses = async (

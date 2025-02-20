@@ -39,7 +39,7 @@ async function getCurrentBranch(): Promise<string> {
 }
 
 function sanitizeBranchName(branchName: string): string {
-  return branchName.replace(/[-/]/g, '_');
+  return branchName.replace(/[-/]/g, '_').toLowerCase();
 }
 
 async function updateEnvFile(dbName: string, envFile: string): Promise<void> {
@@ -234,8 +234,23 @@ async function main() {
 
   await updateEnvFile(dbName, config.envFile);
 
-  if (options.new || options.init) {
-    await applyPrismaSchema();
+  async function checkIfDefaultDBHasSchema() {
+    const result = await executePostgresCommand(
+      `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '_prisma_migrations');`,
+    );
+    return result === 't';
+  }
+
+  if (options.init) {
+    const isMainBranch = (await getCurrentBranch()) === 'main';
+    const defaultDbHasSchema = await checkIfDefaultDBHasSchema();
+    if (isMainBranch || (!isMainBranch && !defaultDbHasSchema)) {
+      await applyPrismaSchema();
+    } else {
+      console.log(
+        'Skipping Prisma schema update for default db from non-main branch.',
+      );
+    }
   }
 }
 

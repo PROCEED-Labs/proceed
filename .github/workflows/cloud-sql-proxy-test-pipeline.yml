@@ -40,5 +40,5 @@ jobs:
           cat $GOOGLE_APPLICATION_CREDENTIALS > /tmp/key.json
           mkdir -p "$HOME/cloudsql"
           chmod 777 "$HOME/cloudsql"
-          docker run --name cloud-sql-auth-proxy -v /$HOME/cloudsql:/tmp/cloudsql -v /tmp/key.json:/tmp/key.json --user "$(id -u):$(id -g)" gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --unix-socket=/tmp/cloudsql --credentials-file /tmp/key.json proceed-bpms:europe-west1:ms-db-staging
+          docker run -d --name cloud-sql-auth-proxy -v /$HOME/cloudsql:/tmp/cloudsql -v /tmp/key.json:/tmp/key.json --user "$(id -u):$(id -g)" gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --unix-socket=/tmp/cloudsql --credentials-file /tmp/key.json proceed-bpms:europe-west1:ms-db-staging
           ls /cloudsql

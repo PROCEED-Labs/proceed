@@ -40,7 +40,6 @@ async function getCorrectTargetEngines(
       getSpaceEnginesFromDb(spaceId, ability),
     ]);
 
-    engines = proceedEngines.status === 'fulfilled' ? proceedEngines.value : [];
     if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
 
     if (spaceEngines.status === 'fulfilled') {

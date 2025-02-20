@@ -1,7 +1,9 @@
 {
   "get": {
     "/machine/:properties": {
-      "params": true
+      "queryParams": {
+        "entries": true
+      }
     },
     "/machine/": {},
     "/capabilities/": {},

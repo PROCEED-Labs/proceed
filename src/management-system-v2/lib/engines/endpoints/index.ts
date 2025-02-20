@@ -1,5 +1,11 @@
+import { Prettify } from '@/lib/typescript-utils';
 import { Engine } from '../machines';
-import { EndpointParams, Methods, AvailableEndpoints, _endpointBuilder } from './endpoint-builder';
+import {
+  Methods,
+  AvailableEndpoints,
+  _endpointBuilder,
+  EndpointBuilderOptions,
+} from './endpoint-builder';
 import { httpRequest } from './http-endpoints';
 import { getClient, mqttRequest } from './mqtt-endpoints';
 
@@ -17,7 +23,7 @@ export async function engineRequest<
   method: Method;
   endpoint: Url;
   body?: any;
-} & (NoInfer<EndpointParams<Url>> extends never ? {} : { params: NoInfer<EndpointParams<Url>> })) {
+} & Prettify<EndpointBuilderOptions<Method, Url>>) {
   const builtEndpoint =
     'params' in params ? _endpointBuilder(endpoint, params.params as any) : endpoint;
 

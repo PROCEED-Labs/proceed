@@ -38,7 +38,7 @@ async function deployProcessToMachines(
             engineRequest({
               method: 'put',
               endpoint: '/process/:definitionId/user-tasks/:fileName',
-              params: { definitionId: exportData.definitionId, fileName: userTask.filename },
+              pathParams: { definitionId: exportData.definitionId, fileName: userTask.filename },
               engine,
               body: { html: userTask.html },
             }),
@@ -53,7 +53,7 @@ async function deployProcessToMachines(
             engineRequest({
               method: 'put',
               endpoint: '/process/:definitionId/script-tasks/:fileName',
-              params: { definitionId: exportData.definitionId, fileName: scriptTask.filename },
+              pathParams: { definitionId: exportData.definitionId, fileName: scriptTask.filename },
               engine,
               body: { script: scriptTask.js },
             });
@@ -63,7 +63,7 @@ async function deployProcessToMachines(
             engineRequest({
               method: 'put',
               endpoint: '/resources/process/:definitionId/images/:fileName',
-              params: { definitionId: exportData.definitionId, fileName: image.filename },
+              pathParams: { definitionId: exportData.definitionId, fileName: image.filename },
               engine,
               // TODO: make sure that images are being sent correctly
               // the pain point is probably going to be MQTT
@@ -85,7 +85,7 @@ async function deployProcessToMachines(
           engineRequest({
             method: 'delete',
             endpoint: '/process/:definitionId',
-            params: { definitionId },
+            pathParams: { definitionId },
             engine,
           }),
         ),

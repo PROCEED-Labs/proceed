@@ -8,7 +8,7 @@ import { MoreOutlined } from '@ant-design/icons';
 import { ResizeableTitle } from '@/lib/useColumnWidth';
 import { getUniqueObjects } from '@/lib/utils';
 
-type ElementListProps<T extends { id: string }> = PropsWithChildren<{
+type ElementListProps<T extends { id: string } | { definitionId: string }> = PropsWithChildren<{
   data: T[];
   columns: NonNullable<TableProps<T>['columns']>;
   elementSelection?: {
@@ -30,7 +30,7 @@ const numberOfRows =
 
 // TODO: comprehensive documentation
 
-const ElementList = <T extends { id: string }>({
+const ElementList = <T extends { id: string } | { definitionId: string }>({
   data,
   columns,
   elementSelection,
@@ -105,7 +105,9 @@ const ElementList = <T extends { id: string }>({
     });
   }
 
-  const selectedElementsKeys = elementSelection?.selectedElements.map(({ id }) => id);
+  const selectedElementsKeys = elementSelection?.selectedElements.map((item) =>
+    'id' in item ? item.id : item.definitionId,
+  );
   const { components } = tableProps || {};
 
   return (
@@ -123,7 +125,7 @@ const ElementList = <T extends { id: string }>({
             // @ts-ignore
             if (nativeEvent.shiftKey && elementSelection.selectedElements.length > 0) {
               // console.log('shift key pressed');
-              /* If checkbox shiftclick is recognizeable, a drag select can be implemented here */
+              /* If checkbox shiftclick is recognizable, a drag select can be implemented here */
               /* Currently, the event is not fired in most browser on checkbox */
             } else {
               // console.log('data length', data.length);
@@ -132,7 +134,7 @@ const ElementList = <T extends { id: string }>({
                 elementSelection.setSelectionElements((prev) => [...prev, record]);
               } else {
                 elementSelection.setSelectionElements((prev) =>
-                  prev.filter(({ id }) => id !== record.id),
+                  prev.filter((item) => ('id' in item ? item.id : item.definitionId) !== record.id),
                 );
               }
             }
@@ -145,9 +147,10 @@ const ElementList = <T extends { id: string }>({
                 return getUniqueObjects([...oldSelection, ...changeRows], 'id') as T[];
               } else {
                 return getUniqueObjects(
-                  oldSelection.filter(
-                    ({ id }) => !changeRows.some(({ id: rowId }) => rowId === id),
-                  ),
+                  oldSelection.filter((item) => {
+                    const id = 'id' in item ? item.id : item.definitionId;
+                    !changeRows.some(({ id: rowId }) => rowId === id);
+                  }),
                   'id',
                 ) as T[];
               }

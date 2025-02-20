@@ -38,5 +38,5 @@ jobs:
       - name: Configure Cloud SQL Auth Proxy Docker
         run: |
           cat $GOOGLE_APPLICATION_CREDENTIALS > /tmp/key.json
-          docker run --name cloud-sql-auth-proxy --user $(id -u):$(id -g) -v /${{github.workspace}}cloudsql:/tmp/cloudsql -v /tmp/key.json:/tmp/key.json gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --unix-socket=/tmp/cloudsql --credentials-file /tmp/key.json proceed-bpms:europe-west1:ms-db-staging
-          ls /tmp/cloudsql
+          docker run --name cloud-sql-auth-proxy -v /${{github.workspace}}/cloudsql:/tmp/cloudsql -v /tmp/key.json:/tmp/key.json gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --unix-socket=/tmp/cloudsql --credentials-file /tmp/key.json proceed-bpms:europe-west1:ms-db-staging
+          ls /cloudsql

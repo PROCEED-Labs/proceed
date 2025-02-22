@@ -132,7 +132,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
 
   useAddControlCallback(
     'modeler',
-    'export',
+    ['export', 'shift+enter'],
     () => {
       setShareModalOpen(true);
       setShareModalDefaultOpenTab((prev) => (prev === 'bpmn' ? prev : 'bpmn'));

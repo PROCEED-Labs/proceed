@@ -4,8 +4,8 @@ import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
-import { Input, ColorPicker, Space, Grid, Divider, Modal } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { Input, ColorPicker, Space, Grid, Divider, Modal, InputNumber } from 'antd';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
@@ -27,6 +27,7 @@ import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
 import { Shape } from 'bpmn-js/lib/model/Types';
+import { on } from 'events';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -42,6 +43,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const borderColor = getBorderColor(selectedElement as Shape);
 
   const [name, setName] = useState('');
+  const [elementWidth, setElementWidth] = useState(0);
+  const [elementHeight, setElementHeight] = useState(0);
 
   const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
   const timePlannedDuration: string | undefined = metaData.timePlannedDuration;
@@ -80,6 +83,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         setName(definitions.name);
       } else {
         setName(selectedElement.businessObject.name);
+        setElementWidth(selectedElement.width);
+        setElementHeight(selectedElement.height);
       }
     }
   }, [selectedElement]);
@@ -104,6 +109,28 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     } else {
       modeling.updateProperties(selectedElement as any, { name: event.target.value });
     }
+  };
+
+  const handleWidthChange = async () => {
+    const modeling = modeler!.getModeling();
+
+    modeling.resizeShape(selectedElement, {
+      height: selectedElement.height,
+      width: elementWidth,
+      x: selectedElement.x,
+      y: selectedElement.y,
+    });
+  };
+
+  const handleHeightChange = async () => {
+    const modeling = modeler!.getModeling();
+
+    modeling.resizeShape(selectedElement, {
+      width: selectedElement.width,
+      height: elementHeight,
+      x: selectedElement.x,
+      y: selectedElement.y,
+    });
   };
 
   const updateBackgroundColor = (backgroundColor: string) => {
@@ -276,6 +303,37 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           )}
         </Space>
       )}
+
+      {selectedElement.type !== 'bpmn:Process' &&
+        selectedElement.type !== 'bpmn:Collaboration' &&
+        selectedElement.width &&
+        selectedElement.height && (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Divider style={{ fontSize: '0.85rem' }}>Size</Divider>
+            <Space>
+              <InputNumber
+                name="Width"
+                placeholder="Element Width"
+                style={{ fontSize: '0.85rem' }}
+                addonBefore="Width"
+                value={elementWidth}
+                onChange={(val) => setElementWidth(val || 0)}
+                onBlur={handleWidthChange}
+              />
+            </Space>
+            <Space>
+              <InputNumber
+                name="Height"
+                placeholder="Element Height"
+                style={{ fontSize: '0.85rem' }}
+                addonBefore="Height"
+                value={elementHeight}
+                onChange={(val) => setElementHeight(val || 0)}
+                onBlur={handleHeightChange}
+              />
+            </Space>
+          </Space>
+        )}
     </Space>
   );
 };

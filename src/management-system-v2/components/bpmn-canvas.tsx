@@ -33,6 +33,7 @@ import {
   CustomAnnotationModelingModule,
 } from '@/lib/modeler-extensions/TextAnnotation';
 import { ModelingOverrideModule } from '@/lib/modeler-extensions/Overrides';
+import { ModelingExtensionModule } from '@/lib/modeler-extensions/Extensions';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -226,6 +227,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           PerformerLabelBehaviorModule,
           CustomAnnotationModelingModule,
           ModelingOverrideModule,
+          ModelingExtensionModule,
         );
       }
 

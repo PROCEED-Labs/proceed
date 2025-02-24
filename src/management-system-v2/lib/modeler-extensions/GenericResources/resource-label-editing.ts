@@ -7,6 +7,7 @@ import { Shape } from 'bpmn-js/lib/model/Types';
 import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 import TextRenderer from 'bpmn-js/lib/draw/TextRenderer';
+import { getBackgroundColor, getBorderColor } from '@/lib/helpers/bpmn-js-helpers';
 
 /**
  * This module provides functionality that allows label editing on resource elements similar to the
@@ -108,35 +109,6 @@ export default class ResourceLabelEditingProvider {
     };
 
     eventBus.on('element.dblclick', 1500, onResourceDoubleClick);
-
-    const postAdd: EventBusEventCallback<{ element: Shape }> = ({ element }) => {
-      if (
-        is(element, 'proceed:GenericResource') &&
-        !isLabel(element) &&
-        !element.label &&
-        element.di &&
-        element.di.label &&
-        element.di.label.bounds
-      ) {
-        // recreate labels when importing an xml into the modeler
-        modeling.createLabel(
-          element,
-          {
-            x: element.di.label.bounds.x,
-            y: element.di.label.bounds.y,
-            width: element.di.label.bounds.width,
-            height: element.di.label.bounds.height,
-          } as any,
-          {
-            id: element.businessObject.id + '_label',
-            businessObject: element.businessObject,
-            di: element.di,
-          },
-        );
-      }
-    };
-
-    eventBus.on('shape.added', 1500, postAdd);
   }
 
   // this function is called by the direct-editing module and should return information about the editing box
@@ -179,8 +151,8 @@ export default class ResourceLabelEditingProvider {
       lineHeight: externalLineHeight,
       paddingTop: paddingTop + 'px',
       paddingBottom: paddingBottom + 'px',
-      backgroundColor: '#ffffff',
-      border: '1px solid #ccc',
+      backgroundColor: getBackgroundColor(element.parent as Shape) || '#ffffff',
+      border: `1px solid ${getBorderColor(element) || 'black'}`,
     };
 
     const options = {

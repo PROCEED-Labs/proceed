@@ -6,6 +6,7 @@ import ResourceReplace from './resource-replacement';
 import ResourceLabelEditingProvider from './resource-label-editing';
 import ResourceLabelBehavior from './resource-label-behavior';
 import ResourceAutoPlace from './resource-auto-place';
+import ResourceLabelImportFix from './resource-import-label-fix';
 
 /*
  * This module adds a visualisation for different types of resources that can be assigned to
@@ -14,9 +15,10 @@ import ResourceAutoPlace from './resource-auto-place';
 
 // this module is responsible for adding the visualisation for the element to the modeler or viewer
 export const ResourceViewModule = {
-  __init__: ['resourceRenderer', 'resourceRules'],
+  __init__: ['resourceRenderer', 'resourceRules', 'resourceLabelImportFix'],
   resourceRenderer: ['type', ResourceRenderer],
   resourceRules: ['type', ResourceRules],
+  resourceLabelImportFix: ['type', ResourceLabelImportFix],
 };
 
 // this module is responsible to provide functionality to the editor to add and edit resource

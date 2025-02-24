@@ -39,15 +39,22 @@ export default class LabelBehavior extends CommandInterceptor {
           // without this the label would be removed if the name of a resource is changed through the properties panel
           if (element.label) {
             context.element = element.label!;
+            context.labelDI = element.label.di?.label;
           }
+        } else {
+          context.labelDI = element.di?.label;
         }
       }
     });
 
     this.postExecute('element.updateLabel', (event: any) => {
       const { context } = event;
-      const { element, newLabel } = context;
+      const { element, newLabel, labelDI } = context;
       if (is(element, 'proceed:GenericResource')) {
+        // readd the di label info that is removed by bpmn-js
+        if (labelDI) {
+          modeling.updateModdleProperties(element, element.di, { label: labelDI });
+        }
         if (newLabel !== element.businessObject.name) {
           modeling.updateModdleProperties(element, element.businessObject, { name: newLabel });
         }

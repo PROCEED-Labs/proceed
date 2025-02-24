@@ -70,7 +70,7 @@ jobs:
           --address 0.0.0.0 --port 3306 \\
           --credentials-file /tmp/key.json ${{secrets.INSTANCE_CONNECTION_NAME}}
 
-          echo "DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@$localhost:5432/${{ secrets.CLOUD_SQL_DB_NAME }}?host=/$HOME/cloudsql/${{secrets.INSTANCE_CONNECTION_NAME}}" >> $GITHUB_ENV
+          echo "DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@127.0.0.1:3306/${{ secrets.CLOUD_SQL_DB_NAME }}" >> $GITHUB_ENV
 
       - name: Restore Cache
         uses: actions/cache@v4
@@ -94,7 +94,7 @@ jobs:
           flags: '--add-cloudsql-instances=${{secrets.INSTANCE_CONNECTION_NAME}}'
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
-            DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@$localhost:5432/${{ secrets.CLOUD_SQL_DB_NAME }}?host=/cloudsql/${{secrets.INSTANCE_CONNECTION_NAME}}
+            DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@127.0.0.1:3306/${{ secrets.CLOUD_SQL_DB_NAME }}
             PROCEED_PUBLIC_DEPLOYMENT_ENV=local
           region: 'europe-west1'
           revision_traffic: LATEST=100

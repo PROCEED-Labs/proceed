@@ -55,5 +55,8 @@ export default class CustomRules extends RuleProvider {
       // connection
       if (sourceIsResource && targetCanHaveResource && isAssociation) return true;
     });
+    this.addRule('shape.resize', 1500, ({ shape }) => {
+      if (is(shape, 'proceed:GenericResource')) return true;
+    });
   }
 }

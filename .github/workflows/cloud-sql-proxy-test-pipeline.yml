@@ -13,6 +13,27 @@ on:
         required: true
 
 jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile --ignore-engines
+
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: cache-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -27,15 +48,6 @@ jobs:
       SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
       ENV: Staging
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
-
       - uses: 'google-github-actions/auth@v2'
         with:
           export_environment_variables: true # Exports the service account key as GOOGLE_APPLICATION_CREDENTIALS, we need this for cloud sql auth proxy
@@ -52,8 +64,13 @@ jobs:
 
           echo "DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@$localhost:5432/${{ secrets.CLOUD_SQL_DB_NAME }}?host=/cloudsql/${{secrets.INSTANCE_CONNECTION_NAME}}" >> $GITHUB_ENV
 
-      - name: Install Prisma
-        run: cd src/management-system-v2/ && yarn add prisma @prisma/client --ignore-engines
+      - name: Restore Cache
+        uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
 
       - name: Apply Prisma Migrations
         env:

@@ -87,7 +87,7 @@ jobs:
           flags: '--add-cloudsql-instances=${{secrets.INSTANCE_CONNECTION_NAME}}'
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
-            DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@localhost:5432/${{ secrets.CLOUD_SQL_DB_NAME }}
+            DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@localhost:5432/${{ secrets.CLOUD_SQL_DB_NAME }}?host=/cloudsql/${{secrets.INSTANCE_CONNECTION_NAME}}
             PROCEED_PUBLIC_DEPLOYMENT_ENV=local
           region: 'europe-west1'
           revision_traffic: LATEST=100

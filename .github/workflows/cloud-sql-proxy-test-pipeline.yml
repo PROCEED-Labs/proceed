@@ -13,30 +13,30 @@ on:
         required: true
 
 jobs:
-  install:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # install:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn install --frozen-lockfile --ignore-engines
+  #     - run: yarn install --frozen-lockfile --ignore-engines
 
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: cache-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: cache-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
   deploy:
     runs-on: ubuntu-latest
-    needs: install
+    #needs: install
     permissions:
       contents: read
       id-token: write
@@ -65,6 +65,26 @@ jobs:
           ls -la $HOME/cloudsql
           echo "DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@$localhost:5432/${{ secrets.CLOUD_SQL_DB_NAME }}?host=/$HOME/cloudsql/${{secrets.INSTANCE_CONNECTION_NAME}}" >> $GITHUB_ENV
 
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      - name: Dump Prisma Migrations to a SQL Script # for research server
+        run: |
+          scp /tmp/key.json $ENV:/home/${{secrets.SSH_USER}}/key
       - name: Restore Cache
         uses: actions/cache@v4
         timeout-minutes: 2

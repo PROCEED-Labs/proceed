@@ -11,7 +11,9 @@ import { getSpaceEngines } from '@/lib/data/space-engines';
 import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
 import { isUserErrorResponse } from '@/lib/user-error';
 
-function getDeploymentNames(deployments: DeployedProcessInfo[]) {
+function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
+  deployments: T[],
+) {
   for (const deployment of deployments) {
     let latestVesrionIdx = deployment.versions.length - 1;
     for (let i = deployment.versions.length - 2; i >= 0; i--) {
@@ -24,7 +26,7 @@ function getDeploymentNames(deployments: DeployedProcessInfo[]) {
     deployment.name = latestVersion.definitionName || latestVersion.versionName;
   }
 
-  return deployments as (DeployedProcessInfo & { name: string })[];
+  return deployments as (T & { name: string })[];
 }
 
 export default async function ExecutionsPage({ params }: { params: { environmentId: string } }) {
@@ -57,7 +59,14 @@ export default async function ExecutionsPage({ params }: { params: { environment
       })(),
     ]);
 
-  const deployedProcesses = getDeploymentNames(deployedInProceed.concat(deployedInSpaceEngines));
+  const deployedWithRemappedIds: (Omit<DeployedProcessInfo, 'definitionId'> & { id: string })[] =
+    deployedInProceed.concat(deployedInSpaceEngines).map((_process) => {
+      const process = _process as any;
+      process.id = process.definitionId;
+      delete process.definitionId;
+      return process;
+    });
+  const deployedProcesses = getDeploymentNames(deployedWithRemappedIds);
 
   return (
     <Content title="Executions">

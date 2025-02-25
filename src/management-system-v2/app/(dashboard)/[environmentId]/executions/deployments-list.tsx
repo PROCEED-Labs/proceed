@@ -9,7 +9,12 @@ import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import SpaceLink from '@/components/space-link';
 import processListStyles from '@/components/process-icon-list.module.scss';
 
-type InputItem = DeployedProcessInfo & { name: string };
+type InputItem = {
+  id: string;
+  name: string;
+  versions: DeployedProcessInfo['versions'];
+  instances: DeployedProcessInfo['instances'];
+};
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
 const DeploymentsList = ({
@@ -29,7 +34,7 @@ const DeploymentsList = ({
       ellipsis: true,
       render: (_, record) => (
         <SpaceLink
-          href={`/executions/${record.definitionId}`}
+          href={`/executions/${record.id}`}
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,

@@ -1,14 +1,14 @@
 'use client';
 
 import { Button, Checkbox, Dropdown, Grid, Table, TableProps } from 'antd';
-import { PropsWithChildren, ReactNode, SetStateAction, useMemo, useRef } from 'react';
+import { PropsWithChildren, SetStateAction, useMemo, useRef } from 'react';
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
 import { ResizeableTitle } from '@/lib/useColumnWidth';
 import { getUniqueObjects } from '@/lib/utils';
 
-type ElementListProps<T extends { id: string } | { definitionId: string }> = PropsWithChildren<{
+type ElementListProps<T extends { id: string }> = PropsWithChildren<{
   data: T[];
   columns: NonNullable<TableProps<T>['columns']>;
   elementSelection?: {
@@ -30,7 +30,7 @@ const numberOfRows =
 
 // TODO: comprehensive documentation
 
-const ElementList = <T extends { id: string } | { definitionId: string }>({
+const ElementList = <T extends { id: string }>({
   data,
   columns,
   elementSelection,
@@ -105,9 +105,7 @@ const ElementList = <T extends { id: string } | { definitionId: string }>({
     });
   }
 
-  const selectedElementsKeys = elementSelection?.selectedElements.map((item) =>
-    'id' in item ? item.id : item.definitionId,
-  );
+  const selectedElementsKeys = elementSelection?.selectedElements.map(({ id }) => id);
   const { components } = tableProps || {};
 
   return (
@@ -134,7 +132,7 @@ const ElementList = <T extends { id: string } | { definitionId: string }>({
                 elementSelection.setSelectionElements((prev) => [...prev, record]);
               } else {
                 elementSelection.setSelectionElements((prev) =>
-                  prev.filter((item) => ('id' in item ? item.id : item.definitionId) !== record.id),
+                  prev.filter(({ id }) => id !== record.id),
                 );
               }
             }
@@ -147,10 +145,9 @@ const ElementList = <T extends { id: string } | { definitionId: string }>({
                 return getUniqueObjects([...oldSelection, ...changeRows], 'id') as T[];
               } else {
                 return getUniqueObjects(
-                  oldSelection.filter((item) => {
-                    const id = 'id' in item ? item.id : item.definitionId;
-                    !changeRows.some(({ id: rowId }) => rowId === id);
-                  }),
+                  oldSelection.filter(
+                    ({ id }) => !changeRows.some(({ id: rowId }) => rowId === id),
+                  ),
                   'id',
                 ) as T[];
               }

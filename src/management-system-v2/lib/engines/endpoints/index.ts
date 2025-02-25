@@ -24,8 +24,13 @@ export async function engineRequest<
   endpoint: Url;
   body?: any;
 } & Prettify<EndpointBuilderOptions<Method, Url>>) {
-  const builtEndpoint =
-    'params' in params ? _endpointBuilder(endpoint, params.params as any) : endpoint;
+  let queryParams;
+  if ('queryParams' in params && engine.type === 'mqtt') {
+    queryParams = params.queryParams;
+    delete params.queryParams;
+  }
+
+  const builtEndpoint = 'params' in params ? _endpointBuilder(endpoint, params as any) : endpoint;
 
   if (engine.type === 'mqtt') {
     let spaceEngineClient;
@@ -38,6 +43,7 @@ export async function engineRequest<
       builtEndpoint,
       {
         method: method.toUpperCase() as any,
+        query: queryParams as any,
         body,
       },
       spaceEngineClient,

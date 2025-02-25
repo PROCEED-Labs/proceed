@@ -58,11 +58,10 @@ export async function handleExportMethod(
   if (options.exportMethod === 'webshare') {
     if ('canShare' in window?.navigator)
       try {
-        await exportBlob.then(({ blob, filename }) =>
-          navigator.share({
-            files: [new File([blob], filename, { type: blob.type })],
-          }),
-        );
+        const { blob, filename } = await exportBlob;
+        navigator.share({
+          files: [new File([blob], filename, { type: blob.type })],
+        });
         return fallback;
       } catch (_) {}
 

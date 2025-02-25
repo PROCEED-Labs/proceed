@@ -291,8 +291,6 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
     { level: 2, blocking: active, dependencies: [type] },
   );
 
-  const disabledPdfExport = type === 'pdf' && processes.length > 1;
-
   if (type === 'pdf' && processes.length > 1) {
     return (
       <Alert type="info" message="PDF export is only available when a single process is selected" />
@@ -335,7 +333,7 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
         >
           <Space direction="vertical">
             {getSubOptions(hasSelection)[type].map(({ label, value, tooltip }) => (
-              <Checkbox value={value} key={label} disabled={disabledPdfExport}>
+              <Checkbox value={value} key={label}>
                 <Tooltip placement="right" title={tooltip}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
                     {label} <FaRegQuestionCircle style={{ verticalAlign: 'center' }} />

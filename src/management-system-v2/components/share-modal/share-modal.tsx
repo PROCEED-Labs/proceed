@@ -14,19 +14,17 @@ import {
 import Icon, {
   ShareAltOutlined,
   LinkOutlined,
-  LeftOutlined,
-  RightOutlined,
   FileImageOutlined,
   FilePdfOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import { TbFileTypePng, TbFileTypeSvg } from 'react-icons/tb';
+import { ImEmbed } from 'react-icons/im';
 import { getProcess } from '@/lib/data/processes';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { updateShare } from './share-helpers';
-import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
 
 import ModelerShareModalOptionPublicLink from './public-link';
 import ModelerShareModalOptionEmdedInWeb from './embed-in-web';
@@ -36,6 +34,7 @@ import {
   useExportOptionsState,
   useExportProcess,
 } from './export';
+import styles from './share-modal.module.scss';
 
 type ShareModalProps = {
   processes: {
@@ -55,7 +54,6 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
   const environment = useEnvironment();
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
-  const modeler = useModelerStateStore((state) => state.modeler);
 
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const isSharing = useRef(false);
@@ -141,20 +139,20 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
 
   const optionsMobile = [
     {
-      icon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      icon: <LinkOutlined className={styles.ModalIcon} />,
       label: 'Share Process with Public Link',
       key: 'share-public-link',
       children: null,
       onClick: () => mobileShareWrapper(shareProcess, ['public']),
     },
     {
-      icon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      icon: <LinkOutlined className={styles.ModalIcon} />,
       label: 'Share Process for Registered Users',
       key: 'share-protected-link',
       onClick: () => mobileShareWrapper(shareProcess, ['protected']),
     },
     {
-      icon: <FileImageOutlined style={{ fontSize: '24px' }} />,
+      icon: <FileImageOutlined className={styles.ModalIcon} />,
       label: 'Share Process as Image',
       key: 'share-process-as-image',
       children: null,
@@ -166,7 +164,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
     onClick?: () => void;
   })[] = [
     {
-      icon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      icon: <LinkOutlined className={styles.ModalIcon} />,
       label: 'Share Public Link',
       key: 'share-public-link',
       children: (
@@ -179,12 +177,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       ),
     },
     {
-      icon: (
-        <span>
-          <LeftOutlined style={{ fontSize: '24px' }} />
-          <RightOutlined style={{ fontSize: '24px' }} />
-        </span>
-      ),
+      icon: <ImEmbed className={styles.ModalIcon} />,
       label: 'Embed in Website',
       key: 'embed-in-website',
       children: (
@@ -197,7 +190,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       ),
     },
     {
-      icon: <FilePdfOutlined style={{ fontSize: '24px' }} />,
+      icon: <FilePdfOutlined className={styles.ModalIcon} />,
       label: 'Download Diagram as PDF',
       key: 'pdf',
       children: (
@@ -211,7 +204,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       ),
     },
     {
-      icon: <TbFileTypePng style={{ fontSize: '24px' }} />,
+      icon: <TbFileTypePng className={styles.ModalIcon} />,
       label: 'Download Diagram as PNG',
       key: 'png',
       children: (
@@ -225,7 +218,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       ),
     },
     {
-      icon: <TbFileTypeSvg style={{ fontSize: '24px' }} />,
+      icon: <TbFileTypeSvg className={styles.ModalIcon} />,
       label: 'Download Diagram as SVG',
       key: 'svg',
       children: (
@@ -239,7 +232,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       ),
     },
     {
-      icon: <Icon aria-label="xml-sign" component={SvgXML} />,
+      icon: <Icon aria-label="xml-sign" className={styles.ModalIcon} component={SvgXML} />,
       label: 'Download Diagram as BPMN',
       key: 'bpmn',
       children: (

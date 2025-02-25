@@ -1,4 +1,14 @@
-import { App, Button, Checkbox, CheckboxChangeEvent, Input, QRCode, Select, Space } from 'antd';
+import {
+  Alert,
+  App,
+  Button,
+  Checkbox,
+  CheckboxChangeEvent,
+  Input,
+  QRCode,
+  Select,
+  Space,
+} from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import { IoMdCopy } from 'react-icons/io';
 import { useEffect, useRef, useState } from 'react';
@@ -18,15 +28,17 @@ type ModelerShareModalOptionPublicLinkProps = {
   sharedAs: 'public' | 'protected';
   shareTimestamp: number;
   refresh: () => void;
-  process?: { id: string; versions: Process['versions'] };
+  processes: { id: string; versions: Process['versions'] }[];
 };
 
 const ModelerShareModalOptionPublicLink = ({
   sharedAs,
   shareTimestamp,
   refresh,
-  process,
+  processes,
 }: ModelerShareModalOptionPublicLinkProps) => {
+  const process = processes[0];
+
   const environment = useEnvironment();
 
   const [selectedVersionId, setSelectedVersionId] = useProcessVersion(process?.versions);
@@ -151,6 +163,12 @@ const ModelerShareModalOptionPublicLink = ({
       });
     }
   };
+
+  if (processes.length > 1) {
+    return (
+      <Alert type="info" message="PDF export is only available when a single process is selected" />
+    );
+  }
 
   return (
     <Space direction="vertical" style={{ gap: '1rem', width: '100%' }}>

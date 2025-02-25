@@ -11,6 +11,7 @@ import {
   Result,
   message,
   CheckboxChangeEvent,
+  Alert,
 } from 'antd';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { useEnvironment } from '@/components/auth-can';
@@ -25,15 +26,17 @@ type ModelerShareModalOptionEmdedInWebProps = {
   sharedAs: 'public' | 'protected';
   allowIframeTimestamp: number;
   refresh: () => void;
-  process?: { id: string; versions: Process['versions'] };
+  processes: { id: string; versions: Process['versions'] }[];
 };
 
 const ModelerShareModalOptionEmdedInWeb = ({
   sharedAs,
   allowIframeTimestamp,
   refresh,
-  process,
+  processes,
 }: ModelerShareModalOptionEmdedInWebProps) => {
+  const process = processes[0];
+
   const app = App.useApp();
   const environment = useEnvironment();
   const [embeddingUrl, setEmbeddingUrl] = useState('');
@@ -88,6 +91,12 @@ const ModelerShareModalOptionEmdedInWeb = ({
     await navigator.clipboard.writeText(iframeCode);
     message.success('Code copied to you clipboard');
   };
+
+  if (processes.length > 1) {
+    return (
+      <Alert type="info" message="PDF export is only available when a single process is selected" />
+    );
+  }
 
   if (process?.versions?.length === 0)
     return (

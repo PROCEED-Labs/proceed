@@ -137,7 +137,11 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
     checkIfProcessShared();
   }, []);
 
-  const optionsMobile = [
+  type TabOptions = NonNullable<TabsProps['items']>[number] & {
+    onClick?: () => void;
+    disabled?: boolean;
+  };
+  const optionsMobile: TabOptions[] = [
     {
       icon: <LinkOutlined className={styles.ModalIcon} />,
       label: 'Share Process with Public Link',
@@ -160,19 +164,18 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
     },
   ];
 
-  const optionsDesktop: (NonNullable<TabsProps['items']>[number] & {
-    onClick?: () => void;
-  })[] = [
+  const optionsDesktop: TabOptions[] = [
     {
       icon: <LinkOutlined className={styles.ModalIcon} />,
       label: 'Share Public Link',
       key: 'share-public-link',
+      disabled: processes.length !== 1,
       children: (
         <ModelerShareModalOptionPublicLink
           sharedAs={sharedAs as SharedAsType}
           shareTimestamp={shareTimestamp}
           refresh={checkIfProcessShared}
-          process={processes[0]}
+          processes={processes}
         />
       ),
     },
@@ -180,12 +183,13 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       icon: <ImEmbed className={styles.ModalIcon} />,
       label: 'Embed in Website',
       key: 'embed-in-website',
+      disabled: processes.length !== 1,
       children: (
         <ModelerShareModalOptionEmdedInWeb
           sharedAs={sharedAs as SharedAsType}
           allowIframeTimestamp={allowIframeTimestamp}
           refresh={checkIfProcessShared}
-          process={processes[0]}
+          processes={processes}
         />
       ),
     },
@@ -193,6 +197,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       icon: <FilePdfOutlined className={styles.ModalIcon} />,
       label: 'Download Diagram as PDF',
       key: 'pdf',
+      disabled: processes.length !== 1,
       children: (
         <ProcessExportOption
           type="pdf"
@@ -374,6 +379,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
                       setActiveIndex(index);
                       if ('onClick' in option && option.onClick) option.onClick();
                     }}
+                    disabled={option.disabled}
                   >
                     {option.icon}
                     <Typography.Text

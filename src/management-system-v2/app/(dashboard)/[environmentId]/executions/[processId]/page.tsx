@@ -4,7 +4,7 @@ import { getDeployments } from '@/lib/engines/deployment';
 import { getProceedEngines } from '@/lib/engines/machines';
 import ProcessDeploymentView from './process-deployment-view';
 import { Suspense } from 'react';
-import { getSpaceEngines } from '@/lib/data/db/space-engines';
+import { getDbEngines } from '@/lib/data/db/engines';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
 import { getCurrentEnvironment } from '@/components/auth';
@@ -15,7 +15,7 @@ import { getCurrentEnvironment } from '@/components/auth';
 async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
   const [deployedInProceed, deployedInSpaceEngines] = await Promise.all([
     getProceedEngines().then((engines) => getDeployments(engines)),
-    getSpaceEngines(spaceId).then((spaceEngines) => {
+    getDbEngines(spaceId).then((spaceEngines) => {
       if (isUserErrorResponse(spaceEngines)) return [];
       return getDeployedProcessesFromSpaceEngines(spaceEngines);
     }),

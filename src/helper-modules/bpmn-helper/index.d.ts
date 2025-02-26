@@ -45,8 +45,31 @@ declare const _exports: {
   setTargetNamespace(bpmn: string | object, id: string): Promise<string | object>;
   setStandardDefinitions(
     bpmn: string | object,
-    exporterName: string,
-    exporterVersion: string,
+    options: {
+      exporterName: string;
+      exporterVersion: string;
+      creatorSpaceName?: string;
+      creatorSpaceId?: string;
+      creatorId?: string;
+      creatorName?: string;
+      creatorUsername?: string;
+      creationDate?: string;
+    },
+  ): Promise<string | object>;
+  updateBpmnXMLAttributes(
+    bpmn: string | object,
+    attributes: {
+      id?: string;
+      originalId?: string;
+      name?: string;
+      creatorId?: string;
+      creatorName?: string;
+      creatorUsername?: string;
+      creatorSpaceId?: string;
+      creatorSpaceName?: string;
+      userDefinedId?: string;
+      creationDate?: string;
+    },
   ): Promise<string | object>;
   setDeploymentMethod(bpmn: string | object, method: string): Promise<string | object>;
   setMachineInfo(
@@ -239,6 +262,7 @@ declare const _exports: {
   ): Promise<string | object>;
   moddle: any;
 };
+
 export = _exports;
 import getters = require('./src/getters.js');
 import util = require('./src/util.js');

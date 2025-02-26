@@ -1,11 +1,14 @@
 import { getFolderById } from './folders';
 import eventHandler from '../legacy/eventHandler.js';
 import logger from '../legacy/logging.js';
-import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
+import {
+  getProcessInfo,
+  getDefaultProcessMetaInfo,
+  BpmnAttributeType,
+  transformBpmnAttributes,
+} from '../../helpers/processHelpers';
 import {
   getDefinitionsVersionInformation,
-  getMetaDataFromElement,
-  getAllElements,
   generateUserTaskFileName,
   generateScriptTaskFileName,
 } from '@proceed/bpmn-helper';
@@ -88,7 +91,6 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       //departments: true,
       //variables: true,
       versions: true,
-      bpmn: includeBPMN,
     },
   });
   if (!process) {
@@ -108,7 +110,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   const convertedProcess = {
     ...process,
     //versions: convertedVersions,
-    bpmn: `<?xml version="1.0" encoding="UTF-8"?>${process.bpmn}`,
+    bpmn: includeBPMN ? await getProcessBpmn(processDefinitionsId) : null,
     shareTimestamp:
       typeof process.shareTimestamp === 'bigint'
         ? Number(process.shareTimestamp)
@@ -136,6 +138,7 @@ export async function checkIfProcessExists(processDefinitionsId: string) {
   if (!existingProcess) {
     throw new Error(`Process with id ${processDefinitionsId} does not exist!`);
   }
+  return existingProcess;
 }
 
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
@@ -185,6 +188,11 @@ export async function addProcess(
     throw new Error(`Process with id ${processDefinitionsId} already exists!`);
   }
 
+  const bpmnWithPlaceholders = await transformBpmnAttributes(
+    bpmn,
+    BpmnAttributeType.DB_PLACEHOLDER,
+  );
+
   // save process info
   try {
     await tx.process.create({
@@ -203,9 +211,10 @@ export async function addProcess(
         allowIframeTimestamp: metadata.allowIframeTimestamp,
         environmentId: metadata.environmentId,
         creatorId: metadata.creatorId,
+        userDefinedId: metadata.userDefinedId,
         //departments: { set: metadata.departments },
         //variables: { set: metadata.variables },
-        bpmn: bpmn,
+        bpmn: bpmnWithPlaceholders,
       },
     });
   } catch (error) {
@@ -264,7 +273,7 @@ export async function updateProcess(
     try {
       await db.process.update({
         where: { id: processDefinitionsId },
-        data: { bpmn: newBpmn },
+        data: { bpmn: await transformBpmnAttributes(newBpmn, BpmnAttributeType.DB_PLACEHOLDER) },
       });
     } catch (error) {
       console.error('Error updating bpmn: ', error);
@@ -349,12 +358,14 @@ export async function updateProcessMetaData(
   processDefinitionsId: string,
   metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
-  checkIfProcessExists(processDefinitionsId);
+  const existingrocess = await checkIfProcessExists(processDefinitionsId);
   try {
     const updatedProcess = await db.process.update({
       where: { id: processDefinitionsId },
       data: {
         ...(metaChanges as any),
+        id: processDefinitionsId, // make sure the id is not changed
+        originalId: existingrocess.originalId || metaChanges.originalId, // originalId is only changed is not set yet
       },
     });
 
@@ -546,18 +557,36 @@ function removeExcessiveInformation(processInfo: Omit<ProcessMetadata, 'bpmn'>) 
 
 /** Returns the process definition for the process with the given id */
 export async function getProcessBpmn(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
   try {
     const process = await db.process.findUnique({
       where: {
         id: processDefinitionsId,
       },
       select: {
+        creator: { select: { id: true, firstName: true, lastName: true, username: true } },
+        space: { select: { id: true, name: true } },
         bpmn: true,
+        userDefinedId: true,
+        createdOn: true,
+        id: true,
+        name: true,
+        originalId: true,
       },
     });
-    return `<?xml version="1.0" encoding="UTF-8"?>\n${process?.bpmn}`;
+
+    if (!process) {
+      throw new Error('Process not found');
+    }
+
+    const processWithStringDate = {
+      ...process,
+      createdOn: toCustomUTCString(process.createdOn),
+    };
+    let bpmnWithDBValue = await transformBpmnAttributes(
+      processWithStringDate!,
+      BpmnAttributeType.ACTUAL_VALUE,
+    );
+    return bpmnWithDBValue;
   } catch (err) {
     logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
     throw new Error('Unable to find process bpmn!');

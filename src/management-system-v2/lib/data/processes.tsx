@@ -205,7 +205,13 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
+  values: {
+    name: string;
+    description: string;
+    bpmn?: string;
+    folderId?: string;
+    userDefinedId?: string;
+  }[],
   spaceId: string,
   generateNewId: boolean = false,
 ) => {
@@ -230,12 +236,15 @@ export const addProcesses = async (
       name: value.name,
       description: value.description,
       bpmn: value.bpmn,
+      creatorId: userId,
+      environmentId: activeEnvironment.spaceId,
     });
 
     const newProcess = {
       bpmn,
       creatorId: userId,
       environmentId: activeEnvironment.spaceId,
+      userDefinedId: value.userDefinedId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -284,7 +293,6 @@ export const updateProcess = async (
   invalidate = false,
 ) => {
   await loadModules();
-
   const error = await checkValidity(definitionsId, 'update', spaceId);
 
   if (error) return error;

@@ -22,10 +22,17 @@ import {
   setUserTaskData,
   getScriptTaskFileNameMapping,
   setScriptTaskData,
+  updateBpmnXMLAttributes,
 } from '@proceed/bpmn-helper';
-import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
+import {
+  ProcessMetadata,
+  ProcessServerInput,
+  ProcessServerInputSchema,
+} from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
 import { asyncForEach } from './javascriptHelpers';
+import { toCustomUTCString } from './timeHelper';
+import { XMLAttrDBProcessTableColsMap } from './xmlAttr-db-process-cols-map';
 
 interface ProcessInfo {
   bpmn: string;
@@ -65,14 +72,13 @@ export function getDefaultProcessMetaInfo() {
  * creates a bpmn and a meta info object
  */
 export async function createProcess(
-  processInfo: ProcessInput & { bpmn?: string },
+  processInfo: ProcessServerInput & { bpmn?: string },
   noDefaults: boolean = false,
 ) {
   // create default bpmn if user didn't provide any
   let bpmn = processInfo.bpmn || initXml();
-
   // schema parser removes bpmn property
-  let metaInfo = ProcessInputSchema.parse(processInfo);
+  let metaInfo = ProcessServerInputSchema.parse(processInfo);
 
   let definitions;
 
@@ -97,7 +103,13 @@ export async function createProcess(
     metaInfo.name = (await getDefinitionsName(definitions))!;
   }
 
-  setStandardDefinitions(definitions, getExporterName(), getExporterVersion());
+  setStandardDefinitions(definitions, {
+    exporterName: getExporterName(),
+    exporterVersion: getExporterVersion(),
+    creatorId: metaInfo.creatorId,
+    creatorSpaceId: metaInfo.environmentId,
+    creationDate: toCustomUTCString(new Date()),
+  });
 
   if (!metaInfo.name) {
     throw new Error(
@@ -238,4 +250,75 @@ export async function updateScriptTaskFileName(
   });
 
   return { bpmn: await toBpmnXml(bpmnObj), newFilename };
+}
+
+type ProcessWithCreatorAndSpace = {
+  bpmn: string;
+  userDefinedId: string | null;
+  id: string;
+  createdOn: string;
+  name: string;
+  originalId: string;
+} & {
+  creator: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    username: string | null;
+  } | null;
+  space: { name: string | null; id: string };
+};
+
+export enum BpmnAttributeType {
+  DB_PLACEHOLDER,
+  ACTUAL_VALUE,
+}
+
+export async function transformBpmnAttributes(
+  input: string | ProcessWithCreatorAndSpace,
+  transformType: BpmnAttributeType,
+): Promise<string> {
+  const bpmnString =
+    typeof input === 'string' ? input : `<?xml version="1.0" encoding="UTF-8"?>\n${input?.bpmn}`;
+
+  let definitions;
+  try {
+    const xmlObj = await toBpmnObject(bpmnString);
+    [definitions] = getElementsByTagName(xmlObj, 'bpmn:Definitions');
+  } catch (err) {
+    throw new Error(`Invalid BPMN: ${err}`);
+  }
+
+  if (transformType === BpmnAttributeType.DB_PLACEHOLDER) {
+    const placeholders: Record<string, string> = {};
+    Object.entries(XMLAttrDBProcessTableColsMap).forEach(([attrKey, dbPath]) => {
+      placeholders[attrKey] = `PROCEED_DB_VALUE_${dbPath}`;
+    });
+
+    updateBpmnXMLAttributes(definitions, placeholders);
+  } else {
+    const processMeta = input as ProcessWithCreatorAndSpace;
+    const actualValues: Record<string, string> = {};
+
+    Object.entries(XMLAttrDBProcessTableColsMap).forEach(([attrKey, dbPath]) => {
+      if (dbPath.includes('+')) {
+        const parts = dbPath.split('+').map((part) => part.trim());
+        const values = parts.map((part) => getNestedValue(processMeta, part) || '');
+        actualValues[attrKey] = values.join(' ').trim();
+      } else {
+        actualValues[attrKey] = getNestedValue(processMeta, dbPath) || '';
+      }
+    });
+
+    updateBpmnXMLAttributes(definitions, actualValues);
+    console.log('actualValues', actualValues);
+  }
+  const transformedXml = await toBpmnXml(definitions);
+  return transformedXml;
+}
+
+// Helper function to access nested properties by path (e.g., "creator.firstName")
+function getNestedValue(obj: any, path: string): string | null {
+  const keys = path.split('.');
+  return keys.reduce((o, key) => (o ? o[key] : null), obj);
 }

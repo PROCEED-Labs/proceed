@@ -70,18 +70,35 @@ export function setTemplateId(bpmn: string, id: string): Promise<string | object
  */
 export function setTargetNamespace(bpmn: string | object, id: string): Promise<string | object>;
 /**
- * Sets exporter, exporterVersion, expressionLanguage, typeLanguage and needed namespaces on defintions element
- * stores the previous values of exporter and exporterVersion if there are any
+ * Sets the `<bpmn:Definitions>` element by setting `exporter`, `exporterVersion`,
+ * `expressionLanguage`, `typeLanguage`, and necessary namespaces.
+ * If previous values for `exporter` and `exporterVersion` exist, they are preserved.
  *
- * @param {(string|object)} bpmn the process definition as XML string or BPMN-Moddle Object
- * @param {string} exporterName - the exporter name
- * @param {string} exporterVersion - the exporter version
- * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @param {string | object} bpmn - The BPMN process definition, either as an XML string or a BPMN-Moddle object.
+ * @param {Object} options - Metadata containing details about the process definition.
+ * @param {string} options.exporterName - The name of the exporter.
+ * @param {string} options.exporterVersion - The version of the exporter.
+ * @param {string} [options.creatorSpaceName] - (Optional) The name of the creator's Space.
+ * @param {string} [options.creatorSpaceId] - (Optional) The ID of the creator's Space.
+ * @param {string} [options.creatorId] - (Optional) The unique ID of the creator.
+ * @param {string} [options.creatorName] - (Optional) The full name of the creator.
+ * @param {string} [options.creatorUsername] - (Optional) The username of the creator.
+ * @param {string} [options.creationDate] - (Optional) The date when the process was created.
+ * @returns {Promise<string | object>} - A promise resolving to the modified BPMN process,
+ *                                       either as a BPMN-Moddle object or an XML string, depending on the input format.
  */
 export function setStandardDefinitions(
   bpmn: string | object,
-  exporterName: string,
-  exporterVersion: string,
+  options: {
+    exporterName: string;
+    exporterVersion: string;
+    creatorSpaceName?: string;
+    creatorSpaceId?: string;
+    creatorId?: string;
+    creatorName?: string;
+    creatorUsername?: string;
+    creationDate?: string;
+  },
 ): Promise<string | object>;
 /**
  * Sets deployment method of a process
@@ -228,4 +245,38 @@ export function updatePerformersOnElementById(
   bpmn: string | object,
   elementId: string,
   performers: any[],
+): Promise<string | object>;
+
+/**
+ * Updates the BPMN XML attributes of the given BPMN process.
+ *
+ * @param {(string | object)} bpmn - The BPMN process definition as an XML string or a BPMN-Moddle object.
+ * @param {object} attributes - The attributes to update in the BPMN process.
+ * @param {string} [attributes.id] - The id of the BPMN process.
+ * @param {string} [attributes.originalId] - The original of a copied/imported BPMN process.
+ * @param {string} [attributes.name] - The name of the BPMN process.
+ * @param {string} [attributes.creatorId] - The unique identifier of the creator.
+ * @param {string} [attributes.creatorName] - The name of the creator.
+ * @param {string} [attributes.creatorUsername] - The username of the creator.
+ * @param {string} [attributes.creatorSpaceId] - The unique identifier of the creator's space.
+ * @param {string} [attributes.creatorSpaceName] - The name of the creator's space.
+ * @param {string} [attributes.userDefinedId] - The user-defined ID of the BPMN process.
+ * @param {string} [attributes.creationDate] - The creation date of the BPMN process in string format.
+ * @returns {Promise<string | object>} A promise that resolves to the modified BPMN process,
+ * either as a BPMN-Moddle object or an XML string, depending on the input format.
+ */
+export function updateBpmnXMLAttributes(
+  bpmn: string | object,
+  attributes: {
+    id?: string;
+    oringalId?: string;
+    name?: string;
+    creatorId?: string;
+    creatorName?: string;
+    creatorUsername?: string;
+    creatorSpaceId?: string;
+    creatorSpaceName?: string;
+    userDefinedId?: string;
+    creationDate?: string;
+  },
 ): Promise<string | object>;

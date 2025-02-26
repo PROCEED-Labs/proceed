@@ -24,7 +24,6 @@ import {
   softDeleteProcessScriptTask,
   updateFileDeletableStatus,
 } from '@/lib/data/file-manager-facade';
-import { useSession } from 'next-auth/react';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;

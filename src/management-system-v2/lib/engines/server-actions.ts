@@ -150,3 +150,9 @@ export async function getAvailableSpaceEngines(spaceId: string) {
     return userError('Something went wrong');
   }
 }
+
+export async function getAllDeployments(spaceId: string) {
+  const engines = await getCorrectTargetEngines(spaceId);
+
+  return await getDeployments(engines);
+}

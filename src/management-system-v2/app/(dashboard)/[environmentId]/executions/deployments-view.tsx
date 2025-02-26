@@ -28,7 +28,12 @@ const DeploymentsView = ({
   processes: InputItem[];
   folder: any;
   favourites: any;
-  deployedProcesses: (DeployedProcessInfo & { name: string })[];
+  deployedProcesses: {
+    id: string;
+    name: string;
+    versions: DeployedProcessInfo['versions'];
+    instances: DeployedProcessInfo['instances'];
+  }[];
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const app = App.useApp();

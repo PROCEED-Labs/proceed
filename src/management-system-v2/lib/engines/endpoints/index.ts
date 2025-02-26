@@ -21,27 +21,26 @@ export async function engineRequest<
   const builtEndpoint =
     'params' in params ? _endpointBuilder(endpoint, params.params as any) : endpoint;
 
-  if (engine.type === 'mqtt') {
-    let spaceEngineClient;
-    if (engine.spaceEngine) {
-      spaceEngineClient = await getClient(engine.brokerAddress);
-    }
-
-    const response = await mqttRequest(
-      engine.id,
-      builtEndpoint,
-      {
-        method: method.toUpperCase() as any,
-        body,
-      },
-      spaceEngineClient,
-    );
-
-    // NOTE: not awaiting this could be a problem if hosted on vercel
-    spaceEngineClient?.endAsync();
-
-    return response;
-  } else {
+  if (engine.type === 'http')
     return await httpRequest(engine.address, builtEndpoint, method.toUpperCase() as any, body);
+
+  const mqttClient = await getClient(engine.brokerAddress, !engine.spaceEngine);
+
+  const response = await mqttRequest(
+    engine.id,
+    builtEndpoint,
+    {
+      method: method.toUpperCase() as any,
+      body,
+    },
+    mqttClient,
+  );
+
+  // TODO: if multiple requests are sent, this will be called multiple times
+  if (engine.spaceEngine) {
+    // NOTE: not awaiting this could be a problem if hosted on vercel
+    mqttClient.endAsync();
   }
+
+  return response;
 }

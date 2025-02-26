@@ -28,11 +28,6 @@ const environmentVariables = {
         }
       })
       .optional(),
-
-    MQTT_SERVER_ADDRESS: z.string().url().optional(),
-    MQTT_USERNAME: z.string().optional(),
-    MQTT_PASSWORD: z.string().optional(),
-    MQTT_BASETOPIC: z.string().optional(),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),

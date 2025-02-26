@@ -13,7 +13,12 @@ import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
-type InputItem = DeployedProcessInfo & { name: string };
+type InputItem = {
+  id: string;
+  name: string;
+  versions: DeployedProcessInfo['versions'];
+  instances: DeployedProcessInfo['instances'];
+};
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
 const DeploymentsList = ({
@@ -21,7 +26,7 @@ const DeploymentsList = ({
   tableProps,
 }: {
   processes: DeployedProcessListProcess[];
-  tableProps?: TableProps;
+  tableProps?: TableProps<DeployedProcessListProcess>;
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
@@ -36,7 +41,7 @@ const DeploymentsList = ({
       ellipsis: true,
       render: (_, record) => (
         <SpaceLink
-          href={`/executions/${record.definitionId}`}
+          href={`/executions/${record.id}`}
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
@@ -144,7 +149,7 @@ const DeploymentsList = ({
                   type="text"
                   onClick={() => {
                     wrapServerCall({
-                      fn: () => removeDeployment(record.definitionId, space.spaceId),
+                      fn: () => removeDeployment(record.id, space.spaceId),
                       onSuccess: () => router.refresh(),
                     });
                   }}

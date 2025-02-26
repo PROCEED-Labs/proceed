@@ -94,7 +94,10 @@ const ModelerShareModalOptionEmdedInWeb = ({
 
   if (processes.length > 1) {
     return (
-      <Alert type="info" message="PDF export is only available when a single process is selected" />
+      <Alert
+        type="info"
+        message="Embed sharing is only available when a single process is selected"
+      />
     );
   }
 

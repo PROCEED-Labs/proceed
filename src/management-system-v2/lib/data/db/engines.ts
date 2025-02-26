@@ -10,7 +10,7 @@ export async function getDbEngines(
   systemAdmin?: SystemAdmin,
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === undefined && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
 
   const engines = await db.engine.findMany({
     where: { environmentId: environmentId },
@@ -26,7 +26,7 @@ export async function getDbEngineById(
   systemAdmin?: SystemAdmin,
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === undefined && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
 
   const engine = await db.engine.findUnique({
     where: {
@@ -54,7 +54,7 @@ export async function getDbEngineByAddress(
   systemAdmin?: SystemAdmin,
 ) {
   // engines without an environmentId are PROCEED engines
-  if (spaceId === undefined && !systemAdmin) throw new UnauthorizedError();
+  if (spaceId === null && !systemAdmin) throw new UnauthorizedError();
 
   const engine = await db.engine.findFirst({
     where: {
@@ -85,7 +85,7 @@ export async function addDbEngines(
   systemAdmin?: SystemAdmin,
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === undefined && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
 
   const newEngines = SpaceEngineArraySchema.parse(enginesInput);
 
@@ -105,7 +105,7 @@ export async function updateDbEngine(
   systemAdmin?: SystemAdmin,
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === undefined && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
 
   const newEngineData = PartialSpaceEngineInputSchema.parse(engineInput);
 
@@ -134,7 +134,7 @@ export async function deleteSpaceEngine(
   systemAdmin?: SystemAdmin,
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === undefined && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
 
   if (ability) {
     const engine = await getDbEngineById(engineId, environmentId, ability, systemAdmin);

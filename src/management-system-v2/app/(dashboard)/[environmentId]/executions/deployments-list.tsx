@@ -8,6 +8,10 @@ import { useState } from 'react';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import SpaceLink from '@/components/space-link';
 import processListStyles from '@/components/process-icon-list.module.scss';
+import { removeDeployment } from '@/lib/engines/server-actions';
+import { useEnvironment } from '@/components/auth-can';
+import { useRouter } from 'next/navigation';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type InputItem = {
   id: string;
@@ -25,6 +29,9 @@ const DeploymentsList = ({
   tableProps?: TableProps<DeployedProcessListProcess>;
 }) => {
   const breakpoint = Grid.useBreakpoint();
+
+  const space = useEnvironment();
+  const router = useRouter();
 
   const columns: TableColumnsType<DeployedProcessListProcess> = [
     {
@@ -137,7 +144,16 @@ const DeploymentsList = ({
             responsive: ['xl'],
             render: (id, record) => {
               return (
-                <Button style={{ float: 'right' }} type="text">
+                <Button
+                  style={{ float: 'right' }}
+                  type="text"
+                  onClick={() => {
+                    wrapServerCall({
+                      fn: () => removeDeployment(record.id, space.spaceId),
+                      onSuccess: () => router.refresh(),
+                    });
+                  }}
+                >
                   <DeleteOutlined color="red" />
                 </Button>
               );

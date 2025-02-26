@@ -126,13 +126,13 @@ function getImagesReferencedByJSON(json: string) {
       .map((node) => node.props.src as string);
 
     // get the referenced images that are stored locally
-    const seperatelyStored = images
-      .filter((src) => src.startsWith('/api/'))
-      .map((src) => src.split('/').pop())
-      .filter((imageName): imageName is string => !!imageName);
+    // const seperatelyStored = images
+    //   .filter((src) => src.startsWith('/api/'))
+    //   .map((src) => src.split('/').pop())
+    //   .filter((imageName): imageName is string => !!imageName);
 
     // remove duplicates
-    return [...new Set(seperatelyStored)];
+    return [...new Set(images)];
   } catch (err) {
     throw new Error('Unable to parse the image information from the given json');
   }
@@ -472,6 +472,7 @@ export async function prepareExport(
       // determine the images that are used inside user tasks
       for (const { json } of exportData[definitionId].userTasks) {
         const referencedImages = getImagesReferencedByJSON(json);
+        console.log(referencedImages);
         for (const filename of referencedImages) {
           allRequiredImageFiles.add(filename);
         }

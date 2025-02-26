@@ -5,6 +5,9 @@ const nextConfig = {
   output: 'standalone',
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../../'),
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   /**
    *

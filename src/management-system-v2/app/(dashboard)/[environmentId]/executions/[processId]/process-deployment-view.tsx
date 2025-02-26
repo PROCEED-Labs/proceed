@@ -42,34 +42,34 @@ export default function ProcessDeploymentView({
 
   const { spaceId } = useEnvironment();
 
-  const { data: selectedProcess } = useDeployment(processId, initialDeploymentInfo);
+  const { data: deploymentInfo } = useDeployment(processId, initialDeploymentInfo);
 
   const router = useRouter();
 
   const { selectedVersion, instances, selectedInstance, currentVersion } = useMemo(() => {
     let selectedVersion, instances, selectedInstance, currentVersion;
 
-    if (selectedProcess) {
-      selectedVersion = selectedProcess.versions.find((v) => v.versionId === selectedVersionId);
+    if (deploymentInfo) {
+      selectedVersion = deploymentInfo.versions.find((v) => v.versionId === selectedVersionId);
 
-      instances = getVersionInstances(selectedProcess, selectedVersionId);
+      instances = getVersionInstances(deploymentInfo, selectedVersionId);
       selectedInstance = selectedInstanceId
         ? instances.find((i) => i.processInstanceId === selectedInstanceId)
         : undefined;
 
-      let currentVersionId = getLatestDeployment(selectedProcess).versionId;
+      let currentVersionId = getLatestDeployment(deploymentInfo).versionId;
       if (selectedInstance) {
         currentVersionId = selectedInstance.processVersion;
       } else if (selectedVersionId) {
         currentVersionId = selectedVersionId;
       }
-      currentVersion = selectedProcess.versions.find(
+      currentVersion = deploymentInfo.versions.find(
         (version) => version.versionId === currentVersionId,
       );
     }
 
     return { selectedVersion, instances, selectedInstance, currentVersion };
-  }, [selectedProcess, selectedVersionId, selectedInstanceId]);
+  }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
 
   const selectedBpmn = useMemo(() => {
     return { bpmn: currentVersion?.bpmn || '' };
@@ -82,7 +82,7 @@ export default function ProcessDeploymentView({
     canvasRef,
   );
 
-  if (!selectedProcess) {
+  if (!deploymentInfo) {
     return (
       <Content>
         <Result status="404" title="Process data is not available anymore" />
@@ -128,8 +128,8 @@ export default function ProcessDeploymentView({
                     wrapServerCall({
                       fn: () =>
                         startInstance(
-                          selectedProcess.definitionId,
-                          getLatestDeployment(selectedProcess).versionId,
+                          deploymentInfo.definitionId,
+                          getLatestDeployment(deploymentInfo).versionId,
                           spaceId,
                         ),
                       onSuccess: (instanceId) => {
@@ -158,7 +158,7 @@ export default function ProcessDeploymentView({
                           },
                         ]
                         : []),
-                      ...selectedProcess.versions.map((version) => ({
+                      ...deploymentInfo.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
                         key: `${version.versionId}`,
                         disabled: false,
@@ -169,7 +169,7 @@ export default function ProcessDeploymentView({
                       const versionId = key === '-2' ? undefined : key;
                       setSelectedVersionId(versionId);
 
-                      const instances = getVersionInstances(selectedProcess, versionId);
+                      const instances = getVersionInstances(deploymentInfo, versionId);
                       if (!instances.some((i) => i.processInstanceId === selectedInstanceId)) {
                         const youngestInstance = getYoungestInstance(instances);
                         setSelectedInstanceId(youngestInstance?.processInstanceId);
@@ -217,7 +217,7 @@ export default function ProcessDeploymentView({
                   info={{
                     instance: selectedInstance,
                     element: selectedElement!,
-                    process: selectedProcess,
+                    process: deploymentInfo,
                     version: selectedVersion!,
                   }}
                   open={infoPanelOpen}

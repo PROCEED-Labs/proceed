@@ -7,10 +7,11 @@ import { SystemAdmin } from '@prisma/client';
 export async function getDbEngines(
   environmentId: string | null,
   ability?: Ability,
-  systemAdmin?: SystemAdmin,
+  systemAdmin?: SystemAdmin | 'dont-check',
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
+    throw new UnauthorizedError();
 
   const engines = await db.engine.findMany({
     where: { environmentId: environmentId },
@@ -23,10 +24,11 @@ export async function getDbEngineById(
   engineId: string,
   environmentId: string | null,
   ability?: Ability,
-  systemAdmin?: SystemAdmin,
+  systemAdmin?: SystemAdmin | 'dont-check',
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
+    throw new UnauthorizedError();
 
   const engine = await db.engine.findUnique({
     where: {
@@ -51,10 +53,11 @@ export async function getDbEngineByAddress(
   address: string,
   spaceId: string | null,
   ability?: Ability,
-  systemAdmin?: SystemAdmin,
+  systemAdmin?: SystemAdmin | 'dont-check',
 ) {
   // engines without an environmentId are PROCEED engines
-  if (spaceId === null && !systemAdmin) throw new UnauthorizedError();
+  if (spaceId === null && systemAdmin !== 'dont-check' && !systemAdmin)
+    throw new UnauthorizedError();
 
   const engine = await db.engine.findFirst({
     where: {
@@ -82,10 +85,11 @@ export async function addDbEngines(
   enginesInput: SpaceEngineInput[],
   environmentId: string | null,
   ability?: Ability,
-  systemAdmin?: SystemAdmin,
+  systemAdmin?: SystemAdmin | 'dont-check',
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
+    throw new UnauthorizedError();
 
   const newEngines = SpaceEngineArraySchema.parse(enginesInput);
 
@@ -102,10 +106,11 @@ export async function updateDbEngine(
   engineInput: Partial<SpaceEngineInput>,
   environmentId: string | null,
   ability?: Ability,
-  systemAdmin?: SystemAdmin,
+  systemAdmin?: SystemAdmin | 'dont-check',
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
+    throw new UnauthorizedError();
 
   const newEngineData = PartialSpaceEngineInputSchema.parse(engineInput);
 
@@ -131,10 +136,11 @@ export async function deleteSpaceEngine(
   engineId: string,
   environmentId: string | null,
   ability?: Ability,
-  systemAdmin?: SystemAdmin,
+  systemAdmin?: SystemAdmin | 'dont-check',
 ) {
   // engines without an environmentId are PROCEED engines
-  if (environmentId === null && !systemAdmin) throw new UnauthorizedError();
+  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
+    throw new UnauthorizedError();
 
   if (ability) {
     const engine = await getDbEngineById(engineId, environmentId, ability, systemAdmin);

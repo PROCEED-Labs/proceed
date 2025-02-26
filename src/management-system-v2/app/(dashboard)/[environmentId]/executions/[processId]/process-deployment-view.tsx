@@ -25,7 +25,13 @@ import { getLatestDeployment, getVersionInstances, getYoungestInstance } from '.
 import useColors from './use-colors';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 
-function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo }) {
+export default function ProcessDeploymentView({
+  processId,
+  initialDeploymentInfo,
+}: {
+  processId: string;
+  initialDeploymentInfo: DeployedProcessInfo;
+}) {
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
@@ -36,25 +42,31 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
 
   const { spaceId } = useEnvironment();
 
+  const { data: selectedProcess } = useDeployment(processId, initialDeploymentInfo);
+
   const router = useRouter();
 
   const { selectedVersion, instances, selectedInstance, currentVersion } = useMemo(() => {
-    const selectedVersion = selectedProcess.versions.find((v) => v.versionId === selectedVersionId);
+    let selectedVersion, instances, selectedInstance, currentVersion;
 
-    const instances = getVersionInstances(selectedProcess, selectedVersionId);
-    const selectedInstance = selectedInstanceId
-      ? instances.find((i) => i.processInstanceId === selectedInstanceId)
-      : undefined;
+    if (selectedProcess) {
+      selectedVersion = selectedProcess.versions.find((v) => v.versionId === selectedVersionId);
 
-    let currentVersionId = getLatestDeployment(selectedProcess).versionId;
-    if (selectedInstance) {
-      currentVersionId = selectedInstance.processVersion;
-    } else if (selectedVersionId) {
-      currentVersionId = selectedVersionId;
+      instances = getVersionInstances(selectedProcess, selectedVersionId);
+      selectedInstance = selectedInstanceId
+        ? instances.find((i) => i.processInstanceId === selectedInstanceId)
+        : undefined;
+
+      let currentVersionId = getLatestDeployment(selectedProcess).versionId;
+      if (selectedInstance) {
+        currentVersionId = selectedInstance.processVersion;
+      } else if (selectedVersionId) {
+        currentVersionId = selectedVersionId;
+      }
+      currentVersion = selectedProcess.versions.find(
+        (version) => version.versionId === currentVersionId,
+      );
     }
-    const currentVersion = selectedProcess.versions.find(
-      (version) => version.versionId === currentVersionId,
-    );
 
     return { selectedVersion, instances, selectedInstance, currentVersion };
   }, [selectedProcess, selectedVersionId, selectedInstanceId]);
@@ -69,6 +81,14 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
     selectedInstance,
     canvasRef,
   );
+
+  if (!selectedProcess) {
+    return (
+      <Content>
+        <Result status="404" title="Process data is not available anymore" />
+      </Content>
+    );
+  }
 
   return (
     <Content compact wrapperClass={contentStyles.Content}>
@@ -231,35 +251,5 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
         </div>
       </div>
     </Content>
-  );
-}
-
-function SuspenseWrapper({ processId }: { processId: string }) {
-  const { data } = useDeployment(processId);
-
-  return (
-    <>
-      {data ? (
-        <PageContent selectedProcess={data} />
-      ) : (
-        <Content>
-          <Result status="404" title="Process not found" />
-        </Content>
-      )}
-    </>
-  );
-}
-
-export default function ProcessDeploymentView({ processId }: { processId: string }) {
-  return (
-    <Suspense
-      fallback={
-        <Content>
-          <Skeleton />
-        </Content>
-      }
-    >
-      <SuspenseWrapper processId={processId} />
-    </Suspense>
   );
 }

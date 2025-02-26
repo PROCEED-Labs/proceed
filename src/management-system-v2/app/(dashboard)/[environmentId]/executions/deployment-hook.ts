@@ -2,14 +2,14 @@ import { useEnvironment } from '@/components/auth-can';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import { getAllDeployments } from '@/lib/engines/server-actions';
 import { deepEquals } from '@/lib/helpers/javascriptHelpers';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 async function fetchDeployments(spaceId: string) {
   return await getAllDeployments(spaceId);
 }
 
-async function fetchDeployment(spaceId: string, definitionId: string) {
+export async function fetchDeployment(spaceId: string, definitionId: string) {
   const deployments = await fetchDeployments(spaceId);
 
   return deployments.find((d) => d.definitionId === definitionId) || null;
@@ -83,15 +83,16 @@ const mergeDeployment = (
   return hasChanges ? newDeployment : oldDeployment;
 };
 
-function useDeployment(definitionId: string) {
+function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) {
   const space = useEnvironment();
 
   const queryFn = useCallback(async () => {
     return await fetchDeployment(space.spaceId, definitionId);
   }, [space.spaceId, definitionId]);
 
-  return useSuspenseQuery({
+  return useQuery({
     queryFn,
+    initialData,
     queryKey: ['processDeployments', space.spaceId, definitionId],
     refetchInterval: 5000,
     // return the same data if nothing has changed from the last fetch to prevent unnecessary

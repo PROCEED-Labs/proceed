@@ -51,7 +51,7 @@ type UseFuzySearchOptions<TData, TKeys, THighlightKeys, TTransformFunc> = {
   highlightedKeys?: THighlightKeys[] | readonly THighlightKeys[];
   /** Color of the highlighted letters, the default color is #3e93de*/
   highlightColor?: string;
-  /** Transfrom the hook's output (result is memoized) */
+  /** Transform the hook's output (result is memoized) */
   transformData?: TTransformFunc;
   /** If specified, the search query will be stored as a search param with the given name */
   queryName?: string;
@@ -61,7 +61,7 @@ type UseFuzySearchOptions<TData, TKeys, THighlightKeys, TTransformFunc> = {
 export default function useFuzySearch<
   TData extends Record<string, any>,
   TKeys extends keyof TData,
-  THighlightKeys extends TKeys,
+  THighlightKeys extends TKeys = never,
   TTransformFunc extends (
     items: FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[],
   ) => any = (

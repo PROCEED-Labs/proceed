@@ -33,7 +33,7 @@ const mergeInstance = (newInstance: InstanceInfo, oldInstance?: InstanceInfo) =>
     if (!deepEquals(oldInstance[key], newInstance[key])) {
       hasChanges = true;
     } else {
-      newInstance[key] = oldInstance[key];
+      newInstance[key] = oldInstance[key] as never;
     }
   });
 

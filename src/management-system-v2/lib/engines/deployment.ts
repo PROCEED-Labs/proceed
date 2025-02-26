@@ -104,7 +104,6 @@ async function dynamicDeployment(
   version: string,
   processesExportData: ProcessesExportData,
   machines: Engine[],
-  forceMachine?: Engine,
 ) {
   const process = processesExportData.find(({ definitionId: id }) => id === definitionId);
   if (!process) throw new Error('Process not found in processesExportData');
@@ -117,23 +116,19 @@ async function dynamicDeployment(
 
   let preferredMachine: Engine;
 
-  if (forceMachine) {
-    preferredMachine = forceMachine;
-  } else {
-    // TODO: use decider
-    // // use decider to get sorted list of viable engines
-    // const { engineList } = await decider.findOptimalExternalMachine(
-    //   { id: definitionId, nextFlowNode: startEventIds[0] },
-    //   taskConstraintMapping[startEventIds[0]] || {},
-    //   processConstraints || {},
-    //   addedMachines,
-    // );
-    //
-    // // try to get the best engine
-    // [preferredMachine] = engineList;
+  // TODO: use decider
+  // // use decider to get sorted list of viable engines
+  // const { engineList } = await decider.findOptimalExternalMachine(
+  //   { id: definitionId, nextFlowNode: startEventIds[0] },
+  //   taskConstraintMapping[startEventIds[0]] || {},
+  //   processConstraints || {},
+  //   addedMachines,
+  // );
+  //
+  // // try to get the best engine
+  // [preferredMachine] = engineList;
 
-    preferredMachine = machines[Math.floor(Math.random() * machines.length)];
-  }
+  preferredMachine = machines[Math.floor(Math.random() * machines.length)];
 
   // there is no deployable machine known to the MS
   if (!preferredMachine) {
@@ -148,7 +143,6 @@ async function staticDeployment(
   version: string,
   processesExportData: ProcessesExportData,
   machines: Engine[],
-  forceMachine?: Engine,
 ) {
   const process = processesExportData.find(({ definitionId: id }) => id === definitionId);
   if (!process) throw new Error('Process not found in processesExportData');
@@ -195,10 +189,8 @@ export async function deployProcess(
   spaceId: string,
   method: 'static' | 'dynamic',
   machines: Engine[],
-  forceMachine?: Engine,
 ) {
-  if (machines.length === 0 && !forceMachine)
-    throw new Error('No machines available for deployment');
+  if (machines.length === 0) throw new Error('No machines available for deployment');
 
   const processesExportData = await prepareExport(
     {
@@ -220,9 +212,9 @@ export async function deployProcess(
   );
 
   if (method === 'static') {
-    await staticDeployment(definitionId, version, processesExportData, machines, forceMachine);
+    await staticDeployment(definitionId, version, processesExportData, machines);
   } else {
-    await dynamicDeployment(definitionId, version, processesExportData, machines, forceMachine);
+    await dynamicDeployment(definitionId, version, processesExportData, machines);
   }
 }
 export type ImportInformation = { definitionId: string; processId: string; version: number };

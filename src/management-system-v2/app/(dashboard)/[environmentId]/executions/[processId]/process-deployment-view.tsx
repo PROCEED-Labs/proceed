@@ -102,7 +102,6 @@ function PageContent({ selectedProcess }: { selectedProcess: DeployedProcessInfo
                 placeholder="Select an instance"
               />
               <Tooltip title="Start new instance">
-                {/** TODO: implement start new instance */}
                 <Button
                   icon={<PlusOutlined />}
                   onClick={() => {

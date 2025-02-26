@@ -1,0 +1,14 @@
+.ant-carousel .slick-prev,
+.ant-carousel .slick-next {
+  color: #000;
+}
+
+.ant-carousel .slick-dots li button {
+  background: #000;
+}
+
+.ant-carousel .slick-dots li.slick-active button {
+  background: #1976d2;
+
+  font-size: 2px;
+}

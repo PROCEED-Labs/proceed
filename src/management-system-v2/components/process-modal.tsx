@@ -1,9 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, ModalProps } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  App,
+  Collapse,
+  CollapseProps,
+  Typography,
+  ModalProps,
+  Carousel,
+  Card,
+} from 'antd';
+import Icon from '@ant-design/icons';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
+import './process-modal-carousel.css';
 
 type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -15,7 +28,7 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
   modalProps?: ModalProps;
 };
 
-const ProcessModal = <T extends { name: string; description: string }>({
+const ProcessModal = <T extends { name: string; description: string; userDefinedId?: string }>({
   open,
   title,
   okText,
@@ -35,14 +48,6 @@ const ProcessModal = <T extends { name: string; description: string }>({
       form.setFieldsValue(initialData);
     }
   }, [form, initialData]);
-
-  const items: CollapseProps['items'] =
-    (initialData?.length ?? 0) > 1
-      ? initialData?.map((data, index) => ({
-          label: data.name,
-          children: <ProcessInputs index={index} />,
-        }))
-      : undefined;
 
   const onOk = async () => {
     try {
@@ -141,7 +146,15 @@ const ProcessModal = <T extends { name: string; description: string }>({
         {!initialData || initialData.length === 1 ? (
           <ProcessInputs index={0} />
         ) : (
-          <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
+          // <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
+          <Carousel arrows infinite={false} style={{ padding: '0px 25px 0px 25px' }}>
+            {initialData &&
+              initialData.map((process, index) => (
+                <Card key={index}>
+                  <ProcessInputs key={index} index={index} />
+                </Card>
+              ))}
+          </Carousel>
         )}
       </Form>
     </Modal>
@@ -168,6 +181,13 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
         rules={[{ required: false, message: 'Please fill out the Process description' }]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
+      </Form.Item>
+      <Form.Item
+        name={[index, 'userDefinedId']}
+        label="User Defined ID"
+        rules={[{ required: false, message: 'Please enter a unique ID for the process.' }]}
+      >
+        <Input />
       </Form.Item>
     </>
   );

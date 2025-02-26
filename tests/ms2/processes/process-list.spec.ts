@@ -57,10 +57,13 @@ test('export a single process', async ({ processListPage }) => {
   let modal = await openModal(page, () =>
     page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
   );
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await modal.getByRole('radio', { name: 'bpmn' }).click();
+  await expect(page.getByTestId('Share Modal').getByRole('dialog')).toBeVisible();
+  await modal.getByRole('button', { name: 'Download Diagram as BPMN' }).click();
   const { filename: bpmnFilename, content: exportBpmn } = await processListPage.handleDownload(
-    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
+    async () =>
+      await closeModal(modal, () =>
+        modal.getByRole('button', { name: 'Download', exact: true }).click(),
+      ),
     'string',
   );
   expect(bpmnFilename).toMatch(/.bpmn$/);
@@ -73,9 +76,12 @@ test('export a single process', async ({ processListPage }) => {
   modal = await openModal(page, () =>
     page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
   );
-  await modal.getByRole('radio', { name: 'svg' }).click();
+  await modal.getByRole('button', { name: 'Download Diagram as SVG' }).click();
   const { filename: svgFilename, content: exportSvg } = await processListPage.handleDownload(
-    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
+    async () =>
+      await closeModal(modal, () =>
+        modal.getByRole('button', { name: 'Download', exact: true }).click(),
+      ),
     'string',
   );
 
@@ -95,10 +101,13 @@ test('export a single process', async ({ processListPage }) => {
   modal = await openModal(page, () =>
     page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click(),
   );
-  await modal.getByRole('radio', { name: 'svg' }).click();
+  await modal.getByRole('button', { name: 'Download Diagram as SVG' }).click();
   await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
   const { filename: multiSvgFilename, content: svgZip } = await processListPage.handleDownload(
-    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
+    async () =>
+      await closeModal(modal, () =>
+        modal.getByRole('button', { name: 'Download', exact: true }).click(),
+      ),
     'zip',
   );
 
@@ -152,9 +161,12 @@ test('export a single process', async ({ processListPage }) => {
   modal = await openModal(page, () =>
     page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
   );
-  await modal.getByRole('radio', { name: 'png' }).click();
+  await page.getByRole('button', { name: 'Download Diagram as PNG' }).click();
   const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
+    async () =>
+      await closeModal(modal, () =>
+        modal.getByRole('button', { name: 'Download', exact: true }).click(),
+      ),
     'string',
   );
 
@@ -165,12 +177,14 @@ test('export a single process', async ({ processListPage }) => {
   modal = await openModal(page, () =>
     page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click(),
   );
-  await modal.getByRole('radio', { name: 'png' }).click();
-  // the selection of the "with selected subprocesses" option should still be valid
-  await expect(modal.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
+  await page.getByRole('button', { name: 'Download Diagram as PNG' }).click();
+  await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
 
   const { filename: multiPngFilename, content: pngZip } = await processListPage.handleDownload(
-    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
+    async () =>
+      await closeModal(modal, () =>
+        modal.getByRole('button', { name: 'Download', exact: true }).click(),
+      ),
     'zip',
   );
 
@@ -210,10 +224,13 @@ test('export multiple processes', async ({ processListPage }) => {
 
   let modal = await openModal(page, () => page.getByLabel('export').first().click());
 
-  await modal.getByRole('radio', { name: 'bpmn' }).click();
+  await modal.getByRole('button', { name: 'Download Diagram as BPMN' }).click();
 
   const { filename, content: zip } = await processListPage.handleDownload(
-    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
+    async () =>
+      await closeModal(modal, () =>
+        modal.getByRole('button', { name: 'Download', exact: true }).click(),
+      ),
     'zip',
   );
 
@@ -251,11 +268,14 @@ test('export multiple processes', async ({ processListPage }) => {
 
   modal = await openModal(page, () => page.getByLabel('export').first().click());
 
-  await modal.getByRole('radio', { name: 'svg' }).click();
+  await modal.getByRole('button', { name: 'Download Diagram as SVG' }).click();
   await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
 
   const { filename: svgZipFilename, content: svgZip } = await processListPage.handleDownload(
-    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
+    async () =>
+      await closeModal(modal, () =>
+        modal.getByRole('button', { name: 'Download', exact: true }).click(),
+      ),
     'zip',
   );
 
@@ -276,14 +296,16 @@ test('export multiple processes', async ({ processListPage }) => {
 
   modal = await openModal(page, () => page.getByLabel('export').first().click());
 
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
+  await expect(page.getByTestId('Share Modal').getByRole('dialog')).toBeVisible();
 
-  await modal.getByRole('radio', { name: 'png' }).click();
-  // the selection of the "with selected subprocesses" option should still be valid
-  await expect(modal.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
+  await page.getByRole('button', { name: 'Download Diagram as PNG' }).click();
+  await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
 
   const { filename: pngZipFilename, content: pngZip } = await processListPage.handleDownload(
-    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
+    async () =>
+      await closeModal(modal, () =>
+        modal.getByRole('button', { name: 'Download', exact: true }).click(),
+      ),
     'zip',
   );
 
@@ -370,7 +392,7 @@ test('create a new folder and remove it with context menu', async ({ processList
   const { page } = processListPage;
   const folderId = crypto.randomUUID();
 
-  await page.getByText('No data').click({ button: 'right' });
+  await page.getByRole('button', { name: 'No data No data' }).click({ button: 'right' });
   let modal = await openModal(page, () =>
     page.getByRole('menuitem', { name: 'Create Folder' }).click(),
   );
@@ -380,7 +402,7 @@ test('create a new folder and remove it with context menu', async ({ processList
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
-  /* The playwright browser crops it's view which can cause unwanted scroling */
+  /* The playwright browser crops it's view which can cause unwanted scrolling */
   /* Clicking calls scrollIntoView before clicking, which can cause the context menu to close */
   /* Workauround: */
   await page.evaluate(() => window!.scrollTo(0, 0));
@@ -425,7 +447,7 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // create folder
   const folderId = crypto.randomUUID();
-  await page.getByText('No data').click({ button: 'right' });
+  await page.getByRole('button', { name: 'No data No data' }).click({ button: 'right' });
   let modal = await openModal(page, () =>
     page.getByRole('menuitem', { name: 'Create Folder' }).click(),
   );
@@ -833,12 +855,10 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if correct modal opened */
     const modalTitle = await modal.locator('div[class="ant-modal-title"]');
-    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
-      /export/i,
-    );
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/Share/i);
 
     // close modal to allow cleanup to work as expected
-    await closeModal(modal, () => modal.getByRole('button', { name: 'Cancel' }).click());
+    await closeModal(modal, () => modal.getByRole('button', { name: 'Close' }).click());
   });
 });
 
@@ -1038,7 +1058,7 @@ test.describe('Click-Controls in Process-List', () => {
 });
 
 test.describe('Favourites', () => {
-  test('Add new Favourite as Guest and recieve info message', async ({ processListPage }) => {
+  test('Add new Favourite as Guest and receive info message', async ({ processListPage }) => {
     const { page } = processListPage;
 
     /* Create a Process */
@@ -1338,7 +1358,7 @@ test.describe('Selecting Processes', () => {
       numberOfProcesses += adding;
     }
 
-    /* Add Copys to processListPage.processDefinitionIds */
+    /* Add Copies to processListPage.processDefinitionIds */
     /* Search for '(Copy)' */
     const inputSearch = await page.locator('.ant-input-affix-wrapper').getByPlaceholder(/search/i);
     await inputSearch.fill('(Copy)');
@@ -1398,7 +1418,7 @@ test.describe('Selecting Processes', () => {
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
     await expect(indicator).toContainText('1');
 
-    /* Select all visible works aswell */
+    /* Select all visible works as well */
     await page.getByLabel('Select all').check();
 
     /* Check */
@@ -1436,7 +1456,7 @@ test.describe('Selecting Processes', () => {
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
     await expect(indicator).toContainText('1');
 
-    /* Select all visible works aswell */
+    /* Select all visible works as well */
     await page.getByLabel('Select all').check();
 
     /* Check */

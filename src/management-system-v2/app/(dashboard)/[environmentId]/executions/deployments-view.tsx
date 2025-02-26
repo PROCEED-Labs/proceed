@@ -61,7 +61,7 @@ const DeploymentsView = ({
           for (const version of process.versions)
             if (+version.createdOn > +latestVersion.createdOn) latestVersion = version;
 
-          if (!latestVersion) throw { error: userError('Process has no versions') };
+          if (!latestVersion) throw userError('Process has no versions').error;
 
           return await serverDeployProcess(
             process.id,

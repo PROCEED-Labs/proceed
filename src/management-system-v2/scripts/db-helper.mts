@@ -130,7 +130,7 @@ async function ensureDockerContainerRunning(): Promise<void> {
 
 async function applyPrismaSchema(): Promise<void> {
   try {
-    execaSync('yarn', ['prisma', 'migrate', 'deploy']);
+    execaSync('yarn', ['prisma', 'migrate', 'dev']);
     console.log('Schema applied successfully.');
   } catch (error) {
     console.error('Failed to apply Prisma schema:', error);

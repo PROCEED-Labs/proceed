@@ -30,7 +30,7 @@ export async function engineRequest<
     delete params.queryParams;
   }
 
-  const builtEndpoint = 'params' in params ? _endpointBuilder(endpoint, params as any) : endpoint;
+  const builtEndpoint = _endpointBuilder(endpoint, params);
 
   if (engine.type === 'mqtt') {
     let spaceEngineClient;

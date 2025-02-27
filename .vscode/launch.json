@@ -64,6 +64,12 @@
       "webRoot": "${workspaceFolder}/src/management-system-v2"
     },
     {
+      "name": "MS2: Debug server-side",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev"
+    },
+    {
       "type": "chrome",
       "request": "attach",
       "name": "Attach to puppeteer client",

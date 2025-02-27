@@ -170,6 +170,7 @@ export function toHtml(json: string) {
         resolver={{
           ...Elements,
           Image: Elements.ExportImage,
+          Input: Elements.ExportInput,
         }}
       >
         <Frame data={json} />

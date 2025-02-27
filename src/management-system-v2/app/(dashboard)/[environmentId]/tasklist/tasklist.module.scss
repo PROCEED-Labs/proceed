@@ -96,5 +96,27 @@
 
   .taskView {
     flex-grow: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .overlay {
+      position: absolute;
+      text-align: center;
+      color: rgb(70, 70, 70);
+
+      h1 {
+        font-size: 28px;
+        font-weight: bold;
+      }
+    }
+  }
+
+  .completed {
+    iframe {
+      opacity: 0.25;
+      pointer-events: none;
+    }
   }
 }

@@ -1,8 +1,8 @@
 'use client';
 import { Button, Checkbox, Dropdown, Grid, List, MenuProps, Select, Slider, Space } from 'antd';
 import UserTaskCard from './userTaskCard';
-import userTaskHTML from './user-task';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import cn from 'classnames';
 
 import { FaFilter, FaSort } from 'react-icons/fa6';
 
@@ -11,6 +11,16 @@ import { IoArrowBack } from 'react-icons/io5';
 
 import styles from './tasklist.module.scss';
 import ScrollBar from '@/components/scrollbar';
+import {
+  completeTasklistEntry,
+  getTasklistEntryHTML,
+  setTasklistEntryVariableValues,
+} from '@/lib/engines/server-actions';
+import { useEnvironment } from '@/components/auth-can';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+
+import { useRouter } from 'next/navigation';
+import { TaskListEntry } from '@/lib/engines/tasklist';
 
 const StatusSelection = ({
   selectedValues,
@@ -78,26 +88,16 @@ const SliderRangeWithText = ({
   );
 };
 
-const Tasklist = ({
-  userTasks,
-}: {
-  userTasks: {
-    id: number;
-    name: string;
-    status: string;
-    owner: string;
-    startTime: number;
-    endTime: number;
-    priority: number;
-    progress: number;
-  }[];
-}) => {
+const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
   const breakpoint = Grid.useBreakpoint();
+  const router = useRouter();
 
-  const [selectedUserTaskID, setSelectedUserTaskID] = useState<number | null>(null);
+  const { spaceId } = useEnvironment();
+
+  const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [statusSelectionFilter, setStatusSelectionFilter] = useState([
+  const [stateSelectionFilter, setStateSelectionFilter] = useState([
     'READY',
     'ACTIVE',
     'COMPLETED',
@@ -109,10 +109,34 @@ const Tasklist = ({
   const [groupsFilter, setGroupsFilter] = useState<string[]>([]);
   const [selectedSortItem, setSelectedSortItem] = useState({ ascending: true, value: 'startTime' });
 
+  const selectedUserTaskIsCompleted =
+    selectedUserTaskID &&
+    userTasks.find((uT) => uT.id === selectedUserTaskID)?.state === 'COMPLETED';
+
+  const [userTaskHtml, setUserTaskHtml] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (selectedUserTaskID) {
+      const userTask = userTasks.find((uT) => uT.id === selectedUserTaskID);
+
+      if (!userTask) return;
+
+      wrapServerCall({
+        fn: () =>
+          getTasklistEntryHTML(spaceId, userTask.instanceID, userTask.taskId, userTask.startTime),
+        onSuccess: (html) => {
+          setUserTaskHtml(html);
+        },
+      });
+
+      return () => setUserTaskHtml(undefined);
+    }
+  }, [spaceId, selectedUserTaskID, userTasks]);
+
   const filteredAndSortedUserTasks = useMemo(() => {
     const showingUserTasks = userTasks.filter((uT) => {
       return (
-        statusSelectionFilter.includes(uT.status) &&
+        stateSelectionFilter.includes(uT.state) &&
         uT.priority >= priorityRangeFilter[0] &&
         uT.priority <= priorityRangeFilter[1] &&
         uT.progress >= progressRangeFilter[0] &&
@@ -153,11 +177,11 @@ const Tasklist = ({
       case 'state':
         showingUserTasks.sort((a, b) => {
           const stateOrder = ['READY', 'ACTIVE', 'COMPLETED', 'PAUSED'];
-          if (a.status === b.status) {
+          if (a.state === b.state) {
             selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
           }
-          const indexA = stateOrder.findIndex((state) => a.status === state);
-          const indexB = stateOrder.findIndex((state) => b.status === state);
+          const indexA = stateOrder.findIndex((state) => a.state === state);
+          const indexB = stateOrder.findIndex((state) => b.state === state);
           return selectedSortItem.ascending ? indexA - indexB : indexB - indexA;
         });
         break;
@@ -165,7 +189,7 @@ const Tasklist = ({
 
     return showingUserTasks;
   }, [
-    statusSelectionFilter,
+    stateSelectionFilter,
     priorityRangeFilter,
     progressRangeFilter,
     usersFilter,
@@ -188,9 +212,9 @@ const Tasklist = ({
           key: '1-1',
           label: (
             <StatusSelection
-              selectedValues={statusSelectionFilter}
+              selectedValues={stateSelectionFilter}
               onSelectionChange={(selectedValues) => {
-                setStatusSelectionFilter(selectedValues);
+                setStateSelectionFilter(selectedValues);
               }}
             ></StatusSelection>
           ),
@@ -436,12 +460,66 @@ const Tasklist = ({
         </div>
       </div>
       {(selectedUserTaskID ?? breakpoint.xl) && (
-        <div className={styles.taskView}>
-          {selectedUserTaskID ?? (
-            <iframe
-              srcDoc={userTaskHTML}
-              style={{ width: '100%', height: '100%', border: 0 }}
-            ></iframe>
+        <div className={cn(styles.taskView, { [styles.completed]: selectedUserTaskIsCompleted })}>
+          {userTaskHtml && (
+            <>
+              <iframe
+                ref={(r) => {
+                  if (r?.contentWindow) {
+                    r.contentWindow.PROCEED_DATA = {
+                      post: async (
+                        path: string,
+                        body: { [key: string]: any },
+                        query: { instanceID: string; userTaskID: string },
+                      ) => {
+                        console.log(path, body, query);
+                        if (path === '/tasklist/api/userTask') {
+                          wrapServerCall({
+                            fn: () =>
+                              completeTasklistEntry(
+                                spaceId,
+                                query.instanceID,
+                                query.userTaskID,
+                                body,
+                              ),
+                            onSuccess: () => router.refresh(),
+                          });
+                        }
+                      },
+                      put: async (
+                        path: string,
+                        body: { [key: string]: any },
+                        query: { instanceID: string; userTaskID: string },
+                      ) => {
+                        console.log(path, body, query);
+                        // if (path === '/tasklist/api/milestone') {
+                        // TODO: implement milestone handling
+                        // }
+                        if (path === '/tasklist/api/variable') {
+                          wrapServerCall({
+                            fn: () =>
+                              setTasklistEntryVariableValues(
+                                spaceId,
+                                query.instanceID,
+                                query.userTaskID,
+                                body,
+                              ),
+                            onSuccess: () => router.refresh(),
+                          });
+                        }
+                      },
+                    };
+                  }
+                }}
+                srcDoc={userTaskHtml}
+                style={{ width: '100%', height: '100%', border: 0 }}
+              ></iframe>
+              {selectedUserTaskIsCompleted && (
+                <div className={styles.overlay}>
+                  <h1>This task is completed!</h1>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

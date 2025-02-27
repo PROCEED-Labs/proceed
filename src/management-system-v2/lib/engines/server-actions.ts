@@ -19,8 +19,16 @@ import {
   getSpaceEngines as getSpaceEnginesFromDb,
   getSpaceEngineByAddress as getSpaceEngineByAddressFromDb,
 } from '@/lib/data/db/space-engines';
+
 import { startInstanceOnMachine } from './instances';
-import { asyncFilter } from '../helpers/javascriptHelpers';
+import { asyncFilter, asyncMap } from '../helpers/javascriptHelpers';
+import {
+  completeTasklistEntryOnMachine,
+  getTaskListFromMachine,
+  getTasklistEntryHTMLFromMachine,
+  setTasklistEntryVariableValuesOnMachine,
+} from './tasklist';
+import { truthyFilter } from '../typescript-utils';
 
 async function getCorrectTargetEngines(
   spaceId: string,
@@ -132,6 +140,132 @@ export async function startInstance(
     // TODO: if there are multiple possible engines maybe try to find the one that fits the best
     // (e.g. the one with the least load)
     return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+
+export async function getAvailableTaskListEntries(spaceId: string) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    const engines = await getCorrectTargetEngines(spaceId);
+
+    const results = (
+      await asyncMap(engines, async (engine) => {
+        try {
+          return getTaskListFromMachine(engine);
+        } catch (e) {
+          return null;
+        }
+      })
+    ).filter(truthyFilter);
+
+    return results.flat();
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+
+export async function getTasklistEntryHTML(
+  spaceId: string,
+  instanceId: string,
+  userTaskId: string,
+  startTime: number,
+) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await getDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      const userTaskIsCurrentlyRunning = instance.tokens.some(
+        (token) =>
+          token.currentFlowElementId === userTaskId &&
+          token.currentFlowElementStartTime === startTime,
+      );
+
+      const userTaskWasCompleted = instance.log.some(
+        (entry) => entry.flowElementId === userTaskId && entry.startTime === startTime,
+      );
+
+      return userTaskIsCurrentlyRunning || userTaskWasCompleted;
+    });
+
+    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+
+    return await getTasklistEntryHTMLFromMachine(engines[0], instanceId, userTaskId, startTime);
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+
+export async function setTasklistEntryVariableValues(
+  spaceId: string,
+  instanceId: string,
+  userTaskId: string,
+  variables: { [key: string]: any },
+) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await getDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      return instance.tokens.some((token) => token.currentFlowElementId === userTaskId);
+    });
+
+    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+
+    await setTasklistEntryVariableValuesOnMachine(engines[0], instanceId, userTaskId, variables);
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+
+export async function completeTasklistEntry(
+  spaceId: string,
+  instanceId: string,
+  userTaskId: string,
+  variables: { [key: string]: any },
+) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await getDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      return instance.tokens.some((token) => token.currentFlowElementId === userTaskId);
+    });
+
+    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+
+    await completeTasklistEntryOnMachine(engines[0], instanceId, userTaskId, variables);
   } catch (e) {
     return userError('Something went wrong');
   }

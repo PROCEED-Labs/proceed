@@ -240,11 +240,15 @@ async function main() {
       await applyPrismaSchema();
     } else {
       console.log(
-        '\x1b[32m You are not in main branch! Skipping Prisma schema update for default db from non-main branch.\x1b[0m',
+        '\x1b[33m You are not in main branch! Skipping Prisma schema update for default db from non-main branch.\x1b[0m',
       );
       console.log(
-        '\x1b[41mPlease run `yarn dev-ms-db-new-structure` to create/switch db for your branch.\x1b[0m',
+        '\x1b[32m If you want to apply schema changes to default db, please checkout the main branch and run the command `yarn dev-ms-db`.\x1b[0m',
       );
+      console.log(
+        '\x1b[35m Alternatively,\x1b[0m \x1b[41m Please run `yarn dev-ms-db-new-structure` to create/switch db for your current branch.\x1b[0m',
+      );
+      console.log('');
     }
   }
 }

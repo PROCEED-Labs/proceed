@@ -61,7 +61,9 @@ const environmentVariables = {
 
     GUEST_REFERENCE_SECRET: z.string(),
 
+    //Note: needed for cloud deployment with gcp bucket
     GOOGLE_CLOUD_BUCKET_NAME: z.string().optional(),
+    PROCEED_GCP_BUCKET_KEY_PATH: z.string().optional(),
   },
   development: {
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),

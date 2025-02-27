@@ -58,6 +58,25 @@ class TaskListTab extends DisplayItem {
     let variables;
     let milestonesData;
 
+    function getVariableStateAtUserTaskEnd(userTask, instance) {
+      const variables = {};
+
+      Object.entries(instance.variables).map(([key, { value, log }]) => {
+        for (const entry of log) {
+          if (entry.changedTime > userTask.endTime + 10) {
+            value = entry.oldValue;
+            break;
+          }
+        }
+
+        variables[key] = value;
+      });
+
+      Object.entries(userTask.variableChanges).forEach(([key, value]) => (variables[key] = value));
+
+      return variables;
+    }
+
     if (engine) {
       userTask = engine.userTasks.find(
         (userTask) =>
@@ -78,8 +97,9 @@ class TaskListTab extends DisplayItem {
         // get the data from the instance (will look at the data of the token that currently resides on this user task)
         milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
       } else {
+        const instance = engine.getInstanceInformation(instanceId);
         // use the data in the user task if it exists (this is the case when the user task has already ended)
-        variables = userTask.variableChanges || {};
+        variables = getVariableStateAtUserTaskEnd(userTask, instance);
         // use the data in the user task if it exists (this is the case when the user task has already ended)
         milestonesData = userTask.milestones || {};
       }
@@ -100,7 +120,8 @@ class TaskListTab extends DisplayItem {
       );
 
       definitionId = userTask.definitionId;
-      variables = userTaskInstance.variables;
+
+      variables = getVariableStateAtUserTaskEnd(userTask, userTaskInstance);
 
       if (userTaskToken) {
         milestonesData = userTaskToken.milestones;

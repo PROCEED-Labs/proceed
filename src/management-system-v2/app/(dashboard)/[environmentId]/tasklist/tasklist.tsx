@@ -97,21 +97,18 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [stateSelectionFilter, setStateSelectionFilter] = useState([
-    'READY',
-    'ACTIVE',
-    'COMPLETED',
-    'PAUSED',
-  ]);
+  const [stateSelectionFilter, setStateSelectionFilter] = useState(['READY', 'ACTIVE', 'PAUSED']);
   const [priorityRangeFilter, setPriorityRangeFilter] = useState<[number, number]>([1, 10]);
   const [progressRangeFilter, setProgressRangeFilter] = useState<[number, number]>([0, 100]);
   const [usersFilter, setUsersFilter] = useState<string[]>([]);
   const [groupsFilter, setGroupsFilter] = useState<string[]>([]);
   const [selectedSortItem, setSelectedSortItem] = useState({ ascending: true, value: 'startTime' });
 
-  const selectedUserTaskIsCompleted =
-    selectedUserTaskID &&
-    userTasks.find((uT) => uT.id === selectedUserTaskID)?.state === 'COMPLETED';
+  const selectedUserTask = selectedUserTaskID
+    ? userTasks.find((uT) => uT.id === selectedUserTaskID)
+    : undefined;
+  const selectedUserTaskIsCompleted = selectedUserTask?.state === 'COMPLETED';
+  const selectedUserTaskIsPaused = selectedUserTask?.state === 'PAUSED';
 
   const [userTaskHtml, setUserTaskHtml] = useState<string | undefined>();
 
@@ -460,7 +457,12 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
         </div>
       </div>
       {(selectedUserTaskID ?? breakpoint.xl) && (
-        <div className={cn(styles.taskView, { [styles.completed]: selectedUserTaskIsCompleted })}>
+        <div
+          className={cn(styles.taskView, {
+            [styles.completed]: selectedUserTaskIsCompleted,
+            [styles.paused]: selectedUserTaskIsPaused,
+          })}
+        >
           {userTaskHtml && (
             <>
               <iframe
@@ -514,9 +516,10 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
                 srcDoc={userTaskHtml}
                 style={{ width: '100%', height: '100%', border: 0 }}
               ></iframe>
-              {selectedUserTaskIsCompleted && (
+              {(selectedUserTaskIsCompleted || selectedUserTaskIsPaused) && (
                 <div className={styles.overlay}>
-                  <h1>This task is completed!</h1>
+                  {selectedUserTaskIsCompleted && <h1>This task is completed!</h1>}
+                  {selectedUserTaskIsPaused && <h1>This task is paused!</h1>}
                 </div>
               )}
             </>

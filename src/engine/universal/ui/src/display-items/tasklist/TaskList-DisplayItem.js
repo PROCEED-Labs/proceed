@@ -63,7 +63,7 @@ class TaskListTab extends DisplayItem {
 
       Object.entries(instance.variables).map(([key, { value, log }]) => {
         for (const entry of log) {
-          if (entry.changedTime > userTask.endTime + 10) {
+          if (userTask.endTime && entry.changedTime > userTask.endTime + 10) {
             value = entry.oldValue;
             break;
           }
@@ -72,7 +72,11 @@ class TaskListTab extends DisplayItem {
         variables[key] = value;
       });
 
-      Object.entries(userTask.variableChanges).forEach(([key, value]) => (variables[key] = value));
+      if (userTask.variableChanges) {
+        Object.entries(userTask.variableChanges).forEach(
+          ([key, value]) => (variables[key] = value),
+        );
+      }
 
       return variables;
     }

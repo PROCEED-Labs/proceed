@@ -113,7 +113,8 @@
     }
   }
 
-  .completed {
+  .completed,
+  .paused {
     iframe {
       opacity: 0.25;
       pointer-events: none;

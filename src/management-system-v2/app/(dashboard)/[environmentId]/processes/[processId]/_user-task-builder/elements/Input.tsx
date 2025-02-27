@@ -19,7 +19,7 @@ type InputProps = {
 };
 
 export const ExportInput: UserComponent<InputProps> = ({
-  label,
+  label = '',
   type = 'text',
   defaultValue = '',
   labelPosition = 'top',
@@ -41,9 +41,16 @@ export const ExportInput: UserComponent<InputProps> = ({
       >
         {labelPosition !== 'none' && (
           <div style={{ marginRight: labelPosition === 'left' ? '8px' : 0, position: 'relative' }}>
-            <label htmlFor={inputId} style={{ whiteSpace: 'nowrap' }}>
-              {label}
-            </label>
+            <EditableText
+              style={{ whiteSpace: 'nowrap' }}
+              value={label}
+              active={false}
+              onStopEditing={() => { }}
+              tagName="label"
+              htmlFor={inputId}
+              onClick={() => { }}
+              onChange={() => { }}
+            />
           </div>
         )}
 

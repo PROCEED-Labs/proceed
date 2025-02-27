@@ -252,7 +252,7 @@ export async function deleteProcessArtifact(
   processId?: string,
   tx?: Prisma.TransactionClient,
 ): Promise<boolean> {
-  const dbMutator = tx ? tx : db;
+  const dbMutator = tx || db;
 
   const artifact = await getArtifactMetaData(fileNameOrPath, isFilePath);
   if (!artifact) {
@@ -269,11 +269,11 @@ export async function deleteProcessArtifact(
     });
   }
   // Check if there are any remaining references
-  const remainingReferencesCount = await db.artifactProcessReference.count({
+  const remainingReferencesCount = await dbMutator.artifactProcessReference.count({
     where: { artifactId: artifact.id },
   });
 
-  const remainingVersionReferencesCount = await db.artifactVersionReference.count({
+  const remainingVersionReferencesCount = await dbMutator.artifactVersionReference.count({
     where: { artifactId: artifact.id },
   });
 

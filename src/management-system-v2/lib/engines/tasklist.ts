@@ -2,7 +2,6 @@ import 'server-only';
 
 import { Engine } from './machines';
 import { engineRequest } from './endpoints';
-import { asyncMap } from '../helpers/javascriptHelpers';
 
 export type TaskListEntry = {
   id: string;
@@ -28,7 +27,6 @@ export async function getTaskListFromMachine(machine: Engine) {
     endpoint: '/tasklist/api/',
     engine: machine,
   })) as TaskListEntry[];
-  console.log(entries);
 
   return entries.map(({ id, instanceID, startTime, ...rest }) => ({
     ...rest,

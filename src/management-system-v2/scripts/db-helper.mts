@@ -234,21 +234,16 @@ async function main() {
 
   await updateEnvFile(dbName, config.envFile);
 
-  async function checkIfDefaultDBHasSchema() {
-    const result = await executePostgresCommand(
-      `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '_prisma_migrations');`,
-    );
-    return result === 't';
-  }
-
   if (options.init) {
     const isMainBranch = (await getCurrentBranch()) === 'main';
-    const defaultDbHasSchema = await checkIfDefaultDBHasSchema();
-    if (isMainBranch || (!isMainBranch && !defaultDbHasSchema)) {
+    if (isMainBranch) {
       await applyPrismaSchema();
     } else {
       console.log(
-        'Skipping Prisma schema update for default db from non-main branch.',
+        '\x1b[32m You are not in main branch! Skipping Prisma schema update for default db from non-main branch.\x1b[0m',
+      );
+      console.log(
+        '\x1b[41mPlease run `yarn dev-ms-db-new-structure` to create/switch db for your branch.\x1b[0m',
       );
     }
   }

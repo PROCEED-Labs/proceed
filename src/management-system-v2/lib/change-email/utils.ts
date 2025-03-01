@@ -1,8 +1,8 @@
 import 'server-only';
 
-import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { z } from 'zod';
 import { VerificationToken } from '../data/legacy/verification-tokens';
+import { env } from '../env-vars';
 
 async function createHash(message: string) {
   const msgUint8 = new TextEncoder().encode(message);
@@ -14,7 +14,7 @@ async function createHash(message: string) {
 }
 
 export function getTokenHash(token: string) {
-  return createHash(`${token}${nextAuthOptions.secret}`);
+  return createHash(`${token}${env.NEXTAUTH_SECRET}`);
 }
 
 export async function createChangeEmailVerificationToken({

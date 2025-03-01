@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/components/auth';
 import CreateOrganizationPage from './client-page';
-import { getProviders } from '../api/auth/[...nextauth]/auth-options';
+import { getProviders } from '@/lib/auth';
 import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema';
 import { addEnvironment } from '@/lib/data/legacy/iam/environments';
 import { userError } from '@/lib/user-error';

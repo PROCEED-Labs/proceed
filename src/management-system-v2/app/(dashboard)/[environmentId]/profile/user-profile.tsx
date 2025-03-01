@@ -1,10 +1,10 @@
 'use client';
 
-import { FC, ReactNode, useState } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
-import { signOut } from 'next-auth/react';
+import { getCsrfToken, signOut } from 'next-auth/react';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';

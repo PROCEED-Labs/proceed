@@ -56,7 +56,7 @@ export type User = z.infer<typeof UserSchema> & { id: string };
 export const OauthAccountSchema = z.object({
   userId: z.string(),
   provider: z.string(),
-  type: z.enum(['oauth', 'email', 'credentials']),
+  type: z.enum(['oauth', 'email', 'credentials', 'oidc', 'webauthn']),
   providerAccountId: z.string(),
 
   // At the time we don't store tokens

@@ -125,7 +125,7 @@ const nextAuthOptions: NextAuthConfig = {
           return;
         }
 
-        deleteUser(user.id);
+        await deleteUser(user.id);
       }
     },
   },

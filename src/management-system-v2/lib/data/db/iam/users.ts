@@ -255,16 +255,35 @@ export async function updateGuestUserLastSigninTime(
 export async function deleteInactiveGuestUsers(
   inactiveTimeInMS: number,
   tx?: Prisma.TransactionClient,
-) {
-  const dbMutator = tx || db;
+): Promise<{ count: number }> {
+  // if no tx, start own transaction
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await deleteInactiveGuestUsers(inactiveTimeInMS, trx);
+    });
+  }
 
-  const inactiveTime = new Date(Date.now() - inactiveTimeInMS);
-
-  await dbMutator.guestSignin.deleteMany({
+  const cutoff = new Date(Date.now() - inactiveTimeInMS);
+  const staleSignins = await tx.guestSignin.findMany({
     where: {
-      lastSigninAt: {
-        lt: inactiveTime,
-      },
+      lastSigninAt: { lt: cutoff },
+    },
+    select: { userId: true },
+  });
+  if (staleSignins.length === 0) return { count: 0 };
+
+  const userIds = staleSignins.map((s) => s.userId);
+
+  await tx.guestSignin.deleteMany({
+    where: {
+      lastSigninAt: { lt: cutoff },
+    },
+  });
+
+  return await tx.user.deleteMany({
+    where: {
+      id: { in: userIds },
+      isGuest: true,
     },
   });
 }

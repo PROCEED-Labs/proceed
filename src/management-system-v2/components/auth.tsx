@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { auth } from '@/lib/auth';
+import { auth, signOut } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
 import { isMember } from '@/lib/data/db/iam/memberships';
@@ -10,11 +10,27 @@ import {
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
+import { getUserById } from '@/lib/data/db/iam/users';
+import { cookies } from 'next/headers';
 
 export const getCurrentUser = cache(async () => {
   const session = await auth();
   const userId = session?.user.id || '';
-  const systemAdmin = await getSystemAdminByUserId(userId);
+  const [systemAdmin, user] = await Promise.all([
+    getSystemAdminByUserId(userId),
+    userId !== '' && getUserById(userId),
+  ]);
+
+  // Sign out user if the id doesn't correspond to a user in the db
+  // We need to reset the cookie that stores the user id, this isn't possible
+  // inside a server components, so we need to redirect the user to an endpoint
+  // that logs him out, this endpoint needs to csrf protected, for this we use
+  // the user's csrf token (which was added by next-auth)
+  if (userId !== '' && !user) {
+    const cookieStore = cookies();
+    const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
+    redirect(`/api/private/signout?csrfToken=${csrfToken}`);
+  }
 
   return { session, userId, systemAdmin };
 });

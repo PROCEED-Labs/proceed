@@ -42,6 +42,7 @@ model User {
   oauthAccounts   OauthAccount[]
   roleMembers     RoleMember[]
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
+  guestSignin     GuestSignin?
 
   @@map("user")
 }
@@ -226,4 +227,12 @@ model Engine {
   lastEditedOn  DateTime @updatedAt
 
   @@map("engine")
+}
+
+model GuestSignin {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastSigninAt DateTime @default(now())
+
+  @@map("guest_signin")
 }

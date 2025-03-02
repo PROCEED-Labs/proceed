@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { deleteInactiveGuestUsers } from '@/lib/data/db/iam/users';
 
 // TODO: get this time from the database
-const GUESET_INACTIVE_TIME = 4; // 30 days
+const GUESET_INACTIVE_TIME = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 export async function POST(request: NextRequest) {
   try {

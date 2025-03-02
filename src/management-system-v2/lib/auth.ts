@@ -16,6 +16,7 @@ import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
 import { enableUseDB } from 'FeatureFlags';
+import { updateGuestUserLastSigninTime } from './data/db/iam/users';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -126,6 +127,12 @@ const nextAuthOptions: NextAuthConfig = {
         }
 
         await deleteUser(user.id);
+      }
+    },
+    async session({ session }) {
+      // TODO: this causes many db calls, we should debounce this with a significant delay
+      if (session.user.isGuest) {
+        await updateGuestUserLastSigninTime(session.user.id, new Date());
       }
     },
   },

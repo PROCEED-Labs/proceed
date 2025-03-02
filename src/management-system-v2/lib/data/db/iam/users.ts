@@ -83,7 +83,9 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
           isGuest: user.isGuest,
         },
       });
+
       await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+
       if ((await getSystemAdmins()).length === 0 && !user.isGuest)
         await addSystemAdmin(
           {
@@ -92,6 +94,14 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
           },
           tx,
         );
+
+      if (user.isGuest) {
+        await tx.guestSignin.create({
+          data: {
+            userId: user.id!,
+          },
+        });
+      }
     });
   } catch (error) {
     console.error('Error adding new user: ', error);
@@ -139,7 +149,7 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
     if (adminRole.members.length === 1) {
       orgsWithNoNextAdmin.push(environmentId);
     } else {
-      /* make the next available admin the owner of the organization, because once the user is deleted, 
+      /* make the next available admin the owner of the organization, because once the user is deleted,
       the space that the user owns will be deleted: ON DELETE CASCADE */
       await dbMutator.space.update({
         where: { id: environmentId },
@@ -149,6 +159,10 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
 
     if (orgsWithNoNextAdmin.length > 0)
       throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
+  }
+
+  if (user.isGuest) {
+    await dbMutator.guestSignin.delete({ where: { userId: userId } });
   }
 
   await dbMutator.user.delete({ where: { id: userId } });
@@ -219,6 +233,38 @@ export async function getOauthAccountByProviderId(provider: string, providerAcco
     where: {
       provider: provider,
       providerAccountId: providerAccountId,
+    },
+  });
+}
+
+export async function updateGuestUserLastSigninTime(
+  userId: string,
+  date: Date,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+  const user = await getUserById(userId, { throwIfNotFound: true });
+  if (!user.isGuest) throw new Error('User is not a guest user');
+
+  return await dbMutator.guestSignin.update({
+    where: { userId: userId },
+    data: { lastSigninAt: date },
+  });
+}
+
+export async function deleteInactiveGuestUsers(
+  inactiveTimeInMS: number,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const inactiveTime = new Date(Date.now() - inactiveTimeInMS);
+
+  await dbMutator.guestSignin.deleteMany({
+    where: {
+      lastSigninAt: {
+        lt: inactiveTime,
+      },
     },
   });
 }

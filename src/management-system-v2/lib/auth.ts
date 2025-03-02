@@ -23,6 +23,17 @@ const nextAuthOptions: NextAuthConfig = {
   session: {
     strategy: 'jwt',
   },
+  cookies: {
+    csrfToken: {
+      name: 'proceed.csrf-token',
+    },
+    callbackUrl: {
+      name: 'proceed.callback-url',
+    },
+    sessionToken: {
+      name: 'proceed.session-token',
+    },
+  },
   trustHost: true,
   providers: [
     CredentialsProvider({

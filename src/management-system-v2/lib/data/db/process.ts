@@ -1,11 +1,16 @@
 import { getFolderById } from './folders';
 import eventHandler from '../legacy/eventHandler.js';
 import logger from '../legacy/logging.js';
-import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
+import {
+  getProcessInfo,
+  getDefaultProcessMetaInfo,
+  BpmnAttributeType,
+  transformBpmnAttributes,
+} from '../../helpers/processHelpers';
 import {
   getDefinitionsVersionInformation,
-  getMetaDataFromElement,
-  getAllElements,
+  generateUserTaskFileName,
+  generateScriptTaskFileName,
 } from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
@@ -22,7 +27,7 @@ import {
 import { toCustomUTCString } from '@/lib/helpers/timeHelper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { copyFile } from '../file-manager/file-manager';
-import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
+import { ArtifactType, generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -86,7 +91,6 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       //departments: true,
       //variables: true,
       versions: true,
-      bpmn: includeBPMN,
     },
   });
   if (!process) {
@@ -106,7 +110,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   const convertedProcess = {
     ...process,
     //versions: convertedVersions,
-    bpmn: `<?xml version="1.0" encoding="UTF-8"?>${process.bpmn}`,
+    bpmn: includeBPMN ? await getProcessBpmn(processDefinitionsId) : null,
     shareTimestamp:
       typeof process.shareTimestamp === 'bigint'
         ? Number(process.shareTimestamp)
@@ -134,6 +138,7 @@ export async function checkIfProcessExists(processDefinitionsId: string) {
   if (!existingProcess) {
     throw new Error(`Process with id ${processDefinitionsId} does not exist!`);
   }
+  return existingProcess;
 }
 
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
@@ -183,6 +188,11 @@ export async function addProcess(
     throw new Error(`Process with id ${processDefinitionsId} already exists!`);
   }
 
+  const bpmnWithPlaceholders = await transformBpmnAttributes(
+    bpmn,
+    BpmnAttributeType.DB_PLACEHOLDER,
+  );
+
   // save process info
   try {
     await tx.process.create({
@@ -201,21 +211,15 @@ export async function addProcess(
         allowIframeTimestamp: metadata.allowIframeTimestamp,
         environmentId: metadata.environmentId,
         creatorId: metadata.creatorId,
+        userDefinedId: metadata.userDefinedId,
         //departments: { set: metadata.departments },
         //variables: { set: metadata.variables },
-        bpmn: bpmn,
+        bpmn: bpmnWithPlaceholders,
       },
     });
   } catch (error) {
     console.error('Error adding new process: ', error);
   }
-
-  await moveProcess({
-    processDefinitionsId,
-    newFolderId: metadata.folderId,
-    dontUpdateOldFolder: true,
-    tx,
-  });
 
   //if referencedProcessId is present, the process was copied from a shared process
   if (referencedProcessId) {
@@ -269,7 +273,7 @@ export async function updateProcess(
     try {
       await db.process.update({
         where: { id: processDefinitionsId },
-        data: { bpmn: newBpmn },
+        data: { bpmn: await transformBpmnAttributes(newBpmn, BpmnAttributeType.DB_PLACEHOLDER) },
       });
     } catch (error) {
       console.error('Error updating bpmn: ', error);
@@ -354,12 +358,14 @@ export async function updateProcessMetaData(
   processDefinitionsId: string,
   metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
-  checkIfProcessExists(processDefinitionsId);
+  const existingrocess = await checkIfProcessExists(processDefinitionsId);
   try {
     const updatedProcess = await db.process.update({
       where: { id: processDefinitionsId },
       data: {
         ...(metaChanges as any),
+        id: processDefinitionsId, // make sure the id is not changed
+        originalId: existingrocess.originalId || metaChanges.originalId, // originalId is only changed is not set yet
       },
     });
 
@@ -378,11 +384,15 @@ export async function updateProcessMetaData(
 export async function removeProcess(processDefinitionsId: string, tx?: Prisma.TransactionClient) {
   if (!tx) {
     return await db.$transaction(async (trx: Prisma.TransactionClient) => {
-      await removeProcess(processDefinitionsId, trx);
+      try {
+        await removeProcess(processDefinitionsId, trx);
+      } catch (error) {
+        throw error;
+      }
     });
   }
 
-  const process = await db.process.findUnique({
+  const process = await tx.process.findUnique({
     where: { id: processDefinitionsId },
     include: { artifactProcessReferences: { include: { artifact: true } } },
   });
@@ -390,16 +400,20 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
   if (!process) {
     throw new Error(`Process with id: ${processDefinitionsId} not found`);
   }
-  await Promise.all(
-    process.artifactProcessReferences.map((artifactRef) => {
-      deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
-    }),
-  );
 
-  // Remove from database
-  await tx.process.delete({ where: { id: processDefinitionsId } });
+  try {
+    await Promise.all(
+      process.artifactProcessReferences.map((artifactRef) => {
+        return deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
+      }),
+    );
 
-  eventHandler.dispatch('processRemoved', { processDefinitionsId });
+    await tx.process.delete({ where: { id: processDefinitionsId } });
+
+    eventHandler.dispatch('processRemoved', { processDefinitionsId });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /** Stores a new version of an existing process */
@@ -543,18 +557,36 @@ function removeExcessiveInformation(processInfo: Omit<ProcessMetadata, 'bpmn'>) 
 
 /** Returns the process definition for the process with the given id */
 export async function getProcessBpmn(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
   try {
     const process = await db.process.findUnique({
       where: {
         id: processDefinitionsId,
       },
       select: {
+        creator: { select: { id: true, firstName: true, lastName: true, username: true } },
+        space: { select: { id: true, name: true } },
         bpmn: true,
+        userDefinedId: true,
+        createdOn: true,
+        id: true,
+        name: true,
+        originalId: true,
       },
     });
-    return `<?xml version="1.0" encoding="UTF-8"?>\n${process?.bpmn}`;
+
+    if (!process) {
+      throw new Error('Process not found');
+    }
+
+    const processWithStringDate = {
+      ...process,
+      createdOn: toCustomUTCString(process.createdOn),
+    };
+    let bpmnWithDBValue = await transformBpmnAttributes(
+      processWithStringDate!,
+      BpmnAttributeType.ACTUAL_VALUE,
+    );
+    return bpmnWithDBValue;
   } catch (err) {
     logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
     throw new Error('Unable to find process bpmn!');
@@ -921,15 +953,20 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
   const oldNewFilenameMapping = await asyncMap(refs, async (ref) => {
     const { artifactId, artifact } = ref;
     const sourceFilePath = artifact.filePath;
+    const ext = sourceFilePath.split('.').pop();
     const destinationFilePath = generateProcessFilePath(artifact.fileName, destinationProcessId);
+    type typesWithFilename = Extract<ArtifactType, 'user-tasks' | 'script-tasks'>;
+    const filenameGenerators: Record<typesWithFilename, () => string> = {
+      'user-tasks': generateUserTaskFileName,
+      'script-tasks': generateScriptTaskFileName,
+    };
+
+    const generateFilename = filenameGenerators[artifact.artifactType as typesWithFilename];
     const { status, newFilename, newFilepath } = await copyFile(
       sourceFilePath,
       destinationFilePath,
-      {
-        newFilename: `${destinationProcessId}-${artifact.fileName}`,
-      },
+      { newFilename: generateFilename ? `${generateFilename()}.${ext}` : undefined },
     );
-
     if (status) {
       try {
         const { id: newArtifactId } = await db.artifact.create({

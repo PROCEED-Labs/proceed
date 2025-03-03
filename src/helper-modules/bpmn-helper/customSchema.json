@@ -305,22 +305,77 @@
       ]
     },
     {
-      "name": "creatorEnvironmentId",
+      "name": "creatorSpaceId",
       "extends": ["bpmn:Definitions"],
       "properties": [
         {
-          "name": "creatorEnvironmentId",
+          "name": "creatorSpaceId",
           "isAttr": true,
           "type": "String"
         }
       ]
     },
     {
-      "name": "creatorEnvironmentName",
+      "name": "creatorSpaceName",
       "extends": ["bpmn:Definitions"],
       "properties": [
         {
-          "name": "creatorEnvironmentName",
+          "name": "creatorSpaceName",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "creatorId",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "creatorId",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "creatorName",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "creatorName",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "creatorUsername",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "creatorUsername",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "creationDate",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "creationDate",
+          "isAttr": true,
+          "type": "Date"
+        }
+      ]
+    },
+    {
+      "name": "userDefinedId",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "userDefinedId",
           "isAttr": true,
           "type": "String"
         }

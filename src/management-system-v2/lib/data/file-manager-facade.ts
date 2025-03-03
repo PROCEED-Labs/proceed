@@ -207,6 +207,14 @@ export async function saveProcessArtifact(
   const usePresignedUrl = ['images', 'others'].includes(artifactType);
 
   try {
+    if (!generateNewFileName && !replaceFileContentOnly) {
+      const artifact = await getArtifactMetaData(newFileName, false);
+      // if artifact already exists, update the reference and return
+      if (artifact) {
+        await db.artifactProcessReference.create({ data: { artifactId: artifact.id, processId } });
+        return { presignedUrl: null, fileName: newFileName };
+      }
+    }
     // Save the file (local or presigned URL)
     const { presignedUrl, status } = await saveFile(
       filePath,
@@ -252,7 +260,7 @@ export async function deleteProcessArtifact(
   processId?: string,
   tx?: Prisma.TransactionClient,
 ): Promise<boolean> {
-  const dbMutator = tx ? tx : db;
+  const dbMutator = tx || db;
 
   const artifact = await getArtifactMetaData(fileNameOrPath, isFilePath);
   if (!artifact) {
@@ -269,11 +277,11 @@ export async function deleteProcessArtifact(
     });
   }
   // Check if there are any remaining references
-  const remainingReferencesCount = await db.artifactProcessReference.count({
+  const remainingReferencesCount = await dbMutator.artifactProcessReference.count({
     where: { artifactId: artifact.id },
   });
 
-  const remainingVersionReferencesCount = await db.artifactVersionReference.count({
+  const remainingVersionReferencesCount = await dbMutator.artifactVersionReference.count({
     where: { artifactId: artifact.id },
   });
 

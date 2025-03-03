@@ -15,6 +15,7 @@ import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints';
 import { asyncForEach } from '../helpers/javascriptHelpers';
+import { UserFacingError } from '../user-error';
 
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
 
@@ -132,7 +133,7 @@ async function dynamicDeployment(
 
   // there is no deployable machine known to the MS
   if (!preferredMachine) {
-    throw new Error('There is no machine the process can be deployed to.');
+    throw new UserFacingError('There is no machine the process can be deployed to.');
   }
 
   await deployProcessToMachines([preferredMachine], processesExportData);
@@ -145,7 +146,7 @@ async function staticDeployment(
   machines: Engine[],
 ) {
   const process = processesExportData.find(({ definitionId: id }) => id === definitionId);
-  if (!process) throw new Error('Process not found in processesExportData');
+  if (!process) throw new UserFacingError('Process not found in processesExportData');
   const bpmn = process.versions[version].bpmn;
 
   const nodeToMachineMapping = Object.values(await getElementMachineMapping(bpmn));
@@ -190,7 +191,7 @@ export async function deployProcess(
   method: 'static' | 'dynamic',
   machines: Engine[],
 ) {
-  if (machines.length === 0) throw new Error('No machines available for deployment');
+  if (machines.length === 0) throw new UserFacingError('No machines available for deployment');
 
   const processesExportData = await prepareExport(
     {

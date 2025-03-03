@@ -3,8 +3,13 @@ import { getPNGFromSVG } from './image-export';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import Modeler from 'bpmn-js/lib/Modeler';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
+import type ViewerType from 'bpmn-js/lib/Viewer';
+const BPMNViewer: Promise<typeof ViewerType> =
+  typeof window !== 'undefined'
+    ? import('bpmn-js/lib/Viewer').then((mod) => mod.default)
+    : (null as any);
 
-async function getPNG(modeler: BPMNCanvasRef | Modeler | NavigatedViewer) {
+async function getPNG(modeler: BPMNCanvasRef | Modeler | NavigatedViewer | ViewerType) {
   let bpmnXML;
   let rootElement;
   let selection;
@@ -45,16 +50,15 @@ async function getPNG(modeler: BPMNCanvasRef | Modeler | NavigatedViewer) {
  */
 
 export async function copyProcessImage(
-  modeler: BPMNCanvasRef | Modeler | NavigatedViewer,
-): Promise<Boolean> {
+  modeler: BPMNCanvasRef | Modeler | NavigatedViewer | ViewerType,
+) {
   try {
     // Check if clipboard writing is supported
     if (navigator.clipboard && 'write' in navigator.clipboard && window.ClipboardItem) {
       // this is necessary to avoid permission error in safari: can't call await before clipboard.write
       // https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': getPNG(modeler) })]);
-      console.log('Copied to clipboard');
-      return true;
+      return 'Copied to clipboard';
     } else {
       // Fallback: Download the image
       const blob = await getPNG(modeler);
@@ -72,23 +76,32 @@ export async function copyProcessImage(
  * @param modeler the modeler to copy the process image from
  */
 
-export async function shareProcessImage(modeler: BPMNCanvasRef) {
-  const blob = await getPNG(modeler);
-
+export async function shareProcessImage(
+  modeler: BPMNCanvasRef | Modeler | NavigatedViewer | ViewerType,
+) {
   const nav = navigator as Navigator;
-
   if ('canShare' in nav) {
     try {
       await nav.share({
-        files: [new File([blob], 'diagram.png', { type: 'image/png' })],
+        files: [new File([await getPNG(modeler)], 'diagram.png', { type: 'image/png' })],
       });
     } catch (err: any) {
-      if (!err.toString().includes('AbortError')) {
-        console.log('error occurred while sharing... ', err);
-      }
+      return false;
     }
   } else {
     console.log('Webshare api not supported');
-    await copyProcessImage(modeler);
+    return await copyProcessImage(modeler);
   }
+}
+
+export async function shareProcessImageFromXml(xml: string) {
+  const Viewer = await BPMNViewer;
+  const viewer = new Viewer();
+  await viewer.importXML(xml);
+
+  const ret = await shareProcessImage(viewer);
+
+  viewer.destroy();
+
+  return ret;
 }

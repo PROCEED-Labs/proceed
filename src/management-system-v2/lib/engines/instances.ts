@@ -13,7 +13,7 @@ export async function startInstanceOnMachine(
     method: 'post',
     endpoint: '/process/:definitionId/versions/:version/instance',
     engine: machine,
-    params: { definitionId, version: versionId },
+    pathParams: { definitionId, version: versionId },
     body: { variables },
   });
 

@@ -38,7 +38,8 @@ import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
 import { type BlocklyEditorRefType } from './blockly-editor';
 import { useCanEdit } from './modeler';
 import { useQuery } from '@tanstack/react-query';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse, userError } from '@/lib/user-error';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 
 type ScriptEditorProps = {
@@ -53,6 +54,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const [isScriptValid, setIsScriptValid] = useState(true);
   const [selectedEditor, setSelectedEditor] = useState<null | 'JS' | 'blockly'>(null); // JS or blockly
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const monacoEditorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
@@ -61,7 +63,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const canEdit = useCanEdit();
 
   const environment = useEnvironment();
-  const { modal: modalApi } = App.useApp();
+  const app = App.useApp();
 
   const blocklyRef = useRef<BlocklyEditorRefType>(null);
 
@@ -125,96 +127,73 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   };
 
   const handleSave = async () => {
-    if (modeler && filename && selectedElement) {
-      modeler.getModeling().updateProperties(selectedElement, {
-        fileName: filename,
-      });
+    if (saving || !modeler || !filename || !selectedElement || !selectedEditor) return;
 
-      if (selectedEditor === 'JS') {
-        await storeJSScript();
-      } else if (selectedEditor === 'blockly') {
-        await storeBlocklyScript();
-      }
-      setHasUnsavedChanges(false);
-    }
+    modeler.getModeling().updateProperties(selectedElement, {
+      fileName: filename,
+    });
+
+    setSaving(true);
+    await wrapServerCall({
+      fn: async () => {
+        const responses = await (selectedEditor === 'JS' ? storeJSScript() : storeBlocklyScript());
+        if (!responses) return userError('Invalid script, please try again');
+
+        // just use first error
+        return responses.find(isUserErrorResponse);
+      },
+      onSuccess: 'Script saved',
+      app,
+    });
+
+    setHasUnsavedChanges(false);
+    setSaving(false);
   };
 
   const storeJSScript = async () => {
-    if (filename && monacoEditorRef.current && monacoRef.current) {
-      const typescriptCode = monacoEditorRef.current.getValue();
+    if (!filename || !monacoEditorRef.current || !monacoRef.current) return;
+    const typescriptCode = monacoEditorRef.current.getValue();
 
-      // Transpile TS code to JS
-      const typescriptWorker = await monacoRef.current.languages.typescript.getTypeScriptWorker();
-      const editorModel = monacoEditorRef.current.getModel();
-      if (!editorModel) {
-        throw new Error(
-          'Could not get model from editor to transpile TypeScript code to JavaScript',
-        );
-      }
-      const client = await typescriptWorker(editorModel.uri);
-      const emitOutput = await client.getEmitOutput(editorModel.uri.toString());
-      const javascriptCode = emitOutput.outputFiles[0].text;
-
-      await deleteProcessScriptTask(processId, filename, 'xml', environment.spaceId).then(
-        (res) => res && console.error(res.error),
-      );
-      await saveProcessScriptTask(
-        processId,
-        filename,
-        'ts',
-        typescriptCode,
-        environment.spaceId,
-      ).then((res) => res && console.error(res.error));
-      await saveProcessScriptTask(
-        processId,
-        filename,
-        'js',
-        javascriptCode,
-        environment.spaceId,
-      ).then((res) => res && console.error(res.error));
+    // Transpile TS code to JS
+    const typescriptWorker = await monacoRef.current.languages.typescript.getTypeScriptWorker();
+    const editorModel = monacoEditorRef.current.getModel();
+    if (!editorModel) {
+      throw new Error('Could not get model from editor to transpile TypeScript code to JavaScript');
     }
+    const client = await typescriptWorker(editorModel.uri);
+    const emitOutput = await client.getEmitOutput(editorModel.uri.toString());
+    const javascriptCode = emitOutput.outputFiles[0].text;
+
+    return await Promise.all([
+      deleteProcessScriptTask(processId, filename, 'xml', environment.spaceId),
+      saveProcessScriptTask(processId, filename, 'ts', typescriptCode, environment.spaceId),
+      saveProcessScriptTask(processId, filename, 'js', javascriptCode, environment.spaceId),
+    ]);
   };
 
   const storeBlocklyScript = async () => {
-    if (filename && isScriptValid && blocklyRef.current) {
-      const blocklyCode = blocklyRef.current.getCode();
+    if (!filename || !isScriptValid || !blocklyRef.current) return;
 
-      const scriptTaskStoragePromises = [
-        deleteProcessScriptTask(processId, filename, 'ts', environment.spaceId),
-        saveProcessScriptTask(processId, filename, 'xml', blocklyCode.xml, environment.spaceId),
-        saveProcessScriptTask(processId, filename, 'js', blocklyCode.js, environment.spaceId),
-      ];
+    const blocklyCode = blocklyRef.current.getCode();
 
-      return Promise.allSettled(scriptTaskStoragePromises).then((results) => {
-        results.forEach((res) => {
-          if (res.status === 'fulfilled' && res.value) {
-            console.error(res.value.error);
-          }
-
-          if (res.status === 'rejected') {
-            console.error(res.reason);
-          }
-        });
-      });
-    }
+    return await Promise.all([
+      deleteProcessScriptTask(processId, filename, 'ts', environment.spaceId),
+      saveProcessScriptTask(processId, filename, 'xml', blocklyCode.xml, environment.spaceId),
+      saveProcessScriptTask(processId, filename, 'js', blocklyCode.js, environment.spaceId),
+    ]);
   };
 
   const handleClose = () => {
     if (!canEdit || !hasUnsavedChanges) {
       onClose();
     } else {
-      modalApi.confirm({
+      app.modal.confirm({
         title: 'You have unsaved changes!',
         content: 'Are you sure you want to close without saving?',
-        onOk: () => {
-          handleSave();
-          onClose();
-        },
+        onOk: () => handleSave().then(onClose),
         okText: 'Save',
         cancelText: 'Discard',
-        onCancel: () => {
-          onClose();
-        },
+        onCancel: onClose,
       });
     }
   };
@@ -256,7 +235,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         <Space>
           <Button onClick={handleClose}>Close</Button>
           {canEdit && (
-            <Button disabled={!isScriptValid} type="primary" onClick={handleSave}>
+            <Button disabled={!isScriptValid} loading={saving} type="primary" onClick={handleSave}>
               Save
             </Button>
           )}

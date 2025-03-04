@@ -74,6 +74,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     setHasUnsavedChanges(false);
     setInitialScript('');
     setSelectedEditor(null);
+    setIsScriptValid(true);
     if (filename && open) {
       // Check if script is stored in JS or blockly and set script and selected editor accordingly
       getProcessScriptTaskData(processId, filename, 'ts', environment.spaceId).then((res) => {

@@ -317,7 +317,6 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                       }}
                     />
                   </Tooltip>
-                  // no idea why it has to be checked as string?
                   {env.PROCEED_PUBLIC_TIMELINE_VIEW === 'true' && (
                     <Tooltip title="Switch to timeline mode">
                       <Button

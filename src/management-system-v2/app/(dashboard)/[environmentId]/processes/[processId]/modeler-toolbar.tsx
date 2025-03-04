@@ -187,7 +187,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
     LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
-  const timelineViewFeatureEnabled = process.env.NEXT_PUBLIC_TIMELINE_VIEW === 'true';
+  const timelineViewFeatureEnabled = true; //process.env.PROCEED_PUBLIC_TIMELINE_VIEW === 'true';
 
   return (
     <>
@@ -308,15 +308,16 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                 />
               </Tooltip>
               {!showMobileView && (
-                <Tooltip title="Download">
-                  <Button
-                    icon={<ExportOutlined />}
-                    onClick={() => {
-                      setShareModalOpen(true);
-                      setShareModalDefaultOpenTab('bpmn');
-                    }}
-                  />
-                </Tooltip>
+                <>
+                  <Tooltip title="Download">
+                    <Button
+                      icon={<ExportOutlined />}
+                      onClick={() => {
+                        setShareModalOpen(true);
+                        setShareModalDefaultOpenTab('bpmn');
+                      }}
+                    />
+                  </Tooltip>
                   {timelineViewFeatureEnabled && (
                     <Tooltip title="Switch to timeline mode">
                       <Button
@@ -325,6 +326,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                       ></Button>
                     </Tooltip>
                   )}
+                </>
               )}
             </ToolbarGroup>
 

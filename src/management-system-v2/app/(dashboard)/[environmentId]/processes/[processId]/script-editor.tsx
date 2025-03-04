@@ -193,7 +193,13 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         onOk: () => handleSave().then(onClose),
         okText: 'Save',
         cancelText: 'Discard',
-        onCancel: onClose,
+        onCancel: () => {
+          onClose();
+
+          // discard changes
+          if (selectedEditor === 'JS') monacoEditorRef.current?.setValue(initialScript);
+          if (selectedEditor === 'blockly') blocklyRef.current?.reset();
+        },
       });
     }
   };

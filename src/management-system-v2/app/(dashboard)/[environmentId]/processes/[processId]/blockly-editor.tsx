@@ -12,7 +12,10 @@ import { INITIAL_TOOLBOX_JSON, javascriptGenerator, Blockly } from './blockly-ed
 
 import './blockly-editor.css';
 
-export type BlocklyEditorRefType = { getCode: () => { js: string; xml: string } };
+export type BlocklyEditorRefType = {
+  getCode: () => { js: string; xml: string };
+  reset: () => void;
+};
 
 type BlocklyEditorProps = PropsWithChildren<{
   onChange: (isScriptValid: boolean, code: { xml: string; js: string }) => void;
@@ -56,16 +59,30 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
     }
   }, [initialXml]);
 
-  useImperativeHandle(editorRef, () => ({
-    getCode: () => {
-      if (blocklyEditorRef.current) {
-        const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(blocklyEditorRef.current));
-        const javascriptCode = javascriptGenerator.workspaceToCode(blocklyEditorRef.current);
-        return { xml: xmlText, js: javascriptCode };
-      }
-      return { xml: '', js: '' };
-    },
-  }));
+  useImperativeHandle(
+    editorRef,
+    () =>
+      ({
+        getCode: () => {
+          if (blocklyEditorRef.current) {
+            const xmlText = Blockly.Xml.domToText(
+              Blockly.Xml.workspaceToDom(blocklyEditorRef.current),
+            );
+            const javascriptCode = javascriptGenerator.workspaceToCode(blocklyEditorRef.current);
+            return { xml: xmlText, js: javascriptCode };
+          }
+          return { xml: '', js: '' };
+        },
+        reset: () => {
+          if (!blocklyEditorRef.current) return;
+
+          blocklyEditorRef.current.clear();
+          const xmlDom = Blockly.utils.xml.textToDom(initialXml);
+          Blockly.Xml.domToWorkspace(xmlDom, blocklyEditorRef.current);
+          blocklyEditorRef.current.scrollCenter();
+        },
+      }) satisfies BlocklyEditorRefType,
+  );
 
   return (
     <BlocklyWorkspace

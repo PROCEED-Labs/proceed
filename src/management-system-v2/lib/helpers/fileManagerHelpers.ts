@@ -36,6 +36,7 @@ const MIME_TYPE_CATEGORIES: Record<string, ArtifactType> = {
   'image/webp': 'images',
   'text/html': 'user-tasks',
   'application/json': 'user-tasks',
+  'application/js': 'script-tasks',
   'application/pdf': 'others',
   'application/xml': 'bpmns',
 };
@@ -75,8 +76,9 @@ export const generateProcessFilePath = (
   processId: string,
   mimeType?: string,
   versionCreatedOn?: string,
+  artifactType?: string,
 ): string => {
-  const artifactType = getFileCategory(fileName, mimeType);
+  if (!artifactType) artifactType = getFileCategory(fileName, mimeType);
 
   if (artifactType === 'images' || artifactType === 'others') {
     return `artifacts/${artifactType}/${fileName}`;

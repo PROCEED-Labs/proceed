@@ -1,21 +1,34 @@
 'use client';
 
-import styles from '@/components/item-list-view.module.scss';
-import { Space, Button, Grid, Modal, Switch, Dropdown, MenuProps, DropdownProps } from 'antd';
+import {
+  Space,
+  Button,
+  Modal,
+  Switch,
+  Dropdown,
+  MenuProps,
+  Descriptions,
+  Skeleton,
+  Result,
+} from 'antd';
 import { UnorderedListOutlined, AppstoreOutlined, DownOutlined } from '@ant-design/icons';
 import Bar from '@/components/bar';
 import { useUserPreferences } from '@/lib/user-preferences';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import { Folder } from '@/lib/data/folder-schema';
-
 import { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
-import ScrollBar from '@/components/scrollbar';
 import ProcessIconView from './deployment-selection-icon-view';
 import { useState } from 'react';
 import { useEnvironment } from '@/components/auth-can';
 import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
+import { useQuery } from '@tanstack/react-query';
+import { isUserErrorResponse } from '@/lib/user-error';
+import { getAvailableSpaceEngines } from '@/lib/engines/server-actions';
+import { SpaceEngine } from '@/lib/engines/machines';
+import { MdOutlineComputer } from 'react-icons/md';
+import { LeftOutlined } from '@ant-design/icons';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
@@ -31,15 +44,6 @@ const DeploymentButtons = ({
 }) => {
   return isAdvancedView ? (
     <Space style={{ float: 'right' }}>
-      <Button
-        type="primary"
-        size="small"
-        onClick={() => {
-          onDeploy(process);
-        }}
-      >
-        Normal
-      </Button>
       <Button
         type="primary"
         size="small"
@@ -73,25 +77,99 @@ const DeploymentButtons = ({
   );
 };
 
+const EngineSelection = ({ onEngine }: { onEngine: (args?: SpaceEngine | 'PROCEED') => void }) => {
+  const space = useEnvironment();
+  const { isLoading, error, data } = useQuery({
+    queryFn: async () => {
+      const response = await getAvailableSpaceEngines(space.spaceId);
+      if (isUserErrorResponse(response)) throw response.error;
+      return response;
+    },
+    queryKey: [space.spaceId, 'spaceEngines'],
+  });
+
+  if (error) return <Result status="error" subTitle="Failed to fetch engines" />;
+  if (isLoading || !data) return <Skeleton active />;
+
+  const engines = data.map((engine, idx) => (
+    <Button
+      key={idx}
+      style={{ padding: '.5rem 1rem', height: 'fit-content', width: '100%' }}
+      onClick={() => onEngine(engine)}
+    >
+      <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <MdOutlineComputer />
+          {engine.type === 'http' ? engine.address : engine.id}
+        </div>
+
+        <Descriptions
+          items={[
+            {
+              label: 'type',
+              children: engine.type.toUpperCase(),
+              key: '0',
+              style: { padding: 0 },
+            },
+          ]}
+        />
+      </>
+    </Button>
+  ));
+  engines.push(
+    <Button
+      key={engines.length}
+      style={{ padding: '.5rem 1rem', height: 'fit-content', width: '100%' }}
+      onClick={() => onEngine('PROCEED')}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <MdOutlineComputer />
+        Random PROCEED Engine
+      </div>
+    </Button>,
+  );
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        width: '90vw',
+        maxWidth: '70ch',
+      }}
+    >
+      {engines}
+    </div>
+  );
+};
+
 const DeploymentsModal = ({
   open,
   close,
   processes: initialProcesses,
   favourites,
   folder: initialFolder,
-  selectProcess,
+  selectProcess: _selectProcess,
 }: {
   open: boolean;
   close: () => void;
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
-  selectProcess: (process: ProcessListProcess) => void;
+  selectProcess: (process: ProcessListProcess, engine?: SpaceEngine | 'PROCEED') => void;
 }) => {
-  const [isAdvancedView, setIsAdvancedView] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
   const environment = useEnvironment();
+
+  const [isAdvancedView, setIsAdvancedView] = useState(false);
+  const [selectedProcessForStaticDeployment, setSelectedProcessForStaticDeployment] = useState<
+    ProcessListProcess | undefined
+  >();
+
+  function selectProcess(process: ProcessListProcess, engine?: SpaceEngine | 'PROCEED') {
+    _selectProcess(process, engine);
+    close();
+  }
 
   if (initialFolder.parentId)
     initialProcesses = [
@@ -109,15 +187,13 @@ const DeploymentsModal = ({
     ];
 
   const [processes, setProcesses] = useState(initialProcesses);
-
   const [folder, setFolder] = useState(initialFolder);
-
-  const breakpoint = Grid.useBreakpoint();
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
 
   const addPreferences = useUserPreferences.use.addPreferences();
+  // NOTE: should this be the same as in the process list
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
@@ -170,65 +246,69 @@ const DeploymentsModal = ({
   const dropdownItems: MenuProps['items'] = [
     {
       key: 1,
+      onClick: () => setIsAdvancedView((prev) => !prev),
       label: (
         <Space>
           <span>Advanced Deployment</span>
           <Switch
             size="small"
             value={isAdvancedView}
-            onChange={(checked) => setIsAdvancedView(checked)}
+            onChange={(checked, event) => {
+              event.stopPropagation();
+              setIsAdvancedView(checked);
+            }}
           ></Switch>
         </Space>
       ),
     },
   ];
 
-  const handleOpenChange: DropdownProps['onOpenChange'] = (nextOpen, info) => {
-    if (info.source === 'trigger' || nextOpen) {
-      setIsDropdownOpen(nextOpen);
-    }
-  };
-
-  const handleMenuClick: MenuProps['onClick'] = (e) => {
-    if (e.key === '3') {
-      setIsDropdownOpen(false);
-    }
-  };
-
   return (
     <Modal
-      width="90vw"
       open={open}
-      onCancel={() => close()}
+      onCancel={close}
+      afterClose={() => setSelectedProcessForStaticDeployment(undefined)}
       title={
-        <Space size="large">
-          <span>Deployment Selection</span>
-          <Dropdown
-            open={isDropdownOpen}
-            onOpenChange={handleOpenChange}
-            menu={{ items: dropdownItems, onClick: handleMenuClick }}
-          >
-            <Button size="small" type="link" style={{ padding: 0 }}>
-              <Space>
-                Advanced Options
-                <DownOutlined />
-              </Space>
-            </Button>
-          </Dropdown>
-        </Space>
+        selectedProcessForStaticDeployment ? (
+          `Select an engine to deploy ${selectedProcessForStaticDeployment.name.value}`
+        ) : (
+          <Space size="large">
+            <span>Deployment Selection</span>
+            <Dropdown menu={{ items: dropdownItems }}>
+              <Button size="small" type="link" style={{ padding: 0 }}>
+                <Space>
+                  Options
+                  <DownOutlined />
+                </Space>
+              </Button>
+            </Dropdown>
+          </Space>
+        )
       }
+      closeIcon={null}
+      width="max-content"
+      // NOTE: these widths should probably standardised for the whole app
+      style={{ maxWidth: '80vw', minWidth: 'min(70ch, 100%)', padding: '1px' }}
+      footer={[
+        selectedProcessForStaticDeployment ? (
+          <Button key="back" onClick={() => setSelectedProcessForStaticDeployment(undefined)}>
+            <LeftOutlined />
+            Return
+          </Button>
+        ) : null,
+        <Button key="submit" onClick={close}>
+          Cancel
+        </Button>,
+      ]}
     >
-      <div
-        className={breakpoint.xs ? styles.MobileView : ''}
-        style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
-      >
-        {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div style={{ flex: '1' }}>
+      {!selectedProcessForStaticDeployment && (
+        <>
+          {/* 73% for list / icon view, 27% for meta data panel (if active) */}
           <Bar
             leftNode={
               <span style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
                 <span>
-                  <Space.Compact className={breakpoint.xs ? styles.MobileToggleView : undefined}>
+                  <Space.Compact>
                     <Button
                       style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
                       onClick={() => addPreferences({ 'icon-view-in-process-list': false })}
@@ -253,37 +333,45 @@ const DeploymentsModal = ({
           />
 
           {iconView ? (
-            <ScrollBar width="12px">
-              <ProcessIconView
-                data={filteredData}
-                openFolder={(id) => {
-                  openFolder(id);
-                }}
-                selectProcess={(id) => {
-                  selectProcess(id);
-                }}
-              ></ProcessIconView>
-            </ScrollBar>
-          ) : (
-            <ProcessDeploymentList
+            <ProcessIconView
               data={filteredData}
-              folder={folder}
               openFolder={(id) => {
                 openFolder(id);
               }}
-              deploymentButtons={({ process }) => (
-                <DeploymentButtons
-                  isAdvancedView={isAdvancedView}
-                  onDeploy={(processId, method) => {
-                    selectProcess(processId);
-                  }}
-                  process={process}
-                ></DeploymentButtons>
-              )}
-            ></ProcessDeploymentList>
+              selectProcess={(id) => {
+                selectProcess(id);
+              }}
+              containerProps={{ style: { width: '90vw', maxWidth: '100ch' } }}
+            />
+          ) : (
+            <div style={{ width: 'min-content' }}>
+              <ProcessDeploymentList
+                data={filteredData}
+                folder={folder}
+                openFolder={(id) => {
+                  openFolder(id);
+                }}
+                deploymentButtons={({ process }) => (
+                  <DeploymentButtons
+                    isAdvancedView={isAdvancedView}
+                    onDeploy={(process, method) => {
+                      if (method !== 'static') return selectProcess(process);
+                      setSelectedProcessForStaticDeployment(process);
+                    }}
+                    process={process}
+                  />
+                )}
+              />
+            </div>
           )}
-        </div>
-      </div>
+        </>
+      )}
+
+      {!!selectedProcessForStaticDeployment && (
+        <EngineSelection
+          onEngine={(engine) => selectProcess(selectedProcessForStaticDeployment, engine)}
+        />
+      )}
     </Modal>
   );
 };

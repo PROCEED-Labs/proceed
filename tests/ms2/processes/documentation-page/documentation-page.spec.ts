@@ -779,11 +779,9 @@ test('the page shows only imported processes that are shared themselves to other
   const shareModal = await openModal(page, () =>
     page.getByRole('button', { name: 'share-alt' }).click(),
   );
+  await shareModal.getByRole('button', { name: 'Share Public Link' }).click();
   await shareModal.getByText('Share Process with Public Link').click();
-  await page
-    .locator('.ant-message')
-    .filter({ hasText: 'Process shared' })
-    .waitFor({ state: 'visible' });
+  await expect(shareModal.locator('input[name="generated share link"]')).toBeEnabled();
 
   await processListPage.goto();
   // import the process that imports the other two and set the correct versions in its bpmn

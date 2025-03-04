@@ -61,11 +61,12 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
   const [iframeMounted, setIframeMounted] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const iframeContainerRef = useRef<HTMLDivElement>(null);
+
+  const [iframeContainer, setIframeContainer] = useState<HTMLDivElement>();
 
   const [iframeLayout, setIframeLayout] = useState<EditorLayout>('computer');
 
-  const { width: iframeMaxWidth } = useBoundingClientRect(iframeContainerRef, ['width']);
+  const { width: iframeMaxWidth } = useBoundingClientRect(iframeContainer, ['width']);
 
   const breakpoint = Grid.useBreakpoint();
 
@@ -162,7 +163,11 @@ const EditorModal: React.FC<BuilderModalProps> = ({
             )}
             <Col
               style={{ border: '2px solid #d3d3d3', borderRadius: '8px' }}
-              ref={iframeContainerRef}
+              ref={(r) => {
+                if (r && r != iframeContainer) {
+                  setIframeContainer(r);
+                }
+              }}
               className={styles.HtmlEditor}
               span={isMobile ? 24 : 20}
             >

@@ -7,7 +7,7 @@ module.exports = {
   // Flags that can likely be deleted or landed without consequences
   // -----------------------------------------------------------------------------
 
-  enableComponentStackLocations: true,
+  enableComponentStackLocations: false,
 
   // -----------------------------------------------------------------------------
   // Land or remove (moderate effort)

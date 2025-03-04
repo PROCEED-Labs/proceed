@@ -16,7 +16,7 @@ export async function getSpaceEngineById(
   engineId: string,
   ability?: Ability,
 ) {
-  const engine = await db.engine.findFirst({
+  const engine = await db.engine.findUnique({
     where: {
       environmentId: environmentId,
       id: engineId,
@@ -28,6 +28,28 @@ export async function getSpaceEngineById(
   if (ability && !ability.can('view', toCaslResource('Machine', engine), { environmentId })) {
     throw new UnauthorizedError();
   }
+
+  return engine;
+}
+
+export async function getSpaceEngineByAddress(address: string, spaceId: string, ability?: Ability) {
+  const engine = await db.engine.findFirst({
+    where: {
+      environmentId: spaceId,
+      address,
+    },
+  });
+
+  if (!engine) {
+    if (ability && !ability.can('view', 'Machine')) throw new UnauthorizedError();
+    return undefined;
+  }
+
+  if (
+    ability &&
+    !ability.can('view', toCaslResource('Machine', engine), { environmentId: spaceId })
+  )
+    throw new UnauthorizedError();
 
   return engine;
 }

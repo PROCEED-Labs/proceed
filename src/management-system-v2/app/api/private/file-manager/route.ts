@@ -186,6 +186,10 @@ export async function PUT(request: NextRequest) {
 
     if ('error' in res) throw new Error((res.error as any).message);
 
+    if (!res.fileName) {
+      throw new Error('No file name returned');
+    }
+
     const { fileName: newFileName } = res;
 
     return new NextResponse(newFileName, {

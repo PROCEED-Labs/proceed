@@ -8,6 +8,7 @@ import { getProcess, getProcesses } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
 import BPMNTimeline from '@/components/bpmn-timeline';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import type { Process } from '@/lib/data/process-schema';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
@@ -46,7 +47,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
         modelerComponent={
           <Modeler
             className={styles.Modeler}
-            process={{ ...process, bpmn: selectedVersionBpmn as string }}
+            process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
             versions={process.versions}
             versionName={selectedVersion?.name}
           />
@@ -54,7 +55,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
         timelineComponent={
           <BPMNTimeline
             className={styles.Modeler}
-            process={{ ...process, bpmn: selectedVersionBpmn as string }}
+            process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
           />
         }
       />

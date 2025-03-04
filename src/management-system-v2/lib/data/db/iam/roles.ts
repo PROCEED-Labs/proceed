@@ -4,6 +4,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
 import db from '@/lib/data/db';
+import { Prisma } from '@prisma/client';
 
 /** Returns all roles in form of an array */
 export async function getRoles(environmentId?: string, ability?: Ability) {
@@ -81,7 +82,13 @@ export async function getRoleById(roleId: string, ability?: Ability) {
  * @throws {UnauthorizedError}
  * @throws {Error}
  */
-export async function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
+export async function addRole(
+  roleRepresentationInput: RoleInput,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx ? tx : db;
+
   const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
 
   if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation))) {
@@ -106,7 +113,7 @@ export async function addRole(roleRepresentationInput: RoleInput, ability?: Abil
   const lastEditedOn = createdOn;
   const id = v4();
 
-  const createdRole = await db.role.create({
+  const createdRole = await dbMutator.role.create({
     data: {
       name,
       environmentId,

@@ -319,21 +319,8 @@ export const INITIAL_TOOLBOX_JSON = {
         {
           kind: 'block',
           blockxml:
-            '    <block type="text_print">\n' +
-            '      <value name="TEXT">\n' +
-            '        <shadow type="text">\n' +
-            '          <field name="TEXT">abc</field>\n' +
-            '        </shadow>\n' +
-            '      </value>\n' +
-            '    </block>\n',
-        },
-        {
-          kind: 'block',
-          blockxml:
-            '    <block type="text_prompt_ext">\n' +
-            '      <mutation type="TEXT"></mutation>\n' +
-            '      <field name="TYPE">TEXT</field>\n' +
-            '      <value name="TEXT">\n' +
+            '    <block type="console_log">\n' +
+            '      <value name="value">\n' +
             '        <shadow type="text">\n' +
             '          <field name="TEXT">abc</field>\n' +
             '        </shadow>\n' +
@@ -389,6 +376,30 @@ export const INITIAL_TOOLBOX_JSON = {
   ],
 };
 
+Blockly.Blocks['console_log'] = {
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      message0: 'print %1',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'value',
+        },
+      ],
+      tooltip: 'Writes the input to the command line of the engine that executes the process!',
+      nextStatement: true,
+      previousStatement: true,
+      colour: 160,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['console_log'] = function (block) {
+  const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
+
+  return `console.log(${value});\n`;
+};
+
 Blockly.Blocks['variables_get'] = {
   init: function () {
     this.appendDummyInput()
@@ -403,7 +414,7 @@ Blockly.Blocks['variables_get'] = {
 
 javascriptGenerator.forBlock['variables_get'] = function (block) {
   const variableName = block.getFieldValue('name');
-  const code = `variable.get("${variableName}");\n`;
+  const code = `variable.get("${variableName}")`;
   return [code, BlocklyJavaScript.Order.ATOMIC];
 };
 

@@ -14,7 +14,11 @@ module.exports = (path) => {
 
     await db.saveHTMLString(definitionId, fileName, html);
 
-    return '';
+    return {
+      statusCode: 200,
+      mimeType: 'text/html',
+      response: html,
+    };
   });
 
   network.get(`${path}/:definitionId/user-tasks/:fileName`, { cors: true }, async (req) => {

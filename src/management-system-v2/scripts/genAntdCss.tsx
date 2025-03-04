@@ -47,6 +47,9 @@ const px2rem = px2remTransformer({
   rootValue: 16, // 32px = 1rem; @default 16
 });
 
+// Mute antd deprecation and props warning messages.
+console.error = () => {};
+
 // A node containing all the relevant antd components.
 const Components = (
   <>

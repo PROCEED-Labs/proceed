@@ -247,6 +247,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
           )}
         </Space>
       }
+      afterOpenChange={(open) => {
+        if (open && selectedEditor === 'blockly') blocklyRef.current?.fillContainer();
+      }}
     >
       {/* Error display */}
       {isError && (

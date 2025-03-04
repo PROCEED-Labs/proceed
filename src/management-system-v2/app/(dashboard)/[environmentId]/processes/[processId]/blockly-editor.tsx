@@ -14,6 +14,7 @@ import './blockly-editor.css';
 
 export type BlocklyEditorRefType = {
   getCode: () => { js: string; xml: string };
+  fillContainer: () => void;
   reset: () => void;
 };
 
@@ -72,6 +73,10 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
             return { xml: xmlText, js: javascriptCode };
           }
           return { xml: '', js: '' };
+        },
+        fillContainer: () => {
+          // firing this event is easier and more robust than copying blockly's resize logic
+          window.dispatchEvent(new Event('resize'));
         },
         reset: () => {
           if (!blocklyEditorRef.current) return;

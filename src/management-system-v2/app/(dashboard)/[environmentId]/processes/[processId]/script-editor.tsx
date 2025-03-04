@@ -302,7 +302,13 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                     style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}
                   >
                     <Tooltip title="Open Script Task API for further reference">
-                      <Button> Open Script Task API </Button>
+                      <Button
+                        href="https://docs.proceed-labs.org/developer/bpmn/bpmn-script-task#api"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        Open Script Task API
+                      </Button>
                     </Tooltip>
                   </Space>
                   <div

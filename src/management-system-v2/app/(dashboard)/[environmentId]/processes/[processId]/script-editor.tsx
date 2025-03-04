@@ -15,6 +15,8 @@ import {
   Tag,
   Popconfirm,
   App,
+  Spin,
+  Result,
 } from 'antd';
 import { FaArrowRight } from 'react-icons/fa';
 import { CheckCircleOutlined, ExclamationCircleOutlined, FormOutlined } from '@ant-design/icons';
@@ -35,6 +37,8 @@ import { useEnvironment } from '@/components/auth-can';
 import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
 import { type BlocklyEditorRefType } from './blockly-editor';
 import { useCanEdit } from './modeler';
+import { useQuery } from '@tanstack/react-query';
+import { isUserErrorResponse } from '@/lib/user-error';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 
 type ScriptEditorProps = {
@@ -72,27 +76,36 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     return undefined;
   }, [modeler, selectedElement]);
 
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryFn: async () => {
+      if (!filename) return ['', null] as const;
+
+      // Check if script is stored in JS or blockly and set script and selected editor accordingly
+      const [jsScript, blocklyScript] = await Promise.all([
+        getProcessScriptTaskData(processId, filename, 'ts', environment.spaceId),
+        getProcessScriptTaskData(processId, filename, 'xml', environment.spaceId),
+      ]);
+
+      const unsuccessful = +isUserErrorResponse(jsScript) + +isUserErrorResponse(blocklyScript);
+      if (unsuccessful === 0) throw new Error('Inconsistency in script storage');
+      if (unsuccessful === 2) return ['', null] as const;
+
+      const scriptType = isUserErrorResponse(jsScript) ? 'blockly' : 'JS';
+      const script = scriptType === 'JS' ? (jsScript as string) : (blocklyScript as string);
+
+      return [script, scriptType] as const;
+    },
+    queryKey: ['processScriptTaskData', environment.spaceId, processId, filename],
+  });
+
   useEffect(() => {
     setHasUnsavedChanges(false);
     setInitialScript('');
     setSelectedEditor(null);
     setIsScriptValid(true);
-    if (filename && open) {
-      // Check if script is stored in JS or blockly and set script and selected editor accordingly
-      getProcessScriptTaskData(processId, filename, 'ts', environment.spaceId).then((res) => {
-        if (typeof res === 'string') {
-          setInitialScript(res);
-          setSelectedEditor('JS');
-        }
-      });
-      getProcessScriptTaskData(processId, filename, 'xml', environment.spaceId).then((res) => {
-        if (typeof res === 'string') {
-          setInitialScript(res);
-          setSelectedEditor('blockly');
-        }
-      });
-    }
-  }, [processId, open, filename, environment]);
+    setInitialScript(data?.[0] ?? '');
+    setSelectedEditor(data?.[1] ?? null);
+  }, [data]);
 
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     monacoEditorRef.current = editor;
@@ -250,8 +263,36 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         </Space>
       }
     >
+      {/* Error display */}
+      {isError && (
+        <Result
+          status="error"
+          title="Something went wrong"
+          subTitle="Something went wrong while fetching the script data. Please try again."
+          extra={
+            <Button type="primary" onClick={() => refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      )}
+
+      {/* Loading Screen */}
+      {!isError && isLoading && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+          }}
+        >
+          <Spin size="large" spinning />
+        </div>
+      )}
+
       {/* Initial editor selection */}
-      {!selectedEditor && (
+      {!isLoading && !selectedEditor && (
         <div
           style={{
             display: 'flex',
@@ -282,7 +323,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       )}
 
       {/* Editor */}
-      {selectedEditor && (
+      {!isLoading && !isError && selectedEditor && (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {canEdit && selectedEditor && (
             <div

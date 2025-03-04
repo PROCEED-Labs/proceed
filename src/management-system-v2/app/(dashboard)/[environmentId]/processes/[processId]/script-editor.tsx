@@ -36,7 +36,8 @@ import {
 } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
-import { BlocklyEditorRefType } from './blockly-editor';
+import { type BlocklyEditorRefType } from './blockly-editor';
+import { useCanEdit } from './modeler';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 
 type ScriptEditorProps = {
@@ -56,6 +57,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const [selectedEditor, setSelectedEditor] = useState<null | 'JS' | 'blockly'>(null); // JS or blockly
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [modalApi, modalElement] = Modal.useModal();
+  const canEdit = useCanEdit();
 
   const blocklyRef = useRef<BlocklyEditorRefType>(null);
 
@@ -185,7 +187,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   };
 
   const handleClose = () => {
-    if (!hasUnsavedChanges) {
+    if (!canEdit || !hasUnsavedChanges) {
       onClose();
     } else {
       modalApi.confirm({
@@ -234,19 +236,23 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         centered
         width="90vw"
         styles={{ body: { height: '85vh', marginTop: '0.5rem' }, header: { margin: 0 } }}
-        title={<span style={{ fontSize: '1.5rem' }}>Edit Script Task</span>}
+        title={
+          <span style={{ fontSize: '1.5rem' }}>{canEdit ? 'Edit Script Task' : 'Script Task'}</span>
+        }
         onCancel={handleClose}
         footer={
           <Space>
             <Button onClick={handleClose}>Close</Button>
-            <Button disabled={!isScriptValid} type="primary" onClick={handleSave}>
-              Save
-            </Button>
+            {canEdit && (
+              <Button disabled={!isScriptValid} type="primary" onClick={handleSave}>
+                Save
+              </Button>
+            )}
           </Space>
         }
       >
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          {selectedEditor && (
+          {canEdit && selectedEditor && (
             <div
               style={{
                 display: 'flex',
@@ -328,6 +334,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                                   ]);
                                 }
                               }}
+                              disabled={!canEdit}
                             >
                               SET
                             </Button>
@@ -344,6 +351,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                                   ]);
                                 }
                               }}
+                              disabled={!canEdit}
                             >
                               GET
                             </Button>
@@ -361,6 +369,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                       wordWrap: 'on',
                       wrappingStrategy: 'advanced',
                       wrappingIndent: 'same',
+                      readOnly: !canEdit,
                     }}
                     onMount={handleEditorMount}
                     className="Hide-Scroll-Bar"
@@ -383,7 +392,10 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                   }
                   setIsScriptValid(isScriptValid);
                 }}
-              ></BlocklyEditor>
+                blocklyOptions={{
+                  readOnly: !canEdit,
+                }}
+              />
             ) : (
               <div
                 style={{

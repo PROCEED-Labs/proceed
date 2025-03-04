@@ -1,5 +1,5 @@
 'use client';
-import {
+import React, {
   forwardRef,
   PropsWithChildren,
   useEffect,
@@ -18,9 +18,10 @@ type BlocklyEditorProps = PropsWithChildren<{
   onChange: (isScriptValid: boolean, code: { xml: string; js: string }) => void;
   initialXml: string;
   editorRef: React.Ref<BlocklyEditorRefType>;
+  blocklyOptions?: Blockly.BlocklyOptions;
 }>;
 
-const BlocklyEditor = ({ onChange, initialXml, editorRef }: BlocklyEditorProps) => {
+const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: BlocklyEditorProps) => {
   const blocklyEditorRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
   const validateBlockScript = () => {
@@ -77,6 +78,7 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef }: BlocklyEditorProps) 
           colour: '#ccc',
           snap: true,
         },
+        ...blocklyOptions,
       }}
       onWorkspaceChange={(workspace) => {
         const isBlockScriptValid = validateBlockScript();

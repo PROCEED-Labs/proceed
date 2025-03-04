@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Modal,
@@ -227,6 +227,14 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     }
   };
 
+  const blocklyOnChange = useCallback(
+    (isScriptValid: boolean | ((prevState: boolean) => boolean), code: any) => {
+      if (code.xml && initialScript !== code.xml) setHasUnsavedChanges(true);
+      setIsScriptValid(isScriptValid);
+    },
+    [initialScript],
+  );
+
   return (
     <Modal
       open={open}
@@ -373,7 +381,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                         target="_blank"
                         rel="noopener"
                       >
-                        Open Script Task API
+                        Open Script Task AP
                       </Button>
                     </Tooltip>
                   </Space>
@@ -456,18 +464,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                   <BlocklyEditor
                     editorRef={blocklyRef}
                     initialXml={initialScript}
-                    onChange={(
-                      isScriptValid: boolean | ((prevState: boolean) => boolean),
-                      code: any,
-                    ) => {
-                      if (
-                        (code.xml && initialScript !== code.xml) ||
-                        (code.ts && initialScript !== code.ts)
-                      ) {
-                        setHasUnsavedChanges(true);
-                      }
-                      setIsScriptValid(isScriptValid);
-                    }}
+                    onChange={blocklyOnChange}
                     blocklyOptions={{
                       readOnly: !canEdit,
                     }}

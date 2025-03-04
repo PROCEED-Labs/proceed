@@ -1,13 +1,12 @@
 'use client';
 import React, {
-  forwardRef,
   PropsWithChildren,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
-  useState,
 } from 'react';
-import { BlocklyWorkspace, useBlocklyWorkspace } from 'react-blockly';
+import { BlocklyWorkspace } from 'react-blockly';
 import { INITIAL_TOOLBOX_JSON, javascriptGenerator, Blockly } from './blockly-editor-config';
 
 import './blockly-editor.css';
@@ -89,6 +88,17 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
       }) satisfies BlocklyEditorRefType,
   );
 
+  const onWorkspaceChange = useCallback(
+    (workspace: Blockly.WorkspaceSvg) => {
+      const isBlockScriptValid = validateBlockScript();
+      const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
+      const javascriptCode = javascriptGenerator.workspaceToCode(workspace);
+
+      onChange(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
+    },
+    [onChange],
+  );
+
   return (
     <BlocklyWorkspace
       className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
@@ -102,13 +112,7 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
         },
         ...blocklyOptions,
       }}
-      onWorkspaceChange={(workspace) => {
-        const isBlockScriptValid = validateBlockScript();
-        const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
-        const javascriptCode = javascriptGenerator.workspaceToCode(workspace);
-
-        onChange(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
-      }}
+      onWorkspaceChange={onWorkspaceChange}
       onInject={(newWorkspace) => {
         blocklyEditorRef.current = newWorkspace;
       }}

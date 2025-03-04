@@ -440,6 +440,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                       readOnly: !canEdit,
                     }}
                     onMount={handleEditorMount}
+                    onChange={() => setHasUnsavedChanges(true)}
                     className="Hide-Scroll-Bar"
                   />
                 ) : (

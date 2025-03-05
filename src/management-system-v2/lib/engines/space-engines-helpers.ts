@@ -32,7 +32,7 @@ async function getMqttEngines(engine: SavedEngine): Promise<SpaceEngine[]> {
 async function getHttpEngine(engine: SavedEngine): Promise<[SpaceEngine]> {
   const { id } = await httpRequest(
     engine.address,
-    endpointBuilder('get', '/machine/:properties', { properties: 'id' }),
+    endpointBuilder('get', '/machine/:properties', { pathParams: { properties: 'id' } }),
     'GET',
   );
 

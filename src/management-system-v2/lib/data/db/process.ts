@@ -942,22 +942,40 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
     },
   });
 
+  const filenameMapping = {
+    'user-tasks': new Map<string, string>(),
+    'script-tasks': new Map<string, string>(),
+  };
+
   const oldNewFilenameMapping = await asyncMap(refs, async (ref) => {
     const { artifactId, artifact } = ref;
     const sourceFilePath = artifact.filePath;
-    const ext = sourceFilePath.split('.').pop();
+    const fileNameParts = artifact.fileName.split('.');
+    const ext = fileNameParts.pop();
+    const baseName = fileNameParts.join('.');
     const destinationFilePath = generateProcessFilePath(artifact.fileName, destinationProcessId);
+
     type typesWithFilename = Extract<ArtifactType, 'user-tasks' | 'script-tasks'>;
     const filenameGenerators: Record<typesWithFilename, () => string> = {
       'user-tasks': generateUserTaskFileName,
       'script-tasks': generateScriptTaskFileName,
     };
 
-    const generateFilename = filenameGenerators[artifact.artifactType as typesWithFilename];
+    let newFileName;
+    if (artifact.artifactType === 'user-tasks') {
+      newFileName =
+        filenameMapping['user-tasks'].get(baseName) || filenameGenerators['user-tasks']();
+      filenameMapping['user-tasks'].set(baseName, newFileName);
+    } else if (artifact.artifactType === 'script-tasks') {
+      newFileName =
+        filenameMapping['script-tasks'].get(baseName) || filenameGenerators['script-tasks']();
+      filenameMapping['script-tasks'].set(baseName, newFileName);
+    }
+
     const { status, newFilename, newFilepath } = await copyFile(
       sourceFilePath,
       destinationFilePath,
-      { newFilename: generateFilename ? `${generateFilename()}.${ext}` : undefined },
+      { newFilename: `${newFileName}.${ext}` },
     );
     if (status) {
       try {

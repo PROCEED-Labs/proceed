@@ -17,8 +17,9 @@ export type BlocklyEditorRefType = {
   reset: () => void;
 };
 
+type OnChangeFunc = (isScriptValid: boolean, code: { xml: string; js: string }) => void;
 type BlocklyEditorProps = PropsWithChildren<{
-  onChange: (isScriptValid: boolean, code: { xml: string; js: string }) => void;
+  onChange: OnChangeFunc;
   initialXml: string;
   editorRef: React.Ref<BlocklyEditorRefType>;
   blocklyOptions?: Blockly.BlocklyOptions;
@@ -89,16 +90,29 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
       }) satisfies BlocklyEditorRefType,
   );
 
-  const onWorkspaceChange = useCallback(
-    (workspace: Blockly.WorkspaceSvg) => {
-      const isBlockScriptValid = validateBlockScript();
-      const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
-      const javascriptCode = javascriptGenerator.workspaceToCode(workspace);
+  // This workaround with the ref is necessary to not cause the props of the BlocklyWorkspace to change
+  // as this would call onWorkspaceChange which isn't desired
+  // Example:
+  // 1. onchange func is memoized with respect to the initialXml prop
+  // 2. The initialXml changes
+  // 3. The BlocklyWorkspace detects the change of this function and calls it before it has loaded
+  // in the new initialXml
+  // 4. The onChange function detects differences between the xml in the editor and initialXml and
+  // marks a change
+  //
+  // For this reason we want the function only to be called when there has really been a change in
+  // xml in the blockly editor
+  const onChangeFunc = useRef<OnChangeFunc | undefined>();
+  useEffect(() => {
+    onChangeFunc.current = onChange;
+  }, [onChange]);
+  const onWorkspaceChange = useCallback((workspace: Blockly.WorkspaceSvg) => {
+    const isBlockScriptValid = validateBlockScript();
+    const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
+    const javascriptCode = javascriptGenerator.workspaceToCode(workspace);
 
-      onChange(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
-    },
-    [onChange],
-  );
+    onChangeFunc.current?.(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
+  }, []);
 
   return (
     <BlocklyWorkspace

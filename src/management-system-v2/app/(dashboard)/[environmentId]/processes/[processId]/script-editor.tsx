@@ -235,14 +235,6 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     }
   };
 
-  const blocklyOnChange = useCallback(
-    (isScriptValid: boolean | ((prevState: boolean) => boolean), code: any) => {
-      if (code.xml && initialScript !== code.xml) setHasUnsavedChanges(true);
-      setIsScriptValid(isScriptValid);
-    },
-    [initialScript],
-  );
-
   return (
     <Modal
       open={open}
@@ -472,7 +464,11 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                   <BlocklyEditor
                     editorRef={blocklyRef}
                     initialXml={initialScript}
-                    onChange={blocklyOnChange}
+                    onChange={(isScriptValid, code) => {
+                      if (code.xml && initialScript !== code.xml) setHasUnsavedChanges(true);
+
+                      setIsScriptValid(isScriptValid);
+                    }}
                     blocklyOptions={{
                       readOnly: !canEdit,
                     }}

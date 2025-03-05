@@ -134,36 +134,15 @@ async function setTargetNamespace(bpmn, id) {
 }
 
 /**
- * Updates the `<bpmn:Definitions>` element by setting `exporter`, `exporterVersion`,
- * `expressionLanguage`, `typeLanguage`, and necessary namespaces.
- * If previous values for `exporter` and `exporterVersion` exist, they are preserved.
+ * Sets exporter, exporterVersion, expressionLanguage, typeLanguage and needed namespaces on defintions element
+ * stores the previous values of exporter and exporterVersion if there are any
  *
- * @param {(string|object)} bpmn - The BPMN process definition as an XML string or BPMN-Moddle object.
- * @param {Object} options - An object containing metadata for the process definition.
- * @param {string} options.exporterName - The exporter name
- * @param {string} options.exporterVersion - The exporter version.
- * @param {string} [options.creatorSpaceName] - The name of the creator's Space.
- * @param {string} [options.creatorSpaceId] - The ID of the creator's Space.
- * @param {string} [options.creatorId] - The ID of the creator.
- * @param {string} [options.creatorName] - The full name of the creator.
- * @param {string} [options.creatorUsername] - The username of the creator.
- * @param {string} [options.creationDate] - The date when the process was created.
- * @returns {Promise<string|object>} - The modified BPMN process as a BPMN-Moddle object or XML string,
- *                                     depending on the input format.
+ * @param {(string|object)} bpmn the process definition as XML string or BPMN-Moddle Object
+ * @param {string} exporterName - the exporter name
+ * @param {string} exporterVersion - the exporter version
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
-async function setStandardDefinitions(
-  bpmn,
-  {
-    exporterName,
-    exporterVersion,
-    creatorSpaceName,
-    creatorSpaceId,
-    creatorId,
-    creatorName,
-    creatorUsername,
-    creationDate,
-  },
-) {
+async function setStandardDefinitions(bpmn, exporterName, exporterVersion) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
     if (definitions.exporter && definitions.exporter !== exporterName) {
       definitions.originalExporter = definitions.exporter;
@@ -197,12 +176,13 @@ async function setStandardDefinitions(
       definitions.$attrs['xsi:schemaLocation'] = '';
     }
 
-    definitions.creatorSpaceId ??= creatorSpaceId || '';
-    definitions.creatorSpaceName ??= creatorSpaceName || '';
-    definitions.creatorId ??= creatorId || '';
-    definitions.creatorName ??= creatorName || '';
-    definitions.creatorUsername ??= creatorUsername || '';
-    definitions.creationDate ??= creationDate || new Date().toUTCString();
+    if (typeof definitions.creatorSpaceId !== 'string') {
+      definitions.creatorSpaceId = '';
+    }
+
+    if (typeof definitions.creatorSpaceName !== 'string') {
+      definitions.creatorSpaceName = '';
+    }
 
     for (const xsi of proceedXSIs) {
       if (!definitions.$attrs['xsi:schemaLocation'].includes(xsi)) {

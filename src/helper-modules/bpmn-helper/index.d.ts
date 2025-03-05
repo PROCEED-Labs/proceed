@@ -45,16 +45,8 @@ declare const _exports: {
   setTargetNamespace(bpmn: string | object, id: string): Promise<string | object>;
   setStandardDefinitions(
     bpmn: string | object,
-    options: {
-      exporterName: string;
-      exporterVersion: string;
-      creatorSpaceName?: string;
-      creatorSpaceId?: string;
-      creatorId?: string;
-      creatorName?: string;
-      creatorUsername?: string;
-      creationDate?: string;
-    },
+    exporterName: string,
+    exporterVersion: string,
   ): Promise<string | object>;
   updateBpmnXMLAttributes(
     bpmn: string | object,

@@ -97,13 +97,10 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
       return [script, scriptType] as const;
     },
+    // Refetch on close to update the script if it was changed
+    enabled: !open,
     queryKey: ['processScriptTaskData', environment.spaceId, processId, filename],
   });
-
-  useEffect(() => {
-    // Fetch the data for the script task when the element is selected in the editor
-    if (!open) refetch();
-  }, [open, refetch]);
 
   useEffect(() => {
     setHasUnsavedChanges(false);

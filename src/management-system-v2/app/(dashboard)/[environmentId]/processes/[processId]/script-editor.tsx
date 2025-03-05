@@ -101,6 +101,11 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   });
 
   useEffect(() => {
+    // Fetch the data for the script task when the element is selected in the editor
+    if (!open) refetch();
+  }, [open, refetch]);
+
+  useEffect(() => {
     setHasUnsavedChanges(false);
     setInitialScript('');
     setSelectedEditor(null);
@@ -195,10 +200,13 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         cancelText: 'Discard',
         onCancel: () => {
           onClose();
-
           // discard changes
+          // no change was saved to the script -> script is opened again -> no props change -> Editors keep changes
+          // (if changes where made, the props of the editors would change and the editors would reset)
           if (selectedEditor === 'JS') monacoEditorRef.current?.setValue(initialScript);
           if (selectedEditor === 'blockly') blocklyRef.current?.reset();
+
+          setHasUnsavedChanges(false);
         },
       });
     }

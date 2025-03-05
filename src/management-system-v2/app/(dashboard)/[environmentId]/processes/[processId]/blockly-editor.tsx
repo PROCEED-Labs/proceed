@@ -56,6 +56,7 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
     if (blocklyEditorRef.current && blocklyEditorRef.current.rendered && initialXml) {
       const xml = Blockly.utils.xml.textToDom(initialXml);
       Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyEditorRef.current);
+      blocklyEditorRef.current.scrollCenter();
     }
   }, [initialXml]);
 
@@ -74,15 +75,15 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
           return { xml: '', js: '' };
         },
         fillContainer: () => {
+          if (!blocklyEditorRef.current) return;
           // firing this event is easier and more robust than copying blockly's resize logic
           window.dispatchEvent(new Event('resize'));
+          blocklyEditorRef.current.scrollCenter();
         },
         reset: () => {
-          if (!blocklyEditorRef.current) return;
-
-          blocklyEditorRef.current.clear();
-          const xmlDom = Blockly.utils.xml.textToDom(initialXml);
-          Blockly.Xml.domToWorkspace(xmlDom, blocklyEditorRef.current);
+          if (!blocklyEditorRef.current || initialXml === '') return;
+          const xml = Blockly.utils.xml.textToDom(initialXml);
+          Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyEditorRef.current);
           blocklyEditorRef.current.scrollCenter();
         },
       }) satisfies BlocklyEditorRefType,

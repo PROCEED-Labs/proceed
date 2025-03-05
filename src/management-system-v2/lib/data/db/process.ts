@@ -572,7 +572,7 @@ export async function getProcessBpmn(processDefinitionsId: string) {
 
     const processWithStringDate = {
       ...process,
-      createdOn: toCustomUTCString(process.createdOn),
+      createdOn: process.createdOn.toISOString(),
     };
     let bpmnWithDBValue = await transformBpmnAttributes(
       processWithStringDate!,

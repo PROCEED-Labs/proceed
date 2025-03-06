@@ -36,7 +36,7 @@ type PathParamsOptions<ParamsArray extends string[]> = ParamsArray extends []
 /* -------------------------------------------------------------------------------------------------
  * Query params
  * -----------------------------------------------------------------------------------------------*/
-export type QueryParamsOpitonsArray<
+export type QueryParamsOptionsArray<
   Method extends Methods,
   Url extends AvailableEndpoints<Method>,
 > = EndpointSchema[Method][Url] extends { queryParams: any }
@@ -55,7 +55,7 @@ export type EndpointBuilderOptions<
   Url extends AvailableEndpoints<Method>,
 > = RemoveNeverKeys<
   { pathParams: PathParamsOptions<GetParamsFromString<Url>> } & {
-    queryParams?: QueryParamsOpitonsArray<Method, Url>;
+    queryParams?: QueryParamsOptionsArray<Method, Url>;
   }
 >;
 type _Options<OptionsObject> = keyof OptionsObject extends never ? [] : [OptionsObject];

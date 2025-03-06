@@ -90,7 +90,7 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
     return await fetchDeployment(space.spaceId, definitionId);
   }, [space.spaceId, definitionId]);
 
-  return useQuery({
+  return useQuery<DeployedProcessInfo>({
     queryFn,
     initialData,
     queryKey: ['processDeployments', space.spaceId, definitionId],

@@ -237,7 +237,10 @@ export async function saveProcessArtifact(
 
     return { presignedUrl, fileName: newFileName };
   } catch (error) {
-    console.error('Failed to save process artifact:', error);
+    console.error(
+      `Failed to save process artifact (${artifactType}, ${fileName}) for process ${processId}:`,
+      error,
+    );
     return { presignedUrl: null, fileName: null };
   }
 }

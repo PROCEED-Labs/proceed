@@ -67,7 +67,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
                     const artefactPath = bpmnFilePath.split('/').slice(0, -1).join('/');
                     const artefactFiles = Object.keys(zip.files).filter(
                       (name) =>
-                        name.startsWith(artefactPath) &&
+                        name.startsWith(artefactPath.concat('/')) &&
                         name !== bpmnFilePath &&
                         !zip.files[name].dir,
                     );

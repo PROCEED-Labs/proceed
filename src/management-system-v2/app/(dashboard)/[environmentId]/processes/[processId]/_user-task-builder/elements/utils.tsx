@@ -1,12 +1,4 @@
-import React, {
-  ReactElement,
-  ReactNode,
-  useContext,
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-} from 'react';
+import React, { ReactElement, ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Button, Menu, MenuProps } from 'antd';
@@ -14,7 +6,7 @@ import { useDndContext } from '@dnd-kit/core';
 
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
-import BuilderContext from '../BuilderContext';
+import { useCanEdit } from '../../modeler';
 
 export const Setting: React.FC<{
   label: string;
@@ -23,7 +15,7 @@ export const Setting: React.FC<{
 }> = ({ label, control, style = {} }) => {
   const id = useId();
 
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   const clonedControl = React.cloneElement(control, { id, disabled: !editingEnabled });
 
@@ -48,7 +40,7 @@ type ContextMenuProps = React.PropsWithChildren<{
 export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClose }) => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>();
 
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   const id = useId();
   const blockDragging = useBuilderStateStore((state) => state.blockDragging);
@@ -192,7 +184,7 @@ function SidebarButton<T extends string>({
   onClick,
   onHovered,
 }: SidebarButtonProps<T>) {
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   return (
     <Button

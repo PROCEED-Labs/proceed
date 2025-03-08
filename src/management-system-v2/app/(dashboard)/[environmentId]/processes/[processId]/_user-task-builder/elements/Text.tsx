@@ -4,8 +4,8 @@ import { EditOutlined } from '@ant-design/icons';
 
 import EditableText from '../_utils/EditableText';
 import { ContextMenu, Overlay } from './utils';
-import { useContext, useState } from 'react';
-import BuilderContext from '../BuilderContext';
+import { useState } from 'react';
+import { useCanEdit } from '../../modeler';
 
 type TextProps = {
   text?: string;
@@ -19,7 +19,7 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   return (
     <ContextMenu menu={[]}>

@@ -16,6 +16,7 @@ import { deployProcess as serverDeployProcess } from '@/lib/engines/server-actio
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { SpaceEngine } from '@/lib/engines/machines';
 import { userError } from '@/lib/user-error';
+import { removeDeployment as serverRemoveDeployment } from '@/lib/engines/server-actions';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -85,6 +86,18 @@ const DeploymentsView = ({
     });
   }
 
+  const [removingDeployment, startRemovingDeployment] = useTransition();
+  function removeDeployment(definitionId: string) {
+    return startRemovingDeployment(() =>
+      wrapServerCall({
+        fn: () => serverRemoveDeployment(definitionId, space.spaceId),
+        onSuccess: () => router.refresh(),
+      }),
+    );
+  }
+
+  const loading = checkingProcessVersion || removingDeployment;
+
   return (
     <div>
       <div style={{ marginBottom: '0.5rem' }}>
@@ -108,8 +121,9 @@ const DeploymentsView = ({
 
       <DeploymentsList
         processes={filteredData}
-        tableProps={{ loading: checkingProcessVersion }}
-      ></DeploymentsList>
+        tableProps={{ loading }}
+        removeDeployment={removeDeployment}
+      />
 
       <DeploymentsModal
         open={modalIsOpen}

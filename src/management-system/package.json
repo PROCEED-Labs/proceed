@@ -64,7 +64,7 @@
     "@proceed/system": "^1.0.0",
     "acme": "^3.0.3",
     "acme-http-01-webroot": "^3.0.0",
-    "axios": "^0.19.0",
+    "axios": "^1.8.2",
     "bcryptjs": "^2.4.3",
     "bpmn-js": "^11.1.1",
     "bpmn-js-cli": "^2.0.0",

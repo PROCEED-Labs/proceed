@@ -53,7 +53,12 @@ export default class CustomRules extends RuleProvider {
 
       // if a resource element is replaced by another resource element make sure to keep the
       // connection
-      if (sourceIsResource && targetCanHaveResource && isAssociation) return true;
+      if (sourceIsResource && targetCanHaveResource && isAssociation) {
+        return {
+          type: 'bpmn:Association',
+          associationDirection: 'None',
+        };
+      }
     });
     this.addRule('shape.resize', 1500, ({ shape }) => {
       if (is(shape, 'proceed:GenericResource')) return true;

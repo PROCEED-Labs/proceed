@@ -151,8 +151,10 @@ export async function getAvailableSpaceEngines(spaceId: string) {
   }
 }
 
-export async function getAllDeployments(spaceId: string) {
+export async function getDeployment(spaceId: string, definitionId: string) {
   const engines = await getCorrectTargetEngines(spaceId);
 
-  return await getDeployments(engines);
+  const deployments = await getDeployments(engines);
+
+  return deployments.find((d) => d.definitionId === definitionId) || null;
 }

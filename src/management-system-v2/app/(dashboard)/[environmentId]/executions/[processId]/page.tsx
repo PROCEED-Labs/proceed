@@ -1,14 +1,12 @@
 import { Result, Skeleton } from 'antd';
 import Content from '@/components/content';
-import { getDeployments } from '@/lib/engines/deployment';
-import { getProceedEngines } from '@/lib/engines/machines';
+import { getDeployment } from '@/lib/engines/server-actions';
 import ProcessDeploymentView from './process-deployment-view';
 import { Suspense } from 'react';
 import { getCurrentEnvironment } from '@/components/auth';
-import { fetchDeployment } from '../deployment-hook';
 
 async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
-  const deployment = await fetchDeployment(spaceId, processId);
+  const deployment = await getDeployment(spaceId, processId);
 
   if (!deployment) {
     return (

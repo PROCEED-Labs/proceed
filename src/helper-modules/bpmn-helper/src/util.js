@@ -77,6 +77,7 @@ function getChildren(travObj) {
     'participants',
     'laneSets',
     'lanes',
+    'artifacts'
   ];
 
   const allChildren = childNodeTypes

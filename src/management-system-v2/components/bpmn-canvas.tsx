@@ -293,7 +293,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current!.on(
           'commandStack.shape.create.executed',
           (event: { context: { shape: Shape } }) => {
-            onShapeRemoveUndo?.(event.context.shape.businessObject);
+            if (event.context.shape.businessObject)
+              onShapeRemoveUndo?.(event.context.shape.businessObject);
           },
         );
       }

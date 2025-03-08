@@ -59,7 +59,12 @@ export default class ResourceLabelEditingProvider {
         context: { shape },
       } = event;
 
-      if (isLabel(shape) && is(shape, 'proceed:GenericResource') && !shape.businessObject) {
+      if (
+        isLabel(shape) &&
+        !shape.businessObject &&
+        shape.oldBusinessObject &&
+        is(shape.oldBusinessObject, 'proceed:GenericResource')
+      ) {
         const businessObject = shape.oldBusinessObject;
         modeling.removeElements([shape]);
 
@@ -72,7 +77,7 @@ export default class ResourceLabelEditingProvider {
           },
           {
             id: shape.businessObject.id + '_label',
-            businessObject: shape.businessObject,
+            businessObject,
             di: shape.di,
           },
         );

@@ -212,7 +212,6 @@ export default class CustomContextPadProvider implements ContextPadProvider {
         'Assign IT System',
         'Laptop',
       );
-    } else {
     }
 
     return actions;

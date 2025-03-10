@@ -385,6 +385,10 @@ export const INITIAL_TOOLBOX_JSON = {
   ],
 };
 
+// --------------------------------------------
+// Console Log
+// --------------------------------------------
+
 Blocks['console_log'] = {
   init: function (this: Blockly.Block) {
     this.jsonInit({
@@ -408,6 +412,10 @@ javascriptGenerator.forBlock['console_log'] = function (block) {
 
   return `console.log(${value});\n`;
 };
+
+// --------------------------------------------
+// Variables
+// --------------------------------------------
 
 Blocks['variables_get'] = {
   init: function () {
@@ -468,6 +476,10 @@ javascriptGenerator.forBlock['variables_get_all'] = function (_) {
   return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
 };
 
+// --------------------------------------------
+// Progress
+// --------------------------------------------
+
 Blocks['progress'] = {
   init: function () {
     this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
@@ -488,6 +500,10 @@ javascriptGenerator.forBlock['progress'] = function (block) {
   const code = `setProgress(${progressValue});\n`;
   return code;
 };
+
+// --------------------------------------------
+// Errors
+// --------------------------------------------
 
 Blocks['throw_error'] = {
   init: function () {

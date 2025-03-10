@@ -10,6 +10,7 @@ import {
   completeTasklistEntry,
   getTasklistEntryHTML,
   setTasklistEntryVariableValues,
+  setTasklistMilestoneValues,
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 
@@ -73,9 +74,18 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
                     body: { [key: string]: any },
                     query: { instanceID: string; userTaskID: string },
                   ) => {
-                    // if (path === '/tasklist/api/milestone') {
-                    // TODO: implement milestone handling
-                    // }
+                    if (path === '/tasklist/api/milestone') {
+                      wrapServerCall({
+                        fn: () =>
+                          setTasklistMilestoneValues(
+                            spaceId,
+                            query.instanceID,
+                            query.userTaskID,
+                            body,
+                          ),
+                        onSuccess: () => {},
+                      });
+                    }
                     if (path === '/tasklist/api/variable') {
                       wrapServerCall({
                         fn: () =>
@@ -85,7 +95,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
                             query.userTaskID,
                             body,
                           ),
-                        onSuccess: () => router.refresh(),
+                        onSuccess: () => {},
                       });
                     }
                   },

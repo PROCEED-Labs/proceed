@@ -73,6 +73,24 @@ export async function setTasklistEntryVariableValuesOnMachine(
   });
 }
 
+export async function setTasklistEntryMilestoneValuesOnMachine(
+  machine: Engine,
+  instanceId: string,
+  userTaskId: string,
+  milestones: { [key: string]: any },
+) {
+  await engineRequest({
+    method: 'put',
+    endpoint: '/tasklist/api/variable',
+    engine: machine,
+    queryParams: {
+      instanceID: instanceId,
+      userTaskID: userTaskId,
+    },
+    body: milestones,
+  });
+}
+
 export async function completeTasklistEntryOnMachine(
   machine: Engine,
   instanceId: string,

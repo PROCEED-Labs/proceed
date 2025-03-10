@@ -26,6 +26,7 @@ import {
   completeTasklistEntryOnMachine,
   getTaskListFromMachine,
   getTasklistEntryHTMLFromMachine,
+  setTasklistEntryMilestoneValuesOnMachine,
   setTasklistEntryVariableValuesOnMachine,
 } from './tasklist';
 import { truthyFilter } from '../typescript-utils';
@@ -240,6 +241,38 @@ export async function setTasklistEntryVariableValues(
     if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
 
     await setTasklistEntryVariableValuesOnMachine(engines[0], instanceId, userTaskId, variables);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function setTasklistMilestoneValues(
+  spaceId: string,
+  instanceId: string,
+  userTaskId: string,
+  milestones: { [key: string]: any },
+) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await getDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      return instance.tokens.some((token) => token.currentFlowElementId === userTaskId);
+    });
+
+    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+
+    await setTasklistEntryMilestoneValuesOnMachine(engines[0], instanceId, userTaskId, milestones);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

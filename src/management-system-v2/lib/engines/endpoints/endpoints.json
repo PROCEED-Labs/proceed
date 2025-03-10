@@ -62,7 +62,10 @@
       "instanceID": true,
       "userTaskID": true
     },
-    "/tasklist/api/milestone": {},
+    "/tasklist/api/milestone": {
+      "instanceID": true,
+      "userTaskID": true
+    },
     "/process/:definitionId/instance/:instanceID": {},
     "/process/:definitionId/instance/:instanceID/instanceState": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {},

@@ -17,7 +17,13 @@
     "/logging/process/:definitionId/instance/:instanceId": {},
     "/monitoring/": {},
     "/tasklist/api/": {},
-    "/tasklist/api/userTask": {},
+    "/tasklist/api/userTask": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true,
+        "startTime": true
+      }
+    },
     "/configuration/api/config": {},
     "/logging/api/log": {},
     "/": {},
@@ -39,7 +45,10 @@
     "/capabilities/execute": {},
     "/capabilities/return": {},
     "/evaluation/": {},
-    "/tasklist/api/userTask": {},
+    "/tasklist/api/userTask": {
+      "instanceID": true,
+      "userTaskID": true
+    },
     "/configuration/api/config": {},
     "/process/": {},
     "/process/:definitionId/versions/:version/instance": {},
@@ -49,7 +58,10 @@
   },
   "put": {
     "/configuration/": {},
-    "/tasklist/api/variable": {},
+    "/tasklist/api/variable": {
+      "instanceID": true,
+      "userTaskID": true
+    },
     "/tasklist/api/milestone": {},
     "/process/:definitionId/instance/:instanceID": {},
     "/process/:definitionId/instance/:instanceID/instanceState": {},

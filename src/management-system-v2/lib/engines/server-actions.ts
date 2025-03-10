@@ -167,7 +167,8 @@ export async function getAvailableTaskListEntries(spaceId: string) {
 
     return results.flat();
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -208,7 +209,8 @@ export async function getTasklistEntryHTML(
 
     return await getTasklistEntryHTMLFromMachine(engines[0], instanceId, userTaskId, startTime);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -239,7 +241,8 @@ export async function setTasklistEntryVariableValues(
 
     await setTasklistEntryVariableValuesOnMachine(engines[0], instanceId, userTaskId, variables);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -270,7 +273,8 @@ export async function completeTasklistEntry(
 
     await completeTasklistEntryOnMachine(engines[0], instanceId, userTaskId, variables);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 

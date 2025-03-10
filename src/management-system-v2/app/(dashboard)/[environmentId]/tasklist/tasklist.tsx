@@ -468,13 +468,12 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
               <iframe
                 ref={(r) => {
                   if (r?.contentWindow) {
-                    r.contentWindow.PROCEED_DATA = {
+                    (r.contentWindow as any).PROCEED_DATA = {
                       post: async (
                         path: string,
                         body: { [key: string]: any },
                         query: { instanceID: string; userTaskID: string },
                       ) => {
-                        console.log(path, body, query);
                         if (path === '/tasklist/api/userTask') {
                           wrapServerCall({
                             fn: () =>
@@ -493,7 +492,6 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
                         body: { [key: string]: any },
                         query: { instanceID: string; userTaskID: string },
                       ) => {
-                        console.log(path, body, query);
                         // if (path === '/tasklist/api/milestone') {
                         // TODO: implement milestone handling
                         // }

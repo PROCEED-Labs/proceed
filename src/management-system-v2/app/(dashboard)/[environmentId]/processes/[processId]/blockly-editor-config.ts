@@ -343,7 +343,7 @@ export const INITIAL_TOOLBOX_JSON = {
     { kind: 'sep' },
     {
       kind: 'category',
-      name: 'Variables',
+      name: 'Process Variables',
       colour: 290,
       contents: [
         {
@@ -353,6 +353,10 @@ export const INITIAL_TOOLBOX_JSON = {
         {
           kind: 'block',
           type: 'variables_set',
+        },
+        {
+          kind: 'block',
+          type: 'variables_get_all',
         },
       ],
     },
@@ -448,6 +452,20 @@ javascriptGenerator.forBlock['variables_set'] = function (block) {
 
   const code = `variable.set("${variableName}", ${variableValue || null});\n`;
   return code;
+};
+
+Blocks['variables_get_all'] = {
+  init: function () {
+    this.appendDummyInput().appendField('Get all variables');
+    this.setOutput(true, null);
+    this.setTooltip('Returns an object containing all variables and values');
+    this.setHelpUrl('');
+    this.setColour(75);
+  },
+};
+
+javascriptGenerator.forBlock['variables_get_all'] = function (_) {
+  return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
 };
 
 Blocks['progress'] = {

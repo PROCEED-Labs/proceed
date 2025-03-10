@@ -114,8 +114,41 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
     onChangeFunc.current?.(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
   }, []);
 
-  return (
+  useEffect(() => {
+    if (!blocklyEditorRef.current || initialXml === '') return;
+    const xml = Blockly.utils.xml.textToDom(initialXml);
+    Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyEditorRef.current);
+    blocklyEditorRef.current.scrollCenter();
+  }, [initialXml]);
+
+  // react blockly doesn't when readOnly changes and it can even lead to issues if the workspace was
+  // readonly and changed to editable
+  // For this reason, when reaOnly changes, we unmount the BlocklyWorkspace and mount a new one
+  return blocklyOptions?.readOnly ? (
     <BlocklyWorkspace
+      key="readonly-blockly"
+      initialXml={initialXml}
+      className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
+      toolboxConfiguration={INITIAL_TOOLBOX_JSON} // this must be a JSON toolbox definition
+      workspaceConfiguration={{
+        grid: {
+          spacing: 20,
+          length: 3,
+          colour: '#ccc',
+          snap: true,
+        },
+        scrollbars: true,
+        ...blocklyOptions,
+      }}
+      onWorkspaceChange={onWorkspaceChange}
+      onInject={(newWorkspace) => {
+        blocklyEditorRef.current = newWorkspace;
+      }}
+    />
+  ) : (
+    <BlocklyWorkspace
+      key="editable-blockly"
+      initialXml={initialXml}
       className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
       toolboxConfiguration={INITIAL_TOOLBOX_JSON} // this must be a JSON toolbox definition
       workspaceConfiguration={{

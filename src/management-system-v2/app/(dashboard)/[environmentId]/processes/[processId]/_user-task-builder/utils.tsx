@@ -3,7 +3,7 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
-import BuilderContext from './BuilderContext';
+import { CanEditContext } from '../modeler';
 
 const styles = `
 body {
@@ -164,7 +164,7 @@ p, h1, h2, h3, h4, h5, th, td {
 
 export function toHtml(json: string) {
   const markup = ReactDOMServer.renderToStaticMarkup(
-    <BuilderContext.Provider value={{ editingEnabled: true }}>
+    <CanEditContext.Provider value={true}>
       <Editor
         enabled={false}
         resolver={{
@@ -175,7 +175,7 @@ export function toHtml(json: string) {
         <Frame data={json} />
       </Editor>
       ,
-    </BuilderContext.Provider>,
+    </CanEditContext.Provider>,
   );
 
   return `

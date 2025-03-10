@@ -2,17 +2,17 @@ import { useEditor, useNode, UserComponent, Node } from '@craftjs/core';
 
 import { InputNumber } from 'antd';
 
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import { ContextMenu, Setting } from './utils';
 import ImageUpload from '@/components/image-upload';
-import BuilderContext from '../BuilderContext';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { enableUseFileManager } from 'FeatureFlags';
+import { useCanEdit } from '../../modeler';
 
 type ImageProps = {
   src?: string;
@@ -60,7 +60,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }
     return { isHovered: !!parent && parent.events.hovered };
   });
 
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   const {
     fileUrl: imageUrl,

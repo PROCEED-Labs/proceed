@@ -321,17 +321,6 @@ export const INITIAL_TOOLBOX_JSON = {
             '      </value>\n' +
             '    </block>\n',
         },
-        {
-          kind: 'block',
-          blockxml:
-            '    <block type="console_log">\n' +
-            '      <value name="value">\n' +
-            '        <shadow type="text">\n' +
-            '          <field name="TEXT">abc</field>\n' +
-            '        </shadow>\n' +
-            '      </value>\n' +
-            '    </block>\n',
-        },
       ],
     },
     {
@@ -374,6 +363,21 @@ export const INITIAL_TOOLBOX_JSON = {
     },
     {
       kind: 'category',
+      name: 'Console',
+      colour: 290,
+      contents: [
+        { kind: 'block', type: 'console_log' },
+        { kind: 'block', type: 'console_trace' },
+        { kind: 'block', type: 'console_debug' },
+        { kind: 'block', type: 'console_info' },
+        { kind: 'block', type: 'console_warn' },
+        { kind: 'block', type: 'console_error' },
+        { kind: 'block', type: 'console_time' },
+        { kind: 'block', type: 'console_timeend' },
+      ],
+    },
+    {
+      kind: 'category',
       name: 'Error',
       colour: 290,
       contents: [
@@ -395,34 +399,6 @@ export const INITIAL_TOOLBOX_JSON = {
       ],
     },
   ],
-};
-
-// --------------------------------------------
-// Console Log
-// --------------------------------------------
-
-Blocks['console_log'] = {
-  init: function (this: Blockly.Block) {
-    this.jsonInit({
-      message0: 'print %1',
-      args0: [
-        {
-          type: 'input_value',
-          name: 'value',
-        },
-      ],
-      tooltip: 'Writes the input to the command line of the engine that executes the process!',
-      nextStatement: true,
-      previousStatement: true,
-      colour: 160,
-    });
-  },
-};
-
-javascriptGenerator.forBlock['console_log'] = function (block) {
-  const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
-
-  return `console.log(${value});\n`;
 };
 
 // --------------------------------------------
@@ -517,6 +493,38 @@ for (const level of ['Trace', 'Debug', 'Info', 'Warn', 'Error']) {
   javascriptGenerator.forBlock[blockName] = function (block) {
     const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
     return `log.${lowerCaseLevel}(${value});\n`;
+  };
+}
+
+// --------------------------------------------
+// Console Log
+// --------------------------------------------
+
+for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', 'TimeEnd']) {
+  const lowerCaseLevel = level.toLowerCase();
+  const blockName = `console_${lowerCaseLevel}`;
+  Blocks[blockName] = {
+    init: function (this: Blockly.Block) {
+      this.jsonInit({
+        message0: `Console ${level} %1`,
+        args0: [
+          {
+            type: 'input_value',
+            name: 'value',
+          },
+        ],
+        tooltip: 'Write a message to the console of the engine.',
+        helpUrl: 'https://docs.proceed-labs.org/developer/bpmn/bpmn-script-task#console',
+        nextStatement: true,
+        previousStatement: true,
+        colour: 75,
+      });
+    },
+  };
+
+  javascriptGenerator.forBlock[blockName] = function (block) {
+    const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
+    return `console.${lowerCaseLevel}(${value});\n`;
   };
 }
 

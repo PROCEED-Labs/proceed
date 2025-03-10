@@ -7,8 +7,13 @@ import { Shape } from 'bpmn-js/lib/model/Types';
 import { isLabel } from 'bpmn-js/lib/util/LabelUtil';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 import TextRenderer from 'bpmn-js/lib/draw/TextRenderer';
+import { getBackgroundColor, getBorderColor } from '@/lib/helpers/bpmn-js-helpers';
 
-export default class PerformerLabelEditingProvider {
+/**
+ * This module provides functionality that allows label editing on resource elements similar to the
+ * label editing on default bpmn-js elements
+ **/
+export default class ResourceLabelEditingProvider {
   static $inject = [
     'eventBus',
     'modeling',
@@ -40,7 +45,7 @@ export default class PerformerLabelEditingProvider {
         context: { shape },
       } = event;
 
-      if (isLabel(shape) && is(shape, 'proceed:Performer') && shape.businessObject) {
+      if (isLabel(shape) && is(shape, 'proceed:GenericResource') && shape.businessObject) {
         shape.oldBusinessObject = shape.businessObject;
         shape.businessObject = undefined;
         return false;
@@ -54,7 +59,12 @@ export default class PerformerLabelEditingProvider {
         context: { shape },
       } = event;
 
-      if (isLabel(shape) && is(shape, 'proceed:Performer') && !shape.businessObject) {
+      if (
+        isLabel(shape) &&
+        !shape.businessObject &&
+        shape.oldBusinessObject &&
+        is(shape.oldBusinessObject, 'proceed:GenericResource')
+      ) {
         const businessObject = shape.oldBusinessObject;
         modeling.removeElements([shape]);
 
@@ -67,7 +77,7 @@ export default class PerformerLabelEditingProvider {
           },
           {
             id: shape.businessObject.id + '_label',
-            businessObject: shape.businessObject,
+            businessObject,
             di: shape.di,
           },
         );
@@ -79,11 +89,12 @@ export default class PerformerLabelEditingProvider {
 
     directEditing.registerProvider(this);
 
-    const onPerformerDoubleClick: EventBusEventCallback<{ element: Shape }> = (event) => {
+    const onResourceDoubleClick: EventBusEventCallback<{ element: Shape }> = (event) => {
       let { element } = event;
-      if (is(element, 'proceed:Performer') && !isLabel(element)) {
+      if (is(element, 'proceed:GenericResource') && !isLabel(element)) {
         if (!element.label) {
-          // create a label that we can target with direct editing when a user double clicks a performer that does not have a label
+          // create a label that we can target with direct editing when a user double clicks a resource
+          // that does not have a label
           modeling.createLabel(
             element,
             {
@@ -102,41 +113,13 @@ export default class PerformerLabelEditingProvider {
       }
     };
 
-    eventBus.on('element.dblclick', 1500, onPerformerDoubleClick);
-
-    const postAdd: EventBusEventCallback<{ element: Shape }> = ({ element }) => {
-      if (
-        is(element, 'proceed:Performer') &&
-        !isLabel(element) &&
-        !element.label &&
-        element.di &&
-        element.di.label &&
-        element.di.label.bounds
-      ) {
-        // recreate labels when importing an xml into the modeler
-        modeling.createLabel(
-          element,
-          {
-            x: element.di.label.bounds.x,
-            y: element.di.label.bounds.y,
-            width: element.di.label.bounds.width,
-            height: element.di.label.bounds.height,
-          } as any,
-          {
-            id: element.businessObject.id + '_label',
-            businessObject: element.businessObject,
-            di: element.di,
-          },
-        );
-      }
-    };
-
-    eventBus.on('shape.added', 1500, postAdd);
+    eventBus.on('element.dblclick', 1500, onResourceDoubleClick);
   }
 
   // this function is called by the direct-editing module and should return information about the editing box
   // to display for direct editing
   activate(element: Shape) {
+    if (!is(element, 'proceed:GenericResource')) return;
     const { canvas, textRenderer } = this;
 
     const target = isLabel(element) ? element : element.label!;
@@ -173,8 +156,8 @@ export default class PerformerLabelEditingProvider {
       lineHeight: externalLineHeight,
       paddingTop: paddingTop + 'px',
       paddingBottom: paddingBottom + 'px',
-      backgroundColor: '#ffffff',
-      border: '1px solid #ccc',
+      backgroundColor: getBackgroundColor(element.parent as Shape) || '#ffffff',
+      border: `1px solid ${getBorderColor(element) || 'black'}`,
     };
 
     const options = {

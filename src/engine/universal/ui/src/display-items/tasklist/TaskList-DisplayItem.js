@@ -1,9 +1,9 @@
 const DisplayItem = require('./../../display-item.js');
 const distribution = require('@proceed/distribution');
 const { logging } = require('@proceed/machine');
-const whiskers = require('whiskers/dist/whiskers.min.js');
-const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/getters');
 const { enable5thIndustryIntegration } = require('../../../../../../../FeatureFlags.js');
+
+const { inlineUserTaskData } = require('@proceed/user-task-helper/index.js');
 
 class TaskListTab extends DisplayItem {
   constructor(management) {
@@ -54,32 +54,9 @@ class TaskListTab extends DisplayItem {
     let engine = this.management.getEngineWithID(instanceId);
 
     let userTask;
+
+    let userTaskInstance;
     let definitionId;
-    let variables;
-    let milestonesData;
-
-    function getVariableStateAtUserTaskEnd(userTask, instance) {
-      const variables = {};
-
-      Object.entries(instance.variables).map(([key, { value, log }]) => {
-        for (const entry of log) {
-          if (userTask.endTime && entry.changedTime > userTask.endTime + 10) {
-            value = entry.oldValue;
-            break;
-          }
-        }
-
-        variables[key] = value;
-      });
-
-      if (userTask.variableChanges) {
-        Object.entries(userTask.variableChanges).forEach(
-          ([key, value]) => (variables[key] = value),
-        );
-      }
-
-      return variables;
-    }
 
     if (engine) {
       userTask = engine.userTasks.find(
@@ -93,20 +70,9 @@ class TaskListTab extends DisplayItem {
         throw new Error(`No pending user task with id ${query.userTaskID}`);
       }
 
-      definitionId = engine.definitionId;
+      userTaskInstance = engine.getInstanceInformation(instanceId);
 
-      if (userTask.state === 'READY' || userTask.state === 'ACTIVE') {
-        // get the data from the instance (will merge the instance and token data)
-        variables = userTask.processInstance.getVariables(userTask.tokenId);
-        // get the data from the instance (will look at the data of the token that currently resides on this user task)
-        milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
-      } else {
-        const instance = engine.getInstanceInformation(instanceId);
-        // use the data in the user task if it exists (this is the case when the user task has already ended)
-        variables = getVariableStateAtUserTaskEnd(userTask, instance);
-        // use the data in the user task if it exists (this is the case when the user task has already ended)
-        milestonesData = userTask.milestones || {};
-      }
+      definitionId = engine.definitionId;
     } else {
       const inactiveTasks = await this.management.getInactiveUserTasks();
       userTask = inactiveTasks.find(
@@ -118,21 +84,9 @@ class TaskListTab extends DisplayItem {
       const allArchivedUserTaskInstances = await distribution.db.getArchivedInstances(
         userTask.definitionId,
       );
-      const userTaskInstance = allArchivedUserTaskInstances[query.instanceID];
-      const userTaskToken = userTaskInstance.tokens.find(
-        (token) => token.currentFlowElementId === query.userTaskID,
-      );
+      userTaskInstance = allArchivedUserTaskInstances[query.instanceID];
 
       definitionId = userTask.definitionId;
-
-      variables = getVariableStateAtUserTaskEnd(userTask, userTaskInstance);
-
-      if (userTaskToken) {
-        milestonesData = userTaskToken.milestones;
-      } else {
-        const logEntry = userTaskInstance.log.find((log) => log.flowElementId === query.userTaskID);
-        milestonesData = logEntry.milestones;
-      }
     }
 
     const {
@@ -141,7 +95,6 @@ class TaskListTab extends DisplayItem {
       ['_5thIndustryInspectionOrderLink']: inspectionOrderLink,
       activate,
       definitionVersion,
-      tokenId,
     } = userTask;
 
     if (enable5thIndustryIntegration && implementation === '5thIndustry') {
@@ -164,108 +117,10 @@ class TaskListTab extends DisplayItem {
 
       const { 'proceed:fileName': userTaskFileName } = attrs;
 
+      const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
       const html = await distribution.db.getHTML(definitionId, userTaskFileName);
 
-      const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
-
-      const milestones = await getMilestonesFromElementById(bpmn, query.userTaskID);
-
-      const script = `
-      const instanceID = '${query.instanceID}';
-      const userTaskID = '${query.userTaskID}';
-
-      window.addEventListener('submit', (event) => {
-        event.preventDefault();
-
-        const data = new FormData(event.target);
-        const variables = {};
-        const entries = data.entries();
-        let entry = entries.next();
-        while (!entry.done) {
-          const [key, value] = entry.value;
-          if (variables[key]) {
-            if (!Array.isArray(variables[key])) {
-              variables[key] = [variables[key]]; 
-            }
-            variables[key].push(value);
-          } else {
-            variables[key] = value; 
-          }
-          entry = entries.next();
-        }
-
-        window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
-            instanceID,
-            userTaskID,
-        }).then(() => {
-          window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
-            instanceID,
-            userTaskID,
-          });
-        });
-      })
-
-      window.addEventListener('DOMContentLoaded', () => {
-        const milestoneInputs = document.querySelectorAll(
-          'input[class^="milestone-"]'
-        );
-        Array.from(milestoneInputs).forEach((milestoneInput) => {
-          milestoneInput.addEventListener('click', (event) => {
-            const milestoneName = Array.from(event.target.classList)
-            .find((className) => className.includes('milestone-'))
-            .split('milestone-')
-            .slice(1)
-            .join('');
-
-            window.PROCEED_DATA.put(
-              '/tasklist/api/milestone',
-              { [milestoneName]: parseInt(event.target.value) },
-              {
-                instanceID,
-                userTaskID,
-              }
-            );
-          });
-        });
-
-        const variableInputs = document.querySelectorAll(
-          'input[class^="variable-"]'
-        );
-        Array.from(variableInputs).forEach((variableInput) => {
-          let variableInputTimer;
-
-          variableInput.addEventListener('input', (event) => {
-            const variableName = Array.from(event.target.classList)
-            .find((className) => className.includes('variable-'))
-            .split('variable-')
-            .slice(1)
-            .join('');
-
-            clearTimeout(variableInputTimer);
-
-            variableInputTimer = setTimeout(() => {
-              window.PROCEED_DATA.put(
-                '/tasklist/api/variable',
-                { [variableName]: event.target.value },
-                {
-                  instanceID,
-                  userTaskID,
-                }
-              );
-            }, 5000)
-          });
-        });
-      })
-      `;
-
-      const parsedHtml = whiskers.render(html, {
-        ...variables,
-        ...milestonesData,
-        milestones,
-        script,
-      });
-
-      return parsedHtml;
+      return await inlineUserTaskData(bpmn, html, userTask, userTaskInstance);
     }
   }
 

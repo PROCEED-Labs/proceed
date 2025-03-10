@@ -1,0 +1,16 @@
+{
+  "name": "@proceed/user-task-helper",
+  "version": "1.0.0",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "description": "This library provides functions that handle user task html forms for PROCEED",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "whiskers": "^0.4.0"
+  }
+}

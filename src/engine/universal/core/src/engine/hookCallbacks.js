@@ -282,7 +282,7 @@ module.exports = {
 
       newInstance.onFlowNodeExecuted((execution) => {
         const token = engine.getToken(newInstance.id, execution.tokenId);
-        // move information about milestones to log and delete from token
+        // move information from the token to the log and update the token
         if (token) {
           if (token.currentFlowNodeProgress && token.currentFlowNodeProgress.manual) {
             newInstance.updateLog(execution.flowElementId, execution.tokenId, {

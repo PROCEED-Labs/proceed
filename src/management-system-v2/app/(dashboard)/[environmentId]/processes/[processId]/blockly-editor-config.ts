@@ -2,6 +2,11 @@ import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
 import * as Blockly from 'blockly/core';
 
+interface BlockDeclaration {
+  init(this: Blockly.Block): void;
+}
+const Blocks = Blockly.Blocks as Record<string, BlockDeclaration>;
+
 export const INITIAL_TOOLBOX_JSON = {
   kind: 'categoryToolbox',
   contents: [
@@ -376,7 +381,7 @@ export const INITIAL_TOOLBOX_JSON = {
   ],
 };
 
-Blockly.Blocks['console_log'] = {
+Blocks['console_log'] = {
   init: function (this: Blockly.Block) {
     this.jsonInit({
       message0: 'print %1',
@@ -400,7 +405,7 @@ javascriptGenerator.forBlock['console_log'] = function (block) {
   return `console.log(${value});\n`;
 };
 
-Blockly.Blocks['variables_get'] = {
+Blocks['variables_get'] = {
   init: function () {
     this.appendDummyInput()
       .appendField('Variable')
@@ -418,7 +423,7 @@ javascriptGenerator.forBlock['variables_get'] = function (block) {
   return [code, BlocklyJavaScript.Order.ATOMIC];
 };
 
-Blockly.Blocks['variables_set'] = {
+Blocks['variables_set'] = {
   init: function () {
     this.appendValueInput('value')
       .appendField('Set variable')
@@ -445,7 +450,7 @@ javascriptGenerator.forBlock['variables_set'] = function (block) {
   return code;
 };
 
-Blockly.Blocks['progress'] = {
+Blocks['progress'] = {
   init: function () {
     this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
     this.setInputsInline(true);
@@ -466,7 +471,7 @@ javascriptGenerator.forBlock['progress'] = function (block) {
   return code;
 };
 
-Blockly.Blocks['throw_error'] = {
+Blocks['throw_error'] = {
   init: function () {
     this.appendDummyInput()
       .appendField('Throw')
@@ -480,7 +485,7 @@ Blockly.Blocks['throw_error'] = {
 
     this.appendDummyInput()
       .appendField('Reference')
-      .appendField(new Blockly.FieldTextInput(''), 'reference');
+      .appendField(new Blockly.FieldTextInput(undefined), 'reference');
 
     this.appendDummyInput()
       .appendField('Explanation')

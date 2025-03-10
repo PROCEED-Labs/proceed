@@ -362,6 +362,18 @@ export const INITIAL_TOOLBOX_JSON = {
     },
     {
       kind: 'category',
+      name: 'Engine Log',
+      colour: 290,
+      contents: [
+        { kind: 'block', type: 'log_trace' },
+        { kind: 'block', type: 'log_debug' },
+        { kind: 'block', type: 'log_info' },
+        { kind: 'block', type: 'log_warn' },
+        { kind: 'block', type: 'log_error' },
+      ],
+    },
+    {
+      kind: 'category',
       name: 'Error',
       colour: 290,
       contents: [
@@ -428,6 +440,89 @@ Blocks['variables_get'] = {
     this.setColour(75);
   },
 };
+
+javascriptGenerator.forBlock['variables_get'] = function (block) {
+  const variableName = block.getFieldValue('name');
+  const code = `variable.get("${variableName}")`;
+  return [code, BlocklyJavaScript.Order.FUNCTION_CALL];
+};
+
+Blocks['variables_set'] = {
+  init: function () {
+    this.appendValueInput('value')
+      .appendField('Set variable')
+      .appendField(new Blockly.FieldTextInput('variableName'), 'name')
+      .appendField('to');
+    this.setInputsInline(true);
+    this.setTooltip('');
+    this.setHelpUrl('');
+    this.setColour(75);
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+  },
+};
+
+javascriptGenerator.forBlock['variables_set'] = function (block) {
+  const variableName = block.getFieldValue('name');
+  const variableValue = javascriptGenerator.valueToCode(
+    block,
+    'value',
+    BlocklyJavaScript.Order.ATOMIC,
+  );
+
+  const code = `variable.set("${variableName}", ${variableValue || null});\n`;
+  return code;
+};
+
+Blocks['variables_get_all'] = {
+  init: function () {
+    this.appendDummyInput().appendField('Get all variables');
+    this.setOutput(true, null);
+    this.setTooltip('Returns an object containing all variables and values');
+    this.setHelpUrl('');
+    this.setColour(75);
+  },
+};
+
+javascriptGenerator.forBlock['variables_get_all'] = function (_) {
+  return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
+};
+
+// --------------------------------------------
+// Engine Log
+// --------------------------------------------
+
+for (const level of ['Trace', 'Debug', 'Info', 'Warn', 'Error']) {
+  const lowerCaseLevel = level.toLowerCase();
+  const blockName = `log_${lowerCaseLevel}`;
+  Blocks[blockName] = {
+    init: function (this: Blockly.Block) {
+      this.jsonInit({
+        message0: `${level} log %1`,
+        args0: [
+          {
+            type: 'input_value',
+            name: 'value',
+          },
+        ],
+        tooltip: 'Write a message to the logging system of the Engine.',
+        helpUrl: 'https://docs.proceed-labs.org/developer/bpmn/bpmn-script-task#log',
+        nextStatement: true,
+        previousStatement: true,
+        colour: 75,
+      });
+    },
+  };
+
+  javascriptGenerator.forBlock[blockName] = function (block) {
+    const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
+    return `log.${lowerCaseLevel}(${value});\n`;
+  };
+}
+
+// --------------------------------------------
+// Variables
+// --------------------------------------------
 
 javascriptGenerator.forBlock['variables_get'] = function (block) {
   const variableName = block.getFieldValue('name');

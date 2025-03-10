@@ -420,7 +420,7 @@ Blocks['variables_get'] = {
 javascriptGenerator.forBlock['variables_get'] = function (block) {
   const variableName = block.getFieldValue('name');
   const code = `variable.get("${variableName}")`;
-  return [code, BlocklyJavaScript.Order.ATOMIC];
+  return [code, BlocklyJavaScript.Order.FUNCTION_CALL];
 };
 
 Blocks['variables_set'] = {

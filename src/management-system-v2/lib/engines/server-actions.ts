@@ -1,6 +1,6 @@
 'use server';
 
-import { userError } from '../user-error';
+import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
   deployProcess as _deployProcess,
   getDeployments,
@@ -58,7 +58,7 @@ async function getCorrectTargetEngines(
 
   if (validatorFunc) engines = await asyncFilter(engines, validatorFunc);
 
-  if (engines.length === 0) throw new Error('No fitting engine found.');
+  if (engines.length === 0) throw new UserFacingError('No fitting engine found.');
 
   return engines;
 }
@@ -91,7 +91,8 @@ export async function deployProcess(
 
     await _deployProcess(definitionId, versionId, spaceId, method, engines);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -107,7 +108,8 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
 
     await removeDeploymentFromMachines(engines, definitionId);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -141,7 +143,8 @@ export async function startInstance(
     // (e.g. the one with the least load)
     return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -281,6 +284,7 @@ export async function getAvailableSpaceEngines(spaceId: string) {
     const spaceEngines = await getSpaceEnginesFromDb(spaceId, ability);
     return await spaceEnginesToEngines(spaceEngines);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }

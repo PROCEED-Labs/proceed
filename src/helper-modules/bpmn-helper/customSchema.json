@@ -404,6 +404,116 @@
       ]
     },
     {
+      "name": "originalName",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalName",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalUserDefinedId",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalUserDefinedId",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalCreationDate",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalCreationDate",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalProcessVersionId",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalProcessVersionId",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalProcessVersionName",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalProcessVersionName",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalCreatorSpaceId",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalCreatorSpaceId",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalCreatorSpaceName",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalCreatorSpaceName",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalCreatorId",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalCreatorId",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalCreatorName",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalCreatorName",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "originalCreatorUsername",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "originalCreatorUsername",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
       "name": "originalExporter",
       "extends": ["bpmn:Definitions"],
       "properties": [

@@ -223,10 +223,12 @@ export async function getTasklistEntryHTML(
     const deployment = deployments[0][1].find((d) => d.definitionId === definitionId)!;
     const instance = deployment.instances.find((i) => i.processInstanceId === instanceId)!;
     const version = deployment.versions.find((v) => v.versionId === instance.processVersion)!;
-    const userTask = instance.userTasks.find(
-      (uT) =>
-        uT.processInstance.id === instanceId && uT.id === userTaskId && uT.startTime == startTime,
+    const userTasks = await getTaskListFromMachine(deployments[0][0]);
+    const userTask = userTasks.find(
+      (uT) => uT.instanceID === instanceId && uT.id === userTaskId && uT.startTime == startTime,
     );
+
+    if (!userTask) throw new Error('Could not fetch user task data!');
 
     return await inlineUserTaskData(version.bpmn, html, userTask, instance);
   } catch (e) {

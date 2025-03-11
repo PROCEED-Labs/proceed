@@ -34,7 +34,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
           getTasklistEntryHTML(
             spaceId,
             task.instanceID,
-            task.taskId,
+            task.id,
             task.attrs['proceed:fileName'],
             task.startTime,
           ),

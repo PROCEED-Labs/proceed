@@ -11,8 +11,6 @@ const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/gette
  * @typedef UserTaskInfo
  * @type {object}
  * @property {string} id - the id of the user task
- * @property {{id: string}} processInstance - the instance the user task is executed in
- * @property {string} tokenId - the token that activated the user task
  * @property {number} startTime - the time at which execution of the element started
  * @property {number} [endTime] - the time at which execution of the element ended
  * @property {string} state - the current execution state of the user task

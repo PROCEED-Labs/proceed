@@ -10,29 +10,29 @@ import { getProceedEngines } from '@/lib/engines/machines';
 import { getSpaceEngines } from '@/lib/data/space-engines';
 import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
 import { isUserErrorResponse } from '@/lib/user-error';
+import { Skeleton } from 'antd';
+import { Suspense } from 'react';
 
-function getDeploymentNames(deployments: DeployedProcessInfo[]) {
+function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
+  deployments: T[],
+) {
   for (const deployment of deployments) {
-    let latestVesrionIdx = deployment.versions.length - 1;
+    let latestDeploymentIdx = deployment.versions.length - 1;
     for (let i = deployment.versions.length - 2; i >= 0; i--) {
-      if (deployment.versions[i].version > deployment.versions[latestVesrionIdx].version)
-        latestVesrionIdx = i;
+      if (deployment.versions[i].versionId > deployment.versions[latestDeploymentIdx].versionId)
+        latestDeploymentIdx = i;
     }
-    const latestVersion = deployment.versions[latestVesrionIdx];
+    const latestDeployment = deployment.versions[latestDeploymentIdx];
 
     // @ts-ignore
-    deployment.name = latestVersion.definitionName || latestVersion.versionName;
+    deployment.name = latestDeployment.definitionName || latestDeployment.versionName;
   }
 
-  return deployments as (DeployedProcessInfo & { name: string })[];
+  return deployments as (T & { name: string })[];
 }
 
-export default async function ExecutionsPage({ params }: { params: { environmentId: string } }) {
-  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
-    return notFound();
-  }
-
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+async function Executions({ environmentId }: { environmentId: string }) {
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   // TODO: check ability
 
@@ -57,16 +57,35 @@ export default async function ExecutionsPage({ params }: { params: { environment
       })(),
     ]);
 
-  const deployedProcesses = getDeploymentNames(deployedInProceed.concat(deployedInSpaceEngines));
+  const deployedWithRemappedIds: (Omit<DeployedProcessInfo, 'definitionId'> & { id: string })[] =
+    deployedInProceed.concat(deployedInSpaceEngines).map((_process) => {
+      const process = _process as any;
+      process.id = process.definitionId;
+      delete process.definitionId;
+      return process;
+    });
+  const deployedProcesses = getDeploymentNames(deployedWithRemappedIds);
+
+  return (
+    <DeploymentsView
+      processes={folderContents}
+      folder={folder}
+      favourites={favs as string[]}
+      deployedProcesses={deployedProcesses}
+    />
+  );
+}
+
+export default function ExecutionsPage({ params }: { params: { environmentId: string } }) {
+  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+    return notFound();
+  }
 
   return (
     <Content title="Executions">
-      <DeploymentsView
-        processes={folderContents}
-        folder={folder}
-        favourites={favs as string[]}
-        deployedProcesses={deployedProcesses}
-      ></DeploymentsView>
+      <Suspense fallback={<Skeleton active />}>
+        <Executions environmentId={params.environmentId} />
+      </Suspense>
     </Content>
   );
 }

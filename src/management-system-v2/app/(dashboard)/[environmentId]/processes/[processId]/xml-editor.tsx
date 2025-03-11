@@ -322,7 +322,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
             Cancel
           </Button>,
           <Button key="proceed" type="primary" onClick={confirmEditMode}>
-            Edit anyway
+            Edit Anyway
           </Button>,
         ]}
       >

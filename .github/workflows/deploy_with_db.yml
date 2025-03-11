@@ -24,19 +24,36 @@ env:
   DB_CONTAINER: ${{ vars.DB_CONTAINER_NAME }}
   DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
 jobs:
+  check-feature-flags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check feature flags are disabled
+        run: |
+          FILE="FeatureFlags.js"
+
+          # Define exempted flags
+          EXEMPTED_FLAGS=("enableMessaging" "enableUseDB" "enableUseFileManager")
+
+          # Find all flags set to `true`
+          FLAGS_WITH_TRUE=$(grep -E '^\s*enable[a-zA-Z0-9_]+\s*:\s*true' "$FILE" | awk -F: '{print $1}' | tr -d ' ')
+
+          # Check each flag
+          for FLAG in $FLAGS_WITH_TRUE; do
+            if [[ ! " ${EXEMPTED_FLAGS[@]} " =~ " $FLAG " ]]; then
+              echo "❌ Feature flag $FLAG must be set to false before merging!"
+              exit 1
+            fi
+          done
+
+          echo "✅ All feature flags (except exemptions) are correctly set to false."
+
   install:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -55,7 +72,7 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
   lint:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -64,15 +81,6 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
-
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -84,7 +92,7 @@ jobs:
       - run: yarn prettier --check .
 
   testEngine:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -93,15 +101,6 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
-
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -113,7 +112,7 @@ jobs:
       - run: yarn test-engine --ci
 
   testEngineE2E:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -122,15 +121,6 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
-
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -142,7 +132,7 @@ jobs:
       - run: yarn test-e2e --ci
 
   testMS:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -151,15 +141,6 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
-
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -171,7 +152,7 @@ jobs:
       - run: yarn test-ms --ci
 
   buildMS:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
     outputs:
@@ -184,15 +165,6 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
-
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -222,7 +194,7 @@ jobs:
           tag: ${{ steps.set_tag.outputs.tag }}
 
   validate-migrations:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: buildMS
     outputs:
       main_diff: ${{ steps.migration-diff-main.outputs.diff }}
@@ -269,7 +241,7 @@ jobs:
           fi
 
   deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: [buildMS, validate-migrations]
     permissions:
       contents: read
@@ -375,15 +347,6 @@ jobs:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
-
       - name: Apply Prisma Migrations
         if: steps.db-status.outputs.create_db == 'true'
         env:
@@ -422,7 +385,7 @@ jobs:
           env_vars: '{"DATABASE_URL": "${{ steps.configure-connection.outputs.DATABASE_URL }}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
 
   githubEnvironment:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: deploy
     if: ${{ github.ref == 'refs/heads/main' }}
     environment:
@@ -434,7 +397,7 @@ jobs:
   testE2E:
     needs: deploy
     timeout-minutes: 60
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: ${{ inputs.environment != 'Production' }}
     strategy:
       matrix:
@@ -446,15 +409,6 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
-
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -484,7 +438,7 @@ jobs:
     if: always()
     needs: [testE2E]
 
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/cache@v4
         timeout-minutes: 2
@@ -492,15 +446,6 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
-
-      # Self-hosted runners don't have yarn, setup-node fails without it:
-      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
-      - name: Install yarn
-        run: |-
-          curl -fsSL --create-dirs -o $HOME/bin/yarn \
-          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-          chmod +x $HOME/bin/yarn
-          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

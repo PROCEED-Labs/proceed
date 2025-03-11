@@ -30,7 +30,14 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
   useEffect(() => {
     if (task) {
       wrapServerCall({
-        fn: () => getTasklistEntryHTML(spaceId, task.instanceID, task.taskId, task.startTime),
+        fn: () =>
+          getTasklistEntryHTML(
+            spaceId,
+            task.instanceID,
+            task.taskId,
+            task.attrs['proceed:fileName'],
+            task.startTime,
+          ),
         onSuccess: (html) => {
           setHtml(html);
         },

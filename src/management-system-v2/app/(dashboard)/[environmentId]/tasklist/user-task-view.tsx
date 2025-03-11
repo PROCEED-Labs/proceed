@@ -16,12 +16,13 @@ import { useEnvironment } from '@/components/auth-can';
 
 import styles from './tasklist.module.scss';
 import { TaskListEntry } from '@/lib/engines/tasklist';
+import { Skeleton } from 'antd';
 
-type UserTaskFormProps = {
+type UserTaskViewProps = {
   task?: TaskListEntry;
 };
 
-const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
+const UserTaskForm: React.FC<{ task: TaskListEntry }> = ({ task }) => {
   const router = useRouter();
   const { spaceId } = useEnvironment();
 
@@ -47,6 +48,61 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
     }
   }, [spaceId, task]);
 
+  if (!html) return <Skeleton active style={{ alignSelf: 'baseline' }} />;
+
+  return (
+    <iframe
+      ref={(r) => {
+        if (r?.contentWindow) {
+          (r.contentWindow as any).PROCEED_DATA = {
+            post: async (
+              path: string,
+              body: { [key: string]: any },
+              query: { instanceID: string; userTaskID: string },
+            ) => {
+              if (path === '/tasklist/api/userTask') {
+                wrapServerCall({
+                  fn: () =>
+                    completeTasklistEntry(spaceId, query.instanceID, query.userTaskID, body),
+                  onSuccess: () => router.refresh(),
+                });
+              }
+            },
+            put: async (
+              path: string,
+              body: { [key: string]: any },
+              query: { instanceID: string; userTaskID: string },
+            ) => {
+              if (path === '/tasklist/api/milestone') {
+                wrapServerCall({
+                  fn: () =>
+                    setTasklistMilestoneValues(spaceId, query.instanceID, query.userTaskID, body),
+                  onSuccess: () => {},
+                });
+              }
+              if (path === '/tasklist/api/variable') {
+                wrapServerCall({
+                  fn: () =>
+                    setTasklistEntryVariableValues(
+                      spaceId,
+                      query.instanceID,
+                      query.userTaskID,
+                      body,
+                    ),
+                  onSuccess: () => {},
+                });
+              }
+            },
+          };
+        }
+      }}
+      srcDoc={html}
+      style={{ width: '100%', height: '100%', border: 0 }}
+    ></iframe>
+  );
+};
+
+const UserTaskView: React.FC<UserTaskViewProps> = ({ task }) => {
   const isCompleted = task?.state === 'COMPLETED';
   const isPaused = task?.state === 'PAUSED';
 
@@ -57,71 +113,15 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
         [styles.paused]: isPaused,
       })}
     >
-      {html && (
-        <>
-          <iframe
-            ref={(r) => {
-              if (r?.contentWindow) {
-                (r.contentWindow as any).PROCEED_DATA = {
-                  post: async (
-                    path: string,
-                    body: { [key: string]: any },
-                    query: { instanceID: string; userTaskID: string },
-                  ) => {
-                    if (path === '/tasklist/api/userTask') {
-                      wrapServerCall({
-                        fn: () =>
-                          completeTasklistEntry(spaceId, query.instanceID, query.userTaskID, body),
-                        onSuccess: () => router.refresh(),
-                      });
-                    }
-                  },
-                  put: async (
-                    path: string,
-                    body: { [key: string]: any },
-                    query: { instanceID: string; userTaskID: string },
-                  ) => {
-                    if (path === '/tasklist/api/milestone') {
-                      wrapServerCall({
-                        fn: () =>
-                          setTasklistMilestoneValues(
-                            spaceId,
-                            query.instanceID,
-                            query.userTaskID,
-                            body,
-                          ),
-                        onSuccess: () => {},
-                      });
-                    }
-                    if (path === '/tasklist/api/variable') {
-                      wrapServerCall({
-                        fn: () =>
-                          setTasklistEntryVariableValues(
-                            spaceId,
-                            query.instanceID,
-                            query.userTaskID,
-                            body,
-                          ),
-                        onSuccess: () => {},
-                      });
-                    }
-                  },
-                };
-              }
-            }}
-            srcDoc={html}
-            style={{ width: '100%', height: '100%', border: 0 }}
-          ></iframe>
-          {(isCompleted || isPaused) && (
-            <div className={styles.overlay}>
-              {isCompleted && <h1>This task is completed!</h1>}
-              {isPaused && <h1>This task is paused!</h1>}
-            </div>
-          )}
-        </>
+      {task ? <UserTaskForm task={task} /> : <></>}
+      {(isCompleted || isPaused) && (
+        <div className={styles.overlay}>
+          {isCompleted && <h1>This task is completed!</h1>}
+          {isPaused && <h1>This task is paused!</h1>}
+        </div>
       )}
     </div>
   );
 };
 
-export default UserTaskForm;
+export default UserTaskView;

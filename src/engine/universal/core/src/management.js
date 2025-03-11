@@ -548,7 +548,7 @@ const Management = {
         }
       });
 
-      return { ...acc, ...nonDuplicateArchivedInstancesForDefinitionId };
+      return { ...(await acc), ...nonDuplicateArchivedInstancesForDefinitionId };
     }, {});
 
     const allArchivedUserTasks = Object.values(allArchivedInstances).flatMap((archivedInstance) => {

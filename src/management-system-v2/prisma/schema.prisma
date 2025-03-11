@@ -267,6 +267,7 @@ model TargetConfig {
 
 model ConfigVersions {
   id                        String            @id @default(uuid())
+  parentId                  String
   data                      Json
 
   @@map("config_version")

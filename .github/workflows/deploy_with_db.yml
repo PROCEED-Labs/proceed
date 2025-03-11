@@ -25,9 +25,18 @@ env:
   DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
 jobs:
   install:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -46,7 +55,7 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -55,6 +64,15 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
+
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -66,7 +84,7 @@ jobs:
       - run: yarn prettier --check .
 
   testEngine:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -75,6 +93,15 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
+
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -86,7 +113,7 @@ jobs:
       - run: yarn test-engine --ci
 
   testEngineE2E:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -95,6 +122,15 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
+
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -106,7 +142,7 @@ jobs:
       - run: yarn test-e2e --ci
 
   testMS:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: install
     steps:
       - uses: actions/cache@v4
@@ -115,6 +151,15 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
+
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -126,7 +171,7 @@ jobs:
       - run: yarn test-ms --ci
 
   buildMS:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
     outputs:
@@ -139,6 +184,15 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
+
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -168,7 +222,7 @@ jobs:
           tag: ${{ steps.set_tag.outputs.tag }}
 
   validate-migrations:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: buildMS
     outputs:
       main_diff: ${{ steps.migration-diff-main.outputs.diff }}
@@ -214,15 +268,22 @@ jobs:
             echo "diff=false" >> "$GITHUB_OUTPUT"
           fi
 
-  generate-database-name:
-    needs: [validate-migrations]
-    runs-on: ubuntu-latest
+  deploy:
+    runs-on: self-hosted
+    needs: [buildMS, validate-migrations]
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+      issues: write
     environment: Research
     env:
+      MS_TAG: ${{ needs.buildMS.outputs.tag }}
+      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
+      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
       ENV: Research
-    outputs:
-      db_name: ${{ steps.generate-name.outputs.DB_NAME }}
     steps:
+      # Database name generation step
       - name: Generate sanitized database name
         id: generate-name
         run: |
@@ -241,6 +302,7 @@ jobs:
           echo "Generated database name: $DB_NAME"
           echo "DB_NAME=$DB_NAME" >> "$GITHUB_OUTPUT"
 
+      # SSH Configuration step
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/
@@ -258,61 +320,37 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
+      # Database lifecycle management step
       - name: Manage database lifecycle
         run: |
           DB_EXISTS=$(ssh $ENV "docker exec ${{ env.DB_CONTAINER }} \
-             psql -U ${{ secrets.DB_USER }} \
-             -d ${{ env.DEFAULT_DB }} \
-             -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
 
           if [[ "${{ needs.validate-migrations.outputs.main_diff }}" = "true" && \
                 "${{ needs.validate-migrations.outputs.branch_diff }}" = "true" ]]; then
             echo "Dropping existing database due to migration changes"
             ssh $ENV \
               "docker exec ${{ env.DB_CONTAINER }} \
-               psql -U ${{ secrets.DB_USER }} \
-               -d ${{ env.DEFAULT_DB }} \
-               -c 'DROP DATABASE IF EXISTS \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
+                psql -U ${{ secrets.DB_USER }} \
+                -d ${{ env.DEFAULT_DB }} \
+                -c 'DROP DATABASE IF EXISTS \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
           elif [ "$DB_EXISTS" = "1" ]; then
             echo "Reusing existing database"
           else
             echo "Database will be created in subsequent step"
           fi
 
-  deploy-database:
-    needs: [generate-database-name, validate-migrations]
-    runs-on: ubuntu-latest
-    environment: Research
-    env:
-      ENV: Research
-    outputs:
-      database_url: ${{ steps.configure-connection.outputs.DATABASE_URL }}
-    steps:
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/$ENV.key
-          chmod 600 ~/.ssh/$ENV.key
-          cat >>~/.ssh/config <<END
-          Host $ENV
-            HostName $SSH_HOST
-            User $SSH_USER
-            IdentityFile ~/.ssh/$ENV.key
-            StrictHostKeyChecking no
-          END
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-
+      # Database deployment steps
       - name: Verify database status
         id: db-status
         run: |
           DB_EXISTS=$(ssh $ENV \
             "docker exec ${{ env.DB_CONTAINER }} \
-             psql -U ${{ secrets.DB_USER }} \
-             -d ${{ env.DEFAULT_DB }} \
-             -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ needs.generate-database-name.outputs.db_name }}'\"")
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
           echo "create_db=$([[ "$DB_EXISTS" != "1" ]] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
 
       - name: Create database if needed
@@ -320,14 +358,14 @@ jobs:
         run: |
           ssh $ENV \
             "docker exec ${{ env.DB_CONTAINER }} \
-             psql -U ${{ secrets.DB_USER }} \
-             -d ${{ env.DEFAULT_DB }} \
-             -c 'CREATE DATABASE \"${{ needs.generate-database-name.outputs.db_name }}\"'"
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -c 'CREATE DATABASE \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
 
       - name: Configure database connection
         id: configure-connection
         run: |
-          echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-database-name.outputs.db_name }}?schema=public" >> "$GITHUB_OUTPUT"
+          echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ steps.generate-name.outputs.DB_NAME }}?schema=public" >> "$GITHUB_OUTPUT"
 
       - name: Restore Cache
         uses: actions/cache@v4
@@ -337,6 +375,15 @@ jobs:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
+
       - name: Apply Prisma Migrations
         if: steps.db-status.outputs.create_db == 'true'
         env:
@@ -344,21 +391,6 @@ jobs:
         run: |
           yarn dev-ms-db-deploy
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [buildMS, generate-database-name, deploy-database]
-    permissions:
-      contents: read
-      id-token: write
-      pull-requests: write
-      issues: write
-    environment: Research
-    env:
-      MS_TAG: ${{ needs.buildMS.outputs.tag }}
-      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
-      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ needs.generate-database-name.outputs.db_name }}?schema=public
-    steps:
       - uses: 'google-github-actions/auth@v2'
         with:
           project_id: 'proceed-bpms'
@@ -373,7 +405,7 @@ jobs:
           image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
-            DATABASE_URL=${{ env.DATABASE_URL }}
+            DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ steps.generate-name.outputs.DB_NAME }}?schema=public
             PROCEED_PUBLIC_DEPLOYMENT_ENV=local
           region: 'europe-west1'
           revision_traffic: LATEST=100
@@ -387,10 +419,10 @@ jobs:
           image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
           region: 'europe-west1'
-          env_vars: '{"DATABASE_URL": "${{env.DATABASE_URL}}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
+          env_vars: '{"DATABASE_URL": "${{ steps.configure-connection.outputs.DATABASE_URL }}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
 
   githubEnvironment:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: deploy
     if: ${{ github.ref == 'refs/heads/main' }}
     environment:
@@ -402,7 +434,7 @@ jobs:
   testE2E:
     needs: deploy
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: ${{ inputs.environment != 'Production' }}
     strategy:
       matrix:
@@ -414,6 +446,15 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
+
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -443,7 +484,7 @@ jobs:
     if: always()
     needs: [testE2E]
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/cache@v4
         timeout-minutes: 2
@@ -451,6 +492,15 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
+
+      # Self-hosted runners don't have yarn, setup-node fails without it:
+      # https://github.com/actions/setup-node/issues/182#issuecomment-1565453717
+      - name: Install yarn
+        run: |-
+          curl -fsSL --create-dirs -o $HOME/bin/yarn \
+          https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+          chmod +x $HOME/bin/yarn
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

@@ -21,6 +21,10 @@ import { userError } from '@/lib/user-error';
 import { getCurrentUser } from '@/components/auth';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import {
+  defaultConfiguration,
+  defaultParentConfiguration,
+} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
 /**
  * Creates a copy of a parameter and all its nested parameters to be pasted as child of a given parent. Stores the copied parameter.
@@ -167,8 +171,6 @@ export async function copyParentConfig(
       },
     });
 
-    // eventHandler.dispatch('machineConfigCopied', {configOriginal: originalConfig, configCopy: copy });
-
     return machineConfigInput;
   } catch (e) {
     return userError("Couldn't save Config");
@@ -176,39 +178,32 @@ export async function copyParentConfig(
 }
 
 /*************************** Element Addition *****************************/
-
-export async function addParentConfig(machineConfigInput: ParentConfig, environmentId: string) {
+/**
+ * Adds a parent config to to DB for a given environment ID.
+ *
+ * @param machineConfigInput  Config which is to be stored in the DB
+ * @param environmentId       Environment ID of the user's space
+ * @param throwCollisionError Determines if an error is thrown when a collision of IDs occurs. If not a new ID is generated for the config which is added. Default: false
+ * @returns ID of the stored config
+ */
+export async function addParentConfig(
+  machineConfigInput: ParentConfig,
+  environmentId: string,
+  throwCollisionError: boolean = false,
+) {
   try {
     const { userId } = await getCurrentUser();
+    // TODO this doesn't do anything since every property is optional
     AbstractConfigInputSchema.parse(machineConfigInput);
-    const date = new Date();
+    const folderId = (await getRootFolder(environmentId)).id;
+    const defaultConfig = defaultParentConfiguration(environmentId, folderId);
     const newConfig: ParentConfig = {
-      ...({
-        id: v4(),
-        type: 'config',
-        name: 'Default Parent Configuration',
-        variables: [],
-        createdBy: userId,
-        lastEditedBy: userId,
-        metadata: {},
-        departments: [],
-        inEditingBy: [],
-        createdOn: date,
-        lastEditedOn: date,
-        sharedAs: 'protected',
-        shareTimestamp: 0,
-        allowIframeTimestamp: 0,
-        versions: [],
-        folderId: '',
-        targetConfig: undefined,
-        machineConfigs: [],
-        environmentId: environmentId,
-      } as ParentConfig),
+      ...defaultConfig,
       ...machineConfigInput,
     };
 
     newConfig.createdBy = userId;
-    newConfig.folderId = (await getRootFolder(environmentId)).id;
+    newConfig.folderId = folderId;
     newConfig.environmentId = environmentId;
 
     const folderData = await getFolderById(newConfig.folderId);
@@ -218,17 +213,84 @@ export async function addParentConfig(machineConfigInput: ParentConfig, environm
 
     const existingConfig = await db.config.findUnique({ where: { id: parentConfigId } });
     if (existingConfig) {
-      //   throw new Error(`Config with id ${parentConfigId} already exists!`);
+      if (throwCollisionError) throw new Error(`Config with id ${parentConfigId} already exists!`);
       idCollision = true;
     }
+    let storeId = await parentConfigToStorage(newConfig, idCollision);
+    return { storeId };
+  } catch (e: unknown) {
+    const error = e as Error;
+    return userError(error.message ?? "Couldn't create Config");
+  }
+}
 
-    await parentConfigToStorage(newConfig, idCollision);
-    // eventHandler.dispatch('machineConfigAdded', { machineConfig: newConfig });
+//TODO
+/**
+ * This adds a new version for a parent configuration to the db.
+ * @param machineConfigInput Config for which a version is created.
+ * @param environmentId Environment ID for the current space.
+ * @param versionId ID for the version that is to be created.
+ * @param versionName Name for the version that is to be created.
+ * @param versionDescription Description for the version that is to be created.
+ * @returns returns the newly created config version in the case of no errors. Otherwise returns UserError.
+ */
+export async function addParentConfigVersion(
+  machineConfigInput: ParentConfig,
+  environmentId: string,
+  versionId: string,
+  versionName: string,
+  versionDescription: string,
+) {
+  let versions = Array.from(machineConfigInput.versions);
+  versions.push({
+    id: versionId,
+    name: versionName,
+    description: versionDescription,
+    versionBasedOn: machineConfigInput.version,
+    createdOn: new Date(),
+  });
+
+  // update references to versions in main/latest config
+  await updateParentConfig(machineConfigInput.id, { versions });
+
+  // storing a copy as versioned config
+  const newVersion: ParentConfig = JSON.parse(JSON.stringify(machineConfigInput));
+  newVersion.id = newVersion.id;
+
+  try {
+    const newConfig: ParentConfig = {
+      ...(defaultConfiguration(environmentId) as ParentConfig),
+      ...newVersion,
+      version: versionId,
+    };
+
+    newConfig.folderId = (await getRootFolder(environmentId)).id;
+    newConfig.environmentId = environmentId;
+
+    const folderData = await getFolderById(newConfig.folderId);
+    if (!folderData) throw new Error('Folder not found');
+
+    // true to generate new IDs for data and create a version of a parentConfig instead of a regular one
+    parentConfigToStorage(newConfig, true, versionId);
 
     return newConfig;
   } catch (e: unknown) {
     const error = e as Error;
-    return userError(error.message ?? "Couldn't create Config");
+    return userError(error.message ?? "Couldn't create Machine Config");
+  }
+}
+
+/**
+ * Copies the data of a specific config-version into the editable "main-config" displayed as latest version.
+ * @param machineConfigInput The config-version that is to be set as latest version.
+ * @returns Returns the config if no errors occur. Otherwise a UserError is returned.
+ */
+export async function setParentConfigVersionAsLatest(versionId: string) {
+  try {
+    versionToParentConfigStorage(versionId);
+  } catch (e: unknown) {
+    const error = e as Error;
+    return userError(error.message ?? "Couldn't create Machine Config");
   }
 }
 
@@ -447,30 +509,82 @@ function machineConfigsToStorage(
 }
 
 /**
- * Stores a given ParentConfig into the new storage referencing other elements by id instead of having them nested.
+ * Stores a given ParentConfig (or ParentConfigVersion) into db referencing other elements by id instead of having them nested.
  * @param parentConfig ParentConfig that is to be stored, able to contain TargetConfigs, MachineConfigs and ParameterConfigs
  * @param newId Boolean determining if new IDs are to be generated.
+ * @param version Version-ID of the config if a versioned config is to be stored.
  */
-async function parentConfigToStorage(parentConfig: ParentConfig, newId: boolean = false) {
+async function parentConfigToStorage(
+  parentConfig: ParentConfig,
+  newId: boolean = false,
+  version: string = '',
+) {
   const { targetConfig, metadata, machineConfigs } = parentConfig;
-  parentConfig.id = newId ? v4() : parentConfig.id;
+  parentConfig.id = newId && !version ? v4() : parentConfig.id;
   let creationDate = new Date(parentConfig.createdOn);
-  await db.config.create({
-    data: {
-      id: parentConfig.id,
-      environmentId: parentConfig.environmentId,
-      creatorId: parentConfig.createdBy,
-      createdOn: creationDate,
-      // lastEditedOn: currentDate,
+  const toStore = {
+    ...parentConfig,
+    targetConfig: targetConfig
+      ? await targetConfigToStorage(parentConfig.id, targetConfig, newId)
+      : undefined,
+    machineConfigs: await machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+    metadata: await parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+  };
+
+  if (version)
+    await db.configVersions.create({
+      data: { id: version, parentId: parentConfig.id, data: toStore },
+    });
+  else
+    await db.config.create({
       data: {
-        ...parentConfig,
-        targetConfig: targetConfig
-          ? await targetConfigToStorage(parentConfig.id, targetConfig, newId)
-          : undefined,
-        machineConfigs: await machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
-        metadata: await parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+        id: parentConfig.id,
+        environmentId: parentConfig.environmentId,
+        creatorId: parentConfig.createdBy,
+        createdOn: creationDate,
+        data: toStore,
       },
-    },
+    });
+  return parentConfig.id;
+}
+
+async function versionToParentConfigStorage(versionId: string) {
+  let configVersionResult = await db.configVersions.findUnique({ where: { id: versionId } });
+  let configVersion = configVersionResult?.data as unknown as StoredParentConfig;
+
+  let originalConfigResult = await db.config.findUnique({ where: { id: configVersion.id } });
+  let originalConfig = originalConfigResult?.data as unknown as StoredParentConfig;
+  let versions = originalConfig.versions;
+  let environmentId = originalConfigResult?.environmentId || '';
+
+  // delete referenced parameters, machine- and targetconfigs - but keeps versions and parent config
+  removeParentConfiguration(configVersion.id, true);
+
+  const copy = {
+    ...(JSON.parse(JSON.stringify(configVersion)) as typeof configVersion),
+    ...configVersion,
+    metadata: await asyncMap(configVersion.metadata, (id) =>
+      copyParameter(id, configVersion.id, 'parent-config'),
+    ),
+    targetConfig:
+      configVersion.targetConfig &&
+      (await copyConfig(configVersion.targetConfig, 'target-config', configVersion.id)),
+    machineConfigs: await asyncMap(configVersion.machineConfigs, (id) =>
+      copyConfig(id, 'machine-config', configVersion.id),
+    ),
+  } as StoredParentConfig;
+
+  // if no folder ID is given, set ID to root folder's
+  if (!copy.folderId) {
+    copy.folderId = (await getRootFolder(environmentId)).id;
+  }
+
+  const folderData = await getFolderById(copy.folderId);
+  if (!folderData) throw new Error('Folder not found');
+
+  await db.config.update({
+    where: { id: configVersion.id },
+    data: { data: { ...copy, versions } },
   });
 }
 
@@ -548,16 +662,6 @@ async function nestedConfigFromStorage<T extends TargetConfig | MachineConfig>(
 async function nestedMachineConfigsFromStorage(
   machineConfigIds: string[],
 ): Promise<MachineConfig[]> {
-  //   return machineConfigIds
-  //     .map((machineConfigId) => {
-  //       return nestedConfigFromStorage('machine-config', machineConfigId);
-  //     })
-  //     .filter((config): config is MachineConfig => !!config);
-
-  //   return asyncMap(
-  //     machineConfigIds,
-  //     async (e, i) => await nestedConfigFromStorage('machine-config', e),
-  //   );
   return await (
     await asyncMap(
       machineConfigIds,
@@ -573,27 +677,31 @@ async function nestedMachineConfigsFromStorage(
  */
 export async function getDeepParentConfigurationById(
   parentConfigId: string,
+  version: string = '',
   ability?: Ability,
 ): Promise<ParentConfig> {
-  //   const storedParentConfig = storedData.parentConfigs[parentConfigId];
-  let configResult = await db.config.findUnique({
-    where: { id: parentConfigId },
-  });
-  let configInter = configResult?.data ?? {};
-  //   let configConvert: StoredParentConfig = JSON.parse(configInter.toString());
-  let configConvert = configResult?.data as unknown as StoredParentConfig;
-  // console.log('PARENT: \n', configConvert);
+  let configResult = await db.config.findUnique({ where: { id: parentConfigId } });
+  let lastEdited = configResult?.lastEditedOn;
+  let config = configResult?.data as unknown as StoredParentConfig;
+  let versions = config.versions;
+
+  if (version) {
+    let configVersionResult = await db.configVersions.findUnique({
+      where: { id: version },
+    });
+    config = configVersionResult?.data as unknown as StoredParentConfig;
+  }
 
   // TODO: check if the user can access the config
 
   const parentConfig = {
-    ...configConvert,
-    lastEditedOn: configResult?.lastEditedOn,
-    metadata: await nestedParametersFromStorage(configConvert.metadata),
-    targetConfig: await nestedConfigFromStorage('target-config', configConvert.targetConfig),
-    machineConfigs: await nestedMachineConfigsFromStorage(configConvert.machineConfigs),
+    ...config,
+    lastEditedOn: lastEdited,
+    metadata: await nestedParametersFromStorage(config.metadata),
+    targetConfig: await nestedConfigFromStorage('target-config', config.targetConfig),
+    machineConfigs: await nestedMachineConfigsFromStorage(config.machineConfigs),
+    versions: versions,
   } as unknown as ParentConfig;
-  // console.log('LOADED: \n', parentConfig);
 
   if (
     parentConfig &&
@@ -604,7 +712,7 @@ export async function getDeepParentConfigurationById(
   return parentConfig;
 }
 
-/** Returns all shallow machineConfigs in form of an array */
+/** Returns all shallow Configs in form of an array */
 export async function getParentConfigurations(
   environmentId: string,
   ability?: Ability,
@@ -612,7 +720,6 @@ export async function getParentConfigurations(
   const storedParentConfigs = await db.config.findMany({
     where: { environmentId: environmentId },
   });
-
   //TODO remove redundancy
   const parentConfigs = await asyncMap(storedParentConfigs, ({ id }) =>
     getDeepParentConfigurationById(id),
@@ -705,7 +812,6 @@ export async function updateParentConfig(configId: string, changes: Partial<Stor
  * @param parameterId the id of the parameter to remove
  */
 export async function removeParameter(parameterId: string) {
-  // const parameter = storedData.parameters[parameterId];
   const parameterResult = await db.configParameter.findUnique({ where: { id: parameterId } });
   const parameter = parameterResult?.data as unknown as StoredParameter;
 
@@ -803,14 +909,14 @@ export async function removeTargetConfig(targetConfigId: string) {
   await db.targetConfig.delete({ where: { id: targetConfigId } });
 }
 
-// /**
-//  * Removes a machine config and all its nested parameters from the store
-//  * will also remove the reference to the machine config from its parent config if it still exists
-//  *
-//  * //TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
-//  *
-//  * @param machineConfigId the id of the machine config to remove
-//  */
+/**
+ * Removes a machine config and all its nested parameters from the store
+ * will also remove the reference to the machine config from its parent config if it still exists
+ *
+ * //TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
+ *
+ * @param machineConfigId the id of the machine config to remove
+ */
 export async function removeMachineConfig(machineConfigId: string) {
   const machineConfigResult = await db.machineConfig.findUnique({ where: { id: machineConfigId } });
   const machineConfig = machineConfigResult?.data as unknown as StoredMachineConfig;
@@ -841,14 +947,22 @@ export async function removeMachineConfig(machineConfigId: string) {
   await db.machineConfig.delete({ where: { id: machineConfigId } });
 }
 
-// /**
-//  * Removes an existing parent config for a given ID from store.
-//  *
-//  * @param parentConfigId ID of the ParentConfig that is to be removed.
-//  */
-export async function removeParentConfiguration(parentConfigId: string) {
+/**
+ * Removes an existing parent config for a given ID from store.
+ *
+ * @param parentConfigId ID of the ParentConfig that is to be removed.
+ * @param keepVersions only removes referenced parameters and configs but keeps versioned configs and parent config itself. Used to overwrite config with data from a stored version
+ */
+export async function removeParentConfiguration(
+  parentConfigId: string,
+  keepVersions: boolean = false,
+) {
   const parentConfigResult = await db.config.findUnique({ where: { id: parentConfigId } });
   const parentConfig = parentConfigResult?.data as unknown as StoredParentConfig;
+
+  const parentConfigVersionsResult = await db.configVersions.findMany({
+    where: { parentId: parentConfigId },
+  });
 
   if (!parentConfig) return;
 
@@ -856,6 +970,20 @@ export async function removeParentConfiguration(parentConfigId: string) {
   await asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id));
   await asyncForEach(parentConfig.metadata, (id) => removeParameter(id));
 
-  // remove from db
-  await db.config.delete({ where: { id: parentConfigId } });
+  // TODO for each version removeTargetConfig(), removeMachineConfig(), removeParameter() like above
+  if (!keepVersions) {
+    const parentConfigVersions = parentConfigVersionsResult.map(
+      (element) => element.data,
+    ) as unknown as StoredParentConfig[];
+
+    await asyncForEach(parentConfigVersions, async (configVersion) => {
+      if (configVersion.targetConfig) await removeTargetConfig(configVersion.targetConfig);
+      await asyncForEach(configVersion.machineConfigs, (id) => removeMachineConfig(id));
+      await asyncForEach(configVersion.metadata, (id) => removeParameter(id));
+      await db.configVersions.delete({ where: { id: configVersion.version } });
+    });
+
+    // remove from db
+    await db.config.delete({ where: { id: parentConfigId } });
+  }
 }

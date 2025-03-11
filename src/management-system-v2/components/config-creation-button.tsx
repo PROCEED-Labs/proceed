@@ -37,9 +37,9 @@ export const ConfigCreationModal: React.FC<
       addParentConfig(
         defaultParentConfiguration(
           environment.spaceId,
+          folderId,
           values[0].name,
           values[0].description,
-          folderId,
         ),
         environment.spaceId,
       ).then((res) => (Array.isArray(res) ? res[0] : res)));

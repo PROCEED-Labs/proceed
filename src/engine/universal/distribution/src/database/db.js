@@ -67,6 +67,16 @@ module.exports = {
     // get the requirements for the versionId
     const requirements = versionInfo.needs;
 
+    // get all known script-task files for the process
+    const knownScriptTaskFiles = ((await data.getAllScriptTasks(definitionId)) || []).map(
+      (fileName) => fileName.split('.js')[0],
+    );
+
+    // check if script data is missing
+    if (!requirements.scripts.every((fileName) => knownScriptTaskFiles.includes(fileName))) {
+      return false;
+    }
+
     // get all known user task files for the process
     const knownUserTaskFiles = ((await data.getAllUserTasks(definitionId)) || []).map(
       (fileName) => fileName.split('.html')[0],
@@ -426,6 +436,60 @@ module.exports = {
 
     return ((await data.getAllUserTasks(definitionId)) || []).map((fileName) => {
       const [fileNameWithoutType] = fileName.split('.html');
+      return fileNameWithoutType;
+    });
+  },
+
+  /**
+   * Saves the JS for a specific script task in a specific process stored in the file with the given definitionId
+   *
+   * @param {String} definitionId
+   * @param {String} fileName the fileName as given in the proceed:fileName attribute of the script task
+   * @param {String} script
+   */
+  async saveScriptString(definitionId, fileName, script) {
+    const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
+    if (!processInfo) {
+      throw new Error('Process with given ID does not exist!');
+    }
+
+    if (!script) {
+      throw new Error('Script content must not be empty!');
+    }
+
+    await data.writeScriptTaskScript(definitionId, fileName, script);
+  },
+
+  /**
+   * Gets the script for a specific script-task in the process stored under the given definitionId
+   *
+   * @param {String} definitionId
+   * @param {String} fileName the fileName as given in the proceed:fileName attribute of the script-task
+   */
+  async getScript(definitionId, fileName) {
+    const script = await data.readScriptTaskScript(definitionId, fileName);
+    if (!script) {
+      throw new Error(
+        "No script file found. Either the process or the script file doesn't seem to exist.",
+      );
+    }
+
+    return script;
+  },
+
+  /**
+   * Get the fileNames for all the script-task script files given for the process stored under the given definitionId
+   *
+   * @param {String} definitionId
+   * @returns {Array} - array containing the ids for all script-task scripts
+   */
+  async getAllScripts(definitionId) {
+    if (!(await this.isProcessExisting(definitionId))) {
+      throw new Error('Process with given ID does not exist!');
+    }
+
+    return ((await data.getAllScriptTasks(definitionId)) || []).map((fileName) => {
+      const [fileNameWithoutType] = fileName.split('.js');
       return fileNameWithoutType;
     });
   },

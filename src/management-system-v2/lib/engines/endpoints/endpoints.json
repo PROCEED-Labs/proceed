@@ -46,8 +46,10 @@
     "/capabilities/return": {},
     "/evaluation/": {},
     "/tasklist/api/userTask": {
-      "instanceID": true,
-      "userTaskID": true
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
     },
     "/configuration/api/config": {},
     "/process/": {},
@@ -59,8 +61,10 @@
   "put": {
     "/configuration/": {},
     "/tasklist/api/variable": {
-      "instanceID": true,
-      "userTaskID": true
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
     },
     "/tasklist/api/milestone": {},
     "/process/:definitionId/instance/:instanceID": {},

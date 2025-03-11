@@ -14,8 +14,7 @@ const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/gette
  * @property {number} startTime - the time at which execution of the element started
  * @property {number} [endTime] - the time at which execution of the element ended
  * @property {string} state - the current execution state of the user task
- // TODO
- * @property {any} [milestones] - 
+ * @property {{ [key: string]: number }} [milestones] - the values of the milestones of the user task
  * @property {{ [key: string]: any }} [variableChanges] - the variables that were changed by the user task
  */
 
@@ -28,7 +27,7 @@ const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/gette
  * @property {string} state - the state the token is in
  * @property {string} currentFlowElementId - the flow element the token resides on
  * @property {number} currentFlowElementStartTime - the time the current execution of the current flow element started
- * @property {null | { [key: string]: any }} intermediateVariablesState - the values of variables changed during the tokens execution that are not yet commited to the instance
+ * @property {{ [key: string]: any }} [intermediateVariablesState] - the values of variables changed during the tokens execution that are not yet committed to the instance
  */
 
 /**
@@ -46,7 +45,7 @@ const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/gette
  * @typedef LogEntry
  * @type {object}
  * @property {string} flowElementId - id of the executed element
- * @property {tokenId} tokenId - id of the token that activated the element
+ * @property {string} tokenId - id of the token that activated the element
  * @property {string} executionState - the with which the execution of the element ended
  * @property {number} startTime - the time at which execution of the element started
  * @property {number} endTime - the time at which execution of the element ended

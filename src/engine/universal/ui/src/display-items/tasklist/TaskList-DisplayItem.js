@@ -43,6 +43,7 @@ class TaskListTab extends DisplayItem {
         progress: task.progress,
         startTime: task.startTime,
         endTime: task.endTime,
+        milestones: task.milestones,
       };
     });
     return taskInfos;

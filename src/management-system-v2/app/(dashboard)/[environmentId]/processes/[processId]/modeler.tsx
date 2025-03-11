@@ -230,6 +230,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   }, [messageApi, subprocessId]);
 
   const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
+    if (!element.businessObject) return;
     const metaData = getMetaDataFromElement(element.businessObject);
     if (element.type === 'bpmn:UserTask' && element.businessObject.fileName) {
       softDeleteProcessUserTask(process.id, element.businessObject.fileName);

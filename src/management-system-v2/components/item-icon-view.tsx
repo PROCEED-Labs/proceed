@@ -1,10 +1,10 @@
-import { CSSProperties, Fragment, ReactNode, SetStateAction, useRef } from 'react';
+import React, { CSSProperties, Fragment, ReactNode, SetStateAction, useRef } from 'react';
 import { Card, Grid, CardProps, Table } from 'antd';
 
 export type TabCardProps<T extends { id: string }> = {
   item: T;
   onClick?: (event: React.MouseEvent<HTMLDivElement, MouseEvent>, item: T) => void;
-  Wrapper?: (props: { children?: ReactNode; itemId: string; item: T }) => ReactNode;
+  Wrapper?: ((props: { children?: ReactNode; itemId: string; item: T }) => ReactNode) | string;
   selected?: boolean;
   cardProps?: CardProps;
 };
@@ -14,7 +14,7 @@ export const TabCard = <T extends { id: string }>({
   onClick,
   selected,
   cardProps,
-  Wrapper = Fragment,
+  Wrapper = 'div',
 }: TabCardProps<T>) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -108,8 +108,8 @@ const ItemIconViewProps = <T extends { id: string }>({
   if (breakpoint.xs) groupStyle.width = '95dvw';
 
   const groups = divisions || [data];
-  const tabCardGroups = groups.map((dataSlice) => (
-    <div {...groupProps} style={{ ...groupStyle, ...groupProps?.style }}>
+  const tabCardGroups = groups.map((dataSlice, idx) => (
+    <div {...groupProps} style={{ ...groupStyle, ...groupProps?.style }} key={idx}>
       {dataSlice.map((item) => {
         const props = tabCardPropsGenerator(item);
 

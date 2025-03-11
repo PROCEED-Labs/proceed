@@ -70,8 +70,8 @@ describe('Tests for setter functions of this library', () => {
     baseObj.expressionLanguage = 'https://ecma-international.org/ecma-262/8.0/';
     baseObj.typeLanguage =
       'https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf';
-    baseObj.creatorEnvironmentId = '';
-    baseObj.creatorEnvironmentName = '';
+    baseObj.creatorSpaceId = '';
+    baseObj.creatorSpaceName = '';
     baseObj.originalExporter = 'PROCEED Management System';
     baseObj.originalExporterVersion = '0.1.0';
     baseObj.$attrs = {

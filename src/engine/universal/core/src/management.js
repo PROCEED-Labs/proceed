@@ -281,13 +281,18 @@ const Management = {
    */
   async resumeInstance(definitionId, instanceId) {
     let instanceInformation;
+    let userTasks = [];
 
     const existingEngine = this.getEngineWithID(instanceId);
     if (existingEngine) {
       instanceInformation = existingEngine.getInstanceInformation(instanceId);
+      userTasks = existingEngine.userTasks.filter(
+        (userTask) => userTask.processInstance.id === instanceID,
+      );
       this.removeInstance(instanceId);
     } else {
       instanceInformation = (await distribution.db.getArchivedInstances(definitionId))[instanceId];
+      userTasks = instanceInformation.userTasks;
 
       if (!enableInterruptedInstanceRecovery) {
         // remove intermediate state when the instance recovery is not used; when it is finally implemented this should be removed
@@ -326,6 +331,14 @@ const Management = {
       importedInstance.variables,
       importedInstance,
       (newInstance) => {
+        engine.userTasks.push(
+          ...userTasks
+            .filter((userTask) => userTask.state !== 'PAUSED')
+            .map((userTask) => ({
+              ...userTask,
+              processInstance: newInstance,
+            })),
+        );
         engine._log.info({
           msg: `Resuming process instance. Id = ${resumedInstanceInformation.processInstanceId}`,
           instanceId: resumedInstanceInformation.instanceId,

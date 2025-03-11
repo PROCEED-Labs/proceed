@@ -8,10 +8,8 @@ import {
   generateScriptTaskFileName,
   generateUserTaskFileName,
   getDefinitionsVersionInformation,
-  getUserTaskFileNameMapping,
   setDefinitionsName,
   setDefinitionsVersionInformation,
-  setUserTaskData,
   toBpmnObject,
   toBpmnXml,
 } from '@proceed/bpmn-helper';
@@ -223,8 +221,10 @@ export const addProcesses = async (
   const newProcesses: Process[] = [];
 
   for (const value of values) {
-    // new ID is required for imported processes
+    // new ID is required for imported/copied processes
     if (generateNewId) {
+      // add original_ attributes to the bpmn.
+
       value.bpmn = await getFinalBpmn({
         id: generateDefinitionsId(),
         name: value.name,
@@ -236,8 +236,6 @@ export const addProcesses = async (
       name: value.name,
       description: value.description,
       bpmn: value.bpmn,
-      creatorId: userId,
-      environmentId: activeEnvironment.spaceId,
     });
 
     const newProcess = {
@@ -349,7 +347,6 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
   await loadModules();
 
   const importedProcesses = await addProcesses(processData, spaceId, true);
-
   if ('error' in importedProcesses) {
     return importedProcesses;
   }

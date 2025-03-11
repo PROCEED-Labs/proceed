@@ -1,14 +1,9 @@
-.ant-carousel .slick-prev,
-.ant-carousel .slick-next {
-  color: #000;
+.slick-arrow.slick-next,
+.slick-arrow.slick-prev {
+  min-height: 30px;
+  min-width: 30px;
 }
 
-.ant-carousel .slick-dots li button {
-  background: #000;
-}
-
-.ant-carousel .slick-dots li.slick-active button {
-  background: #1976d2;
-
-  font-size: 2px;
+.slick-arrow.slick-next {
+  right: 0;
 }

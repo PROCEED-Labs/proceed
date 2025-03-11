@@ -61,6 +61,22 @@ declare const _exports: {
       creatorSpaceName?: string;
       userDefinedId?: string;
       creationDate?: string;
+      // for copied/imported processes
+      originalCreationDate?: string;
+      originalCreatorId?: string;
+      originalCreatorName?: string;
+      originalCreatorUsername?: string;
+      originalCreatorSpaceId?: string;
+      originalCreatorSpaceName?: string;
+      originalUserDefinedId?: string;
+      originalName?: string;
+      originalVersionId?: string;
+      originalVersionName?: string;
+      originalProcessVersionId?: string;
+      originalProcessVersionName?: string;
+      originalExporter?: string;
+      originalExporterVersion?: string;
+      originalTargetNamespace?: string;
     },
   ): Promise<string | object>;
   setDeploymentMethod(bpmn: string | object, method: string): Promise<string | object>;

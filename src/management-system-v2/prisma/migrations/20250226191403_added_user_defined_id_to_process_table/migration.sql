@@ -8,4 +8,4 @@
 ALTER TABLE "process" ADD COLUMN     "userDefinedId" TEXT;
 
 -- CreateIndex
-CREATE UNIQUE INDEX "process_userDefinedId_key" ON "process"("userDefinedId");
+CREATE INDEX "process_userDefinedId_key" ON "process"("userDefinedId");

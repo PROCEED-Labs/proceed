@@ -246,6 +246,19 @@ export function updatePerformersOnElementById(
  * @param {string} [attributes.creatorSpaceName] - The name of the creator's space.
  * @param {string} [attributes.userDefinedId] - The user-defined ID of the BPMN process.
  * @param {string} [attributes.creationDate] - The creation date of the BPMN process in string format.
+ * @param {string} [attributes.originalName] - The original name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalUserDefinedId] - The original user-defined ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreationDate] - The original creation date of a copied/imported BPMN process.
+ * @param {string} [attributes.originalProcessVersionId] - The original process version ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalProcessVersionName] - The original process version name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalExporter] - The original exporter of a copied/imported BPMN process.
+ * @param {string} [attributes.originalExporterVersion] - The original exporter version of a copied/imported BPMN process.
+ * @param {string} [attributes.originalTargetNamespace] - The original target namespace of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorSpaceId] - The original creator space ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorSpaceName] - The original creator space name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorId] - The original creator ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorName] - The original creator name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorUsername] - The original creator username of a copied/imported
  * @returns {Promise<string | object>} A promise that resolves to the modified BPMN process,
  * either as a BPMN-Moddle object or an XML string, depending on the input format.
  */
@@ -262,5 +275,18 @@ export function updateBpmnXMLAttributes(
     creatorSpaceName?: string;
     userDefinedId?: string;
     creationDate?: string;
+    originalName?: string;
+    originalUserDefinedId?: string;
+    originalCreationDate?: string;
+    originalProcessVersionId?: string;
+    originalProcessVersionName?: string;
+    originalExporter?: string;
+    originalExporterVersion?: string;
+    originalTargetNamespace?: string;
+    originalCreatorSpaceId?: string;
+    originalCreatorSpaceName?: string;
+    originalCreatorId?: string;
+    originalCreatorName?: string;
+    originalCreatorUsername?: string;
   },
 ): Promise<string | object>;

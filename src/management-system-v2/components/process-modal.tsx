@@ -1,22 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import {
-  Modal,
-  Form,
-  Input,
-  App,
-  Collapse,
-  CollapseProps,
-  Typography,
-  ModalProps,
-  Carousel,
-  Card,
-} from 'antd';
-import Icon from '@ant-design/icons';
+import { Modal, Form, Input, App, Typography, ModalProps, Carousel, Card, Flex } from 'antd';
+import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 import './process-modal-carousel.css';
+import Title from 'antd/es/typography/Title';
 
 type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -28,7 +18,15 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
   modalProps?: ModalProps;
 };
 
-const ProcessModal = <T extends { name: string; description: string; userDefinedId?: string }>({
+const ProcessModal = <
+  T extends {
+    name: string;
+    description: string;
+    userDefinedId?: string;
+    creator?: string;
+    createdOn?: string;
+  },
+>({
   open,
   title,
   okText,
@@ -40,6 +38,7 @@ const ProcessModal = <T extends { name: string; description: string; userDefined
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
+  const [carouselIndex, setCarouselIndex] = useState(1);
 
   useEffect(() => {
     if (initialData) {
@@ -113,7 +112,16 @@ const ProcessModal = <T extends { name: string; description: string; userDefined
 
   return (
     <Modal
-      title={title}
+      title={
+        <Flex justify="space-between" style={{ width: '100%', paddingRight: '25px' }}>
+          <Title level={4} style={{ margin: 0 }}>
+            {title}
+          </Title>
+          {initialData && initialData.length > 1 && (
+            <Typography.Text type="secondary">{`Process ${carouselIndex} of ${initialData.length}`}</Typography.Text>
+          )}
+        </Flex>
+      }
       open={open}
       width={600}
       centered
@@ -147,11 +155,18 @@ const ProcessModal = <T extends { name: string; description: string; userDefined
           <ProcessInputs index={0} />
         ) : (
           // <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
-          <Carousel arrows infinite={false} style={{ padding: '0px 25px 0px 25px' }}>
+          <Carousel
+            arrows
+            infinite={false}
+            style={{ padding: '0px 25px 0px 25px' }}
+            afterChange={(current) => setCarouselIndex(current + 1)}
+            prevArrow={<MdArrowBackIos color="#000" />}
+            nextArrow={<MdArrowForwardIos color="#000" />}
+          >
             {initialData &&
               initialData.map((process, index) => (
                 <Card key={index}>
-                  <ProcessInputs key={index} index={index} />
+                  <ProcessInputs key={index} index={index} isImport={true} />
                 </Card>
               ))}
           </Carousel>
@@ -163,9 +178,10 @@ const ProcessModal = <T extends { name: string; description: string; userDefined
 
 type ProcessInputsProps = {
   index: number;
+  isImport?: boolean;
 };
 
-const ProcessInputs = ({ index }: ProcessInputsProps) => {
+const ProcessInputs = ({ index, isImport }: ProcessInputsProps) => {
   return (
     <>
       <Form.Item
@@ -176,19 +192,29 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
         <Input />
       </Form.Item>
       <Form.Item
+        name={[index, 'userDefinedId']}
+        label="ID"
+        rules={[{ required: false, message: 'Please enter a unique ID for the process.' }]}
+      >
+        <Input />
+      </Form.Item>
+      <Form.Item
         name={[index, 'description']}
         label="Process Description"
         rules={[{ required: false, message: 'Please fill out the Process description' }]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>
-      <Form.Item
-        name={[index, 'userDefinedId']}
-        label="User Defined ID"
-        rules={[{ required: false, message: 'Please enter a unique ID for the process.' }]}
-      >
-        <Input />
-      </Form.Item>
+      {isImport && (
+        <>
+          <Form.Item name={[index, 'creator']} label="Creator" rules={[{ required: false }]}>
+            <Input disabled />
+          </Form.Item>
+          <Form.Item name={[index, 'createdOn']} label="Created On" rules={[{ required: false }]}>
+            <Input disabled />
+          </Form.Item>
+        </>
+      )}
     </>
   );
 };

@@ -150,6 +150,7 @@ async function getDefinitionsInfos(bpmn) {
     exporter: bpmnObj.exporter,
     exporterVersion: bpmnObj.exporterVersion,
     targetNamespace: bpmnObj.targetNamespace,
+    creatorName: bpmnObj.creatorName,
   };
 }
 

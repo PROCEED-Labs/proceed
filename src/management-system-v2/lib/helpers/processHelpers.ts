@@ -24,14 +24,9 @@ import {
   setScriptTaskData,
   updateBpmnXMLAttributes,
 } from '@proceed/bpmn-helper';
-import {
-  ProcessMetadata,
-  ProcessServerInput,
-  ProcessServerInputSchema,
-} from '../data/process-schema';
+import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
 import { asyncForEach } from './javascriptHelpers';
-import { toCustomUTCString } from './timeHelper';
 import { XMLAttrDBProcessTableColsMap } from './xmlAttr-db-process-cols-map';
 
 interface ProcessInfo {
@@ -72,13 +67,14 @@ export function getDefaultProcessMetaInfo() {
  * creates a bpmn and a meta info object
  */
 export async function createProcess(
-  processInfo: ProcessServerInput & { bpmn?: string },
+  processInfo: ProcessInput & { bpmn?: string },
   noDefaults: boolean = false,
 ) {
   // create default bpmn if user didn't provide any
   let bpmn = processInfo.bpmn || initXml();
+
   // schema parser removes bpmn property
-  let metaInfo = ProcessServerInputSchema.parse(processInfo);
+  let metaInfo = ProcessInputSchema.parse(processInfo);
 
   let definitions;
 
@@ -103,12 +99,25 @@ export async function createProcess(
     metaInfo.name = (await getDefinitionsName(definitions))!;
   }
 
-  setStandardDefinitions(definitions, {
-    exporterName: getExporterName(),
-    exporterVersion: getExporterVersion(),
-    creatorId: metaInfo.creatorId,
-    creatorSpaceId: metaInfo.environmentId,
-    creationDate: toCustomUTCString(new Date()),
+  setStandardDefinitions(definitions, getExporterName(), getExporterVersion());
+
+  setDefinitionsVersionInformation(definitions, {
+    versionId: 'latest',
+    versionName: 'latest',
+  });
+
+  updateBpmnXMLAttributes(definitions, {
+    originalName: definitions.name,
+    originalCreatorName: definitions.creatorName,
+    originalCreatorId: definitions.creatorId,
+    originalCreatorUsername: definitions.creatorUsername,
+    originalCreatorSpaceId: definitions.creatorSpaceId,
+    originalCreatorSpaceName: definitions.creatorSpaceName,
+    originalCreationDate: definitions.creationDate,
+    originalExporterVersion: definitions.exporterVersion,
+    originalProcessVersionId: definitions.processVersionId,
+    originalProcessVersionName: definitions.processVersionName,
+    originalTargetNamespace: definitions.targetNamespace,
   });
 
   if (!metaInfo.name) {
@@ -311,7 +320,6 @@ export async function transformBpmnAttributes(
     });
 
     updateBpmnXMLAttributes(definitions, actualValues);
-    console.log('actualValues', actualValues);
   }
   const transformedXml = await toBpmnXml(definitions);
   return transformedXml;

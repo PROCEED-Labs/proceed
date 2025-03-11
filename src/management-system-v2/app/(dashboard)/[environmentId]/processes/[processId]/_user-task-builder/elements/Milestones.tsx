@@ -5,10 +5,10 @@ import { Button } from 'antd';
 import { Setting } from './utils';
 
 type MilestonesProps = {
-  milestones: { id: string; name: string; description?: string }[];
+  milestones?: { id: string; name: string; description?: string }[];
 };
 
-export const ExportMilestones: UserComponent<MilestonesProps> = ({ milestones }) => {
+export const ExportMilestones: UserComponent<MilestonesProps> = ({ milestones = [] }) => {
   return (
     <div className="user-task-form-milestones">
       <p>Update your Milestones:</p>
@@ -25,7 +25,7 @@ export const ExportMilestones: UserComponent<MilestonesProps> = ({ milestones })
                   max="100"
                   value={`{if ${milestone.id}}{${milestone.id}}{else}0{/if}`}
                   className={`milestone-${milestone.id}`}
-                  onChange={() => { }}
+                  onChange={() => {}}
                 />
                 <output
                   name={`fulfillment_${milestone.id}`}
@@ -38,7 +38,7 @@ export const ExportMilestones: UserComponent<MilestonesProps> = ({ milestones })
   );
 };
 
-const Milestones: UserComponent<MilestonesProps> = ({ milestones }) => {
+const Milestones: UserComponent<MilestonesProps> = ({ milestones = [] }) => {
   const {
     connectors: { connect },
   } = useNode();
@@ -64,7 +64,7 @@ const Milestones: UserComponent<MilestonesProps> = ({ milestones }) => {
                   min="0"
                   max="100"
                   value={0}
-                  onChange={() => { }}
+                  onChange={() => {}}
                 />
                 <output>0%</output>
               </label>

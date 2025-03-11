@@ -14,8 +14,8 @@
     typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf"
     exporter="PROCEED Management System"
     exporterVersion="${pkgJSON.version}"
-    proceed:creatorEnvironmentId=""
-    proceed:creatorEnvironmentName="">
+    proceed:creatorSpaceId=""
+    proceed:creatorSpaceName="">
 <bpmn2:process id="Process_1" name="PROCEED Main Process" processType="Private" isExecutable="true" deploymentMethod="dynamic">
     <bpmn2:startEvent id="StartEvent_1"/>
     <bpmn2:userTask id="Activity_0o4gb6d" proceed:fileName="Task1" implementation="https://html.spec.whatwg.org/"/>

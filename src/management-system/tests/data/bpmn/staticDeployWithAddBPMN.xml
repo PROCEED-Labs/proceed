@@ -14,8 +14,8 @@
     typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf"
     exporter="PROCEED Management System"
     exporterVersion="${pkgJSON.version}"
-    proceed:creatorEnvironmentId=""
-    proceed:creatorEnvironmentName="">
+    proceed:creatorSpaceId=""
+    proceed:creatorSpaceName="">
 <bpmn2:process id="Process_1" name="PROCEED Main Process" processType="Private" isExecutable="true" deploymentMethod="static">
     <bpmn2:startEvent id="StartEvent_1" proceed:machineAddress="192.168.1.1:44444"/>
 </bpmn2:process>

@@ -60,6 +60,7 @@ model OauthAccount {
 
 model Process {
   id                   String              @id @default(uuid())
+  userDefinedId        String?             
   originalId           String
   name                 String
   description          String

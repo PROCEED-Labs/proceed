@@ -107,6 +107,15 @@ body {
   margin: 3px 3px 6px 0;
 }
 
+.user-task-form-milestone label {
+  display: flex;
+  align-items: center;
+}
+
+.user-task-form-milestone input[type="range"] {
+  margin: 5px 10px;
+}
+
 .user-task-form-button {
   background-color: #eee;
   box-shadow: rgba(0,0,0, 0.02) 0 2px 0 0;
@@ -171,6 +180,7 @@ export function toHtml(json: string) {
           ...Elements,
           Image: Elements.ExportImage,
           Input: Elements.ExportInput,
+          Milestones: Elements.ExportMilestones,
         }}
       >
         <Frame data={json} />

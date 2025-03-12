@@ -17,9 +17,13 @@ import { useEnvironment } from '@/components/auth-can';
 import styles from './tasklist.module.scss';
 import { TaskListEntry } from '@/lib/engines/tasklist';
 
+export type ExtendedTaskListEntry = Omit<TaskListEntry, 'actualOwner'> & {
+  actualOwner: { id: string; name: string; userName: string }[];
+};
+
 type UserTaskFormProps = {
   userId: string;
-  task?: TaskListEntry;
+  task?: ExtendedTaskListEntry;
 };
 
 const UserTaskForm: React.FC<UserTaskFormProps> = ({ task, userId }) => {
@@ -65,7 +69,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task, userId }) => {
                     if (path === '/tasklist/api/userTask') {
                       wrapServerCall({
                         fn: async () => {
-                          if (!task?.actualOwner.some((id) => id === userId)) {
+                          if (!task?.actualOwner.some((owner) => owner.id === userId)) {
                             const updatedOwners = await addOwnerToTaskListEntry(
                               spaceId,
                               query.instanceID,
@@ -73,7 +77,6 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task, userId }) => {
                               userId,
                             );
                             if ('error' in updatedOwners) return updatedOwners;
-                            task!.actualOwner = updatedOwners;
                           }
                           return await completeTasklistEntry(
                             spaceId,
@@ -97,7 +100,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task, userId }) => {
                     if (path === '/tasklist/api/variable') {
                       wrapServerCall({
                         fn: async () => {
-                          if (!task?.actualOwner.some((id) => id === userId)) {
+                          if (!task?.actualOwner.some((owner) => owner.id === userId)) {
                             const updatedOwners = await addOwnerToTaskListEntry(
                               spaceId,
                               query.instanceID,
@@ -105,7 +108,6 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task, userId }) => {
                               userId,
                             );
                             if ('error' in updatedOwners) return updatedOwners;
-                            task!.actualOwner = updatedOwners;
                           }
                           return await setTasklistEntryVariableValues(
                             spaceId,

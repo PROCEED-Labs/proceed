@@ -1,6 +1,7 @@
 'use client';
 
-import { Card, Col, Progress, Row } from 'antd';
+import React from 'react';
+import { Card, Col, Progress, Row, Tooltip, Typography } from 'antd';
 import {
   UserOutlined,
   CalendarOutlined,
@@ -11,22 +12,34 @@ import {
 } from '@ant-design/icons';
 import { generateDateString } from '@/lib/utils';
 import { transformMilisecondsToDurationValues } from '@/lib/helpers/timeHelper';
+import { TaskListEntry } from '@/lib/engines/tasklist';
+import { ExtendedTaskListEntry } from './user-task-view';
+
+const OwnerInfo: React.FC<{ task: ExtendedTaskListEntry }> = ({ task }) => {
+  let owner = '';
+
+  if (task.actualOwner.length === 1) {
+    owner = task.actualOwner[0].name || task.actualOwner[0].userName;
+  } else if (task.actualOwner.length > 1) {
+    owner = task.actualOwner.map(({ name, userName }) => name || userName).join(' | ');
+  }
+
+  return (
+    <Tooltip title={owner}>
+      <UserOutlined />{' '}
+      <Typography.Text ellipsis style={{ fontSize: 'inherit' }}>
+        {owner}
+      </Typography.Text>
+    </Tooltip>
+  );
+};
 
 const UserTaskCard = ({
   userTaskData,
   clickHandler,
   selected = false,
 }: {
-  userTaskData: {
-    id: string;
-    name: string;
-    state: string;
-    owner?: string;
-    startTime: number;
-    endTime: number;
-    priority: number;
-    progress: number;
-  };
+  userTaskData: ExtendedTaskListEntry;
   clickHandler?: () => void;
   selected?: boolean;
 }) => {
@@ -76,7 +89,7 @@ const UserTaskCard = ({
       <Row gutter={16}>
         <Col span={10}>
           <span style={{ fontSize: '0.75rem' }}>
-            <UserOutlined></UserOutlined> {userTaskData.owner}
+            <OwnerInfo task={userTaskData} />
           </span>
         </Col>
         <Col span={14}>

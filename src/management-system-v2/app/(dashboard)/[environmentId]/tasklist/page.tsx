@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 import { env } from '@/lib/env-vars';
 import { getAvailableTaskListEntries } from '@/lib/engines/server-actions';
-import { getRoles } from '@/lib/data/DTOs';
+import { getMembers, getRoles, getUsers } from '@/lib/data/DTOs';
+import { truthyFilter } from '@/lib/typescript-utils';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
@@ -37,6 +38,22 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     );
   });
 
+  const users = roles.reduce(
+    (acc, role) => {
+      role.members.forEach((member) => {
+        acc[member.userId] = {
+          // @ts-ignore    // types wrong?!
+          userName: member.user.username,
+          // @ts-ignore    // types wrong?!
+          name: member.user.firstName + ' ' + member.user.lastName,
+        };
+      });
+
+      return acc;
+    },
+    {} as { [key: string]: { userName: string; name: string } },
+  );
+
   userTasks = userTasks.filter((uT) => {
     if (!uT.performers.user?.length && !uT.performers.roles?.length) return true;
 
@@ -48,10 +65,25 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     return userCanOwn || userRoleCanOwn;
   });
 
+  const mappedUserTasks = userTasks.map((uT) => {
+    return {
+      ...uT,
+      actualOwner: uT.actualOwner
+        .map((id) => {
+          if (users[id]) {
+            return { id, ...users[id] };
+          } else {
+            return null;
+          }
+        })
+        .filter(truthyFilter),
+    };
+  });
+
   return (
     <Content title="Tasklist">
       <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Tasklist userId={userId} userTasks={userTasks}></Tasklist>
+        <Tasklist userId={userId} userTasks={mappedUserTasks}></Tasklist>
       </Space>
     </Content>
   );

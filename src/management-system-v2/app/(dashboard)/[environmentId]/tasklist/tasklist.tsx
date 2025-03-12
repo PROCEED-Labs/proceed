@@ -11,8 +11,7 @@ import { IoArrowBack } from 'react-icons/io5';
 import styles from './tasklist.module.scss';
 import ScrollBar from '@/components/scrollbar';
 
-import { TaskListEntry } from '@/lib/engines/tasklist';
-import UserTaskView from './user-task-view';
+import UserTaskView, { ExtendedTaskListEntry } from './user-task-view';
 
 const StatusSelection = ({
   selectedValues,
@@ -106,7 +105,13 @@ const SliderRangeWithText = ({
   );
 };
 
-const Tasklist = ({ userTasks, userId }: { userTasks: TaskListEntry[]; userId: string }) => {
+const Tasklist = ({
+  userTasks,
+  userId,
+}: {
+  userTasks: ExtendedTaskListEntry[];
+  userId: string;
+}) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);

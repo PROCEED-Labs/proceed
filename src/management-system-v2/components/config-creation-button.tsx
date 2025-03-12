@@ -45,7 +45,6 @@ export const ConfigCreationModal: React.FC<
         defaultParentConfiguration(
           folderId,
           environment.spaceId,
-          folderId,
           values[0].name,
           values[0].shortname,
           values[0].categories,

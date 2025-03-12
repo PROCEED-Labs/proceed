@@ -21,16 +21,6 @@ import {
 } from '../configuration-helper';
 import ConfigModal from '@/components/config-modal';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
-
-// import {
-//   addMachineConfig,
-//   addTargetConfig,
-//   addParameter as backendAddParameter,
-//   removeMachineConfig,
-//   removeParameter,
-//   removeTargetConfig,
-// } from '@/lib/data/legacy/machine-config';
-
 import {
   addMachineConfig,
   addTargetConfig,

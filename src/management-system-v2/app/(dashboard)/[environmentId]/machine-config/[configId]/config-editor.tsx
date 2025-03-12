@@ -48,16 +48,6 @@ import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import AddButton from './add-button';
 import ConfigModal from '@/components/config-modal';
-// import {
-//   addMachineConfig,
-//   addTargetConfig,
-//   removeTargetConfig,
-//   updateMachineConfig,
-//   updateParentConfig,
-//   updateTargetConfig,
-// addParentConfigVersion,
-// setParentConfigVersionAsLatest,
-// } from '@/lib/data/legacy/machine-config';
 import ActionButtons from './action-buttons';
 import {
   addTargetConfig,

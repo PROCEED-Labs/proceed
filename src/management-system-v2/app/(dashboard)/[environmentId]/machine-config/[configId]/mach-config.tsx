@@ -8,13 +8,6 @@ import { useMemo, useRef, useState } from 'react';
 import { Collapse, theme, Modal, Form, Input, Typography } from 'antd';
 import ActionButtons from './action-buttons';
 import Content from './config-content';
-// import {
-//   copyConfig,
-//   removeMachineConfig,
-//   updateMachineConfig,
-//   updateParentConfig,
-// } from '@/lib/data/legacy/machine-config';
-
 import {
   copyConfig,
   removeMachineConfig,

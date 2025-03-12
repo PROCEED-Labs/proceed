@@ -33,14 +33,6 @@ import {
   EditOutlined,
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
-// import {
-//   addParentConfig,
-//   copyParentConfig,
-//   updateParentConfig,
-//   updateParameter,
-//   addParameter,
-//   removeParentConfiguration,
-// } from '@/lib/data/legacy/machine-config';
 import {
   addParentConfig,
   copyParentConfig,

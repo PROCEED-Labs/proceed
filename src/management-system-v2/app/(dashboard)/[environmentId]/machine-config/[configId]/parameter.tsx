@@ -1,16 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-
 import { CaretRightOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { Space, Collapse, theme } from 'antd';
-
 import AddButton from './add-button';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
-
 import { Parameter, ParameterContent } from '@/lib/data/machine-config-schema';
-// import { updateParameter } from '@/lib/data/legacy/machine-config';
 import { updateParameter } from '@/lib/data/db/machine-config';
 import { ParamContent, ParameterContentHeader } from './parameter-content';
 

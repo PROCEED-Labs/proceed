@@ -224,7 +224,6 @@ export async function addParentConfig(
   }
 }
 
-//TODO
 /**
  * This adds a new version for a parent configuration to the db.
  * @param machineConfigInput Config for which a version is created.
@@ -693,7 +692,6 @@ export async function getDeepParentConfigurationById(
   }
 
   // TODO: check if the user can access the config
-
   const parentConfig = {
     ...config,
     lastEditedOn: lastEdited,
@@ -970,7 +968,7 @@ export async function removeParentConfiguration(
   await asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id));
   await asyncForEach(parentConfig.metadata, (id) => removeParameter(id));
 
-  // TODO for each version removeTargetConfig(), removeMachineConfig(), removeParameter() like above
+  // for each version removing TargetConfig, MachineConfigs and Parameters and finally removing the configVersion itself
   if (!keepVersions) {
     const parentConfigVersions = parentConfigVersionsResult.map(
       (element) => element.data,

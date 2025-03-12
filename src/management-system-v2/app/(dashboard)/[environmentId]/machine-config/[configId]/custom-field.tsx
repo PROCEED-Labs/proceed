@@ -23,13 +23,6 @@ import { defaultParameter, findParameter, getAllParameters } from '../configurat
 import { useEffect, useMemo, useRef, useState } from 'react';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 import styles from './page.module.scss';
-
-// import {
-//   addParameter as backendAddParameter,
-//   removeParameter,
-//   updateParameter,
-// } from '@/lib/data/legacy/machine-config';
-
 import {
   addParameter as backendAddParameter,
   removeParameter,

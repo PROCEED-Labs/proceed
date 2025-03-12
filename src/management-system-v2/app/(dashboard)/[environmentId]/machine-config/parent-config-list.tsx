@@ -73,8 +73,6 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     transformData: (matches) => matches.map((match) => match.item),
   });
 
-  console.log(data);
-
   const { message } = App.useApp();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ParentConfigListConfigs[]>([]);
@@ -247,7 +245,6 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     try {
       const text = await file.text();
       const importedData: ParentConfig[] = JSON.parse(text);
-      console.log(importedData);
 
       await asyncForEach(importedData, async (item) => {
         const add_return = await addParentConfig(item, space.spaceId);

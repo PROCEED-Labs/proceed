@@ -16,7 +16,7 @@ export type TaskListEntry = {
   status: string;
   owner: string;
   priority: number;
-  performers: string[];
+  performers: { user?: string[]; roles?: string[] };
   progress: 0;
   startTime: number;
   endTime: number;

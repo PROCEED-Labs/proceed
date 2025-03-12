@@ -50,6 +50,32 @@ const StatusSelection = ({
   );
 };
 
+const OwnerSelection = ({
+  selectedValues,
+  onSelectionChange,
+}: {
+  selectedValues: string[];
+  onSelectionChange: (selectedValues: string[]) => void;
+}) => {
+  return (
+    <Checkbox.Group
+      style={{
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+      value={selectedValues}
+      onChange={(checkedValues: string[]) => {
+        onSelectionChange(checkedValues);
+      }}
+    >
+      <Checkbox value="unassigned" style={{ marginBottom: '0.25rem' }}>
+        Show Unassigned Tasks
+      </Checkbox>
+    </Checkbox.Group>
+  );
+};
+
 const SliderRangeWithText = ({
   min = 0,
   max = 100,
@@ -87,6 +113,7 @@ const Tasklist = ({ userTasks, userId }: { userTasks: TaskListEntry[]; userId: s
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [stateSelectionFilter, setStateSelectionFilter] = useState(['READY', 'ACTIVE', 'PAUSED']);
+  const [ownerSelectionFilter, setOwnerSelectionFilter] = useState<string[]>([]);
   const [priorityRangeFilter, setPriorityRangeFilter] = useState<[number, number]>([1, 10]);
   const [progressRangeFilter, setProgressRangeFilter] = useState<[number, number]>([0, 100]);
   const [usersFilter, setUsersFilter] = useState<string[]>([]);
@@ -97,6 +124,9 @@ const Tasklist = ({ userTasks, userId }: { userTasks: TaskListEntry[]; userId: s
     const showingUserTasks = userTasks.filter((uT) => {
       return (
         stateSelectionFilter.includes(uT.state) &&
+        (ownerSelectionFilter.includes('unassigned') ||
+          uT.performers.user?.length ||
+          uT.performers.roles?.length) &&
         uT.priority >= priorityRangeFilter[0] &&
         uT.priority <= priorityRangeFilter[1] &&
         uT.progress >= progressRangeFilter[0] &&
@@ -150,6 +180,7 @@ const Tasklist = ({ userTasks, userId }: { userTasks: TaskListEntry[]; userId: s
     return showingUserTasks;
   }, [
     stateSelectionFilter,
+    ownerSelectionFilter,
     priorityRangeFilter,
     progressRangeFilter,
     usersFilter,
@@ -176,7 +207,7 @@ const Tasklist = ({ userTasks, userId }: { userTasks: TaskListEntry[]; userId: s
               onSelectionChange={(selectedValues) => {
                 setStateSelectionFilter(selectedValues);
               }}
-            ></StatusSelection>
+            />
           ),
         },
       ],
@@ -231,10 +262,31 @@ const Tasklist = ({ userTasks, userId }: { userTasks: TaskListEntry[]; userId: s
     {
       key: '4',
       type: 'group',
-      label: 'Users',
+      label: 'Owners',
       children: [
         {
           key: '4-1',
+          label: (
+            <OwnerSelection
+              selectedValues={ownerSelectionFilter}
+              onSelectionChange={(selectedValues) => {
+                setOwnerSelectionFilter(selectedValues);
+              }}
+            />
+          ),
+        },
+      ],
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: '5',
+      type: 'group',
+      label: 'Users',
+      children: [
+        {
+          key: '5-1',
           label: (
             <Select
               mode="multiple"
@@ -258,12 +310,12 @@ const Tasklist = ({ userTasks, userId }: { userTasks: TaskListEntry[]; userId: s
       type: 'divider',
     },
     {
-      key: '5',
+      key: '6',
       type: 'group',
       label: 'Groups',
       children: [
         {
-          key: '5-1',
+          key: '6-1',
           label: (
             <Select
               mode="multiple"

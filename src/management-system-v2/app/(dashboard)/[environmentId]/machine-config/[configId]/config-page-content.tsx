@@ -27,6 +27,7 @@ const collapsedWidth = 70;
 
 type VariablesEditorProps = {
   parentConfig: ParentConfig;
+  editingAllowed: boolean;
 };
 
 const ParameterTreeNode: React.FC<{
@@ -73,7 +74,7 @@ const ConfigTreeNode: React.FC<{ config: AbstractConfig }> = ({ config }) => {
   );
 };
 
-const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig }) => {
+const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig, editingAllowed }) => {
   const [selectionId, setSelectionId] = useState('');
   const [selectionType, setSelectionType] = useState<AbstractConfig['type'] | 'parameter'>(
     'config',
@@ -240,11 +241,10 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig }) => {
           <div className={styles.CustomBoxContentWrapper}>
             <ConfigurationTreeView
               parentConfig={parentConfig}
-              editable={editable}
+              editable={editable && editingAllowed}
               treeData={treeData}
               expandedKeys={expandedKeys}
               onExpandedChange={(newExpanded) => {
-                console.log(newExpanded);
                 setUserPreferences({
                   'tech-data-open-tree-items': [
                     ...openTreeItemsInConfigs.filter(({ id }) => id !== parentConfig.id),
@@ -271,13 +271,14 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig }) => {
                   key={key}
                   keyId={key}
                   parameter={val}
-                  editable={editable}
+                  editable={editable && editingAllowed}
                 />
               ))}
             </>
           ) : (
             <ConfigEditor
-              editable={editable}
+              editable={editable && editingAllowed}
+              editingAllowed={editingAllowed}
               onChangeEditable={setEditable}
               parentConfig={parentConfig}
               selectedConfig={selectedNode as AbstractConfig}

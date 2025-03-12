@@ -7,6 +7,7 @@ import AddUserControls from '@/components/add-user-controls';
 import { getProcess, getProcesses } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import type { Process } from '@/lib/data/process-schema';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
@@ -42,8 +43,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
       <Wrapper processName={process.name} processes={processes}>
         <Modeler
           className={styles.Modeler}
-          process={{ ...process, bpmn: selectedVersionBpmn as string }}
-          versions={process.versions}
+          process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
           versionName={selectedVersion?.name}
         />
       </Wrapper>

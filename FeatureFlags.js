@@ -7,7 +7,7 @@ module.exports = {
   // Flags that can likely be deleted or landed without consequences
   // -----------------------------------------------------------------------------
 
-  enableComponentStackLocations: true,
+  enableComponentStackLocations: false,
 
   // -----------------------------------------------------------------------------
   // Land or remove (moderate effort)
@@ -46,9 +46,9 @@ module.exports = {
   enableChatbot: false,
 
   //feature to switch to prisma from fs
-  enableUseDB: false,
+  enableUseDB: true,
   //feature to use GCP_bucket / fs depending on deployment env to store blobs
-  enableUseFileManager: false,
+  enableUseFileManager: true,
   // -----------------------------------------------------------------------------
   // Chopping Block
   //

@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEngines } from '@/lib/engines/mqtt-endpoints';
+import { getEngines } from '@/lib/engines/endpoints/mqtt-endpoints';
 import { Result, Skeleton } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';

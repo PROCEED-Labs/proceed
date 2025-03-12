@@ -34,14 +34,13 @@ import {
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
 import {
-  deleteParentConfigurations,
   addParentConfig,
   copyParentConfig,
   updateParentConfig,
   updateParameter,
   addParameter,
   removeParentConfiguration,
-} from '@/lib/data/legacy/machine-config';
+} from '@/lib/data/db/machine-config';
 
 import AddUserControls from '@/components/add-user-controls';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -349,7 +348,18 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       title: 'Last Edited',
       dataIndex: 'lastEdited',
       key: 'Last Edited',
-      render: (date: Date) => generateDateString(date, true),
+      render: (_, record) => (
+        <SpaceLink
+          href={`/machine-config/${record.id}`}
+          style={{
+            color: 'inherit',
+            textDecoration: 'none',
+            display: 'block',
+          }}
+        >
+          {generateDateString(record.lastEditedOn, true) ?? ''}
+        </SpaceLink>
+      ),
       sorter: (a, b) => new Date(b.lastEditedOn).getTime() - new Date(a.lastEditedOn).getTime(),
       responsive: ['md'],
     },

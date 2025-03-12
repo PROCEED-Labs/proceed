@@ -51,6 +51,12 @@
         "userTaskID": true
       }
     },
+    "/tasklist/api/userTask/owner": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
     "/configuration/api/config": {},
     "/process/": {},
     "/process/:definitionId/versions/:version/instance": {},

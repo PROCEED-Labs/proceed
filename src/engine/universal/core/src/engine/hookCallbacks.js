@@ -370,6 +370,13 @@ module.exports = {
             newInstance.updateToken(execution.tokenId, { performers: undefined });
           }
 
+          if (token.actualOwner) {
+            newInstance.updateLog(execution.flowElementId, execution.tokenId, {
+              actualOwner: token.actualOwner,
+            });
+            newInstance.updateToken(execution.tokenId, { actualOwner: undefined });
+          }
+
           const flowElement = newInstance.getFlowElement(execution.flowElementId);
           if (flowElement && flowElement.$type === 'bpmn:UserTask') {
             // update user task in list

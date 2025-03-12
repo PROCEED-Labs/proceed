@@ -7,6 +7,7 @@ import cn from 'classnames';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
 import {
+  addOwnerToTaskListEntry,
   completeTasklistEntry,
   getTasklistEntryHTML,
   setTasklistEntryVariableValues,
@@ -17,10 +18,11 @@ import styles from './tasklist.module.scss';
 import { TaskListEntry } from '@/lib/engines/tasklist';
 
 type UserTaskFormProps = {
+  userId: string;
   task?: TaskListEntry;
 };
 
-const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
+const UserTaskForm: React.FC<UserTaskFormProps> = ({ task, userId }) => {
   const router = useRouter();
   const { spaceId } = useEnvironment();
 
@@ -62,8 +64,24 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
                   ) => {
                     if (path === '/tasklist/api/userTask') {
                       wrapServerCall({
-                        fn: () =>
-                          completeTasklistEntry(spaceId, query.instanceID, query.userTaskID, body),
+                        fn: async () => {
+                          if (!task?.actualOwner.some((id) => id === userId)) {
+                            const updatedOwners = await addOwnerToTaskListEntry(
+                              spaceId,
+                              query.instanceID,
+                              query.userTaskID,
+                              userId,
+                            );
+                            if ('error' in updatedOwners) return updatedOwners;
+                            task!.actualOwner = updatedOwners;
+                          }
+                          return await completeTasklistEntry(
+                            spaceId,
+                            query.instanceID,
+                            query.userTaskID,
+                            body,
+                          );
+                        },
                         onSuccess: () => router.refresh(),
                       });
                     }
@@ -78,13 +96,24 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
                     // }
                     if (path === '/tasklist/api/variable') {
                       wrapServerCall({
-                        fn: () =>
-                          setTasklistEntryVariableValues(
+                        fn: async () => {
+                          if (!task?.actualOwner.some((id) => id === userId)) {
+                            const updatedOwners = await addOwnerToTaskListEntry(
+                              spaceId,
+                              query.instanceID,
+                              query.userTaskID,
+                              userId,
+                            );
+                            if ('error' in updatedOwners) return updatedOwners;
+                            task!.actualOwner = updatedOwners;
+                          }
+                          return await setTasklistEntryVariableValues(
                             spaceId,
                             query.instanceID,
                             query.userTaskID,
                             body,
-                          ),
+                          );
+                        },
                         onSuccess: () => router.refresh(),
                       });
                     }

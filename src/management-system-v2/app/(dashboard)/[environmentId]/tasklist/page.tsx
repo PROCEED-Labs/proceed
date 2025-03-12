@@ -1,6 +1,6 @@
 import Content from '@/components/content';
 import { Result, Space } from 'antd';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 import { env } from '@/lib/env-vars';
@@ -10,6 +10,8 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
+
+  const { userId } = await getCurrentUser();
 
   const {
     activeEnvironment: { spaceId },
@@ -28,7 +30,7 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
   return (
     <Content title="Tasklist">
       <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Tasklist userTasks={userTasks}></Tasklist>
+        <Tasklist userId={userId} userTasks={userTasks}></Tasklist>
       </Space>
     </Content>
   );

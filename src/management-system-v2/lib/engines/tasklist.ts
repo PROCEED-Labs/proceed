@@ -11,6 +11,7 @@ export type TaskListEntry = {
   attrs: {
     'proceed:fileName': string;
   };
+  actualOwner: string[];
   state: string;
   status: string;
   owner: string;
@@ -89,4 +90,24 @@ export async function completeTasklistEntryOnMachine(
     },
     body: variables,
   });
+}
+
+export async function addOwnerToTaskListEntryOnMachine(
+  machine: Engine,
+  instanceId: string,
+  userTaskId: string,
+  owner: string,
+) {
+  const updatedOwners = await engineRequest({
+    method: 'post',
+    endpoint: '/tasklist/api/userTask/owner',
+    engine: machine,
+    queryParams: {
+      instanceID: instanceId,
+      userTaskID: userTaskId,
+    },
+    body: { owner },
+  });
+
+  return updatedOwners as string[];
 }

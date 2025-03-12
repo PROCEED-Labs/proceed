@@ -80,7 +80,7 @@ const SliderRangeWithText = ({
   );
 };
 
-const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
+const Tasklist = ({ userTasks, userId }: { userTasks: TaskListEntry[]; userId: string }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
@@ -420,7 +420,7 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
         </div>
       </div>
       {(selectedUserTaskID ?? breakpoint.xl) && (
-        <UserTaskView task={userTasks.find((uT) => uT.id === selectedUserTaskID)} />
+        <UserTaskView userId={userId} task={userTasks.find((uT) => uT.id === selectedUserTaskID)} />
       )}
     </div>
   );

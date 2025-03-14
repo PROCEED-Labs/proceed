@@ -3,49 +3,44 @@ CREATE TABLE "config" (
     "id" TEXT NOT NULL,
     "environmentId" TEXT NOT NULL,
     "creatorId" TEXT NOT NULL,
+    "createdOn" TIMESTAMP(3) NOT NULL,
+    "lastEditedOn" TIMESTAMP(3) NOT NULL,
     "data" JSONB NOT NULL,
 
     CONSTRAINT "config_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "ConfigParameter" (
+CREATE TABLE "config_parameter" (
     "id" TEXT NOT NULL,
     "data" JSONB NOT NULL,
 
-    CONSTRAINT "ConfigParameter_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "config_parameter_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "ConfigParameterContent" (
+CREATE TABLE "machine_config" (
     "id" TEXT NOT NULL,
     "data" JSONB NOT NULL,
 
-    CONSTRAINT "ConfigParameterContent_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "machine_config_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "MachineConfig" (
+CREATE TABLE "target_config" (
     "id" TEXT NOT NULL,
     "data" JSONB NOT NULL,
 
-    CONSTRAINT "MachineConfig_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "target_config_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "TargetConfig" (
+CREATE TABLE "config_version" (
     "id" TEXT NOT NULL,
+    "parentId" TEXT NOT NULL,
     "data" JSONB NOT NULL,
 
-    CONSTRAINT "TargetConfig_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "ConfigVersions" (
-    "id" TEXT NOT NULL,
-    "data" JSONB NOT NULL,
-
-    CONSTRAINT "ConfigVersions_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "config_version_pkey" PRIMARY KEY ("id")
 );
 
 -- AddForeignKey

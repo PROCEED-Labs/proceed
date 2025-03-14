@@ -8,6 +8,7 @@ import { getMembers, getProcess, getProcesses, getRoles } from '@/lib/data/DTOs'
 import { getProcessBPMN } from '@/lib/data/processes';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { RoleType, UserType } from './use-potentialOwner-store';
+import type { Process } from '@/lib/data/process-schema';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
@@ -70,8 +71,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
       >
         <Modeler
           className={styles.Modeler}
-          process={{ ...process, bpmn: selectedVersionBpmn as string }}
-          versions={process.versions}
+          process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
           versionName={selectedVersion?.name}
         />
       </Wrapper>

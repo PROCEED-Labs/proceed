@@ -1,22 +1,18 @@
 'use client';
 
-import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
-import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
 import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs } from 'antd';
 import type { TabsProps } from 'antd';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
-  getElementById,
   getMetaDataFromElement,
   setDefinitionsName,
-  setMetaData,
   setProceedElement,
-  toBpmnObject,
   deepCopyElementById,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
@@ -33,6 +29,8 @@ import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
 import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
+import { Shape } from 'bpmn-js/lib/model/Types';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -47,8 +45,9 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const router = useRouter();
   const { spaceId } = useEnvironment();
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
-  const backgroundColor = getFillColor(selectedElement, '#FFFFFFFF');
-  const strokeColor = getStrokeColor(selectedElement, '#000000FF');
+  const backgroundColor = getBackgroundColor(selectedElement as Shape);
+  const textColor = getTextColor(selectedElement as Shape);
+  const borderColor = getBorderColor(selectedElement as Shape);
 
   const [name, setName] = useState('');
 
@@ -121,10 +120,21 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       fill: backgroundColor,
     });
   };
-  const updateStrokeColor = (frameColor: string) => {
+  const updateTextColor = (textColor: string) => {
     const modeling = modeler!.getModeling();
-    modeling.setColor(selectedElement as any, {
-      stroke: frameColor,
+    // update the text color in the external label if one exists, otherwise update the text inside
+    // the element if possible
+    let element = selectedElement.label || selectedElement;
+    if (element) {
+      modeling.updateModdleProperties(element as any, element.di.label, {
+        color: textColor,
+      });
+    }
+  };
+  const updateBorderColor = (borderColor: string) => {
+    const modeling = modeler!.getModeling();
+    modeling.updateProperties(selectedElement as any, {
+      di: { 'border-color': borderColor },
     });
   };
 
@@ -170,10 +180,10 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             aria-labelledby="general-title"
           >
             {/* <Divider>
-            <span id="general-title" style={{ fontSize: '0.85rem' }}>
-              General
-            </span>
-          </Divider> */}
+          <span id="general-title" style={{ fontSize: '0.85rem' }}>
+            General
+          </span>
+        </Divider> */}
             <Input
               name="Name"
               placeholder="Element Name"
@@ -226,6 +236,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               timePlannedDuration={timePlannedDuration || ''}
             ></PlannedDurationInput>
           </Space>
+
           <CustomPropertySection
             metaData={metaData}
             onChange={(name, value, oldName) => {
@@ -241,31 +252,46 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               );
             }}
           ></CustomPropertySection>
-          {selectedElement.type !== 'bpmn:Process' && (
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
-              <Space>
-                <ColorPicker
-                  size="small"
-                  disabledAlpha
-                  presets={colorPickerPresets}
-                  value={backgroundColor}
-                  onChange={(_, hex) => updateBackgroundColor(hex)}
-                />
-                <span>Background Colour</span>
+
+          {selectedElement.type !== 'bpmn:Process' &&
+            selectedElement.type !== 'bpmn:Collaboration' && (
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
+                <Space>
+                  <ColorPicker
+                    size="small"
+                    disabledAlpha
+                    presets={colorPickerPresets}
+                    value={backgroundColor}
+                    onChange={(_, hex) => updateBackgroundColor(hex)}
+                  />
+                  <span>Background Color</span>
+                </Space>
+                <Space>
+                  <ColorPicker
+                    size="small"
+                    disabledAlpha
+                    presets={colorPickerPresets}
+                    value={borderColor}
+                    onChange={(_, hex) => updateBorderColor(hex)}
+                  />
+                  <span>Border Color</span>
+                </Space>
+
+                {selectedElement?.di?.label && (
+                  <Space>
+                    <ColorPicker
+                      size="small"
+                      disabledAlpha
+                      presets={colorPickerPresets}
+                      value={textColor}
+                      onChange={(_, hex) => updateTextColor(hex)}
+                    />
+                    <span>Text Color</span>
+                  </Space>
+                )}
               </Space>
-              <Space>
-                <ColorPicker
-                  size="small"
-                  disabledAlpha
-                  presets={colorPickerPresets}
-                  value={strokeColor}
-                  onChange={(_, hex) => updateStrokeColor(hex)}
-                />
-                <span>Stroke Colour</span>
-              </Space>
-            </Space>
-          )}
+            )}
         </>
       ),
     },

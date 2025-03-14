@@ -217,6 +217,7 @@ export async function addParentConfig(
       idCollision = true;
     }
     let storeId = await parentConfigToStorage(newConfig, idCollision);
+    addConfigCategories(environmentId, newConfig.categories);
     return { storeId };
   } catch (e: unknown) {
     const error = e as Error;
@@ -390,6 +391,15 @@ export async function addParameter(
   }
 }
 
+async function addConfigCategories(environmentId: string, newCategories: string[]) {
+  let storedCategories = await getConfigurationCategories(environmentId);
+  let toStore = Array.from(new Set([...storedCategories, ...newCategories]));
+  await db.configCategories.update({
+    where: { environmentId: environmentId },
+    data: { categories: toStore },
+  });
+}
+
 /**
  * Stores a record of parameters and references to all nested parameters. Storing of nested parameters is done recursively.
  * @param parentId ID of the parent object.
@@ -531,7 +541,7 @@ async function parentConfigToStorage(
   };
 
   if (version)
-    await db.configVersions.create({
+    await db.configVersion.create({
       data: { id: version, parentId: parentConfig.id, data: toStore },
     });
   else
@@ -548,7 +558,7 @@ async function parentConfigToStorage(
 }
 
 async function versionToParentConfigStorage(versionId: string) {
-  let configVersionResult = await db.configVersions.findUnique({ where: { id: versionId } });
+  let configVersionResult = await db.configVersion.findUnique({ where: { id: versionId } });
   let configVersion = configVersionResult?.data as unknown as StoredParentConfig;
 
   let originalConfigResult = await db.config.findUnique({ where: { id: configVersion.id } });
@@ -685,7 +695,7 @@ export async function getDeepParentConfigurationById(
   let versions = config.versions;
 
   if (version) {
-    let configVersionResult = await db.configVersions.findUnique({
+    let configVersionResult = await db.configVersion.findUnique({
       where: { id: version },
     });
     config = configVersionResult?.data as unknown as StoredParentConfig;
@@ -728,6 +738,18 @@ export async function getParentConfigurations(
   return ability
     ? parentConfigs /*ability.filter('view', 'MachineConfig', machineConfig)*/
     : parentConfigs;
+}
+/**
+ * Returns an array of strings listing the available categories in an environment
+ * @param environmentId ID of the environment for which the categories are to be retrieved
+ * @returns categories as string[]
+ */
+export async function getConfigurationCategories(environmentId: string): Promise<string[]> {
+  const categoriesResult = await db.configCategories.findUnique({
+    where: { environmentId: environmentId },
+  });
+  const categories = categoriesResult?.categories as string[];
+  return categories;
 }
 
 /********************** Update Elements ****************************/
@@ -958,7 +980,7 @@ export async function removeParentConfiguration(
   const parentConfigResult = await db.config.findUnique({ where: { id: parentConfigId } });
   const parentConfig = parentConfigResult?.data as unknown as StoredParentConfig;
 
-  const parentConfigVersionsResult = await db.configVersions.findMany({
+  const parentConfigVersionsResult = await db.configVersion.findMany({
     where: { parentId: parentConfigId },
   });
 
@@ -978,7 +1000,7 @@ export async function removeParentConfiguration(
       if (configVersion.targetConfig) await removeTargetConfig(configVersion.targetConfig);
       await asyncForEach(configVersion.machineConfigs, (id) => removeMachineConfig(id));
       await asyncForEach(configVersion.metadata, (id) => removeParameter(id));
-      await db.configVersions.delete({ where: { id: configVersion.version } });
+      await db.configVersion.delete({ where: { id: configVersion.version } });
     });
 
     // remove from db

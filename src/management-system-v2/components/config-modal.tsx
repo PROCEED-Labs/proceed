@@ -3,7 +3,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Form, Input, App, Collapse, CollapseProps, Checkbox, Select } from 'antd';
 import { UserError } from '@/lib/user-error';
-import { categoriesList } from '@/lib/data/machine-config-schema';
+import { getConfigurationCategories } from '@/lib/data/db/machine-config';
+import { string } from 'zod';
+import { useEnvironment } from './auth-can';
+// import { categoriesList } from '@/lib/data/machine-config-schema';
 
 type ConfigModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -28,8 +31,29 @@ const ConfigModal = <T extends { name: string; description: string }>({
 }: ConfigModalProps<T>) => {
   const [form] = Form.useForm();
   const formRef = useRef(null);
+  const environment = useEnvironment();
   const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState<
+    {
+      label: string;
+      value: string;
+    }[]
+  >([]);
   const { message } = App.useApp();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const categories = await getConfigurationCategories(environment.spaceId);
+      if (categories) {
+        const categoriesList = categories.map((v) => ({
+          label: v,
+          value: v,
+        }));
+        setCategories(categoriesList);
+      }
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (initialData && formRef.current) {
@@ -111,7 +135,12 @@ const ConfigModal = <T extends { name: string; description: string }>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <ConfigInputs index={0} configType={configType} targetConfigExists={targetConfigExists} />
+          <ConfigInputs
+            index={0}
+            configType={configType}
+            targetConfigExists={targetConfigExists}
+            categories={categories}
+          />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -124,9 +153,18 @@ type ConfigModalInputsProps = {
   index: number;
   configType?: string;
   targetConfigExists?: boolean;
+  categories?: {
+    label: string;
+    value: string;
+  }[];
 };
 
-const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInputsProps) => {
+const ConfigInputs = ({
+  index,
+  configType,
+  targetConfigExists,
+  categories,
+}: ConfigModalInputsProps) => {
   return (
     <>
       <Form.Item
@@ -150,11 +188,11 @@ const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInpu
           rules={[{ required: false, message: 'Please select a Category' }]}
         >
           <Select
-            mode="multiple"
+            mode="tags"
             allowClear
             style={{ width: '100%' }}
             placeholder="Please select"
-            options={categoriesList}
+            options={categories}
           />
         </Form.Item>
       )}

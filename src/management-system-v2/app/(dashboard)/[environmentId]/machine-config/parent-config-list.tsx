@@ -216,7 +216,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       id: string;
       name: string;
       shortname: string;
-      categories: Array<ConfigCategories>;
+      categories: string[];
       description: string;
     }[],
   ) {
@@ -246,7 +246,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     values: {
       name: string;
       shortname: string;
-      categories: Array<ConfigCategories>;
+      categories: string[];
       description: string;
       originalId: string;
     }[],

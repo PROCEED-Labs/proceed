@@ -265,7 +265,7 @@ model TargetConfig {
   @@map("target_config")
 }
 
-model ConfigVersions {
+model ConfigVersion {
   id                        String            @id @default(uuid())
   parentId                  String
   data                      Json
@@ -273,3 +273,9 @@ model ConfigVersions {
   @@map("config_version")
 }
 
+model ConfigCategories {
+  environmentId           String @id
+  categories              String[]
+  
+  @@map("config_categories")
+}

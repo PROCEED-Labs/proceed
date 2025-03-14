@@ -44,7 +44,7 @@ export const AbstractConfigInputSchema = z.object({
   id: z.string().optional(),
   shortname: z.string().optional(),
   name: z.string().optional(),
-  categories: z.array(CategoriesZod),
+  categories: z.array(z.string()),
   metadata: z.record(z.string(), ParameterZod),
   folderId: z.string().optional(),
   version: z.string().optional(),

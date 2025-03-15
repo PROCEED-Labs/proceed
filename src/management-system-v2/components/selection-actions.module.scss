@@ -1,22 +1,24 @@
 .SelectedRow {
-  display: flex;
-  flex: 1;
+  // display: flex;
+  // flex: 1;
+
   background-color: #ececec;
   border-radius: 4px;
-  margin: 0 4px;
-  margin-left: 10px;
+
   align-items: center;
   justify-content: center;
   text-wrap: nowrap;
   gap: 0.5rem;
+  padding: 0 1rem 0 1rem;
 
-  &.one-row {
-    padding: 0 2rem 0 0.25rem;
+  &.editable {
+    margin: 0 4px;
+    margin-left: 10px;
   }
+}
 
-  &.multiple-rows {
-    padding: 0 1.5rem 0 0.5rem;
-  }
+.counter {
+  margin-right: 0.5rem;
 }
 
 .Icons {

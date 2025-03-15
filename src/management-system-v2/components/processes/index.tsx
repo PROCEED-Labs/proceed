@@ -1,8 +1,30 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useRef, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge } from 'antd';
+import { ComponentProps, useEffect, useRef, useState, useTransition } from 'react';
+import { GrDocumentUser } from 'react-icons/gr';
+import { PiNotePencil } from 'react-icons/pi';
+import { IoOpenOutline } from 'react-icons/io5';
+import { LuNotebookPen } from 'react-icons/lu';
+import { BsFileEarmarkCheck } from 'react-icons/bs';
+import { PiDownloadSimple } from 'react-icons/pi';
+import { RiFolderTransferLine } from 'react-icons/ri';
+import { IoMdCopy } from 'react-icons/io';
+import { AiOutlinePartition } from 'react-icons/ai';
+import { PiFolderOpen } from 'react-icons/pi';
+import {
+  Space,
+  Button,
+  Tooltip,
+  Grid,
+  App,
+  Drawer,
+  Dropdown,
+  Card,
+  Badge,
+  Divider,
+  MenuProps,
+} from 'antd';
 import {
   CopyOutlined,
   EditOutlined,
@@ -12,7 +34,9 @@ import {
   AppstoreOutlined,
   FolderOutlined,
   FileOutlined,
+  FolderFilled,
 } from '@ant-design/icons';
+import BPMNModeler from 'bpmn-js/lib/Modeler';
 import IconView from '@/components/process-icon-list';
 import ProcessList from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
@@ -22,7 +46,12 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
-import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/processes';
+import {
+  copyProcesses,
+  createVersion,
+  deleteProcesses,
+  updateProcesses,
+} from '@/lib/data/processes';
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
@@ -48,6 +77,16 @@ import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { handleOpenDocumentation } from '@/app/(dashboard)/[environmentId]/processes/processes-helper';
+import { spaceURL } from '@/lib/utils';
+import VersionCreationButton, { VersionModal } from '../version-creation-button';
+
+/* SHARE HERE */
+// import ModelerShareModalButton from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-share-modal';
+
+import { getProcess } from '@/lib/data/DTOs';
+import BPMNCanvas, { BPMNCanvasRef } from '../bpmn-canvas';
+import { set } from 'zod';
 import { ShareModal } from '../share-modal/share-modal';
 
 export function canDoActionOnResource(
@@ -71,17 +110,53 @@ export type ProcessActions = {
   moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
 };
 
+export type contextAcions = {
+  // View Process Documentation,
+  viewDocumentation: (item: ProcessListProcess) => void;
+  // Change Meta Data,
+  changeMetaData: (item: ProcessListProcess) => void;
+  // Release Process,
+  releaseProcess: (item: ProcessListProcess) => void;
+  // Share,
+  share: (item: ProcessListProcess) => void;
+  // Download,
+  exportProcess: (items: ProcessListProcess[]) => void;
+  // Move to Folder,
+  moveItems: (items: ProcessListProcess[]) => void;
+  // Copy,
+  copyItems: (items: ProcessListProcess[]) => void;
+  // Delete,
+  deleteItems: (items: ProcessListProcess[]) => void;
+};
+
+export type rowActions = {
+  // View Process Documentation,
+  viewDocumentation: (item: ProcessListProcess) => void;
+  // Open Editor,
+  openEditor: (item: ProcessListProcess) => void;
+  // Change Meta Data,
+  changeMetaData: (item: ProcessListProcess) => void;
+  // Release Process,
+  releaseProcess: (item: ProcessListProcess) => void;
+  // Share
+  share: (item: ProcessListProcess) => void;
+};
+
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
 
 const Processes = ({
   processes,
   favourites,
+  idUsernameMapping = {},
   folder,
+  readOnly = false,
 }: {
   processes: InputItem[];
   favourites?: string[];
+  idUsernameMapping?: Record<string, string>;
   folder: Folder;
+  readOnly?: boolean;
 }) => {
   if (folder.parentId)
     processes = [
@@ -103,6 +178,7 @@ const Processes = ({
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
   const router = useRouter();
+  const environment = useEnvironment();
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -111,9 +187,12 @@ const Processes = ({
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
   const canDeleteSelected =
-    !!selectedRowElements.length && canDoActionOnResource(selectedRowElements, 'delete', ability);
-  const canCreateProcess = ability.can('create', 'Process');
-  const canEditSelected = canDoActionOnResource(selectedRowElements, 'update', ability);
+    !!selectedRowElements.length &&
+    canDoActionOnResource(selectedRowElements, 'delete', ability) &&
+    !readOnly;
+  const canCreateProcess = ability.can('create', 'Process') && !readOnly;
+  const canEditSelected =
+    canDoActionOnResource(selectedRowElements, 'update', ability) && !readOnly;
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
@@ -129,13 +208,28 @@ const Processes = ({
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
   const [updateFolderModal, setUpdateFolderModal] = useState<Folder | undefined>(undefined);
   const [movingItem, startMovingItemTransition] = useTransition();
+  const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
   const [openCreateProcessModal, setOpenCreateProcessModal] = useState(
     typeof window !== 'undefined' &&
       new URLSearchParams(document.location.search).has('createprocess'),
   );
   const [openCreateFolderModal, setOpenCreateFolderModal] = useState(false);
+  const [openVersionModal, setOpenVersionModal] = useState(false);
+  const [rowClickedProcess, setRowClickedProcess] = useState<string | undefined>();
 
   const [copySelection, setCopySelection] = useState<ProcessListProcess[]>([]);
+
+  const [shareXML, setShareXML] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedRowKeys.length === 1) {
+      getProcess(selectedRowKeys[0], true).then(({ bpmn }) => {
+        setShareXML(bpmn);
+      });
+    }
+  }, [selectedRowKeys, setShareXML]);
+
+  const modelerRef = useRef<BPMNCanvasRef>(null);
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: processes ?? [],
@@ -152,6 +246,36 @@ const Processes = ({
 
     return 0;
   });
+
+  // Folder dropdown
+  const folderDropdDownItems: MenuProps['items'] = [
+    ...filteredData
+      .filter(({ type }) => type === 'folder')
+      .filter(({ id }) => !selectedRowKeys.includes(id))
+      .map((folder) => ({
+        key: folder.id,
+        label: folder.name.value,
+        icon: <FolderOutlined />,
+        onClick: () => {
+          moveItems(
+            selectedRowElements.map((element) => ({
+              type: element.type,
+              id: element.id,
+            })),
+            folder.id,
+          );
+        },
+      })),
+    {
+      key: 'new-folder',
+      label: 'Create New Folder',
+      icon: <FolderFilled />,
+      onClick: () => setOpenCreateFolderModal(true),
+      style: {
+        borderTop: '1px solid #f0f0f0',
+      },
+    },
+  ];
 
   const selectableElements = useRef(filteredData);
   selectableElements.current = filteredData;
@@ -213,6 +337,7 @@ const Processes = ({
   }
 
   const defaultDropdownItems = [];
+  // Create Process,
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
@@ -220,13 +345,27 @@ const Processes = ({
       icon: <FileOutlined />,
       onClick: () => setOpenCreateProcessModal(true),
     });
-
+  // Create Folder,
   if (ability.can('create', 'Folder'))
     defaultDropdownItems.push({
       key: 'create-folder',
       label: 'Create Folder',
       onClick: () => setOpenCreateFolderModal(true),
       icon: <FolderOutlined />,
+    });
+  // Import Process
+  if (ability.can('create', 'Process'))
+    defaultDropdownItems.push({
+      key: 'import-process',
+      label: (
+        <>
+          {/* This is a small workaround, because you cant trigger AntDesigns Upload other than a child button */}
+          <ProcessImportButton type="default" className={styles['Process-Import-Context-Menu']}>
+            Import Process
+          </ProcessImportButton>
+        </>
+      ),
+      icon: <PiFolderOpen />,
     });
 
   const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
@@ -308,11 +447,75 @@ const Processes = ({
     });
   };
 
+  const viewDocumentation = (item: ProcessListProcess) => {
+    handleOpenDocumentation(item.id);
+  };
+
+  const openEditor = (item: ProcessListProcess) => {
+    const url = spaceURL(space, `/processes/${item.id}`);
+    router.push(url);
+  };
+
+  const changeMetaData = (item: ProcessListProcess) => {
+    editItem(item);
+  };
+
+  const releaseProcess = (item: ProcessListProcess) => {
+    setRowClickedProcess(item.id);
+    setOpenVersionModal(true);
+  };
+
+  const createVersionFromList = async (values: {
+    versionName: string;
+    versionDescription: string;
+    processId?: string;
+  }) => {
+    await createVersion(
+      values.versionName,
+      values.versionDescription,
+      values.processId ?? selectedRowKeys[0],
+      environment.spaceId,
+    );
+  };
+
+  const share = (item: ProcessListProcess) => {
+    /* TODO: */
+  };
+
+  const openFolderMoveModal = (items: ProcessListProcess[]) => {
+    /* TODO: */
+  };
+
   const processActions: ProcessActions = {
     deleteItems,
     copyItem,
     editItem,
     moveItems,
+  };
+
+  const rowActions: rowActions = {
+    viewDocumentation,
+    openEditor,
+    changeMetaData,
+    releaseProcess,
+    share,
+  };
+
+  const contextActions: contextAcions = {
+    viewDocumentation,
+    changeMetaData,
+    releaseProcess,
+    share,
+    exportProcess: (items) => {
+      setSelectedRowElements(items);
+      setOpenExportModal(true);
+    },
+    moveItems: openFolderMoveModal,
+    copyItems: copyItem,
+    deleteItems: (items) => {
+      setSelectedRowElements(items);
+      setOpenDeleteModal(true);
+    },
   };
 
   // Here all the loading states should be ORed together
@@ -321,7 +524,7 @@ const Processes = ({
   return (
     <>
       <ContextMenuArea
-        processActions={processActions}
+        processActions={contextActions}
         folder={folder}
         suffix={defaultDropdownItems}
       >
@@ -335,7 +538,7 @@ const Processes = ({
               leftNode={
                 <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    {!breakpoint.xs && (
+                    {!breakpoint.xs && !readOnly && (
                       <Space>
                         <Dropdown.Button
                           menu={{
@@ -346,72 +549,187 @@ const Processes = ({
                           }}
                           type="primary"
                           onClick={() => setOpenCreateProcessModal(true)}
+                          trigger={['click']}
                         >
                           Create Process
                         </Dropdown.Button>
-                        <ProcessImportButton type="default">
-                          {breakpoint.xl ? 'Import Process' : 'Import'}
-                        </ProcessImportButton>
+                        <ProcessImportButton type="default">Import</ProcessImportButton>
                       </Space>
                     )}
 
-                    <SelectionActions count={selectedRowKeys.length}>
-                      {/* Copy */}
-                      {canCreateProcess && (
-                        <Tooltip placement="top" title={'Copy'}>
-                          <Button
-                            // className={classNames(styles.ActionButton)}
-                            type="text"
-                            icon={<CopyOutlined className={styles.Icon} />}
-                            onClick={() => {
-                              setCopySelection(selectedRowElements);
-                              setOpenCopyModal(true);
-                            }}
-                          />
-                        </Tooltip>
-                      )}
-
-                      {/* Export */}
-                      <Tooltip placement="top" title={'Export'}>
-                        <Button
-                          type="text"
-                          onClick={() => {
-                            setOpenExportModal(true);
-                          }}
-                          icon={<ExportOutlined className={styles.Icon} />}
-                        ></Button>
-                      </Tooltip>
-                      {/* Edit (only if one selected) */}
-
-                      {selectedRowKeys.length === 1 && canEditSelected && (
-                        <Tooltip placement="top" title={'Edit'}>
-                          <Button
-                            // className={classNames(styles.ActionButton)}
-                            type="text"
-                            icon={<EditOutlined className={styles.Icon} />}
-                            onClick={() => {
-                              editItem(selectedRowElements[0]);
-                            }}
-                          />
-                        </Tooltip>
-                      )}
-                      {/* Delete */}
-                      {canDeleteSelected && (
-                        // <Tooltip placement="top" title={'Delete'}>
-                        <ConfirmationButton
-                          tooltip="Delete"
-                          title="Delete Processes"
-                          externalOpen={openDeleteModal}
-                          onExternalClose={() => setOpenDeleteModal(false)}
-                          description="Are you sure you want to delete the selected processes?"
-                          onConfirm={() => deleteItems(selectedRowElements)}
-                          buttonProps={{
-                            icon: <DeleteOutlined className={styles.Icon} />,
-                            type: 'text',
-                          }}
-                        />
-                        // </Tooltip>
-                      )}
+                    {/* DIVIDER BLOCK */}
+                    <SelectionActions count={selectedRowKeys.length} readOnly={readOnly}>
+                      <Space split={<Divider type="vertical" />}>
+                        {selectedRowKeys.length === 1 &&
+                          selectedRowElements[0].type == 'process' && (
+                            <div>
+                              {selectedRowElements[0].type == 'process' && (
+                                <>
+                                  {/* View Process Documentation, */}
+                                  <Tooltip placement="top" title={'View Process Documentation'}>
+                                    <Button
+                                      // className={classNames(styles.ActionButton)}
+                                      type="text"
+                                      icon={<GrDocumentUser className={styles.Icon} />}
+                                      onClick={() => {
+                                        handleOpenDocumentation(selectedRowKeys[0]);
+                                      }}
+                                    />
+                                  </Tooltip>
+                                </>
+                              )}
+                              {/* // Open Editor */}
+                              <Tooltip placement="top" title={'Open Editor'}>
+                                <Button
+                                  // className={classNames(styles.ActionButton)}
+                                  type="text"
+                                  icon={<PiNotePencil className={styles.Icon} />}
+                                  onClick={() => {
+                                    const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
+                                    router.push(url);
+                                  }}
+                                />
+                              </Tooltip>
+                              {/* // Open Editor in new Tab */}
+                              <Tooltip placement="top" title={'Open Editor in new Tab'}>
+                                <Button
+                                  // className={classNames(styles.ActionButton)}
+                                  type="text"
+                                  icon={<IoOpenOutline className={styles.Icon} />}
+                                  onClick={() => {
+                                    const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
+                                    window.open(url, '_blank');
+                                  }}
+                                />
+                              </Tooltip>
+                              {/* // Change Meta Data */}
+                              {canEditSelected && (
+                                <Tooltip placement="top" title={'Change Meta Data'}>
+                                  <Button
+                                    // className={classNames(styles.ActionButton)}
+                                    type="text"
+                                    icon={<LuNotebookPen className={styles.Icon} />}
+                                    onClick={() => {
+                                      editItem(selectedRowElements[0]);
+                                    }}
+                                  />
+                                </Tooltip>
+                              )}
+                              {/* // Release Process */}
+                              {canCreateProcess && (
+                                <Tooltip placement="top" title={'Release Process'}>
+                                  <VersionCreationButton
+                                    type="text"
+                                    icon={<BsFileEarmarkCheck />}
+                                    createVersion={createVersionFromList}
+                                  ></VersionCreationButton>
+                                </Tooltip>
+                              )}
+                            </div>
+                          )}
+                        {/* 
+                            Vertical Bar | ,
+                          */}
+                        {!readOnly && (
+                          <div>
+                            {/* // Move to Folder */}
+                            {/* TODO: edit ~= move? (ability wise)*/}
+                            {canEditSelected && (
+                              <>
+                                <Dropdown menu={{ items: folderDropdDownItems }}>
+                                  <Tooltip placement="top" title={'Move to Folder'}>
+                                    <Button
+                                      // className={classNames(styles.ActionButton)}
+                                      type="text"
+                                      icon={<RiFolderTransferLine className={styles.Icon} />}
+                                    />
+                                  </Tooltip>
+                                </Dropdown>
+                              </>
+                            )}
+                            {/* // Copy */}
+                            {canCreateProcess && (
+                              <Tooltip placement="top" title={'Copy'}>
+                                <Button
+                                  // className={classNames(styles.ActionButton)}
+                                  type="text"
+                                  icon={<IoMdCopy className={styles.Icon} />}
+                                  onClick={() => {
+                                    setCopySelection(selectedRowElements);
+                                    setOpenCopyModal(true);
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                            {/* // Delete */}
+                            {canDeleteSelected && (
+                              // <Tooltip placement="top" title={'Delete'}>
+                              <ConfirmationButton
+                                tooltip="Delete"
+                                title="Delete Processes"
+                                externalOpen={openDeleteModal}
+                                onExternalClose={() => setOpenDeleteModal(false)}
+                                description="Are you sure you want to delete the selected processes?"
+                                onConfirm={() => deleteItems(selectedRowElements)}
+                                buttonProps={{
+                                  icon: <DeleteOutlined className={styles.Icon} />,
+                                  type: 'text',
+                                }}
+                              />
+                              // </Tooltip>
+                            )}
+                          </div>
+                        )}
+                        {/* 
+                            Vertical Bar | ,
+                          */}
+                        <div>
+                          {/* // Share */}
+                          {selectedRowKeys.length === 1 &&
+                            selectedRowElements[0].type == 'process' && (
+                              <>
+                                <div
+                                  style={{
+                                    /* display: 'none'  */ position: 'absolute',
+                                    height: 1,
+                                    width: 1,
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  {shareXML && (
+                                    <BPMNCanvas
+                                      bpmn={{ bpmn: shareXML ?? '' }}
+                                      type="viewer"
+                                      ref={modelerRef}
+                                    />
+                                  )}
+                                </div>
+                                {/* SHARE HERE */}
+                                {/* <ModelerShareModalButton
+                                  type="text"
+                                  onExport={() => {
+                                    setOpenExportModal(true);
+                                  }}
+                                  onExportMobile={() => {
+                                    setOpenExportModal(true);
+                                  }}
+                                  modeler={modelerRef.current}
+                                  processId={selectedRowKeys[0]}
+                                /> */}
+                              </>
+                            )}
+                          {/* // Download */}
+                          <Tooltip placement="top" title={'Download'}>
+                            <Button
+                              type="text"
+                              onClick={() => {
+                                setOpenExportModal(true);
+                              }}
+                              icon={<PiDownloadSimple className={styles.Icon} />}
+                            ></Button>
+                          </Tooltip>
+                        </div>
+                      </Space>
                     </SelectionActions>
                   </span>
 
@@ -518,6 +836,7 @@ const Processes = ({
                   >
                     <ProcessList
                       data={filteredData}
+                      idUsernameMapping={idUsernameMapping}
                       folder={folder}
                       selection={selectedRowKeys}
                       setSelectionElements={setSelectedRowElements}
@@ -529,7 +848,7 @@ const Processes = ({
                         setOpenExportModal(true);
                       }}
                       setShowMobileMetaData={setShowMobileMetaData}
-                      processActions={processActions}
+                      processActions={/* processActions */ rowActions}
                     />
                   </div>
                 )}
@@ -594,7 +913,7 @@ const Processes = ({
       />
       <ProcessModal
         open={openEditModal}
-        title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
+        title={'Process Meta Data' /* `Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}` */}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData
           .filter((process) => selectedRowKeys.includes(process.id))
@@ -630,10 +949,21 @@ const Processes = ({
           onOk: deleteCreateProcessSearchParams,
         }}
       />
+      <VersionModal
+        close={(values) => {
+          setOpenVersionModal(false);
+
+          if (values) {
+            createVersionFromList({ ...values, processId: rowClickedProcess });
+          }
+        }}
+        show={openVersionModal}
+      />
       <FolderCreationModal
         open={openCreateFolderModal}
         close={() => setOpenCreateFolderModal(false)}
       />
+
       <AddUserControls name={'process-list'} />
     </>
   );

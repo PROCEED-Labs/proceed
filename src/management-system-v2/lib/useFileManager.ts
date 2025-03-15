@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
 import {
+  cleanUpFailedUploadEntry,
   deleteEntityFile,
   retrieveEntityFile,
   saveEntityFile,
@@ -9,9 +10,9 @@ import {
 } from './data/file-manager-facade';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
-const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
 
 interface FileManagerHookProps {
   entityType: EntityType;
@@ -27,6 +28,8 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
   const queryClient = useQueryClient();
   const { spaceId } = useEnvironment();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const env = use(EnvVarsContext);
+  const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
 
   // Upload Mutation
   const uploadMutation = useMutation<
@@ -57,7 +60,14 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
           throw new Error('Failed to get presignedUrl');
         }
 
-        await uploadToCloud(file, response.presignedUrl);
+        try {
+          await uploadToCloud(file, response.presignedUrl);
+        } catch (e) {
+          //if upload fails, delete the artifact from the database
+          console.error('Failed to upload file to cloud', e);
+          await cleanUpFailedUploadEntry(spaceId, entityId, entityType, fileName!);
+        }
+
         return { fileName: response.fileName };
       } else {
         return await handleLocalUpload(
@@ -225,16 +235,16 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
     shareToken?: string | null,
   ): Promise<{ fileUrl?: string }> => {
     const url = `/api/private/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
+    return { fileUrl: url };
+    // const response = await fetch(url, { method: 'GET' });
 
-    const response = await fetch(url, { method: 'GET' });
+    // if (response.status === 200) {
+    //   const blob = await response.blob();
+    //   const downloadUrl = URL.createObjectURL(blob);
 
-    if (response.status === 200) {
-      const blob = await response.blob();
-      const downloadUrl = URL.createObjectURL(blob);
-      return { fileUrl: downloadUrl };
-    } else {
-      throw new Error('Local download failed');
-    }
+    // } else {
+    //   throw new Error('Local download failed');
+    // }
   };
 
   return {

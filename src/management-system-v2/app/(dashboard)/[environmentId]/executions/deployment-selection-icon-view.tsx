@@ -4,15 +4,19 @@ import { ProcessListProcess } from './deployments-modal';
 import { Button, Card } from 'antd';
 import Viewer from '@/components/bpmn-viewer';
 import { FolderOutlined } from '@ant-design/icons';
+import { HTMLAttributes, Suspense } from 'react';
+import ProceedLoadingIndicator from '@/components/loading-proceed';
 
 const ProcessIconView = ({
   data: filteredData,
   openFolder,
   selectProcess,
+  containerProps,
 }: {
   data: ProcessListProcess[];
   openFolder: (id: string) => void;
   selectProcess: (process: ProcessListProcess) => void;
+  containerProps?: HTMLAttributes<HTMLDivElement>;
 }) => {
   const folders = filteredData.filter((item) => item.type === 'folder');
   const processesData = filteredData.filter((item) => item.type !== 'folder');
@@ -46,7 +50,9 @@ const ProcessIconView = ({
           item.type === 'folder' ? (
             <Card.Meta title={cardTitle} />
           ) : (
-            <Viewer definitionId={item.id} reduceLogo={true} />
+            <Suspense fallback={<ProceedLoadingIndicator />}>
+              <Viewer definitionId={item.id} reduceLogo={true} fitOnResize />
+            </Suspense>
           ),
         title: item.type === 'process' && cardTitle,
       },
@@ -58,6 +64,7 @@ const ProcessIconView = ({
         tabCardPropsGenerator={tabCardPropGenerator}
         data={filteredData}
         divisions={[folders, processesData]}
+        containerProps={containerProps}
       />
     </ScrollBar>
   );

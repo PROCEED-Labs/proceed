@@ -72,7 +72,7 @@ context.global.setSync('_stdout_log', function (...args) {
 // TODO: setProgress(<number between 0 - 100>)
 
 const structure = {
-  log: ['get'],
+  log: ['trace', 'debug', 'info', 'warn', 'error'],
   console: ['trace', 'debug', 'info', 'warn', 'error', 'log', 'time', 'timeEnd'],
   variable: ['get', 'set', 'getAll'],
 };
@@ -86,7 +86,7 @@ for (const objName of Object.keys(structure)) {
   for (const functionName of functionNames) {
     context.evalClosureSync(
       `globalThis["${objName}"]["${functionName}"] = function (...args) {
-        return $0.applySyncPromise(null, [JSON.stringify(args)], {}).copyInto();
+        return $0.applySyncPromise(null, [JSON.stringify(args)], {});
       }`,
       [
         new ivm.Reference(async function (args) {
@@ -95,7 +95,7 @@ for (const objName of Object.keys(structure)) {
             args: JSON.parse(args),
           });
 
-          return new ivm.ExternalCopy(result);
+          return new ivm.ExternalCopy(result).copyInto({ release: true, transferIn: true });
         }),
       ],
     );

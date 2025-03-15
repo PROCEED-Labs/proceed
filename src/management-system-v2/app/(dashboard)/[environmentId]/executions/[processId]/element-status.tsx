@@ -4,7 +4,7 @@ import { ClockCircleFilled } from '@ant-design/icons';
 import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
-import { endpointBuilder } from '@/lib/engines/endpoint';
+import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 
 function transformMillisecondsToTimeFormat(milliseconds: number | undefined) {
   if (!milliseconds || milliseconds < 0 || milliseconds < 1000) return;
@@ -48,8 +48,10 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
         <Image
           // TODO: use engine endpoint to get the image
           src={endpointBuilder('get', '/resources/process/:definitionId/images/:fileName', {
-            definitionId: info.process.definitionId,
-            fileName: metaData.overviewImage,
+            pathParams: {
+              definitionId: info.process.definitionId,
+              fileName: metaData.overviewImage,
+            },
           })}
         />
       </div>,

@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEngines } from '@/lib/engines/mqtt-endpoints';
+import { getEngines } from '@/lib/engines/endpoints/mqtt-endpoints';
 import { Result, Skeleton } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
@@ -27,7 +27,7 @@ async function Engines() {
 }
 
 export default function EnginesPage() {
-  if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) return notFound();
+  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
   if (!env.MQTT_SERVER_ADDRESS)
     return <Result status="500" title="Error" subTitle="No MQTT server address configured" />;

@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   if (entityType === EntityType.PROCESS) {
     let canAccess = false;
 
-    const processMeta = await getProcess(entityId, environmentId);
+    const processMeta = await getProcess(entityId, environmentId, true); // true --> skip the validity check as it will be done below
     if (!processMeta || 'error' in processMeta) {
       return new NextResponse(null, {
         status: 404,
@@ -185,6 +185,10 @@ export async function PUT(request: NextRequest) {
     );
 
     if ('error' in res) throw new Error((res.error as any).message);
+
+    if (!res.fileName) {
+      throw new Error('No file name returned');
+    }
 
     const { fileName: newFileName } = res;
 

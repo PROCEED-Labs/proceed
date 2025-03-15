@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Checkbox, Dropdown, Grid, Table, TableProps } from 'antd';
-import { PropsWithChildren, ReactNode, SetStateAction, useMemo, useRef } from 'react';
+import { PropsWithChildren, SetStateAction, useMemo, useRef } from 'react';
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
@@ -124,7 +124,7 @@ const ElementList = <T extends { id: string }>({
             // @ts-ignore
             if (nativeEvent.shiftKey && elementSelection.selectedElements.length > 0) {
               // console.log('shift key pressed');
-              /* If checkbox shiftclick is recognizeable, a drag select can be implemented here */
+              /* If checkbox shiftclick is recognizable, a drag select can be implemented here */
               /* Currently, the event is not fired in most browser on checkbox */
             } else {
               // console.log('data length', data.length);

@@ -40,7 +40,6 @@ import BPMNModeler from 'bpmn-js/lib/Modeler';
 import IconView from '@/components/process-icon-list';
 import ProcessList from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
-import ProcessExportModal from '@/components/process-export';
 import Bar from '@/components/bar';
 import { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -81,10 +80,14 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import { handleOpenDocumentation } from '@/app/(dashboard)/[environmentId]/processes/processes-helper';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton, { VersionModal } from '../version-creation-button';
-import ModelerShareModalButton from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-share-modal';
+
+/* SHARE HERE */
+// import ModelerShareModalButton from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-share-modal';
+
 import { getProcess } from '@/lib/data/DTOs';
 import BPMNCanvas, { BPMNCanvasRef } from '../bpmn-canvas';
 import { set } from 'zod';
+import { ShareModal } from '../share-modal/share-modal';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -701,7 +704,8 @@ const Processes = ({
                                     />
                                   )}
                                 </div>
-                                <ModelerShareModalButton
+                                {/* SHARE HERE */}
+                                {/* <ModelerShareModalButton
                                   type="text"
                                   onExport={() => {
                                     setOpenExportModal(true);
@@ -711,7 +715,7 @@ const Processes = ({
                                   }}
                                   modeler={modelerRef.current}
                                   processId={selectedRowKeys[0]}
-                                />
+                                /> */}
                               </>
                             )}
                           {/* // Download */}
@@ -872,12 +876,18 @@ const Processes = ({
         </div>
       </ContextMenuArea>
 
-      <ProcessExportModal
-        processes={selectedRowKeys.map((definitionId) => ({
-          definitionId: definitionId as string,
-        }))}
+      <ShareModal
         open={openExportModal}
-        onClose={() => setOpenExportModal(false)}
+        setOpen={setOpenExportModal}
+        processes={(
+          selectedRowElements.filter((e) => e.type !== 'folder') as Exclude<
+            ProcessListProcess,
+            { type: 'folder' }
+          >[]
+        ).map((e) => ({
+          ...e,
+          name: e.name.value,
+        }))}
       />
       <ProcessModal
         open={openCopyModal}

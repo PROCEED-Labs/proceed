@@ -55,7 +55,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal
     .getByPlaceholder('Version Description')
-    .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
+    .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`);
   await expect(page.getByPlaceholder('Version Description')).toHaveText(stringWith150Chars);
   await expect(versionCreationSubmitButton).toBeEnabled();
   await closeModal(modal, () => versionCreationSubmitButton.click());
@@ -100,7 +100,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await processCreationDialog.getByLabel('Process Name').fill('New Process');
   await processCreationDialog
     .getByLabel('Process Description')
-    .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
+    .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`);
   await expect(processCreationDialog.getByLabel('Process Description')).toHaveText(
     stringWith150Chars,
   );
@@ -235,9 +235,7 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if correct modal opened */
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
-    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
-      /export/i,
-    );
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/Share/i);
 
     /* Close Modal */
     // await page.locator('body').press('Escape');
@@ -259,6 +257,25 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
+  // create new process version - Needed for embed
+  const openVersionCreationDialog = page
+    .getByLabel('general-modeler-toolbar')
+    .getByRole('button', { name: 'plus' });
+  let versionModal = await openModal(page, () => openVersionCreationDialog.click());
+  const versionCreationDialog = page.getByRole('dialog', {
+    name: 'Create New Version',
+  });
+  await expect(versionCreationDialog).toBeVisible();
+
+  // Fill version creation dialog and create new version
+  const versionCreationSubmitButton = versionModal.getByRole('button', {
+    name: 'Create Version',
+  });
+  await versionModal.getByPlaceholder('Version Name').fill('Version 1');
+  await versionModal.getByPlaceholder('Version Description').fill('description');
+  await closeModal(versionModal, () => versionCreationSubmitButton.click());
+
+  //Open share modal
   const modal = await openModal(page, () =>
     page.getByRole('button', { name: 'share-alt' }).click(),
   );
@@ -268,48 +285,16 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   /*************************** Embed in Website ********************************/
 
   await modal.getByRole('button', { name: 'Embed in Website' }).click();
-  await expect(modal.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
-  await modal.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
+  await expect(modal.getByText('Enable iFrame Embedding', { exact: true })).toBeVisible();
+  await modal.getByRole('checkbox', { name: 'Enable iFrame Embedding' }).click();
   await expect(modal.locator('div[class="code"]')).toBeVisible();
   await modal.getByTitle('copy code', { exact: true }).click();
 
   clipboardData = await ms2Page.readClipboard(true);
 
   const regex =
-    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
+    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+\&version=[a-zA-Z0-9._-]+)'/;
   expect(clipboardData).toMatch(regex);
-
-  /*************************** Copy Diagram As PNG ********************************/
-  //if (page.context().browser().browserType() !== firefox) {
-  await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click();
-  await page.waitForTimeout(100);
-  clipboardData = await ms2Page.readClipboard(false);
-  await expect(clipboardData).toMatch('image/png');
-  /*} else {
-    // download as fallback
-    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-      async () => await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
-      'string',
-    );
-
-    expect(pngFilename).toMatch(/.png$/);
-  }*/
-
-  /*************************** Copy Diagram As XML ********************************/
-
-  await modal.getByTitle('Copy Diagram as XML', { exact: true }).click();
-
-  clipboardData = await ms2Page.readClipboard(true);
-
-  const xmlRegex = /<([a-zA-Z0-9\-:_]+)[^>]*>[\s\S]*?<\/\1>/g;
-  await expect(clipboardData).toMatch(xmlRegex);
-
-  /*************************** Export as File ********************************/
-  const exportModal = await openModal(page, () =>
-    modal.getByTitle('Export as file', { exact: true }).click(),
-  );
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await closeModal(exportModal, () => exportModal.getByRole('button', { name: 'cancel' }).click());
 
   /*************************** Share Process with link ********************************/
   await modal.getByRole('button', { name: 'Share Public Link' }).click();
@@ -348,7 +333,8 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   const newProcessId = newPage.url().split('/processes/').pop();
 
-  await newPage.getByRole('link', { name: 'process list' }).click();
+  await newPage.getByRole('menuitem', { name: 'Processes' }).click();
+  await newPage.getByRole('link', { name: 'Editor' }).click();
   await newPage.waitForURL(/processes/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });

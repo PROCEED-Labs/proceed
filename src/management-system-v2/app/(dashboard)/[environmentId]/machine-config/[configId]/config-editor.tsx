@@ -29,6 +29,7 @@ import {
   Radio,
   Collapse,
   Typography,
+  App,
 } from 'antd';
 
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -46,29 +47,45 @@ import Title from 'antd/es/typography/Title';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import AddButton from './add-button';
-import MachineConfigModal from '@/components/machine-config-modal';
+import ConfigModal from '@/components/config-modal';
 import {
   addMachineConfig,
+  addParentConfigVersion,
   addTargetConfig,
+  removeTargetConfig,
+  setParentConfigVersionAsLatest,
   updateMachineConfig,
   updateParentConfig,
   updateTargetConfig,
 } from '@/lib/data/legacy/machine-config';
+import ActionButtons from './action-buttons';
+import ConfirmationButton from '@/components/confirmation-button';
+import { v4 } from 'uuid';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 type MachineDataViewProps = {
   selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;
   editable: boolean;
+  editingAllowed: boolean;
   onChangeEditable: (isEditable: boolean) => void;
 };
 
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
+const LATEST_VERSION = {
+  id: '-1',
+  name: 'Latest Version',
+  description: '',
+  versionBasedOn: '',
+  createdOn: new Date(),
+};
 
 const ConfigEditor: React.FC<MachineDataViewProps> = ({
   selectedConfig,
   parentConfig,
   editable,
+  editingAllowed,
   onChangeEditable,
 }) => {
+  const app = App.useApp();
   const router = useRouter();
   const environment = useEnvironment();
   const query = useSearchParams();
@@ -103,33 +120,76 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   } = theme.useToken();
 
   const selectedVersion =
-    selectedConfig.versions.find(
-      (version: any) => version.version === parseInt(selectedVersionId ?? '-1'),
-    ) ?? LATEST_VERSION;
+    parentConfig.versions.find((version: any) => version.id === (selectedVersionId ?? '')) ??
+    LATEST_VERSION;
+
+  // TODO use FuzzySearch
+  // currently only ignores capitalization
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
-  // const createConfigVersion = async (values: {
-  //   versionName: string;
-  //   versionDescription: string;
-  // }) => {
-  //   selectedConfig.versions.push({
-  //     version: selectedConfig.versions.length + 1,
-  //     name: values.versionName,
-  //     description: values.versionDescription,
-  //     versionBasedOn: selectedConfig.versions.length,
-  //   });
-  //   await saveParentConfig(configId, parentConfig);
-  //   router.refresh();
-  // };
+  const createConfigVersion = async (values: {
+    versionName: string;
+    versionDescription: string;
+  }) => {
+    const versionId = v4();
+    wrapServerCall({
+      fn: () =>
+        addParentConfigVersion(
+          parentConfig,
+          environment.spaceId,
+          versionId,
+          values.versionName,
+          values.versionDescription,
+        ),
+      onSuccess: () => {
+        router.refresh();
+        app.message.success({
+          content: (
+            <span>
+              Version <em>{values.versionName}</em> successfully created
+            </span>
+          ),
+        });
+      },
+      onError: () => {
+        app.message.success(`Creation of version failed`);
+      },
+    });
+  };
+
+  const makeConfigVersionLatest = async () => {
+    wrapServerCall({
+      fn: () => setParentConfigVersionAsLatest(parentConfig),
+      onSuccess: () => {
+        const searchParams = new URLSearchParams(query);
+        searchParams.delete('version');
+        router.push(
+          spaceURL(
+            environment,
+            `/machine-config/${parentConfig.id as string}${
+              searchParams.size ? '?' + searchParams.toString() : ''
+            }`,
+          ),
+        );
+        router.refresh();
+        app.message.success(`Version successfully set as latest`);
+      },
+      onError: () => {
+        app.message.success(`There was an error setting this version as latest`);
+      },
+    });
+  };
 
   const showMobileView = useMobileModeler();
 
   const { token } = theme.useToken();
   const panelStyle = {
-    marginBottom: 16,
+    marginBottom: 32,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
+    boxShadow:
+      '2px 2px 6px -4px rgba(0, 0, 0, 0.12), 4px 4px 16px 0px rgba(0, 0, 0, 0.08), 6px 6px 28px 8px rgba(0, 0, 0, 0.05)',
     //border: 'none',
   };
 
@@ -193,6 +253,11 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     router.refresh();
   };
 
+  const handleDelete = async (id: string) => {
+    if (id) await removeTargetConfig(id);
+    router.refresh();
+  };
+
   const exportCurrentConfig = () => {
     const blob = new Blob([JSON.stringify([selectedConfig], null, 2)], {
       type: 'application/json',
@@ -222,9 +287,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           editingEnabled={editable}
         />
       ),
-      /* extra: <Tooltip editable={editable} options={['copy', 'edit']} actions={...}/>, */ ///TODO
-      style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
+      style: { ...panelStyle, border: '1px solid #87e8de', background: 'rgba(255, 255, 255, 0.9)' }, //cyan-3
     });
+
     if (selectedConfig.type === 'config') {
       const currentConfig = selectedConfig as ParentConfig;
       if (currentConfig.targetConfig) {
@@ -233,8 +298,19 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           key: '2',
           label: title,
           children: <TargetConfiguration parentConfig={parentConfig} editingEnabled={editable} />,
-          /* extra:  <Tooltip editable={editable} options={['copy', 'edit', 'delete']} actions={...}/> */ //TODO
-          style: { ...panelStyle, border: '1px solid #91caff' }, //blue-3
+          extra: (
+            // TODO stop propagation to collapse component on click
+            <ActionButtons
+              editable={editable}
+              options={['delete']}
+              actions={{ delete: () => handleDelete(currentConfig.targetConfig?.id ?? '') }}
+            />
+          ),
+          style: {
+            ...panelStyle,
+            border: '1px solid #91caff',
+            background: '#f0f4f9',
+          }, //blue-3
         });
       }
     } else if (
@@ -261,7 +337,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     return panels;
   }, [editable, selectedConfig]);
 
-  const machineConfigModalTitle =
+  const configModalTitle =
     createConfigType === 'target' ? 'Create Target Tech Data Set' : 'Create Machine Tech Data Set';
 
   return (
@@ -301,34 +377,35 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                   {selectedConfig.name}
                 </Title>
               </div>
-              {/* <Space.Compact style={{ margin: '0 0 0 10px' }}>
+
+              <Space.Compact style={{ margin: '0 0 0 10px' }}>
                 <Select
                   popupMatchSelectWidth={false}
                   placeholder="Select Version"
                   showSearch
                   filterOption={filterOption}
                   value={{
-                    value: selectedVersion.version,
+                    value: selectedVersion.id,
                     label: selectedVersion.name,
                   }}
                   onSelect={(_, option) => {
                     // change the version info in the query but keep other info
                     const searchParams = new URLSearchParams(query);
-                    if (!option.value || option.value === -1) searchParams.delete('version');
+                    if (!option.value || option.value === '-1') searchParams.delete('version');
                     else searchParams.set(`version`, `${option.value}`);
                     router.push(
                       spaceURL(
                         environment,
-                        `/machine-config/${configId as string}${
+                        `/machine-config/${parentConfig.id as string}${
                           searchParams.size ? '?' + searchParams.toString() : ''
                         }`,
                       ),
                     );
                   }}
-                  options={[LATEST_VERSION]
-                    .concat(selectedConfig.versions ?? [])
-                    .map(({ version, name }) => ({
-                      value: version,
+                  options={[LATEST_VERSION, ...parentConfig.versions]
+                    // .concat(parentConfig.versions ?? [])
+                    .map(({ id, name }) => ({
+                      value: id,
                       label: name,
                     }))}
                 />
@@ -342,7 +419,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                     </Tooltip>
                   </>
                 )}
-              </Space.Compact> */}
+              </Space.Compact>
             </Space>
 
             <Space>
@@ -356,28 +433,49 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             </Space>
 
             <Space>
-              <Radio.Group
-                value={editable ? 'edit' : 'view'}
-                onChange={(e) => onChangeEditable(e.target.value === 'edit')}
-              >
-                <Radio.Button value="view">
-                  View
-                  <EyeOutlined
-                    style={{
-                      margin: '0 0 0 8px',
-                    }}
-                  />
-                </Radio.Button>
+              {!editingAllowed && (
+                <ConfirmationButton
+                  title="Are you sure you want to continue editing with this Version?"
+                  description="Any changes that are not stored in another version are irrecoverably lost!"
+                  tooltip="Set as latest Version and enable editing"
+                  onConfirm={makeConfigVersionLatest}
+                  modalProps={{
+                    okText: 'Set as latest Version',
+                    okButtonProps: {
+                      danger: true,
+                    },
+                  }}
+                  buttonProps={{
+                    icon: <EditOutlined />,
+                  }}
+                >
+                  Set as Latest
+                </ConfirmationButton>
+              )}
+              {editingAllowed && (
+                <Radio.Group
+                  value={editable ? 'edit' : 'view'}
+                  onChange={(e) => onChangeEditable(e.target.value === 'edit')}
+                >
+                  <Radio.Button value="view">
+                    View
+                    <EyeOutlined
+                      style={{
+                        margin: '0 0 0 8px',
+                      }}
+                    />
+                  </Radio.Button>
 
-                <Radio.Button value="edit">
-                  Edit
-                  <EditOutlined
-                    style={{
-                      margin: '0 0 0 8px',
-                    }}
-                  />
-                </Radio.Button>
-              </Radio.Group>
+                  <Radio.Button value="edit">
+                    Edit
+                    <EditOutlined
+                      style={{
+                        margin: '0 0 0 8px',
+                      }}
+                    />
+                  </Radio.Button>
+                </Radio.Group>
+              )}
 
               <Button onClick={exportCurrentConfig}>
                 Export
@@ -411,15 +509,16 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             }}
             items={collapseItems}
           />
+
           {selectedConfig.type === 'config' && (
             <MachineConfigurations parentConfig={parentConfig} editingEnabled={editable} />
           )}
         </Content>
       </Layout>
 
-      <MachineConfigModal
+      <ConfigModal
         open={!!createConfigType}
-        title={machineConfigModalTitle}
+        title={configModalTitle}
         onCancel={() => setCreateConfigType('')}
         onSubmit={handleCreateConfig}
         configType={createConfigType}

@@ -112,6 +112,88 @@ export const INITIAL_TOOLBOX_JSON = {
     },
     {
       kind: 'category',
+      name: 'Objects',
+      colour: 230,
+      contents: [
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_create">\n' +
+            '        <value name="entry0">\n' +
+            '            <block type="object_key_value">\n' +
+            '              <value name="key">\n' +
+            '                <shadow type="text">\n' +
+            '                  <field name="TEXT">Key</field>\n' +
+            '                </shadow>\n' +
+            '              </value>\n' +
+            '              <value name="value">\n' +
+            '                <shadow type="text">\n' +
+            '                  <field name="TEXT">Value</field>\n' +
+            '                </shadow>\n' +
+            '              </value>\n' +
+            '            </block>\n' +
+            '        </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_key_value">\n' +
+            '      <value name="key">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">Key</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '      <value name="value">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">Value</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_set_key">\n' +
+            '      <value name="key">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">key</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '      <value name="value">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">value</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_get_key">\n' +
+            '      <value name="key">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">key</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_delete_key">\n' +
+            '      <value name="key">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">key</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+      ],
+    },
+    {
+      kind: 'category',
       name: 'Lists',
       colour: 280,
       contents: [
@@ -430,6 +512,252 @@ export const INITIAL_TOOLBOX_JSON = {
       ],
     },
   ],
+};
+
+const connectionTypeCheckers: ((a: Blockly.Connection, b: Blockly.Connection) => boolean | null)[] =
+  [];
+export class ObjectsConnectionChecker extends Blockly.ConnectionChecker {
+  constructor() {
+    super();
+  }
+  // There is no guaranteed order of the connections.
+  doTypeChecks(a: Blockly.Connection, b: Blockly.Connection): boolean {
+    for (const checker of connectionTypeCheckers) {
+      const result = checker(a, b);
+      if (typeof result === 'boolean') return result;
+    }
+
+    const checkArrayOne = a.getCheck();
+    const checkArrayTwo = b.getCheck();
+
+    if (!checkArrayOne || !checkArrayTwo) {
+      // One or both sides are promiscuous enough that anything will fit.
+      return true;
+    }
+    // Find any intersection in the check lists.
+    for (let i = 0; i < checkArrayOne.length; i++) {
+      if (checkArrayTwo.includes(checkArrayOne[i])) {
+        return true;
+      }
+    }
+    // No intersection.
+    return false;
+  }
+}
+export const registrationType = Blockly.registry.Type.CONNECTION_CHECKER;
+export const registrationName = 'ObjectsConnectionChecker';
+
+// --------------------------------------------
+// Objects
+// --------------------------------------------
+
+Blocks['object_create'] = {
+  init: function () {
+    this.jsonInit({
+      message0: '{%1}',
+      args0: [
+        {
+          name: 'entry0',
+          type: 'input_statement',
+          check: 'object_building_block',
+        },
+      ],
+      output: 'OBJECT',
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_create'] = function (block) {
+  let entries = '';
+  let n = 0;
+  do {
+    entries += javascriptGenerator.statementToCode(block, 'entry' + n);
+    n++;
+  } while (block.getInput('IF' + n));
+
+  // order is atomic because we add the parentheses ourselves
+  return [`({\n${entries}})`, BlocklyJavaScript.Order.ATOMIC];
+};
+
+function isCreateObjectStatementConnection(connection: Blockly.Connection) {
+  return (
+    connection.getSourceBlock().type === 'object_create' &&
+    connection.type === Blockly.ConnectionType.NEXT_STATEMENT
+  );
+}
+function objectBuildingBlockConnectionCheck(a: Blockly.Connection, b: Blockly.Connection) {
+  // Check for connections to the statement input of object_create
+  let otherConnection;
+  if (isCreateObjectStatementConnection(a)) otherConnection = b;
+  else if (isCreateObjectStatementConnection(b)) otherConnection = a;
+  else return null;
+
+  return otherConnection.getSourceBlock().type === 'object_key_value';
+}
+connectionTypeCheckers.push(objectBuildingBlockConnectionCheck);
+
+Blocks['object_key_value'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'key %1 ',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'key',
+          check: 'String',
+        },
+      ],
+      message1: ' value %1 ',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'value',
+        },
+      ],
+      inputsInline: true,
+      previousStatement: ['object_building_block'],
+      nextStatement: ['object_building_block'],
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_key_value'] = function (block) {
+  const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '';
+  const value =
+    javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ASSIGNMENT) ||
+    'undefined';
+
+  // statementBlocks should just return a string
+  return `[${key}]: ${value},\n`;
+};
+
+function isOKeyValueBlockStatementConnection(connection: Blockly.Connection) {
+  return (
+    connection.getSourceBlock().type === 'object_key_value' &&
+    (connection.type === Blockly.ConnectionType.PREVIOUS_STATEMENT ||
+      connection.type === Blockly.ConnectionType.NEXT_STATEMENT)
+  );
+}
+function objectKeyValueChecker(a: Blockly.Connection, b: Blockly.Connection) {
+  // Check for next/previous connections to object_key_value
+  let otherConnection;
+  if (isOKeyValueBlockStatementConnection(a)) otherConnection = b;
+  if (isOKeyValueBlockStatementConnection(b)) otherConnection = a;
+  else return null;
+
+  return otherConnection.getSourceBlock().type === 'object_key_value';
+}
+connectionTypeCheckers.push(objectKeyValueChecker);
+
+// Register the checker so that it can be used by name.
+Blockly.registry.register(registrationType, registrationName, ObjectsConnectionChecker);
+
+export const pluginInfo = {
+  [registrationType.toString()]: registrationName,
+};
+
+Blocks['object_set_key'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'Set key of %1\n',
+      args0: [
+        {
+          type: 'field_variable',
+          name: 'variable',
+          variable: '%{BKY_VARIABLES_DEFAULT_NAME}',
+        },
+      ],
+      message1: 'Key %1\nValue %2',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'key',
+          check: 'String',
+        },
+        {
+          type: 'input_value',
+          name: 'value',
+        },
+      ],
+      previousStatement: true,
+      nextStatement: true,
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_set_key'] = function (block, generator) {
+  const object = generator.getVariableName(block.getFieldValue('variable'));
+  const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
+  const value =
+    javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ASSIGNMENT) ||
+    'undefined';
+  return `${object}[${key}] = ${value};\n`;
+};
+
+Blocks['object_get_key'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'Get key of %1\n',
+      args0: [
+        {
+          type: 'field_variable',
+          name: 'variable',
+          variable: '%{BKY_VARIABLES_DEFAULT_NAME}',
+        },
+      ],
+      message1: 'Key %1\n',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'key',
+          check: 'String',
+        },
+      ],
+      output: null,
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_get_key'] = function (block, generator) {
+  const object = generator.getVariableName(block.getFieldValue('variable'));
+  const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
+  return `${object}[${key}]`;
+};
+
+Blocks['object_delete_key'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'Delete key of %1\n',
+      args0: [
+        {
+          type: 'field_variable',
+          name: 'variable',
+          variable: '%{BKY_VARIABLES_DEFAULT_NAME}',
+        },
+      ],
+      message1: 'Key %1',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'key',
+          check: 'String',
+        },
+      ],
+      previousStatement: true,
+      nextStatement: true,
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_delete_key'] = function (block, generator) {
+  const object = generator.getVariableName(block.getFieldValue('variable'));
+  const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
+  return `delete ${object}[${key}];\n`;
 };
 
 // --------------------------------------------
@@ -760,7 +1088,7 @@ Blocks['throw_error'] = {
           check: 'String',
         },
       ],
-      previousStatement: null,
+      previousStatement: true,
       colour: 75,
       tooltip: 'Throws error with given reference and explanation',
       helpUrl: '',

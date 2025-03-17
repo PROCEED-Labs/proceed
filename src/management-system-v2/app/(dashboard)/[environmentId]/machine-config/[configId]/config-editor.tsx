@@ -220,15 +220,16 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   const handleCreateConfig = async (
     values: {
       name: string;
+      shortname: string;
       description: string;
       copyTarget: boolean;
     }[],
   ) => {
-    const { name, description, copyTarget } = values[0];
+    const { name, shortname, description, copyTarget } = values[0];
     if (createConfigType === 'target') {
       await addTargetConfig(
         parentConfig.id,
-        defaultTargetConfiguration(parentConfig.environmentId, name, description),
+        defaultTargetConfiguration(parentConfig.environmentId, name, shortname, description),
       );
     } else {
       if (copyTarget && parentConfig.targetConfig) {
@@ -237,6 +238,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           customMachineConfiguration(
             parentConfig.environmentId,
             name,
+            shortname,
             description,
             parentConfig.targetConfig,
           ),
@@ -245,7 +247,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
       } else {
         await addMachineConfig(
           parentConfig.id,
-          defaultMachineConfiguration(parentConfig.environmentId, name, description),
+          defaultMachineConfiguration(parentConfig.environmentId, name, shortname, description),
         );
       }
     }

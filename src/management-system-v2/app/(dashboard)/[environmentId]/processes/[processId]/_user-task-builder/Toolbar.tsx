@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 
 import { Row, Button, Divider, Col, Space } from 'antd';
 
@@ -13,7 +13,7 @@ import {
 import styles from './index.module.scss';
 
 import { useEditor, Node } from '@craftjs/core';
-import BuilderContext from './BuilderContext';
+import { useCanEdit } from '../modeler';
 
 export type EditorLayout = 'computer' | 'mobile';
 
@@ -61,7 +61,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     };
   });
 
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   return (
     <Row className={styles.EditorHeader}>

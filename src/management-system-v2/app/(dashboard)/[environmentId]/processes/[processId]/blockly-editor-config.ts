@@ -579,7 +579,7 @@ javascriptGenerator.forBlock['interval_async'] = function (block) {
     BlocklyJavaScript.Order.COMMA,
   );
 
-  return `setIntervalAsync(() => ${callback}, ${delay})`;
+  return `setIntervalAsync(() => ${callback}, ${delay});\n`;
 };
 
 Blocks['timeout_async'] = {
@@ -622,7 +622,7 @@ javascriptGenerator.forBlock['timeout_async'] = function (block) {
     BlocklyJavaScript.Order.COMMA,
   );
 
-  return `setTimeoutAsync(() => ${callback}, ${delay})`;
+  return `setTimeoutAsync(() => ${callback}, ${delay});\n`;
 };
 
 // --------------------------------------------

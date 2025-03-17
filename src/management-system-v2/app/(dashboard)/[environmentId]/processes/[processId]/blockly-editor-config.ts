@@ -2,9 +2,7 @@ import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
 import * as Blockly from 'blockly/core';
 
-interface BlockDeclaration {
-  init(this: Blockly.Block): void;
-}
+type BlockDeclaration = Partial<Blockly.Block> & ThisType<Blockly.Block>;
 const Blocks = Blockly.Blocks as Record<string, BlockDeclaration>;
 
 export const INITIAL_TOOLBOX_JSON = {

@@ -761,7 +761,6 @@ Blocks['throw_error'] = {
         },
       ],
       previousStatement: null,
-      nextStatement: null,
       colour: 75,
       tooltip: 'Throws error with given reference and explanation',
       helpUrl: '',

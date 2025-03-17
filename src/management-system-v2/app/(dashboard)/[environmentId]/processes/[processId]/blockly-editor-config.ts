@@ -376,6 +376,15 @@ export const INITIAL_TOOLBOX_JSON = {
     },
     {
       kind: 'category',
+      name: 'Timeouts',
+      colour: 290,
+      contents: [
+        { kind: 'block', type: 'interval_async' },
+        { kind: 'block', type: 'timeout_async' },
+      ],
+    },
+    {
+      kind: 'category',
       name: 'Error',
       colour: 290,
       contents: [
@@ -527,6 +536,96 @@ for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', '
 }
 
 // --------------------------------------------
+// Timeouts
+// --------------------------------------------
+
+Blocks['interval_async'] = {
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      message0: 'Async interval %1 ms\nCallback function%2',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'delay',
+          check: 'Number',
+        },
+        {
+          type: 'input_value',
+          name: 'callback',
+          check: 'PROCEDURE',
+        },
+      ],
+      tooltip: 'An interval function which repeatedly calls a callback function after a timeout.',
+      helpUrl: 'TODO',
+      nextStatement: true,
+      previousStatement: true,
+      colour: 75,
+    });
+  },
+  onchange() {
+    // only allow function calls
+    const connection = this.getInput('callback')?.connection;
+    if (connection?.isConnected() && connection.targetBlock()?.type !== 'procedures_callreturn') {
+      connection.disconnect();
+    }
+  },
+};
+
+javascriptGenerator.forBlock['interval_async'] = function (block) {
+  const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
+  const callback = javascriptGenerator.valueToCode(
+    block,
+    'callback',
+    BlocklyJavaScript.Order.COMMA,
+  );
+
+  return `setIntervalAsync(() => ${callback}, ${delay})`;
+};
+
+Blocks['timeout_async'] = {
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      message0: 'Async Timeout %1 ms\nCallback function%2',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'delay',
+          check: 'Number',
+        },
+        {
+          type: 'input_value',
+          name: 'callback',
+          check: 'PROCEDURE',
+        },
+      ],
+      tooltip: 'A timeout function which executes a callback function after a timeout expired.',
+      helpUrl: 'TODO',
+      nextStatement: true,
+      previousStatement: true,
+      colour: 75,
+    });
+  },
+  onchange() {
+    // only allow function calls
+    const connection = this.getInput('callback')?.connection;
+    if (connection?.isConnected() && connection.targetBlock()?.type !== 'procedures_callreturn') {
+      connection.disconnect();
+    }
+  },
+};
+
+javascriptGenerator.forBlock['timeout_async'] = function (block) {
+  const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
+  const callback = javascriptGenerator.valueToCode(
+    block,
+    'callback',
+    BlocklyJavaScript.Order.COMMA,
+  );
+
+  return `setTimeoutAsync(() => ${callback}, ${delay})`;
+};
+
+// --------------------------------------------
 // Variables
 // --------------------------------------------
 
@@ -566,7 +665,7 @@ javascriptGenerator.forBlock['variables_set'] = function (block) {
 Blocks['variables_get_all'] = {
   init: function () {
     this.appendDummyInput().appendField('Get all variables');
-    this.setOutput(true, null);
+    this.setOutput(true, 'Object');
     this.setTooltip('Returns an object containing all variables and values');
     this.setHelpUrl('');
     this.setColour(75);

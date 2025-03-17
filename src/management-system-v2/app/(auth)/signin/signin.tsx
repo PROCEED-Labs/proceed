@@ -20,7 +20,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
-import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
+import { type ExtractedProvider } from '@/lib/auth';
 
 const verticalGap = '1rem';
 

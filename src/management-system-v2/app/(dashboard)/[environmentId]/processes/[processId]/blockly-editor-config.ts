@@ -707,40 +707,54 @@ javascriptGenerator.forBlock['progress'] = function (block) {
 
 Blocks['throw_error'] = {
   init: function () {
-    this.appendDummyInput()
-      .appendField('Throw')
-      .appendField(
-        new Blockly.FieldDropdown([
-          ['BpmnEscalation', 'BpmnEscalation'],
-          ['BpmnError', 'BpmnError'],
-        ]),
-        'name',
-      );
-
-    this.appendDummyInput()
-      .appendField('Reference')
-      .appendField(new Blockly.FieldTextInput(undefined), 'reference');
-
-    this.appendDummyInput()
-      .appendField('Explanation')
-      .appendField(new Blockly.FieldTextInput(''), 'explanation');
-
-    this.setInputsInline(false);
-    this.setTooltip('Throws error with given reference and explanation');
-    this.setHelpUrl('');
-    this.setColour(75);
-    this.setPreviousStatement(true);
-    this.setNextStatement(false);
+    this.jsonInit({
+      type: 'throw_block',
+      message0: 'Throw %1\n',
+      args0: [
+        {
+          type: 'field_dropdown',
+          name: 'name',
+          options: [
+            ['BpmnEscalation', 'BpmnEscalation'],
+            ['BpmnError', 'BpmnError'],
+          ],
+        },
+      ],
+      message1: 'Reference %1\n',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'reference',
+          check: 'String',
+        },
+      ],
+      message2: 'Explanation %1',
+      args2: [
+        {
+          type: 'input_value',
+          name: 'explanation',
+          check: 'String',
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 75,
+      tooltip: 'Throws error with given reference and explanation',
+      helpUrl: '',
+    });
   },
 };
 
 javascriptGenerator.forBlock['throw_error'] = function (block) {
   const errorType = block.getFieldValue('name');
-  const reference = block.getFieldValue('reference');
-  const explanation = block.getFieldValue('explanation');
+  const reference =
+    javascriptGenerator.valueToCode(block, 'reference', BlocklyJavaScript.Order.COMMA) ||
+    'undefined';
+  const explanation =
+    javascriptGenerator.valueToCode(block, 'explanation', BlocklyJavaScript.Order.COMMA) ||
+    undefined;
 
-  const code = `throw new ${errorType}("${reference}", "${explanation}");\n`;
-  return code;
+  return `throw new ${errorType}(${reference}, ${explanation});\n`;
 };
 
 // --------------------------------------------

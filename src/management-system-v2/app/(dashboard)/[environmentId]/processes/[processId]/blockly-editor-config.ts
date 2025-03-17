@@ -106,6 +106,12 @@ export const INITIAL_TOOLBOX_JSON = {
     },
     {
       kind: 'category',
+      name: 'Variables',
+      colour: 330,
+      custom: 'VARIABLE',
+    },
+    {
+      kind: 'category',
       name: 'Math',
       colour: 230,
       contents: [
@@ -335,15 +341,15 @@ export const INITIAL_TOOLBOX_JSON = {
       contents: [
         {
           kind: 'block',
-          type: 'variables_get',
+          type: 'proceed_variables_get',
         },
         {
           kind: 'block',
-          type: 'variables_set',
+          type: 'proceed_variables_set',
         },
         {
           kind: 'block',
-          type: 'variables_get_all',
+          type: 'proceed_variables_get_all',
         },
       ],
     },
@@ -412,7 +418,7 @@ export const INITIAL_TOOLBOX_JSON = {
 // Variables
 // --------------------------------------------
 
-Blocks['variables_get'] = {
+Blocks['proceed_variables_get'] = {
   init: function () {
     this.appendDummyInput()
       .appendField('Variable')
@@ -424,13 +430,13 @@ Blocks['variables_get'] = {
   },
 };
 
-javascriptGenerator.forBlock['variables_get'] = function (block) {
+javascriptGenerator.forBlock['proceed_variables_get'] = function (block) {
   const variableName = block.getFieldValue('name');
   const code = `variable.get("${variableName}")`;
   return [code, BlocklyJavaScript.Order.FUNCTION_CALL];
 };
 
-Blocks['variables_set'] = {
+Blocks['proceed_variables_set'] = {
   init: function () {
     this.appendValueInput('value')
       .appendField('Set variable')
@@ -445,7 +451,7 @@ Blocks['variables_set'] = {
   },
 };
 
-javascriptGenerator.forBlock['variables_set'] = function (block) {
+javascriptGenerator.forBlock['proceed_variables_set'] = function (block) {
   const variableName = block.getFieldValue('name');
   const variableValue = javascriptGenerator.valueToCode(
     block,
@@ -457,7 +463,7 @@ javascriptGenerator.forBlock['variables_set'] = function (block) {
   return code;
 };
 
-Blocks['variables_get_all'] = {
+Blocks['proceed_variables_get_all'] = {
   init: function () {
     this.appendDummyInput().appendField('Get all variables');
     this.setOutput(true, null);
@@ -467,7 +473,7 @@ Blocks['variables_get_all'] = {
   },
 };
 
-javascriptGenerator.forBlock['variables_get_all'] = function (_) {
+javascriptGenerator.forBlock['proceed_variables_get_all'] = function (_) {
   return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
 };
 
@@ -629,13 +635,13 @@ javascriptGenerator.forBlock['timeout_async'] = function (block) {
 // Variables
 // --------------------------------------------
 
-javascriptGenerator.forBlock['variables_get'] = function (block) {
+javascriptGenerator.forBlock['proceed_variables_get'] = function (block) {
   const variableName = block.getFieldValue('name');
   const code = `variable.get("${variableName}")`;
   return [code, BlocklyJavaScript.Order.FUNCTION_CALL];
 };
 
-Blocks['variables_set'] = {
+Blocks['proceed_variables_set'] = {
   init: function () {
     this.appendValueInput('value')
       .appendField('Set variable')
@@ -650,7 +656,7 @@ Blocks['variables_set'] = {
   },
 };
 
-javascriptGenerator.forBlock['variables_set'] = function (block) {
+javascriptGenerator.forBlock['proceed_variables_set'] = function (block) {
   const variableName = block.getFieldValue('name');
   const variableValue = javascriptGenerator.valueToCode(
     block,
@@ -662,7 +668,7 @@ javascriptGenerator.forBlock['variables_set'] = function (block) {
   return code;
 };
 
-Blocks['variables_get_all'] = {
+Blocks['proceed_variables_get_all'] = {
   init: function () {
     this.appendDummyInput().appendField('Get all variables');
     this.setOutput(true, 'Object');
@@ -672,7 +678,7 @@ Blocks['variables_get_all'] = {
   },
 };
 
-javascriptGenerator.forBlock['variables_get_all'] = function (_) {
+javascriptGenerator.forBlock['proceed_variables_get_all'] = function (_) {
   return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
 };
 

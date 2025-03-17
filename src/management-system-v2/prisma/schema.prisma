@@ -245,28 +245,28 @@ model Config {
 }
 
 model ConfigParameter {
-  id                        String            @id @default(uuid())
+  id                        String    @id @default(uuid())
   data                      Json
   
   @@map("config_parameter")
 }
 
 model MachineConfig {
-  id                        String            @id @default(uuid())
+  id                        String    @id @default(uuid())
   data                      Json
   
   @@map("machine_config")
 }
 
 model TargetConfig {
-  id                        String            @id @default(uuid())
+  id                        String    @id @default(uuid())
   data                      Json
 
   @@map("target_config")
 }
 
 model ConfigVersion {
-  id                        String            @id @default(uuid())
+  id                        String    @id @default(uuid())
   parentId                  String
   data                      Json
 
@@ -274,8 +274,8 @@ model ConfigVersion {
 }
 
 model ConfigCategories {
-  environmentId           String @id
-  categories              String[]
+  id                        String    @id @default(uuid())
+  categories                String[]
   
   @@map("config_categories")
 }

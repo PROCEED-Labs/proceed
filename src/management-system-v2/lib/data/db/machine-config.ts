@@ -251,7 +251,7 @@ export async function addParentConfigVersion(
   });
 
   // update references to versions in main/latest config
-  await updateParentConfig(machineConfigInput.id, { versions });
+  await updateParentConfig(machineConfigInput.id, { versions, version: versionId });
 
   // storing a copy as versioned config
   const newVersion: ParentConfig = JSON.parse(JSON.stringify(machineConfigInput));
@@ -393,11 +393,17 @@ export async function addParameter(
 
 async function addConfigCategories(environmentId: string, newCategories: string[]) {
   let storedCategories = await getConfigurationCategories(environmentId);
-  let toStore = Array.from(new Set([...storedCategories, ...newCategories]));
-  await db.configCategories.update({
-    where: { environmentId: environmentId },
-    data: { categories: toStore },
-  });
+  if (storedCategories) {
+    let toStore = Array.from(new Set([...storedCategories, ...newCategories]));
+    await db.configCategories.update({
+      where: { id: environmentId },
+      data: { categories: toStore },
+    });
+  } else {
+    await db.configCategories.create({
+      data: { id: environmentId, categories: newCategories },
+    });
+  }
 }
 
 /**
@@ -746,7 +752,7 @@ export async function getParentConfigurations(
  */
 export async function getConfigurationCategories(environmentId: string): Promise<string[]> {
   const categoriesResult = await db.configCategories.findUnique({
-    where: { environmentId: environmentId },
+    where: { id: environmentId },
   });
   const categories = categoriesResult?.categories as string[];
   return categories;

@@ -106,7 +106,7 @@ function updateResource(
 }
 
 const filter = (inputValue: string, path: DefaultOptionType[]) =>
-  path.some((option) => option?.value?.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
+  path.some((option) => `${option?.value}`.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
 
 export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) => {
   const { user, roles } = usePotentialOwnerStore();

@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
 import { ProcessListItemIcon } from './process-list';
 import { ProcessListProcess } from './processes';
+import ProceedLoadingIndicator from './loading-proceed';
 
 type FolderChildren = {
   id: string;
@@ -30,6 +31,22 @@ function generateNode(element: FolderChildren): TreeNode {
     isLeaf,
     element,
   };
+}
+
+function getCorrespondingFolder(key: React.Key, nodeMap: Map<React.Key, TreeNode>) {
+  const node = nodeMap.get(key);
+  if (!node) return;
+
+  /* If the element is a folder */
+  if (node.element.type !== 'folder') return node.element;
+
+  /* If it is not a folder go up hierarchy until folder */
+  let parent = nodeMap.get(node.key);
+  while (parent && parent.element.type !== 'folder') {
+    parent = nodeMap.get(parent.key);
+  }
+
+  return parent?.element;
 }
 
 export const FolderTree = ({
@@ -120,7 +137,8 @@ export const FolderTree = ({
   }, [rootNodes]);
 
   return (
-    <Spin spinning={loading}>
+    <ProceedLoadingIndicator loading={loading}>
+      {/* <Spin spinning={loading}> */}
       <Tree
         showIcon={true}
         style={{
@@ -136,7 +154,13 @@ export const FolderTree = ({
         // loadData, we also trigger a rerender, such that the rendered Tree will always have the
         // correct loadedKeys
         loadedKeys={[...loadedKeys.current.keys()]}
+        onSelect={(selectedKeys) => {
+          // console.log({ selectedKeys });
+          const nextFolder = getCorrespondingFolder(selectedKeys[0], nodeMap.current);
+          console.log(nextFolder);
+        }}
       />
-    </Spin>
+      {/* </Spin> */}
+    </ProceedLoadingIndicator>
   );
 };

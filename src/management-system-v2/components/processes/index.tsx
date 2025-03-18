@@ -89,6 +89,7 @@ import { getProcess } from '@/lib/data/DTOs';
 import BPMNCanvas, { BPMNCanvasRef } from '../bpmn-canvas';
 import { set } from 'zod';
 import { ShareModal } from '../share-modal/share-modal';
+import MoveToFolderModal from '../folder-move-modal';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -205,6 +206,7 @@ const Processes = ({
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [openFolderMoveModal, setOpenFolderMoveModal] = useState(false);
 
   const [showMobileMetaData, setShowMobileMetaData] = useState(false);
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
@@ -481,11 +483,16 @@ const Processes = ({
   };
 
   const share = (item: ProcessListProcess) => {
+    setSelectedRowElements([item]);
+    exportModalTab.current = 'share-public-link';
     setOpenExportModal(true);
   };
 
-  const openFolderMoveModal = (items: ProcessListProcess[]) => {
+  const openFolderModal = (items: ProcessListProcess[]) => {
     /* TODO: */
+    // setSelectedRowElements(items);
+    console.log('openFolderModal');
+    setOpenFolderMoveModal(true);
   };
 
   const processActions: ProcessActions = {
@@ -512,7 +519,7 @@ const Processes = ({
       setSelectedRowElements(items);
       setOpenExportModal(true);
     },
-    moveItems: openFolderMoveModal,
+    moveItems: openFolderModal,
     copyItems: copyItem,
     deleteItems: (items) => {
       setSelectedRowElements(items);
@@ -948,6 +955,10 @@ const Processes = ({
       <FolderCreationModal
         open={openCreateFolderModal}
         close={() => setOpenCreateFolderModal(false)}
+      />
+      <MoveToFolderModal
+        open={openFolderMoveModal}
+        onCancel={() => setOpenFolderMoveModal(false)}
       />
 
       <AddUserControls name={'process-list'} />

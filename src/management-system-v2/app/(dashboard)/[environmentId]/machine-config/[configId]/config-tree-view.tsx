@@ -265,7 +265,7 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
         title={`Creating ${openModal === 'target-config' ? 'target' : 'machine'} configuration`}
         onCancel={closeModal}
         onSubmit={handleCreateMachineOk}
-        configType={openModal === 'machine-config' ? 'machine' : undefined}
+        configType={openModal === 'machine-config' ? 'machine' : 'target'}
         targetConfigExists={!!parentConfig.targetConfig}
       />
 

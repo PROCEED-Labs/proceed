@@ -62,7 +62,7 @@ export async function copyParameter(
 }
 
 /**
- * Creates a copy of a config and all its nested parameters to be pasted as child of a given parent. Stores the copied config.
+ * Creates a copy of a machine- or target-config and all its nested parameters to be pasted as child of a given parent. Stores the copied config.
  * @param configId ID of the config which is to be copied.
  * @param configType Type of the config. (_'machine-config'_ | _'target-config'_)
  * @param parentId ID of the parent where the config is to be copied to.
@@ -83,7 +83,7 @@ export async function copyConfig(
     config = machineResult?.data as unknown as StoredMachineConfig;
   }
 
-  if (!config) throw new Error(`(Target/Machine)config with id ${configId} does not exist`);
+  if (!config) throw new Error(`${configType} with id ${configId} does not exist`);
 
   // deep copy the config
   const copy = JSON.parse(JSON.stringify(config)) as typeof config;
@@ -106,8 +106,9 @@ export async function copyConfig(
 
 /**
  * @param originalId ID of the config to be copied.
- * @param machineConfigInput Config the selected config is to be pasted into
+ * @param configBase Config the selected config is to be pasted into
  * @param environmentId
+ * @return Returns the newly generated ID for the config.
  * @throws {Error} in case:
  * * config ID does not exist.
  * * the folder is not found.
@@ -115,7 +116,7 @@ export async function copyConfig(
  */
 export async function copyParentConfig(
   originalId: string,
-  machineConfigInput: AbstractConfigInput,
+  configBase: AbstractConfigInput,
   environmentId: string,
 ) {
   if (!originalId) return;
@@ -127,7 +128,7 @@ export async function copyParentConfig(
     }
     const originalConfig = originalConfigResult?.data as unknown as StoredParentConfig;
 
-    const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
+    const configBaseData = AbstractConfigInputSchema.parse(configBase);
 
     const { userId } = await getCurrentUser();
     const newId = v4();
@@ -139,8 +140,8 @@ export async function copyParentConfig(
       createdBy: userId,
       createdOn: date,
       lastEditedOn: date,
-      ...parentConfigData,
-      name: parentConfigData.name || `${originalConfig.name} (Copy)`,
+      ...configBaseData,
+      name: configBaseData.name || `${originalConfig.name} (Copy)`,
       metadata: await asyncMap(originalConfig.metadata, (id) =>
         copyParameter(id, newId, 'parent-config'),
       ),
@@ -171,7 +172,7 @@ export async function copyParentConfig(
       },
     });
 
-    return machineConfigInput;
+    return newId;
   } catch (e) {
     return userError("Couldn't save Config");
   }
@@ -569,14 +570,13 @@ async function versionToParentConfigStorage(versionId: string) {
 
   let originalConfigResult = await db.config.findUnique({ where: { id: configVersion.id } });
   let originalConfig = originalConfigResult?.data as unknown as StoredParentConfig;
-  let versions = originalConfig.versions;
   let environmentId = originalConfigResult?.environmentId || '';
+  let versions = originalConfig.versions;
 
   // delete referenced parameters, machine- and targetconfigs - but keeps versions and parent config
   removeParentConfiguration(configVersion.id, true);
 
-  const copy = {
-    ...(JSON.parse(JSON.stringify(configVersion)) as typeof configVersion),
+  const newLatestConfig = {
     ...configVersion,
     metadata: await asyncMap(configVersion.metadata, (id) =>
       copyParameter(id, configVersion.id, 'parent-config'),
@@ -590,16 +590,16 @@ async function versionToParentConfigStorage(versionId: string) {
   } as StoredParentConfig;
 
   // if no folder ID is given, set ID to root folder's
-  if (!copy.folderId) {
-    copy.folderId = (await getRootFolder(environmentId)).id;
+  if (!newLatestConfig.folderId) {
+    newLatestConfig.folderId = (await getRootFolder(environmentId)).id;
   }
 
-  const folderData = await getFolderById(copy.folderId);
+  const folderData = await getFolderById(newLatestConfig.folderId);
   if (!folderData) throw new Error('Folder not found');
 
   await db.config.update({
     where: { id: configVersion.id },
-    data: { data: { ...copy, versions } },
+    data: { data: { ...newLatestConfig, versions } },
   });
 }
 
@@ -986,11 +986,11 @@ export async function removeParentConfiguration(
   const parentConfigResult = await db.config.findUnique({ where: { id: parentConfigId } });
   const parentConfig = parentConfigResult?.data as unknown as StoredParentConfig;
 
+  if (!parentConfig) return;
+
   const parentConfigVersionsResult = await db.configVersion.findMany({
     where: { parentId: parentConfigId },
   });
-
-  if (!parentConfig) return;
 
   if (parentConfig.targetConfig) await removeTargetConfig(parentConfig.targetConfig);
   await asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id));

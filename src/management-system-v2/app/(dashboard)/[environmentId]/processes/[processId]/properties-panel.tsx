@@ -178,6 +178,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             style={{ width: '100%' }}
             role="group"
             aria-labelledby="general-title"
+            aria-label="General Properties"
           >
             {/* <Divider>
           <span id="general-title" style={{ fontSize: '0.85rem' }}>

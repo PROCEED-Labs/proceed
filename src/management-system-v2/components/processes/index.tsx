@@ -35,6 +35,7 @@ import {
   FolderOutlined,
   FileOutlined,
   FolderFilled,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import BPMNModeler from 'bpmn-js/lib/Modeler';
 import IconView from '@/components/process-icon-list';
@@ -200,6 +201,7 @@ const Processes = ({
     useUserPreferences.use['process-meta-data']();
 
   const [openExportModal, setOpenExportModal] = useState(false);
+  const exportModalTab = useRef<'bpmn' | 'share-public-link' | undefined>(undefined);
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -479,7 +481,7 @@ const Processes = ({
   };
 
   const share = (item: ProcessListProcess) => {
-    /* TODO: */
+    setOpenExportModal(true);
   };
 
   const openFolderMoveModal = (items: ProcessListProcess[]) => {
@@ -688,34 +690,16 @@ const Processes = ({
                           {selectedRowKeys.length === 1 &&
                             selectedRowElements[0].type == 'process' && (
                               <>
-                                <div
-                                  style={{
-                                    /* display: 'none'  */ position: 'absolute',
-                                    height: 1,
-                                    width: 1,
-                                    overflow: 'hidden',
-                                  }}
-                                >
-                                  {shareXML && (
-                                    <BPMNCanvas
-                                      bpmn={{ bpmn: shareXML ?? '' }}
-                                      type="viewer"
-                                      ref={modelerRef}
-                                    />
-                                  )}
-                                </div>
-                                {/* SHARE HERE */}
-                                {/* <ModelerShareModalButton
-                                  type="text"
-                                  onExport={() => {
-                                    setOpenExportModal(true);
-                                  }}
-                                  onExportMobile={() => {
-                                    setOpenExportModal(true);
-                                  }}
-                                  modeler={modelerRef.current}
-                                  processId={selectedRowKeys[0]}
-                                /> */}
+                                <Tooltip placement="top" title={'Share'}>
+                                  <Button
+                                    type="text"
+                                    onClick={() => {
+                                      exportModalTab.current = 'share-public-link';
+                                      setOpenExportModal(true);
+                                    }}
+                                    icon={<ShareAltOutlined className={styles.Icon} />}
+                                  ></Button>
+                                </Tooltip>
                               </>
                             )}
                           {/* // Download */}
@@ -723,6 +707,7 @@ const Processes = ({
                             <Button
                               type="text"
                               onClick={() => {
+                                exportModalTab.current = 'bpmn';
                                 setOpenExportModal(true);
                               }}
                               icon={<PiDownloadSimple className={styles.Icon} />}
@@ -888,6 +873,7 @@ const Processes = ({
           ...e,
           name: e.name.value,
         }))}
+        defaultOpenTab={exportModalTab.current}
       />
       <ProcessModal
         open={openCopyModal}

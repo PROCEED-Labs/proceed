@@ -85,6 +85,26 @@ export async function createProcess(
     throw new Error(`Invalid bpmn: ${err}`);
   }
 
+  // if process is imported, add original attributes
+  processInfo.bpmn
+    ? updateBpmnXMLAttributes(definitions, {
+        originalId: definitions.id,
+        originalName: definitions.name,
+        originalCreatorName: definitions.creatorName,
+        originalCreatorId: definitions.creatorId,
+        originalCreatorUsername: definitions.creatorUsername,
+        originalCreatorSpaceId: definitions.creatorSpaceId,
+        originalCreatorSpaceName: definitions.creatorSpaceName,
+        originalCreationDate: definitions.creationDate,
+        originalExporterVersion: definitions.exporterVersion,
+        originalProcessVersionId: definitions.processVersionId,
+        originalProcessVersionName: definitions.processVersionName,
+        originalTargetNamespace: definitions.targetNamespace,
+        originalUserDefinedId: definitions.userDefinedId,
+        originalExporter: definitions.exporter,
+      })
+    : null;
+
   // if we import a process not created in proceed we set the id to a proceed conform id
   const { exporter, id: importDefinitionsId } = await getDefinitionsInfos(definitions);
   if (
@@ -106,18 +126,15 @@ export async function createProcess(
     versionName: 'latest',
   });
 
+  // these attributes are updated with db_values
   updateBpmnXMLAttributes(definitions, {
-    originalName: definitions.name,
-    originalCreatorName: definitions.creatorName,
-    originalCreatorId: definitions.creatorId,
-    originalCreatorUsername: definitions.creatorUsername,
-    originalCreatorSpaceId: definitions.creatorSpaceId,
-    originalCreatorSpaceName: definitions.creatorSpaceName,
-    originalCreationDate: definitions.creationDate,
-    originalExporterVersion: definitions.exporterVersion,
-    originalProcessVersionId: definitions.processVersionId,
-    originalProcessVersionName: definitions.processVersionName,
-    originalTargetNamespace: definitions.targetNamespace,
+    creatorId: 'DB_PLACEHOLDER',
+    creationDate: 'DB_PLACEHOLDER',
+    creatorName: 'DB_PLACEHOLDER',
+    creatorSpaceId: 'DB_PLACEHOLDER',
+    creatorSpaceName: 'DB_PLACEHOLDER',
+    creatorUsername: 'DB_PLACEHOLDER',
+    userDefinedId: 'DB_PLACEHOLDER',
   });
 
   if (!metaInfo.name) {
@@ -210,6 +227,7 @@ export const getFinalBpmn = async ({
 }) => {
   // write the necessary meta info into the bpmn to create the final bpmn that is sent to the backend
   const bpmnObj = await toBpmnObject(bpmn);
+
   await setDefinitionsId(bpmnObj, id);
   await setDefinitionsName(bpmnObj, name);
   await addDocumentation(bpmnObj, description);
@@ -290,7 +308,7 @@ export async function transformBpmnAttributes(
   const bpmnString =
     typeof input === 'string' ? input : `<?xml version="1.0" encoding="UTF-8"?>\n${input?.bpmn}`;
 
-  let definitions;
+  let definitions: object;
   try {
     const xmlObj = await toBpmnObject(bpmnString);
     [definitions] = getElementsByTagName(xmlObj, 'bpmn:Definitions');
@@ -301,7 +319,8 @@ export async function transformBpmnAttributes(
   if (transformType === BpmnAttributeType.DB_PLACEHOLDER) {
     const placeholders: Record<string, string> = {};
     Object.entries(XMLAttrDBProcessTableColsMap).forEach(([attrKey, dbPath]) => {
-      placeholders[attrKey] = `PROCEED_DB_VALUE_${dbPath}`;
+      // @ts-ignore
+      definitions[attrKey] ? (placeholders[attrKey] = `PROCEED_DB_VALUE_${dbPath}`) : null;
     });
 
     updateBpmnXMLAttributes(definitions, placeholders);
@@ -313,9 +332,13 @@ export async function transformBpmnAttributes(
       if (dbPath.includes('+')) {
         const parts = dbPath.split('+').map((part) => part.trim());
         const values = parts.map((part) => getNestedValue(processMeta, part) || '');
-        actualValues[attrKey] = values.join(' ').trim();
+        // @ts-ignore
+        definitions[attrKey] ? (actualValues[attrKey] = values.join(' ').trim()) : null;
       } else {
-        actualValues[attrKey] = getNestedValue(processMeta, dbPath) || '';
+        // @ts-ignore
+        definitions[attrKey]
+          ? (actualValues[attrKey] = getNestedValue(processMeta, dbPath) || '')
+          : null;
       }
     });
 

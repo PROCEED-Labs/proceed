@@ -24,6 +24,7 @@ const ProcessModal = <
     description: string;
     userDefinedId?: string;
     creator?: string;
+    creatorUsername?: string;
     createdOn?: string;
   },
 >({
@@ -117,7 +118,7 @@ const ProcessModal = <
           <Title level={4} style={{ margin: 0 }}>
             {title}
           </Title>
-          {initialData && initialData.length > 1 && (
+          {initialData && initialData.length >= 1 && (
             <Typography.Text type="secondary">{`Process ${carouselIndex} of ${initialData.length}`}</Typography.Text>
           )}
         </Flex>
@@ -151,7 +152,7 @@ const ProcessModal = <
         // doesn't work in production, that's why we use the useEffect above)
         preserve={false}
       >
-        {!initialData || initialData.length === 1 ? (
+        {!initialData ? (
           <ProcessInputs index={0} />
         ) : (
           // <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
@@ -207,10 +208,25 @@ const ProcessInputs = ({ index, isImport }: ProcessInputsProps) => {
       </Form.Item>
       {isImport && (
         <>
-          <Form.Item name={[index, 'creator']} label="Creator" rules={[{ required: false }]}>
+          <Form.Item
+            name={[index, 'creator']}
+            label="Original Creator"
+            rules={[{ required: false }]}
+          >
             <Input disabled />
           </Form.Item>
-          <Form.Item name={[index, 'createdOn']} label="Created On" rules={[{ required: false }]}>
+          <Form.Item
+            name={[index, 'creatorUsername']}
+            label="Original Creator Username"
+            rules={[{ required: false }]}
+          >
+            <Input disabled />
+          </Form.Item>
+          <Form.Item
+            name={[index, 'createdOn']}
+            label="Original Creation Date"
+            rules={[{ required: false }]}
+          >
             <Input disabled />
           </Form.Item>
         </>

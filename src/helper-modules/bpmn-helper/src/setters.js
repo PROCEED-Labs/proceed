@@ -33,9 +33,9 @@ const constraintParser = new ConstraintParser();
 async function setDefinitionsId(bpmn, id) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
     // store the current id as originalId if there is one and we provide a new one
-    if (id && definitions.id && definitions.id !== id) {
-      definitions.originalId = definitions.id;
-    }
+    // if (id && definitions.id && definitions.id !== id) {
+    //   definitions.originalId = definitions.id;
+    // }
 
     definitions.id = id;
   });
@@ -71,8 +71,8 @@ async function setDefinitionsVersionInformation(
   { versionId, versionName, versionDescription, versionBasedOn, versionCreatedOn },
 ) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    definitions.versionId = versionId;
-    definitions.versionName = versionName;
+    definitions.processVersionId = versionId;
+    definitions.processVersionName = versionName;
     definitions.versionDescription = versionDescription;
     definitions.versionBasedOn = versionBasedOn;
     definitions.versionCreatedOn = versionCreatedOn;
@@ -122,9 +122,9 @@ async function setTargetNamespace(bpmn, id) {
     if (id) {
       const targetNamespace = generateTargetNamespace(id);
 
-      if (definitions.targetNamespace && definitions.targetNamespace !== targetNamespace) {
-        definitions.originalTargetNamespace = definitions.targetNamespace;
-      }
+      // if (definitions.targetNamespace && definitions.targetNamespace !== targetNamespace) {
+      //   definitions.originalTargetNamespace = definitions.targetNamespace;
+      // }
 
       definitions.targetNamespace = targetNamespace;
     } else {
@@ -144,14 +144,14 @@ async function setTargetNamespace(bpmn, id) {
  */
 async function setStandardDefinitions(bpmn, exporterName, exporterVersion) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    if (definitions.exporter && definitions.exporter !== exporterName) {
-      definitions.originalExporter = definitions.exporter;
-      definitions.originalExporterVersion = definitions.exporterVersion;
-    }
+    // if (definitions.exporter && definitions.exporter !== exporterName) {
+    //   definitions.originalExporter = definitions.exporter;
+    //   definitions.originalExporterVersion = definitions.exporterVersion;
+    // }
 
-    if (definitions.exporterVersion && definitions.exporterVersion !== exporterVersion) {
-      definitions.originalExporterVersion = definitions.exporterVersion;
-    }
+    // if (definitions.exporterVersion && definitions.exporterVersion !== exporterVersion) {
+    //   definitions.originalExporterVersion = definitions.exporterVersion;
+    // }
 
     definitions.exporter = exporterName;
     definitions.exporterVersion = exporterVersion;

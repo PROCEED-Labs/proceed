@@ -74,15 +74,15 @@ async function getDefinitionsVersionInformation(bpmn) {
   //   throw new Error('The process version has to be a number (time in ms since 1970)');
   // }
 
-  if (!bpmnObj.versionId) {
+  if (!bpmnObj.processVersionId) {
     return {
       versionBasedOn: bpmnObj.versionBasedOn,
     };
   }
 
   return {
-    versionId: bpmnObj.versionId,
-    name: bpmnObj.versionName,
+    versionId: bpmnObj.processVersionId,
+    name: bpmnObj.processVersionName,
     description: bpmnObj.versionDescription,
     versionBasedOn: bpmnObj.versionBasedOn,
     versionCreatedOn: bpmnObj.versionCreatedOn,

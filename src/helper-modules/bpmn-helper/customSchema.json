@@ -250,22 +250,22 @@
       ]
     },
     {
-      "name": "versionId",
+      "name": "processVersionId",
       "extends": ["bpmn:Definitions", "bpmn:Import"],
       "properties": [
         {
-          "name": "versionId",
+          "name": "processVersionId",
           "isAttr": true,
           "type": "String"
         }
       ]
     },
     {
-      "name": "versionName",
+      "name": "processVersionName",
       "extends": ["bpmn:Definitions"],
       "properties": [
         {
-          "name": "versionName",
+          "name": "processVersionName",
           "isAttr": true,
           "type": "String"
         }

@@ -21,6 +21,7 @@ export type ProcessData = {
   name: string;
   description: string;
   creator?: string;
+  creatorUsername?: string;
   createdOn?: string;
   userDefinedId?: string;
   bpmn: string;
@@ -92,8 +93,12 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
                                 name: (await getDefinitionsName(bpmnObj)) || '',
                                 description: await getProcessDocumentation(bpmn),
                                 userDefinedId: definitions['userDefinedId'],
-                                creator: definitions['creatorUsername'],
-                                createdOn: definitions['creationDate'],
+                                creator: definitions['creatorName'],
+                                creatorUsername: definitions['creatorUsername'],
+                                createdOn: new Date(definitions['creationDate']).toLocaleDateString(
+                                  'en-GB',
+                                  { day: '2-digit', month: '2-digit', year: '2-digit' },
+                                ),
                                 bpmn,
                                 artefacts: {
                                   images: [],
@@ -188,6 +193,13 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
                         processesData.push({
                           name: (await getDefinitionsName(bpmnObj)) || '',
                           description: await getProcessDocumentation(bpmn),
+                          userDefinedId: definitions['userDefinedId'],
+                          creator: definitions['creatorName'],
+                          creatorUsername: definitions['creatorUsername'],
+                          createdOn: new Date(definitions['creationDate']).toLocaleDateString(
+                            'en-GB',
+                            { day: '2-digit', month: '2-digit', year: '2-digit' },
+                          ),
                           bpmn,
                         });
                       } catch (e: any) {

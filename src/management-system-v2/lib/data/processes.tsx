@@ -7,6 +7,7 @@ import {
   generateDefinitionsId,
   generateScriptTaskFileName,
   generateUserTaskFileName,
+  getDefinitionsId,
   getDefinitionsVersionInformation,
   setDefinitionsName,
   setDefinitionsVersionInformation,
@@ -221,22 +222,22 @@ export const addProcesses = async (
   const newProcesses: Process[] = [];
 
   for (const value of values) {
-    // new ID is required for imported/copied processes
-    if (generateNewId) {
-      // add original_ attributes to the bpmn.
-
-      value.bpmn = await getFinalBpmn({
-        id: generateDefinitionsId(),
-        name: value.name,
-        description: value.description,
-        bpmn: value.bpmn ?? '',
-      });
-    }
-    const { bpmn } = await createProcess({
+    let { bpmn } = await createProcess({
       name: value.name,
       description: value.description,
       bpmn: value.bpmn,
     });
+
+    if (generateNewId) {
+      // new ID is required for imported/copied processes
+      const newId = generateDefinitionsId();
+      bpmn = await getFinalBpmn({
+        id: newId,
+        name: value.name,
+        description: value.description,
+        bpmn: bpmn,
+      });
+    }
 
     const newProcess = {
       bpmn,

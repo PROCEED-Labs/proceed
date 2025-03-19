@@ -67,7 +67,6 @@ export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess
 
 type BaseProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
-  idUsernameMapping?: Record<string, string>;
   folder: Folder;
   elementSelection?: {
     selectedElements: ProcessListProcess[];
@@ -84,7 +83,6 @@ type BaseProcessListProps = PropsWithChildren<{
 
 const BaseProcessList: FC<BaseProcessListProps> = ({
   data,
-  idUsernameMapping = {},
   folder,
   elementSelection,
   onExportProcess = () => {},
@@ -121,14 +119,12 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     'Meta Data Button',
   ];
 
-  const mapIdToUsername = useCallback(
-    (id: string | undefined | null) => {
-      console.log('USERMAPPING', idUsernameMapping, id);
-      if (!id) return 'Could not load username';
-      return idUsernameMapping[id] ?? 'Could not load username';
-    },
-    [idUsernameMapping],
-  );
+  /* TODO:
+    User potentialOwner Store to get the username 
+  */
+  const mapIdToUsername = useCallback((id: string | undefined | null) => {
+    return id;
+  }, []);
 
   /* This is the 'action' buttons in the row itself (visible on hover) */
   const actionBarGenerator = useCallback(
@@ -565,7 +561,6 @@ const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
 type ProcessManagementListProps = PropsWithChildren<{
   data: ProcessListProcess[];
-  idUsernameMapping?: Record<string, string>;
   folder: Folder;
   selection: Key[];
   selectedElements: ProcessListProcess[];
@@ -577,7 +572,6 @@ type ProcessManagementListProps = PropsWithChildren<{
 
 const ProcessManagementList: FC<ProcessManagementListProps> = ({
   data,
-  idUsernameMapping = {},
   folder,
   selection,
   selectedElements,
@@ -600,7 +594,6 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
   return (
     <BaseProcessList
       data={data}
-      idUsernameMapping={idUsernameMapping}
       folder={folder}
       elementSelection={{ selectedElements, setSelectionElements }}
       setShowMobileMetaData={setShowMobileMetaData}

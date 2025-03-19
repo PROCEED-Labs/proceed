@@ -10,12 +10,17 @@ import FolderModal from './folder-modal';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
 export const FolderCreationModal: FC<
-  Partial<ComponentProps<typeof FolderModal>> & { open: boolean; close: () => void }
+  Partial<ComponentProps<typeof FolderModal>> & {
+    open: boolean;
+    close: () => void;
+    parentFolderId?: string;
+  }
 > = (props) => {
   const { message } = App.useApp();
   const router = useRouter();
   const spaceId = useEnvironment().spaceId;
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
+  const selectedFolderId = props.parentFolderId ?? folderId;
   const [isLoading, startTransition] = useTransition();
 
   const createFolder = (values: FolderUserInput) => {
@@ -37,7 +42,7 @@ export const FolderCreationModal: FC<
       open={props.open}
       close={props.close}
       spaceId={spaceId}
-      parentId={folderId}
+      parentId={selectedFolderId}
       onSubmit={createFolder}
       modalProps={{
         title: 'Create Folder',

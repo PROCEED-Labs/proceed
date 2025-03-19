@@ -35,30 +35,6 @@ const ProcessesPage = async ({
 
   const favs = await getUsersFavourites();
 
-  // Id-UserName Mapping for Space
-  const { userId } = await getCurrentUser();
-  const idUsernameMapping = {
-    // @ts-ignore
-    [userId]: (await getUserById(userId)).username,
-  };
-  if (activeEnvironment.isOrganization) {
-    // Add all members
-    const members = await getMembers(activeEnvironment.spaceId, ability);
-    const memberUsernames = await Promise.all(
-      members.map(async ({ userId }) => {
-        return {
-          // @ts-ignore
-          [userId]: (await getUserById(userId)).username,
-        };
-      }),
-    );
-
-    memberUsernames.forEach((usernameMapping) => {
-      Object.assign(idUsernameMapping, usernameMapping);
-    });
-  }
-  console.log('idUsernameMapping', idUsernameMapping);
-
   const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
 
   const folder = await getFolderById(
@@ -99,10 +75,10 @@ const ProcessesPage = async ({
       >
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
           <Processes
+            rootFolder={rootFolder}
             processes={folderContents}
             favourites={favs as string[]}
             folder={folder}
-            idUsernameMapping={idUsernameMapping}
           />
         </Space>
       </Content>

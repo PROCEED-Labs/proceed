@@ -33,33 +33,21 @@ function generateNode(element: FolderChildren): TreeNode {
   };
 }
 
-function getCorrespondingFolder(key: React.Key, nodeMap: Map<React.Key, TreeNode>) {
-  const node = nodeMap.get(key);
-  if (!node) return;
-
-  /* If the element is a folder */
-  if (node.element.type !== 'folder') return node.element;
-
-  /* If it is not a folder go up hierarchy until folder */
-  let parent = nodeMap.get(node.key);
-  while (parent && parent.element.type !== 'folder') {
-    parent = nodeMap.get(parent.key);
-  }
-
-  return parent?.element;
-}
-
 export const FolderTree = ({
   rootNodes,
   newChildrenHook,
   treeProps,
   showRootAsFolder,
+  onSelect,
+  forceReload,
 }: {
   rootNodes?: FolderChildren[];
   /** The return value is used to update the tree */
   newChildrenHook?: (nodes: TreeNode[], parent?: TreeNode) => TreeNode[];
   treeProps?: TreeProps<TreeNode>;
   showRootAsFolder?: boolean;
+  onSelect?: (folder: FolderChildren | undefined) => void;
+  forceReload?: any;
 }) => {
   const spaceId = useEnvironment().spaceId;
 
@@ -95,7 +83,7 @@ export const FolderTree = ({
 
       nodeMap.current.set(rootNode.key, rootNode);
 
-      console.log({ rootNode });
+      // console.log({ rootNode });
     }
 
     const parentNode = nodeId ? nodeMap.current.get(nodeId) : rootNode;
@@ -136,6 +124,12 @@ export const FolderTree = ({
     loadRoot();
   }, [rootNodes]);
 
+  useEffect(() => {
+    if (forceReload) {
+      setTimeout(() => loadData(), 100);
+    }
+  }, [forceReload]);
+
   return (
     <ProceedLoadingIndicator loading={loading}>
       {/* <Spin spinning={loading}> */}
@@ -155,9 +149,8 @@ export const FolderTree = ({
         // correct loadedKeys
         loadedKeys={[...loadedKeys.current.keys()]}
         onSelect={(selectedKeys) => {
-          // console.log({ selectedKeys });
-          const nextFolder = getCorrespondingFolder(selectedKeys[0], nodeMap.current);
-          console.log(nextFolder);
+          // console.log(nodeMap.current.get(selectedKeys[0])?.element);
+          onSelect?.(nodeMap.current.get(selectedKeys[0])?.element);
         }}
       />
       {/* </Spin> */}

@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useEffect, useRef, useState, useTransition } from 'react';
+import { ComponentProps, useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiNotePencil } from 'react-icons/pi';
 import { IoOpenOutline } from 'react-icons/io5';
@@ -150,15 +150,15 @@ export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 
 const Processes = ({
   processes,
   favourites,
-  idUsernameMapping = {},
   folder,
   readOnly = false,
+  rootFolder,
 }: {
   processes: InputItem[];
   favourites?: string[];
-  idUsernameMapping?: Record<string, string>;
   folder: Folder;
   readOnly?: boolean;
+  rootFolder?: Folder;
 }) => {
   if (folder.parentId)
     processes = [
@@ -207,12 +207,14 @@ const Processes = ({
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openFolderMoveModal, setOpenFolderMoveModal] = useState(false);
+  const selectedFolderModalElement = useRef<ProcessListProcess[]>([]);
+  const selectedFolderID = useRef<string>(rootFolder?.id ?? '');
+  const folderStrucutreChangeCounter = useRef(0);
 
   const [showMobileMetaData, setShowMobileMetaData] = useState(false);
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
   const [updateFolderModal, setUpdateFolderModal] = useState<Folder | undefined>(undefined);
   const [movingItem, startMovingItemTransition] = useTransition();
-  const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
   const [openCreateProcessModal, setOpenCreateProcessModal] = useState(
     typeof window !== 'undefined' &&
       new URLSearchParams(document.location.search).has('createprocess'),
@@ -447,6 +449,7 @@ const Processes = ({
         fn: () => moveIntoFolder(items, folderId),
         onSuccess: router.refresh,
         app,
+        onError: () => app.message.error('Could not move items'),
       });
     });
   };
@@ -489,9 +492,8 @@ const Processes = ({
   };
 
   const openFolderModal = (items: ProcessListProcess[]) => {
-    /* TODO: */
     // setSelectedRowElements(items);
-    console.log('openFolderModal');
+    selectedFolderModalElement.current = items;
     setOpenFolderMoveModal(true);
   };
 
@@ -828,7 +830,6 @@ const Processes = ({
                   >
                     <ProcessList
                       data={filteredData}
-                      idUsernameMapping={idUsernameMapping}
                       folder={folder}
                       selection={selectedRowKeys}
                       setSelectionElements={setSelectedRowElements}
@@ -954,11 +955,38 @@ const Processes = ({
       />
       <FolderCreationModal
         open={openCreateFolderModal}
-        close={() => setOpenCreateFolderModal(false)}
+        close={() => {
+          setOpenCreateFolderModal(false);
+          if (openFolderMoveModal) {
+            folderStrucutreChangeCounter.current++;
+          }
+        }}
+        parentFolderId={selectedFolderID.current}
       />
       <MoveToFolderModal
+        forceReload={folderStrucutreChangeCounter.current}
+        selectedElements={selectedFolderModalElement.current}
+        onCreateFolder={() => {
+          setOpenCreateFolderModal(true);
+        }}
         open={openFolderMoveModal}
-        onCancel={() => setOpenFolderMoveModal(false)}
+        onCancel={() => {
+          selectedFolderID.current = rootFolder?.id ?? '';
+          setOpenFolderMoveModal(false);
+        }}
+        onMove={() => {
+          const items = selectedFolderModalElement.current.map((element) => ({
+            type: element.type,
+            id: element.id,
+          }));
+
+          moveItems(items, selectedFolderID.current);
+          selectedFolderID.current = rootFolder?.id ?? '';
+          setOpenFolderMoveModal(false);
+        }}
+        onSelectFolder={(folderID: string) => {
+          selectedFolderID.current = folderID;
+        }}
       />
 
       <AddUserControls name={'process-list'} />

@@ -48,8 +48,10 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
         <Image
           // TODO: use engine endpoint to get the image
           src={endpointBuilder('get', '/resources/process/:definitionId/images/:fileName', {
-            definitionId: info.process.definitionId,
-            fileName: metaData.overviewImage,
+            pathParams: {
+              definitionId: info.process.definitionId,
+              fileName: metaData.overviewImage,
+            },
           })}
         />
       </div>,

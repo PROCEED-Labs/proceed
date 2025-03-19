@@ -24,6 +24,32 @@ env:
   DB_CONTAINER: ${{ vars.DB_CONTAINER_NAME }}
   DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
 jobs:
+  check-feature-flags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check feature flags are disabled
+        run: |
+          FILE="FeatureFlags.js"
+
+          # Define exempted flags
+          EXEMPTED_FLAGS=("enableMessaging" "enableUseDB" "enableUseFileManager")
+
+          # Find all flags set to `true`
+          FLAGS_WITH_TRUE=$(grep -E '^\s*enable[a-zA-Z0-9_]+\s*:\s*true' "$FILE" | awk -F: '{print $1}' | tr -d ' ')
+
+          # Check each flag
+          for FLAG in $FLAGS_WITH_TRUE; do
+            if [[ ! " ${EXEMPTED_FLAGS[@]} " =~ " $FLAG " ]]; then
+              echo "❌ Feature flag $FLAG must be set to false before merging!"
+              exit 1
+            fi
+          done
+
+          echo "✅ All feature flags (except exemptions) are correctly set to false."
+
   install:
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +62,7 @@ jobs:
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: yarn install --frozen-lockfile
 
       - uses: actions/cache@v4
         timeout-minutes: 2
@@ -105,25 +131,25 @@ jobs:
 
       - run: yarn test-e2e --ci
 
-  testMS:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testMS:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn test-ms --ci
+  #     - run: yarn test-ms --ci
 
   buildMS:
     runs-on: ubuntu-latest

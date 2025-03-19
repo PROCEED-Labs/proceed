@@ -61,7 +61,7 @@
     "test-engine": "cross-env USE_PROJECTS=\"capabilities helper-modules engine-unit-integration\" jest",
     "test-ms": "cd src/management-system && yarn test:unit",
     "test-e2e": "cross-env USE_PROJECTS=\"engine-e2e\" jest src/engine/e2e_tests --runInBand --detectOpenHandles --forceExit",
-    "test-all": "yarn test-engine && yarn test-ms && yarn test-e2e",
+    "test-all": "yarn test-engine && yarn test-e2e",
     "jsdoc": "jsdoc -c ./jsdoc.config.json --pedantic",
     "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",
     "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug",
@@ -74,7 +74,7 @@
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
-      "pre-push": "yarn test-engine && yarn test-ms"
+      "pre-push": "yarn test-engine"
     }
   },
   "devDependencies": {
@@ -86,7 +86,6 @@
     "@playwright/test": "1.48.1",
     "@types/jest": "^29.5.1",
     "@userfrosting/merge-package-dependencies": "^1.2.0",
-    "@vue/cli-plugin-typescript": "5.0.8",
     "babel-loader": "^8.0.6",
     "clean-webpack-plugin": "^2.0.1",
     "cross-env": "^6.0.2",

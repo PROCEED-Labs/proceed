@@ -36,7 +36,11 @@ import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
-import { copyProcessArtifactReferences, copyProcessFiles, saveProcessImage } from './db/process';
+import {
+  checkIfProcessAlreadyExistsForAUserInASpaceByName,
+  copyProcessArtifactReferences,
+  copyProcessFiles,
+} from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
 import { ProcessData } from '@/components/process-import';
@@ -723,4 +727,17 @@ export const getProcessImage = async (
   if (error) return error;
 
   return _getProcessImage!(definitionId, imageFileName);
+};
+
+export const checkIfProcessExistsByName = async (
+  processName: string,
+  spaceId: string,
+  userId: string,
+): Promise<boolean> => {
+  try {
+    return await checkIfProcessAlreadyExistsForAUserInASpaceByName(processName, spaceId, userId);
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
 };

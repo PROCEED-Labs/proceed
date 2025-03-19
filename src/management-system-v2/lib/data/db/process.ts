@@ -141,6 +141,28 @@ export async function checkIfProcessExists(processDefinitionsId: string) {
   return existingProcess;
 }
 
+export async function checkIfProcessAlreadyExistsForAUserInASpaceByName(
+  processName: string,
+  spaceId: string,
+  userId: string,
+) {
+  try {
+    const existingProcess = await db.process.findUnique({
+      where: {
+        name_environmentId_creatorId: {
+          name: processName,
+          environmentId: spaceId,
+          creatorId: userId,
+        },
+      },
+    });
+
+    return !!existingProcess;
+  } catch (err: any) {
+    throw new Error('Error checking if process exists by name:', err.message);
+  }
+}
+
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
 export async function addProcess(
   processInput: ProcessServerInput & { bpmn: string },

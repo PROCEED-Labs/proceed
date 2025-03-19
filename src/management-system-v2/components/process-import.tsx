@@ -290,6 +290,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
           router.refresh();
         }}
         initialData={importProcessData}
+        isImportModal={true}
       />
     </>
   );

@@ -20,7 +20,7 @@ import { moddle } from '@proceed/bpmn-helper';
 
 import { debounce } from '@/lib/utils';
 import { downloadFile } from '@/lib/process-export/util';
-import { MdOutlineEditOff, MdOutlineModeEdit } from 'react-icons/md';
+import { MdOutlineEditOff, MdOutlineModeEdit, MdRedo, MdUndo } from 'react-icons/md';
 
 type XmlEditorProps = {
   bpmn?: string;
@@ -390,6 +390,25 @@ const XmlEditor: FC<XmlEditorProps> = ({
                   <Button icon={<MdOutlineEditOff />} onClick={toggleEditMode} />
                 </Tooltip>
               )}
+
+              <Tooltip title="Undo">
+                <Button
+                  disabled={isReadOnly}
+                  icon={<MdUndo />}
+                  onClick={() => {
+                    editorRef.current?.trigger(null, 'undo', null);
+                  }}
+                ></Button>
+              </Tooltip>
+              <Tooltip title="Redo">
+                <Button
+                  disabled={isReadOnly}
+                  icon={<MdRedo />}
+                  onClick={() => {
+                    editorRef.current?.trigger(null, 'redo', null);
+                  }}
+                ></Button>
+              </Tooltip>
 
               <Tooltip title="Download">
                 <Button icon={<DownloadOutlined />} onClick={handleDownload} />

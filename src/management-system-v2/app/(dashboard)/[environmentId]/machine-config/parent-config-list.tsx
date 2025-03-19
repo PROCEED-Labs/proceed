@@ -222,7 +222,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
   ) {
     const { id, name, shortname, categories, description } = values[0];
     await updateParentConfig(id, { name, shortname, categories });
-    if (editingItem?.metadata['description'].id) {
+    if (editingItem?.metadata['description']?.id) {
       let previousContent = editingItem?.metadata['description'].content;
       previousContent[0] = {
         displayName: 'Description',
@@ -233,6 +233,14 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       await updateParameter(editingItem?.metadata['description'].id, {
         content: previousContent,
       });
+    } else if (description) {
+      await addParameter(
+        id,
+        'parent-config',
+        'metadata',
+        'description',
+        defaultParameter('description', description, 'Description', 'en'),
+      );
     }
     setOpenEditModal(false);
     router.refresh();

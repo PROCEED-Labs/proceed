@@ -345,6 +345,23 @@ async function getProcessIds(bpmn) {
 }
 
 /**
+ * Gets process elements / top root element inside a BPMN process
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns {Promise.<object>} process element inside a BPMN process
+ */
+async function getBPMNProcessElement(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const allElements = getAllElements(bpmnObj);
+  return allElements.filter(
+    (element) =>
+      typeof element.$type === 'string' &&
+      element.$type.startsWith('bpmn:') &&
+      element.$type.includes('Process'),
+  )[0];
+}
+
+/**
  * Gets every Task|Event|Gateway|CallActivity|SubProcess|SequenceFlow inside a BPMN process
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -1213,4 +1230,5 @@ module.exports = {
   getPerformersFromElementById,
   parseISODuration,
   convertISODurationToMiliseconds,
+  getBPMNProcessElement,
 };

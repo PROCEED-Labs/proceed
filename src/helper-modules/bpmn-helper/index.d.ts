@@ -180,6 +180,7 @@ declare const _exports: {
     };
   }>;
   getStartEvents(bpmn: string | object): Promise<string[]>;
+  getBPMNProcessElement(bpmn: string | object): Promise<object>;
   getAllBpmnFlowElements(bpmn: string | object): Promise<object[]>;
   getAllBpmnFlowNodeIds(bpmn: string | object): Promise<string[]>;
   getAllBpmnFlowElementIds(bpmn: string | object): Promise<string[]>;

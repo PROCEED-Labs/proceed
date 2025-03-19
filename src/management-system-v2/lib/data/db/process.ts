@@ -1045,7 +1045,7 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
       select: { filePath: true },
     });
     if (!res) {
-      throw new Error('Unable to get image!');
+      throw new Error(`Unable to get image : ${imageFileName}`);
     }
     const image = (await retrieveProcessArtifact(
       processDefinitionsId,
@@ -1056,7 +1056,7 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
     return image;
   } catch (err) {
     logger.debug(`Error getting image. Reason:\n${err}`);
-    throw new Error('Unable to get image!');
+    throw new Error(`Unable to get image : ${imageFileName}`);
   }
 }
 

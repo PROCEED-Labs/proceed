@@ -519,6 +519,7 @@ const Processes = ({
     share,
     exportProcess: (items) => {
       setSelectedRowElements(items);
+      exportModalTab.current = 'bpmn';
       setOpenExportModal(true);
     },
     moveItems: openFolderModal,

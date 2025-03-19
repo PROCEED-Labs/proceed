@@ -41,7 +41,7 @@ After that, you must install the platform compiler `node-gyp` globally using Yar
 After cloning/retrieving the code, you need to install the software dependencies. Run the following command in the root directory of the repo:
 
 ```
-yarn install --ignore-engines
+yarn install
 ```
 
 This will install all modules and their dependencies inside `node_modules/`

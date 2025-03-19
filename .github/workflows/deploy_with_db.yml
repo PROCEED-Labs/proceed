@@ -62,7 +62,7 @@ jobs:
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn install --frozen-lockfile --ignore-engines
+      - run: yarn install --frozen-lockfile
 
       - uses: actions/cache@v4
         timeout-minutes: 2

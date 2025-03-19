@@ -86,7 +86,6 @@
     "@playwright/test": "1.48.1",
     "@types/jest": "^29.5.1",
     "@userfrosting/merge-package-dependencies": "^1.2.0",
-    "@vue/cli-plugin-typescript": "5.0.8",
     "babel-loader": "^8.0.6",
     "clean-webpack-plugin": "^2.0.1",
     "cross-env": "^6.0.2",

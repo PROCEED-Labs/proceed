@@ -1,14 +1,13 @@
 'use client';
 
-import React, { FC, useRef, useState } from 'react';
+import React, { FC, useEffect, useRef, useState } from 'react';
 
 import { useParams, useSearchParams } from 'next/navigation';
-import { Modal, Button, Tooltip, Flex, Popconfirm, Space, message } from 'antd';
+import { Modal, Button, Tooltip, Flex, Popconfirm, Space, message, Alert } from 'antd';
 import {
   SearchOutlined,
   DownloadOutlined,
   CopyOutlined,
-  EditOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { Typography } from 'antd';
@@ -21,6 +20,7 @@ import { moddle } from '@proceed/bpmn-helper';
 
 import { debounce } from '@/lib/utils';
 import { downloadFile } from '@/lib/process-export/util';
+import { MdOutlineEditOff, MdOutlineModeEdit } from 'react-icons/md';
 
 type XmlEditorProps = {
   bpmn?: string;
@@ -29,6 +29,21 @@ type XmlEditorProps = {
   onSaveXml: (bpmn: string) => Promise<void>;
   process: { name: string; id: string };
   versionName?: string;
+};
+
+type EditorError = {
+  startLineNumber: number;
+  endLineNumber: number;
+  startColumn: number;
+  endColumn: number;
+  message: string;
+};
+
+type SaveStateType = {
+  state: 'error' | 'warning' | 'none';
+  errorMessages: string[];
+  errorLocations: string[];
+  warnings?: any[];
 };
 
 /**
@@ -57,7 +72,7 @@ async function checkBpmn(bpmn: string) {
           startLineNumber: line,
           endLineNumber: line,
           startColumn: column,
-          endColumn: column + 1,
+          endColumn: column + match[0].length,
           message,
         },
       };
@@ -79,14 +94,52 @@ const XmlEditor: FC<XmlEditorProps> = ({
 }) => {
   const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
-  const [saveState, setSaveState] = useState<'error' | 'warning' | 'none'>('none');
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const [saveState, setSaveState] = useState<SaveStateType>({
+    state: 'none',
+    errorMessages: [],
+    errorLocations: [],
+  });
   const [isReadOnly, setIsReadOnly] = useState(true);
   const [editWarningVisible, setEditWarningVisible] = useState(false);
   const [saveConfirmVisible, setSaveConfirmVisible] = useState(false);
 
+  // Overlay for readonly mode
+  const toggleOverlay = (show: boolean) => {
+    if (!editorRef.current) return;
+    const editorElement = editorRef.current.getDomNode();
+    if (!editorElement) return;
+
+    if (overlayRef.current && overlayRef.current.parentElement) {
+      overlayRef.current.parentElement.removeChild(overlayRef.current);
+      overlayRef.current = null;
+    }
+
+    if (show) {
+      const overlay = document.createElement('div');
+      overlay.style.position = 'absolute';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.backgroundColor = 'rgba(200, 200, 200, 0.3)';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.zIndex = '10';
+
+      editorElement.style.position = 'relative';
+      editorElement.appendChild(overlay);
+      overlayRef.current = overlay;
+    }
+  };
+
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    // Apply overlay if in read-only mode
+    if (isReadOnly) {
+      toggleOverlay(true);
+    }
   };
 
   const handleSave = async () => {
@@ -102,17 +155,40 @@ const XmlEditor: FC<XmlEditorProps> = ({
     if (editorRef.current && monacoRef.current) {
       // reset error markings in the editor
       monacoRef.current.editor.setModelMarkers(editorRef.current.getModel()!, 'owner', []);
-      setSaveState('none');
+      setSaveState({
+        state: 'none',
+        errorMessages: [],
+        errorLocations: [],
+      });
       const bpmn = editorRef.current.getValue();
-      const errors = [];
+
+      const errors: EditorError[] = [];
+      const errorMessages: string[] = [];
+      const errorLocations: string[] = [];
+
       const { error: bpmnError, warnings } = await checkBpmn(bpmn);
       const { error: definitionIdChangeError } = await checkDefinitionIdChange(bpmn);
 
-      if (bpmnError) errors.push(bpmnError);
-      if (definitionIdChangeError) errors.push(definitionIdChangeError);
+      if (bpmnError) {
+        errors.push(bpmnError);
+        errorMessages.push(bpmnError.message);
+        errorLocations.push(`Line ${bpmnError.startLineNumber}, Column ${bpmnError.startColumn}`);
+      }
+
+      if (definitionIdChangeError) {
+        errors.push(definitionIdChangeError);
+        errorMessages.push(definitionIdChangeError.message);
+        errorLocations.push(
+          `Line ${definitionIdChangeError.startLineNumber}, Column ${definitionIdChangeError.startColumn}`,
+        );
+      }
 
       if (errors.length > 0) {
-        setSaveState('error');
+        setSaveState({
+          state: 'error',
+          errorMessages,
+          errorLocations,
+        });
         // add new error markings
         errors.map((error) => {
           if (error) {
@@ -124,7 +200,12 @@ const XmlEditor: FC<XmlEditorProps> = ({
 
         return false;
       } else if (warnings && warnings.length) {
-        setSaveState('warning');
+        setSaveState({
+          state: 'warning',
+          errorMessages: [],
+          errorLocations: [],
+          warnings: warnings,
+        });
       }
     }
 
@@ -200,11 +281,48 @@ const XmlEditor: FC<XmlEditorProps> = ({
     if (isReadOnly) {
       setEditWarningVisible(true);
     }
+    if (!isReadOnly) {
+      setIsReadOnly(true);
+      toggleOverlay(true);
+    }
   };
 
   const confirmEditMode = () => {
     setIsReadOnly(false);
     setEditWarningVisible(false);
+    toggleOverlay(false);
+  };
+
+  const getAlertMessage = () => {
+    if (saveState.state === 'error' && saveState.errorMessages.length > 0) {
+      return (
+        <div>
+          <strong>Error{saveState.errorMessages.length > 1 ? 's' : ''}:</strong>
+          <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+            {saveState.errorMessages.map((msg, index) => (
+              <li key={index}>
+                {msg}{' '}
+                <span style={{ fontWeight: 'bold' }}>({saveState.errorLocations[index]})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    } else if (
+      saveState.state === 'warning' &&
+      saveState.warnings &&
+      saveState.warnings.length > 0
+    ) {
+      return (
+        <div>
+          <strong>Warning{saveState.warnings.length > 1 ? 's' : ''}:</strong>
+          <span>
+            There are {saveState.warnings.length} unrecognized attributes or elements in the BPMN.
+          </span>
+        </div>
+      );
+    }
+    return '';
   };
 
   // display different information for the save button and handle its click differently based on the current state of the editor (error / warnings / no issues)
@@ -220,7 +338,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
         }
       >
         <Button key="disabled-save-button" type="primary" disabled>
-          Ok
+          Save
         </Button>
       </Tooltip>
     ),
@@ -237,12 +355,12 @@ const XmlEditor: FC<XmlEditorProps> = ({
         okText="Save"
         cancelText="Cancel"
       >
-        <Button type="primary">Ok</Button>
+        <Button type="primary">Save</Button>
       </Popconfirm>
     ),
     normal: (
       <Button key="save-button" type="primary" onClick={handleValidationAndSave}>
-        Ok
+        Save
       </Button>
     ),
   };
@@ -258,13 +376,21 @@ const XmlEditor: FC<XmlEditorProps> = ({
         title={
           <Flex justify="space-between">
             <Title level={3}>BPMN XML</Title>
-            <Typography.Text type="secondary">{isReadOnly ? 'Read only' : 'Edit'}</Typography.Text>
+            <Typography.Text type="secondary">
+              Mode: {isReadOnly ? 'Read only' : 'Edit'}
+            </Typography.Text>
             <Space.Compact>
               {isReadOnly && canSave && (
                 <Tooltip title="Enter Edit Mode">
-                  <Button icon={<EditOutlined />} onClick={toggleEditMode} />
+                  <Button icon={<MdOutlineModeEdit />} onClick={toggleEditMode} />
                 </Tooltip>
               )}
+              {!isReadOnly && (
+                <Tooltip title="Exit Edit Mode">
+                  <Button icon={<MdOutlineEditOff />} onClick={toggleEditMode} />
+                </Tooltip>
+              )}
+
               <Tooltip title="Download">
                 <Button icon={<DownloadOutlined />} onClick={handleDownload} />
               </Tooltip>
@@ -287,11 +413,14 @@ const XmlEditor: FC<XmlEditorProps> = ({
           <Button key="close-button" onClick={onClose}>
             Cancel
           </Button>,
-          ((!canSave || saveState === 'error') && saveButton['disabled']) ||
-            (saveState === 'warning' && saveButton['warning']) ||
+          ((!canSave || saveState.state === 'error') && saveButton['disabled']) ||
+            (saveState.state === 'warning' && saveButton['warning']) ||
             saveButton['normal'],
         ]}
       >
+        {saveState.state !== 'none' && (
+          <Alert message={getAlertMessage()} type={saveState.state} banner showIcon />
+        )}{' '}
         <Editor
           defaultLanguage="xml"
           value={bpmn}
@@ -300,6 +429,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
             wrappingStrategy: 'advanced',
             wrappingIndent: 'same',
             readOnly: isReadOnly,
+            theme: 'vs',
           }}
           onMount={handleEditorMount}
           onChange={handleChange}

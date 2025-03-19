@@ -154,6 +154,24 @@ export async function copyParentConfig(
       originalId,
     } as StoredParentConfig;
 
+    // overwriting the original description with the one given by the user
+    let parameters = Object.values(
+      await nestedParametersFromStorage(copy?.metadata),
+    ) as Parameter[];
+    let descriptionParameter = parameters.find((item) => item.key == 'description') as Parameter;
+    let desc = descriptionParameter?.content ?? [];
+    desc[0] = {
+      displayName: 'Description',
+      value: configBase.metadata['description'].content[0].value,
+      unit: undefined,
+      language: 'en',
+    };
+    if (descriptionParameter?.id) {
+      updateParameter(descriptionParameter.id, {
+        content: desc,
+      });
+    }
+
     // if no folder ID is given, set ID to root folder's
     if (!copy.folderId) {
       copy.folderId = (await getRootFolder(environmentId)).id;

@@ -48,7 +48,7 @@
     "install": "^0.13.0",
     "js-md5": "^0.7.3",
     "jsonwebtoken": "^8.5.1",
-    "jspdf": "2.5.1",
+    "jspdf": "3.0.1",
     "jszip": "3.10.1",
     "libphonenumber-js": "^1.11.1",
     "lru-cache": "^10.1.0",

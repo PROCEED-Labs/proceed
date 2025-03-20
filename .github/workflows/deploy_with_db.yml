@@ -248,15 +248,16 @@ jobs:
       id-token: write
       pull-requests: write
       issues: write
-    environment: Research
+    environment: Staging
     env:
       MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
       SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
-      ENV: Research
+      ENV: Staging
     steps:
       # Database name generation step
       - name: Generate sanitized database name
+        if: ${{ github.ref != 'refs/heads/main' }}
         id: generate-name
         run: |
           # Sanitize branch name for database naming
@@ -276,6 +277,7 @@ jobs:
 
       # SSH Configuration step
       - name: Configure SSH
+        if: ${{ github.ref != 'refs/heads/main' }}
         run: |
           mkdir -p ~/.ssh/
           echo "$SSH_KEY" > ~/.ssh/$ENV.key
@@ -294,6 +296,7 @@ jobs:
 
       # Database lifecycle management step
       - name: Manage database lifecycle
+        if: ${{ github.ref != 'refs/heads/main' }}
         run: |
           DB_EXISTS=$(ssh $ENV "docker exec ${{ env.DB_CONTAINER }} \
               psql -U ${{ secrets.DB_USER }} \
@@ -316,6 +319,7 @@ jobs:
 
       # Database deployment steps
       - name: Verify database status
+        if: ${{ github.ref != 'refs/heads/main' }}
         id: db-status
         run: |
           DB_EXISTS=$(ssh $ENV \
@@ -334,10 +338,27 @@ jobs:
               -d ${{ env.DEFAULT_DB }} \
               -c 'CREATE DATABASE \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
 
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          export_environment_variables: true # Exports the service account key as GOOGLE_APPLICATION_CREDENTIALS, we need this for cloud sql auth proxy
+          project_id: 'proceed-bpms'
+          workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
+          service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
+
+      - name: Configure Cloud SQL Auth Proxy Docker
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          cat $GOOGLE_APPLICATION_CREDENTIALS > /tmp/key.json
+          docker run -d --name cloud-sql-auth-proxy -p 127.0.0.1:3306:3306 -v /tmp/key.json:/tmp/key.json --user "$(id -u):$(id -g)" gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --address 0.0.0.0 --port 3306 --credentials-file /tmp/key.json ${{secrets.INSTANCE_CONNECTION_NAME}}
+
       - name: Configure database connection
         id: configure-connection
         run: |
-          echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ steps.generate-name.outputs.DB_NAME }}?schema=public" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{ secrets.CLOUD_SQL_DB_PASS }}@127.0.0.1:3306/${{ secrets.CLOUD_SQL_DB_NAME }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.SSH_HOST }}:5433/${{ steps.generate-name.outputs.DB_NAME }}?schema=public" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Restore Cache
         uses: actions/cache@v4
@@ -354,21 +375,16 @@ jobs:
         run: |
           yarn dev-ms-db-deploy
 
-      - uses: 'google-github-actions/auth@v2'
-        with:
-          project_id: 'proceed-bpms'
-          workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
-          service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
-
       - id: 'deploy'
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: 'google-github-actions/deploy-cloudrun@v2'
         with:
           service: ${{ env.SERVICE_NAME }}
           image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
+          flags: '--add-cloudsql-instances=${{secrets.INSTANCE_CONNECTION_NAME}}'
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
-            DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{secrets.DB_PASSWORD}}@${{ secrets.SSH_HOST }}:5433/${{ steps.generate-name.outputs.DB_NAME }}?schema=public
+            DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@localhost/${{ secrets.CLOUD_SQL_DB_NAME }}?host=/cloudsql/${{secrets.INSTANCE_CONNECTION_NAME}}/
             PROCEED_PUBLIC_DEPLOYMENT_ENV=local
           region: 'europe-west1'
           revision_traffic: LATEST=100

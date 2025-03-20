@@ -618,7 +618,7 @@ export const registrationName = 'ObjectsConnectionChecker';
 Blocks['object_create'] = {
   init: function () {
     this.jsonInit({
-      message0: '{%1}',
+      message0: 'Key-Value store\n%1',
       args0: [
         {
           name: 'entry0',

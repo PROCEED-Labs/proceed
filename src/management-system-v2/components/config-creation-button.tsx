@@ -4,7 +4,7 @@ import React, { ComponentProps, ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import MachineConfigModal from './config-modal'; //TODO refactoring not using term "machine config"
-import { addParentConfig } from '@/lib/data/legacy/machine-config'; //TODO refactoring not using term "machine config"
+import { addParentConfig } from '@/lib/data/db/machine-config'; //TODO refactoring not using term "machine config"
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -36,9 +36,9 @@ export const ConfigCreationModal: React.FC<
       addParentConfig(
         defaultParentConfiguration(
           environment.spaceId,
+          folderId,
           values[0].name,
           values[0].description,
-          folderId,
         ),
         environment.spaceId,
       ).then((res) => (Array.isArray(res) ? res[0] : res)));

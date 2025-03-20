@@ -11,6 +11,7 @@ import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
 import db from '@/lib/data/db';
 import { getProcess } from './process';
+import { Prisma } from '@prisma/client';
 
 export async function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolder = await db.folder.findFirst({
@@ -118,7 +119,17 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
   return folderContent;
 }
 
-export async function createFolder(folderInput: FolderInput, ability?: Ability) {
+export async function createFolder(
+  folderInput: FolderInput,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+): Promise<Folder> {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await createFolder(folderInput, ability, trx);
+    });
+  }
+
   const folder = FolderSchema.parse(folderInput);
   if (!folder.id) folder.id = v4();
 
@@ -149,7 +160,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
     if (parentFolder.environmentId !== folder.environmentId) {
       throw new Error('Parent folder is in a different environment');
     }
-    await db.folder.update({
+    await tx.folder.update({
       where: {
         id: folder.parentId,
       },
@@ -170,7 +181,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
     }
   }
 
-  const createdFolder = await db.folder.create({
+  const createdFolder = await tx.folder.create({
     data: {
       id: folder.id,
       name: folder.name,
@@ -178,7 +189,6 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
       parentId: folder.parentId,
       createdBy: folder.createdBy!,
       environmentId: folder.environmentId,
-      lastEditedOn: new Date(),
       createdOn: new Date(),
     },
   });

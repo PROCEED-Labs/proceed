@@ -169,6 +169,13 @@
   width: 1em;
 }
 
+.proceed-text-annotation-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'g';
+  width: 1em;
+  font-size: 0.95em;
+}
+
 .orange:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: orange !important;
 }

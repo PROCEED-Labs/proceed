@@ -832,7 +832,7 @@ Blocks['proceed_variables_get'] = {
       .appendField(new Blockly.FieldTextInput('variableName'), 'name');
     this.setOutput(true, null);
     this.setTooltip('Returns value for selected variable');
-    this.setHelpUrl('');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
     this.setColour(75);
   },
 };
@@ -851,7 +851,7 @@ Blocks['proceed_variables_set'] = {
       .appendField('to');
     this.setInputsInline(true);
     this.setTooltip('');
-    this.setHelpUrl('');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
     this.setColour(75);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -875,7 +875,7 @@ Blocks['proceed_variables_get_all'] = {
     this.appendDummyInput().appendField('Get all variables');
     this.setOutput(true, null);
     this.setTooltip('Returns an object containing all variables and values');
-    this.setHelpUrl('');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
     this.setColour(75);
   },
 };
@@ -902,7 +902,7 @@ for (const level of ['Trace', 'Debug', 'Info', 'Warn', 'Error']) {
           },
         ],
         tooltip: 'Write a message to the logging system of the Engine.',
-        helpUrl: 'https://docs.proceed-labs.org/developer/bpmn/bpmn-script-task#log',
+        helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#log',
         nextStatement: true,
         previousStatement: true,
         colour: 75,
@@ -934,7 +934,8 @@ for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', '
           },
         ],
         tooltip: 'Write a message to the console of the engine.',
-        helpUrl: 'https://docs.proceed-labs.org/developer/bpmn/bpmn-script-task#console',
+        helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#console',
+
         nextStatement: true,
         previousStatement: true,
         colour: 75,
@@ -969,7 +970,7 @@ Blocks['interval_async'] = {
         },
       ],
       tooltip: 'An interval function which repeatedly calls a callback function after a timeout.',
-      helpUrl: 'TODO',
+      helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#await-setintervalasync-clb-number-in-milliseconds-',
       nextStatement: true,
       previousStatement: true,
       colour: 75,
@@ -1012,7 +1013,7 @@ Blocks['timeout_async'] = {
         },
       ],
       tooltip: 'A timeout function which executes a callback function after a timeout expired.',
-      helpUrl: 'TODO',
+      helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#await-settimeoutasync-clb-number-in-milliseconds-',
       nextStatement: true,
       previousStatement: true,
       colour: 75,
@@ -1098,7 +1099,7 @@ Blocks['progress'] = {
     this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
     this.setInputsInline(true);
     this.setTooltip('');
-    this.setHelpUrl('');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#setprogressnumber-between-0---100');
     this.setColour(75);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -1152,7 +1153,7 @@ Blocks['throw_error'] = {
       previousStatement: true,
       colour: 75,
       tooltip: 'Throws error with given reference and explanation',
-      helpUrl: '',
+      helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#throw-new-bpmnerror-reference-explanation-',
     });
   },
 };
@@ -1206,7 +1207,7 @@ for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
         output: null,
         colour: 75,
         tooltip: 'Throws error with given reference and explanation',
-        helpUrl: '',
+        helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#getservicenetwork',
       });
     },
   };

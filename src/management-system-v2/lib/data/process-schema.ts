@@ -10,6 +10,7 @@ export const ProcessInputSchema = z.object({
   basedOnTemplateId: z.string().optional(),
   basedOnTemplateVersion: z.string().optional(),
   folderId: z.string().optional(),
+  isTemplate: z.boolean().optional(),
 });
 
 export type ProcessInput = z.infer<typeof ProcessInputSchema>;

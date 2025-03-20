@@ -1,53 +1,35 @@
 'use server';
-import * as util from 'util';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { Folder, FolderUserInput, FolderUserInputSchema } from './folder-schema';
+import { FolderUserInput, FolderUserInputSchema } from './folder-schema';
 import { UserErrorType, userError } from '../user-error';
-import { TreeMap, toCaslResource } from '../ability/caslAbility';
+import { toCaslResource } from '../ability/caslAbility';
 
 import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 import { FolderChildren } from './legacy/folders';
-import { enableUseDB } from 'FeatureFlags';
-import { TFoldersModule, TProcessModule } from './module-import-types-temp';
 import { getFolders } from './DTOs';
+import {
+  getRootFolder,
+  moveFolder,
+  createFolder as _createFolder,
+  getFolderById,
+  getFolderContents as _getFolderContent,
+  updateFolderMetaData,
+  deleteFolder as _deleteFolder,
+} from './db/folders';
+import { moveProcess } from './db/process';
 
-let _createFolder: TFoldersModule['createFolder'],
-  _getFolderContent: TFoldersModule['getFolderContents'],
-  getFolderById: TFoldersModule['getFolderById'],
-  getRootFolder: TFoldersModule['getRootFolder'],
-  moveFolder: TFoldersModule['moveFolder'],
-  updateFolderMetaData: TFoldersModule['updateFolderMetaData'],
-  _deleteFolder: TFoldersModule['deleteFolder'],
-  moveProcess: TProcessModule['moveProcess'];
-
-const loadModules = async () => {
-  const [folderModule, processModule] = await Promise.all([
-    enableUseDB ? import('./db/folders') : import('./legacy/folders'),
-    enableUseDB ? import('./db/process') : import('./legacy/_process'),
-  ]);
-
-  _createFolder = folderModule.createFolder;
-  _getFolderContent = folderModule.getFolderContents;
-  getFolderById = folderModule.getFolderById;
-  getRootFolder = folderModule.getRootFolder;
-  moveFolder = folderModule.moveFolder;
-  updateFolderMetaData = folderModule.updateFolderMetaData;
-  _deleteFolder = folderModule.deleteFolder;
-  moveProcess = processModule.moveProcess;
-};
-
-loadModules().catch(console.error);
-
-export async function createFolder(folderInput: FolderUserInput) {
-  await loadModules();
+export async function createFolder(
+  folderInput: FolderUserInput & { type: 'process' | 'template' },
+) {
   try {
     const folder = FolderUserInputSchema.parse(folderInput);
     const { ability } = await getCurrentEnvironment(folder.environmentId);
     const { userId } = await getCurrentUser();
 
-    if (!folder.parentId) folder.parentId = (await getRootFolder(folder.environmentId)).id;
+    if (!folder.parentId)
+      folder.parentId = (await getRootFolder(folder.environmentId, folderInput.type)).id;
 
-    _createFolder({ ...folder, createdBy: userId }, ability);
+    _createFolder({ ...folder, type: folderInput.type, createdBy: userId }, ability);
   } catch (e) {
     return userError("Couldn't create folder");
   }
@@ -91,8 +73,6 @@ export async function getSpaceFolderTree(
 }
 
 export async function moveIntoFolder(items: FolderChildren[], folderId: string) {
-  await loadModules();
-
   const folder = await getFolderById(folderId);
   if (!folder) return userError('Folder not found');
 
@@ -114,12 +94,15 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
   }
 }
 
-export async function getFolder(environmentId: string, folderId?: string) {
-  await loadModules();
+export async function getFolder(
+  environmentId: string,
+  folderId?: string,
+  type?: 'process' | 'template',
+) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
   let folder;
-  if (!folderId) folder = getRootFolder(environmentId, ability);
+  if (!folderId) folder = await getRootFolder(environmentId, type!, ability);
   else folder = await getFolderById(folderId);
 
   if (folder && !ability.can('view', toCaslResource('Folder', folder)))
@@ -130,12 +113,14 @@ export async function getFolder(environmentId: string, folderId?: string) {
   return folder;
 }
 
-export async function getFolderContents(environmentId: string, folderId?: string) {
-  await loadModules();
-
+export async function getFolderContents(
+  environmentId: string,
+  folderId?: string,
+  type?: 'process' | 'template',
+) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  if (!folderId) folderId = (await getRootFolder(environmentId)).id;
+  if (!folderId) folderId = (await getRootFolder(environmentId, type!)).id;
 
   try {
     return _getFolderContent(folderId, ability);
@@ -152,8 +137,6 @@ export async function updateFolder(
   folderInput: Omit<Partial<FolderUserInput>, 'environmentId' | 'parentId'>,
   folderId: string,
 ) {
-  await loadModules();
-
   try {
     const folder = await getFolderById(folderId);
     if (!folder) return userError('Folder not found');
@@ -173,8 +156,6 @@ export async function updateFolder(
 }
 
 export async function deleteFolder(folderIds: string[], spaceId: string) {
-  await loadModules();
-
   try {
     const { ability } = await getCurrentEnvironment(spaceId);
 

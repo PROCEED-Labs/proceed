@@ -10,7 +10,11 @@ import FolderModal from './folder-modal';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
 export const FolderCreationModal: FC<
-  Partial<ComponentProps<typeof FolderModal>> & { open: boolean; close: () => void }
+  Partial<ComponentProps<typeof FolderModal>> & {
+    open: boolean;
+    close: () => void;
+    type: 'process' | 'template';
+  }
 > = (props) => {
   const { message } = App.useApp();
   const router = useRouter();
@@ -21,7 +25,7 @@ export const FolderCreationModal: FC<
   const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
       await wrapServerCall({
-        fn: async () => serverCreateFolder(values),
+        fn: async () => serverCreateFolder({ ...values, type: props.type }),
         onSuccess() {
           router.refresh();
           message.open({ type: 'success', content: 'Folder Created' });

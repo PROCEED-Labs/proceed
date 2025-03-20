@@ -27,14 +27,23 @@ const ProcessesPage = async ({
 
   const favs = await getUsersFavourites();
 
-  const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+  const rootFolderProcessPage = await getRootFolder(activeEnvironment.spaceId, 'process', ability);
+  const rootFolderTemplatepage = await getRootFolder(
+    activeEnvironment.spaceId,
+    'template',
+    ability,
+  );
 
   const folder = await getFolderById(
-    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
+    params.folderId ? decodeURIComponent(params.folderId) : rootFolderProcessPage.id,
   );
+  const templatesFolder = await getFolderById(rootFolderTemplatepage.id);
 
   const folderContents = await getFolderContents(folder.id, ability);
 
+  const templateFolderContents = await getFolderContents(templatesFolder.id, ability);
+
+  //folderContents.push(...templateFolderContents);
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder: Folder | null = folder;
   do {

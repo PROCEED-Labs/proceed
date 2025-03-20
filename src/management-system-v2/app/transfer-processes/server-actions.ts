@@ -35,8 +35,8 @@ export async function transferProcesses(referenceToken: string, callbackUrl: str
 
   // Processes and folders under root folder of guest space guet their folderId changed to the
   // root folder of the new owner space, for the rest we just update the environmentId
-  const userRootFolderId = (await getRootFolder(session.user.id)).id;
-  const guestRootFolderId = (await getRootFolder(guestId)).id;
+  const userRootFolderId = (await getRootFolder(session.user.id, 'process')).id;
+  const guestRootFolderId = (await getRootFolder(guestId, 'process')).id;
 
   // no ability check necessary, owners of personal spaces can do anything
   const guestProcesses = await getProcesses(guestId);

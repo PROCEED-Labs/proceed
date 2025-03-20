@@ -191,6 +191,7 @@ model Folder {
   id             String    @id @default(uuid())
   name           String
   description    String
+  category       String 
   parentFolder   Folder?   @relation("folderChildren", fields: [parentId], references: [id], onDelete: Cascade)
   parentId       String?
   owner          User?     @relation(fields: [createdBy], references: [id])
@@ -204,6 +205,7 @@ model Folder {
 
   @@map("folder")
 }
+
 
 model Version {
   id                String              @id @default(uuid())

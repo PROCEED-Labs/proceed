@@ -27,7 +27,7 @@ const TemplatesPage = async ({
 
   const favs = await getUsersFavourites();
 
-  const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+  const rootFolder = await getRootFolder(activeEnvironment.spaceId, 'template', ability);
 
   const folder = await getFolderById(
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
@@ -36,7 +36,8 @@ const TemplatesPage = async ({
   const folderContents = await getFolderContents(folder.id, ability);
 
   const templateProcessesAndFolders = folderContents.filter(
-    (content) => content.type === 'template' || content.type === 'folder',
+    (content) =>
+      content.type === 'template' || content.type === 'folder' || content.isTemplate == true,
   );
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];

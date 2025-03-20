@@ -13,11 +13,16 @@ import db from '@/lib/data/db';
 import { getProcess } from './process';
 import { Prisma } from '@prisma/client';
 
-export async function getRootFolder(environmentId: string, ability?: Ability) {
+export async function getRootFolder(
+  environmentId: string,
+  type: 'process' | 'template',
+  ability?: Ability,
+) {
   const rootFolder = await db.folder.findFirst({
     where: {
       environmentId: environmentId,
       parentId: null,
+      category: type as string,
     },
   });
 
@@ -68,7 +73,6 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
     include: {
       childrenFolder: true,
       processes: true,
-      templateProcesses: true,
     },
   });
 
@@ -83,10 +87,6 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
   const combinedResults = [
     ...folder.childrenFolder.map((child) => ({ ...child, type: 'folder' })),
     ...folder.processes.map((process) => ({ ...process, type: process.type.toLowerCase() })),
-    ...folder.templateProcesses.map((process) => ({
-      ...process,
-      type: process.type.toLowerCase(),
-    })),
   ];
   return combinedResults;
 }
@@ -120,7 +120,7 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
 }
 
 export async function createFolder(
-  folderInput: FolderInput,
+  folderInput: FolderInput & { type: 'process' | 'template' },
   ability?: Ability,
   tx?: Prisma.TransactionClient,
 ): Promise<Folder> {
@@ -173,6 +173,7 @@ export async function createFolder(
       where: {
         environmentId: folder.environmentId,
         parentId: null,
+        category: folderInput.type as string,
       },
     });
 
@@ -190,6 +191,7 @@ export async function createFolder(
       createdBy: folder.createdBy!,
       environmentId: folder.environmentId,
       createdOn: new Date(),
+      category: folderInput.type,
     },
   });
 

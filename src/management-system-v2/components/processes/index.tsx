@@ -612,6 +612,7 @@ const Processes = ({
             description: process.description.value ?? '',
             originalId: process.id,
             folderId: folder.id,
+            type: process.type as 'template' | 'process',
           }))}
         onSubmit={async (values) => {
           const res = await copyProcesses(values, space.spaceId);
@@ -697,6 +698,7 @@ const Processes = ({
       <FolderCreationModal
         open={openCreateFolderModal}
         close={() => setOpenCreateFolderModal(false)}
+        type={type}
       />
       <AddUserControls name={'process-list'} />
     </>

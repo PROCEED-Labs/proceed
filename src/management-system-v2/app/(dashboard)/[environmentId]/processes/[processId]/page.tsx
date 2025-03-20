@@ -4,9 +4,10 @@ import styles from './page.module.scss';
 import Modeler from './modeler';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
-import { getProcess, getProcesses } from '@/lib/data/DTOs';
+import { getMembers, getProcess, getProcesses, getRoles } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import { RoleType, UserType } from './use-potentialOwner-store';
 import type { Process } from '@/lib/data/process-schema';
 
 type ProcessProps = {
@@ -25,6 +26,26 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   const process = await getProcess(processId, !selectedVersionId);
   const processes = await getProcesses(activeEnvironment.spaceId, ability, false);
 
+  /* TODO: Does this leak the complete roles array to front end? */
+  const rawRoles = activeEnvironment.isOrganization
+    ? await getRoles(activeEnvironment.spaceId, ability)
+    : [];
+
+  const roles = rawRoles.reduce((acc, role) => ({ ...acc, [role.id]: role.name }), {} as RoleType);
+  // console.log('roles', roles);
+  const user = rawRoles.reduce((acc, role) => {
+    role.members.forEach((member) => {
+      acc[member.userId] = {
+        // @ts-ignore    // types wrong?!
+        userName: member.user.username,
+        // @ts-ignore    // types wrong?!
+        name: member.user.firstName + ' ' + member.user.lastName,
+      };
+    });
+
+    return acc;
+  }, {} as UserType);
+
   if (!ability.can('view', toCaslResource('Process', process))) {
     throw new UnauthorizedError();
   }
@@ -40,7 +61,14 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   // client component from here.
   return (
     <>
-      <Wrapper processName={process.name} processes={processes}>
+      <Wrapper
+        processName={process.name}
+        processes={processes}
+        potentialOwner={{
+          roles,
+          user,
+        }}
+      >
         <Modeler
           className={styles.Modeler}
           process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}

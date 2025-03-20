@@ -305,22 +305,22 @@ export const schema = {
       ],
     },
     {
-      name: 'creatorEnvironmentId',
+      name: 'creatorSpaceId',
       extends: ['bpmn:Definitions'],
       properties: [
         {
-          name: 'creatorEnvironmentId',
+          name: 'creatorSpaceId',
           isAttr: true,
           type: 'String',
         },
       ],
     },
     {
-      name: 'creatorEnvironmentName',
+      name: 'creatorSpaceName',
       extends: ['bpmn:Definitions'],
       properties: [
         {
-          name: 'creatorEnvironmentName',
+          name: 'creatorSpaceName',
           isAttr: true,
           type: 'String',
         },

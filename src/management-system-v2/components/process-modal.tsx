@@ -1,9 +1,28 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, ModalProps } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  App,
+  Typography,
+  ModalProps,
+  Carousel,
+  Card,
+  Flex,
+  message,
+  notification,
+} from 'antd';
+import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
+import './process-modal-carousel.css';
+import Title from 'antd/es/typography/Title';
+import { checkIfProcessExistsByName } from '@/lib/data/processes';
+import { useEnvironment } from './auth-can';
+import { useSession } from 'next-auth/react';
+import { debounce } from '@/lib/utils';
 
 type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -13,9 +32,19 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
   modalProps?: ModalProps;
+  isImportModal?: boolean;
 };
 
-const ProcessModal = <T extends { name: string; description: string }>({
+const ProcessModal = <
+  T extends {
+    name: string;
+    description: string;
+    userDefinedId?: string;
+    creator?: string;
+    creatorUsername?: string;
+    createdOn?: string;
+  },
+>({
   open,
   title,
   okText,
@@ -23,10 +52,13 @@ const ProcessModal = <T extends { name: string; description: string }>({
   onSubmit,
   initialData,
   modalProps,
+  isImportModal,
 }: ProcessModalProps<T>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
+  const [carouselIndex, setCarouselIndex] = useState(1);
+  const [api, contextHolder] = notification.useNotification();
 
   useEffect(() => {
     if (initialData) {
@@ -35,14 +67,6 @@ const ProcessModal = <T extends { name: string; description: string }>({
       form.setFieldsValue(initialData);
     }
   }, [form, initialData]);
-
-  const items: CollapseProps['items'] =
-    (initialData?.length ?? 0) > 1
-      ? initialData?.map((data, index) => ({
-          label: data.name,
-          children: <ProcessInputs index={index} />,
-        }))
-      : undefined;
 
   const onOk = async () => {
     try {
@@ -64,6 +88,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
           // UserError was thrown by the server
           message.open({ type: 'error', content: res.error.message });
         }
+        setCarouselIndex(1);
       } catch (e) {
         // Unkown server error or was not sent from server (e.g. network error)
         message.open({
@@ -106,59 +131,161 @@ const ProcessModal = <T extends { name: string; description: string }>({
     { level: 2, blocking: open, dependencies: [open] },
   );
 
+  const resolveProcessNameCollision = (index: number, oldName: string, newName: string) => {
+    initialData ? (initialData[index].name = newName) : null;
+    form.setFieldsValue(initialData);
+    api.open({
+      type: 'warning',
+      message: `Process Name Collision Detected: "${oldName}" changed to "${newName}"`,
+      duration: 0,
+      style: { background: '#FFFDE6', border: '1px solid #F8E7A2' },
+    });
+  };
+
   return (
-    <Modal
-      title={title}
-      open={open}
-      width={600}
-      centered
-      // IMPORTANT: This prevents a modal being stored for every row in the
-      // table.
-      destroyOnClose
-      okButtonProps={{ loading: submitting }}
-      okText={okText}
-      wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}
-      {...modalProps}
-      onCancel={(e) => {
-        modalProps?.onCancel?.(e);
-        onCancel(e);
-      }}
-      onOk={(e) => {
-        modalProps?.onOk?.(e);
-        onOk();
-      }}
-    >
-      <Form
-        form={form}
-        layout="vertical"
-        name="process_form"
-        initialValues={initialData}
-        autoComplete="off"
-        // This resets the fields when the modal is opened again. (apparently
-        // doesn't work in production, that's why we use the useEffect above)
-        preserve={false}
+    <>
+      {contextHolder}
+      <Modal
+        title={
+          <Flex justify="space-between" style={{ width: '100%', paddingRight: '25px' }}>
+            <Title level={4} style={{ margin: 0 }}>
+              {title}
+            </Title>
+            {initialData && initialData.length >= 1 && (
+              <Typography.Text type="secondary">{`Process ${carouselIndex} of ${initialData.length}`}</Typography.Text>
+            )}
+          </Flex>
+        }
+        open={open}
+        width={600}
+        centered
+        // IMPORTANT: This prevents a modal being stored for every row in the
+        // table.
+        destroyOnClose
+        okButtonProps={{ loading: submitting }}
+        okText={okText}
+        wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}
+        {...modalProps}
+        onCancel={(e) => {
+          modalProps?.onCancel?.(e);
+          onCancel(e);
+        }}
+        onOk={(e) => {
+          modalProps?.onOk?.(e);
+          onOk();
+        }}
       >
-        {!initialData || initialData.length === 1 ? (
-          <ProcessInputs index={0} />
-        ) : (
-          <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
-        )}
-      </Form>
-    </Modal>
+        <Form
+          form={form}
+          layout="vertical"
+          name="process_form"
+          initialValues={initialData}
+          autoComplete="off"
+          // This resets the fields when the modal is opened again. (apparently
+          // doesn't work in production, that's why we use the useEffect above)
+          preserve={false}
+        >
+          {!initialData ? (
+            <ProcessInputs index={0} />
+          ) : (
+            // <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
+            <Carousel
+              arrows
+              infinite={false}
+              style={{ padding: '0px 25px 0px 25px' }}
+              afterChange={(current) => setCarouselIndex(current + 1)}
+              prevArrow={<MdArrowBackIos color="#000" />}
+              nextArrow={<MdArrowForwardIos color="#000" />}
+            >
+              {initialData &&
+                initialData.map((process, index) => (
+                  <Card key={index}>
+                    <ProcessInputs
+                      key={index}
+                      index={index}
+                      isImport={isImportModal}
+                      resolveNameCollision={resolveProcessNameCollision}
+                    />
+                  </Card>
+                ))}
+            </Carousel>
+          )}
+        </Form>
+      </Modal>
+    </>
   );
 };
 
 type ProcessInputsProps = {
   index: number;
+  isImport?: boolean;
+  resolveNameCollision?: (index: number, oldName: string, newName: string) => void;
 };
 
-const ProcessInputs = ({ index }: ProcessInputsProps) => {
+const ProcessInputs = ({ index, isImport, resolveNameCollision }: ProcessInputsProps) => {
+  const environment = useEnvironment();
+  const session = useSession();
+  const [resolveCollisionCalled, setResolveCollisionCalled] = useState(false);
+
+  const validateProcessName = debounce(async (name: string, callback: Function) => {
+    if (!name) {
+      callback(new Error('Please fill out the Process name'));
+      return;
+    }
+
+    const exists = await checkIfProcessExistsByName(
+      name,
+      environment.spaceId,
+      session.data?.user.id!,
+    );
+
+    if (!exists) {
+      callback();
+      return;
+    }
+
+    if (isImport) {
+      // if name collision is detected during import, add '_import_' + currrent Date suffix
+      // try to resolve collision once automatically, if not pass control to the user
+      if (resolveNameCollision && !resolveCollisionCalled) {
+        resolveNameCollision(index, name, `${name}_import_${new Date().toISOString()}`);
+        setResolveCollisionCalled(true);
+      } else {
+        message.warning(`A process with the name "${name}" already exists.`);
+        callback(new Error('Please manually resolve process name collision'));
+        return;
+      }
+    } else {
+      callback(new Error('A process with this name already exists!'));
+      return;
+    }
+
+    callback();
+  }, 500);
+
   return (
     <>
       <Form.Item
         name={[index, 'name']}
         label="Process Name"
-        rules={[{ required: true, message: 'Please fill out the Process name' }]}
+        rules={[
+          { required: true, message: '' },
+          {
+            validator: (_, value) =>
+              new Promise((resolve, reject) =>
+                validateProcessName(value, (error?: Error) =>
+                  error ? reject(error) : resolve(true),
+                ),
+              ),
+          },
+        ]}
+      >
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name={[index, 'userDefinedId']}
+        label="ID"
+        rules={[{ required: false, message: 'Please enter a unique ID for the process.' }, {}]}
       >
         <Input />
       </Form.Item>
@@ -169,6 +296,31 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>
+      {isImport && (
+        <>
+          <Form.Item
+            name={[index, 'creator']}
+            label="Original Creator"
+            rules={[{ required: false }]}
+          >
+            <Input disabled />
+          </Form.Item>
+          <Form.Item
+            name={[index, 'creatorUsername']}
+            label="Original Creator Username"
+            rules={[{ required: false }]}
+          >
+            <Input disabled />
+          </Form.Item>
+          <Form.Item
+            name={[index, 'createdOn']}
+            label="Original Creation Date"
+            rules={[{ required: false }]}
+          >
+            <Input disabled />
+          </Form.Item>
+        </>
+      )}
     </>
   );
 };

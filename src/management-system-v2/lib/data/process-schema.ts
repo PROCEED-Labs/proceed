@@ -7,6 +7,8 @@ export const ProcessInputSchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
   originalId: z.string().optional(),
+  basedOnTemplateId: z.string().optional(),
+  basedOnTemplateVersion: z.string().optional(),
   folderId: z.string().optional(),
 });
 
@@ -21,7 +23,7 @@ export type ProcessServerInput = z.infer<typeof ProcessServerInputSchema>;
 export type ProcessMetadata = Prettify<
   WithRequired<ProcessServerInput, 'id' | 'name' | 'description' | 'folderId'> & {
     processIds: string[];
-  } & VersionedObject<'process' | 'project' | 'process-instance'>
+  } & VersionedObject<'process' | 'project' | 'process-instance' | 'template'>
 >;
 
 export type Process = Prettify<ProcessMetadata & { bpmn: string }>;

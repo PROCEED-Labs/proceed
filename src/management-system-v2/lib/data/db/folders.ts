@@ -68,6 +68,7 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
     include: {
       childrenFolder: true,
       processes: true,
+      templateProcesses: true,
     },
   });
 
@@ -82,6 +83,10 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
   const combinedResults = [
     ...folder.childrenFolder.map((child) => ({ ...child, type: 'folder' })),
     ...folder.processes.map((process) => ({ ...process, type: process.type.toLowerCase() })),
+    ...folder.templateProcesses.map((process) => ({
+      ...process,
+      type: process.type.toLowerCase(),
+    })),
   ];
   return combinedResults;
 }
@@ -97,7 +102,13 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
       if (child.type !== 'folder') {
         const process = (await getProcess(child.id)) as unknown as Process;
         // NOTE: this check should probably done inside inside getprocess
-        if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
+        if (
+          ability &&
+          process.type === 'process' &&
+          !ability.can('view', toCaslResource('Process', process))
+        ) {
+          continue;
+        }
         folderContent.push(process);
       } else {
         folderContent.push({ ...(await getFolderById(child.id, ability)), type: 'folder' });

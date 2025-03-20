@@ -12,18 +12,26 @@ export const ProcessCreationModal: React.FC<
   Partial<ComponentProps<typeof ProcessModal>> & {
     open: boolean;
     setOpen: (open: boolean) => void;
-    customAction?: (values: { name: string; description: string }) => Promise<any>;
+    templates?: any[];
+    customAction?: (values: {
+      name: string;
+      description: string;
+      templateId?: string;
+    }) => Promise<any>;
+    type?: 'process' | 'template';
   }
-> = ({ open, setOpen, customAction, ...props }) => {
+> = ({ open, setOpen, customAction, templates = [], type = 'process', ...props }) => {
   const router = useRouter();
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
 
-  const createNewProcess = async (values: { name: string; description: string }[]) => {
+  const createNewProcess = async (
+    values: { name: string; description: string; templateId?: string }[],
+  ) => {
     // Invoke the custom handler otherwise use the default server action.
     const process = await (customAction?.(values[0]) ??
       addProcesses(
-        values.map((value) => ({ ...value, folderId })),
+        values.map((value) => ({ ...value, folderId, type })),
         environment.spaceId,
       ).then((res) => (Array.isArray(res) ? res[0] : res)));
 
@@ -57,20 +65,24 @@ export const ProcessCreationModal: React.FC<
   return (
     <ProcessModal
       {...props}
+      templates={templates}
       open={open}
       title="Create Process"
       okText="Create"
       onCancel={() => setOpen(false)}
       onSubmit={createNewProcess}
+      type={type}
     />
   );
 };
 
 type ProcessCreationButtonProps = ButtonProps & {
+  templates?: any[];
   customAction?: (values: { name: string; description: string }) => Promise<any>;
   wrapperElement?: ReactNode;
   defaultOpen?: boolean;
   modalProps?: ModalProps;
+  type?: 'process' | 'template';
 };
 
 /**
@@ -79,9 +91,11 @@ type ProcessCreationButtonProps = ButtonProps & {
  */
 const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
   wrapperElement,
+  templates = [],
   customAction,
   defaultOpen = false,
   modalProps,
+  type,
   ...props
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(defaultOpen);
@@ -94,10 +108,12 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
         <Button {...props} onClick={() => setIsProcessModalOpen(true)} />
       )}
       <ProcessCreationModal
+        templates={templates}
         open={isProcessModalOpen}
         setOpen={setIsProcessModalOpen}
         customAction={customAction}
         modalProps={modalProps}
+        type={type}
       />
     </>
   );

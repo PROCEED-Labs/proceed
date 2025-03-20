@@ -970,18 +970,12 @@ Blocks['interval_async'] = {
         },
       ],
       tooltip: 'An interval function which repeatedly calls a callback function after a timeout.',
-      helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#await-setintervalasync-clb-number-in-milliseconds-',
+      helpUrl:
+        'https://docs.proceed-labs.org/developer/script-task-api#await-setintervalasync-clb-number-in-milliseconds-',
       nextStatement: true,
       previousStatement: true,
       colour: 75,
     });
-  },
-  onchange() {
-    // only allow function calls
-    const connection = this.getInput('callback')?.connection;
-    if (connection?.isConnected() && connection.targetBlock()?.type !== 'procedures_callreturn') {
-      connection.disconnect();
-    }
   },
 };
 
@@ -1013,18 +1007,12 @@ Blocks['timeout_async'] = {
         },
       ],
       tooltip: 'A timeout function which executes a callback function after a timeout expired.',
-      helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#await-settimeoutasync-clb-number-in-milliseconds-',
+      helpUrl:
+        'https://docs.proceed-labs.org/developer/script-task-api#await-settimeoutasync-clb-number-in-milliseconds-',
       nextStatement: true,
       previousStatement: true,
       colour: 75,
     });
-  },
-  onchange() {
-    // only allow function calls
-    const connection = this.getInput('callback')?.connection;
-    if (connection?.isConnected() && connection.targetBlock()?.type !== 'procedures_callreturn') {
-      connection.disconnect();
-    }
   },
 };
 
@@ -1039,6 +1027,24 @@ javascriptGenerator.forBlock['timeout_async'] = function (block) {
   return `setTimeoutAsync(() => ${callback}, ${delay});\n`;
 };
 
+function isTimeoutCallbackConnection(connection: Blockly.Connection) {
+  const blockType = connection.getSourceBlock().type;
+  return (
+    (blockType === 'interval_async' || blockType === 'timeout_async') &&
+    connection.type === Blockly.ConnectionType.INPUT_VALUE
+  );
+}
+function timeoutsConnectionChecker(a: Blockly.Connection, b: Blockly.Connection) {
+  // Check for connections to the callback input of interval_async and timeout_async
+  let otherConnection;
+  if (isTimeoutCallbackConnection(a)) otherConnection = b;
+  if (isTimeoutCallbackConnection(b)) otherConnection = a;
+  else return null;
+
+  return otherConnection.getSourceBlock().type === 'procedures_callreturn';
+}
+connectionTypeCheckers.push(timeoutsConnectionChecker);
+
 // --------------------------------------------
 // Progress
 // --------------------------------------------
@@ -1048,7 +1054,9 @@ Blocks['progress'] = {
     this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
     this.setInputsInline(true);
     this.setTooltip('');
-    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#setprogressnumber-between-0---100');
+    this.setHelpUrl(
+      'https://docs.proceed-labs.org/developer/script-task-api#setprogressnumber-between-0---100',
+    );
     this.setColour(75);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -1102,7 +1110,8 @@ Blocks['throw_error'] = {
       previousStatement: true,
       colour: 75,
       tooltip: 'Throws error with given reference and explanation',
-      helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#throw-new-bpmnerror-reference-explanation-',
+      helpUrl:
+        'https://docs.proceed-labs.org/developer/script-task-api#throw-new-bpmnerror-reference-explanation-',
     });
   },
 };

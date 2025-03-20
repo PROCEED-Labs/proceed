@@ -1040,57 +1040,6 @@ javascriptGenerator.forBlock['timeout_async'] = function (block) {
 };
 
 // --------------------------------------------
-// Variables
-// --------------------------------------------
-
-javascriptGenerator.forBlock['proceed_variables_get'] = function (block) {
-  const variableName = block.getFieldValue('name');
-  const code = `variable.get("${variableName}")`;
-  return [code, BlocklyJavaScript.Order.FUNCTION_CALL];
-};
-
-Blocks['proceed_variables_set'] = {
-  init: function () {
-    this.appendValueInput('value')
-      .appendField('Set variable')
-      .appendField(new Blockly.FieldTextInput('variableName'), 'name')
-      .appendField('to');
-    this.setInputsInline(true);
-    this.setTooltip('');
-    this.setHelpUrl('');
-    this.setColour(75);
-    this.setPreviousStatement(true);
-    this.setNextStatement(true);
-  },
-};
-
-javascriptGenerator.forBlock['proceed_variables_set'] = function (block) {
-  const variableName = block.getFieldValue('name');
-  const variableValue = javascriptGenerator.valueToCode(
-    block,
-    'value',
-    BlocklyJavaScript.Order.ATOMIC,
-  );
-
-  const code = `variable.set("${variableName}", ${variableValue || null});\n`;
-  return code;
-};
-
-Blocks['proceed_variables_get_all'] = {
-  init: function () {
-    this.appendDummyInput().appendField('Get all variables');
-    this.setOutput(true, 'Object');
-    this.setTooltip('Returns an object containing all variables and values');
-    this.setHelpUrl('');
-    this.setColour(75);
-  },
-};
-
-javascriptGenerator.forBlock['proceed_variables_get_all'] = function (_) {
-  return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
-};
-
-// --------------------------------------------
 // Progress
 // --------------------------------------------
 

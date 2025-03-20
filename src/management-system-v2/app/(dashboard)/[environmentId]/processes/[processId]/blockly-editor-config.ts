@@ -482,6 +482,70 @@ export const INITIAL_TOOLBOX_JSON = {
     },
     {
       kind: 'category',
+      name: 'Network',
+      colour: 290,
+      contents: [
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="network_Get">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">https://google.com</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+
+          blockxml:
+            '    <block type="network_Post">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">https://google.com</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+
+          blockxml:
+            '    <block type="network_Put">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">https://google.com</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="network_Delete">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">https://google.com</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="network_Head">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">https://google.com</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+      ],
+    },
+    {
+      kind: 'category',
       name: 'Timeouts',
       colour: 290,
       contents: [
@@ -1111,7 +1175,64 @@ javascriptGenerator.forBlock['throw_error'] = function (block) {
 // --------------------------------------------
 // Services
 // --------------------------------------------
+const methodsWithBody = ['Post', 'Put'];
+for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
+  const methodName = `network_${method}`;
+  const hasBody = methodsWithBody.includes(method);
 
-// TODO
+  const args: any = [
+    {
+      type: 'input_value',
+      name: 'url',
+      check: 'String',
+    },
+    {
+      type: 'input_value',
+      name: 'options',
+      check: 'OBJECT',
+    },
+  ];
+
+  if (hasBody)
+    args.push({
+      type: 'input_value',
+      name: 'body',
+      check: null,
+    });
+
+  Blocks[methodName] = {
+    init: function () {
+      this.jsonInit({
+        type: 'network_get',
+        message0: `Get url %1\n${hasBody ? 'Body %3\n' : ''}Options %2`,
+        args0: args,
+        output: null,
+        colour: 75,
+        tooltip: 'Throws error with given reference and explanation',
+        helpUrl: '',
+      });
+    },
+  };
+
+  javascriptGenerator.forBlock[methodName] = function (block) {
+    const url = javascriptGenerator.valueToCode(block, 'url', BlocklyJavaScript.Order.COMMA) || '';
+    const options =
+      javascriptGenerator.valueToCode(block, 'options', BlocklyJavaScript.Order.COMMA) ||
+      'undefined';
+
+    let body = '';
+    if (hasBody) {
+      body =
+        javascriptGenerator.valueToCode(block, 'body', BlocklyJavaScript.Order.COMMA) ||
+        'undefined';
+      body += ',';
+    }
+
+    return [
+      `await getService('network').get(${url}, ${body}${options});\n`,
+      BlocklyJavaScript.Order.AWAIT,
+    ];
+  };
+}
 
 export { Blockly, javascriptGenerator };

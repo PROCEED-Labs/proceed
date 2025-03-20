@@ -608,8 +608,12 @@ export class ObjectsConnectionChecker extends Blockly.ConnectionChecker {
     return false;
   }
 }
-export const registrationType = Blockly.registry.Type.CONNECTION_CHECKER;
-export const registrationName = 'ObjectsConnectionChecker';
+const registrationType = Blockly.registry.Type.CONNECTION_CHECKER;
+const registrationName = 'ObjectsConnectionChecker';
+Blockly.registry.register(registrationType, registrationName, ObjectsConnectionChecker);
+export const connectionCheckerPlugin = {
+  [registrationType.toString()]: registrationName,
+};
 
 // --------------------------------------------
 // Objects
@@ -714,13 +718,6 @@ function objectKeyValueChecker(a: Blockly.Connection, b: Blockly.Connection) {
   return otherConnection.getSourceBlock().type === 'object_key_value';
 }
 connectionTypeCheckers.push(objectKeyValueChecker);
-
-// Register the checker so that it can be used by name.
-Blockly.registry.register(registrationType, registrationName, ObjectsConnectionChecker);
-
-export const pluginInfo = {
-  [registrationType.toString()]: registrationName,
-};
 
 Blocks['object_set_key'] = {
   init: function () {

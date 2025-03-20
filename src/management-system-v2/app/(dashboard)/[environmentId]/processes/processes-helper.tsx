@@ -15,7 +15,11 @@ export async function handleOpenDocumentation(
     );
 
     // open the documentation page in a new tab (unless it is already open in which case just show the tab)
-    window.open(url, `${processId}-${selectedVersionId}-tab`);
+    if (typeof url === 'string') {
+      window.open(url, `${processId}-${selectedVersionId}-tab`);
+    } else {
+      message.error('Failed to generate the documentation URL.');
+    }
   } catch (err) {
     message.error('Failed to open the documentation page.');
   }

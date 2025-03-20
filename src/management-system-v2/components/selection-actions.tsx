@@ -4,15 +4,22 @@ import cn from 'classnames';
 type SelectionActionsProps = {
   count?: number;
   children: React.ReactNode;
+  readOnly?: boolean;
 };
 
-const SelectionActions = ({ count, children }: SelectionActionsProps) => {
+const SelectionActions = ({ count, children, readOnly = false }: SelectionActionsProps) => {
   return count ? (
     <span
-      className={cn(styles.SelectedRow, count == 1 ? styles['one-row'] : styles['multiple-rows'])}
-      role="note"
+      className={cn(
+        styles.SelectedRow,
+        count == 1 ? styles['one-row'] : styles['multiple-rows'],
+        !readOnly && styles.editable,
+      )}
+      // role="note"
     >
-      {count} selected:
+      <span role="note" className={cn(styles.counter)}>
+        {count} selected:
+      </span>
       <span className={styles.Icons}>{children}</span>
     </span>
   ) : undefined;

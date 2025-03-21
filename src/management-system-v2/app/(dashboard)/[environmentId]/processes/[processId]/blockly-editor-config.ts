@@ -1029,9 +1029,12 @@ javascriptGenerator.forBlock['timeout_async'] = function (block) {
 
 function isTimeoutCallbackConnection(connection: Blockly.Connection) {
   const blockType = connection.getSourceBlock().type;
+  const parentInput = connection.getParentInput();
   return (
     (blockType === 'interval_async' || blockType === 'timeout_async') &&
-    connection.type === Blockly.ConnectionType.INPUT_VALUE
+    connection.type === Blockly.ConnectionType.INPUT_VALUE &&
+    parentInput &&
+    parentInput.name === 'callback'
   );
 }
 function timeoutsConnectionChecker(a: Blockly.Connection, b: Blockly.Connection) {

@@ -616,6 +616,43 @@ export const connectionCheckerPlugin = {
 };
 
 // --------------------------------------------
+// Functions
+// Make every function async and await calls to them
+// --------------------------------------------
+
+type Generator = Exclude<BlocklyJavaScript.JavascriptGenerator['forBlock'][string], null>;
+
+for (const type of ['return', 'noreturn']) {
+  const defName = `procedures_def${type}`;
+  const defGenerator: Generator = javascriptGenerator.forBlock[defName];
+  javascriptGenerator.forBlock[defName] = function (block, generator) {
+    // this is necessary, otherwise the generated code will start with a comment and the await on front will be wrong
+    block.setCommentText(null);
+    defGenerator(block, generator);
+
+    const funcName = generator.getProcedureName(block.getFieldValue('NAME'));
+    // grab the generated code
+    const code = (generator as any).definitions_['%' + funcName];
+    (generator as any).definitions_['%' + funcName] = 'async ' + code;
+
+    return null;
+  };
+}
+
+// call no return uses callreturn so we only have to apply await here
+const callGenerator: Generator = javascriptGenerator.forBlock['procedures_callreturn'];
+javascriptGenerator.forBlock['procedures_callreturn'] = function (block, generator) {
+  const code = callGenerator(block, generator);
+
+  if (!code) return code;
+  else if (Array.isArray(code)) {
+    code[0] = 'await ' + code[0];
+    return code;
+  }
+  return 'await ' + code;
+};
+
+// --------------------------------------------
 // Objects
 // --------------------------------------------
 
@@ -987,7 +1024,7 @@ javascriptGenerator.forBlock['interval_async'] = function (block) {
     BlocklyJavaScript.Order.COMMA,
   );
 
-  return `setIntervalAsync(() => ${callback}, ${delay});\n`;
+  return `setIntervalAsync(async () => ${callback}, ${delay});\n`;
 };
 
 Blocks['timeout_async'] = {
@@ -1024,7 +1061,7 @@ javascriptGenerator.forBlock['timeout_async'] = function (block) {
     BlocklyJavaScript.Order.COMMA,
   );
 
-  return `setTimeoutAsync(() => ${callback}, ${delay});\n`;
+  return `setTimeoutAsync(async () => ${callback}, ${delay});\n`;
 };
 
 function isTimeoutCallbackConnection(connection: Blockly.Connection) {

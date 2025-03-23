@@ -491,7 +491,7 @@ export const INITIAL_TOOLBOX_JSON = {
             '    <block type="network_Get">\n' +
             '      <value name="url">\n' +
             '        <shadow type="text">\n' +
-            '          <field name="TEXT">https://google.com</field>\n' +
+            '          <field name="TEXT">https://jsonplaceholder.typicode.com/todos/1</field>\n' +
             '        </shadow>\n' +
             '      </value>\n' +
             '    </block>\n',
@@ -503,7 +503,7 @@ export const INITIAL_TOOLBOX_JSON = {
             '    <block type="network_Post">\n' +
             '      <value name="url">\n' +
             '        <shadow type="text">\n' +
-            '          <field name="TEXT">https://google.com</field>\n' +
+            '          <field name="TEXT">http://localhost</field>\n' +
             '        </shadow>\n' +
             '      </value>\n' +
             '    </block>\n',
@@ -515,7 +515,7 @@ export const INITIAL_TOOLBOX_JSON = {
             '    <block type="network_Put">\n' +
             '      <value name="url">\n' +
             '        <shadow type="text">\n' +
-            '          <field name="TEXT">https://google.com</field>\n' +
+            '          <field name="TEXT">http://localhost</field>\n' +
             '        </shadow>\n' +
             '      </value>\n' +
             '    </block>\n',
@@ -526,7 +526,7 @@ export const INITIAL_TOOLBOX_JSON = {
             '    <block type="network_Delete">\n' +
             '      <value name="url">\n' +
             '        <shadow type="text">\n' +
-            '          <field name="TEXT">https://google.com</field>\n' +
+            '          <field name="TEXT">http://localhost</field>\n' +
             '        </shadow>\n' +
             '      </value>\n' +
             '    </block>\n',
@@ -537,7 +537,7 @@ export const INITIAL_TOOLBOX_JSON = {
             '    <block type="network_Head">\n' +
             '      <value name="url">\n' +
             '        <shadow type="text">\n' +
-            '          <field name="TEXT">https://google.com</field>\n' +
+            '          <field name="TEXT">http://localhost</field>\n' +
             '        </shadow>\n' +
             '      </value>\n' +
             '    </block>\n',

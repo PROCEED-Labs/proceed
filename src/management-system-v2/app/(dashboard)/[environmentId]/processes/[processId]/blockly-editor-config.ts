@@ -1199,8 +1199,8 @@ for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
   Blocks[methodName] = {
     init: function () {
       this.jsonInit({
-        type: 'network_get',
-        message0: `Get url %1\n${hasBody ? 'Body %3\n' : ''}Options %2`,
+        type: methodName,
+        message0: `${method} url %1\n${hasBody ? 'Body %3\n' : ''}Options %2`,
         args0: args,
         output: null,
         colour: 75,
@@ -1225,7 +1225,7 @@ for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
     }
 
     return [
-      `await getService('network').get(${url}, ${body}${options});\n`,
+      `await getService('network').${method.toLowerCase()}(${url}, ${body}${options})`,
       BlocklyJavaScript.Order.AWAIT,
     ];
   };

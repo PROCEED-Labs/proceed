@@ -762,9 +762,8 @@ Blocks['object_set_key'] = {
       message0: 'Set key of %1\n',
       args0: [
         {
-          type: 'field_variable',
-          name: 'variable',
-          variable: '%{BKY_VARIABLES_DEFAULT_NAME}',
+          type: 'input_value',
+          name: 'input_object',
         },
       ],
       message1: 'Key %1\nValue %2',
@@ -786,8 +785,9 @@ Blocks['object_set_key'] = {
   },
 };
 
-javascriptGenerator.forBlock['object_set_key'] = function (block, generator) {
-  const object = generator.getVariableName(block.getFieldValue('variable'));
+javascriptGenerator.forBlock['object_set_key'] = function (block) {
+  const object =
+    javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
   const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
   const value =
     javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ASSIGNMENT) ||
@@ -801,9 +801,8 @@ Blocks['object_get_key'] = {
       message0: 'Get key of %1\n',
       args0: [
         {
-          type: 'field_variable',
-          name: 'variable',
-          variable: '%{BKY_VARIABLES_DEFAULT_NAME}',
+          type: 'input_value',
+          name: 'input_object',
         },
       ],
       message1: 'Key %1\n',
@@ -820,10 +819,11 @@ Blocks['object_get_key'] = {
   },
 };
 
-javascriptGenerator.forBlock['object_get_key'] = function (block, generator) {
-  const object = generator.getVariableName(block.getFieldValue('variable'));
+javascriptGenerator.forBlock['object_get_key'] = function (block) {
+  const object =
+    javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
   const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
-  return `${object}[${key}]`;
+  return [`${object}[${key}]`, BlocklyJavaScript.Order.NONE];
 };
 
 Blocks['object_delete_key'] = {
@@ -832,9 +832,8 @@ Blocks['object_delete_key'] = {
       message0: 'Delete key of %1\n',
       args0: [
         {
-          type: 'field_variable',
-          name: 'variable',
-          variable: '%{BKY_VARIABLES_DEFAULT_NAME}',
+          type: 'input_value',
+          name: 'input_object',
         },
       ],
       message1: 'Key %1',
@@ -852,8 +851,9 @@ Blocks['object_delete_key'] = {
   },
 };
 
-javascriptGenerator.forBlock['object_delete_key'] = function (block, generator) {
-  const object = generator.getVariableName(block.getFieldValue('variable'));
+javascriptGenerator.forBlock['object_delete_key'] = function (block) {
+  const object =
+    javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
   const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
   return `delete ${object}[${key}];\n`;
 };

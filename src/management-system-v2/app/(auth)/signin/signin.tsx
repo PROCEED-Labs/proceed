@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useEffect, useState } from 'react';
+import { FC } from 'react';
 import {
   Typography,
   Alert,
@@ -8,19 +8,17 @@ import {
   Input,
   Button as AntDesignButton,
   Divider,
-  Modal,
   Space,
   Tooltip,
   ButtonProps,
   ConfigProvider,
 } from 'antd';
-
-import styles from './login.module.scss';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/lib/auth';
+import AuthModal from '../auth-modal';
 
 const verticalGap = '1rem';
 
@@ -73,13 +71,6 @@ const SignIn: FC<{
     (provider) => provider.type !== 'oauth' && provider.id !== 'guest-signin',
   );
 
-  // We need to wait until the component is mounted on the client
-  // to open the modal, otherwise it will cause a hydration mismatch
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    setOpen(true);
-  }, [setOpen]);
-
   return (
     <ConfigProvider
       theme={{
@@ -90,7 +81,7 @@ const SignIn: FC<{
         },
       }}
     >
-      <Modal
+      <AuthModal
         title={
           <Image
             src="/proceed.svg"
@@ -101,19 +92,9 @@ const SignIn: FC<{
             style={{ marginBottom: '1rem', display: 'block', margin: 'auto' }}
           />
         }
-        open={open}
-        closeIcon={null}
-        footer={null}
-        style={{
-          maxWidth: '60ch',
-          width: '90%',
-          top: 0,
-        }}
         styles={{
-          mask: { backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },
           header: { paddingBottom: verticalGap },
         }}
-        className={styles.Card}
       >
         {authError && (
           <Alert description={authError} type="error" style={{ marginBottom: verticalGap }} />
@@ -254,7 +235,7 @@ const SignIn: FC<{
           <Link href="/terms">Terms of Service</Link> and the storage of functionally essential
           cookies on your device.
         </Typography.Paragraph>
-      </Modal>
+      </AuthModal>
     </ConfigProvider>
   );
 };

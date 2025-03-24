@@ -14,8 +14,6 @@ import {
   ButtonProps,
   ConfigProvider,
 } from 'antd';
-
-import styles from './login.module.scss';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -113,7 +111,6 @@ const SignIn: FC<{
           mask: { backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },
           header: { paddingBottom: verticalGap },
         }}
-        className={styles.Card}
       >
         {authError && (
           <Alert description={authError} type="error" style={{ marginBottom: verticalGap }} />

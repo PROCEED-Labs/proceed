@@ -12,6 +12,7 @@ import styles from './tasklist.module.scss';
 import ScrollBar from '@/components/scrollbar';
 
 import { TaskListEntry } from '@/lib/engines/tasklist';
+import { UserTask } from '@/lib/user-task-schema';
 import UserTaskView from './user-task-view';
 
 const StatusSelection = ({
@@ -43,6 +44,10 @@ const StatusSelection = ({
 
       <Checkbox value="COMPLETED" style={{ marginBottom: '0.25rem' }}>
         COMPLETED
+      </Checkbox>
+
+      <Checkbox value="UNREACHABLE" style={{ marginBottom: '0.25rem' }}>
+        UNREACHABLE
       </Checkbox>
 
       <Checkbox value="PAUSED">PAUSED</Checkbox>
@@ -80,7 +85,7 @@ const SliderRangeWithText = ({
   );
 };
 
-const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
+const Tasklist = ({ userTasks }: { userTasks: UserTask[] }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
@@ -94,23 +99,15 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
   const [selectedSortItem, setSelectedSortItem] = useState({ ascending: true, value: 'startTime' });
 
   const filteredAndSortedUserTasks = useMemo(() => {
-    const showingUserTasks = userTasks
-      .map(({ id, instanceID, startTime, ...rest }) => ({
-        ...rest,
-        id: `${id}|${instanceID}|${startTime}`,
-        taskId: id,
-        instanceID,
-        startTime,
-      }))
-      .filter((uT) => {
-        return (
-          stateSelectionFilter.includes(uT.state) &&
-          uT.priority >= priorityRangeFilter[0] &&
-          uT.priority <= priorityRangeFilter[1] &&
-          uT.progress >= progressRangeFilter[0] &&
-          uT.progress <= progressRangeFilter[1]
-        );
-      });
+    const showingUserTasks = userTasks.filter((uT) => {
+      return (
+        stateSelectionFilter.includes(uT.state) &&
+        uT.priority >= priorityRangeFilter[0] &&
+        uT.priority <= priorityRangeFilter[1] &&
+        uT.progress >= progressRangeFilter[0] &&
+        uT.progress <= progressRangeFilter[1]
+      );
+    });
 
     switch (selectedSortItem.value) {
       case 'startTime':
@@ -123,7 +120,9 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
           if (a.endTime === b.endTime) {
             selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
           }
-          return selectedSortItem.ascending ? a.endTime - b.endTime : b.endTime - a.endTime;
+          return selectedSortItem.ascending
+            ? (a.endTime || 0) - (b.endTime || 0)
+            : (b.endTime || 0) - (a.endTime || 0);
         });
         break;
       case 'progress':
@@ -428,12 +427,7 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
         </div>
       </div>
       {(selectedUserTaskID ?? breakpoint.xl) && (
-        <UserTaskView
-          task={userTasks.find(
-            ({ id, instanceID, startTime }) =>
-              `${id}|${instanceID}|${startTime}` === selectedUserTaskID,
-          )}
-        />
+        <UserTaskView task={userTasks.find(({ id }) => id === selectedUserTaskID)} />
       )}
     </div>
   );

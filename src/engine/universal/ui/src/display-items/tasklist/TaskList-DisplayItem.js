@@ -3,7 +3,11 @@ const distribution = require('@proceed/distribution');
 const { logging } = require('@proceed/machine');
 const { enable5thIndustryIntegration } = require('../../../../../../../FeatureFlags.js');
 
-const { inlineUserTaskData } = require('@proceed/user-task-helper/index.js');
+const {
+  inlineUserTaskData,
+  getCorrectVariableState,
+  getCorrectMilestoneState,
+} = require('@proceed/user-task-helper/index.js');
 
 class TaskListTab extends DisplayItem {
   constructor(management) {
@@ -121,7 +125,21 @@ class TaskListTab extends DisplayItem {
       const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
       const html = await distribution.db.getHTML(definitionId, userTaskFileName);
 
-      return await inlineUserTaskData(bpmn, html, userTask, userTaskInstance);
+      const variables = getCorrectVariableState(userTask, userTaskInstance);
+      const { milestones, milestonesData } = await getCorrectMilestoneState(
+        bpmn,
+        userTask,
+        userTaskInstance,
+      );
+
+      return await inlineUserTaskData(
+        html,
+        instanceId,
+        userTask.id,
+        variables,
+        milestones,
+        milestonesData,
+      );
     }
   }
 

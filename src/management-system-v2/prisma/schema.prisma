@@ -227,3 +227,24 @@ model Engine {
 
   @@map("engine")
 }
+
+model UserTask {
+ id                    String @id
+ taskId                String
+ name                  String?
+ instanceID            String
+ fileName              String
+ html                  String?
+ priority              Int
+ progress              Int
+ startTime             DateTime
+ endTime               DateTime?
+ initialVariables      Json?
+ variableChanges       Json?
+ milestones            Json?
+ milestonesData        Json?
+ milestonesChanges     Json?
+ machineId             String
+
+ @@map("userTask")
+}

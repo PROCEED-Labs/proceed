@@ -11,27 +11,25 @@ import {
 } from '@ant-design/icons';
 import { generateDateString } from '@/lib/utils';
 import { transformMilisecondsToDurationValues } from '@/lib/helpers/timeHelper';
+import { UserTask } from '@/lib/user-task-schema';
 
 const UserTaskCard = ({
   userTaskData,
   clickHandler,
   selected = false,
 }: {
-  userTaskData: {
-    id: string;
-    name: string;
-    state: string;
-    owner?: string;
-    startTime: number;
-    endTime: number;
-    priority: number;
-    progress: number;
-  };
+  userTaskData: UserTask;
   clickHandler?: () => void;
   selected?: boolean;
 }) => {
+  const endTime = userTaskData.endTime;
+
+  const endTimeString = endTime
+    ? generateDateString(new Date(userTaskData.endTime || 0), true)
+    : '';
+
   const durationValues = transformMilisecondsToDurationValues(
-    +new Date() - userTaskData.startTime,
+    (endTime || +new Date()) - userTaskData.startTime,
     true,
   );
 
@@ -39,7 +37,7 @@ const UserTaskCard = ({
     ' ' +
     (durationValues.days ? `${durationValues.days}d, ` : '') +
     (durationValues.hours ? `${durationValues.hours}h, ` : '') +
-    (durationValues.minutes ? `${durationValues.minutes}min` : '');
+    `${durationValues.minutes}min`;
 
   return (
     <Card
@@ -76,7 +74,7 @@ const UserTaskCard = ({
       <Row gutter={16}>
         <Col span={10}>
           <span style={{ fontSize: '0.75rem' }}>
-            <UserOutlined></UserOutlined> {userTaskData.owner}
+            <UserOutlined></UserOutlined> {''}
           </span>
         </Col>
         <Col span={14}>
@@ -108,7 +106,7 @@ const UserTaskCard = ({
         <Col span={14}>
           <span style={{ fontSize: '0.75rem' }}>
             <ClockCircleOutlined></ClockCircleOutlined>
-            {' ' + generateDateString(new Date(userTaskData.endTime), true)}
+            {endTimeString}
           </span>
         </Col>
       </Row>

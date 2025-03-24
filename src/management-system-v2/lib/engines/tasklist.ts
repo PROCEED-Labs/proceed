@@ -11,7 +11,6 @@ export type TaskListEntry = {
     'proceed:fileName': string;
   };
   state: string;
-  status: string;
   owner: string;
   priority: number;
   performers: string[];

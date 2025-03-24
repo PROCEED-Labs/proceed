@@ -32,6 +32,7 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
             ],
           },
         ]}
+        disableUserDataModal
       >
         <Content title="Processes">
           <Processes

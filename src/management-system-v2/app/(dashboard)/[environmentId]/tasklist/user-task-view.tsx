@@ -15,14 +15,17 @@ import {
 import { useEnvironment } from '@/components/auth-can';
 
 import styles from './tasklist.module.scss';
-import { Skeleton } from 'antd';
+import { Button, Modal, Skeleton } from 'antd';
 import { UserTask } from '@/lib/user-task-schema';
 
 type UserTaskViewProps = {
   task?: UserTask;
 };
 
-const UserTaskForm: React.FC<{ task: UserTask }> = ({ task }) => {
+const UserTaskForm: React.FC<{ task: UserTask; onSubmitFailure: () => void }> = ({
+  task,
+  onSubmitFailure,
+}) => {
   const router = useRouter();
   const { spaceId } = useEnvironment();
 
@@ -51,8 +54,12 @@ const UserTaskForm: React.FC<{ task: UserTask }> = ({ task }) => {
             post: async (path: string, body: { [key: string]: any }) => {
               if (path === '/tasklist/api/userTask') {
                 await wrapServerCall({
-                  fn: () => completeTasklistEntry(spaceId, task.id, body),
+                  fn: async () => await completeTasklistEntry(spaceId, task.id, body),
                   onSuccess: () => router.refresh(),
+                  onError: () => {
+                    onSubmitFailure();
+                    if (task.state !== 'UNREACHABLE') router.refresh();
+                  },
                 });
               }
             },
@@ -83,6 +90,8 @@ const UserTaskView: React.FC<UserTaskViewProps> = ({ task }) => {
   const isCompleted = !!task?.endTime;
   const isPaused = task?.state === 'PAUSED';
 
+  const [failedToSubmit, setFailedToSubmit] = useState(false);
+
   return (
     <div
       className={cn(styles.taskView, {
@@ -90,7 +99,22 @@ const UserTaskView: React.FC<UserTaskViewProps> = ({ task }) => {
         [styles.paused]: isPaused,
       })}
     >
-      {task ? <UserTaskForm task={task} /> : <></>}
+      {task && (
+        <Modal
+          open={failedToSubmit && task.state === 'UNREACHABLE'}
+          title="The engine is offline!"
+          onCancel={() => setFailedToSubmit(false)}
+          footer={() => [
+            <Button type="primary" key="ok" onClick={() => setFailedToSubmit(false)}>
+              Ok
+            </Button>,
+          ]}
+        >
+          The engine this user task is running on is currently not reachable. Changes you make to
+          the task are saved and can be submitted once the engine is reachable again!
+        </Modal>
+      )}
+      {task ? <UserTaskForm task={task} onSubmitFailure={() => setFailedToSubmit(true)} /> : <></>}
       {(isCompleted || isPaused) && (
         <div className={styles.overlay}>
           {isCompleted && <h1>This task is completed!</h1>}

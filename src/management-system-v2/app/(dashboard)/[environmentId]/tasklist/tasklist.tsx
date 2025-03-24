@@ -11,7 +11,6 @@ import { IoArrowBack } from 'react-icons/io5';
 import styles from './tasklist.module.scss';
 import ScrollBar from '@/components/scrollbar';
 
-import { TaskListEntry } from '@/lib/engines/tasklist';
 import { UserTask } from '@/lib/user-task-schema';
 import UserTaskView from './user-task-view';
 

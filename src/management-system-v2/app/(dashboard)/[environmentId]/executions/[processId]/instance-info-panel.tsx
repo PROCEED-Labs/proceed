@@ -17,18 +17,20 @@ export function DisplayTable({ data }: { data: ReactNode[][] }) {
   // TODO: make this responsive
   return (
     <table style={{ borderSpacing: '0 .5rem', borderCollapse: 'separate' }}>
-      {data.map((row, idx_row) => (
-        <tr key={idx_row}>
-          {row.map((cell, idx_cell) => (
-            <td
-              key={`${idx_row}.${idx_cell}`}
-              style={{ paddingRight: idx_cell < row.length - 1 ? '1rem' : '' }}
-            >
-              {cell}
-            </td>
-          ))}
-        </tr>
-      ))}
+      <tbody>
+        {data.map((row, idx_row) => (
+          <tr key={idx_row}>
+            {row.map((cell, idx_cell) => (
+              <td
+                key={`${idx_row}.${idx_cell}`}
+                style={{ paddingRight: idx_cell < row.length - 1 ? '1rem' : '' }}
+              >
+                {cell}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
     </table>
   );
 }

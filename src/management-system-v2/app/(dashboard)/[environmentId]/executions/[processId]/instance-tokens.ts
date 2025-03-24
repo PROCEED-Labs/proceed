@@ -1,7 +1,8 @@
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { InstanceInfo } from '@/lib/engines/deployment';
 
-import type { Connection, Element } from 'bpmn-js/lib/model/Types';
+import type { Element } from 'bpmn-js/lib/model/Types';
+import type { Connection } from 'diagram-js/lib/util/Elements';
 
 type TokenInfo = InstanceInfo['tokens'][number];
 

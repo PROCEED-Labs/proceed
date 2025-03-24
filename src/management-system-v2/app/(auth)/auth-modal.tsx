@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal, ModalProps } from 'antd';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 export default function AuthModal(props: ModalProps) {
   // We need to wait until the component is mounted on the client
@@ -8,6 +9,14 @@ export default function AuthModal(props: ModalProps) {
   useEffect(() => {
     setOpen(true);
   }, [setOpen]);
+
+  // disable all keyboard shortcuts that are set in the process list
+  useAddControlCallback(
+    'process-list',
+    ['selectall', 'del', 'esc', 'copy', 'paste', 'controlenter', 'enter', 'cut'],
+    () => {},
+    { blocking: true, level: 5 },
+  );
 
   return (
     <Modal

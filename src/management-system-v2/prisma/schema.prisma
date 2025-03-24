@@ -40,6 +40,7 @@ model User {
   memberIn        Membership[]
   folders         Folder[]
   oauthAccounts   OauthAccount[]
+  passwordAccount PasswordAccount?
   roleMembers     RoleMember[]
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
   guestSignin     GuestSignin?
@@ -57,6 +58,15 @@ model OauthAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("oauth_account")
+}
+
+model PasswordAccount {
+  userId   String @id
+  password String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_account")
 }
 
 model Process {

@@ -3,6 +3,9 @@ import type { Editor as ToastEditorType } from '@toast-ui/editor';
 import { v4 } from 'uuid';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
+
+import { CustomAnnotationViewModule } from '@/lib/modeler-extensions/TextAnnotation';
+
 import Canvas from 'diagram-js/lib/core/Canvas';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 
@@ -18,6 +21,8 @@ import {
 import { getSVGFromBPMN } from '@/lib/process-export/util';
 
 import schema from '@/lib/schema';
+
+import { ResourceViewModule } from '@/lib/modeler-extensions/GenericResources/index';
 
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {
@@ -127,6 +132,7 @@ export async function getViewer(bpmn: string) {
     moddleExtensions: {
       proceed: schema,
     },
+    additionalModules: [ResourceViewModule, CustomAnnotationViewModule],
   });
   await viewer.importXML(bpmn);
 

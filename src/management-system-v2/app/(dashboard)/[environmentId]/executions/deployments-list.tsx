@@ -13,15 +13,22 @@ import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
-type InputItem = DeployedProcessInfo & { name: string };
+type InputItem = {
+  id: string;
+  name: string;
+  versions: DeployedProcessInfo['versions'];
+  instances: DeployedProcessInfo['instances'];
+};
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
 const DeploymentsList = ({
   processes,
   tableProps,
+  removeDeployment,
 }: {
   processes: DeployedProcessListProcess[];
-  tableProps?: TableProps;
+  tableProps?: TableProps<DeployedProcessListProcess>;
+  removeDeployment: (id: string) => void;
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
@@ -36,7 +43,7 @@ const DeploymentsList = ({
       ellipsis: true,
       render: (_, record) => (
         <SpaceLink
-          href={`/executions/${record.definitionId}`}
+          href={`/executions/${record.id}`}
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
@@ -137,17 +144,12 @@ const DeploymentsList = ({
           columnProps: {
             width: '150px',
             responsive: ['xl'],
-            render: (id, record) => {
+            render: (_, record) => {
               return (
                 <Button
                   style={{ float: 'right' }}
                   type="text"
-                  onClick={() => {
-                    wrapServerCall({
-                      fn: () => removeDeployment(record.definitionId, space.spaceId),
-                      onSuccess: () => router.refresh(),
-                    });
-                  }}
+                  onClick={() => removeDeployment(record.id)}
                 >
                   <DeleteOutlined color="red" />
                 </Button>

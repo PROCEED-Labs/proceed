@@ -24,15 +24,14 @@ import {
   softDeleteProcessScriptTask,
   updateFileDeletableStatus,
 } from '@/lib/data/file-manager-facade';
-import { useSession } from 'next-auth/react';
+import { Process } from '@/lib/data/process-schema';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
-  process: { name: string; id: string; bpmn: string };
-  versions: { id: string; name: string; description: string; createdOn: Date }[];
+  process: Process;
 };
 
-const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
+const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
@@ -231,6 +230,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   }, [messageApi, subprocessId]);
 
   const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
+    if (!element.businessObject) return;
     const metaData = getMetaDataFromElement(element.businessObject);
     if (element.type === 'bpmn:UserTask' && element.businessObject.fileName) {
       softDeleteProcessUserTask(process.id, element.businessObject.fileName);
@@ -321,9 +321,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         <>
           {loaded && (
             <ModelerToolbar
-              processId={process.id}
+              process={process}
               onOpenXmlEditor={handleOpenXmlEditor}
-              versions={versions}
               canRedo={canRedo}
               canUndo={canUndo}
             />

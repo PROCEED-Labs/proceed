@@ -1,6 +1,6 @@
 'use server';
 
-import { userError } from '../user-error';
+import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
   deployProcess as _deployProcess,
   getDeployments,
@@ -24,50 +24,35 @@ import { asyncFilter } from '../helpers/javascriptHelpers';
 
 async function getCorrectTargetEngines(
   spaceId: string,
-  _forceEngine?: SpaceEngine | 'PROCEED',
+  onlyProceedEngines = false,
   validatorFunc?: (engine: Engine) => Promise<boolean>,
 ) {
   const { ability } = await getCurrentEnvironment(spaceId);
 
-  const [proceedEngines, spaceEngines] = await Promise.allSettled([
-    getProceedEngines(),
-    getSpaceEnginesFromDb(spaceId, ability),
-  ]);
-  if (proceedEngines.status === 'rejected' && spaceEngines.status === 'rejected')
-    throw new Error('Failed to fetch engines');
+  let engines: Engine[] = [];
+  if (onlyProceedEngines) {
+    // force that only proceed engines are supposed to be used
+    engines = await getProceedEngines();
+  } else {
+    // use all available engines
+    const [proceedEngines, spaceEngines] = await Promise.allSettled([
+      getProceedEngines(),
+      getSpaceEnginesFromDb(spaceId, ability),
+    ]);
 
-  // Start with PROCEED engines and overwrite them later if needed
-  let engines = proceedEngines.status === 'fulfilled' ? proceedEngines.value : [];
+    if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
 
-  // TODO: refactor spaceEnginesToEngines and calls to db potentially happening twice
-  let forceEngine: SpaceEngine | undefined = undefined;
-  if (_forceEngine === 'PROCEED' && validatorFunc) {
-    engines = await asyncFilter(engines, validatorFunc);
-  } else if (_forceEngine && _forceEngine !== 'PROCEED') {
-    const address =
-      _forceEngine.type === 'http' ? _forceEngine.address : _forceEngine.brokerAddress;
-    const spaceEngine = await getSpaceEngineByAddressFromDb(address, spaceId, ability);
-    if (!spaceEngine) throw new Error('No matching space engine found');
-
-    const engine = await spaceEnginesToEngines([spaceEngine]);
-    if (engine.length === 0) throw new Error("Engine couldn't be reached");
-    forceEngine = engine[0];
-  } else if (!_forceEngine && spaceEngines.status === 'fulfilled') {
-    // If we don't want to force PROCEEDE engines use space engines if available
-    let availableSpaceEngines = await spaceEnginesToEngines(spaceEngines.value);
-    if (validatorFunc) {
-      availableSpaceEngines = await asyncFilter(availableSpaceEngines, validatorFunc);
+    if (spaceEngines.status === 'fulfilled') {
+      let availableSpaceEngines = await spaceEnginesToEngines(spaceEngines.value);
+      engines = engines.concat(availableSpaceEngines);
     }
-    if (availableSpaceEngines.length > 0) engines = availableSpaceEngines;
   }
 
-  return { forceEngine, engines };
-}
+  if (validatorFunc) engines = await asyncFilter(engines, validatorFunc);
 
-export async function getAllDeployments(spaceId: string) {
-  const { engines } = await getCorrectTargetEngines(spaceId);
+  if (engines.length === 0) throw new UserFacingError('No fitting engine found.');
 
-  return await getDeployments(engines);
+  return engines;
 }
 
 export async function deployProcess(
@@ -82,11 +67,24 @@ export async function deployProcess(
 
     if (!enableUseDB) throw new Error('deployProcess only available with enableUseDB');
 
-    const { forceEngine, engines } = await getCorrectTargetEngines(spaceId, _forceEngine);
+    let engines;
+    if (_forceEngine && _forceEngine !== 'PROCEED') {
+      // forcing a specific engine
+      const { ability } = await getCurrentEnvironment(spaceId);
+      const address =
+        _forceEngine.type === 'http' ? _forceEngine.address : _forceEngine.brokerAddress;
+      const spaceEngine = await getSpaceEngineByAddressFromDb(address, spaceId, ability);
+      if (!spaceEngine) throw new Error('No matching space engine found');
+      engines = await spaceEnginesToEngines([spaceEngine]);
+      if (engines.length === 0) throw new Error("Engine couldn't be reached");
+    } else {
+      engines = await getCorrectTargetEngines(spaceId, _forceEngine === 'PROCEED');
+    }
 
-    await _deployProcess(definitionId, versionId, spaceId, method, engines, forceEngine);
+    await _deployProcess(definitionId, versionId, spaceId, method, engines);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -94,19 +92,16 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
   try {
     if (!enableUseDB) throw new Error('removeDeployment only available with enableUseDB');
 
-    const { engines } = await getCorrectTargetEngines(
-      spaceId,
-      undefined,
-      async (engine: Engine) => {
-        const deployments = await getDeployments([engine]);
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
+      const deployments = await getDeployments([engine]);
 
-        return deployments.some((deployment) => deployment.definitionId === definitionId);
-      },
-    );
+      return deployments.some((deployment) => deployment.definitionId === definitionId);
+    });
 
     await removeDeploymentFromMachines(engines, definitionId);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -121,21 +116,17 @@ export async function startInstance(
 
     if (!enableUseDB) throw new Error('startInstance is only available with enableUseDB');
 
-    const { engines } = await getCorrectTargetEngines(
-      spaceId,
-      undefined,
-      async (engine: Engine) => {
-        const deployments = await getDeployments([engine]);
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
+      const deployments = await getDeployments([engine]);
 
-        // TODO: in case of static deployment we will need to only return the engines that are
-        // assigned an entry point of the process
-        return deployments.some(
-          (deployment) =>
-            deployment.definitionId === definitionId &&
-            deployment.versions.some((version) => version.versionId === versionId),
-        );
-      },
-    );
+      // TODO: in case of static deployment we will need to only return the engines that are
+      // assigned an entry point of the process
+      return deployments.some(
+        (deployment) =>
+          deployment.definitionId === definitionId &&
+          deployment.versions.some((version) => version.versionId === versionId),
+      );
+    });
 
     if (engines.length === 0)
       return userError('Could not find an engine that the selected process could be started on.');
@@ -144,7 +135,8 @@ export async function startInstance(
     // (e.g. the one with the least load)
     return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -158,6 +150,15 @@ export async function getAvailableSpaceEngines(spaceId: string) {
     const spaceEngines = await getSpaceEnginesFromDb(spaceId, ability);
     return await spaceEnginesToEngines(spaceEngines);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
+}
+
+export async function getDeployment(spaceId: string, definitionId: string) {
+  const engines = await getCorrectTargetEngines(spaceId);
+
+  const deployments = await getDeployments(engines);
+
+  return deployments.find((d) => d.definitionId === definitionId) || null;
 }

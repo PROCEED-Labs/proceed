@@ -26,12 +26,12 @@ import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 
-function PageContent({
-  selectedProcess,
-  refetch,
+export default function ProcessDeploymentView({
+  processId,
+  initialDeploymentInfo,
 }: {
-  selectedProcess: DeployedProcessInfo;
-  refetch: () => Promise<any>;
+  processId: string;
+  initialDeploymentInfo: DeployedProcessInfo;
 }) {
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
@@ -43,28 +43,34 @@ function PageContent({
 
   const { spaceId } = useEnvironment();
 
+  const { data: deploymentInfo } = useDeployment(processId, initialDeploymentInfo);
+
   const router = useRouter();
 
   const { selectedVersion, instances, selectedInstance, currentVersion } = useMemo(() => {
-    const selectedVersion = selectedProcess.versions.find((v) => v.versionId === selectedVersionId);
+    let selectedVersion, instances, selectedInstance, currentVersion;
 
-    const instances = getVersionInstances(selectedProcess, selectedVersionId);
-    const selectedInstance = selectedInstanceId
-      ? instances.find((i) => i.processInstanceId === selectedInstanceId)
-      : undefined;
+    if (deploymentInfo) {
+      selectedVersion = deploymentInfo.versions.find((v) => v.versionId === selectedVersionId);
 
-    let currentVersionId = getLatestDeployment(selectedProcess).versionId;
-    if (selectedInstance) {
-      currentVersionId = selectedInstance.processVersion;
-    } else if (selectedVersionId) {
-      currentVersionId = selectedVersionId;
+      instances = getVersionInstances(deploymentInfo, selectedVersionId);
+      selectedInstance = selectedInstanceId
+        ? instances.find((i) => i.processInstanceId === selectedInstanceId)
+        : undefined;
+
+      let currentVersionId = getLatestDeployment(deploymentInfo).versionId;
+      if (selectedInstance) {
+        currentVersionId = selectedInstance.processVersion;
+      } else if (selectedVersionId) {
+        currentVersionId = selectedVersionId;
+      }
+      currentVersion = deploymentInfo.versions.find(
+        (version) => version.versionId === currentVersionId,
+      );
     }
-    const currentVersion = selectedProcess.versions.find(
-      (version) => version.versionId === currentVersionId,
-    );
 
     return { selectedVersion, instances, selectedInstance, currentVersion };
-  }, [selectedProcess, selectedVersionId, selectedInstanceId]);
+  }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
 
   const selectedBpmn = useMemo(() => {
     return { bpmn: currentVersion?.bpmn || '' };
@@ -81,6 +87,14 @@ function PageContent({
     refreshTokens();
     refreshColoring();
   }, [refreshTokens, refreshColoring]);
+
+  if (!deploymentInfo) {
+    return (
+      <Content>
+        <Result status="404" title="Process data is not available anymore" />
+      </Content>
+    );
+  }
 
   return (
     <Content compact wrapperClass={contentStyles.Content}>
@@ -114,20 +128,19 @@ function PageContent({
                 placeholder="Select an instance"
               />
               <Tooltip title="Start new instance">
-                {/** TODO: implement start new instance */}
                 <Button
                   icon={<PlusOutlined />}
                   onClick={() => {
                     wrapServerCall({
                       fn: () =>
                         startInstance(
-                          selectedProcess.definitionId,
-                          getLatestDeployment(selectedProcess).versionId,
+                          deploymentInfo.definitionId,
+                          getLatestDeployment(deploymentInfo).versionId,
                           spaceId,
                         ),
-                      onSuccess: async (instanceId) => {
-                        await refetch();
+                      onSuccess: (instanceId) => {
                         setSelectedInstanceId(instanceId);
+                        router.refresh();
                       },
                     });
                   }}
@@ -151,7 +164,7 @@ function PageContent({
                             },
                           ]
                         : []),
-                      ...selectedProcess.versions.map((version) => ({
+                      ...deploymentInfo.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
                         key: `${version.versionId}`,
                         disabled: false,
@@ -162,7 +175,7 @@ function PageContent({
                       const versionId = key === '-2' ? undefined : key;
                       setSelectedVersionId(versionId);
 
-                      const instances = getVersionInstances(selectedProcess, versionId);
+                      const instances = getVersionInstances(deploymentInfo, versionId);
                       if (!instances.some((i) => i.processInstanceId === selectedInstanceId)) {
                         const youngestInstance = getYoungestInstance(instances);
                         setSelectedInstanceId(youngestInstance?.processInstanceId);
@@ -210,7 +223,7 @@ function PageContent({
                   info={{
                     instance: selectedInstance,
                     element: selectedElement!,
-                    process: selectedProcess,
+                    process: deploymentInfo,
                     version: selectedVersion!,
                   }}
                   open={infoPanelOpen}
@@ -244,35 +257,5 @@ function PageContent({
         </div>
       </div>
     </Content>
-  );
-}
-
-function SuspenseWrapper({ processId }: { processId: string }) {
-  const { data, refetch } = useDeployment(processId);
-
-  return (
-    <>
-      {data ? (
-        <PageContent selectedProcess={data} refetch={refetch} />
-      ) : (
-        <Content>
-          <Result status="404" title="Process not found" />
-        </Content>
-      )}
-    </>
-  );
-}
-
-export default function ProcessDeploymentView({ processId }: { processId: string }) {
-  return (
-    <Suspense
-      fallback={
-        <Content>
-          <Skeleton />
-        </Content>
-      }
-    >
-      <SuspenseWrapper processId={processId} />
-    </Suspense>
   );
 }

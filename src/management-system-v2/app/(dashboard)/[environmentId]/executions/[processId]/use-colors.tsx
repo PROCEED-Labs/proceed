@@ -12,12 +12,10 @@ const useColors = (
 ) => {
   const appliedStylingRef = useRef<{ elementId: string; color: string }[]>([]);
 
-  const [timingRecolorTrigger, setTimingRecolorTrigger] = useState(0);
-
   // provide a function that allows BpmnCanvas to reapply the coloring after the bpmn was imported
   // but prevent unnecessary reimports of the bpmn from occuring every time there is a change in the
   // instance information
-  const applyColoringFunctionRef = useRef(() => { });
+  const applyColoringFunctionRef = useRef(() => {});
 
   useEffect(() => {
     applyColoringFunctionRef.current = () => {
@@ -43,7 +41,7 @@ const useColors = (
     // selections do not change
     if (selectedColoring == 'timeColors') {
       const interval = setInterval(() => {
-        setTimingRecolorTrigger(Date.now());
+        applyColoringFunctionRef.current();
       }, 1000);
       return () => {
         clearInterval(interval);
@@ -57,7 +55,7 @@ const useColors = (
 
   useEffect(() => {
     if (applyColoringFunctionRef.current) applyColoringFunctionRef.current();
-  }, [selectedColoring, selectedInstance, timingRecolorTrigger]);
+  }, [selectedColoring, selectedInstance]);
 
   useEffect(() => {
     // This is necessary, because bpmn-js throws an error if you try to remove a marker

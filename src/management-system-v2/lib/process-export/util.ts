@@ -9,6 +9,12 @@ import { getElementsByTagName } from '@proceed/bpmn-helper/src/util';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import { ProcessExportOptions } from './export-preparation';
+
+import { ResourceViewModule } from '@/lib/modeler-extensions/GenericResources';
+import { CustomAnnotationViewModule } from '@/lib/modeler-extensions/TextAnnotation';
+
+import schema from '@/lib/schema';
 
 /**
  * Transforms a definitionName of a process into a valid file path by replacing spaces
@@ -46,6 +52,62 @@ export function downloadFile(filename: string, data: Blob) {
   URL.revokeObjectURL(objectURL);
 }
 
+// This function can't be async do to safari limitations
+/** Exports a blob with the specified method in ProcessExportOptions */
+export async function handleExportMethod(
+  exportBlob: Promise<{ filename: string; blob: Blob } & ({} | { zip: true })>,
+  options: ProcessExportOptions,
+) {
+  let fallback: string | undefined = undefined;
+
+  if (options.exportMethod === 'webshare') {
+    if ('canShare' in window?.navigator)
+      try {
+        const { blob, filename } = await exportBlob;
+        navigator.share({
+          files: [new File([blob], filename, { type: blob.type })],
+        });
+        return fallback;
+      } catch (_) {}
+
+    fallback = 'Failed, copied to clipboard instead.';
+  }
+
+  if (!('zip' in exportBlob) && (fallback || options.exportMethod === 'clipboard')) {
+    // needed for clipboard export
+    let prematureClipboardTypeIfNotZip;
+    if (options.type === 'bpmn') {
+      prematureClipboardTypeIfNotZip = 'text/plain';
+    } else if (options.type === 'png') {
+      prematureClipboardTypeIfNotZip = 'image/png';
+    }
+
+    if (prematureClipboardTypeIfNotZip) {
+      try {
+        if (!navigator.clipboard) throw false;
+
+        const item = exportBlob.then(async ({ blob }) => {
+          if (prematureClipboardTypeIfNotZip === 'text/plain') return blob.text();
+          return blob;
+        });
+
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [prematureClipboardTypeIfNotZip!]: item,
+          }),
+        ]);
+        return fallback;
+      } catch (_) {}
+    }
+
+    fallback = 'Failed, downloaded instead.';
+  }
+
+  // default method
+  await exportBlob.then(({ blob, filename }) => downloadFile(filename, blob));
+  return fallback;
+}
+
 /**
  * Converts the bpmn into an svg image of the process or of subprocess contained inside the process
  *
@@ -66,12 +128,18 @@ export async function getSVGFromBPMN(
     //Creating temporary element for BPMN Viewer
     viewerElement = document.createElement('div');
 
-    //Assiging process id to temp element and append to DOM
+    //Assigning process id to temp element and append to DOM
     viewerElement.id = 'canvas_' + v4();
     document.body.appendChild(viewerElement);
 
     //Create a viewer to transform the bpmn into an svg
-    viewer = new Viewer({ container: '#' + viewerElement.id });
+    viewer = new Viewer({
+      container: '#' + viewerElement.id,
+      moddleExtensions: {
+        proceed: schema,
+      },
+      additionalModules: [ResourceViewModule, CustomAnnotationViewModule],
+    });
     await viewer.importXML(bpmnOrViewer);
   } else {
     viewer = bpmnOrViewer;
@@ -229,7 +297,7 @@ export async function isSelectedOrInsideSelected(
 
   let el = getElementById(bpmnObj, id) as any;
 
-  // this handles all elements that are directly selected or insided a selected subprocess
+  // this handles all elements that are directly selected or inside a selected subprocess
   while (el && !bpmnIs(el, 'bpmn:Process')) {
     if (selectedElementIds.includes(el.id)) return true;
     el = el.$parent;

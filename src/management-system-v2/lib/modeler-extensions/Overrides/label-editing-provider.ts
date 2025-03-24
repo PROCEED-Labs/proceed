@@ -10,6 +10,7 @@ import { Shape } from 'bpmn-js/lib/model/Types';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { isLabelExternal } from 'bpmn-js/lib/util/LabelUtil';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
+import type ResourceLabelEditingProvider from '../GenericResources/resource-label-editing';
 
 export default class CustomLabelEditingProvider extends LabelEditingProvider {
   // this tells bpmn-js which modules need to be passed to the constructor (the order must be the
@@ -22,7 +23,10 @@ export default class CustomLabelEditingProvider extends LabelEditingProvider {
     'modeling',
     'resizeHandles',
     'textRenderer',
+    'resourceLabelEditing',
   ];
+
+  resourceLabelEditing: ResourceLabelEditingProvider;
 
   constructor(
     eventBus: EventBus,
@@ -32,15 +36,25 @@ export default class CustomLabelEditingProvider extends LabelEditingProvider {
     modeling: Modeling,
     resizeHandles: ResizeHandles,
     textRenderer: TextRenderer,
+    resourceLabelEditing: ResourceLabelEditingProvider,
   ) {
     super(eventBus, bpmnFactory, canvas, directEditing, modeling, resizeHandles, textRenderer);
+
+    this.resourceLabelEditing = resourceLabelEditing;
   }
 
   activate(element: Shape) {
-    const context = super.activate(element);
+    let context: any;
+
+    const isGenericResource = is(element, 'proceed:GenericResource');
+    if (isGenericResource) {
+      context = this.resourceLabelEditing.activate(element);
+    } else {
+      context = super.activate(element);
+    }
 
     // overwrite the styling for the direct editing preview
-    if (isLabelExternal(element) && element.parent) {
+    if ((isGenericResource || isLabelExternal(element)) && element.parent) {
       context.style.backgroundColor = getBackgroundColor(element.parent as Shape) || 'white';
     } else {
       context.style.backgroundColor = getBackgroundColor(element) || 'white';

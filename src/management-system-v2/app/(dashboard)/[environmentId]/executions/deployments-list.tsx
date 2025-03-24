@@ -8,10 +8,6 @@ import { useState } from 'react';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import SpaceLink from '@/components/space-link';
 import processListStyles from '@/components/process-icon-list.module.scss';
-import { removeDeployment } from '@/lib/engines/server-actions';
-import { useEnvironment } from '@/components/auth-can';
-import { useRouter } from 'next/navigation';
-import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type InputItem = {
   id: string;
@@ -31,9 +27,6 @@ const DeploymentsList = ({
   removeDeployment: (id: string) => void;
 }) => {
   const breakpoint = Grid.useBreakpoint();
-
-  const space = useEnvironment();
-  const router = useRouter();
 
   const columns: TableColumnsType<DeployedProcessListProcess> = [
     {

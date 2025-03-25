@@ -5,14 +5,13 @@ import { useState } from 'react';
 import { changeEmail as serverChangeEmail } from '@/lib/change-email/server-actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRightOutlined } from '@ant-design/icons';
-import Content from '@/components/content';
 import { useSession } from 'next-auth/react';
 
 export default function ChangeEmailCard({
   previousEmail,
   newEmail,
 }: {
-  previousEmail?: string;
+  previousEmail?: string | null;
   newEmail: string;
 }) {
   const { message } = App.useApp();

@@ -72,8 +72,8 @@ function updateResource(
         } else if (value === 'all-roles') {
           acc.roles = Object.keys(availableResources.roles);
         } else {
-          const [type, id] = value.split('|') as ['user' | 'roles', string];
-          acc[type].push(id);
+          const [type, ...id] = value.split('|') as ['user' | 'roles', string];
+          acc[type].push(id.join('|'));
         }
         return acc;
       },

@@ -11,8 +11,18 @@ import {
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
+import { env } from '@/lib/env-vars';
+import * as noIamUser from '@/lib/no-iam-user';
 
 export const getCurrentUser = cache(async () => {
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    return {
+      session: noIamUser.session,
+      userId: noIamUser.userId,
+      systemAdmin: noIamUser.systemAdmin,
+    };
+  }
+
   const session = await getServerSession(nextAuthOptions);
   const userId = session?.user.id || '';
   const systemAdmin = await getSystemAdminByUserId(userId);

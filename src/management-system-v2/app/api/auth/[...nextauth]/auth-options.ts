@@ -14,6 +14,7 @@ import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
 import { enableUseDB } from 'FeatureFlags';
+import * as noIamUser from '@/lib/no-iam-user';
 
 const nextAuthOptions: AuthOptions = {
   secret: env.NEXTAUTH_SECRET,
@@ -49,6 +50,11 @@ const nextAuthOptions: AuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
+      if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+        token.user = noIamUser.user;
+        return token;
+      }
+
       let user = _user as User | undefined;
 
       if (trigger === 'update') user = (await getUserById(token.user.id)) as User;
@@ -244,6 +250,18 @@ if (env.NODE_ENV === 'development') {
   );
 }
 
+if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      id: 'no-iam-user',
+      credentials: {},
+      async authorize() {
+        return noIamUser.user;
+      },
+    }),
+  );
+}
+
 export type ExtractedProvider =
   | {
       id: string;
@@ -267,12 +285,14 @@ export type ExtractedProvider =
 // So we need to manually map the providers
 // NOTE be careful not to leak any sensitive information
 export const getProviders = () =>
-  nextAuthOptions.providers.map((provider) => ({
-    id: provider.options?.id ?? provider.id,
-    type: provider.type,
-    name: provider.options?.name ?? provider.name,
-    style: provider.type === 'oauth' ? provider.style : undefined,
-    credentials: provider.type === 'credentials' ? provider.options.credentials : undefined,
-  })) as ExtractedProvider[];
+  nextAuthOptions.providers
+    .map((provider) => ({
+      id: provider.options?.id ?? provider.id,
+      type: provider.type,
+      name: provider.options?.name ?? provider.name,
+      style: provider.type === 'oauth' ? provider.style : undefined,
+      credentials: provider.type === 'credentials' ? provider.options.credentials : undefined,
+    }))
+    .filter((provider) => provider.id !== 'no-iam-user') as ExtractedProvider[];
 
 export default nextAuthOptions;

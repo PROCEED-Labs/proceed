@@ -33,6 +33,8 @@ const environmentVariables = {
     MQTT_USERNAME: z.string().optional(),
     MQTT_PASSWORD: z.string().optional(),
     MQTT_BASETOPIC: z.string().optional(),
+
+    PROCEED_PUBLIC_IAM_ACTIVATE: z.string().optional(),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),

@@ -52,9 +52,7 @@ export function getUsers(page: number = 1, pageSize: number = 10) {
 export async function getAuthenticatedUsersInSpace(environmentId: string, ability?: Ability) {
   const members = await getMembers(environmentId, ability);
 
-  return members
-    .map((member) => usersMetaObject[member.userId])
-    .filter((user) => !user.isGuest) as AuthenticatedUser[];
+  return members.map((member) => usersMetaObject[member.userId]) as AuthenticatedUser[];
 }
 
 export async function getUsersInRole(roleId: string, ability?: Ability) {

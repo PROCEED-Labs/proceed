@@ -30,9 +30,7 @@ const Page = async ({
       </Content>
     );
 
-  const usersInRole = (await getUsersInRole(roleId, ability)).filter(
-    (u) => !u.isGuest,
-  ) as AuthenticatedUser[];
+  const usersInRole = (await getUsersInRole(roleId, ability)) as AuthenticatedUser[];
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
 
   const memberships = await getMembers(activeEnvironment.spaceId, ability);

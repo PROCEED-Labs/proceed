@@ -45,7 +45,7 @@ export async function getAuthenticatedUsersInSpace(environmentId: string, abilit
 
   // TODO: ability check
 
-  const authenticatedUsers = users.filter((user) => !user.isGuest) as AuthenticatedUser[];
+  const authenticatedUsers = users as AuthenticatedUser[];
 
   return authenticatedUsers;
 }

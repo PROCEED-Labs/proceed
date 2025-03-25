@@ -142,7 +142,7 @@ export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, model
           <>
             <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
               <span style={{ marginRight: '0.3em', marginBottom: '0.1rem' }}>
-                Responsible Parties
+                Possible Performers
               </span>
               <Tooltip
                 title={

@@ -1,6 +1,6 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getRoleById } from '@/lib/data/DTOs';
+import { getRoleById, getUsersInRole } from '@/lib/data/DTOs';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { getMembers } from '@/lib/data/DTOs';
@@ -30,9 +30,9 @@ const Page = async ({
       </Content>
     );
 
-  const usersInRole = (await Promise.all(
-    role.members.map((member) => getUserById(member.userId)),
-  )) as AuthenticatedUser[];
+  const usersInRole = (await getUsersInRole(roleId, ability)).filter(
+    (u) => !u.isGuest,
+  ) as AuthenticatedUser[];
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
 
   const memberships = await getMembers(activeEnvironment.spaceId, ability);

@@ -49,9 +49,6 @@ export async function getRoleById(roleId: string, ability?: Ability) {
     where: {
       id: roleId,
     },
-    include: {
-      members: true,
-    },
   });
 
   if (!ability) return role as Role;

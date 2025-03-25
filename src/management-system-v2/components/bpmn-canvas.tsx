@@ -21,14 +21,9 @@ import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Mod
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
 import {
-  PerformerRulesModule,
-  PerformerReplaceModule,
-  PerformerRendererModule,
-  PerformerLabelEditingModule,
-  PerformerPaletteProviderModule,
-  PerformerContextPadProviderModule,
-  PerformerLabelBehaviorModule,
-} from '@/lib/modeler-extensions/Performers';
+  ResourceViewModule,
+  ResourceModelingModule,
+} from '@/lib/modeler-extensions/GenericResources';
 import {
   CustomAnnotationViewModule,
   CustomAnnotationModelingModule,
@@ -217,18 +212,13 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
       // this will allow any type of viewer or editor we create to render our performer elements
-      const additionalModules: any[] = [PerformerRendererModule, CustomAnnotationViewModule];
+      const additionalModules: any[] = [ResourceViewModule, CustomAnnotationViewModule];
 
       // the modules related to editing can only be registered in modelers since they depend on
       // other modeler modules
       if (type === 'modeler') {
         additionalModules.push(
-          PerformerContextPadProviderModule,
-          PerformerPaletteProviderModule,
-          PerformerLabelEditingModule,
-          PerformerReplaceModule,
-          PerformerRulesModule,
-          PerformerLabelBehaviorModule,
+          ResourceModelingModule,
           CustomAnnotationModelingModule,
           ModelingOverrideModule,
         );
@@ -276,7 +266,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
     useEffect(() => {
       // Store handlers so we can remove them later.
       const _onLoaded = () => onLoaded?.();
-      const commandStackChanged = () => onChange?.();
+      const commandStackChanged = () => {
+        if (!loadingXML.current) onChange?.();
+      };
       const selectionChanged = (event: {
         oldSelection: ElementLike[];
         newSelection: ElementLike[];
@@ -306,7 +298,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current!.on(
           'commandStack.shape.create.executed',
           (event: { context: { shape: Shape } }) => {
-            onShapeRemoveUndo?.(event.context.shape.businessObject);
+            if (event.context.shape.businessObject)
+              onShapeRemoveUndo?.(event.context.shape.businessObject);
           },
         );
       }

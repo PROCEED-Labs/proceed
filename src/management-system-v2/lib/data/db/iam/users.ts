@@ -67,7 +67,7 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
   if (
     !user.isGuest &&
     ((user.username && (await getUserByUsername(user.username))) ||
-      (await getUserByEmail(user.email!)))
+      (user.email && (await getUserByEmail(user.email!))))
   )
     throw new Error('User with this email or username already exists');
 

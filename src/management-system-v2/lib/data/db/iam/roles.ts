@@ -10,21 +10,6 @@ import { Prisma } from '@prisma/client';
 export async function getRoles(environmentId?: string, ability?: Ability) {
   const roles = await db.role.findMany({
     where: environmentId ? { environmentId: environmentId } : undefined,
-    include: {
-      members: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-        },
-      },
-    },
   });
 
   const filteredRoles = ability ? ability.filter('view', 'Role', roles) : roles;

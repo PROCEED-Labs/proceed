@@ -4,7 +4,7 @@ import styles from './page.module.scss';
 import Modeler from './modeler';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
-import { getMembers, getProcess, getProcesses, getRoles } from '@/lib/data/DTOs';
+import { getAuthenticatedUsersInSpace, getProcess, getProcesses, getRoles } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { RoleType, UserType } from './use-potentialOwner-store';
@@ -26,25 +26,21 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   const process = await getProcess(processId, !selectedVersionId);
   const processes = await getProcesses(activeEnvironment.spaceId, ability, false);
 
-  /* TODO: Does this leak the complete roles array to front end? */
   const rawRoles = activeEnvironment.isOrganization
     ? await getRoles(activeEnvironment.spaceId, ability)
     : [];
+  const rawUsers = activeEnvironment.isOrganization
+    ? await getAuthenticatedUsersInSpace(activeEnvironment.spaceId, ability)
+    : [];
 
   const roles = rawRoles.reduce((acc, role) => ({ ...acc, [role.id]: role.name }), {} as RoleType);
-  // console.log('roles', roles);
-  const user = rawRoles.reduce((acc, role) => {
-    role.members.forEach((member) => {
-      acc[member.userId] = {
-        // @ts-ignore    // types wrong?!
-        userName: member.user.username,
-        // @ts-ignore    // types wrong?!
-        name: member.user.firstName + ' ' + member.user.lastName,
-      };
-    });
-
-    return acc;
-  }, {} as UserType);
+  const user = rawUsers.reduce(
+    (acc, u) => ({
+      ...acc,
+      [u.id]: { userName: u.username, name: u.firstName + ' ' + u.lastName },
+    }),
+    {} as UserType,
+  );
 
   if (!ability.can('view', toCaslResource('Process', process))) {
     throw new UnauthorizedError();

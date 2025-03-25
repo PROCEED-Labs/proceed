@@ -10,8 +10,13 @@ import { AuthenticatedUser } from '@/lib/data/user-schema';
 import UserAvatar from '@/components/user-avatar';
 import { userRepresentation } from '@/lib/utils';
 
+export type MemberInfo = Pick<
+  AuthenticatedUser,
+  'id' | 'firstName' | 'lastName' | 'username' | 'email'
+>;
+
 const RoleContent: FC<{
-  role: (Omit<FilteredRole, 'members'> & { members: AuthenticatedUser[] }) | null;
+  role: (Omit<FilteredRole, 'members'> & { members: MemberInfo[] }) | null;
 }> = ({ role }) => {
   return (
     <>
@@ -46,7 +51,7 @@ const RoleContent: FC<{
             <>
               <Typography.Title>Members</Typography.Title>
               {role.members.map((user) => (
-                <Space>
+                <Space key={user.id}>
                   <UserAvatar user={user} avatarProps={{ size: 30 }} />
                   <Typography.Text>{userRepresentation(user)}</Typography.Text>
                 </Space>
@@ -62,7 +67,7 @@ const RoleContent: FC<{
 };
 
 type RoleSidePanelProps = PropsWithChildren<{
-  role: (FilteredRole & { members: AuthenticatedUser[] }) | null;
+  role: (FilteredRole & { members: MemberInfo[] }) | null;
   setShowMobileRoleSider: Dispatch<SetStateAction<boolean>>;
   showMobileRoleSider: boolean;
 }>;

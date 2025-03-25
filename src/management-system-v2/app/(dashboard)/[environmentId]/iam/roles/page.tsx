@@ -1,10 +1,10 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getRoles } from '@/lib/data/DTOs';
+import { getRoles, getUsersInRole } from '@/lib/data/DTOs';
 import RolesPage from './role-page';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
-import { ComponentProps } from 'react';
-import { getUserById } from '@/lib/data/DTOs';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
@@ -13,14 +13,26 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
 
   const roles = await getRoles(activeEnvironment.spaceId, ability);
 
-  for (let i = 0; i < roles.length; i++) {
-    // @ts-ignore
-    roles[i] = { members: roles[i].members.map(({ userId }) => getUserById(userId)), ...roles[i] };
-  }
+  const extendedRoles = await asyncMap(roles, async (role) => {
+    const roleUsers = await getUsersInRole(role.id, ability);
+    const authenticatedMembers = roleUsers.filter(
+      (member) => member && !member.isGuest,
+    ) as AuthenticatedUser[];
+    return {
+      ...role,
+      members: authenticatedMembers.map(({ id, firstName, lastName, username, email }) => ({
+        id,
+        firstName,
+        lastName,
+        username,
+        email,
+      })),
+    };
+  });
 
   return (
     <Content title="Identity and Access Management">
-      <RolesPage roles={roles as ComponentProps<typeof RolesPage>['roles']} />
+      <RolesPage roles={extendedRoles} />
     </Content>
   );
 };

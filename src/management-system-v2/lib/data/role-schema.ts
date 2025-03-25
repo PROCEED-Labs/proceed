@@ -21,13 +21,6 @@ export type RoleInput = z.infer<typeof RoleInputSchema>;
 
 export type Role = RoleInput & {
   id: string;
-  members: {
-    userId: string;
-    username?: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-  }[];
   createdOn: Date;
   lastEditedOn: Date;
 };

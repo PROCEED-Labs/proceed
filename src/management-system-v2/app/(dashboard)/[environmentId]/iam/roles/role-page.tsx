@@ -18,7 +18,7 @@ import Bar from '@/components/bar';
 import { useAbilityStore } from '@/lib/abilityStore';
 import ConfirmationButton from '@/components/confirmation-button';
 import { useRouter } from 'next/navigation';
-import RoleSidePanel from './role-side-panel';
+import RoleSidePanel, { MemberInfo } from './role-side-panel';
 import { deleteRoles as serverDeleteRoles } from '@/lib/data/roles';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
@@ -26,7 +26,11 @@ import styles from './role-page.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 
-function getMembersRepresentation(members: Role['members']) {
+type ModifiedRole = Omit<Role, 'members'> & {
+  members: MemberInfo[];
+};
+
+function getMembersRepresentation(members: ModifiedRole['members']) {
   if (members.length === 0) return undefined;
 
   return members.map((member) => userRepresentation(member)).join(', ');
@@ -39,7 +43,6 @@ import SelectionActions from '@/components/selection-actions';
 import { spaceURL, userRepresentation } from '@/lib/utils';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 
-type ModifiedRole = Role & { members: AuthenticatedUser[] };
 export type FilteredRole = ReplaceKeysWithHighlighted<ModifiedRole, 'name'>;
 
 const RolesPage = ({ roles }: { roles: ModifiedRole[] }) => {

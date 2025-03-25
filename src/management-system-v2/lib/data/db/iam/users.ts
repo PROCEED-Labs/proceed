@@ -14,6 +14,7 @@ import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
+import Ability from '@/lib/ability/abilityHelper';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -35,6 +36,28 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
       totalPages,
     },
   };
+}
+
+export async function getAuthenticatedUsersInSpace(environmentId: string, ability?: Ability) {
+  const users = await db.user.findMany({
+    where: { memberIn: { some: { environmentId } } },
+  });
+
+  // TODO: ability check
+
+  const authenticatedUsers = users.filter((user) => !user.isGuest) as AuthenticatedUser[];
+
+  return authenticatedUsers;
+}
+
+export async function getUsersInRole(roleId: string, ability?: Ability) {
+  const users = await db.user.findMany({
+    where: { roleMembers: { some: { roleId } } },
+  });
+
+  // TODO: ability check
+
+  return users as User[];
 }
 
 export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
@@ -139,7 +162,7 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
     if (adminRole.members.length === 1) {
       orgsWithNoNextAdmin.push(environmentId);
     } else {
-      /* make the next available admin the owner of the organization, because once the user is deleted, 
+      /* make the next available admin the owner of the organization, because once the user is deleted,
       the space that the user owns will be deleted: ON DELETE CASCADE */
       await dbMutator.space.update({
         where: { id: environmentId },

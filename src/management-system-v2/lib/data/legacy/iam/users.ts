@@ -12,10 +12,11 @@ import {
 } from '../../user-schema';
 import { addEnvironment, deleteEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
-import { getUserOrganizationEnvironments, removeMember } from './memberships';
-import { getRoleMappingByUserId } from './role-mappings';
+import { getMembers, getUserOrganizationEnvironments, removeMember } from './memberships';
+import { getRoleMappingByUserId, getRoleMappings } from './role-mappings';
 import { getRoles } from './roles';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
+import Ability from '@/lib/ability/abilityHelper.js';
 
 // @ts-ignore
 let firstInit = !global.usersMetaObject || !global.accountsMetaObject;
@@ -46,6 +47,22 @@ export function getUsers(page: number = 1, pageSize: number = 10) {
       totalPages: totalPages,
     },
   };
+}
+
+export async function getAuthenticatedUsersInSpace(environmentId: string, ability?: Ability) {
+  const members = await getMembers(environmentId, ability);
+
+  return members
+    .map((member) => usersMetaObject[member.userId])
+    .filter((user) => !user.isGuest) as AuthenticatedUser[];
+}
+
+export async function getUsersInRole(roleId: string, ability?: Ability) {
+  const roleMappings = await getRoleMappings(ability);
+
+  const userIds = roleMappings.filter((m) => m.roleId === roleId).map((m) => m.userId);
+
+  return userIds.map((id) => usersMetaObject[id]);
 }
 
 export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {

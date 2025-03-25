@@ -177,6 +177,18 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
     : await usersModuleLegacy.getUsers();
 }
 
+export async function getAuthenticatedUsersInSpace(environmentId: string, ability?: Ability) {
+  return enableUseDB
+    ? await usersModuleDB.getAuthenticatedUsersInSpace(environmentId, ability)
+    : await usersModuleLegacy.getAuthenticatedUsersInSpace(environmentId, ability);
+}
+
+export async function getUsersInRole(roleId: string, ability?: Ability) {
+  return enableUseDB
+    ? await usersModuleDB.getUsersInRole(roleId, ability)
+    : await usersModuleLegacy.getUsersInRole(roleId, ability);
+}
+
 export async function isMember(environmentId: string, userId: string) {
   return enableUseDB
     ? await membershipsModuleDB.isMember(environmentId, userId)

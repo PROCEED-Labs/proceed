@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
+import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
 import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
 import { AppstoreOutlined } from '@ant-design/icons';
 import Image from 'next/image';
@@ -19,6 +19,7 @@ import { FaUserEdit } from 'react-icons/fa';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { enableUseFileManager } from 'FeatureFlags';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -62,6 +63,7 @@ const Layout: FC<
   });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
+  const envVars = use(EnvVarsContext);
 
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
@@ -75,24 +77,29 @@ const Layout: FC<
     );
 
     if (userData && !userData.isGuest) {
+      const mobileLayoutItems = [];
+
+      if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+        mobileLayoutItems.push({
+          key: 'profile',
+          title: 'Profile Settings',
+          label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
+          icon: <FaUserEdit />,
+        });
+      }
+
+      mobileLayoutItems.push({
+        key: 'spaces',
+        title: 'My Spaces',
+        label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
+        icon: <AppstoreOutlined />,
+      });
+
       layoutMenuItems = [
         {
           label: 'Profile',
           key: 'profile-settings',
-          children: [
-            {
-              key: 'profile',
-              title: 'Profile Settings',
-              label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-              icon: <FaUserEdit />,
-            },
-            {
-              key: 'spaces',
-              title: 'My Spaces',
-              label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
-              icon: <AppstoreOutlined />,
-            },
-          ],
+          children: mobileLayoutItems,
         },
         ...layoutMenuItems,
       ];

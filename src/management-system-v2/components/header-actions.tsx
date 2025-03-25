@@ -15,7 +15,7 @@ import {
   theme,
 } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { FC, useContext, useState } from 'react';
+import { FC, use, useContext, useState } from 'react';
 import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
 import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
+import { EnvVarsContext } from './env-vars-context';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -34,6 +35,7 @@ const HeaderActions: FC = () => {
   const [guestWarningOpen, setGuestWarningOpen] = useState(false);
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
+  const envVars = use(EnvVarsContext);
 
   if (!loggedIn) {
     return (
@@ -50,14 +52,16 @@ const HeaderActions: FC = () => {
   }
 
   let actionButton;
-  const avatarDropdownItems: MenuProps['items'] = [
-    {
+  const avatarDropdownItems: MenuProps['items'] = [];
+
+  if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    avatarDropdownItems.push({
       key: 'profile',
       title: 'Profile Settings',
       label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
       icon: <FaUserEdit />,
-    },
-  ];
+    });
+  }
 
   if (isGuest) {
     actionButton = (
@@ -124,21 +128,22 @@ const HeaderActions: FC = () => {
       );
     }
 
-    avatarDropdownItems.push(
-      {
-        key: 'spaces',
-        title: 'My Spaces',
-        label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
-        icon: <AppstoreOutlined />,
-      },
-      {
+    avatarDropdownItems.push({
+      key: 'spaces',
+      title: 'My Spaces',
+      label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
+      icon: <AppstoreOutlined />,
+    });
+
+    if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+      avatarDropdownItems.push({
         key: 'signout',
         title: 'Sign Out',
         label: 'Sign Out',
         onClick: () => signOut(),
         icon: <FaSignOutAlt />,
-      },
-    );
+      });
+    }
   }
 
   return (
@@ -168,9 +173,15 @@ const HeaderActions: FC = () => {
             items: avatarDropdownItems,
           }}
         >
-          <SpaceLink href={`/profile`}>
-            <UserAvatar user={session.data.user} />
-          </SpaceLink>
+          {envVars.PROCEED_PUBLIC_IAM_ACTIVATE ? (
+            <SpaceLink href={`/profile`}>
+              <UserAvatar user={session.data.user} />
+            </SpaceLink>
+          ) : (
+            <div>
+              <UserAvatar user={session.data.user} />
+            </div>
+          )}
         </Dropdown>
       </Space>
     </>

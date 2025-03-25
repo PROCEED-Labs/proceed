@@ -1,14 +1,12 @@
 'use client';
+import React, { PropsWithChildren, useEffect, useImperativeHandle, useRef } from 'react';
+import { BlocklyWorkspace } from 'react-blockly';
 import {
-  forwardRef,
-  PropsWithChildren,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react';
-import { BlocklyWorkspace, useBlocklyWorkspace } from 'react-blockly';
-import { INITIAL_TOOLBOX_JSON, javascriptGenerator, Blockly } from './blockly-editor-config';
+  INITIAL_TOOLBOX_JSON,
+  javascriptGenerator,
+  Blockly,
+  connectionCheckerPlugin,
+} from './blockly-editor-config';
 
 import './blockly-editor.css';
 
@@ -71,6 +69,9 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef }: BlocklyEditorProps) 
       className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
       toolboxConfiguration={INITIAL_TOOLBOX_JSON} // this must be a JSON toolbox definition
       workspaceConfiguration={{
+        plugins: {
+          ...connectionCheckerPlugin,
+        },
         grid: {
           spacing: 20,
           length: 3,
@@ -82,7 +83,6 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef }: BlocklyEditorProps) 
         const isBlockScriptValid = validateBlockScript();
         const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
         const javascriptCode = javascriptGenerator.workspaceToCode(workspace);
-
         onChange(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
       }}
       onInject={(newWorkspace) => {

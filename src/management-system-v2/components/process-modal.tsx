@@ -11,8 +11,8 @@ import {
   Carousel,
   Card,
   Flex,
-  message,
-  notification,
+  Alert,
+  Collapse,
 } from 'antd';
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
@@ -58,7 +58,12 @@ const ProcessModal = <
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
   const [carouselIndex, setCarouselIndex] = useState(1);
-  const [api, contextHolder] = notification.useNotification();
+  const [nameCollisions, setNameCollisions] = useState<
+    { index: number; oldName: string; newName: string }[]
+  >([]);
+  const [showCollisions, setShowCollisions] = useState(true);
+  const environment = useEnvironment();
+  const session = useSession();
 
   useEffect(() => {
     if (initialData) {
@@ -89,6 +94,7 @@ const ProcessModal = <
           message.open({ type: 'error', content: res.error.message });
         }
         setCarouselIndex(1);
+        setNameCollisions([]);
       } catch (e) {
         // Unkown server error or was not sent from server (e.g. network error)
         message.open({
@@ -131,20 +137,43 @@ const ProcessModal = <
     { level: 2, blocking: open, dependencies: [open] },
   );
 
-  const resolveProcessNameCollision = (index: number, oldName: string, newName: string) => {
-    initialData ? (initialData[index].name = newName) : null;
-    form.setFieldsValue(initialData);
-    api.open({
-      type: 'warning',
-      message: `Process Name Collision Detected: "${oldName}" changed to "${newName}"`,
-      duration: 0,
-      style: { background: '#FFFDE6', border: '1px solid #F8E7A2' },
-    });
+  useEffect(() => {
+    if (open && initialData && isImportModal) {
+      validateImportedNames();
+    }
+  }, [open, initialData]);
+
+  const validateImportedNames = async () => {
+    if (!initialData || !isImportModal) return;
+
+    const collisions: { index: number; oldName: string; newName: string }[] = [];
+
+    for (let i = 0; i < initialData.length; i++) {
+      const process = initialData[i];
+      const exists = await checkIfProcessExistsByName(
+        process.name,
+        environment.spaceId,
+        session.data?.user.id!,
+      );
+
+      if (exists) {
+        const newName = `${process.name}_import_${new Date().toISOString()}`;
+        collisions.push({ index: i, oldName: process.name, newName });
+        initialData[i].name = newName;
+      }
+    }
+
+    if (collisions.length > 0) {
+      setNameCollisions(collisions);
+      form.setFieldsValue(initialData);
+      setShowCollisions(true);
+    } else {
+      setNameCollisions([]);
+    }
   };
 
   return (
     <>
-      {contextHolder}
       <Modal
         title={
           <Flex justify="space-between" style={{ width: '100%', paddingRight: '25px' }}>
@@ -169,12 +198,45 @@ const ProcessModal = <
         onCancel={(e) => {
           modalProps?.onCancel?.(e);
           onCancel(e);
+          setNameCollisions([]);
         }}
         onOk={(e) => {
           modalProps?.onOk?.(e);
           onOk();
         }}
       >
+        {nameCollisions.length > 0 && showCollisions && (
+          <Alert
+            message={
+              <>
+                <Collapse
+                  size="small"
+                  items={[
+                    {
+                      key: '1',
+                      label: `${nameCollisions.length} process name${nameCollisions.length > 1 ? 's were' : ' was'} automatically renamed due to name conflict with existing process`,
+                      children: (
+                        <ul style={{ margin: 0, paddingLeft: 20 }}>
+                          {nameCollisions.map((collision, i) => (
+                            <li key={i}>
+                              Process {collision.index + 1}: "{collision.oldName}" → "
+                              {collision.newName}"
+                            </li>
+                          ))}
+                        </ul>
+                      ),
+                    },
+                  ]}
+                />
+              </>
+            }
+            type="warning"
+            showIcon
+            closable
+            style={{ marginBottom: 16 }}
+            onClose={() => setShowCollisions(false)}
+          />
+        )}
         <Form
           form={form}
           layout="vertical"
@@ -200,12 +262,7 @@ const ProcessModal = <
               {initialData &&
                 initialData.map((process, index) => (
                   <Card key={index}>
-                    <ProcessInputs
-                      key={index}
-                      index={index}
-                      isImport={isImportModal}
-                      resolveNameCollision={resolveProcessNameCollision}
-                    />
+                    <ProcessInputs key={index} index={index} isImport={isImportModal} />
                   </Card>
                 ))}
             </Carousel>
@@ -219,15 +276,13 @@ const ProcessModal = <
 type ProcessInputsProps = {
   index: number;
   isImport?: boolean;
-  resolveNameCollision?: (index: number, oldName: string, newName: string) => void;
 };
 
-const ProcessInputs = ({ index, isImport, resolveNameCollision }: ProcessInputsProps) => {
+const ProcessInputs = ({ index, isImport }: ProcessInputsProps) => {
   const environment = useEnvironment();
   const session = useSession();
-  const [resolveCollisionCalled, setResolveCollisionCalled] = useState(false);
 
-  const validateProcessName = debounce(async (name: string, callback: Function) => {
+  const validateProcessName = async (name: string, callback: Function) => {
     if (!name) {
       callback(new Error('Please fill out the Process name'));
       return;
@@ -245,29 +300,23 @@ const ProcessInputs = ({ index, isImport, resolveNameCollision }: ProcessInputsP
     }
 
     if (isImport) {
-      // if name collision is detected during import, add '_import_' + currrent Date suffix
-      // try to resolve collision once automatically, if not pass control to the user
-      if (resolveNameCollision && !resolveCollisionCalled) {
-        resolveNameCollision(index, name, `${name}_import_${new Date().toISOString()}`);
-        setResolveCollisionCalled(true);
-      } else {
-        message.warning(`A process with the name "${name}" already exists.`);
-        callback(new Error('Please manually resolve process name collision'));
-        return;
-      }
+      callback(
+        new Error(`A process with the name "${name}" already exists. Please use different name`),
+      );
+      return;
     } else {
       callback(new Error('A process with this name already exists!'));
       return;
     }
-
-    callback();
-  }, 500);
+  };
 
   return (
     <>
       <Form.Item
         name={[index, 'name']}
         label="Process Name"
+        validateDebounce={1000}
+        hasFeedback
         rules={[
           { required: true, message: '' },
           {

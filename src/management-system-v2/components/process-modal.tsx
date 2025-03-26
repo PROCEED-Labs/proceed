@@ -318,6 +318,7 @@ const ProcessInputs = ({ index, isImport }: ProcessInputsProps) => {
         validateDebounce={1000}
         hasFeedback
         rules={[
+          { max: 100, message: 'Process name can be max 100 characters long' },
           { required: true, message: '' },
           {
             validator: (_, value) =>
@@ -334,14 +335,25 @@ const ProcessInputs = ({ index, isImport }: ProcessInputsProps) => {
       <Form.Item
         name={[index, 'userDefinedId']}
         label="ID"
-        rules={[{ required: false, message: 'Please enter a unique ID for the process.' }, {}]}
+        rules={[
+          { max: 50, message: 'ID can be max 50 characters long' },
+          {
+            required: false,
+            message: 'Please enter a unique ID for the process.',
+          },
+          {},
+        ]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
         label="Process Description"
-        rules={[{ required: false, message: 'Please fill out the Process description' }]}
+        rules={[
+          { max: 1000, message: 'Process description can be max 1000 characters long' },
+
+          { required: false, message: 'Please fill out the Process description' },
+        ]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>

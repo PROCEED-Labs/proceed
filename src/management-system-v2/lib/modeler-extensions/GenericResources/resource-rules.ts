@@ -18,10 +18,16 @@ export default class CustomRules extends RuleProvider {
 
   init(): void {
     this.addRule('connection.create', 1500, (context) => {
-      const { source, target } = context;
+      let { source, target } = context;
 
-      const sourceIsPerformer = is(source, 'proceed:Performer');
-      const targetCanHavePerformer = is(target, 'proceed:PerformableNode');
+      if (is(target, 'proceed:GenericResource')) {
+        const tmp = source;
+        source = target;
+        target = tmp;
+      }
+
+      const sourceIsResource = is(source, 'proceed:GenericResource');
+      const targetCanHaveResource = is(target, 'proceed:PerformableNode');
 
       const { elementRegistry } = this;
       const associations = elementRegistry.filter((el) => el.type === 'bpmn:Association');
@@ -29,9 +35,9 @@ export default class CustomRules extends RuleProvider {
         (association) => association.source === source && association.target === target,
       );
 
-      // if the user tries to connect a performer to some element we want the connection to be an
+      // if the user tries to connect a resource to some element we want the connection to be an
       // association
-      if (sourceIsPerformer && targetCanHavePerformer && !isRedundant) {
+      if (sourceIsResource && targetCanHaveResource && !isRedundant) {
         return {
           type: 'bpmn:Association',
           associationDirection: 'None',
@@ -41,13 +47,21 @@ export default class CustomRules extends RuleProvider {
     this.addRule('connection.reconnect', 1500, (context) => {
       const { source, target, connection } = context;
 
-      const sourceIsPerformer = is(source, 'proceed:Performer');
-      const targetCanHavePerformer = is(target, 'proceed:PerformableNode');
+      const sourceIsResource = is(source, 'proceed:GenericResource');
+      const targetCanHaveResource = is(target, 'proceed:PerformableNode');
       const isAssociation = is(connection, 'bpmn:Association');
 
-      // if a performer element is replaced by another performer element make sure to keep the
+      // if a resource element is replaced by another resource element make sure to keep the
       // connection
-      if (sourceIsPerformer && targetCanHavePerformer && isAssociation) return true;
+      if (sourceIsResource && targetCanHaveResource && isAssociation) {
+        return {
+          type: 'bpmn:Association',
+          associationDirection: 'None',
+        };
+      }
+    });
+    this.addRule('shape.resize', 1500, ({ shape }) => {
+      if (is(shape, 'proceed:GenericResource')) return true;
     });
   }
 }

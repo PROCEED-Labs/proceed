@@ -92,8 +92,10 @@ export async function copyConfig(
   copy.id = newId;
   copy.parentId = parentId;
 
-  copy.parameters = await asyncMap(copy.parameters, (id) => copyParameter(id, newId, configType));
-  copy.metadata = await asyncMap(copy.metadata, (id) => copyParameter(id, newId, configType));
+  [copy.parameters, copy.metadata] = await Promise.all([
+    asyncMap(copy.parameters, (id) => copyParameter(id, newId, configType)),
+    asyncMap(copy.metadata, (id) => copyParameter(id, newId, configType)),
+  ]);
 
   if (configType === 'target-config') {
     await db.targetConfig.create({ data: { id: copy.id, data: copy } });
@@ -141,17 +143,18 @@ export async function copyParentConfig(
       lastEditedOn: date,
       ...parentConfigData,
       name: parentConfigData.name || `${originalConfig.name} (Copy)`,
-      metadata: await asyncMap(originalConfig.metadata, (id) =>
-        copyParameter(id, newId, 'parent-config'),
-      ),
-      targetConfig:
-        originalConfig.targetConfig &&
-        (await copyConfig(originalConfig.targetConfig, 'target-config', newId)),
-      machineConfigs: await asyncMap(originalConfig.machineConfigs, (id) =>
-        copyConfig(id, 'machine-config', newId),
-      ),
+      metadata: [],
+      targetConfig: undefined,
+      machineConfigs: [],
       originalId,
     } as StoredParentConfig;
+
+    [copy.metadata, copy.targetConfig, copy.machineConfigs] = await Promise.all([
+      asyncMap(originalConfig.metadata, (id) => copyParameter(id, newId, 'parent-config')),
+      originalConfig.targetConfig &&
+        copyConfig(originalConfig.targetConfig, 'target-config', newId),
+      asyncMap(originalConfig.machineConfigs, (id) => copyConfig(id, 'machine-config', newId)),
+    ]);
 
     // if no folder ID is given, set ID to root folder's
     if (!copy.folderId) {
@@ -441,25 +444,22 @@ async function targetConfigToStorage(
 ) {
   if (targetConfig) {
     targetConfig.id = newId ? v4() : targetConfig.id;
+    let configToStore = {
+      ...targetConfig,
+      parentId,
+      metadata: [],
+      parameters: [],
+    } as StoredTargetConfig;
+
+    [configToStore.metadata, configToStore.parameters] = await Promise.all([
+      parametersToStorage(targetConfig.id, 'target-config', targetConfig.metadata, newId),
+      parametersToStorage(targetConfig.id, 'target-config', targetConfig.parameters, newId),
+    ]);
+
     await db.targetConfig.create({
       data: {
         id: targetConfig.id,
-        data: {
-          ...targetConfig,
-          parentId,
-          metadata: await parametersToStorage(
-            targetConfig.id,
-            'target-config',
-            targetConfig.metadata,
-            newId,
-          ),
-          parameters: await parametersToStorage(
-            targetConfig.id,
-            'target-config',
-            targetConfig.parameters,
-            newId,
-          ),
-        },
+        data: configToStore,
       },
     });
 
@@ -481,25 +481,23 @@ function machineConfigsToStorage(
 ) {
   machineConfigs.forEach(async (machineConfig) => {
     machineConfig.id = newId ? v4() : machineConfig.id;
+
+    let configToStore = {
+      ...machineConfig,
+      parentId,
+      metadata: [],
+      parameters: [],
+    } as StoredMachineConfig;
+
+    [configToStore.metadata, configToStore.parameters] = await Promise.all([
+      parametersToStorage(machineConfig.id, 'target-config', machineConfig.metadata, newId),
+      parametersToStorage(machineConfig.id, 'target-config', machineConfig.parameters, newId),
+    ]);
+
     await db.machineConfig.create({
       data: {
         id: machineConfig.id,
-        data: {
-          ...machineConfig,
-          parentId,
-          metadata: await parametersToStorage(
-            machineConfig.id,
-            'machine-config',
-            machineConfig.metadata,
-            newId,
-          ),
-          parameters: await parametersToStorage(
-            machineConfig.id,
-            'machine-config',
-            machineConfig.parameters,
-            newId,
-          ),
-        },
+        data: configToStore,
       },
     });
   });
@@ -521,18 +519,23 @@ async function parentConfigToStorage(
   const { targetConfig, metadata, machineConfigs } = parentConfig;
   parentConfig.id = newId && !version ? v4() : parentConfig.id;
   let creationDate = new Date(parentConfig.createdOn);
-  const toStore = {
+  const configToStore = {
     ...parentConfig,
-    targetConfig: targetConfig
-      ? await targetConfigToStorage(parentConfig.id, targetConfig, newId)
-      : undefined,
-    machineConfigs: await machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
-    metadata: await parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
-  };
+    targetConfig: undefined,
+    machineConfigs: [],
+    metadata: [],
+  } as StoredParentConfig;
+
+  [configToStore.targetConfig, configToStore.machineConfigs, configToStore.metadata] =
+    await Promise.all([
+      targetConfig && targetConfigToStorage(parentConfig.id, targetConfig, newId),
+      machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+      parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+    ]);
 
   if (version)
     await db.configVersions.create({
-      data: { id: version, parentId: parentConfig.id, data: toStore },
+      data: { id: version, parentId: parentConfig.id, data: configToStore },
     });
   else
     await db.config.create({
@@ -541,7 +544,7 @@ async function parentConfigToStorage(
         environmentId: parentConfig.environmentId,
         creatorId: parentConfig.createdBy,
         createdOn: creationDate,
-        data: toStore,
+        data: configToStore,
       },
     });
   return parentConfig.id;
@@ -562,16 +565,19 @@ async function versionToParentConfigStorage(versionId: string) {
   const copy = {
     ...(JSON.parse(JSON.stringify(configVersion)) as typeof configVersion),
     ...configVersion,
-    metadata: await asyncMap(configVersion.metadata, (id) =>
-      copyParameter(id, configVersion.id, 'parent-config'),
-    ),
-    targetConfig:
-      configVersion.targetConfig &&
-      (await copyConfig(configVersion.targetConfig, 'target-config', configVersion.id)),
-    machineConfigs: await asyncMap(configVersion.machineConfigs, (id) =>
+    metadata: [],
+    targetConfig: undefined,
+    machineConfigs: [],
+  } as StoredParentConfig;
+
+  [copy.metadata, copy.targetConfig, copy.machineConfigs] = await Promise.all([
+    asyncMap(configVersion.metadata, (id) => copyParameter(id, configVersion.id, 'parent-config')),
+    configVersion.targetConfig &&
+      copyConfig(configVersion.targetConfig, 'target-config', configVersion.id),
+    asyncMap(configVersion.machineConfigs, (id) =>
       copyConfig(id, 'machine-config', configVersion.id),
     ),
-  } as StoredParentConfig;
+  ]);
 
   // if no folder ID is given, set ID to root folder's
   if (!copy.folderId) {
@@ -633,21 +639,27 @@ async function nestedConfigFromStorage<T extends TargetConfig | MachineConfig>(
 ) {
   if (!configId) return;
 
-  let targetResult = await db.targetConfig.findUnique({ where: { id: configId } });
-  let machineResult = await db.machineConfig.findUnique({ where: { id: configId } });
-
-  let targetConvert: StoredTargetConfig = targetResult?.data as unknown as StoredTargetConfig;
-  let machineConvert: StoredMachineConfig = machineResult?.data as unknown as StoredMachineConfig;
-
-  const storedConfig = configType === 'target-config' ? targetConvert : machineConvert;
+  let storedConfig;
+  if (configType === 'target-config') {
+    let targetResult = await db.targetConfig.findUnique({ where: { id: configId } });
+    storedConfig = targetResult?.data as unknown as StoredTargetConfig;
+  } else {
+    let machineResult = await db.machineConfig.findUnique({ where: { id: configId } });
+    storedConfig = machineResult?.data as unknown as StoredMachineConfig;
+  }
 
   if (!storedConfig) return;
 
   const config = {
     ...storedConfig,
-    parameters: await nestedParametersFromStorage(storedConfig.parameters),
-    metadata: await nestedParametersFromStorage(storedConfig.metadata),
+    parameters: {},
+    metadata: {},
   };
+
+  [config.parameters, config.metadata] = await Promise.all([
+    nestedParametersFromStorage(storedConfig.parameters),
+    nestedParametersFromStorage(storedConfig.metadata),
+  ]);
 
   if (configType === 'target-config') return config as TargetConfig;
   else return config as MachineConfig;
@@ -695,11 +707,18 @@ export async function getDeepParentConfigurationById(
   const parentConfig = {
     ...config,
     lastEditedOn: lastEdited,
-    metadata: await nestedParametersFromStorage(config.metadata),
-    targetConfig: await nestedConfigFromStorage('target-config', config.targetConfig),
-    machineConfigs: await nestedMachineConfigsFromStorage(config.machineConfigs),
+    metadata: {},
+    targetConfig: {},
+    machineConfigs: {},
     versions: versions,
-  } as unknown as ParentConfig;
+  } as ParentConfig;
+
+  [parentConfig.metadata, parentConfig.targetConfig, parentConfig.machineConfigs] =
+    await Promise.all([
+      nestedParametersFromStorage(config.metadata),
+      nestedConfigFromStorage('target-config', config.targetConfig),
+      nestedMachineConfigsFromStorage(config.machineConfigs),
+    ]);
 
   if (
     parentConfig &&
@@ -900,8 +919,10 @@ export async function removeTargetConfig(targetConfigId: string) {
   }
 
   // remove all referenced parameters
-  await asyncForEach(targetConfig.metadata, async (id) => removeParameter(id));
-  await asyncForEach(targetConfig.parameters, async (id) => removeParameter(id));
+  await Promise.all([
+    asyncForEach(targetConfig.metadata, async (id) => removeParameter(id)),
+    asyncForEach(targetConfig.parameters, async (id) => removeParameter(id)),
+  ]);
 
   // remove the target config from db
   await db.targetConfig.delete({ where: { id: targetConfigId } });
@@ -938,8 +959,10 @@ export async function removeMachineConfig(machineConfigId: string) {
   }
 
   // remove all referenced parameters
-  await asyncForEach(machineConfig.metadata, async (id) => removeParameter(id));
-  await asyncForEach(machineConfig.parameters, async (id) => removeParameter(id));
+  await Promise.all([
+    asyncForEach(machineConfig.metadata, async (id) => removeParameter(id)),
+    asyncForEach(machineConfig.parameters, async (id) => removeParameter(id)),
+  ]);
 
   // remove the machine config from db
   await db.machineConfig.delete({ where: { id: machineConfigId } });
@@ -964,9 +987,11 @@ export async function removeParentConfiguration(
 
   if (!parentConfig) return;
 
-  if (parentConfig.targetConfig) await removeTargetConfig(parentConfig.targetConfig);
-  await asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id));
-  await asyncForEach(parentConfig.metadata, (id) => removeParameter(id));
+  await Promise.all([
+    parentConfig.targetConfig && removeTargetConfig(parentConfig.targetConfig),
+    asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id)),
+    asyncForEach(parentConfig.metadata, (id) => removeParameter(id)),
+  ]);
 
   // for each version removing TargetConfig, MachineConfigs and Parameters and finally removing the configVersion itself
   if (!keepVersions) {
@@ -975,10 +1000,12 @@ export async function removeParentConfiguration(
     ) as unknown as StoredParentConfig[];
 
     await asyncForEach(parentConfigVersions, async (configVersion) => {
-      if (configVersion.targetConfig) await removeTargetConfig(configVersion.targetConfig);
-      await asyncForEach(configVersion.machineConfigs, (id) => removeMachineConfig(id));
-      await asyncForEach(configVersion.metadata, (id) => removeParameter(id));
-      await db.configVersions.delete({ where: { id: configVersion.version } });
+      await Promise.all([
+        configVersion.targetConfig && removeTargetConfig(configVersion.targetConfig),
+        asyncForEach(configVersion.machineConfigs, (id) => removeMachineConfig(id)),
+        asyncForEach(configVersion.metadata, (id) => removeParameter(id)),
+        db.configVersions.delete({ where: { id: configVersion.version } }),
+      ]);
     });
 
     // remove from db

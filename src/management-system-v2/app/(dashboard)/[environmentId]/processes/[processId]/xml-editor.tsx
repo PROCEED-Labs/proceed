@@ -4,12 +4,7 @@ import React, { FC, useEffect, useRef, useState } from 'react';
 
 import { useParams, useSearchParams } from 'next/navigation';
 import { Modal, Button, Tooltip, Flex, Popconfirm, Space, message, Alert } from 'antd';
-import {
-  SearchOutlined,
-  DownloadOutlined,
-  CopyOutlined,
-  ExclamationCircleOutlined,
-} from '@ant-design/icons';
+import { SearchOutlined, CopyOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
 const { Title } = Typography;
 
@@ -260,23 +255,6 @@ const XmlEditor: FC<XmlEditorProps> = ({
     }
   };
 
-  const selectedVersionId = parseInt(useSearchParams().get('version') ?? '-1');
-
-  const handleDownload = async () => {
-    if (editorRef.current) {
-      let filename = process.name || process.id || 'process';
-
-      if (versionName !== undefined) {
-        filename += `_version_${versionName || selectedVersionId}`;
-      }
-
-      await downloadFile(
-        `${filename}.bpmn`,
-        new Blob([editorRef.current.getValue()], { type: 'application/xml' }),
-      );
-    }
-  };
-
   const toggleEditMode = () => {
     if (isReadOnly) {
       setEditWarningVisible(true);
@@ -297,7 +275,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
     if (saveState.state === 'error' && saveState.errorMessages.length > 0) {
       return (
         <div>
-          <strong>Error{saveState.errorMessages.length > 1 ? 's' : ''}:</strong>
+          <strong>XML Error{saveState.errorMessages.length > 1 ? 's' : ''}:</strong>
           <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
             {saveState.errorMessages.map((msg, index) => (
               <li key={index}>
@@ -410,9 +388,6 @@ const XmlEditor: FC<XmlEditorProps> = ({
                 ></Button>
               </Tooltip>
 
-              <Tooltip title="Download">
-                <Button icon={<DownloadOutlined />} onClick={handleDownload} />
-              </Tooltip>
               <Tooltip title="Copy to Clipboard">
                 <Button icon={<CopyOutlined />} onClick={handleCopyToClipboard} />
               </Tooltip>

@@ -19,6 +19,9 @@ import { FaUserEdit } from 'react-icons/fa';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { enableUseFileManager } from 'FeatureFlags';
+import { useUserPreferences } from '@/lib/user-preferences';
+
+export const COLLAPSED_SIDER_WIDTH = 75;
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -65,7 +68,11 @@ const Layout: FC<
 
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
-  const [collapsed, setCollapsed] = useState(false);
+  // const [collapsed, setCollapsed] = useState(false);
+  const { collapsed } = useUserPreferences.use['layout-menu']();
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const setCollapsed = (collapsed: boolean) => addPreferences({ 'layout-menu': { collapsed } });
+
   const breakpoint = Grid.useBreakpoint();
 
   let layoutMenuItems = _layoutMenuItems;
@@ -162,7 +169,7 @@ const Layout: FC<
                 collapsible
                 collapsed={collapsed}
                 onCollapse={(collapsed) => setCollapsed(collapsed)}
-                collapsedWidth={breakpoint.xs ? '0' : '75'}
+                collapsedWidth={breakpoint.xs ? '0' : `${COLLAPSED_SIDER_WIDTH}`}
                 breakpoint="xl"
                 theme="light"
               >

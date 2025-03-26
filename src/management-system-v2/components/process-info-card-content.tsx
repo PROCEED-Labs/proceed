@@ -1,11 +1,13 @@
 'use client';
 
-import { Divider, Spin } from 'antd';
+import { Descriptions, Divider, Spin } from 'antd';
 import React, { FC, Suspense } from 'react';
 import Viewer from './bpmn-viewer';
-import { ProcessListProcess } from './processes';
+import { canDoActionOnResource, ProcessListProcess } from './processes';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProceedLoadingIndicator from './loading-proceed';
+import { generateDateString } from '@/lib/utils';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 type MetaDataContentType = {
   selectedElement?: ProcessListProcess;
@@ -13,6 +15,11 @@ type MetaDataContentType = {
 
 const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
   const hydrated = useUserPreferences.use._hydrated();
+
+  const ability = useAbilityStore((state) => state.ability);
+
+  const canDelete = selectedElement && canDoActionOnResource([selectedElement], 'delete', ability);
+  const canEdit = selectedElement && canDoActionOnResource([selectedElement], 'update', ability);
 
   if (!hydrated) return null;
 
@@ -47,27 +54,39 @@ const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
           <h5>
             <b>Last Edited</b>
           </h5>
-          <p>{/**generateDateString(selectedElement.lastEdited, true)*/}</p>
+          <p>{generateDateString(selectedElement.lastEditedOn!, true)}</p>
           <h5>
             <b>Created On</b>
           </h5>
-          <p>{/**generateDateString(selectedElement.createdOn, true)*/}</p>
-          <h5>
-            <b>File Size</b>
-          </h5>
-          <p>X KB</p>
+          <p>{generateDateString(selectedElement.createdOn!, true)}</p>
           <h5>
             <b>Owner</b>
           </h5>
-          <p>Obi Wan Kenobi</p>
+          <p>{/* TODO: once userID-userName Mapping is done */}</p>
           <h5>
             <b>Description</b>
           </h5>
           <p>{selectedElement.description.value}</p>
 
           <Divider style={{ width: '100%', marginLeft: '-20%' }} />
-          <h3>Access Rights</h3>
-          <p>Test</p>
+          {/* <h3>Access Rights</h3> */}
+          <Descriptions
+            title={'Access Rights'}
+            bordered
+            size="small"
+            layout="horizontal"
+            // colon={false}
+          >
+            <Descriptions.Item span={3} label="View the Process:">
+              ✅
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label="Edit the Process:">
+              {canEdit ? '✅' : '❌'}
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label="Delete the Process">
+              {canDelete ? '✅' : '❌'}
+            </Descriptions.Item>
+          </Descriptions>
         </>
       ) : (
         <div>Please select a process.</div>

@@ -8,6 +8,8 @@ const {
   getPerformersFromElementById,
 } = require('@proceed/bpmn-helper');
 
+const { db } = require('@proceed/distribution');
+
 const { enable5thIndustryIntegration } = require('../../../../../../FeatureFlags.js');
 
 /**
@@ -127,6 +129,26 @@ function onCallActivity(engine, instance, tokenId, callActivity) {
   });
 }
 
+function onScriptTask(engine, instance, tokenId, scriptTask) {
+  return new Promise(async (resolve) => {
+    engine._log.info({
+      msg: `A new Script Task was encountered, InstanceId = ${instance.id}`,
+      instanceId: instance.id,
+    });
+
+    instance.updateToken(tokenId, { currentFlowNodeProgress: { value: 0, manual: false } });
+
+    // if the script task references a file instead of having inline script information inject the script information from the file
+    if (scriptTask.$attrs['proceed:fileName'] && !scriptTask.script) {
+      const script = await db.getScript(engine.definitionId, scriptTask.$attrs['proceed:fileName']);
+      scriptTask.script = script;
+      scriptTask.scriptFormat = 'application/javascript';
+    }
+
+    resolve();
+  });
+}
+
 module.exports = {
   getShouldActivateFlowNode(engine) {
     return async function shouldActivateFlowNode(
@@ -161,7 +183,7 @@ module.exports = {
       }
 
       if (flowNode.$type === 'bpmn:ScriptTask') {
-        instance.updateToken(tokenId, { currentFlowNodeProgress: { value: 0, manual: false } });
+        await onScriptTask(engine, instance, tokenId, flowNode);
       }
 
       return true;

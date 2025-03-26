@@ -1,0 +1,487 @@
+name: Build and deploy with Database
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        required: true
+
+env:
+  OUTPUT_PATH_ENGINE_NODE: './build/engine/'
+  OUTPUT_PATH_ENGINE_ANDROID: './src/engine/native/android/app/build/outputs/apk/debug/'
+  OUTPUT_PATH_MS_SERVER: './src/management-system-v2/.next/'
+  DOCKER_PATH_MS_SERVER: './src/management-system-v2'
+  FILE_NAME_NODE_ENGINE: 'PROCEED-Engine-0.1.0.zip'
+  FILE_NAME_ANDROID: 'PROCEED-Engine-0.1.0.apk'
+  DB_CONTAINER: ${{ vars.DB_CONTAINER_NAME }}
+  DEFAULT_DB: ${{ vars.DB_DEFAULT_DB }}
+jobs:
+  check-feature-flags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check feature flags are disabled
+        run: |
+          FILE="FeatureFlags.js"
+
+          # Define exempted flags
+          EXEMPTED_FLAGS=("enableMessaging" "enableUseDB" "enableUseFileManager")
+
+          # Find all flags set to `true`
+          FLAGS_WITH_TRUE=$(grep -E '^\s*enable[a-zA-Z0-9_]+\s*:\s*true' "$FILE" | awk -F: '{print $1}' | tr -d ' ')
+
+          # Check each flag
+          for FLAG in $FLAGS_WITH_TRUE; do
+            if [[ ! " ${EXEMPTED_FLAGS[@]} " =~ " $FLAG " ]]; then
+              echo "❌ Feature flag $FLAG must be set to false before merging!"
+              exit 1
+            fi
+          done
+
+          echo "✅ All feature flags (except exemptions) are correctly set to false."
+
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile
+
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: cache-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn prettier --check .
+
+  testEngine:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn test-engine --ci
+
+  testEngineE2E:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn test-e2e --ci
+
+  # testMS:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
+
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
+
+  #     - run: yarn test-ms --ci
+
+  buildMS:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
+    needs: lint
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn build-ms
+
+      - id: set_tag
+        run: |
+          TAG=$(git describe --tags --always --dirty --abbrev=7)
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            echo "tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Kaniko build
+        uses: aevea/action-kaniko@master
+        with:
+          image: proceed/ms-server
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          path: ${{ env.DOCKER_PATH_MS_SERVER }}
+          tag: ${{ steps.set_tag.outputs.tag }}
+
+  validate-migrations:
+    runs-on: ubuntu-latest
+    needs: buildMS
+    outputs:
+      main_diff: ${{ steps.migration-diff-main.outputs.diff }}
+      branch_diff: ${{ steps.migration-diff-branch.outputs.diff }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Fetch main branch
+        if: ${{github.ref != 'refs/heads/main'}}
+        run: git fetch origin main:main
+
+      - name: Compare migrations with main
+        if: ${{github.ref != 'refs/heads/main'}}
+        id: migration-diff-main
+        run: |
+          MIGRATIONS_PATH="src/management-system-v2/prisma/migrations"
+
+          # Use arrays for better handling of filenames with spaces
+          readarray -t MAIN_MIGRATIONS < <(git ls-tree -r main --name-only "$MIGRATIONS_PATH" | grep '\.sql$' || echo "")
+          readarray -t CURRENT_MIGRATIONS < <(git ls-tree -r HEAD --name-only "$MIGRATIONS_PATH" | grep '\.sql$' || echo "")
+
+          # Compare arrays and handle empty cases
+          if [ "${#MAIN_MIGRATIONS[@]}" -ne "${#CURRENT_MIGRATIONS[@]}" ] || \
+             [ -n "$(diff <(printf "%s\n" "${MAIN_MIGRATIONS[@]}") <(printf "%s\n" "${CURRENT_MIGRATIONS[@]}"))" ]; then
+            echo "Migration differences detected between main and current branch"
+            echo "diff=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No migration differences detected between main and current branch"
+            echo "diff=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check branch-specific migration changes
+        id: migration-diff-branch
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q 'src/management-system-v2/prisma/migrations/.*\.sql$'; then
+            echo "Branch-specific migration changes detected"
+            echo "diff=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No branch-specific migration changes"
+            echo "diff=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [buildMS, validate-migrations]
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+      issues: write
+    environment: Staging
+    env:
+      MS_TAG: ${{ needs.buildMS.outputs.tag }}
+      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
+      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
+      ENV: Staging
+    steps:
+      # Database name generation step
+      - name: Generate sanitized database name
+        if: ${{ github.ref != 'refs/heads/main' }}
+        id: generate-name
+        run: |
+          # Sanitize branch name for database naming
+          BRANCH_NAME="${{ github.ref_name }}"
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed -E 's/[^a-zA-Z0-9]/_/g' | tr '[:upper:]' '[:lower:]')
+
+          # Determine suffix based on migration differences
+          if [ "${{ needs.validate-migrations.outputs.main_diff }}" = "false" ]; then
+            DB_NAME="proceed_db_${SANITIZED_BRANCH}_main"
+          else
+            DB_NAME="proceed_db_${SANITIZED_BRANCH}"
+          fi
+
+          DB_NAME="${DB_NAME:0:63}"
+          echo "Generated database name: $DB_NAME"
+          echo "DB_NAME=$DB_NAME" >> "$GITHUB_OUTPUT"
+
+      # SSH Configuration step
+      - name: Configure SSH
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      # Database lifecycle management step
+      - name: Manage database lifecycle
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: |
+          DB_EXISTS=$(ssh $ENV "docker exec ${{ env.DB_CONTAINER }} \
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
+
+          if [[ "${{ needs.validate-migrations.outputs.main_diff }}" = "true" && \
+                "${{ needs.validate-migrations.outputs.branch_diff }}" = "true" ]]; then
+            echo "Dropping existing database due to migration changes"
+            ssh $ENV \
+              "docker exec ${{ env.DB_CONTAINER }} \
+                psql -U ${{ secrets.DB_USER }} \
+                -d ${{ env.DEFAULT_DB }} \
+                -c 'DROP DATABASE IF EXISTS \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
+          elif [ "$DB_EXISTS" = "1" ]; then
+            echo "Reusing existing database"
+          else
+            echo "Database will be created in subsequent step"
+          fi
+
+      # Database deployment steps
+      - name: Verify database status
+        if: ${{ github.ref != 'refs/heads/main' }}
+        id: db-status
+        run: |
+          DB_EXISTS=$(ssh $ENV \
+            "docker exec ${{ env.DB_CONTAINER }} \
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -tAc \"SELECT 1 FROM pg_database WHERE datname='${{ steps.generate-name.outputs.DB_NAME }}'\"")
+          echo "create_db=$([[ "$DB_EXISTS" != "1" ]] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+
+      - name: Create database if needed
+        if: steps.db-status.outputs.create_db == 'true'
+        run: |
+          ssh $ENV \
+            "docker exec ${{ env.DB_CONTAINER }} \
+              psql -U ${{ secrets.DB_USER }} \
+              -d ${{ env.DEFAULT_DB }} \
+              -c 'CREATE DATABASE \"${{ steps.generate-name.outputs.DB_NAME }}\"'"
+
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          export_environment_variables: true # Exports the service account key as GOOGLE_APPLICATION_CREDENTIALS, we need this for cloud sql auth proxy
+          project_id: 'proceed-bpms'
+          workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
+          service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
+
+      - name: Configure Cloud SQL Auth Proxy Docker
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          cat $GOOGLE_APPLICATION_CREDENTIALS > /tmp/key.json
+          docker run -d --name cloud-sql-auth-proxy -p 127.0.0.1:3306:3306 -v /tmp/key.json:/tmp/key.json --user "$(id -u):$(id -g)" gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.3 --address 0.0.0.0 --port 3306 --credentials-file /tmp/key.json ${{secrets.INSTANCE_CONNECTION_NAME}}
+
+      - name: Configure database connection
+        id: configure-connection
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{ secrets.CLOUD_SQL_DB_PASS }}@127.0.0.1:3306/${{ secrets.CLOUD_SQL_DB_NAME }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.SSH_HOST }}:5433/${{ steps.generate-name.outputs.DB_NAME }}?schema=public" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore Cache
+        uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Apply Prisma Migrations
+        env:
+          DATABASE_URL: ${{ steps.configure-connection.outputs.DATABASE_URL }}
+        run: |
+          yarn dev-ms-db-deploy
+
+      - id: 'deploy'
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
+          flags: '--add-cloudsql-instances=${{secrets.INSTANCE_CONNECTION_NAME}}'
+          env_vars: |
+            NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
+            DATABASE_URL=postgresql://${{ secrets.CLOUD_SQL_DB_USER }}:${{secrets.CLOUD_SQL_DB_PASS}}@localhost/${{ secrets.CLOUD_SQL_DB_NAME }}?host=/cloudsql/${{secrets.INSTANCE_CONNECTION_NAME}}&schema=public
+            PROCEED_PUBLIC_DEPLOYMENT_ENV=local
+          region: 'europe-west1'
+          revision_traffic: LATEST=100
+
+      - id: 'deploy-preview'
+        if: ${{ github.event_name == 'pull_request' }}
+        name: Preview Cloud Run Deployment
+        uses: anishsapkota/preview-cloudrun@main
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          region: 'europe-west1'
+          env_vars: '{"DATABASE_URL": "${{ steps.configure-connection.outputs.DATABASE_URL }}", "PROCEED_PUBLIC_DEPLOYMENT_ENV":"local", "PROCEED_PUBLIC_ENABLE_EXECUTION": "true"}'
+
+  githubEnvironment:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ github.ref == 'refs/heads/main' }}
+    environment:
+      name: ${{ inputs.environment || 'Staging' }}
+      url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
+    steps:
+      - run: echo "${{ inputs.environment || 'Staging' }}"
+
+  testE2E:
+    needs: deploy
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    if: ${{ inputs.environment != 'Production' }}
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      # TODO: cache these?
+      - name: Install Playwright Browsers
+        run: yarn playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: yarn playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: ${{ github.event_name == 'pull_request' && format('https://pr-{0}---ms-server-staging-c4f6qdpj7q-ew.a.run.app', github.event.number) || 'https://staging.proceed-labs.org' }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: all-blob-reports-${{ matrix.shard }}
+          path: blob-report
+          retention-days: 1
+
+  create-report:
+    name: 📔 Create test report
+    if: always()
+    needs: [testE2E]
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - name: Download blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: all-blob-reports-*
+          merge-multiple: true
+          path: all-blob-reports
+
+      - name: Merge into HTML Report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 7

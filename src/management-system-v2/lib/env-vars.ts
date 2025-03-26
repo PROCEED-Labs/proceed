@@ -10,7 +10,6 @@ const environmentVariables = {
   all: {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     ENABLE_MACHINE_CONFIG: z.string().optional(), // NOTE: Not sure if it should be optional
-    PROCEED_PUBLIC_NEW_LAYOUT: z.string().optional(),
     PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
     PROCEED_PUBLIC_DEPLOYMENT_ENV: z.enum(['cloud', 'local']).optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
@@ -62,7 +61,9 @@ const environmentVariables = {
 
     GUEST_REFERENCE_SECRET: z.string(),
 
+    //Note: needed for cloud deployment with gcp bucket
     GOOGLE_CLOUD_BUCKET_NAME: z.string().optional(),
+    PROCEED_GCP_BUCKET_KEY_PATH: z.string().optional(),
   },
   development: {
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),

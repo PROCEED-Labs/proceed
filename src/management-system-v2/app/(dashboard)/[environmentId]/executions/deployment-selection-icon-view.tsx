@@ -4,7 +4,8 @@ import { ProcessListProcess } from './deployments-modal';
 import { Button, Card } from 'antd';
 import Viewer from '@/components/bpmn-viewer';
 import { FolderOutlined } from '@ant-design/icons';
-import { HTMLAttributes } from 'react';
+import { HTMLAttributes, Suspense } from 'react';
+import ProceedLoadingIndicator from '@/components/loading-proceed';
 
 const ProcessIconView = ({
   data: filteredData,
@@ -49,7 +50,9 @@ const ProcessIconView = ({
           item.type === 'folder' ? (
             <Card.Meta title={cardTitle} />
           ) : (
-            <Viewer definitionId={item.id} reduceLogo={true} />
+            <Suspense fallback={<ProceedLoadingIndicator />}>
+              <Viewer definitionId={item.id} reduceLogo={true} fitOnResize />
+            </Suspense>
           ),
         title: item.type === 'process' && cardTitle,
       },

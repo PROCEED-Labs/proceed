@@ -4,7 +4,7 @@ import { ComponentProps } from 'react';
 import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
-import { getParentConfigurations } from '@/lib/data/legacy/machine-config';
+import { getParentConfigurations } from '@/lib/data/db/machine-config';
 import ParentConfigList from './parent-config-list';
 import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { env } from '@/lib/env-vars';

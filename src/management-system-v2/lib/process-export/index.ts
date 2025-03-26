@@ -111,7 +111,10 @@ export async function getExportblob(
 
   if (zip) {
     return {
-      filename: 'PROCEED_Multiple-Processes_bpmn.zip',
+      filename:
+        exportData.length === 1
+          ? `${exportData[0].definitionName}.zip`
+          : 'PROCEED_Multiple-Processes_bpmn.zip',
       blob: await zip.generateAsync({ type: 'blob' }),
       zip: true,
     };

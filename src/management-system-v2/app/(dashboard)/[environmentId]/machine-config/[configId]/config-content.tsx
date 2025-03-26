@@ -2,21 +2,21 @@
 
 import { AbstractConfig, ParentConfig, StoredParameter } from '@/lib/data/machine-config-schema';
 import { useRouter } from 'next/navigation';
-
 import { KeyOutlined, EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import { Button, Input, Col, Row, Tooltip, Space } from 'antd';
+import { Button, Input, Col, Row, Tooltip, Space, Select, SelectProps, Tag } from 'antd';
 import { defaultParameter } from '../configuration-helper';
 import AddButton from './add-button';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 import CustomField from './custom-field';
-
-import { addParameter as backendAddParameter } from '@/lib/data/legacy/machine-config';
+import { addParameter as backendAddParameter } from '@/lib/data/db/machine-config';
 
 type MachineDataViewProps = {
   configId: string;
   configType: Exclude<StoredParameter['parentType'], 'parameter'>;
+  shortname: AbstractConfig['shortname'];
   data: AbstractConfig['metadata'];
+  categories: AbstractConfig['categories'];
   parentConfig: ParentConfig;
   editingEnabled: boolean;
   contentType: 'metadata' | 'parameters';
@@ -25,7 +25,9 @@ type MachineDataViewProps = {
 const Content: React.FC<MachineDataViewProps> = ({
   configId,
   configType,
+  shortname,
   data,
+  categories,
   parentConfig,
   editingEnabled: editable,
   contentType,
@@ -44,7 +46,6 @@ const Content: React.FC<MachineDataViewProps> = ({
       valuesFromModal.language,
       valuesFromModal.unit,
     );
-
     await backendAddParameter(
       configId,
       configType,
@@ -89,6 +90,23 @@ const Content: React.FC<MachineDataViewProps> = ({
       )}
 
       <Space direction="vertical" style={{ display: 'flex' }}>
+        <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+          {categories &&
+            categories.map((cat) => (
+              <Space>
+                <Tag color="orange">{cat}</Tag>
+              </Space>
+            ))}
+        </Row>
+
+        <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
+          <Col span={3} className="gutter-row">
+            ID
+          </Col>
+          <Col span={21} className="gutter-row">
+            {shortname}
+          </Col>
+        </Row>
         {Object.entries(data).map(([key, val]) => (
           // Rows: Metadata, Parameter, Nested Parameters, Linked Parameter
           <CustomField

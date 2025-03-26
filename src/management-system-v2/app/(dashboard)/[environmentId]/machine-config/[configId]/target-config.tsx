@@ -45,6 +45,8 @@ const TargetConfiguration: React.FC<MachineDataViewProps> = ({ parentConfig, edi
             configType="target-config"
             data={targetConfig.metadata}
             parentConfig={parentConfig}
+            shortname={targetConfig.shortname}
+            categories={targetConfig.categories}
           />,
         ],
         style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
@@ -66,6 +68,8 @@ const TargetConfiguration: React.FC<MachineDataViewProps> = ({ parentConfig, edi
             configType="target-config"
             data={targetConfig.parameters}
             parentConfig={parentConfig}
+            shortname={targetConfig.shortname}
+            categories={targetConfig.categories}
           />,
         ],
         style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3

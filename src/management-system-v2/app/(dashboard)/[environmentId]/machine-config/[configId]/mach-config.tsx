@@ -13,7 +13,7 @@ import {
   removeMachineConfig,
   updateMachineConfig,
   updateParentConfig,
-} from '@/lib/data/legacy/machine-config';
+} from '@/lib/data/db/machine-config';
 
 const { Text } = Typography;
 
@@ -96,7 +96,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
     const machineConfig = parentConfig.machineConfigs.find(({ id }) => id === configToCopy);
     if (!machineConfig) return;
 
-    const id = await copyConfig(configToCopy, 'machine-config');
+    const id = await copyConfig(configToCopy, 'machine-config', parentConfig.id);
 
     // TODO: update the copy with the correct name and description
     // the description update should be handled in the backend (its not just a field but a content entry of a metadata entry)
@@ -128,7 +128,9 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
             <Content
               contentType="metadata"
               editingEnabled={editingEnabled}
+              shortname={config.shortname}
               data={config.metadata}
+              categories={[]}
               configId={config.id}
               configType="machine-config"
               parentConfig={parentConfig}
@@ -152,7 +154,9 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
               editingEnabled={editingEnabled}
               configId={config.id}
               configType="machine-config"
+              shortname={config.shortname}
               data={config.parameters}
+              categories={[]}
               parentConfig={parentConfig}
             />,
           ],

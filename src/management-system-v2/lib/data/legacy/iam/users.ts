@@ -7,12 +7,10 @@ import {
   OauthAccount,
   AuthenticatedUser,
   AuthenticatedUserSchema,
-  GuestUser,
-  GuestUserSchema,
 } from '../../user-schema';
 import { addEnvironment, deleteEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
-import { getMembers, getUserOrganizationEnvironments, removeMember } from './memberships';
+import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId, getRoleMappings } from './role-mappings';
 import { getRoles } from './roles';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';

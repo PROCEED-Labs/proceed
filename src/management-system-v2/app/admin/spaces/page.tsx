@@ -67,3 +67,5 @@ export default async function SysteAdminDashboard({ params }: { params?: { userI
     </Content>
   );
 }
+
+export const dynamic = 'force-dynamic';

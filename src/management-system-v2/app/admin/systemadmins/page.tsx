@@ -110,3 +110,5 @@ export default async function ManageAdminsPage() {
     </Content>
   );
 }
+
+export const dynamic = 'force-dynamic';

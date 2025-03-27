@@ -37,3 +37,5 @@ export default async function AdminDashboard() {
     </Content>
   );
 }
+
+export const dynamic = 'force-dynamic';

@@ -4,7 +4,7 @@ import styles from './page.module.scss';
 import Modeler from './modeler';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
-import { getAuthenticatedUsersInSpace, getProcess, getProcesses, getRoles } from '@/lib/data/DTOs';
+import { getProcess, getProcesses, getRolesWithMembers } from '@/lib/data/DTOs';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { RoleType, UserType } from './use-potentialOwner-store';
@@ -27,20 +27,20 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   const processes = await getProcesses(activeEnvironment.spaceId, ability, false);
 
   const rawRoles = activeEnvironment.isOrganization
-    ? await getRoles(activeEnvironment.spaceId, ability)
-    : [];
-  const rawUsers = activeEnvironment.isOrganization
-    ? await getAuthenticatedUsersInSpace(activeEnvironment.spaceId, ability)
+    ? await getRolesWithMembers(activeEnvironment.spaceId, ability)
     : [];
 
   const roles = rawRoles.reduce((acc, role) => ({ ...acc, [role.id]: role.name }), {} as RoleType);
-  const user = rawUsers.reduce(
-    (acc, u) => ({
-      ...acc,
-      [u.id]: { userName: u.username, name: u.firstName + ' ' + u.lastName },
-    }),
-    {} as UserType,
-  );
+  const user = rawRoles.reduce((acc, role) => {
+    role.members.forEach((member) => {
+      acc[member.id] = {
+        userName: member.username,
+        name: member.firstName + ' ' + member.lastName,
+      };
+    });
+
+    return acc;
+  }, {} as UserType);
 
   if (!ability.can('view', toCaslResource('Process', process))) {
     throw new UnauthorizedError();

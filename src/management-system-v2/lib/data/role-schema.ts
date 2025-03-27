@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { resources, ResourceType } from '../ability/caslAbility';
+import { AuthenticatedUser } from './user-schema';
 
 type Permissions = Record<ResourceType, z.ZodNumber>;
 const perms: Partial<Permissions> = {};
@@ -23,4 +24,8 @@ export type Role = RoleInput & {
   id: string;
   createdOn: Date;
   lastEditedOn: Date;
+};
+
+export type RoleWithMembers = Role & {
+  members: Pick<AuthenticatedUser, 'id' | 'email' | 'username' | 'firstName' | 'lastName'>[];
 };

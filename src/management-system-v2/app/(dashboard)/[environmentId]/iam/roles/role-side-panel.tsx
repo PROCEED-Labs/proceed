@@ -9,11 +9,9 @@ import { FilteredRole } from './role-page';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import UserAvatar from '@/components/user-avatar';
 import { userRepresentation } from '@/lib/utils';
+import { RoleWithMembers } from '@/lib/data/role-schema';
 
-export type MemberInfo = Pick<
-  AuthenticatedUser,
-  'id' | 'firstName' | 'lastName' | 'username' | 'email'
->;
+export type MemberInfo = RoleWithMembers['members'][number];
 
 const RoleContent: FC<{
   role: (Omit<FilteredRole, 'members'> & { members: MemberInfo[] }) | null;

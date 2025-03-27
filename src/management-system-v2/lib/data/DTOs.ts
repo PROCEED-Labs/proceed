@@ -123,10 +123,22 @@ export async function getRoleById(roleId: string, ability?: Ability) {
     : await rolesModuleLegacy.getRoleById(roleId, ability);
 }
 
+export async function getRoleWithMembersById(roleId: string, ability?: Ability) {
+  return enableUseDB
+    ? await rolesModuleDB.getRoleWithMembersById(roleId, ability)
+    : await rolesModuleLegacy.getRoleWithMembersById(roleId, ability);
+}
+
 export async function getRoles(environmentId: string, ability?: Ability) {
   return enableUseDB
     ? await rolesModuleDB.getRoles(environmentId, ability)
     : await rolesModuleLegacy.getRoles(environmentId, ability);
+}
+
+export async function getRolesWithMembers(environmentId?: string, ability?: Ability) {
+  return enableUseDB
+    ? await rolesModuleDB.getRolesWithMembers(environmentId, ability)
+    : await rolesModuleLegacy.getRolesWithMembers(environmentId, ability);
 }
 
 export async function organizationHasLogo(organisationId: string) {
@@ -175,18 +187,6 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
   return enableUseDB
     ? await usersModuleDB.getUsers(page, pageSize)
     : await usersModuleLegacy.getUsers();
-}
-
-export async function getAuthenticatedUsersInSpace(environmentId: string, ability?: Ability) {
-  return enableUseDB
-    ? await usersModuleDB.getAuthenticatedUsersInSpace(environmentId, ability)
-    : await usersModuleLegacy.getAuthenticatedUsersInSpace(environmentId, ability);
-}
-
-export async function getUsersInRole(roleId: string, ability?: Ability) {
-  return enableUseDB
-    ? await usersModuleDB.getUsersInRole(roleId, ability)
-    : await usersModuleLegacy.getUsersInRole(roleId, ability);
 }
 
 export async function isMember(environmentId: string, userId: string) {

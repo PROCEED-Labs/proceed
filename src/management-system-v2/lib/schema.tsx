@@ -250,22 +250,22 @@ export const schema = {
       ],
     },
     {
-      name: 'versionId',
+      name: 'processVersionId',
       extends: ['bpmn:Definitions', 'bpmn:Import'],
       properties: [
         {
-          name: 'versionId',
+          name: 'processVersionId',
           isAttr: true,
-          type: 'string',
+          type: 'String',
         },
       ],
     },
     {
-      name: 'versionName',
+      name: 'processVersionName',
       extends: ['bpmn:Definitions'],
       properties: [
         {
-          name: 'versionName',
+          name: 'processVersionName',
           isAttr: true,
           type: 'String',
         },
@@ -300,7 +300,7 @@ export const schema = {
         {
           name: 'versionCreatedOn',
           isAttr: true,
-          type: 'String',
+          type: 'Date',
         },
       ],
     },
@@ -327,6 +327,61 @@ export const schema = {
       ],
     },
     {
+      name: 'creatorId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creatorId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'creatorName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creatorName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'creatorUsername',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creatorUsername',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'creationDate',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creationDate',
+          isAttr: true,
+          type: 'Date',
+        },
+      ],
+    },
+    {
+      name: 'userDefinedId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'userDefinedId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
       name: 'templateId',
       extends: ['bpmn:Definitions'],
       properties: [
@@ -343,6 +398,116 @@ export const schema = {
       properties: [
         {
           name: 'originalId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalUserDefinedId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalUserDefinedId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreationDate',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreationDate',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalProcessVersionId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalProcessVersionId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalProcessVersionName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalProcessVersionName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorSpaceId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorSpaceId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorSpaceName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorSpaceName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorUsername',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorUsername',
           isAttr: true,
           type: 'String',
         },

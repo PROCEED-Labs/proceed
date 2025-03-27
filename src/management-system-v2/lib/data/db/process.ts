@@ -81,6 +81,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       lastEditedOn: true,
       inEditingBy: true,
       processIds: true,
+      userDefinedId: true,
       type: true,
       folderId: true,
       sharedAs: true,
@@ -283,6 +284,7 @@ export async function updateProcess(
       ...(await getProcessInfo(newBpmn)),
     };
   }
+
   // Update folders
   if (metaChanges.folderId && metaChanges.folderId !== currentParent) {
     moveProcess({ processDefinitionsId, newFolderId: metaChanges.folderId });
@@ -290,7 +292,6 @@ export async function updateProcess(
   }
 
   const newMetaData = await updateProcessMetaData(processDefinitionsId, metaChanges);
-
   if (newBpmn) {
     try {
       await db.process.update({

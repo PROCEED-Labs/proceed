@@ -1,8 +1,7 @@
 'use client';
 
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { FC, useRef, useState } from 'react';
 
-import { useParams, useSearchParams } from 'next/navigation';
 import { Modal, Button, Tooltip, Flex, Popconfirm, Space, message, Alert } from 'antd';
 import { SearchOutlined, CopyOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
@@ -78,6 +77,23 @@ async function checkBpmn(bpmn: string) {
   const { warnings } = await moddle.fromXML(bpmn);
   return { warnings };
 }
+
+/*
+ Gets the line and column position for a given match in the BPMN string
+ */
+const getErrorPosition = (bpmn: string, matchString: string, matchIndex: number) => {
+  const textBeforeMatch = bpmn.substring(0, matchIndex);
+  const lines = textBeforeMatch.split('\n');
+  const lineNumber = lines.length;
+  const columnNumber = lines[lines.length - 1].length + 1;
+
+  return {
+    startLineNumber: lineNumber,
+    endLineNumber: lineNumber,
+    startColumn: columnNumber,
+    endColumn: columnNumber + matchString.length,
+  };
+};
 
 const XmlEditor: FC<XmlEditorProps> = ({
   bpmn,
@@ -162,7 +178,8 @@ const XmlEditor: FC<XmlEditorProps> = ({
       const errorLocations: string[] = [];
 
       const { error: bpmnError, warnings } = await checkBpmn(bpmn);
-      const { error: definitionIdChangeError } = await checkDefinitionIdChange(bpmn);
+      const { error: definitionIdChangeError } = await checkDefinitionIdChange(bpmn, process.id);
+      const { error: processNameError } = await checkProcessNameDefinitionAttribute(bpmn);
 
       if (bpmnError) {
         errors.push(bpmnError);
@@ -176,6 +193,10 @@ const XmlEditor: FC<XmlEditorProps> = ({
         errorLocations.push(
           `Line ${definitionIdChangeError.startLineNumber}, Column ${definitionIdChangeError.startColumn}`,
         );
+      }
+      if (processNameError) {
+        errors.push(processNameError);
+        errorMessages.push(processNameError.message);
       }
 
       if (errors.length > 0) {
@@ -207,25 +228,54 @@ const XmlEditor: FC<XmlEditorProps> = ({
     return true;
   }
 
-  const checkDefinitionIdChange = async (bpmn: string) => {
-    const currentDefinitionIdMatch = bpmn.match(/id="([^"]*)"/) || bpmn.match(/id='([^']*)'/);
-    if (currentDefinitionIdMatch && currentDefinitionIdMatch[1] !== process.id) {
-      const idAttributeIndex = bpmn.indexOf(currentDefinitionIdMatch[0]);
-      const textBeforeMatch = bpmn.substring(0, idAttributeIndex);
-      const lines = textBeforeMatch.split('\n');
-      const line = lines.length;
-      const column = lines[lines.length - 1].length + 1;
-
+  const checkDefinitionIdChange = async (bpmn: string, expectedId: string) => {
+    const idMatch = bpmn.match(/id=["']([^"']*)["']/i);
+    if (idMatch && idMatch[1] !== expectedId) {
       return {
         error: {
-          startLineNumber: line,
-          endLineNumber: line,
-          startColumn: column,
-          endColumn: column + currentDefinitionIdMatch[0].length,
+          ...getErrorPosition(bpmn, idMatch[0], bpmn.indexOf(idMatch[0])),
           message: 'Modification of definitionId is not allowed!',
         },
       };
     }
+    return { error: null };
+  };
+
+  const checkProcessNameDefinitionAttribute = async (bpmn: string) => {
+    const definitionsMatch = bpmn.match(/<definitions\s([^>]*)>/i);
+
+    if (!definitionsMatch) {
+      return {
+        error: {
+          startLineNumber: 1,
+          endLineNumber: 1,
+          startColumn: 1,
+          endColumn: 1,
+          message: 'BPMN must contain a definitions tag',
+        },
+      };
+    }
+
+    const nameMatch = definitionsMatch[1].match(/\bname\s*=\s*["']([^"']*)["']/i);
+
+    if (!nameMatch) {
+      return {
+        error: {
+          ...getErrorPosition(bpmn, definitionsMatch[0], bpmn.indexOf(definitionsMatch[0])),
+          message: 'Process name attribute is missing in definitions tag',
+        },
+      };
+    }
+
+    if (!nameMatch[1]?.trim()) {
+      return {
+        error: {
+          ...getErrorPosition(bpmn, nameMatch[0], bpmn.indexOf(nameMatch[0])),
+          message: 'Process name cannot be null or empty!',
+        },
+      };
+    }
+
     return { error: null };
   };
 

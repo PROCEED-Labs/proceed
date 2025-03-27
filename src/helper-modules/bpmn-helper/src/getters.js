@@ -151,6 +151,7 @@ async function getDefinitionsInfos(bpmn) {
     exporterVersion: bpmnObj.exporterVersion,
     targetNamespace: bpmnObj.targetNamespace,
     creatorName: bpmnObj.creatorName,
+    userDefinedId: bpmnObj.userDefinedId,
   };
 }
 
@@ -629,7 +630,7 @@ async function getProcessConstraints(bpmn) {
 async function getIdentifyingInfos(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
-  const { id, originalId, name } = await getDefinitionsInfos(bpmnObj);
+  const { id, originalId, name, userDefinedId } = await getDefinitionsInfos(bpmnObj);
 
   const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
@@ -642,7 +643,7 @@ async function getIdentifyingInfos(bpmn) {
     description = '';
   }
 
-  return { id, originalId, processIds, name, description };
+  return { id, originalId, processIds, name, description, userDefinedId };
 }
 
 /**

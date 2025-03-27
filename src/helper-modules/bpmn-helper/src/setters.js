@@ -255,14 +255,14 @@ async function updateBpmnXMLAttributes(
 ) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
     definitions.userDefinedId = userDefinedId;
-    definitions.creatorName = creatorName;
-    definitions.creatorUsername = creatorUsername;
-    definitions.creatorSpaceName = creatorSpaceName;
-    definitions.creatorSpaceId = creatorSpaceId;
-    definitions.creatorId = creatorId;
-    definitions.creationDate = creationDate;
-    definitions.name = name;
-    definitions.id = id;
+    creatorName && (definitions.creatorName = creatorName);
+    creatorUsername && (definitions.creatorUsername = creatorUsername);
+    creatorSpaceName && (definitions.creatorSpaceName = creatorSpaceName);
+    creatorSpaceId && (definitions.creatorSpaceId = creatorSpaceId);
+    creatorId && (definitions.creatorId = creatorId);
+    creationDate && (definitions.creationDate = creationDate);
+    name && (definitions.name = name);
+    id && (definitions.id = id);
     definitions.originalId ??= originalId;
     definitions.originalName ??= originalName;
     definitions.originalUserDefinedId ??= originalUserDefinedId;

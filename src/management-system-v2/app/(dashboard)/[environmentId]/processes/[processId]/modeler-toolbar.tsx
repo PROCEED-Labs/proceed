@@ -30,6 +30,7 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { Process } from '@/lib/data/process-schema';
@@ -280,6 +281,13 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
               >
                 <Button icon={<InfoCircleOutlined />} onClick={handlePropertiesPanelToggle} />
               </Tooltip>
+              {/* SHARE HERE */}
+              {/* <ModelerShareModalButton
+                onExport={handleProcessExportModalToggle}
+                onExportMobile={handleProcessExportModalToggleMobile}
+                modeler={modeler}
+                processId={processId}
+              /> */}
               {!showMobileView && (
                 <Tooltip title="Show XML">
                   <Button
@@ -290,7 +298,12 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
               )}
               <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
               <Tooltip title="Open Documentation">
-                <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
+                <Button
+                  icon={<FilePdfOutlined />}
+                  onClick={() => {
+                    handleOpenDocumentation(/* processId, selectedVersionId */);
+                  }}
+                />
               </Tooltip>
               <Tooltip title="Share">
                 <Button

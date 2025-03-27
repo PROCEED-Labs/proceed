@@ -167,10 +167,13 @@ const HeaderActions: FC = () => {
           menu={{
             items: avatarDropdownItems,
           }}
+          trigger={['click']}
         >
-          <SpaceLink href={`/profile`}>
+          {/* <SpaceLink href={`/profile`}> */}
+          <div>
             <UserAvatar user={session.data.user} />
-          </SpaceLink>
+          </div>
+          {/* </SpaceLink> */}
         </Dropdown>
       </Space>
     </>

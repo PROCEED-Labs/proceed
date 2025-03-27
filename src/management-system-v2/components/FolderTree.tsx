@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
 import { ProcessListItemIcon } from './process-list';
 import { ProcessListProcess } from './processes';
+import ProceedLoadingIndicator from './loading-proceed';
 
 type FolderChildren = {
   id: string;
@@ -37,12 +38,16 @@ export const FolderTree = ({
   newChildrenHook,
   treeProps,
   showRootAsFolder,
+  onSelect,
+  forceReload,
 }: {
   rootNodes?: FolderChildren[];
   /** The return value is used to update the tree */
   newChildrenHook?: (nodes: TreeNode[], parent?: TreeNode) => TreeNode[];
   treeProps?: TreeProps<TreeNode>;
   showRootAsFolder?: boolean;
+  onSelect?: (folder: FolderChildren | undefined) => void;
+  forceReload?: any;
 }) => {
   const spaceId = useEnvironment().spaceId;
 
@@ -78,7 +83,7 @@ export const FolderTree = ({
 
       nodeMap.current.set(rootNode.key, rootNode);
 
-      console.log({ rootNode });
+      // console.log({ rootNode });
     }
 
     const parentNode = nodeId ? nodeMap.current.get(nodeId) : rootNode;
@@ -119,8 +124,15 @@ export const FolderTree = ({
     loadRoot();
   }, [rootNodes]);
 
+  useEffect(() => {
+    if (forceReload) {
+      setTimeout(() => loadData(), 100);
+    }
+  }, [forceReload]);
+
   return (
-    <Spin spinning={loading}>
+    <ProceedLoadingIndicator loading={loading}>
+      {/* <Spin spinning={loading}> */}
       <Tree
         showIcon={true}
         style={{
@@ -136,7 +148,12 @@ export const FolderTree = ({
         // loadData, we also trigger a rerender, such that the rendered Tree will always have the
         // correct loadedKeys
         loadedKeys={[...loadedKeys.current.keys()]}
+        onSelect={(selectedKeys) => {
+          // console.log(nodeMap.current.get(selectedKeys[0])?.element);
+          onSelect?.(nodeMap.current.get(selectedKeys[0])?.element);
+        }}
       />
-    </Spin>
+      {/* </Spin> */}
+    </ProceedLoadingIndicator>
   );
 };

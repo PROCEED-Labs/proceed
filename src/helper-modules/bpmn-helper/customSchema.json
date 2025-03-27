@@ -327,11 +327,22 @@
       ]
     },
     {
-      "name": "templateId",
+      "name": "basedOnTemplateId",
       "extends": ["bpmn:Definitions"],
       "properties": [
         {
-          "name": "templateId",
+          "name": "basedOnTemplateId",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "basedOnTemplateVersion",
+      "extends": ["bpmn:Definitions"],
+      "properties": [
+        {
+          "name": "basedOnTemplateVersion",
           "isAttr": true,
           "type": "String"
         }

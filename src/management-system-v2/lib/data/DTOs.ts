@@ -58,9 +58,13 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
     : await folderModuleLegacy.getFolderContents(folderId, ability);
 }
 
-export async function getRootFolder(environmentId: string, ability?: Ability) {
+export async function getRootFolder(
+  environmentId: string,
+  type: 'process' | 'template',
+  ability?: Ability,
+) {
   return enableUseDB
-    ? await folderModuleDB.getRootFolder(environmentId, ability)
+    ? await folderModuleDB.getRootFolder(environmentId, type, ability)
     : await folderModuleLegacy.getRootFolder(environmentId, ability);
 }
 

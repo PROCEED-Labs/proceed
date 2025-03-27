@@ -125,7 +125,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
                   <AuthCan create Process>
                     <Divider style={{ margin: '4px 0' }} />
                     <Space style={{ display: 'flex', justifyContent: 'center' }}>
-                      <ProcessCreationButton type="text" icon={<PlusOutlined />}>
+                      <ProcessCreationButton icon={<PlusOutlined />}>
                         Create new process
                       </ProcessCreationButton>
                     </Space>

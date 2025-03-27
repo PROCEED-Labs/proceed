@@ -140,6 +140,7 @@ export async function addRole(roleRepresentationInput: RoleInput, ability?: Abil
     note: note || null,
     permissions: permissions || {},
     expiration: expiration || null,
+    members: [],
     id,
     default: roleRepresentation.default,
     createdOn,

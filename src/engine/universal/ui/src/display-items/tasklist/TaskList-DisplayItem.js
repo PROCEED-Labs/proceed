@@ -59,7 +59,7 @@ class TaskListTab extends DisplayItem {
     let milestonesData;
 
     function getVariableStateAtUserTaskEnd(userTask, instance) {
-      const variables = {};
+      let variables = {};
 
       Object.entries(instance.variables).map(([key, { value, log }]) => {
         for (const entry of log) {
@@ -73,9 +73,7 @@ class TaskListTab extends DisplayItem {
       });
 
       if (userTask.variableChanges) {
-        Object.entries(userTask.variableChanges).forEach(
-          ([key, value]) => (variables[key] = value),
-        );
+        variables = { ...variables, ...userTask.variableChanges };
       }
 
       return variables;
@@ -185,11 +183,11 @@ class TaskListTab extends DisplayItem {
           const [key, value] = entry.value;
           if (variables[key]) {
             if (!Array.isArray(variables[key])) {
-              variables[key] = [variables[key]]; 
+              variables[key] = [variables[key]];
             }
             variables[key].push(value);
           } else {
-            variables[key] = value; 
+            variables[key] = value;
           }
           entry = entries.next();
         }

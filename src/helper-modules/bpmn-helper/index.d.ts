@@ -48,6 +48,37 @@ declare const _exports: {
     exporterName: string,
     exporterVersion: string,
   ): Promise<string | object>;
+  updateBpmnXMLAttributes(
+    bpmn: string | object,
+    attributes: {
+      id?: string;
+      originalId?: string;
+      name?: string;
+      creatorId?: string;
+      creatorName?: string;
+      creatorUsername?: string;
+      creatorSpaceId?: string;
+      creatorSpaceName?: string;
+      userDefinedId?: string;
+      creationDate?: string;
+      // for copied/imported processes
+      originalCreationDate?: string;
+      originalCreatorId?: string;
+      originalCreatorName?: string;
+      originalCreatorUsername?: string;
+      originalCreatorSpaceId?: string;
+      originalCreatorSpaceName?: string;
+      originalUserDefinedId?: string;
+      originalName?: string;
+      originalVersionId?: string;
+      originalVersionName?: string;
+      originalProcessVersionId?: string;
+      originalProcessVersionName?: string;
+      originalExporter?: string;
+      originalExporterVersion?: string;
+      originalTargetNamespace?: string;
+    },
+  ): Promise<string | object>;
   setDeploymentMethod(bpmn: string | object, method: string): Promise<string | object>;
   setMachineInfo(
     bpmn: string | object,
@@ -149,6 +180,7 @@ declare const _exports: {
     };
   }>;
   getStartEvents(bpmn: string | object): Promise<string[]>;
+  getBPMNProcessElement(bpmn: string | object): Promise<object>;
   getAllBpmnFlowElements(bpmn: string | object): Promise<object[]>;
   getAllBpmnFlowNodeIds(bpmn: string | object): Promise<string[]>;
   getAllBpmnFlowElementIds(bpmn: string | object): Promise<string[]>;
@@ -239,6 +271,7 @@ declare const _exports: {
   ): Promise<string | object>;
   moddle: any;
 };
+
 export = _exports;
 import getters = require('./src/getters.js');
 import util = require('./src/util.js');

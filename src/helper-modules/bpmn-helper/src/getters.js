@@ -74,15 +74,15 @@ async function getDefinitionsVersionInformation(bpmn) {
   //   throw new Error('The process version has to be a number (time in ms since 1970)');
   // }
 
-  if (!bpmnObj.versionId) {
+  if (!bpmnObj.processVersionId) {
     return {
       versionBasedOn: bpmnObj.versionBasedOn,
     };
   }
 
   return {
-    versionId: bpmnObj.versionId,
-    name: bpmnObj.versionName,
+    versionId: bpmnObj.processVersionId,
+    name: bpmnObj.processVersionName,
     description: bpmnObj.versionDescription,
     versionBasedOn: bpmnObj.versionBasedOn,
     versionCreatedOn: bpmnObj.versionCreatedOn,
@@ -150,6 +150,8 @@ async function getDefinitionsInfos(bpmn) {
     exporter: bpmnObj.exporter,
     exporterVersion: bpmnObj.exporterVersion,
     targetNamespace: bpmnObj.targetNamespace,
+    creatorName: bpmnObj.creatorName,
+    userDefinedId: bpmnObj.userDefinedId,
   };
 }
 
@@ -341,6 +343,23 @@ async function getProcessIds(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
   const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
   return processes.map((process) => process.id);
+}
+
+/**
+ * Gets process elements / top root element inside a BPMN process
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns {Promise.<object>} process element inside a BPMN process
+ */
+async function getBPMNProcessElement(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const allElements = getAllElements(bpmnObj);
+  return allElements.filter(
+    (element) =>
+      typeof element.$type === 'string' &&
+      element.$type.startsWith('bpmn:') &&
+      element.$type.includes('Process'),
+  )[0];
 }
 
 /**
@@ -611,7 +630,7 @@ async function getProcessConstraints(bpmn) {
 async function getIdentifyingInfos(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
-  const { id, originalId, name } = await getDefinitionsInfos(bpmnObj);
+  const { id, originalId, name, userDefinedId } = await getDefinitionsInfos(bpmnObj);
 
   const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
@@ -624,7 +643,7 @@ async function getIdentifyingInfos(bpmn) {
     description = '';
   }
 
-  return { id, originalId, processIds, name, description };
+  return { id, originalId, processIds, name, description, userDefinedId };
 }
 
 /**
@@ -1212,4 +1231,5 @@ module.exports = {
   getPerformersFromElementById,
   parseISODuration,
   convertISODurationToMiliseconds,
+  getBPMNProcessElement,
 };

@@ -12,30 +12,28 @@ const useTokens = (instance: InstanceInfo | null, canvasRef: RefObject<BPMNCanva
 
   const appliedTokensRef = useRef<{ [tokenId: string]: string }>({});
 
-  useEffect(() => {
-    applyTokensFunctionRef.current = () => {
-      const newOverlays: { [tokenId: string]: string } = {};
+  applyTokensFunctionRef.current = () => {
+    const newOverlays: { [tokenId: string]: string } = {};
 
-      if (canvasRef.current) {
-        // remove the previously applied tokens
-        const overlayHandler = canvasRef.current.getOverlays();
-        for (const tokenId in appliedTokensRef.current) {
-          overlayHandler.remove(appliedTokensRef.current[tokenId]);
-        }
+    if (canvasRef.current) {
+      // remove the previously applied tokens
+      const overlayHandler = canvasRef.current.getOverlays();
+      for (const tokenId in appliedTokensRef.current) {
+        overlayHandler.remove(appliedTokensRef.current[tokenId]);
+      }
 
-        if (instance?.tokens) {
-          const { tokens } = instance;
+      if (instance?.tokens) {
+        const { tokens } = instance;
 
-          for (const token of tokens) {
-            if (!canvasRef.current.getElement(token.currentFlowElementId)) continue;
+        for (const token of tokens) {
+          if (!canvasRef.current.getElement(token.currentFlowElementId)) continue;
 
-            newOverlays[token.tokenId] = addToken(token, instance, canvasRef.current);
-          }
+          newOverlays[token.tokenId] = addToken(token, instance, canvasRef.current);
         }
       }
-      appliedTokensRef.current = newOverlays;
-    };
-  }, [instance, canvasRef]);
+    }
+    appliedTokensRef.current = newOverlays;
+  };
 
   const refreshTokens = useCallback(() => {
     if (applyTokensFunctionRef.current) applyTokensFunctionRef.current();

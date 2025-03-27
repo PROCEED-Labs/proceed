@@ -14,7 +14,7 @@ import Icon, {
   FormOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons';
-import { SvgXML } from '@/components/svg';
+import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -30,6 +30,7 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { Process } from '@/lib/data/process-schema';
@@ -59,6 +60,8 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareModalDefaultOpenTab, setShareModalDefaultOpenTab] =
     useState<ComponentProps<typeof ShareModal>['defaultOpenTab']>(undefined);
+
+  const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -304,15 +307,25 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                 />
               </Tooltip>
               {!showMobileView && (
-                <Tooltip title="Download">
-                  <Button
-                    icon={<ExportOutlined />}
-                    onClick={() => {
-                      setShareModalOpen(true);
-                      setShareModalDefaultOpenTab('bpmn');
-                    }}
-                  />
-                </Tooltip>
+                <>
+                  <Tooltip title="Download">
+                    <Button
+                      icon={<ExportOutlined />}
+                      onClick={() => {
+                        setShareModalOpen(true);
+                        setShareModalDefaultOpenTab('bpmn');
+                      }}
+                    />
+                  </Tooltip>
+                  {env.PROCEED_PUBLIC_TIMELINE_VIEW === 'true' && (
+                    <Tooltip title="Switch to timeline mode">
+                      <Button
+                        icon={<Icon aria-label="xml-sign" component={SvgGantt} />}
+                        onClick={enableTimelineView}
+                      ></Button>
+                    </Tooltip>
+                  )}
+                </>
               )}
             </ToolbarGroup>
 

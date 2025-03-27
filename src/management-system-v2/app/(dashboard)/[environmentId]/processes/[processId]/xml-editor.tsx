@@ -197,6 +197,9 @@ const XmlEditor: FC<XmlEditorProps> = ({
       if (processNameError) {
         errors.push(processNameError);
         errorMessages.push(processNameError.message);
+        errorLocations.push(
+          `Line ${processNameError.startLineNumber}, Column ${processNameError.startColumn}`,
+        );
       }
 
       if (errors.length > 0) {

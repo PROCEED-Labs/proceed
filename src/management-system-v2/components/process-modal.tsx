@@ -13,6 +13,7 @@ import {
   Flex,
   Alert,
   Collapse,
+  Divider,
 } from 'antd';
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
@@ -22,7 +23,7 @@ import Title from 'antd/es/typography/Title';
 import { checkIfProcessExistsByName } from '@/lib/data/processes';
 import { useEnvironment } from './auth-can';
 import { useSession } from 'next-auth/react';
-import { debounce } from '@/lib/utils';
+import { LazyBPMNViewer } from '@/components/bpmn-viewer';
 
 type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -43,6 +44,7 @@ const ProcessModal = <
     creator?: string;
     creatorUsername?: string;
     createdOn?: string;
+    bpmn?: string;
   },
 >({
   open,
@@ -204,70 +206,85 @@ const ProcessModal = <
           modalProps?.onOk?.(e);
           onOk();
         }}
+        styles={{
+          body: {
+            maxHeight: '85vh',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        }}
       >
-        {nameCollisions.length > 0 && showCollisions && (
-          <Alert
-            message={
-              <>
-                <Collapse
-                  size="small"
-                  items={[
-                    {
-                      key: '1',
-                      label: `${nameCollisions.length} process name${nameCollisions.length > 1 ? 's were' : ' was'} automatically renamed due to name conflict with existing process`,
-                      children: (
-                        <ul style={{ margin: 0, paddingLeft: 20 }}>
-                          {nameCollisions.map((collision, i) => (
-                            <li key={i}>
-                              Process {collision.index + 1}: "{collision.oldName}" → "
-                              {collision.newName}"
-                            </li>
-                          ))}
-                        </ul>
-                      ),
-                    },
-                  ]}
-                />
-              </>
-            }
-            type="warning"
-            showIcon
-            closable
-            style={{ marginBottom: 16 }}
-            onClose={() => setShowCollisions(false)}
-          />
-        )}
-        <Form
-          form={form}
-          layout="vertical"
-          name="process_form"
-          initialValues={initialData}
-          autoComplete="off"
-          // This resets the fields when the modal is opened again. (apparently
-          // doesn't work in production, that's why we use the useEffect above)
-          preserve={false}
-        >
-          {!initialData ? (
-            <ProcessInputs index={0} />
-          ) : (
-            // <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
-            <Carousel
-              arrows
-              infinite={false}
-              style={{ padding: '0px 25px 0px 25px' }}
-              afterChange={(current) => setCarouselIndex(current + 1)}
-              prevArrow={<MdArrowBackIos color="#000" />}
-              nextArrow={<MdArrowForwardIos color="#000" />}
-            >
-              {initialData &&
-                initialData.map((process, index) => (
-                  <Card key={index}>
-                    <ProcessInputs key={index} index={index} isImport={isImportModal} />
-                  </Card>
-                ))}
-            </Carousel>
+        <div style={{ overflowY: 'auto', flex: 1 }} className="Hide-Scroll-Bar">
+          {nameCollisions.length > 0 && showCollisions && (
+            <Alert
+              message={
+                <>
+                  <Collapse
+                    size="small"
+                    items={[
+                      {
+                        key: '1',
+                        label: `${nameCollisions.length} process name${nameCollisions.length > 1 ? 's were' : ' was'} automatically renamed due to name conflict with existing process`,
+                        children: (
+                          <ul style={{ margin: 0, paddingLeft: 20 }}>
+                            {nameCollisions.map((collision, i) => (
+                              <li key={i}>
+                                Process {collision.index + 1}: "{collision.oldName}" → "
+                                {collision.newName}"
+                              </li>
+                            ))}
+                          </ul>
+                        ),
+                      },
+                    ]}
+                  />
+                </>
+              }
+              type="warning"
+              showIcon
+              closable
+              style={{ marginBottom: 16 }}
+              onClose={() => setShowCollisions(false)}
+            />
           )}
-        </Form>
+          <Form
+            form={form}
+            layout="vertical"
+            name="process_form"
+            initialValues={initialData}
+            autoComplete="off"
+            // This resets the fields when the modal is opened again. (apparently
+            // doesn't work in production, that's why we use the useEffect above)
+            preserve={false}
+          >
+            {!initialData ? (
+              <ProcessInputs index={0} />
+            ) : (
+              // <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
+              <Carousel
+                arrows
+                infinite={false}
+                style={{ padding: '0px 25px 0px 25px' }}
+                afterChange={(current) => setCarouselIndex(current + 1)}
+                prevArrow={<MdArrowBackIos color="#000" />}
+                nextArrow={<MdArrowForwardIos color="#000" />}
+              >
+                {initialData &&
+                  initialData.map((process, index) => (
+                    <Card key={index}>
+                      <>
+                        <LazyBPMNViewer previewBpmn={process.bpmn} reduceLogo={true} fitOnResize />
+
+                        <Divider style={{ width: '100%', marginLeft: '-20%' }} />
+                      </>
+                      <ProcessInputs key={index} index={index} isImport={isImportModal} />
+                    </Card>
+                  ))}
+              </Carousel>
+            )}
+          </Form>
+        </div>
       </Modal>
     </>
   );

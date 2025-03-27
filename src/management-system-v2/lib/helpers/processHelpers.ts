@@ -134,7 +134,7 @@ export async function createProcess(
     creatorSpaceId: 'DB_PLACEHOLDER',
     creatorSpaceName: 'DB_PLACEHOLDER',
     creatorUsername: 'DB_PLACEHOLDER',
-    userDefinedId: 'DB_PLACEHOLDER',
+    userDefinedId: processInfo.userDefinedId ?? 'DB_PLACEHOLDER',
   });
 
   if (!metaInfo.name) {

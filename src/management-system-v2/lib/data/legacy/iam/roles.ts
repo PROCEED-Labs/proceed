@@ -8,11 +8,14 @@ import { Role, RoleInput, RoleInputSchema, RoleWithMembers } from '../../role-sc
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
 import { getFolderById } from '../folders';
 import { getUsersInRole } from './users';
+import { on } from 'events';
+
+type RoleWithUserIds = Role & { members: { userId: string }[] };
 
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
 
-export let roleMetaObjects: Record<string, Role> =
+export let roleMetaObjects: Record<string, RoleWithUserIds> =
   // @ts-ignore
   global.roleMetaObjects || (global.roleMetaObjects = {});
 
@@ -26,7 +29,7 @@ export function init() {
   inited = true;
 
   // get roles that were persistently stored
-  const storedRoles = store.get('roles') as Role[];
+  const storedRoles = store.get('roles') as RoleWithUserIds[];
 
   // set roles store
   store.set('roles', 'roles', storedRoles);

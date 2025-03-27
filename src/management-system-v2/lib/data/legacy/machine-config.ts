@@ -398,7 +398,7 @@ export async function updateParentConfig(configId: string, changes: Partial<Stor
  */
 export async function copyParameter(
   parameterId: string,
-  parentId?: string,
+  parentId: string,
   parentType?: StoredParameter['parentType'],
 ) {
   const storedParameter = storedData.parameters[parameterId];

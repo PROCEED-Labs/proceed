@@ -103,7 +103,7 @@ const DashboardLayout = async ({
     layoutMenuItems = [
       {
         key: 'tasklist',
-        label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Your Tasks</Link>,
+        label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
         icon: <CheckSquareOutlined />,
       },
       ...layoutMenuItems,

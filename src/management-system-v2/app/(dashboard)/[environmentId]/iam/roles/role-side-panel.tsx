@@ -6,7 +6,6 @@ import CollapsibleCard from '@/components/collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import { FilteredRole } from './role-page';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
 import UserAvatar from '@/components/user-avatar';
 import { userRepresentation } from '@/lib/utils';
 import { RoleWithMembers } from '@/lib/data/role-schema';

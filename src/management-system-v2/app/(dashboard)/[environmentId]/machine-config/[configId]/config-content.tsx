@@ -2,7 +2,6 @@
 
 import { AbstractConfig, ParentConfig, StoredParameter } from '@/lib/data/machine-config-schema';
 import { useRouter } from 'next/navigation';
-
 import { KeyOutlined, EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { Button, Input, Col, Row, Tooltip, Space } from 'antd';
@@ -10,8 +9,7 @@ import { defaultParameter } from '../configuration-helper';
 import AddButton from './add-button';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 import CustomField from './custom-field';
-
-import { addParameter as backendAddParameter } from '@/lib/data/legacy/machine-config';
+import { addParameter as backendAddParameter } from '@/lib/data/db/machine-config';
 
 type MachineDataViewProps = {
   configId: string;
@@ -44,7 +42,6 @@ const Content: React.FC<MachineDataViewProps> = ({
       valuesFromModal.language,
       valuesFromModal.unit,
     );
-
     await backendAddParameter(
       configId,
       configType,

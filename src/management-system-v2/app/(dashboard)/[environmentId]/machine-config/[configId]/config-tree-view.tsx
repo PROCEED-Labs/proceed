@@ -21,7 +21,6 @@ import {
 } from '../configuration-helper';
 import ConfigModal from '@/components/config-modal';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
-
 import {
   addMachineConfig,
   addTargetConfig,
@@ -29,7 +28,7 @@ import {
   removeMachineConfig,
   removeParameter,
   removeTargetConfig,
-} from '@/lib/data/legacy/machine-config';
+} from '@/lib/data/db/machine-config';
 
 type ConfigurationTreeViewProps = {
   parentConfig: ParentConfig;

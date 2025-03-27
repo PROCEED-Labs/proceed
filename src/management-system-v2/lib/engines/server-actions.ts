@@ -508,7 +508,7 @@ export async function getAvailableSpaceEngines(spaceId: string) {
 export async function getDeployment(spaceId: string, definitionId: string) {
   const engines = await getCorrectTargetEngines(spaceId);
 
-  const deployments = await getDeployments(engines);
+  const deployments = await fetchDeployments(engines);
 
   return deployments.find((d) => d.definitionId === definitionId) || null;
 }

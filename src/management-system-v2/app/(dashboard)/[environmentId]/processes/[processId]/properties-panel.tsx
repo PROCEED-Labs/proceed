@@ -26,7 +26,6 @@ import DescriptionSection from './description-section';
 import PlannedCostInput from './planned-cost-input';
 import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
-import { useRouter } from 'next/navigation';
 import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
@@ -42,7 +41,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const env = use(EnvVarsContext);
   const environment = useEnvironment();
 
-  const router = useRouter();
   const { spaceId } = useEnvironment();
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
   const backgroundColor = getBackgroundColor(selectedElement as Shape);

@@ -1,17 +1,21 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
-import { mergeIntoObject } from '../../../helpers/javascriptHelpers';
+import { asyncMap, mergeIntoObject } from '../../../helpers/javascriptHelpers';
 import { roleMappingsMetaObjects } from './role-mappings';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
-import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
+import { Role, RoleInput, RoleInputSchema, RoleWithMembers } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
 import { getFolderById } from '../folders';
+import { getUsersInRole } from './users';
+import { on } from 'events';
+
+type RoleWithUserIds = Role & { members: { userId: string }[] };
 
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
 
-export let roleMetaObjects: Record<string, Role> =
+export let roleMetaObjects: Record<string, RoleWithUserIds> =
   // @ts-ignore
   global.roleMetaObjects || (global.roleMetaObjects = {});
 
@@ -25,7 +29,7 @@ export function init() {
   inited = true;
 
   // get roles that were persistently stored
-  const storedRoles = store.get('roles') as Role[];
+  const storedRoles = store.get('roles') as RoleWithUserIds[];
 
   // set roles store
   store.set('roles', 'roles', storedRoles);
@@ -42,6 +46,19 @@ export async function getRoles(environmentId?: string, ability?: Ability) {
     : Object.values(roleMetaObjects);
 
   return ability ? ability.filter('view', 'Role', roles) : roles;
+}
+
+/** Returns all roles in form of an array including the members of each role included in its data */
+export async function getRolesWithMembers(environmentId?: string, ability?: Ability) {
+  const roles = await getRoles(environmentId, ability);
+
+  const rolesWithMembers = await asyncMap(roles, async (role) => {
+    const members = await getUsersInRole(role.id, ability);
+
+    return { ...role, members };
+  });
+
+  return rolesWithMembers as RoleWithMembers[];
 }
 
 /**
@@ -75,6 +92,20 @@ export async function getRoleById(roleId: string, ability?: Ability) {
   if (role && !ability.can('view', toCaslResource('Role', role))) throw new UnauthorizedError();
 
   return role as Role;
+}
+
+/**
+ * Returns a role based on role id including information about the roles members
+ *
+ * @throws {UnauthorizedError}
+ */
+export async function getRoleWithMembersById(roleId: string, ability?: Ability) {
+  const role = await getRoleById(roleId, ability);
+
+  const members = await getUsersInRole(roleId, ability);
+  const roleWithMembers = { ...role, members };
+
+  return roleWithMembers as RoleWithMembers;
 }
 
 /**

@@ -185,6 +185,9 @@ class TaskListTab extends DisplayItem {
           'input[class^="milestone-"]'
         );
         Array.from(milestoneInputs).forEach((milestoneInput) => {
+          milestoneInput.addEventListener('input', (event) => {
+            milestoneInput.nextElementSibling.value = milestoneInput.value + '%'
+          });
           milestoneInput.addEventListener('click', (event) => {
             const milestoneName = Array.from(event.target.classList)
             .find((className) => className.includes('milestone-'))

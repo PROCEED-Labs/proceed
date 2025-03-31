@@ -18,9 +18,9 @@ const UserTaskCard = ({
   selected = false,
 }: {
   userTaskData: {
-    id: number;
+    id: string;
     name: string;
-    status: string;
+    state: string;
     owner?: string;
     startTime: number;
     endTime: number;
@@ -102,7 +102,7 @@ const UserTaskCard = ({
       <Row gutter={16}>
         <Col span={10}>
           <span style={{ fontSize: '0.75rem' }}>
-            <QuestionCircleOutlined></QuestionCircleOutlined> {userTaskData.status}
+            <QuestionCircleOutlined></QuestionCircleOutlined> {userTaskData.state}
           </span>
         </Col>
         <Col span={14}>

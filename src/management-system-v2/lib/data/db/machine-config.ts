@@ -33,27 +33,16 @@ let dataToParentConfigTable: {
   createdOn: Date;
   data: StoredParentConfig;
 }[] = [];
+let dataToConfigVersionTable: { id: string; parentId: string; data: StoredParentConfig }[] = [];
+let dataToTargetConfigTable: { id: string; data: StoredTargetConfig }[] = [];
+let dataToMachineConfigTable: { id: string; data: StoredMachineConfig }[] = [];
+let dataToConfigParameterTable: { id: string; data: StoredParameter }[] = [];
 
-let dataToConfigVersionTable: {
-  id: string;
-  parentId: string;
-  data: StoredParentConfig;
-}[] = [];
-
-let dataToTargetConfigTable: {
-  id: string;
-  data: StoredTargetConfig;
-}[] = [];
-
-let dataToMachineConfigTable: {
-  id: string;
-  data: StoredMachineConfig;
-}[] = [];
-
-let dataToConfigParameterTable: {
-  id: string;
-  data: StoredParameter;
-}[] = [];
+let dataUpdatedInParentConfigTable: { id: string; data: StoredParentConfig }[] = [];
+let dataUpdatedInConfigVersionTable: { id: string; data: StoredParentConfig }[] = [];
+let dataUpdatedInTargetConfigTable: { id: string; data: StoredTargetConfig }[] = [];
+let dataUpdatedInMachineConfigTable: { id: string; data: StoredMachineConfig }[] = [];
+let dataUpdatedInConfigParameterTable: { id: string; data: StoredParameter }[] = [];
 
 let dataRemovedFromParentConfigTable: string[] = [];
 let dataRemovedFromConfigVersionTable: string[] = [];
@@ -277,7 +266,7 @@ export async function addParentConfig(
     }
     let storeId = await parentConfigToStorage(newConfig, idCollision);
     await addConfigCategories(environmentId, newConfig.categories);
-    await storeAllCached();
+    await storeAllCachedData();
     return { storeId };
   } catch (e: unknown) {
     const error = e as Error;
@@ -332,7 +321,7 @@ export async function addParentConfigVersion(
 
     // true to generate new IDs for data and create a version of a parentConfig instead of a regular one
     await parentConfigToStorage(newConfig, true, versionId);
-    await storeAllCached();
+    await storeAllCachedData();
 
     return newConfig;
   } catch (e: unknown) {
@@ -365,7 +354,7 @@ export async function addTargetConfig(parentConfigId: string, targetConfig: Targ
     throw new Error(`The parent configuration already has a target configuration.`);
 
   await targetConfigToStorage(parentConfigId, targetConfig);
-  await storeAllCached();
+  await storeAllCachedData();
 
   parentConfig.targetConfig = targetConfig.id;
   await db.config.update({
@@ -388,7 +377,7 @@ export async function addMachineConfig(
     throw new Error(`There is no parent configuration with the id ${parentConfigId}.`);
 
   await machineConfigsToStorage(parentConfigId, [machineConfig], newId);
-  await storeAllCached();
+  await storeAllCachedData();
 
   parentConfig.machineConfigs.push(machineConfig.id);
   await db.config.update({
@@ -452,7 +441,7 @@ export async function addParameter(
       data: { data: parentParameter },
     });
   }
-  await storeAllCached();
+  await storeAllCachedData();
 }
 
 async function addConfigCategories(environmentId: string, newCategories: string[]) {
@@ -629,6 +618,7 @@ async function versionToParentConfigStorage(versionId: string) {
 
   // delete referenced parameters, machine- and targetconfigs - but keeps versions and parent config
   removeParentConfiguration(configVersion.id, true);
+  removeAllCachedData();
 
   const newLatestConfig = {
     ...configVersion,
@@ -703,7 +693,7 @@ async function storeCachedConfigParameters() {
   dataToConfigParameterTable = [];
 }
 
-async function storeAllCached() {
+async function storeAllCachedData() {
   await Promise.all([
     storeCachedParentConfigs(),
     storeCachedConfigVersions(),
@@ -962,7 +952,8 @@ export async function updateParentConfig(configId: string, changes: Partial<Stor
  */
 export async function removeParameter(parameterId: string) {
   await deleteParameterFromStorage(parameterId);
-  await removeAllCached();
+  await removeAllCachedData();
+  await updateAllCachedData();
 }
 
 /**
@@ -975,7 +966,7 @@ export async function removeParameter(parameterId: string) {
  */
 export async function removeTargetConfig(targetConfigId: string) {
   await deleteTargetConfigFromStorage(targetConfigId);
-  await removeAllCached();
+  await removeAllCachedData();
 }
 
 /**
@@ -988,7 +979,8 @@ export async function removeTargetConfig(targetConfigId: string) {
  */
 export async function removeMachineConfig(machineConfigId: string) {
   await deleteMachineConfigFromStorage(machineConfigId);
-  await removeAllCached();
+  await removeAllCachedData();
+  await updateAllCachedData();
 }
 
 /**
@@ -1002,7 +994,8 @@ export async function removeParentConfiguration(
   keepVersions: boolean = false,
 ) {
   await deleteParentConfigurationFromStorage(parentConfigId, keepVersions);
-  await removeAllCached();
+  await removeAllCachedData();
+  await updateAllCachedData();
 }
 
 async function deleteParameterFromStorage(parameterId: string) {
@@ -1020,10 +1013,7 @@ async function deleteParameterFromStorage(parameterId: string) {
 
     if (parentParameter) {
       parentParameter.parameters = parentParameter.parameters.filter((id) => id !== parameterId);
-      await db.configParameter.update({
-        where: { id: parameter.parentId },
-        data: { data: parentParameter },
-      });
+      dataUpdatedInConfigParameterTable.push({ id: parameter.parentId, data: parentParameter });
     }
   } else if (parameter.parentType === 'parent-config') {
     const parentConfigResult = await db.config.findUnique({ where: { id: parameter.parentId } });
@@ -1031,10 +1021,7 @@ async function deleteParameterFromStorage(parameterId: string) {
 
     if (parentConfig) {
       parentConfig.metadata = parentConfig.metadata.filter((id) => id !== parameterId);
-      await db.config.update({
-        where: { id: parameter.parentId },
-        data: { data: parentConfig },
-      });
+      dataUpdatedInParentConfigTable.push({ id: parameter.parentId, data: parentConfig });
     }
   } else if (parameter.parentType === 'machine-config') {
     const parentConfigResult = await db.config.findUnique({ where: { id: parameter.parentId } });
@@ -1042,10 +1029,7 @@ async function deleteParameterFromStorage(parameterId: string) {
     if (parentConfig) {
       parentConfig.metadata = parentConfig.metadata.filter((id) => id !== parameterId);
       parentConfig.parameters = parentConfig.parameters.filter((id) => id !== parameterId);
-      await db.machineConfig.update({
-        where: { id: parameter.parentId },
-        data: { data: parentConfig },
-      });
+      dataUpdatedInMachineConfigTable.push({ id: parameter.parentId, data: parentConfig });
     }
   } else if (parameter.parentType === 'target-config') {
     const parentConfigResult = await db.config.findUnique({ where: { id: parameter.parentId } });
@@ -1053,18 +1037,14 @@ async function deleteParameterFromStorage(parameterId: string) {
     if (parentConfig) {
       parentConfig.metadata = parentConfig.metadata.filter((id) => id !== parameterId);
       parentConfig.parameters = parentConfig.parameters.filter((id) => id !== parameterId);
-      await db.targetConfig.update({
-        where: { id: parameter.parentId },
-        data: { data: parentConfig },
-      });
+      dataUpdatedInTargetConfigTable.push({ id: parameter.parentId, data: parentConfig });
     }
   }
 
   // recursively remove all referenced parameters
   await asyncForEach(parameter.parameters, async (id) => deleteParameterFromStorage(id));
 
-  // remove the parameter from db
-  // await db.configParameter.delete({ where: { id: parameterId } });
+  // mark the parameter to be deleted from db
   dataRemovedFromConfigParameterTable.push(parameterId);
   // TODO: remove all backlinks from linked parameters
 }
@@ -1082,10 +1062,7 @@ async function deleteTargetConfigFromStorage(targetConfigId: string) {
   const parentConfig = parentConfigResult?.data as unknown as StoredParentConfig;
   if (parentConfig) {
     parentConfig.targetConfig = undefined;
-    await db.config.update({
-      where: { id: targetConfig.parentId },
-      data: { data: parentConfig },
-    });
+    dataUpdatedInParentConfigTable.push({ id: targetConfig.parentId, data: parentConfig });
   }
 
   // remove all referenced parameters
@@ -1094,8 +1071,7 @@ async function deleteTargetConfigFromStorage(targetConfigId: string) {
     asyncForEach(targetConfig.parameters, async (id) => deleteParameterFromStorage(id)),
   ]);
 
-  // remove the target config from db
-  // await db.targetConfig.delete({ where: { id: targetConfigId } });
+  // mark target config to be deleted from db
   dataRemovedFromTargetConfigTable.push(targetConfigId);
 }
 
@@ -1115,10 +1091,7 @@ async function deleteMachineConfigFromStorage(machineConfigId: string) {
     parentConfig.machineConfigs = parentConfig.machineConfigs.filter(
       (id) => id !== machineConfigId,
     );
-    await db.config.update({
-      where: { id: machineConfig.parentId },
-      data: { data: parentConfig },
-    });
+    dataUpdatedInParentConfigTable.push({ id: machineConfig.parentId, data: parentConfig });
   }
 
   // remove all referenced parameters
@@ -1127,8 +1100,7 @@ async function deleteMachineConfigFromStorage(machineConfigId: string) {
     asyncForEach(machineConfig.parameters, async (id) => deleteParameterFromStorage(id)),
   ]);
 
-  // remove the machine config from db
-  // await db.machineConfig.delete({ where: { id: machineConfigId } });
+  // mark machine config to be deleted from db
   dataRemovedFromMachineConfigTable.push(machineConfigId);
 }
 
@@ -1164,14 +1136,95 @@ async function deleteParentConfigurationFromStorage(
         configVersion.targetConfig && deleteTargetConfigFromStorage(configVersion.targetConfig),
         asyncForEach(configVersion.machineConfigs, (id) => deleteMachineConfigFromStorage(id)),
         asyncForEach(configVersion.metadata, (id) => deleteParameterFromStorage(id)),
-        db.configVersion.delete({ where: { id: configVersion.version } }),
       ]);
+      dataRemovedFromConfigVersionTable.push(configVersion.version!);
     });
 
-    // remove from db
-    // await db.config.delete({ where: { id: parentConfigId } });
+    // mark to be removed from db
     dataRemovedFromParentConfigTable.push(parentConfigId);
   }
+}
+
+async function updateCachedParentConfigs() {
+  if (!dataUpdatedInParentConfigTable.length) return;
+  const updateMany = await db.config.updateMany({
+    data: dataUpdatedInParentConfigTable,
+  });
+  dataUpdatedInParentConfigTable = [];
+}
+
+async function updateCachedConfigVersions() {
+  if (!dataUpdatedInConfigVersionTable.length) return;
+  const updateMany = await db.configVersion.updateMany({
+    data: dataUpdatedInConfigVersionTable,
+  });
+  dataUpdatedInConfigVersionTable = [];
+}
+
+async function updateCachedTargetConfigs() {
+  if (!dataUpdatedInTargetConfigTable.length) return;
+  const updateMany = await db.targetConfig.updateMany({
+    data: dataUpdatedInTargetConfigTable,
+  });
+  dataUpdatedInTargetConfigTable = [];
+}
+
+async function updateCachedMachineConfigs() {
+  if (!dataUpdatedInMachineConfigTable.length) return;
+  const updateMany = await db.machineConfig.updateMany({
+    data: dataUpdatedInMachineConfigTable,
+  });
+  dataUpdatedInMachineConfigTable = [];
+}
+
+async function updateCachedConfigParameters() {
+  if (!dataUpdatedInConfigParameterTable.length) return;
+  const updateMany = await db.configParameter.updateMany({
+    data: dataUpdatedInConfigParameterTable,
+  });
+  dataUpdatedInConfigParameterTable = [];
+}
+
+async function filterDeletedUpdates() {
+  [
+    dataUpdatedInParentConfigTable,
+    dataUpdatedInConfigVersionTable,
+    dataUpdatedInTargetConfigTable,
+    dataUpdatedInMachineConfigTable,
+    dataUpdatedInConfigParameterTable,
+  ] = await Promise.all([
+    asyncFilter(
+      dataUpdatedInParentConfigTable,
+      async (item) => !dataRemovedFromParentConfigTable.includes(item.id),
+    ),
+    asyncFilter(
+      dataUpdatedInConfigVersionTable,
+      async (item) => !dataRemovedFromConfigVersionTable.includes(item.id),
+    ),
+    asyncFilter(
+      dataUpdatedInTargetConfigTable,
+      async (item) => !dataRemovedFromTargetConfigTable.includes(item.id),
+    ),
+    asyncFilter(
+      dataUpdatedInMachineConfigTable,
+      async (item) => !dataRemovedFromMachineConfigTable.includes(item.id),
+    ),
+    asyncFilter(
+      dataUpdatedInConfigParameterTable,
+      async (item) => !dataRemovedFromConfigParameterTable.includes(item.id),
+    ),
+  ]);
+}
+
+async function updateAllCachedData() {
+  await filterDeletedUpdates();
+  await Promise.all([
+    updateCachedParentConfigs(),
+    updateCachedConfigVersions(),
+    updateCachedTargetConfigs(),
+    updateCachedMachineConfigs(),
+    updateCachedConfigParameters(),
+  ]);
 }
 
 async function removeCachedParentConfigs() {
@@ -1209,7 +1262,8 @@ async function removeCachedConfigParameters() {
   dataRemovedFromConfigParameterTable = [];
 }
 
-async function removeAllCached() {
+async function removeAllCachedData() {
+  await filterDeletedUpdates();
   await Promise.all([
     removeCachedParentConfigs(),
     removeCachedConfigVersions(),

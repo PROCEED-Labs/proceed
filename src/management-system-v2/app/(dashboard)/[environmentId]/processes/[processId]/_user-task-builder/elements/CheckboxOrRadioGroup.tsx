@@ -1,6 +1,6 @@
-import { useContext, useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 
-import { Divider, Input, MenuProps, Select, Space, Tooltip } from 'antd';
+import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { TbRowInsertTop, TbRowInsertBottom, TbRowRemove } from 'react-icons/tb';
 
@@ -20,7 +20,7 @@ import { WithRequired } from '@/lib/typescript-utils';
 
 import { SettingOutlined, EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
-import BuilderContext from '../BuilderContext';
+import { useCanEdit } from '../../modeler';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
@@ -64,7 +64,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   return (
     <>
@@ -153,7 +153,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     }
   }, [isSelected]);
 
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   const handleLabelEdit = (index: number, text: string) => {
     if (!editingEnabled) return;

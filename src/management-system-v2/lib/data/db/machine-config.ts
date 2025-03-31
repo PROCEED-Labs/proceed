@@ -26,6 +26,43 @@ import {
   defaultParentConfiguration,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
+let dataToParentConfigTable: {
+  id: string;
+  environmentId: string;
+  creatorId: string;
+  createdOn: Date;
+  data: StoredParentConfig;
+}[] = [];
+
+let dataToConfigVersionTable: {
+  id: string;
+  parentId: string;
+  data: StoredParentConfig;
+}[] = [];
+
+let dataToTargetConfigTable: {
+  id: string;
+  data: StoredTargetConfig;
+}[] = [];
+
+let dataToMachineConfigTable: {
+  id: string;
+  data: StoredMachineConfig;
+}[] = [];
+
+let dataToConfigParameterTable: {
+  id: string;
+  data: StoredParameter;
+}[] = [];
+
+let dataRemovedFromParentConfigTable: string[] = [];
+let dataRemovedFromConfigVersionTable: string[] = [];
+let dataRemovedFromTargetConfigTable: string[] = [];
+let dataRemovedFromMachineConfigTable: string[] = [];
+let dataRemovedFromConfigParameterTable: string[] = [];
+
+// (parentId: string, parentType: StoredParameter["parentType"], parameters: Record<string, Parameter>, newId?: boolean)
+
 /**
  * Creates a copy of a parameter and all its nested parameters to be pasted as child of a given parent. Stores the copied parameter.
  * @param parameterId ID of the parameter which is to be copied.
@@ -92,8 +129,10 @@ export async function copyConfig(
   copy.id = newId;
   copy.parentId = parentId;
 
-  copy.parameters = await asyncMap(copy.parameters, (id) => copyParameter(id, newId, configType));
-  copy.metadata = await asyncMap(copy.metadata, (id) => copyParameter(id, newId, configType));
+  [copy.parameters, copy.metadata] = await Promise.all([
+    asyncMap(copy.parameters, (id) => copyParameter(id, newId, configType)),
+    asyncMap(copy.metadata, (id) => copyParameter(id, newId, configType)),
+  ]);
 
   if (configType === 'target-config') {
     await db.targetConfig.create({ data: { id: copy.id, data: copy } });
@@ -142,17 +181,18 @@ export async function copyParentConfig(
       lastEditedOn: date,
       ...configBaseData,
       name: configBaseData.name || `${originalConfig.name} (Copy)`,
-      metadata: await asyncMap(originalConfig.metadata, (id) =>
-        copyParameter(id, newId, 'parent-config'),
-      ),
-      targetConfig:
-        originalConfig.targetConfig &&
-        (await copyConfig(originalConfig.targetConfig, 'target-config', newId)),
-      machineConfigs: await asyncMap(originalConfig.machineConfigs, (id) =>
-        copyConfig(id, 'machine-config', newId),
-      ),
+      metadata: [],
+      targetConfig: undefined,
+      machineConfigs: [],
       originalId,
     } as StoredParentConfig;
+
+    [copy.metadata, copy.targetConfig, copy.machineConfigs] = await Promise.all([
+      asyncMap(originalConfig.metadata, (id) => copyParameter(id, newId, 'parent-config')),
+      originalConfig.targetConfig &&
+        copyConfig(originalConfig.targetConfig, 'target-config', newId),
+      asyncMap(originalConfig.machineConfigs, (id) => copyConfig(id, 'machine-config', newId)),
+    ]);
 
     // overwriting the original description with the one given by the user
     let parameters = Object.values(
@@ -236,7 +276,8 @@ export async function addParentConfig(
       idCollision = true;
     }
     let storeId = await parentConfigToStorage(newConfig, idCollision);
-    addConfigCategories(environmentId, newConfig.categories);
+    await addConfigCategories(environmentId, newConfig.categories);
+    await storeAllCached();
     return { storeId };
   } catch (e: unknown) {
     const error = e as Error;
@@ -290,7 +331,8 @@ export async function addParentConfigVersion(
     if (!folderData) throw new Error('Folder not found');
 
     // true to generate new IDs for data and create a version of a parentConfig instead of a regular one
-    parentConfigToStorage(newConfig, true, versionId);
+    await parentConfigToStorage(newConfig, true, versionId);
+    await storeAllCached();
 
     return newConfig;
   } catch (e: unknown) {
@@ -323,6 +365,7 @@ export async function addTargetConfig(parentConfigId: string, targetConfig: Targ
     throw new Error(`The parent configuration already has a target configuration.`);
 
   await targetConfigToStorage(parentConfigId, targetConfig);
+  await storeAllCached();
 
   parentConfig.targetConfig = targetConfig.id;
   await db.config.update({
@@ -345,6 +388,7 @@ export async function addMachineConfig(
     throw new Error(`There is no parent configuration with the id ${parentConfigId}.`);
 
   await machineConfigsToStorage(parentConfigId, [machineConfig], newId);
+  await storeAllCached();
 
   parentConfig.machineConfigs.push(machineConfig.id);
   await db.config.update({
@@ -408,6 +452,7 @@ export async function addParameter(
       data: { data: parentParameter },
     });
   }
+  await storeAllCached();
 }
 
 async function addConfigCategories(environmentId: string, newCategories: string[]) {
@@ -441,21 +486,20 @@ async function parametersToStorage(
 ) {
   Object.entries(parameters).forEach(async ([key, parameter]) => {
     parameter.id = newId ? v4() : parameter.id;
-    await db.configParameter.create({
+    let nestedParams = await parametersToStorage(
+      parameter.id!,
+      'parameter',
+      parameter.parameters,
+      newId,
+    );
+    dataToConfigParameterTable.push({
+      id: parameter.id!,
       data: {
-        id: parameter.id,
-        data: {
-          ...parameter,
-          key,
-          parentId,
-          parentType,
-          parameters: await parametersToStorage(
-            parameter.id!,
-            'parameter',
-            parameter.parameters,
-            newId,
-          ),
-        },
+        ...parameter,
+        key,
+        parentId,
+        parentType,
+        parameters: nestedParams,
       },
     });
   });
@@ -476,26 +520,21 @@ async function targetConfigToStorage(
 ) {
   if (targetConfig) {
     targetConfig.id = newId ? v4() : targetConfig.id;
-    await db.targetConfig.create({
-      data: {
-        id: targetConfig.id,
-        data: {
-          ...targetConfig,
-          parentId,
-          metadata: await parametersToStorage(
-            targetConfig.id,
-            'target-config',
-            targetConfig.metadata,
-            newId,
-          ),
-          parameters: await parametersToStorage(
-            targetConfig.id,
-            'target-config',
-            targetConfig.parameters,
-            newId,
-          ),
-        },
-      },
+    let configToStore = {
+      ...targetConfig,
+      parentId,
+      metadata: [],
+      parameters: [],
+    } as StoredTargetConfig;
+
+    [configToStore.metadata, configToStore.parameters] = await Promise.all([
+      parametersToStorage(targetConfig.id, 'target-config', targetConfig.metadata, newId),
+      parametersToStorage(targetConfig.id, 'target-config', targetConfig.parameters, newId),
+    ]);
+
+    dataToTargetConfigTable.push({
+      id: targetConfig.id,
+      data: configToStore,
     });
 
     return targetConfig.id;
@@ -516,26 +555,22 @@ function machineConfigsToStorage(
 ) {
   machineConfigs.forEach(async (machineConfig) => {
     machineConfig.id = newId ? v4() : machineConfig.id;
-    await db.machineConfig.create({
-      data: {
-        id: machineConfig.id,
-        data: {
-          ...machineConfig,
-          parentId,
-          metadata: await parametersToStorage(
-            machineConfig.id,
-            'machine-config',
-            machineConfig.metadata,
-            newId,
-          ),
-          parameters: await parametersToStorage(
-            machineConfig.id,
-            'machine-config',
-            machineConfig.parameters,
-            newId,
-          ),
-        },
-      },
+
+    let configToStore = {
+      ...machineConfig,
+      parentId,
+      metadata: [],
+      parameters: [],
+    } as StoredMachineConfig;
+
+    [configToStore.metadata, configToStore.parameters] = await Promise.all([
+      parametersToStorage(machineConfig.id, 'machine-config', machineConfig.metadata, newId),
+      parametersToStorage(machineConfig.id, 'machine-config', machineConfig.parameters, newId),
+    ]);
+
+    dataToMachineConfigTable.push({
+      id: machineConfig.id,
+      data: configToStore,
     });
   });
 
@@ -556,28 +591,29 @@ async function parentConfigToStorage(
   const { targetConfig, metadata, machineConfigs } = parentConfig;
   parentConfig.id = newId && !version ? v4() : parentConfig.id;
   let creationDate = new Date(parentConfig.createdOn);
-  const toStore = {
+  const configToStore = {
     ...parentConfig,
-    targetConfig: targetConfig
-      ? await targetConfigToStorage(parentConfig.id, targetConfig, newId)
-      : undefined,
-    machineConfigs: await machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
-    metadata: await parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
-  };
+    targetConfig: undefined,
+    machineConfigs: [],
+    metadata: [],
+  } as StoredParentConfig;
+
+  [configToStore.targetConfig, configToStore.machineConfigs, configToStore.metadata] =
+    await Promise.all([
+      targetConfig && targetConfigToStorage(parentConfig.id, targetConfig, newId),
+      machineConfigsToStorage(parentConfig.id, machineConfigs, newId),
+      parametersToStorage(parentConfig.id, 'parent-config', metadata, newId),
+    ]);
 
   if (version)
-    await db.configVersion.create({
-      data: { id: version, parentId: parentConfig.id, data: toStore },
-    });
+    dataToConfigVersionTable.push({ id: version, parentId: parentConfig.id, data: configToStore });
   else
-    await db.config.create({
-      data: {
-        id: parentConfig.id,
-        environmentId: parentConfig.environmentId,
-        creatorId: parentConfig.createdBy,
-        createdOn: creationDate,
-        data: toStore,
-      },
+    dataToParentConfigTable.push({
+      id: parentConfig.id,
+      environmentId: parentConfig.environmentId,
+      creatorId: parentConfig.createdBy,
+      createdOn: creationDate,
+      data: configToStore,
     });
   return parentConfig.id;
 }
@@ -596,16 +632,22 @@ async function versionToParentConfigStorage(versionId: string) {
 
   const newLatestConfig = {
     ...configVersion,
-    metadata: await asyncMap(configVersion.metadata, (id) =>
-      copyParameter(id, configVersion.id, 'parent-config'),
-    ),
-    targetConfig:
-      configVersion.targetConfig &&
-      (await copyConfig(configVersion.targetConfig, 'target-config', configVersion.id)),
-    machineConfigs: await asyncMap(configVersion.machineConfigs, (id) =>
-      copyConfig(id, 'machine-config', configVersion.id),
-    ),
+    metadata: [],
+    targetConfig: undefined,
+    machineConfigs: [],
   } as StoredParentConfig;
+
+  [newLatestConfig.metadata, newLatestConfig.targetConfig, newLatestConfig.machineConfigs] =
+    await Promise.all([
+      asyncMap(configVersion.metadata, (id) =>
+        copyParameter(id, configVersion.id, 'parent-config'),
+      ),
+      configVersion.targetConfig &&
+        copyConfig(configVersion.targetConfig, 'target-config', configVersion.id),
+      asyncMap(configVersion.machineConfigs, (id) =>
+        copyConfig(id, 'machine-config', configVersion.id),
+      ),
+    ]);
 
   // if no folder ID is given, set ID to root folder's
   if (!newLatestConfig.folderId) {
@@ -619,6 +661,56 @@ async function versionToParentConfigStorage(versionId: string) {
     where: { id: configVersion.id },
     data: { data: { ...newLatestConfig, versions } },
   });
+}
+
+async function storeCachedParentConfigs() {
+  const createMany = await db.config.createMany({
+    data: dataToParentConfigTable,
+    skipDuplicates: true,
+  });
+  dataToParentConfigTable = [];
+}
+
+async function storeCachedConfigVersions() {
+  const createMany = await db.configVersion.createMany({
+    data: dataToConfigVersionTable,
+    skipDuplicates: true,
+  });
+  dataToConfigVersionTable = [];
+}
+
+async function storeCachedTargetConfigs() {
+  const createMany = await db.targetConfig.createMany({
+    data: dataToTargetConfigTable,
+    skipDuplicates: true,
+  });
+  dataToTargetConfigTable = [];
+}
+
+async function storeCachedMachineConfigs() {
+  const createMany = await db.machineConfig.createMany({
+    data: dataToMachineConfigTable,
+    skipDuplicates: true,
+  });
+  dataToMachineConfigTable = [];
+}
+
+async function storeCachedConfigParameters() {
+  const createMany = await db.configParameter.createMany({
+    data: dataToConfigParameterTable,
+    skipDuplicates: true,
+  });
+  dataToConfigParameterTable = [];
+}
+
+async function storeAllCached() {
+  await Promise.all([
+    storeCachedParentConfigs(),
+    storeCachedConfigVersions(),
+    storeCachedTargetConfigs(),
+    storeCachedMachineConfigs(),
+    storeCachedConfigParameters(),
+  ]);
 }
 
 /********************** Read Elements ****************************/
@@ -667,21 +759,27 @@ async function nestedConfigFromStorage<T extends TargetConfig | MachineConfig>(
 ) {
   if (!configId) return;
 
-  let targetResult = await db.targetConfig.findUnique({ where: { id: configId } });
-  let machineResult = await db.machineConfig.findUnique({ where: { id: configId } });
-
-  let targetConvert: StoredTargetConfig = targetResult?.data as unknown as StoredTargetConfig;
-  let machineConvert: StoredMachineConfig = machineResult?.data as unknown as StoredMachineConfig;
-
-  const storedConfig = configType === 'target-config' ? targetConvert : machineConvert;
+  let storedConfig;
+  if (configType === 'target-config') {
+    let targetResult = await db.targetConfig.findUnique({ where: { id: configId } });
+    storedConfig = targetResult?.data as unknown as StoredTargetConfig;
+  } else {
+    let machineResult = await db.machineConfig.findUnique({ where: { id: configId } });
+    storedConfig = machineResult?.data as unknown as StoredMachineConfig;
+  }
 
   if (!storedConfig) return;
 
   const config = {
     ...storedConfig,
-    parameters: await nestedParametersFromStorage(storedConfig.parameters),
-    metadata: await nestedParametersFromStorage(storedConfig.metadata),
+    parameters: {},
+    metadata: {},
   };
+
+  [config.parameters, config.metadata] = await Promise.all([
+    nestedParametersFromStorage(storedConfig.parameters),
+    nestedParametersFromStorage(storedConfig.metadata),
+  ]);
 
   if (configType === 'target-config') return config as TargetConfig;
   else return config as MachineConfig;
@@ -729,11 +827,18 @@ export async function getDeepParentConfigurationById(
   const parentConfig = {
     ...config,
     lastEditedOn: lastEdited,
-    metadata: await nestedParametersFromStorage(config.metadata),
-    targetConfig: await nestedConfigFromStorage('target-config', config.targetConfig),
-    machineConfigs: await nestedMachineConfigsFromStorage(config.machineConfigs),
+    metadata: {},
+    targetConfig: {},
+    machineConfigs: {},
     versions: versions,
-  } as unknown as ParentConfig;
+  } as ParentConfig;
+
+  [parentConfig.metadata, parentConfig.targetConfig, parentConfig.machineConfigs] =
+    await Promise.all([
+      nestedParametersFromStorage(config.metadata),
+      nestedConfigFromStorage('target-config', config.targetConfig),
+      nestedMachineConfigsFromStorage(config.machineConfigs),
+    ]);
 
   if (
     parentConfig &&
@@ -856,6 +961,51 @@ export async function updateParentConfig(configId: string, changes: Partial<Stor
  * @param parameterId the id of the parameter to remove
  */
 export async function removeParameter(parameterId: string) {
+  await deleteParameterFromStorage(parameterId);
+  await removeAllCached();
+}
+
+/**
+ * Removes a target config and all its nested parameters from the store
+ * will also remove the reference to the target config from its parent config if it still exists
+ *
+ * //TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
+ *
+ * @param targetConfigId the id of the target config to remove
+ */
+export async function removeTargetConfig(targetConfigId: string) {
+  await deleteTargetConfigFromStorage(targetConfigId);
+  await removeAllCached();
+}
+
+/**
+ * Removes a machine config and all its nested parameters from the store
+ * will also remove the reference to the machine config from its parent config if it still exists
+ *
+ * //TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
+ *
+ * @param machineConfigId the id of the machine config to remove
+ */
+export async function removeMachineConfig(machineConfigId: string) {
+  await deleteMachineConfigFromStorage(machineConfigId);
+  await removeAllCached();
+}
+
+/**
+ * Removes an existing parent config for a given ID from store.
+ *
+ * @param parentConfigId ID of the ParentConfig that is to be removed.
+ * @param keepVersions only removes referenced parameters and configs but keeps versioned configs and parent config itself. Used to overwrite config with data from a stored version
+ */
+export async function removeParentConfiguration(
+  parentConfigId: string,
+  keepVersions: boolean = false,
+) {
+  await deleteParentConfigurationFromStorage(parentConfigId, keepVersions);
+  await removeAllCached();
+}
+
+async function deleteParameterFromStorage(parameterId: string) {
   const parameterResult = await db.configParameter.findUnique({ where: { id: parameterId } });
   const parameter = parameterResult?.data as unknown as StoredParameter;
 
@@ -911,22 +1061,15 @@ export async function removeParameter(parameterId: string) {
   }
 
   // recursively remove all referenced parameters
-  await asyncForEach(parameter.parameters, async (id) => removeParameter(id));
+  await asyncForEach(parameter.parameters, async (id) => deleteParameterFromStorage(id));
 
   // remove the parameter from db
-  await db.configParameter.delete({ where: { id: parameterId } });
+  // await db.configParameter.delete({ where: { id: parameterId } });
+  dataRemovedFromConfigParameterTable.push(parameterId);
   // TODO: remove all backlinks from linked parameters
 }
 
-/**
- * Removes a target config and all its nested parameters from the store
- * will also remove the reference to the target config from its parent config if it still exists
- *
- * //TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
- *
- * @param targetConfigId the id of the target config to remove
- */
-export async function removeTargetConfig(targetConfigId: string) {
+async function deleteTargetConfigFromStorage(targetConfigId: string) {
   const targetConfigResult = await db.targetConfig.findUnique({ where: { id: targetConfigId } });
   const targetConfig = targetConfigResult?.data as unknown as StoredTargetConfig;
 
@@ -946,22 +1089,17 @@ export async function removeTargetConfig(targetConfigId: string) {
   }
 
   // remove all referenced parameters
-  await asyncForEach(targetConfig.metadata, async (id) => removeParameter(id));
-  await asyncForEach(targetConfig.parameters, async (id) => removeParameter(id));
+  await Promise.all([
+    asyncForEach(targetConfig.metadata, async (id) => deleteParameterFromStorage(id)),
+    asyncForEach(targetConfig.parameters, async (id) => deleteParameterFromStorage(id)),
+  ]);
 
   // remove the target config from db
-  await db.targetConfig.delete({ where: { id: targetConfigId } });
+  // await db.targetConfig.delete({ where: { id: targetConfigId } });
+  dataRemovedFromTargetConfigTable.push(targetConfigId);
 }
 
-/**
- * Removes a machine config and all its nested parameters from the store
- * will also remove the reference to the machine config from its parent config if it still exists
- *
- * //TODO: if we remove a whole tree we should not trigger a save on every change but only update the store after every change was done
- *
- * @param machineConfigId the id of the machine config to remove
- */
-export async function removeMachineConfig(machineConfigId: string) {
+async function deleteMachineConfigFromStorage(machineConfigId: string) {
   const machineConfigResult = await db.machineConfig.findUnique({ where: { id: machineConfigId } });
   const machineConfig = machineConfigResult?.data as unknown as StoredMachineConfig;
 
@@ -984,20 +1122,17 @@ export async function removeMachineConfig(machineConfigId: string) {
   }
 
   // remove all referenced parameters
-  await asyncForEach(machineConfig.metadata, async (id) => removeParameter(id));
-  await asyncForEach(machineConfig.parameters, async (id) => removeParameter(id));
+  await Promise.all([
+    asyncForEach(machineConfig.metadata, async (id) => deleteParameterFromStorage(id)),
+    asyncForEach(machineConfig.parameters, async (id) => deleteParameterFromStorage(id)),
+  ]);
 
   // remove the machine config from db
-  await db.machineConfig.delete({ where: { id: machineConfigId } });
+  // await db.machineConfig.delete({ where: { id: machineConfigId } });
+  dataRemovedFromMachineConfigTable.push(machineConfigId);
 }
 
-/**
- * Removes an existing parent config for a given ID from store.
- *
- * @param parentConfigId ID of the ParentConfig that is to be removed.
- * @param keepVersions only removes referenced parameters and configs but keeps versioned configs and parent config itself. Used to overwrite config with data from a stored version
- */
-export async function removeParentConfiguration(
+async function deleteParentConfigurationFromStorage(
   parentConfigId: string,
   keepVersions: boolean = false,
 ) {
@@ -1010,9 +1145,13 @@ export async function removeParentConfiguration(
     where: { parentId: parentConfigId },
   });
 
-  if (parentConfig.targetConfig) await removeTargetConfig(parentConfig.targetConfig);
-  await asyncForEach(parentConfig.machineConfigs, (id) => removeMachineConfig(id));
-  await asyncForEach(parentConfig.metadata, (id) => removeParameter(id));
+  if (!parentConfig) return;
+
+  await Promise.all([
+    parentConfig.targetConfig && deleteTargetConfigFromStorage(parentConfig.targetConfig),
+    asyncForEach(parentConfig.machineConfigs, (id) => deleteMachineConfigFromStorage(id)),
+    asyncForEach(parentConfig.metadata, (id) => deleteParameterFromStorage(id)),
+  ]);
 
   // for each version removing TargetConfig, MachineConfigs and Parameters and finally removing the configVersion itself
   if (!keepVersions) {
@@ -1021,13 +1160,61 @@ export async function removeParentConfiguration(
     ) as unknown as StoredParentConfig[];
 
     await asyncForEach(parentConfigVersions, async (configVersion) => {
-      if (configVersion.targetConfig) await removeTargetConfig(configVersion.targetConfig);
-      await asyncForEach(configVersion.machineConfigs, (id) => removeMachineConfig(id));
-      await asyncForEach(configVersion.metadata, (id) => removeParameter(id));
-      await db.configVersion.delete({ where: { id: configVersion.version } });
+      await Promise.all([
+        configVersion.targetConfig && deleteTargetConfigFromStorage(configVersion.targetConfig),
+        asyncForEach(configVersion.machineConfigs, (id) => deleteMachineConfigFromStorage(id)),
+        asyncForEach(configVersion.metadata, (id) => deleteParameterFromStorage(id)),
+        db.configVersion.delete({ where: { id: configVersion.version } }),
+      ]);
     });
 
     // remove from db
-    await db.config.delete({ where: { id: parentConfigId } });
+    // await db.config.delete({ where: { id: parentConfigId } });
+    dataRemovedFromParentConfigTable.push(parentConfigId);
   }
+}
+
+async function removeCachedParentConfigs() {
+  const removeMany = await db.config.deleteMany({
+    where: { id: { in: dataRemovedFromParentConfigTable } },
+  });
+  dataRemovedFromParentConfigTable = [];
+}
+
+async function removeCachedConfigVersions() {
+  const removeMany = await db.configVersion.deleteMany({
+    where: { id: { in: dataRemovedFromConfigVersionTable } },
+  });
+  dataRemovedFromConfigVersionTable = [];
+}
+
+async function removeCachedTargetConfigs() {
+  const removeMany = await db.targetConfig.deleteMany({
+    where: { id: { in: dataRemovedFromTargetConfigTable } },
+  });
+  dataRemovedFromTargetConfigTable = [];
+}
+
+async function removeCachedMachineConfigs() {
+  const removeMany = await db.machineConfig.deleteMany({
+    where: { id: { in: dataRemovedFromMachineConfigTable } },
+  });
+  dataRemovedFromMachineConfigTable = [];
+}
+
+async function removeCachedConfigParameters() {
+  const removeMany = await db.configParameter.deleteMany({
+    where: { id: { in: dataRemovedFromConfigParameterTable } },
+  });
+  dataRemovedFromConfigParameterTable = [];
+}
+
+async function removeAllCached() {
+  await Promise.all([
+    removeCachedParentConfigs(),
+    removeCachedConfigVersions(),
+    removeCachedTargetConfigs(),
+    removeCachedMachineConfigs(),
+    removeCachedConfigParameters(),
+  ]);
 }

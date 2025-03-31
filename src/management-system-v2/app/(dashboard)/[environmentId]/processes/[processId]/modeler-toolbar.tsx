@@ -73,14 +73,13 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
   // Force rerender when the BPMN changes.
   useModelerStateStore((state) => state.changeCounter);
 
+  const modalOpen =
+    showUserTaskEditor || showPropertiesPanel || showScriptTaskEditor || shareModalOpen;
   useEffect(() => {
-    if (modeler && showUserTaskEditor) {
-      // TODO: maybe  do this without an effect
-      modeler.deactivateKeyboard();
-    } else if (modeler) {
-      modeler.activateKeyboard();
-    }
-  }, [modeler, showUserTaskEditor]);
+    if (modalOpen) {
+      modeler?.deactivateKeyboard();
+    } else modeler?.activateKeyboard();
+  }, [modeler, modalOpen]);
 
   const selectedVersionId = query.get('version');
 
@@ -249,7 +248,8 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
           </ToolbarGroup>
 
           <ToolbarGroup>
-            {selectedElement &&
+            {selectedElementId &&
+              selectedElement &&
               ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
                 <Tooltip title="Edit User Task Form">
                   <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />

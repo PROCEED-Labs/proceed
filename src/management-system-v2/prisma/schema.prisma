@@ -239,28 +239,28 @@ model Config {
   createdOn             DateTime
   lastEditedOn          DateTime  @updatedAt
 
-  data                  Json
+  data                  Json      @db.JsonB
   
   @@map("config")
 }
 
 model ConfigParameter {
   id                        String    @id @default(uuid())
-  data                      Json
+  data                      Json      @db.JsonB
   
   @@map("config_parameter")
 }
 
 model MachineConfig {
   id                        String    @id @default(uuid())
-  data                      Json
+  data                      Json      @db.JsonB
   
   @@map("machine_config")
 }
 
 model TargetConfig {
   id                        String    @id @default(uuid())
-  data                      Json
+  data                      Json      @db.JsonB
 
   @@map("target_config")
 }
@@ -268,7 +268,7 @@ model TargetConfig {
 model ConfigVersion {
   id                        String    @id @default(uuid())
   parentId                  String
-  data                      Json
+  data                      Json      @db.JsonB
 
   @@map("config_version")
 }

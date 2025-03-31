@@ -468,6 +468,50 @@
       ]
     },
     {
+      "name": "GenericResource",
+      "superClass": ["bpmn:Artifact"],
+      "properties": [
+        {
+          "name": "name",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "resourceType",
+          "isAttr": true,
+          "type": "ResourceType"
+        }
+      ]
+    },
+    {
+      "name": "PerformableNode",
+      "extends": ["bpmn:Activity", "bpmn:Event", "bpmn:Gateway"],
+      "properties": [
+        {
+          "name": "Performers",
+          "type": "PerformerAssociation",
+          "isMany": true
+        }
+      ]
+    },
+
+    {
+      "name": "ResponsibleParty",
+      "superClass": ["bpmn:ResourceRole"]
+    },
+    {
+      "name": "ResposibilityElements",
+      "extends": ["bpmn:Gateway", "bpmn:Event"],
+      "properties": [
+        {
+          "name": "resources",
+          "type": "ResourceRole",
+          "isMany": true
+        }
+      ]
+    },
+
+    {
       "name": "placeholder",
       "extends": ["bpmn:Task"],
       "properties": [
@@ -1207,6 +1251,27 @@
   "xml": {
     "tagAlias": "lowerCase"
   },
-  "emumerations": [],
+  "emumerations": [
+    {
+      "name": "ResourceType",
+      "literalValues": [
+        {
+          "name": "User"
+        },
+        {
+          "name": "Screen"
+        },
+        {
+          "name": "Laptop"
+        },
+        {
+          "name": "Robot"
+        },
+        {
+          "name": "Server"
+        }
+      ]
+    }
+  ],
   "associations": []
 }

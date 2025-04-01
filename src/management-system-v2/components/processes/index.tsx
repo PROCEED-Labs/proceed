@@ -481,19 +481,15 @@ const Processes = ({
                         {selectedRowKeys.length === 1 &&
                           selectedRowElements[0].type == 'process' && (
                             <div>
-                              {selectedRowElements[0].type == 'process' && (
-                                <>
-                                  <Tooltip placement="top" title={'View Process Documentation'}>
-                                    <Button
-                                      type="text"
-                                      icon={<GrDocumentUser className={styles.Icon} />}
-                                      onClick={() => {
-                                        handleOpenDocumentation(selectedRowKeys[0]);
-                                      }}
-                                    />
-                                  </Tooltip>
-                                </>
-                              )}
+                              <Tooltip placement="top" title={'View Process Documentation'}>
+                                <Button
+                                  type="text"
+                                  icon={<GrDocumentUser className={styles.Icon} />}
+                                  onClick={() => {
+                                    handleOpenDocumentation(selectedRowKeys[0]);
+                                  }}
+                                />
+                              </Tooltip>
                               <Tooltip placement="top" title={'Open Editor'}>
                                 <Button
                                   type="text"

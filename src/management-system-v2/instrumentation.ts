@@ -4,6 +4,7 @@ export async function register() {
     const { userId, createUserArgs } = await import('./lib/no-iam-user');
     const { addUser, getUserById } = await import('./lib/data/db/iam/users');
 
-    if (!process.env.IAM_ACTIVATE && !(await getUserById(userId))) await addUser(createUserArgs);
+    if (!process.env.PROCEED_PUBLIC_IAM_ACTIVATE && !(await getUserById(userId)))
+      await addUser(createUserArgs);
   }
 }

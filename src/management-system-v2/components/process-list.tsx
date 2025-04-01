@@ -308,14 +308,14 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'owner',
       key: 'Owner',
       render: (_, item) => {
-        const id =
+        const name =
           item.type === 'folder'
             ? mapIdToUsername(item.createdBy)
             : mapIdToUsername(item.creatorId);
 
         return (
           <>
-            <ListEntryLink data={item}>{id}</ListEntryLink>
+            <ListEntryLink data={item}>{name}</ListEntryLink>
           </>
         );
       },

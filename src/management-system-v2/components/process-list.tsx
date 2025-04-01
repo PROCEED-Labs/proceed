@@ -16,7 +16,6 @@ import {
   StarOutlined,
   InfoCircleOutlined,
   FolderOutlined as FolderFilled,
-  FileOutlined as FileFilled,
   ShareAltOutlined,
 } from '@ant-design/icons';
 import styles from './item-list-view.module.scss';
@@ -81,9 +80,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   onExportProcess = () => {},
   tableProps,
   processActions: { viewDocumentation, openEditor, changeMetaData, releaseProcess, share } = {
-    // deleteItems: () => {},
-    // editItem: () => {},
-    // copyItem: () => {},
     viewDocumentation: () => {},
     openEditor: () => {},
     changeMetaData: () => {},

@@ -138,60 +138,57 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
       const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
+
+      type ActionButtonProps = {
+        title: string;
+        action: (record: ProcessListProcess) => void;
+        icon: React.ReactNode;
+      } & ({ view: true } | { update: true });
+
+      const ActionButton: React.FC<ActionButtonProps> = ({ title, action, icon, ...actions }) => {
+        return (
+          <AuthCan {...resource} {...actions}>
+            <Tooltip placement="top" title={title}>
+              <Button
+                className={classNames(styles.ActionButton)}
+                type="text"
+                icon={icon}
+                onClick={() => action(record)}
+              />
+            </Tooltip>
+          </AuthCan>
+        );
+      };
+
       return (
         <>
           {record.type !== 'folder' && (
             <>
-              <AuthCan {...resource} view>
-                <Tooltip placement="top" title={'View Documentation'}>
-                  <Button
-                    className={classNames(styles.ActionButton)}
-                    type="text"
-                    icon={<GrDocumentUser />}
-                    onClick={() => viewDocumentation(record)}
-                  />
-                </Tooltip>
-              </AuthCan>
-              <AuthCan {...resource} update>
-                <Tooltip placement="top" title={'Open Editor'}>
-                  <Button
-                    className={classNames(styles.ActionButton)}
-                    type="text"
-                    icon={<PiNotePencil />}
-                    onClick={() => openEditor(record)}
-                  />
-                </Tooltip>
-              </AuthCan>
-              <AuthCan {...resource} update>
-                <Tooltip placement="top" title={'Change Meta Data'}>
-                  <Button
-                    className={classNames(styles.ActionButton)}
-                    type="text"
-                    icon={<LuNotebookPen />}
-                    onClick={() => changeMetaData(record)}
-                  />
-                </Tooltip>
-              </AuthCan>
-              <AuthCan {...resource} update>
-                <Tooltip placement="top" title={'Release Process'}>
-                  <Button
-                    className={classNames(styles.ActionButton)}
-                    type="text"
-                    icon={<BsFileEarmarkCheck />}
-                    onClick={() => releaseProcess(record)}
-                  />
-                </Tooltip>
-              </AuthCan>
-              <AuthCan {...resource} update>
-                <Tooltip placement="top" title={'Share'}>
-                  <Button
-                    className={classNames(styles.ActionButton)}
-                    type="text"
-                    icon={<ShareAltOutlined />}
-                    onClick={() => share(record)}
-                  />
-                </Tooltip>
-              </AuthCan>
+              <ActionButton
+                title={'View Documentation'}
+                action={viewDocumentation}
+                icon={<GrDocumentUser />}
+                view
+              />
+              <ActionButton
+                title={'Open Editor'}
+                action={openEditor}
+                icon={<PiNotePencil />}
+                update
+              />
+              <ActionButton
+                title={'Change Meta Data'}
+                action={changeMetaData}
+                icon={<LuNotebookPen />}
+                update
+              />
+              <ActionButton
+                title={'Release Process'}
+                action={releaseProcess}
+                icon={<BsFileEarmarkCheck />}
+                update
+              />
+              <ActionButton title={'Share'} action={share} icon={<ShareAltOutlined />} update />
             </>
           )}
         </>

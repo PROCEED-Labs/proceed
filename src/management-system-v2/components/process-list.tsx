@@ -13,10 +13,6 @@ import {
   useState,
 } from 'react';
 import {
-  CopyOutlined,
-  ExportOutlined,
-  EditOutlined,
-  DeleteOutlined,
   StarOutlined,
   InfoCircleOutlined,
   FolderOutlined as FolderFilled,
@@ -27,8 +23,7 @@ import styles from './item-list-view.module.scss';
 import { generateDateString, generateTableDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan } from '@/components/auth-can';
-import { ProcessActions, ProcessListProcess, rowActions } from './processes';
-import ConfirmationButton from './confirmation-button';
+import { ProcessListProcess, rowActions } from './processes';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
 import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
@@ -38,8 +33,6 @@ import FavouriteStar from './favouriteStar';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
 import classNames from 'classnames';
-import { set } from 'zod';
-import { getUserById } from '@/lib/data/db/iam/users';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiNotePencil } from 'react-icons/pi';
 import { LuNotebookPen } from 'react-icons/lu';
@@ -62,7 +55,7 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
 }
 
 export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess['type'] } }) {
-  return item.type === 'folder' ? <FolderFilled /> : <FileFilled />;
+  return item.type === 'folder' ? <FolderFilled /> : '';
 }
 
 type BaseProcessListProps = PropsWithChildren<{
@@ -120,7 +113,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   ];
 
   /* TODO:
-    User potentialOwner Store to get the username 
+    User potentialOwner Store to get the username
   */
   const mapIdToUsername = useCallback((id: string | undefined | null) => {
     return id;

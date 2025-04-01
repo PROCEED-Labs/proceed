@@ -161,10 +161,6 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
   if (orgsWithNoNextAdmin.length > 0)
     throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
 
-  if (user.isGuest) {
-    await dbMutator.guestSignin.delete({ where: { userId: userId } });
-  }
-
   await dbMutator.user.delete({ where: { id: userId } });
 
   return user as User;
@@ -273,12 +269,6 @@ export async function deleteInactiveGuestUsers(
   if (staleSignins.length === 0) return { count: 0 };
 
   const userIds = staleSignins.map((s) => s.userId);
-
-  await tx.guestSignin.deleteMany({
-    where: {
-      lastSigninAt: { lt: cutoff },
-    },
-  });
 
   return await tx.user.deleteMany({
     where: {

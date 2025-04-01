@@ -183,36 +183,6 @@ const Processes = ({
     return 0;
   });
 
-  // Folder dropdown
-  const folderDropdDownItems: MenuProps['items'] = [
-    ...filteredData
-      .filter(({ type }) => type === 'folder')
-      .filter(({ id }) => !selectedRowKeys.includes(id))
-      .map((folder) => ({
-        key: folder.id,
-        label: folder.name.value,
-        icon: <FolderOutlined />,
-        onClick: () => {
-          moveItems(
-            selectedRowElements.map((element) => ({
-              type: element.type,
-              id: element.id,
-            })),
-            folder.id,
-          );
-        },
-      })),
-    {
-      key: 'new-folder',
-      label: 'Create New Folder',
-      icon: <FolderFilled />,
-      onClick: () => setOpenCreateFolderModal(true),
-      style: {
-        borderTop: '1px solid #f0f0f0',
-      },
-    },
-  ];
-
   const selectableElements = useRef(filteredData);
   selectableElements.current = filteredData;
 
@@ -575,31 +545,25 @@ const Processes = ({
                               )}
                             </div>
                           )}
-                        {/*
-                            Vertical Bar | ,
-                          */}
+
                         {!readOnly && (
                           <div>
                             {/* // Move to Folder */}
-                            {/* TODO: edit ~= move? (ability wise)*/}
                             {canEditSelected && (
-                              <>
-                                <Dropdown menu={{ items: folderDropdDownItems }}>
-                                  <Tooltip placement="top" title={'Move to Folder'}>
-                                    <Button
-                                      // className={classNames(styles.ActionButton)}
-                                      type="text"
-                                      icon={<RiFolderTransferLine className={styles.Icon} />}
-                                    />
-                                  </Tooltip>
-                                </Dropdown>
-                              </>
+                              <Tooltip placement="top" title={'Move to Folder'}>
+                                <Button
+                                  type="text"
+                                  icon={<RiFolderTransferLine className={styles.Icon} />}
+                                  onClick={() => {
+                                    openMoveModal(selectedRowElements);
+                                  }}
+                                />
+                              </Tooltip>
                             )}
                             {/* // Copy */}
                             {canCreateProcess && (
                               <Tooltip placement="top" title={'Copy'}>
                                 <Button
-                                  // className={classNames(styles.ActionButton)}
                                   type="text"
                                   icon={<IoMdCopy className={styles.Icon} />}
                                   onClick={() => {
@@ -611,7 +575,6 @@ const Processes = ({
                             )}
                             {/* // Delete */}
                             {canDeleteSelected && (
-                              // <Tooltip placement="top" title={'Delete'}>
                               <ConfirmationButton
                                 tooltip="Delete"
                                 title="Delete Processes"
@@ -624,7 +587,6 @@ const Processes = ({
                                   type: 'text',
                                 }}
                               />
-                              // </Tooltip>
                             )}
                           </div>
                         )}

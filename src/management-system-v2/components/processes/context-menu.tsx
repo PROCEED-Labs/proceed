@@ -169,11 +169,8 @@ const ContextMenuArea: FC<
         type: 'divider',
       },
     );
-
-    // Create Process,
-    // Create Folder,
-    // Import Process
   }
+
   return (
     <Dropdown
       menu={{

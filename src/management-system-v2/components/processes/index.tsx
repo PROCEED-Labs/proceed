@@ -483,10 +483,8 @@ const Processes = ({
                             <div>
                               {selectedRowElements[0].type == 'process' && (
                                 <>
-                                  {/* View Process Documentation, */}
                                   <Tooltip placement="top" title={'View Process Documentation'}>
                                     <Button
-                                      // className={classNames(styles.ActionButton)}
                                       type="text"
                                       icon={<GrDocumentUser className={styles.Icon} />}
                                       onClick={() => {
@@ -496,10 +494,8 @@ const Processes = ({
                                   </Tooltip>
                                 </>
                               )}
-                              {/* // Open Editor */}
                               <Tooltip placement="top" title={'Open Editor'}>
                                 <Button
-                                  // className={classNames(styles.ActionButton)}
                                   type="text"
                                   icon={<PiNotePencil className={styles.Icon} />}
                                   onClick={() => {
@@ -508,10 +504,8 @@ const Processes = ({
                                   }}
                                 />
                               </Tooltip>
-                              {/* // Open Editor in new Tab */}
                               <Tooltip placement="top" title={'Open Editor in new Tab'}>
                                 <Button
-                                  // className={classNames(styles.ActionButton)}
                                   type="text"
                                   icon={<IoOpenOutline className={styles.Icon} />}
                                   onClick={() => {
@@ -520,11 +514,9 @@ const Processes = ({
                                   }}
                                 />
                               </Tooltip>
-                              {/* // Change Meta Data */}
                               {canEditSelected && (
                                 <Tooltip placement="top" title={'Change Meta Data'}>
                                   <Button
-                                    // className={classNames(styles.ActionButton)}
                                     type="text"
                                     icon={<LuNotebookPen className={styles.Icon} />}
                                     onClick={() => {
@@ -533,7 +525,6 @@ const Processes = ({
                                   />
                                 </Tooltip>
                               )}
-                              {/* // Release Process */}
                               {canCreateProcess && (
                                 <Tooltip placement="top" title={'Release Process'}>
                                   <VersionCreationButton
@@ -548,7 +539,6 @@ const Processes = ({
 
                         {!readOnly && (
                           <div>
-                            {/* // Move to Folder */}
                             {canEditSelected && (
                               <Tooltip placement="top" title={'Move to Folder'}>
                                 <Button
@@ -560,7 +550,6 @@ const Processes = ({
                                 />
                               </Tooltip>
                             )}
-                            {/* // Copy */}
                             {canCreateProcess && (
                               <Tooltip placement="top" title={'Copy'}>
                                 <Button
@@ -573,7 +562,6 @@ const Processes = ({
                                 />
                               </Tooltip>
                             )}
-                            {/* // Delete */}
                             {canDeleteSelected && (
                               <ConfirmationButton
                                 tooltip="Delete"
@@ -594,7 +582,6 @@ const Processes = ({
                             Vertical Bar | ,
                           */}
                         <div>
-                          {/* // Share */}
                           {selectedRowKeys.length === 1 &&
                             selectedRowElements[0].type == 'process' && (
                               <>
@@ -610,7 +597,6 @@ const Processes = ({
                                 </Tooltip>
                               </>
                             )}
-                          {/* // Download */}
                           <Tooltip placement="top" title={'Download'}>
                             <Button
                               type="text"
@@ -700,14 +686,7 @@ const Processes = ({
                 moveItems(items, over.id);
               }}
             >
-              {/* <Spin spinning={loading}> */}
-              <ProceedLoadingIndicator
-                width={'100%'}
-                scale="60%"
-                // position={{ x: '25%', y: '20%' }}
-                loading={loading}
-                small={true}
-              >
+              <ProceedLoadingIndicator width={'100%'} scale="60%" loading={loading} small={true}>
                 {iconView ? (
                   <IconView
                     data={filteredData}
@@ -740,12 +719,11 @@ const Processes = ({
                         setOpenExportModal(true);
                       }}
                       setShowMobileMetaData={setShowMobileMetaData}
-                      processActions={/* processActions */ rowActions}
+                      processActions={rowActions}
                     />
                   </div>
                 )}
               </ProceedLoadingIndicator>
-              {/* </Spin> */}
             </DraggableContext>
           </div>
 
@@ -827,7 +805,7 @@ const Processes = ({
       </ProcessModal>
       <ProcessModal
         open={openEditModal}
-        title={'Process Meta Data' /* `Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}` */}
+        title={'Process Meta Data'}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData
           .filter((process) => selectedRowKeys.includes(process.id))

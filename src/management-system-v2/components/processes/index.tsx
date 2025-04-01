@@ -139,7 +139,9 @@ const Processes = ({
     useUserPreferences.use['process-meta-data']();
 
   const [openExportModal, setOpenExportModal] = useState(false);
-  const exportModalTab = useRef<'bpmn' | 'share-public-link' | undefined>(undefined);
+  const [exportModalTab, setExportModalTab] = useState<'bpmn' | 'share-public-link' | undefined>(
+    undefined,
+  );
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -421,12 +423,11 @@ const Processes = ({
 
   const share = (item: ProcessListProcess) => {
     setSelectedRowElements([item]);
-    exportModalTab.current = 'share-public-link';
+    setExportModalTab('share-public-link');
     setOpenExportModal(true);
   };
 
   const openMoveModal = (items: ProcessListProcess[]) => {
-    // setSelectedRowElements(items);
     setElementsToMove(items);
     setMoveTargetFolderId(rootFolder?.id);
     setOpenFolderMoveModal(true);
@@ -435,13 +436,6 @@ const Processes = ({
   const closeFolderMoveModal = () => {
     setMoveTargetFolderId(undefined);
     setOpenFolderMoveModal(false);
-  };
-
-  const processActions: ProcessActions = {
-    deleteItems,
-    copyItem,
-    editItem,
-    moveItems,
   };
 
   const rowActions: RowActions = {
@@ -459,7 +453,7 @@ const Processes = ({
     share,
     exportProcess: (items) => {
       setSelectedRowElements(items);
-      exportModalTab.current = 'bpmn';
+      setExportModalTab('bpmn');
       setOpenExportModal(true);
     },
     moveItems: openMoveModal,
@@ -646,7 +640,7 @@ const Processes = ({
                                   <Button
                                     type="text"
                                     onClick={() => {
-                                      exportModalTab.current = 'share-public-link';
+                                      setExportModalTab('share-public-link');
                                       setOpenExportModal(true);
                                     }}
                                     icon={<ShareAltOutlined className={styles.Icon} />}
@@ -659,7 +653,7 @@ const Processes = ({
                             <Button
                               type="text"
                               onClick={() => {
-                                exportModalTab.current = 'bpmn';
+                                setExportModalTab('bpmn');
                                 setOpenExportModal(true);
                               }}
                               icon={<PiDownloadSimple className={styles.Icon} />}
@@ -824,7 +818,7 @@ const Processes = ({
           ...e,
           name: e.name.value,
         }))}
-        defaultOpenTab={exportModalTab.current}
+        defaultOpenTab={exportModalTab}
       />
       <ProcessModal
         open={openCopyModal}

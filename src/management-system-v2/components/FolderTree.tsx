@@ -39,7 +39,7 @@ export const FolderTree = ({
   treeProps,
   showRootAsFolder,
   onSelect,
-  forceReload,
+  subtreesToReload,
 }: {
   rootNodes?: FolderChildren[];
   /** The return value is used to update the tree */
@@ -47,7 +47,7 @@ export const FolderTree = ({
   treeProps?: TreeProps<TreeNode>;
   showRootAsFolder?: boolean;
   onSelect?: (folder: FolderChildren | undefined) => void;
-  forceReload?: any;
+  subtreesToReload?: string[];
 }) => {
   const spaceId = useEnvironment().spaceId;
 
@@ -82,8 +82,6 @@ export const FolderTree = ({
       if (!rootNode) return;
 
       nodeMap.current.set(rootNode.key, rootNode);
-
-      // console.log({ rootNode });
     }
 
     const parentNode = nodeId ? nodeMap.current.get(nodeId) : rootNode;
@@ -96,8 +94,8 @@ export const FolderTree = ({
     for (const node of childrenNodes) nodeMap.current.set(node.key, node);
 
     if (parentNode) {
-      parentNode!.children = childrenNodes;
-      parentNode!.isLeaf = childrenNodes.length === 0;
+      parentNode.children = childrenNodes;
+      parentNode.isLeaf = childrenNodes.length === 0;
       loadedKeys.current.set(parentNode.key, true);
     }
 
@@ -110,6 +108,7 @@ export const FolderTree = ({
   };
 
   const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (rootNodes) return;
 
@@ -125,14 +124,36 @@ export const FolderTree = ({
   }, [rootNodes]);
 
   useEffect(() => {
-    if (forceReload) {
-      setTimeout(() => loadData(), 100);
+    if (subtreesToReload) {
+      const toUpdate = [] as React.Key[];
+
+      for (const id of subtreesToReload) {
+        if (loadedKeys.current.get(id)) toUpdate.push(id);
+      }
+
+      for (const id of toUpdate) {
+        const node = nodeMap.current.get(id);
+
+        if (node?.children) {
+          node.children.forEach(
+            (child) => loadedKeys.current.get(child.key) && toUpdate.push(child.key),
+          );
+        }
+      }
+
+      async function update() {
+        for (const id of toUpdate) {
+          const node = nodeMap.current.get(id);
+          if (node) await loadData(node);
+        }
+      }
+
+      update();
     }
-  }, [forceReload]);
+  }, [subtreesToReload]);
 
   return (
     <ProceedLoadingIndicator loading={loading}>
-      {/* <Spin spinning={loading}> */}
       <Tree
         showIcon={true}
         style={{
@@ -149,11 +170,9 @@ export const FolderTree = ({
         // correct loadedKeys
         loadedKeys={[...loadedKeys.current.keys()]}
         onSelect={(selectedKeys) => {
-          // console.log(nodeMap.current.get(selectedKeys[0])?.element);
           onSelect?.(nodeMap.current.get(selectedKeys[0])?.element);
         }}
       />
-      {/* </Spin> */}
     </ProceedLoadingIndicator>
   );
 };

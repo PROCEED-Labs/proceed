@@ -20,7 +20,7 @@ export const FolderCreationModal: FC<
   const router = useRouter();
   const spaceId = useEnvironment().spaceId;
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
-  const selectedFolderId = props.parentFolderId ?? folderId;
+  const selectedFolderId = props.parentFolderId || folderId;
   const [isLoading, startTransition] = useTransition();
 
   const createFolder = (values: FolderUserInput) => {

@@ -1,16 +1,16 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { ComponentProps, useRef, useState, useTransition } from 'react';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiNotePencil } from 'react-icons/pi';
 import { IoOpenOutline } from 'react-icons/io5';
 import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
 import { PiDownloadSimple } from 'react-icons/pi';
+import { AiOutlineImport, AiOutlinePartition } from 'react-icons/ai';
 import { RiFolderTransferLine } from 'react-icons/ri';
 import { IoMdCopy } from 'react-icons/io';
-import { AiOutlinePartition } from 'react-icons/ai';
 import { PiFolderOpen } from 'react-icons/pi';
 import {
   Space,
@@ -26,9 +26,6 @@ import {
   MenuProps,
 } from 'antd';
 import {
-  CopyOutlined,
-  EditOutlined,
-  ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
@@ -37,7 +34,6 @@ import {
   FolderFilled,
   ShareAltOutlined,
 } from '@ant-design/icons';
-import BPMNModeler from 'bpmn-js/lib/Modeler';
 import IconView from '@/components/process-icon-list';
 import ProcessList from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
@@ -82,12 +78,6 @@ import { handleOpenDocumentation } from '@/app/(dashboard)/[environmentId]/proce
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton, { VersionModal } from '../version-creation-button';
 
-/* SHARE HERE */
-// import ModelerShareModalButton from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-share-modal';
-
-import { getProcess } from '@/lib/data/DTOs';
-import BPMNCanvas, { BPMNCanvasRef } from '../bpmn-canvas';
-import { set } from 'zod';
 import { ShareModal } from '../share-modal/share-modal';
 import MoveToFolderModal from '../folder-move-modal';
 
@@ -112,7 +102,7 @@ export type ProcessActions = {
   moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
 };
 
-export type contextAcions = {
+export type contextActions = {
   // View Process Documentation,
   viewDocumentation: (item: ProcessListProcess) => void;
   // Change Meta Data,
@@ -207,9 +197,9 @@ const Processes = ({
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openFolderMoveModal, setOpenFolderMoveModal] = useState(false);
-  const selectedFolderModalElement = useRef<ProcessListProcess[]>([]);
-  const selectedFolderID = useRef<string>(rootFolder?.id ?? '');
-  const folderStrucutreChangeCounter = useRef(0);
+  const [moveTargetFolderId, setMoveTargetFolderId] = useState<string>();
+  const [elementsToMove, setElementsToMove] = useState<ProcessListProcess[]>([]);
+  const [foldersChangedInMove, setFoldersChangedInMove] = useState<string[]>([]);
 
   const [showMobileMetaData, setShowMobileMetaData] = useState(false);
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
@@ -224,18 +214,6 @@ const Processes = ({
   const [rowClickedProcess, setRowClickedProcess] = useState<string | undefined>();
 
   const [copySelection, setCopySelection] = useState<ProcessListProcess[]>([]);
-
-  const [shareXML, setShareXML] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (selectedRowKeys.length === 1) {
-      getProcess(selectedRowKeys[0], true).then(({ bpmn }) => {
-        setShareXML(bpmn);
-      });
-    }
-  }, [selectedRowKeys, setShareXML]);
-
-  const modelerRef = useRef<BPMNCanvasRef>(null);
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: processes ?? [],
@@ -348,7 +326,7 @@ const Processes = ({
     defaultDropdownItems.push({
       key: 'create-process',
       label: 'Create Process',
-      icon: <FileOutlined />,
+      icon: <AiOutlinePartition />,
       onClick: () => setOpenCreateProcessModal(true),
     });
   // Create Folder,
@@ -491,10 +469,16 @@ const Processes = ({
     setOpenExportModal(true);
   };
 
-  const openFolderModal = (items: ProcessListProcess[]) => {
+  const openMoveModal = (items: ProcessListProcess[]) => {
     // setSelectedRowElements(items);
-    selectedFolderModalElement.current = items;
+    setElementsToMove(items);
+    setMoveTargetFolderId(rootFolder?.id);
     setOpenFolderMoveModal(true);
+  };
+
+  const closeFolderMoveModal = () => {
+    setMoveTargetFolderId(undefined);
+    setOpenFolderMoveModal(false);
   };
 
   const processActions: ProcessActions = {
@@ -512,7 +496,7 @@ const Processes = ({
     share,
   };
 
-  const contextActions: contextAcions = {
+  const contextActions: contextActions = {
     viewDocumentation,
     changeMetaData,
     releaseProcess,
@@ -522,7 +506,7 @@ const Processes = ({
       exportModalTab.current = 'bpmn';
       setOpenExportModal(true);
     },
-    moveItems: openFolderModal,
+    moveItems: openMoveModal,
     copyItems: copyItem,
     deleteItems: (items) => {
       setSelectedRowElements(items);
@@ -563,9 +547,11 @@ const Processes = ({
                           onClick={() => setOpenCreateProcessModal(true)}
                           trigger={['click']}
                         >
-                          Create Process
+                          <AiOutlinePartition /> Create Process
                         </Dropdown.Button>
-                        <ProcessImportButton type="default">Import</ProcessImportButton>
+                        <ProcessImportButton type="default" icon={<PiFolderOpen />}>
+                          Import
+                        </ProcessImportButton>
                       </Space>
                     )}
 
@@ -639,7 +625,7 @@ const Processes = ({
                               )}
                             </div>
                           )}
-                        {/* 
+                        {/*
                             Vertical Bar | ,
                           */}
                         {!readOnly && (
@@ -692,7 +678,7 @@ const Processes = ({
                             )}
                           </div>
                         )}
-                        {/* 
+                        {/*
                             Vertical Bar | ,
                           */}
                         <div>
@@ -958,35 +944,31 @@ const Processes = ({
         open={openCreateFolderModal}
         close={() => {
           setOpenCreateFolderModal(false);
-          if (openFolderMoveModal) {
-            folderStrucutreChangeCounter.current++;
+          if (openFolderMoveModal && moveTargetFolderId) {
+            setFoldersChangedInMove([moveTargetFolderId]);
           }
         }}
-        parentFolderId={selectedFolderID.current}
+        parentFolderId={moveTargetFolderId}
       />
       <MoveToFolderModal
-        forceReload={folderStrucutreChangeCounter.current}
-        selectedElements={selectedFolderModalElement.current}
+        changedFolders={foldersChangedInMove}
+        selectedElements={elementsToMove}
         onCreateFolder={() => {
           setOpenCreateFolderModal(true);
         }}
         open={openFolderMoveModal}
-        onCancel={() => {
-          selectedFolderID.current = rootFolder?.id ?? '';
-          setOpenFolderMoveModal(false);
-        }}
+        onCancel={closeFolderMoveModal}
         onMove={() => {
-          const items = selectedFolderModalElement.current.map((element) => ({
+          const items = elementsToMove.map((element) => ({
             type: element.type,
             id: element.id,
           }));
 
-          moveItems(items, selectedFolderID.current);
-          selectedFolderID.current = rootFolder?.id ?? '';
-          setOpenFolderMoveModal(false);
+          if (moveTargetFolderId) moveItems(items, moveTargetFolderId);
+          closeFolderMoveModal();
         }}
         onSelectFolder={(folderID: string) => {
-          selectedFolderID.current = folderID;
+          setMoveTargetFolderId(folderID);
         }}
       />
 

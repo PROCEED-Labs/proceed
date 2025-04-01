@@ -1,10 +1,9 @@
 'use client';
 
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { FC } from 'react';
 import { FolderTree } from './FolderTree';
 import { Button, Modal } from 'antd';
 import { FolderChildren } from '@/lib/data/legacy/folders';
-import { ProcessListProcess } from './processes';
 
 type MoveToFolderModalProps = {
   open: boolean;
@@ -13,7 +12,7 @@ type MoveToFolderModalProps = {
   onCreateFolder: () => void;
   onSelectFolder: (folder: string) => void;
   selectedElements: FolderChildren[];
-  forceReload?: any;
+  changedFolders?: string[];
 };
 
 const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
@@ -23,12 +22,8 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
   onCreateFolder,
   onSelectFolder,
   selectedElements = [],
-  forceReload,
+  changedFolders,
 }) => {
-  const handleCreateFolder = () => {
-    onCreateFolder();
-  };
-
   return (
     <>
       <Modal
@@ -38,17 +33,15 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
         destroyOnClose
         centered
         onCancel={onCancel}
-        footer={(_, { OkBtn, CancelBtn }) => (
+        footer={(_, { CancelBtn }) => (
           <>
             <CancelBtn />
-            <Button onClick={handleCreateFolder}>Create New Folder</Button>
-            {/* <OkBtn /> */}
+            <Button onClick={onCreateFolder}>Create New Folder</Button>
             <Button type="primary" onClick={onMove}>
               Move To Folder
             </Button>
           </>
         )}
-        // okButtonProps={}
       >
         <div style={{ marginBottom: 20 }}>
           <b>Selected Items:</b>
@@ -61,7 +54,7 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
           ))}
         </div>
         <FolderTree
-          forceReload={forceReload}
+          subtreesToReload={changedFolders}
           onSelect={(selectedElement) => {
             if (!selectedElement) onSelectFolder('');
             else if (selectedElement.type === 'folder')
@@ -71,7 +64,6 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
               // @ts-ignore
               onSelectFolder(selectedElement.folderId);
           }}
-          // showRootAsFolder
         />
       </Modal>
     </>

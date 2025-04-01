@@ -1,28 +1,18 @@
 import { create } from 'zustand';
-import { ProcessActions, ProcessListProcess, canDoActionOnResource, contextAcions } from '.';
+import { ProcessListProcess, canDoActionOnResource, contextActions } from '.';
 import { FC, PropsWithChildren } from 'react';
-import { App, Button, Dropdown, MenuProps } from 'antd';
+import { Dropdown, MenuProps } from 'antd';
 import { useAbilityStore } from '@/lib/abilityStore';
-import {
-  DeleteOutlined,
-  CopyOutlined,
-  FolderAddOutlined,
-  LinkOutlined,
-  ShareAltOutlined,
-  FolderFilled,
-} from '@ant-design/icons';
+import { DeleteOutlined, ShareAltOutlined } from '@ant-design/icons';
 import { Folder } from '@/lib/data/folder-schema';
 import SpaceLink from '../space-link';
-import { MdOpenWith } from 'react-icons/md';
 import { IoOpenOutline } from 'react-icons/io5';
-import { spaceURL } from '@/lib/utils';
-import { useEnvironment } from '../auth-can';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiDownloadSimple, PiNotePencil } from 'react-icons/pi';
 import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
-import { child } from 'winston';
 import { RiFolderTransferLine } from 'react-icons/ri';
+import { IoMdCopy } from 'react-icons/io';
 
 export const contextMenuStore = create<{
   setSelected: (id: ProcessListProcess[]) => void;
@@ -34,7 +24,7 @@ export const contextMenuStore = create<{
 
 const ConextMenuArea: FC<
   PropsWithChildren<{
-    processActions: contextAcions;
+    processActions: contextActions;
     folder: Folder;
     prefix?: MenuProps['items'];
     suffix?: MenuProps['items'];
@@ -58,8 +48,6 @@ const ConextMenuArea: FC<
   const setSelectedContextMenuItem = contextMenuStore((store) => store.setSelected);
   const selectedContextMenuItems = contextMenuStore((store) => store.selected);
   const ability = useAbilityStore((state) => state.ability);
-  const space = useEnvironment();
-  const { message } = App.useApp();
 
   const contextMenuItems: MenuProps['items'] = [];
   if (selectedContextMenuItems.length > 0) {
@@ -86,8 +74,8 @@ const ConextMenuArea: FC<
             <SpaceLink
               href={
                 /* selectedContextMenuItems[0].type === 'folder'
-                  ? `/processes/folder/${selectedContextMenuItems[0].id}`
-                  :  */
+                              ? `/processes/folder/${selectedContextMenuItems[0].id}`
+                              :  */
                 `/processes/${selectedContextMenuItems[0].id}`
               }
             >
@@ -103,8 +91,8 @@ const ConextMenuArea: FC<
             <SpaceLink
               href={
                 /* selectedContextMenuItems[0].type === 'folder'
-                  ? `/processes/folder/${selectedContextMenuItems[0].id}`
-                  :  */
+                              ? `/processes/folder/${selectedContextMenuItems[0].id}`
+                              :  */
                 `/processes/${selectedContextMenuItems[0].id}`
               }
               target="_blank"
@@ -177,7 +165,7 @@ const ConextMenuArea: FC<
       children.push({
         key: 'copy-selected',
         label: 'Copy',
-        icon: <CopyOutlined />,
+        icon: <IoMdCopy />,
         onClick: () => copyItem(selectedContextMenuItems),
       });
       // Download,
@@ -196,7 +184,7 @@ const ConextMenuArea: FC<
       children.push({
         key: 'move-selected',
         label: 'Move to Folder',
-        icon: <FolderAddOutlined />,
+        icon: <RiFolderTransferLine />,
         onClick: () => moveItems(selectedContextMenuItems),
       });
     // Move to parent folder,

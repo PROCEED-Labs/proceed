@@ -48,17 +48,17 @@ import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import AddButton from './add-button';
 import ConfigModal from '@/components/config-modal';
+import ActionButtons from './action-buttons';
 import {
-  addMachineConfig,
-  addParentConfigVersion,
   addTargetConfig,
+  addMachineConfig,
   removeTargetConfig,
-  setParentConfigVersionAsLatest,
   updateMachineConfig,
   updateParentConfig,
   updateTargetConfig,
-} from '@/lib/data/legacy/machine-config';
-import ActionButtons from './action-buttons';
+  addParentConfigVersion,
+  setParentConfigVersionAsLatest,
+} from '@/lib/data/db/machine-config';
 import ConfirmationButton from '@/components/confirmation-button';
 import { v4 } from 'uuid';
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -160,7 +160,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
 
   const makeConfigVersionLatest = async () => {
     wrapServerCall({
-      fn: () => setParentConfigVersionAsLatest(parentConfig),
+      fn: () => setParentConfigVersionAsLatest(parentConfig.version || ''),
       onSuccess: () => {
         const searchParams = new URLSearchParams(query);
         searchParams.delete('version');

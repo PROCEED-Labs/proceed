@@ -156,10 +156,10 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
         data: { ownerId: adminRole.members.find((member) => member.userId !== userId)?.userId },
       });
     }
-
-    if (orgsWithNoNextAdmin.length > 0)
-      throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
   }
+
+  if (orgsWithNoNextAdmin.length > 0)
+    throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
 
   if (user.isGuest) {
     await dbMutator.guestSignin.delete({ where: { userId: userId } });

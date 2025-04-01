@@ -2,11 +2,12 @@ import { getCurrentUser } from '@/components/auth';
 import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
 import { getSystemAdminByUserId } from '@/lib/data/DTOs';
 import { deleteUser, getUsers } from '@/lib/data/DTOs';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import UserTable from './user-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
 import { UserHasToDeleteOrganizationsError } from '@/lib/data/db/iam/users';
+import { env } from '@/lib/env-vars';
 
 async function deleteUsers(userIds: string[]) {
   'use server';
@@ -26,6 +27,8 @@ async function deleteUsers(userIds: string[]) {
 export type deleteUsers = typeof deleteUsers;
 
 export default async function UsersPage() {
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
+
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
 

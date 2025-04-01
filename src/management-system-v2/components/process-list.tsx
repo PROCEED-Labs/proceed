@@ -393,13 +393,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           addPreferences({ 'columns-in-table-view-process-list': propcols });
         },
         selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
-        allColumnTitles: [
-          'Description',
-          'Last Edited',
-          'Created On',
-          /* 'File Size', */ 'Owner',
-          'Responsibility',
-        ],
+        allColumnTitles: ['Description', 'Last Edited', 'Created On', 'Owner', 'Responsibility'],
         columnProps: {
           width: '200px',
           responsive: ['xl'],

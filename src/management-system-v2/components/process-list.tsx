@@ -185,56 +185,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
             </>
           )}
         </>
-
-        // <>
-        //   {record.type !== 'folder' && (
-        //     <AuthCan {...resource} create>
-        //       <Tooltip placement="top" title={'Copy'}>
-        //         <Button
-        //           className={classNames(styles.ActionButton)}
-        //           type="text"
-        //           icon={<CopyOutlined />}
-        //           onClick={() => copyItem([record])}
-        //         />
-        //       </Tooltip>
-        //     </AuthCan>
-        //   )}
-        //   {record.type !== 'folder' && (
-        //     <Tooltip placement="top" title={'Export'}>
-        //       <Button
-        //         className={classNames(styles.ActionButton)}
-        //         type="text"
-        //         icon={<ExportOutlined />}
-        //         onClick={() => onExportProcess(record)}
-        //       />
-        //     </Tooltip>
-        //   )}
-
-        //   <AuthCan {...resource} update>
-        //     <Tooltip placement="top" title={'Edit'}>
-        //       <Button
-        //         className={classNames(styles.ActionButton)}
-        //         type="text"
-        //         icon={<EditOutlined />}
-        //         onClick={() => editItem(record)}
-        //       />
-        //     </Tooltip>
-        //   </AuthCan>
-
-        //   <AuthCan delete {...resource}>
-        //     <ConfirmationButton
-        //       tooltip="Delete"
-        //       title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-        //       description="Are you sure you want to delete the selected process?"
-        //       onConfirm={() => deleteItems([record])}
-        //       buttonProps={{
-        //         icon: <DeleteOutlined />,
-        //         type: 'text',
-        //         className: styles.ActionButton,
-        //       }}
-        //     />
-        //   </AuthCan>
-        // </>
       );
     },
     [
@@ -273,8 +223,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
             display: 'block',
-            // whiteSpace: 'nowrap',
-            // textOverflow: 'ellipsis',
             padding: '5px 0px',
           }}
         >
@@ -291,7 +239,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               whiteSpace: 'nowrap',
               textOverflow: 'ellipsis',
               maxWidth: '100%',
-              // TODO: color
               color: record.id === folder.parentId ? 'grey' : undefined,
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
@@ -393,26 +340,16 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       sorter: folderAwareSort((a, b) => b.createdOn!.getTime() - a.createdOn!.getTime()),
       responsive: ['md'],
     },
-    // {
-    //   title: 'File Size',
-    //   key: 'File Size',
-    //   // dataIndex:  /* TODO: */,
-    //   // sorter: folderAwareSort((a, b) => (parseInt(a) < parseInt(b) ? -1 : 1)),
-    //   responsive: ['md'],
-    //   render: (_, __, rowIndex) => <>{rowIndex} MB</> /* TODO: */,
-    // },
     {
       title: 'Created By',
       dataIndex: 'owner',
       key: 'Owner',
       render: (_, item) => {
-        console.log('ITEM', item);
         const id =
           item.type === 'folder'
             ? mapIdToUsername(item.createdBy)
             : mapIdToUsername(item.creatorId);
 
-        // return await getUserById(id).username: string;
         return (
           <>
             <SpaceLink
@@ -598,17 +535,10 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
         },
         pagination: { position: ['bottomCenter'], pageSize: 20 },
         onRow: (item) => ({
-          // onDoubleClick: () =>
-          //   router.push(
-          //     item.type === 'folder'
-          //       ? `/${space.spaceId}/processes/folder/${item.id}`
-          //       : `/${space.spaceId}/processes/${item.id}`,
-          //   ),
           onContextMenu: () => {
             if (selection.includes(item.id)) {
               setContextMenuItem(selectedElements);
             } else {
-              // setSelectionElements([item]);
               setContextMenuItem([item]);
             }
           },

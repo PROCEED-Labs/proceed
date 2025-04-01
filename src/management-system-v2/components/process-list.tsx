@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Grid, Row, TableColumnType, TableColumnsType, TableProps, Tooltip } from 'antd';
-import {
+import React, {
   useCallback,
   FC,
   PropsWithChildren,
@@ -56,6 +56,25 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
 export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess['type'] } }) {
   return item.type === 'folder' ? <FolderFilled /> : '';
 }
+
+const ListEntryLink: React.FC<React.PropsWithChildren<{ data: ProcessListProcess }>> = ({
+  children,
+  data,
+}) => {
+  return (
+    <SpaceLink
+      href={data.type === 'folder' ? `/processes/folder/${data.id}` : `/processes/${data.id}`}
+      style={{
+        color: 'inherit' /* or any color you want */,
+        textDecoration: 'none' /* removes underline */,
+        display: 'block',
+        padding: '5px 0px',
+      }}
+    >
+      {children}
+    </SpaceLink>
+  );
+};
 
 type BaseProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
@@ -206,17 +225,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       ellipsis: true,
       sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
       render: (_, record) => (
-        <SpaceLink
-          href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
-          }
-          style={{
-            color: 'inherit' /* or any color you want */,
-            textDecoration: 'none' /* removes underline */,
-            display: 'block',
-            padding: '5px 0px',
-          }}
-        >
+        <ListEntryLink data={record}>
           <div
             className={
               breakpoint.xs
@@ -236,7 +245,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           >
             <ProcessListItemIcon item={record} /> {record.name.highlighted}
           </div>
-        </SpaceLink>
+        </ListEntryLink>
       ),
       responsive: ['xs', 'sm'],
     },
@@ -245,17 +254,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'description',
       key: 'Description',
       render: (_, record) => (
-        <SpaceLink
-          href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
-          }
-          style={{
-            color: 'inherit' /* or any color you want */,
-            textDecoration: 'none' /* removes underline */,
-            display: 'block',
-            padding: '5px 0px',
-          }}
-        >
+        <ListEntryLink data={record}>
           <div
             style={{
               overflow: 'hidden',
@@ -270,7 +269,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
             )}
             {/* Makes the link-cell clickable, when there is no description */}
           </div>
-        </SpaceLink>
+        </ListEntryLink>
       ),
       responsive: ['sm'],
     },
@@ -280,23 +279,11 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       key: 'Last Edited',
       render: (date: string, record) => (
         <>
-          <SpaceLink
-            href={
-              record.type === 'folder'
-                ? `/processes/folder/${record.id}`
-                : `/processes/${record.id}`
-            }
-            style={{
-              color: 'inherit' /* or any color you want */,
-              textDecoration: 'none' /* removes underline */,
-              display: 'block',
-              padding: '5px 0px',
-            }}
-          >
+          <ListEntryLink data={record}>
             <Tooltip title={generateDateString(date, true)}>
               {generateTableDateString(date)}
             </Tooltip>
-          </SpaceLink>
+          </ListEntryLink>
         </>
       ),
       sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
@@ -308,23 +295,11 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       key: 'Created On',
       render: (date: Date, record) => (
         <>
-          <SpaceLink
-            href={
-              record.type === 'folder'
-                ? `/processes/folder/${record.id}`
-                : `/processes/${record.id}`
-            }
-            style={{
-              color: 'inherit' /* or any color you want */,
-              textDecoration: 'none' /* removes underline */,
-              display: 'block',
-              padding: '5px 0px',
-            }}
-          >
+          <ListEntryLink data={record}>
             <Tooltip title={generateDateString(date, true)}>
               {generateTableDateString(date)}
             </Tooltip>
-          </SpaceLink>
+          </ListEntryLink>
         </>
       ),
       defaultSortOrder: 'descend',
@@ -343,19 +318,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
 
         return (
           <>
-            <SpaceLink
-              href={
-                item.type === 'folder' ? `/processes/folder/${item.id}` : `/processes/${item.id}`
-              }
-              style={{
-                color: 'inherit' /* or any color you want */,
-                textDecoration: 'none' /* removes underline */,
-                display: 'block',
-                padding: '5px 0px',
-              }}
-            >
-              {id}
-            </SpaceLink>
+            <ListEntryLink data={item}>{id}</ListEntryLink>
           </>
         );
       },
@@ -372,17 +335,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       key: 'Responsibility',
       render: (_, item) => (
         <>
-          <SpaceLink
-            href={item.type === 'folder' ? `/processes/folder/${item.id}` : `/processes/${item.id}`}
-            style={{
-              color: 'inherit' /* or any color you want */,
-              textDecoration: 'none' /* removes underline */,
-              display: 'block',
-              padding: '5px 0px',
-            }}
-          >
-            {item.type === 'folder' ? '' : 'tbd'}
-          </SpaceLink>
+          <ListEntryLink data={item}>{item.type === 'folder' ? '' : 'tbd'}</ListEntryLink>
         </>
       ),
       sorter: folderAwareSort((a, b) =>
@@ -395,7 +348,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'id',
       key: 'Meta Data Button',
       title: '',
-      render: (id, record, index) =>
+      render: (id) =>
         id !== folder.parentId && (
           <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
             <InfoCircleOutlined />
@@ -502,7 +455,6 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
   setShowMobileMetaData,
 }) => {
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
-  const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
 
   const [scrollY, setScrollY] = useState('400px');
   useEffect(() => {

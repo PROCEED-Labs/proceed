@@ -1,7 +1,7 @@
 import Processes from '@/components/processes';
 import Content from '@/components/content';
 import { Button, Space } from 'antd';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 // This is a workaround to enable the Server Actions in that file to return any
 // client components. This is not possible with the current nextjs compiler
 // otherwise. It might be possible in the future with turbopack without this
@@ -15,15 +15,7 @@ import { LeftOutlined } from '@ant-design/icons';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
-import {
-  getFolderById,
-  getRootFolder,
-  getFolderContents,
-  getMembers,
-  getUserById,
-} from '@/lib/data/DTOs';
-import { AuthenticatedUser, User } from '@/lib/data/user-schema';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/DTOs';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async ({

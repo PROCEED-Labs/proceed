@@ -1,7 +1,5 @@
-import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { message } from 'antd';
-import React, { useMemo, useRef } from 'react';
 
 export async function handleOpenDocumentation(
   processId: string,

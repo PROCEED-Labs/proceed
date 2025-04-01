@@ -9,14 +9,7 @@ type SelectionActionsProps = {
 
 const SelectionActions = ({ count, children, readOnly = false }: SelectionActionsProps) => {
   return count ? (
-    <span
-      className={cn(
-        styles.SelectedRow,
-        count == 1 ? styles['one-row'] : styles['multiple-rows'],
-        !readOnly && styles.editable,
-      )}
-      // role="note"
-    >
+    <span className={cn(styles.SelectedRow, !readOnly && styles.editable)}>
       <span role="note" className={cn(styles.counter)}>
         {count} selected:
       </span>

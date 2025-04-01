@@ -13,7 +13,6 @@ import { useUserPreferences } from './user-preferences';
 import { Resizable } from 'react-resizable';
 import styles from './useColumnWidth.module.scss';
 import classNames from 'classnames';
-import { generateDateString } from './utils';
 
 export const useResizeableColumnWidth = <T extends any>(
   columns: NonNullable<TableProps<T>['columns']>,
@@ -240,23 +239,11 @@ export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']
               ? text
               : 'Missing-Display-Name'; /* In case fuzzy-search is used */
           const newRender = column.render
-            ? // column.title === 'Last Edited' || column.title === 'Created On'
-              //   ? () => generateDateString(text, true)
-              //   :
-              () => column.render(text, record, rowIndex)
+            ? () => column.render(text, record, rowIndex)
             : () => fallBackText;
           return (
             <>
-              <TruncatedCell
-                width={column.width}
-                innerRender={newRender}
-                tooltip={
-                  // If any other columns should have other date display, add them here
-                  column.title === 'Last Edited' || column.title === 'Created On'
-                    ? /* generateDateString(text, true) */ undefined
-                    : undefined
-                }
-              />
+              <TruncatedCell width={column.width} innerRender={newRender} />
             </>
           );
         },
@@ -281,7 +268,6 @@ const TruncatedCell: FC<TruncateType> = ({ width, innerRender, tooltip }) => {
     if (!containerRef.current || typeof width !== 'number') return;
 
     const widths = getWidthsOfInnerElements(containerRef.current);
-    // console.log(widths);
     const innerWidth =
       containerRef.current.getClientRects()[0]
         ?.width; /* This is the width, without padding and border (i.e. the actual width its children can fill) */

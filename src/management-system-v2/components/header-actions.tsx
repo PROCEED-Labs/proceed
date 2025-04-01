@@ -169,11 +169,9 @@ const HeaderActions: FC = () => {
           }}
           trigger={['click']}
         >
-          {/* <SpaceLink href={`/profile`}> */}
-          <div>
+          <div style={{ cursor: 'pointer' }}>
             <UserAvatar user={session.data.user} />
           </div>
-          {/* </SpaceLink> */}
         </Dropdown>
       </Space>
     </>

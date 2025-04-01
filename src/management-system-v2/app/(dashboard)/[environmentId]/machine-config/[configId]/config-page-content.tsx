@@ -245,7 +245,6 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig, editingAl
               treeData={treeData}
               expandedKeys={expandedKeys}
               onExpandedChange={(newExpanded) => {
-                console.log(newExpanded);
                 setUserPreferences({
                   'tech-data-open-tree-items': [
                     ...openTreeItemsInConfigs.filter(({ id }) => id !== parentConfig.id),

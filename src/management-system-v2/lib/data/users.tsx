@@ -1,7 +1,7 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import { userError } from '../user-error';
+import { getErrorMessage, userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
 import { OrganizationEnvironment } from './environment-schema';
@@ -86,9 +86,10 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 
     const newUserData = AuthenticatedUserDataSchema.parse(newUserDataInput);
 
-    _updateUser(userId, { ...newUserData });
-  } catch (_) {
-    return userError('Error updating user');
+    await _updateUser(userId, { ...newUserData });
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 

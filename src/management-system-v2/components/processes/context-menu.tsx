@@ -23,7 +23,7 @@ export const contextMenuStore = create<{
   selected: [],
 }));
 
-const ConextMenuArea: FC<
+const ContextMenuArea: FC<
   PropsWithChildren<{
     processActions: ContextActions;
     folder: Folder;
@@ -54,50 +54,31 @@ const ConextMenuArea: FC<
   if (selectedContextMenuItems.length > 0) {
     const children: MenuProps['items'] = [];
 
+    // Options when right clicking a single process that can be edited
     if (
       selectedContextMenuItems.length === 1 &&
       selectedContextMenuItems[0].type == 'process' &&
       canDoActionOnResource(selectedContextMenuItems, 'update', ability)
-    )
+    ) {
       children.push(
-        // View Process Documentation,
         {
           key: 'view-docs',
           icon: <GrDocumentUser />,
           label: <>View Process Documentation</>,
           onClick: () => viewDocumentation(selectedContextMenuItems[0]),
         },
-        // Open Editor,
         {
           key: 'open-selected',
           icon: <PiNotePencil />,
           label: (
-            <SpaceLink
-              href={
-                /* selectedContextMenuItems[0].type === 'folder'
-                                            ? `/processes/folder/${selectedContextMenuItems[0].id}`
-                                            :  */
-                `/processes/${selectedContextMenuItems[0].id}`
-              }
-            >
-              Open Editor
-            </SpaceLink>
+            <SpaceLink href={`/processes/${selectedContextMenuItems[0].id}`}>Open Editor</SpaceLink>
           ),
         },
-        // Open Editor in new Tab,
         {
           key: 'open-selected-new-tab',
           icon: <IoOpenOutline />,
           label: (
-            <SpaceLink
-              href={
-                /* selectedContextMenuItems[0].type === 'folder'
-                                            ? `/processes/folder/${selectedContextMenuItems[0].id}`
-                                            :  */
-                `/processes/${selectedContextMenuItems[0].id}`
-              }
-              target="_blank"
-            >
+            <SpaceLink href={`/processes/${selectedContextMenuItems[0].id}`} target="_blank">
               Open Editor in new Tab
             </SpaceLink>
           ),
@@ -121,7 +102,10 @@ const ConextMenuArea: FC<
           onClick: () => share(selectedContextMenuItems[0]),
         },
       );
+    }
 
+    // Options when right clicking a process when at least one non-folder item is selected and
+    // processes can be created by the user
     if (
       selectedContextMenuItems.find((item) => item.type !== 'folder') &&
       ability.can('create', 'Process')
@@ -139,10 +123,9 @@ const ConextMenuArea: FC<
         onClick: () => download(selectedContextMenuItems),
       });
     }
-    if (
-      // selectedContextMenuItems.every((item) => item.type !== 'folder') &&
-      canDoActionOnResource(selectedContextMenuItems, 'update', ability)
-    )
+
+    // Options when the right clicked item(s) can be updated
+    if (canDoActionOnResource(selectedContextMenuItems, 'update', ability))
       children.push({
         key: 'move-selected',
         label: 'Move to Folder',
@@ -157,6 +140,7 @@ const ConextMenuArea: FC<
         onClick: () => deleteItems(selectedContextMenuItems),
       });
 
+    // Options that should always be shown
     contextMenuItems.push(
       {
         type: 'group',
@@ -209,4 +193,4 @@ const ConextMenuArea: FC<
   );
 };
 
-export default ConextMenuArea;
+export default ContextMenuArea;

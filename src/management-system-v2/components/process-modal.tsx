@@ -23,7 +23,8 @@ const ProcessModal = <T extends { name: string; description: string }>({
   onSubmit,
   initialData,
   modalProps,
-}: ProcessModalProps<T>) => {
+  children,
+}: React.PropsWithChildren<ProcessModalProps<T>>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
@@ -143,6 +144,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
+        {children}
       </Form>
     </Modal>
   );

@@ -1,14 +1,14 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useRef, useState, useTransition } from 'react';
+import React, { ComponentProps, useRef, useState, useTransition } from 'react';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiNotePencil } from 'react-icons/pi';
 import { IoOpenOutline } from 'react-icons/io5';
 import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
 import { PiDownloadSimple } from 'react-icons/pi';
-import { AiOutlineImport, AiOutlinePartition } from 'react-icons/ai';
+import { AiOutlinePartition } from 'react-icons/ai';
 import { RiFolderTransferLine } from 'react-icons/ri';
 import { IoMdCopy } from 'react-icons/io';
 import { PiFolderOpen } from 'react-icons/pi';
@@ -24,6 +24,7 @@ import {
   Badge,
   Divider,
   MenuProps,
+  Typography,
 } from 'antd';
 import {
   DeleteOutlined,
@@ -80,6 +81,7 @@ import VersionCreationButton, { VersionModal } from '../version-creation-button'
 
 import { ShareModal } from '../share-modal/share-modal';
 import MoveToFolderModal from '../folder-move-modal';
+import { FolderTree } from '../FolderTree';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -143,12 +145,14 @@ const Processes = ({
   folder,
   readOnly = false,
   rootFolder,
+  pathToFolder = [],
 }: {
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
   readOnly?: boolean;
   rootFolder?: Folder;
+  pathToFolder?: string[];
 }) => {
   if (folder.parentId)
     processes = [
@@ -200,6 +204,9 @@ const Processes = ({
   const [moveTargetFolderId, setMoveTargetFolderId] = useState<string>();
   const [elementsToMove, setElementsToMove] = useState<ProcessListProcess[]>([]);
   const [foldersChangedInMove, setFoldersChangedInMove] = useState<string[]>([]);
+
+  const [copyTargetFolderId, setCopyTargetFolderId] = useState<string>(folder.id);
+  const [copyExpandedTreeNodeIds, setCopyExpandedTreeNodeIds] = useState<React.Key[]>(pathToFolder);
 
   const [showMobileMetaData, setShowMobileMetaData] = useState(false);
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
@@ -409,6 +416,12 @@ const Processes = ({
   function copyItem(items: ProcessListProcess[]) {
     setOpenCopyModal(true);
     setCopySelection(items);
+  }
+
+  function closeCopyModal() {
+    setOpenCopyModal(false);
+    setCopyTargetFolderId(folder.id);
+    setCopyExpandedTreeNodeIds(pathToFolder);
   }
 
   function editItem(item: ProcessListProcess) {
@@ -873,7 +886,7 @@ const Processes = ({
       <ProcessModal
         open={openCopyModal}
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
-        onCancel={() => setOpenCopyModal(false)}
+        onCancel={closeCopyModal}
         initialData={copySelection
           .filter((item) => item.type !== 'folder')
           .map((process) => ({
@@ -883,15 +896,36 @@ const Processes = ({
             folderId: folder.id,
           }))}
         onSubmit={async (values) => {
-          const res = await copyProcesses(values, space.spaceId);
+          const toCopy = values.map((value) => ({
+            ...value,
+            folderId: copyTargetFolderId || folder.id,
+          }));
+          const res = await copyProcesses(toCopy, space.spaceId, copyTargetFolderId || folder.id);
           // Errors are handled in the modal.
           if ('error' in res) {
             return res;
           }
-          setOpenCopyModal(false);
+          closeCopyModal();
           router.refresh();
         }}
-      />
+      >
+        <div style={{ margin: copySelection.length > 1 ? '5px' : undefined }}>
+          <Typography.Title level={5}>Copy To:</Typography.Title>
+          <FolderTree
+            showRootAsFolder
+            selectedKeys={copyTargetFolderId ? [copyTargetFolderId] : []}
+            onSelect={(selectedElement) => {
+              if (!selectedElement) {
+                setCopyTargetFolderId(folder.id);
+              } else if (selectedElement.type === 'folder') {
+                setCopyTargetFolderId(selectedElement.id);
+              }
+            }}
+            expandedKeys={copyExpandedTreeNodeIds}
+            onExpand={setCopyExpandedTreeNodeIds}
+          />
+        </div>
+      </ProcessModal>
       <ProcessModal
         open={openEditModal}
         title={'Process Meta Data' /* `Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}` */}

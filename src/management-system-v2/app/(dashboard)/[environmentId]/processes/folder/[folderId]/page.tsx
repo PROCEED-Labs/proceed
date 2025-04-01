@@ -36,6 +36,7 @@ const ProcessesPage = async ({
   const folderContents = await getFolderContents(folder.id, ability);
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
+  const wrappingFolderIds = [] as string[];
   let currentFolder: Folder | null = folder;
   do {
     pathToFolder.push({
@@ -45,9 +46,11 @@ const ProcessesPage = async ({
         </Link>
       ),
     });
+    if (currentFolder) wrappingFolderIds.push(currentFolder.id);
     currentFolder = currentFolder.parentId ? await getFolderById(currentFolder.parentId) : null;
   } while (currentFolder);
   pathToFolder.reverse();
+  wrappingFolderIds.reverse();
 
   return (
     <>
@@ -71,6 +74,7 @@ const ProcessesPage = async ({
             processes={folderContents}
             favourites={favs as string[]}
             folder={folder}
+            pathToFolder={wrappingFolderIds}
           />
         </Space>
       </Content>

@@ -119,7 +119,7 @@ export async function getFolder(environmentId: string, folderId?: string) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
   let folder;
-  if (!folderId) folder = getRootFolder(environmentId, ability);
+  if (!folderId) folder = await getRootFolder(environmentId, ability);
   else folder = await getFolderById(folderId);
 
   if (folder && !ability.can('view', toCaslResource('Folder', folder)))

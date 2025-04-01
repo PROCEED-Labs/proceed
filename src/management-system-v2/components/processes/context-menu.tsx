@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ProcessListProcess, canDoActionOnResource, contextActions } from '.';
+import { ProcessListProcess, ContextActions } from './types';
 import { FC, PropsWithChildren } from 'react';
 import { Dropdown, MenuProps } from 'antd';
 import { useAbilityStore } from '@/lib/abilityStore';
@@ -13,6 +13,7 @@ import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
 import { RiFolderTransferLine } from 'react-icons/ri';
 import { IoMdCopy } from 'react-icons/io';
+import { canDoActionOnResource } from './helpers';
 
 export const contextMenuStore = create<{
   setSelected: (id: ProcessListProcess[]) => void;
@@ -24,7 +25,7 @@ export const contextMenuStore = create<{
 
 const ConextMenuArea: FC<
   PropsWithChildren<{
-    processActions: contextActions;
+    processActions: ContextActions;
     folder: Folder;
     prefix?: MenuProps['items'];
     suffix?: MenuProps['items'];
@@ -74,8 +75,8 @@ const ConextMenuArea: FC<
             <SpaceLink
               href={
                 /* selectedContextMenuItems[0].type === 'folder'
-                              ? `/processes/folder/${selectedContextMenuItems[0].id}`
-                              :  */
+                                            ? `/processes/folder/${selectedContextMenuItems[0].id}`
+                                            :  */
                 `/processes/${selectedContextMenuItems[0].id}`
               }
             >
@@ -91,8 +92,8 @@ const ConextMenuArea: FC<
             <SpaceLink
               href={
                 /* selectedContextMenuItems[0].type === 'folder'
-                              ? `/processes/folder/${selectedContextMenuItems[0].id}`
-                              :  */
+                                            ? `/processes/folder/${selectedContextMenuItems[0].id}`
+                                            :  */
                 `/processes/${selectedContextMenuItems[0].id}`
               }
               target="_blank"
@@ -101,21 +102,18 @@ const ConextMenuArea: FC<
             </SpaceLink>
           ),
         },
-        // Change Meta Data,
         {
           key: 'change-meta-data',
           icon: <LuNotebookPen />,
           label: 'Change Meta Data',
           onClick: () => changeMetaData(selectedContextMenuItems[0]),
         },
-        // Release Process,
         {
           key: 'release-process',
           icon: <BsFileEarmarkCheck />,
           label: 'Release Process',
           onClick: () => releaseProcess(selectedContextMenuItems[0]),
         },
-        // Share,
         {
           key: 'share',
           icon: <ShareAltOutlined />,
@@ -124,40 +122,6 @@ const ConextMenuArea: FC<
         },
       );
 
-    // Copy-Link, -> remove
-    // Note: commented it for now, in case we need it in future
-    // if (
-    //   selectedContextMenuItems.length === 1 &&
-    //   selectedContextMenuItems[0].type !== 'folder' &&
-    //   navigator.clipboard &&
-    //   'write' in navigator.clipboard
-    // )
-    //   children.push({
-    //     key: 'copy-selected-id',
-    //     label: 'Copy Link',
-    //     icon: <LinkOutlined />,
-    //     onClick: async () => {
-    //       try {
-    //         const url = new URL(
-    //           spaceURL(space, `/processes/${selectedContextMenuItems[0].id}`),
-    //           window.location.origin,
-    //         );
-
-    //         await window.navigator.clipboard.writeText(url.toString());
-    //         message.open({
-    //           content: 'Link copied to clipboard',
-    //           type: 'success',
-    //         });
-    //       } catch (e) {
-    //         message.open({
-    //           content: 'Failed to copy link to clipboard',
-    //           type: 'error',
-    //         });
-    //       }
-    //     },
-    //   });
-
-    // Copy
     if (
       selectedContextMenuItems.find((item) => item.type !== 'folder') &&
       ability.can('create', 'Process')
@@ -168,7 +132,6 @@ const ConextMenuArea: FC<
         icon: <IoMdCopy />,
         onClick: () => copyItem(selectedContextMenuItems),
       });
-      // Download,
       children.push({
         key: 'export-selected',
         label: 'Download',
@@ -176,7 +139,6 @@ const ConextMenuArea: FC<
         onClick: () => download(selectedContextMenuItems),
       });
     }
-    // Move to Folder,
     if (
       // selectedContextMenuItems.every((item) => item.type !== 'folder') &&
       canDoActionOnResource(selectedContextMenuItems, 'update', ability)
@@ -187,23 +149,6 @@ const ConextMenuArea: FC<
         icon: <RiFolderTransferLine />,
         onClick: () => moveItems(selectedContextMenuItems),
       });
-    // Move to parent folder,
-    // if (
-    //   folder.parentId !== null &&
-    //   !selectedContextMenuItems.some(({ id }) => id === folder.parentId) &&
-    //   canDoActionOnResource(selectedContextMenuItems, 'update', ability)
-    // )
-    //   children.push({
-    //     key: 'move-selected',
-    //     label: 'Move to Parent Folder',
-    //     icon: <FolderFilled />,
-    //     onClick: () =>
-    //       moveItems(
-    //         selectedContextMenuItems.map((item) => ({ type: item.type, id: item.id })),
-    //         folder.parentId as string,
-    //       ),
-    //   });
-    // Delete,
     if (canDoActionOnResource(selectedContextMenuItems, 'delete', ability))
       children.push({
         key: 'delete-selected',

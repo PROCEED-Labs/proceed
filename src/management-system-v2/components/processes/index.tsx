@@ -42,7 +42,7 @@ import Bar from '@/components/bar';
 import { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
-import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
+import useFuzySearch from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
 import {
   copyProcesses,
@@ -53,7 +53,6 @@ import {
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
-import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
@@ -65,11 +64,9 @@ import {
 } from '@/lib/data/folders';
 
 import AddUserControls from '@/components/add-user-controls';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 import FolderModal from '@/components/folder-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
-import Ability from '@/lib/ability/abilityHelper';
 import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
@@ -82,62 +79,8 @@ import VersionCreationButton, { VersionModal } from '../version-creation-button'
 import { ShareModal } from '../share-modal/share-modal';
 import MoveToFolderModal from '../folder-move-modal';
 import { FolderTree } from '../FolderTree';
-
-export function canDoActionOnResource(
-  items: ProcessListProcess[],
-  action: Parameters<Ability['can']>[0],
-  ability: Ability,
-) {
-  for (const item of items) {
-    const resource = toCaslResource(item.type === 'folder' ? 'Folder' : 'Process', item);
-    if (!ability.can(action, resource)) return false;
-  }
-
-  return true;
-}
-
-// TODO: improve ordering
-export type ProcessActions = {
-  deleteItems: (items: ProcessListProcess[]) => void;
-  copyItem: (items: ProcessListProcess[]) => void;
-  editItem: (item: ProcessListProcess) => void;
-  moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
-};
-
-export type contextActions = {
-  // View Process Documentation,
-  viewDocumentation: (item: ProcessListProcess) => void;
-  // Change Meta Data,
-  changeMetaData: (item: ProcessListProcess) => void;
-  // Release Process,
-  releaseProcess: (item: ProcessListProcess) => void;
-  // Share,
-  share: (item: ProcessListProcess) => void;
-  // Download,
-  exportProcess: (items: ProcessListProcess[]) => void;
-  // Move to Folder,
-  moveItems: (items: ProcessListProcess[]) => void;
-  // Copy,
-  copyItems: (items: ProcessListProcess[]) => void;
-  // Delete,
-  deleteItems: (items: ProcessListProcess[]) => void;
-};
-
-export type rowActions = {
-  // View Process Documentation,
-  viewDocumentation: (item: ProcessListProcess) => void;
-  // Open Editor,
-  openEditor: (item: ProcessListProcess) => void;
-  // Change Meta Data,
-  changeMetaData: (item: ProcessListProcess) => void;
-  // Release Process,
-  releaseProcess: (item: ProcessListProcess) => void;
-  // Share
-  share: (item: ProcessListProcess) => void;
-};
-
-type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
-export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
+import { ContextActions, InputItem, ProcessActions, ProcessListProcess, RowActions } from './types';
+import { canDoActionOnResource } from './helpers';
 
 const Processes = ({
   processes,
@@ -501,7 +444,7 @@ const Processes = ({
     moveItems,
   };
 
-  const rowActions: rowActions = {
+  const rowActions: RowActions = {
     viewDocumentation,
     openEditor,
     changeMetaData,
@@ -509,7 +452,7 @@ const Processes = ({
     share,
   };
 
-  const contextActions: contextActions = {
+  const contextActions: ContextActions = {
     viewDocumentation,
     changeMetaData,
     releaseProcess,

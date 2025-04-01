@@ -125,7 +125,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
       return (
         <>
-          {/* // View Process Documentation, */}
           {record.type !== 'folder' && (
             <>
               <AuthCan {...resource} view>
@@ -138,7 +137,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                   />
                 </Tooltip>
               </AuthCan>
-              {/* // Open Editor, */}
               <AuthCan {...resource} update>
                 <Tooltip placement="top" title={'Open Editor'}>
                   <Button
@@ -149,7 +147,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                   />
                 </Tooltip>
               </AuthCan>
-              {/* // Change Meta Data, */}
               <AuthCan {...resource} update>
                 <Tooltip placement="top" title={'Change Meta Data'}>
                   <Button
@@ -160,7 +157,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                   />
                 </Tooltip>
               </AuthCan>
-              {/* // Release Process, */}
               <AuthCan {...resource} update>
                 <Tooltip placement="top" title={'Release Process'}>
                   <Button
@@ -171,7 +167,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                   />
                 </Tooltip>
               </AuthCan>
-              {/* // Share, */}
               <AuthCan {...resource} update>
                 <Tooltip placement="top" title={'Share'}>
                   <Button

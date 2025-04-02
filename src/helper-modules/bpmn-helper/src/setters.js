@@ -122,9 +122,9 @@ async function setTargetNamespace(bpmn, id) {
     if (id) {
       const targetNamespace = generateTargetNamespace(id);
 
-      // if (definitions.targetNamespace && definitions.targetNamespace !== targetNamespace) {
-      //   definitions.originalTargetNamespace = definitions.targetNamespace;
-      // }
+      if (definitions.targetNamespace && definitions.targetNamespace !== targetNamespace) {
+        definitions.originalTargetNamespace = definitions.targetNamespace;
+      }
 
       definitions.targetNamespace = targetNamespace;
     } else {

@@ -18,9 +18,15 @@ import {
   getDefinitionsVersionInformation,
   getDefinitionsAndProcessIdForEveryCallActivity,
   getScriptTaskFileNameMapping,
+  getBPMNProcessElement,
+  toBpmnXml,
 } from '@proceed/bpmn-helper';
 
-import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
+import {
+  asyncMap,
+  asyncFilter,
+  removeSubObjects as removeArtefactReferencesFromBpmn,
+} from '../helpers/javascriptHelpers';
 import { getImageDimensions, getSVGFromBPMN, isSelectedOrInsideSelected } from './util';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
@@ -126,13 +132,13 @@ function getImagesReferencedByJSON(json: string) {
       .map((node) => node.props.src as string);
 
     // get the referenced images that are stored locally
-    const seperatelyStored = images
-      .filter((src) => src.startsWith('/api/'))
-      .map((src) => src.split('/').pop())
-      .filter((imageName): imageName is string => !!imageName);
+    // const seperatelyStored = images
+    //   .filter((src) => src.startsWith('/api/'))
+    //   .map((src) => src.split('/').pop())
+    //   .filter((imageName): imageName is string => !!imageName);
 
     // remove duplicates
-    return [...new Set(seperatelyStored)];
+    return [...new Set(images)];
   } catch (err) {
     throw new Error('Unable to parse the image information from the given json');
   }
@@ -423,12 +429,14 @@ export async function prepareExport(
           'js',
           spaceId,
         );
+
         let ts: string | { error: UserError } | undefined = await getProcessScriptTaskData(
           definitionId,
           filename,
           'ts',
           spaceId,
         );
+
         let xml: string | { error: UserError } | undefined = await getProcessScriptTaskData(
           definitionId,
           filename,
@@ -459,7 +467,12 @@ export async function prepareExport(
 
       // determine the images that are needed per version and across all versions
       for (const { bpmn } of Object.values(exportData[definitionId].versions)) {
+        const rootProcessElement = await getBPMNProcessElement(bpmn);
+
         const flowElements = await getAllBpmnFlowElements(bpmn);
+
+        // add process overview image associated with the root <Process> element as well
+        flowElements.push(rootProcessElement);
 
         flowElements.forEach((flowElement) => {
           const metaData = getMetaDataFromElement(flowElement);
@@ -472,6 +485,7 @@ export async function prepareExport(
       // determine the images that are used inside user tasks
       for (const { json } of exportData[definitionId].userTasks) {
         const referencedImages = getImagesReferencedByJSON(json);
+        console.log(referencedImages);
         for (const filename of referencedImages) {
           allRequiredImageFiles.add(filename);
         }
@@ -487,6 +501,29 @@ export async function prepareExport(
           filename,
           data: image,
         });
+      }
+    } else {
+      //If artefacts option is not selected, remove all the references in xml
+      /*
+      1. overviewImage
+      2. usertask's filename
+      3. scripttask's filename
+      */
+      for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
+        const bpmnObj = await toBpmnObject(bpmn);
+        // filter the object based on attribute and value and delete a specific key from the object
+        const filters = [
+          {
+            filterAttribute: '$type',
+            filterValues: ['bpmn:ScriptTask', 'bpmn:UserTask'],
+            attributesToBeRemoved: ['fileName'],
+          },
+          { filterAttribute: '$type', filterValues: ['proceed:overviewImage'] },
+        ];
+        removeArtefactReferencesFromBpmn(bpmnObj, filters);
+
+        const bpmnObjWithNoArtefactRefsXml = await toBpmnXml(bpmnObj);
+        exportData[definitionId].versions[version].bpmn = bpmnObjWithNoArtefactRefsXml;
       }
     }
   }

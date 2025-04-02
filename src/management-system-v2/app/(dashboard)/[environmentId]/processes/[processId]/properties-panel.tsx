@@ -5,7 +5,7 @@ import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
 import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs } from 'antd';
-import type { TabsProps } from 'antd';
+import type { TabsProps, Form } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import { CloseOutlined } from '@ant-design/icons';
@@ -14,6 +14,7 @@ import {
   setDefinitionsName,
   setProceedElement,
   deepCopyElementById,
+  updateBpmnXMLAttributes,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -48,6 +49,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const borderColor = getBorderColor(selectedElement as Shape);
 
   const [name, setName] = useState('');
+  const [userDefinedId, setUserDefinedId] = useState(metaData.userDefinedId);
 
   const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
   const timePlannedDuration: string | undefined = metaData.timePlannedDuration;
@@ -84,6 +86,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       if (selectedElement.type === 'bpmn:Process') {
         const definitions = selectedElement.businessObject.$parent;
         setName(definitions.name);
+        setUserDefinedId(definitions.userDefinedId);
       } else {
         setName(selectedElement.businessObject.name);
       }
@@ -95,6 +98,11 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 
     if (selectedElement.type === 'bpmn:Process') {
       const definitions = selectedElement.businessObject.$parent;
+      // prevent empty process name
+      if (!event.target.value) {
+        setName(definitions.name);
+        return;
+      }
       const bpmn = await modeler!.getXML();
       const newBpmn = (await setDefinitionsName(bpmn!, event.target.value)) as string;
 
@@ -109,6 +117,19 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       definitions.name = event.target.value;
     } else {
       modeling.updateProperties(selectedElement as any, { name: event.target.value });
+    }
+  };
+
+  const handleUserDefinedIdChange = async (event: FocusEvent<HTMLInputElement>) => {
+    if (selectedElement.type === 'bpmn:Process') {
+      const definitions = selectedElement.businessObject.$parent;
+      const bpmn = await modeler!.getXML();
+      const newBpmn = await updateBpmnXMLAttributes(bpmn!, {
+        userDefinedId: event.target.value,
+      });
+
+      await updateProcess(definitions.id, spaceId, newBpmn as string, undefined, undefined, true);
+      definitions.userDefinedId = event.target.value;
     }
   };
 
@@ -192,6 +213,18 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               onChange={(e) => setName(e.target.value)}
               onBlur={handleNameChange}
             />
+
+            {selectedElement.type === 'bpmn:Process' && (
+              <Input
+                name="ID"
+                placeholder="User Defined ID"
+                style={{ fontSize: '0.85rem' }}
+                addonBefore="ID"
+                value={userDefinedId}
+                onChange={(e) => setUserDefinedId(e.target.value)}
+                onBlur={handleUserDefinedIdChange}
+              />
+            )}
 
             <div
               style={{

@@ -221,3 +221,76 @@ export function mergeIntoObject(
 
   return changedEntries;
 }
+
+/**
+ * Recursively removes sub-objects from an input object based on specified attribute filters.
+ * Modifies the original object directly.
+ *
+ * @param {Object} obj - The input object to filter.
+ * @param {Array} filters - An array of filter objects specifying attributes and values to match for removal.
+ * @param {string} filters[].filterAttribute - The attribute name to check.
+ * @param {Array} filters[].filterValues - An array of values to match for removal. Use ["*"] to match all values.
+ * @param {Array} [filters[].attributesToBeRemoved] - Optional array of specific attributes to remove from matching objects.
+ * If provided, only these attributes are removed instead of the whole object.
+ * @returns {Object} - The cleaned object with matching sub-objects removed or modified.
+ */
+export function removeSubObjects(
+  obj: any,
+  filters: { filterAttribute: string; filterValues: any[]; attributesToBeRemoved?: string[] }[],
+) {
+  if (typeof obj !== 'object' || obj === null) return obj;
+
+  // Recursive function to process objects and arrays
+  function deepClean(current: any): any {
+    if (typeof current !== 'object' || current === null) {
+      return current;
+    }
+
+    // Handle arrays
+    if (Array.isArray(current)) {
+      for (let i = current.length - 1; i >= 0; i--) {
+        const processed = deepClean(current[i]);
+        if (processed === null) {
+          current.splice(i, 1);
+        } else {
+          current[i] = processed;
+        }
+      }
+      return current;
+    }
+
+    for (const filter of filters) {
+      const { filterAttribute, filterValues, attributesToBeRemoved } = filter;
+
+      // Check if current object matches the filter criteria
+      if (
+        filterAttribute in current &&
+        (filterValues.includes('*') || filterValues.includes(current[filterAttribute]))
+      ) {
+        // If attributesToBeRemoved is provided, only remove those attributes
+        if (attributesToBeRemoved && attributesToBeRemoved.length > 0) {
+          attributesToBeRemoved.forEach((attr) => {
+            if (attr in current) {
+              delete current[attr];
+            }
+          });
+        } else {
+          // No attributesToBeRemoved specified, remove the whole object
+          return null;
+        }
+      }
+    }
+
+    // Recursively process each property of the object
+    for (const key in current) {
+      const cleaned = deepClean(current[key]);
+      if (cleaned === null) {
+        delete current[key];
+      }
+    }
+
+    return current;
+  }
+
+  return deepClean(obj);
+}

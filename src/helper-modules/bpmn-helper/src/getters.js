@@ -237,6 +237,7 @@ async function getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn) {
   const userTasks = getElementsByTagName(bpmnObj, 'bpmn:UserTask');
   const mapping = {};
   userTasks.forEach((task) => {
+    if (!task.fileName) return;
     if (mapping[task.fileName]) {
       mapping[task.fileName].push(task.id);
     } else {

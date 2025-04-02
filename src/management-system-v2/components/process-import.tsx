@@ -13,7 +13,7 @@ import {
 } from '@proceed/bpmn-helper';
 import ProcessModal from './process-modal';
 import { importProcesses } from '@/lib/data/processes';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import JSZip from 'jszip';
 import { generateDateString } from '@/lib/utils';
@@ -26,6 +26,7 @@ export type ProcessData = {
   creatorUsername?: string;
   createdOn?: string;
   userDefinedId?: string;
+  folderId?: string;
   bpmn: string;
   artefacts?: {
     images?: Array<{ name: string; content: string }>;
@@ -40,6 +41,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   const [importProcessData, setImportProcessData] = useState<ProcessData[]>([]);
   const router = useRouter();
   const environment = useEnvironment();
+  const currentFolder = usePathname().split('/folder/').pop();
 
   const handleFileImport = async (fileList: File[]) => {
     const processesData: ProcessData[] = [];
@@ -143,6 +145,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
         creator: definitions['creatorName'],
         creatorUsername: definitions['creatorUsername'],
         createdOn: generateDateString(definitions['creationDate'], true),
+        folderId: currentFolder,
         bpmn,
       });
     } catch (error: any) {

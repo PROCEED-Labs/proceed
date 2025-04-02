@@ -3,13 +3,14 @@
 import React, { ComponentProps, ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
-import MachineConfigModal from './config-modal'; //TODO refactoring not using term "machine config"
+import ConfigModal from './config-modal';
 import { addParentConfig } from '@/lib/data/db/machine-config'; //TODO refactoring not using term "machine config"
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 import { defaultParentConfiguration } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { ConfigCategories } from '@/lib/data/machine-config-schema';
 
 type ConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -21,7 +22,7 @@ type ConfigCreationButtonProps = ButtonProps & {
  * Button to create Configs including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
  */
 export const ConfigCreationModal: React.FC<
-  Partial<ComponentProps<typeof MachineConfigModal>> & {
+  Partial<ComponentProps<typeof ConfigModal>> & {
     open: boolean;
     setOpen: (open: boolean) => void;
     customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -31,13 +32,22 @@ export const ConfigCreationModal: React.FC<
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
 
-  const createNewConfig = async (values: { name: string; description: string }[]) => {
+  const createNewConfig = async (
+    values: {
+      name: string;
+      shortname: string;
+      categories: Array<ConfigCategories>;
+      description: string;
+    }[], //TODO - I don't REALLY know why this is an array
+  ) => {
     const config = await (customAction?.(values[0]) ??
       addParentConfig(
         defaultParentConfiguration(
-          environment.spaceId,
           folderId,
+          environment.spaceId,
           values[0].name,
+          values[0].shortname,
+          values[0].categories,
           values[0].description,
         ),
         environment.spaceId,
@@ -68,7 +78,7 @@ export const ConfigCreationModal: React.FC<
   );
 
   return (
-    <MachineConfigModal
+    <ConfigModal
       open={open}
       title="Create Configuration"
       okText="Create"

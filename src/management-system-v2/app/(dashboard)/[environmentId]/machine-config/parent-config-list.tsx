@@ -18,7 +18,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
 import { useCallback, useState } from 'react';
-import { ParameterContent, ParentConfig } from '@/lib/data/machine-config-schema';
+import { ConfigCategories, ParameterContent, ParentConfig } from '@/lib/data/machine-config-schema';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
@@ -50,6 +50,7 @@ import { generateDateString } from '@/lib/utils';
 import ConfigModal from '@/components/config-modal';
 import { defaultParameter } from './configuration-helper';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { validate } from 'uuid';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;
@@ -210,10 +211,37 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     setOpenEditModal(true);
   }
 
-  async function handleEdit(values: { id: string; name: string; description: string }[]) {
-    const { id, name } = values[0];
-    // TODO: handle the description update in the backend (the description is actually a content entry in a metadata entry)
-    await updateParentConfig(id, { name });
+  async function handleEdit(
+    values: {
+      id: string;
+      name: string;
+      shortname: string;
+      categories: string[];
+      description: string;
+    }[],
+  ) {
+    const { id, name, shortname, categories, description } = values[0];
+    await updateParentConfig(id, { name, shortname, categories });
+    if (editingItem?.metadata['description']?.id) {
+      let previousContent = editingItem?.metadata['description'].content;
+      previousContent[0] = {
+        displayName: 'Description',
+        value: description,
+        unit: undefined,
+        language: 'en',
+      };
+      await updateParameter(editingItem?.metadata['description'].id, {
+        content: previousContent,
+      });
+    } else if (description) {
+      await addParameter(
+        id,
+        'parent-config',
+        'metadata',
+        'description',
+        defaultParameter('description', description, 'Description', 'en'),
+      );
+    }
     setOpenEditModal(false);
     router.refresh();
   }
@@ -223,16 +251,24 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
    * @param values List of Value-objects, each containing an ID of a config from which values are to be copied
    */
   async function handleCopy(
-    values: { name: string; description: string; originalId: string }[],
+    values: {
+      name: string;
+      shortname: string;
+      categories: string[];
+      description: string;
+      originalId: string;
+    }[],
   ): Promise<void> {
     await asyncForEach(values, async (valueFromModal) => {
       copyParentConfig(
         valueFromModal.originalId,
         {
           name: valueFromModal.name,
+          shortname: valueFromModal.shortname,
           metadata: {
             description: defaultParameter('description', valueFromModal.description),
           },
+          categories: valueFromModal.categories,
         },
         space.spaceId,
       );
@@ -244,9 +280,10 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
   const importItems = async (file: File) => {
     try {
       const text = await file.text();
-      const importedData: ParentConfig[] = JSON.parse(text);
+      const importedData: ParentConfig[] = JSON.parse(text); //TODO PARSE SCHEMA
 
       await asyncForEach(importedData, async (item) => {
+        if (!validate(item.id)) throw new Error(`Invalid UUID: ${item.id}`);
         const add_return = await addParentConfig(item, space.spaceId);
         if ('error' in add_return) {
           throw add_return.error.message;
@@ -446,6 +483,8 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
                 {
                   id: editingItem.id,
                   name: editingItem.name.value ?? '',
+                  shortname: editingItem.shortname ?? '',
+                  categories: editingItem.categories,
                   description: editingItem.metadata.description?.content[0].value ?? '',
                 },
               ]
@@ -458,7 +497,10 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
         title={`Copy Machine Config${selectedRowKeys.length > 1 ? 'urations' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={copySelection.map((config) => ({
+          id: config.id,
           name: `${config.name.value} (Copy)`,
+          shortname: `${config.shortname} (Copy)`,
+          categories: config.categories,
           description: config.metadata.description?.content[0].value ?? '',
           originalId: config.id,
         }))}

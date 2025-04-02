@@ -82,26 +82,38 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
   const handleCreateMachineOk = async (
     values: {
       name: string;
+      shortname: string;
       description: string;
       copyTarget: boolean;
     }[],
   ) => {
     if (openModal !== 'target-config' && openModal !== 'machine-config') return;
-    const { name, description, copyTarget } = values[0];
+    const { name, shortname, description, copyTarget } = values[0];
 
     if (openModal === 'target-config') {
-      const newConfig = defaultTargetConfiguration(parentConfig.environmentId, name, description);
+      const newConfig = defaultTargetConfiguration(
+        parentConfig.environmentId,
+        name,
+        shortname,
+        description,
+      );
       await addTargetConfig(parentConfig.id, newConfig);
     } else if (copyTarget && parentConfig.targetConfig) {
       const newConfig = customMachineConfiguration(
         parentConfig.environmentId,
         name,
+        shortname,
         description,
         parentConfig.targetConfig,
       );
       await addMachineConfig(parentConfig.id, newConfig, true);
     } else {
-      const newConfig = defaultMachineConfiguration(parentConfig.environmentId, name, description);
+      const newConfig = defaultMachineConfiguration(
+        parentConfig.environmentId,
+        name,
+        shortname,
+        description,
+      );
       await addMachineConfig(parentConfig.id, newConfig);
     }
 
@@ -253,7 +265,7 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
         title={`Creating ${openModal === 'target-config' ? 'target' : 'machine'} configuration`}
         onCancel={closeModal}
         onSubmit={handleCreateMachineOk}
-        configType={openModal === 'machine-config' ? 'machine' : undefined}
+        configType={openModal === 'machine-config' ? 'machine' : 'target'}
         targetConfigExists={!!parentConfig.targetConfig}
       />
 

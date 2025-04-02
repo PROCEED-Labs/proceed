@@ -257,7 +257,7 @@ async function updateBpmnXMLAttributes(
     definitions.userDefinedId = userDefinedId;
     creatorName && (definitions.creatorName = creatorName);
     creatorUsername && (definitions.creatorUsername = creatorUsername);
-    creatorSpaceName && (definitions.creatorSpaceName = creatorSpaceName);
+    definitions.creatorSpaceName = creatorSpaceName;
     creatorSpaceId && (definitions.creatorSpaceId = creatorSpaceId);
     creatorId && (definitions.creatorId = creatorId);
     creationDate && (definitions.creationDate = creationDate);

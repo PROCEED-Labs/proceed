@@ -146,14 +146,16 @@ export async function checkIfProcessAlreadyExistsForAUserInASpaceByName(
   processName: string,
   spaceId: string,
   userId: string,
+  folderId: string,
 ) {
   try {
     const existingProcess = await db.process.findUnique({
       where: {
-        name_environmentId_creatorId: {
+        name_environmentId_creatorId_folderId: {
           name: processName,
           environmentId: spaceId,
           creatorId: userId,
+          folderId: folderId,
         },
       },
     });

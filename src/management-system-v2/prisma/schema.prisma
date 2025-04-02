@@ -83,7 +83,7 @@ model Process {
   creatorId            String
   //TODO: Departments and Variables add here if needed in future
   artifactProcessReferences   ArtifactProcessReference[]
-  @@unique([name,environmentId,creatorId])
+  @@unique([name,environmentId,creatorId,folderId])
   @@map("process")
 }
 

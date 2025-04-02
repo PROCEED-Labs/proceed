@@ -24,6 +24,7 @@ import { checkIfProcessExistsByName } from '@/lib/data/processes';
 import { useEnvironment } from './auth-can';
 import { useSession } from 'next-auth/react';
 import { LazyBPMNViewer } from '@/components/bpmn-viewer';
+import { usePathname } from 'next/navigation';
 
 type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -66,6 +67,8 @@ const ProcessModal = <
   const [showCollisions, setShowCollisions] = useState(true);
   const environment = useEnvironment();
   const session = useSession();
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
   useEffect(() => {
     if (initialData) {
@@ -152,11 +155,12 @@ const ProcessModal = <
 
     for (let i = 0; i < initialData.length; i++) {
       const process = initialData[i];
-      const exists = await checkIfProcessExistsByName(
-        process.name,
-        environment.spaceId,
-        session.data?.user.id!,
-      );
+      const exists = await checkIfProcessExistsByName({
+        processName: process.name,
+        spaceId: environment.spaceId,
+        userId: session.data?.user.id!,
+        folderId: currentFolderId,
+      });
 
       if (exists) {
         const newName = `${process.name}_import_${new Date().toISOString()}`;
@@ -182,7 +186,7 @@ const ProcessModal = <
             <Title level={4} style={{ margin: 0 }}>
               {title}
             </Title>
-            {initialData && initialData.length >= 1 && (
+            {initialData && initialData.length >= 1 && isImportModal && (
               <Typography.Text type="secondary">{`Process ${carouselIndex} of ${initialData.length}`}</Typography.Text>
             )}
           </Flex>
@@ -260,8 +264,7 @@ const ProcessModal = <
           >
             {!initialData ? (
               <ProcessInputs index={0} />
-            ) : (
-              // <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
+            ) : isImportModal ? (
               <Carousel
                 arrows
                 infinite={false}
@@ -270,18 +273,18 @@ const ProcessModal = <
                 prevArrow={<MdArrowBackIos color="#000" />}
                 nextArrow={<MdArrowForwardIos color="#000" />}
               >
-                {initialData &&
-                  initialData.map((process, index) => (
-                    <Card key={index}>
-                      <>
-                        <LazyBPMNViewer previewBpmn={process.bpmn} reduceLogo={true} fitOnResize />
-
-                        <Divider style={{ width: '100%', marginLeft: '-20%' }} />
-                      </>
-                      <ProcessInputs key={index} index={index} isImport={isImportModal} />
-                    </Card>
-                  ))}
+                {initialData.map((process, index) => (
+                  <Card key={index}>
+                    <>
+                      <LazyBPMNViewer previewBpmn={process.bpmn} reduceLogo={true} fitOnResize />
+                      <Divider style={{ width: '100%', marginLeft: '-20%' }} />
+                    </>
+                    <ProcessInputsImport key={index} index={index} />
+                  </Card>
+                ))}
               </Carousel>
+            ) : (
+              <ProcessInputs index={0} />
             )}
           </Form>
         </div>
@@ -292,12 +295,13 @@ const ProcessModal = <
 
 type ProcessInputsProps = {
   index: number;
-  isImport?: boolean;
 };
 
-const ProcessInputs = ({ index, isImport }: ProcessInputsProps) => {
+const ProcessInputs = ({ index }: ProcessInputsProps) => {
   const environment = useEnvironment();
   const session = useSession();
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
   const validateProcessName = async (name: string, callback: Function) => {
     if (!name) {
@@ -305,26 +309,19 @@ const ProcessInputs = ({ index, isImport }: ProcessInputsProps) => {
       return;
     }
 
-    const exists = await checkIfProcessExistsByName(
-      name,
-      environment.spaceId,
-      session.data?.user.id!,
-    );
+    const exists = await checkIfProcessExistsByName({
+      processName: name,
+      spaceId: environment.spaceId,
+      userId: session.data?.user.id!,
+      folderId: currentFolderId,
+    });
 
     if (!exists) {
       callback();
       return;
     }
 
-    if (isImport) {
-      callback(
-        new Error(`A process with the name "${name}" already exists. Please use different name`),
-      );
-      return;
-    } else {
-      callback(new Error('A process with this name already exists!'));
-      return;
-    }
+    callback(new Error('A process with this name already exists!'));
   };
 
   return (
@@ -374,31 +371,31 @@ const ProcessInputs = ({ index, isImport }: ProcessInputsProps) => {
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>
-      {isImport && (
-        <>
-          <Form.Item
-            name={[index, 'creator']}
-            label="Original Creator"
-            rules={[{ required: false }]}
-          >
-            <Input disabled />
-          </Form.Item>
-          <Form.Item
-            name={[index, 'creatorUsername']}
-            label="Original Creator Username"
-            rules={[{ required: false }]}
-          >
-            <Input disabled />
-          </Form.Item>
-          <Form.Item
-            name={[index, 'createdOn']}
-            label="Original Creation Date"
-            rules={[{ required: false }]}
-          >
-            <Input disabled />
-          </Form.Item>
-        </>
-      )}
+    </>
+  );
+};
+
+const ProcessInputsImport = ({ index }: ProcessInputsProps) => {
+  return (
+    <>
+      <ProcessInputs index={index} />
+      <Form.Item name={[index, 'creator']} label="Original Creator" rules={[{ required: false }]}>
+        <Input disabled />
+      </Form.Item>
+      <Form.Item
+        name={[index, 'creatorUsername']}
+        label="Original Creator Username"
+        rules={[{ required: false }]}
+      >
+        <Input disabled />
+      </Form.Item>
+      <Form.Item
+        name={[index, 'createdOn']}
+        label="Original Creation Date"
+        rules={[{ required: false }]}
+      >
+        <Input disabled />
+      </Form.Item>
     </>
   );
 };

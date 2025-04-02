@@ -45,7 +45,7 @@ import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
-import { error } from 'console';
+import { getRootFolder } from './DTOs';
 
 // Declare variables to hold the process module functions
 let removeProcess: TProcessModule['removeProcess'];
@@ -730,13 +730,20 @@ export const getProcessImage = async (
   return _getProcessImage!(definitionId, imageFileName);
 };
 
-export const checkIfProcessExistsByName = async (
-  processName: string,
-  spaceId: string,
-  userId: string,
-): Promise<boolean> => {
+export const checkIfProcessExistsByName = async (processData: {
+  processName: string;
+  spaceId: string;
+  userId: string;
+  folderId?: string;
+}): Promise<boolean> => {
   try {
-    return await checkIfProcessAlreadyExistsForAUserInASpaceByName(processName, spaceId, userId);
+    const { ability } = await getCurrentEnvironment(processData.spaceId);
+    return await checkIfProcessAlreadyExistsForAUserInASpaceByName(
+      processData.processName,
+      processData.spaceId,
+      processData.userId,
+      processData.folderId ?? (await getRootFolder(processData.spaceId, ability)).id,
+    );
   } catch (error) {
     console.log(error);
     return false;

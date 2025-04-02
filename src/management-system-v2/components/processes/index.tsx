@@ -2,7 +2,7 @@
 
 import styles from './processes.module.scss';
 import { ComponentProps, useRef, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge } from 'antd';
+import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, message } from 'antd';
 import {
   CopyOutlined,
   EditOutlined,
@@ -22,7 +22,12 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
-import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/processes';
+import {
+  checkIfProcessExistsByName,
+  copyProcesses,
+  deleteProcesses,
+  updateProcesses,
+} from '@/lib/data/processes';
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
@@ -49,6 +54,10 @@ import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { ShareModal } from '../share-modal/share-modal';
+import { resolve } from 'path';
+import process from 'process';
+import { useSession } from 'next-auth/react';
+import { error } from 'console';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -103,6 +112,7 @@ const Processes = ({
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
   const router = useRouter();
+  const user = useSession().data?.user;
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -301,8 +311,27 @@ const Processes = ({
   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
     startMovingItemTransition(async () => {
       await wrapServerCall({
-        fn: () => moveIntoFolder(items, folderId),
+        fn: async () => {
+          for (const item of items) {
+            if (item.type === 'process') {
+              const process = processes.find((process) => process.id === item.id);
+              const res = await checkIfProcessExistsByName({
+                processName: process?.name!,
+                spaceId: space.spaceId,
+                userId: user?.id!,
+                folderId: folderId,
+              });
+              if (res) {
+                throw new Error(
+                  `Errror: Process with name ${process?.name} already exists in the destination folder`,
+                );
+              }
+            }
+          }
+          return moveIntoFolder(items, folderId);
+        },
         onSuccess: router.refresh,
+        onError: (error) => app.message.error(error.message),
         app,
       });
     });
@@ -602,6 +631,7 @@ const Processes = ({
             id: process.id,
             name: process.name.value ?? '',
             description: process.description.value ?? '',
+            userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
           const res = await updateProcesses(values, space.spaceId);

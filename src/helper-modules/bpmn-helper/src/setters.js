@@ -73,9 +73,9 @@ async function setDefinitionsVersionInformation(
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
     definitions.processVersionId = versionId;
     definitions.processVersionName = versionName;
-    definitions.versionDescription = versionDescription;
-    definitions.versionBasedOn = versionBasedOn;
-    definitions.versionCreatedOn = versionCreatedOn;
+    definitions.processVersionDescription = versionDescription;
+    definitions.processVersionBasedOn = versionBasedOn;
+    definitions.processVersionCreatedOn = versionCreatedOn;
 
     // make sure that the targetnamespace is unique for the new version
     definitions.targetNamespace = generateTargetNamespace(

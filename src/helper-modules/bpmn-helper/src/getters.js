@@ -76,16 +76,16 @@ async function getDefinitionsVersionInformation(bpmn) {
 
   if (!bpmnObj.processVersionId) {
     return {
-      versionBasedOn: bpmnObj.versionBasedOn,
+      versionBasedOn: bpmnObj.processVersionBasedOn,
     };
   }
 
   return {
     versionId: bpmnObj.processVersionId,
     name: bpmnObj.processVersionName,
-    description: bpmnObj.versionDescription,
-    versionBasedOn: bpmnObj.versionBasedOn,
-    versionCreatedOn: bpmnObj.versionCreatedOn,
+    description: bpmnObj.processVersionDescription,
+    versionBasedOn: bpmnObj.processVersionBasedOn,
+    versionCreatedOn: bpmnObj.processVersionCreatedOn,
   };
 }
 

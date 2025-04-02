@@ -272,33 +272,33 @@
       ]
     },
     {
-      "name": "versionDescription",
+      "name": "processVersionDescription",
       "extends": ["bpmn:Definitions"],
       "properties": [
         {
-          "name": "versionDescription",
+          "name": "processVersionDescription",
           "isAttr": true,
           "type": "String"
         }
       ]
     },
     {
-      "name": "versionBasedOn",
+      "name": "processVersionBasedOn",
       "extends": ["bpmn:Definitions"],
       "properties": [
         {
-          "name": "versionBasedOn",
+          "name": "processVersionBasedOn",
           "isAttr": true,
           "type": "String"
         }
       ]
     },
     {
-      "name": "versionCreatedOn",
+      "name": "processVersionCreatedOn",
       "extends": ["bpmn:Definitions"],
       "properties": [
         {
-          "name": "versionCreatedOn",
+          "name": "processVersionCreatedOn",
           "isAttr": true,
           "type": "Date"
         }

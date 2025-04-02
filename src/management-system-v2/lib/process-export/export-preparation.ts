@@ -420,7 +420,6 @@ export async function prepareExport(
           .filter(truthyFilter);
 
         for (const filename of versionScripts) allRequiredScriptTaskFiles.add(filename);
-        console.log(versionScripts, versionUserTasks);
       }
 
       for (const filename of allRequiredScriptTaskFiles) {
@@ -482,6 +481,7 @@ export async function prepareExport(
           }
         });
       }
+
       // determine the images that are used inside user tasks
       for (const { json } of exportData[definitionId].userTasks) {
         const referencedImages = getImagesReferencedByJSON(json);

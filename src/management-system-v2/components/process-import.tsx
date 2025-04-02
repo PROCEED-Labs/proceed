@@ -16,6 +16,7 @@ import { importProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import JSZip from 'jszip';
+import { generateDateString } from '@/lib/utils';
 
 export type ProcessData = {
   name: string;
@@ -95,18 +96,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
                                 userDefinedId: definitions['userDefinedId'],
                                 creator: definitions['creatorName'],
                                 creatorUsername: definitions['creatorUsername'],
-                                createdOn: new Date(definitions['creationDate']).toLocaleDateString(
-                                  'en-GB',
-                                  {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    second: '2-digit',
-                                    hour12: false,
-                                  },
-                                ),
+                                createdOn: generateDateString(definitions['creationDate'], true),
                                 bpmn,
                                 artefacts: {
                                   images: [],
@@ -204,18 +194,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
                           userDefinedId: definitions['userDefinedId'],
                           creator: definitions['creatorName'],
                           creatorUsername: definitions['creatorUsername'],
-                          createdOn: new Date(definitions['creationDate']).toLocaleDateString(
-                            'en-GB',
-                            {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                              hour12: false,
-                            },
-                          ),
+                          createdOn: generateDateString(definitions['creationDate'], true),
                           bpmn,
                         });
                       } catch (e: any) {

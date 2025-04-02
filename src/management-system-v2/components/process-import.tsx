@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 
-import { Alert, Button, Modal, Upload } from 'antd';
+import { Button, Modal, Upload } from 'antd';
 import type { ButtonProps } from 'antd';
 
 import {
@@ -41,7 +41,8 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   const [importProcessData, setImportProcessData] = useState<ProcessData[]>([]);
   const router = useRouter();
   const environment = useEnvironment();
-  const currentFolder = usePathname().split('/folder/').pop();
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
   const handleFileImport = async (fileList: File[]) => {
     const processesData: ProcessData[] = [];
@@ -105,7 +106,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
     try {
       const bpmnFile = zip.files[bpmnFilePath];
       const bpmn = await bpmnFile.async('text');
-      await parseBpmnContent(bpmnFilePath, bpmn, processesData, errors);
+      await parseBpmnContent(bpmnFilePath, bpmn, processesData, errors, zip);
     } catch (error: any) {
       errors.push({
         fileName: bpmnFilePath,
@@ -115,41 +116,93 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   };
 
   const parseBpmnContent = async (
-    fileName: string,
+    bpmnFilePath: string,
     bpmn: string,
     processesData: ProcessData[],
     errors: any[],
+    zip?: JSZip,
   ) => {
     try {
       const bpmnObj = await toBpmnObject(bpmn);
       const [definitions] = await getElementsByTagName(bpmnObj, 'bpmn:Definitions');
-      if (!definitions) throw new Error('Invalid BPMN file: missing Definitions element');
-
-      const validationRes = await checkIfAllReferencedArtefactsAreProvided(bpmn, {
-        images: [],
-        scriptTasks: [],
-        userTasks: [],
-      });
-      if (!validationRes.isValid) {
+      if (!definitions) {
         errors.push({
-          fileName,
-          error: generateMissingArtefactsError(fileName, validationRes.missingArtefacts),
+          fileName: bpmnFilePath,
+          error: 'Invalid BPMN file: missing Definitions element',
         });
         return;
       }
 
-      processesData.push({
+      const processData: ProcessData = {
         name: (await getDefinitionsName(bpmnObj)) || '',
         description: await getProcessDocumentation(bpmn),
         userDefinedId: definitions['userDefinedId'],
         creator: definitions['creatorName'],
         creatorUsername: definitions['creatorUsername'],
         createdOn: generateDateString(definitions['creationDate'], true),
-        folderId: currentFolder,
+        folderId: currentFolderId,
         bpmn,
+        artefacts: {
+          images: [],
+          userTasks: [],
+          scriptTasks: [],
+        },
+      };
+      if (zip) {
+        // Handle artefacts in the same directory as the BPMN file
+        const artefactPath = bpmnFilePath.split('/').slice(0, -1).join('/');
+        const artefactFiles = Object.keys(zip.files).filter(
+          (name) =>
+            name.startsWith(artefactPath.concat('/')) &&
+            name !== bpmnFilePath &&
+            !zip.files[name].dir,
+        );
+
+        await Promise.all(
+          artefactFiles.map(async (fileName) => {
+            try {
+              const file = zip.files[fileName];
+              const name = fileName.split('/').pop()!;
+
+              if (['.png', '.jpg', '.jpeg', '.gif', '.webp'].some((ext) => name.endsWith(ext))) {
+                const content = await file.async('base64');
+                processData.artefacts!.images!.push({ name, content });
+              } else if (['.js', '.ts'].some((ext) => name.endsWith(ext))) {
+                const content = await file.async('text');
+                processData.artefacts!.scriptTasks!.push({ name, content });
+              } else if (['.json', '.html'].some((ext) => name.endsWith(ext))) {
+                const textContent = await file.async('text');
+                processData.artefacts!.userTasks!.push({
+                  name,
+                  content: textContent,
+                });
+              }
+            } catch (e: any) {
+              errors.push({
+                fileName: fileName,
+                error: `Failed to process artifact: ${e.message || 'Unknown error'}`,
+              });
+            }
+          }),
+        );
+      }
+
+      const validationRes = await checkIfAllReferencedArtefactsAreProvided(bpmn, {
+        images: processData.artefacts?.images?.map((item) => item.name) || [],
+        userTasks: processData.artefacts?.userTasks?.map((item) => item.name) || [],
+        scriptTasks: processData.artefacts?.scriptTasks?.map((item) => item.name) || [],
       });
+      if (!validationRes.isValid) {
+        errors.push({
+          bpmnFilePath,
+          error: generateMissingArtefactsError(bpmnFilePath, validationRes.missingArtefacts),
+        });
+        return;
+      }
+
+      processesData.push(processData);
     } catch (error: any) {
-      errors.push({ fileName, error: `Failed to parse BPMN: ${error.message}` });
+      errors.push({ bpmnFilePath, error: `Failed to parse BPMN: ${error.message}` });
     }
   };
 

@@ -284,7 +284,7 @@ const ProcessModal = <
                 ))}
               </Carousel>
             ) : (
-              <ProcessInputs index={0} />
+              <ProcessInputs index={0} initialName={initialData?.[0]?.name} />
             )}
           </Form>
         </div>
@@ -295,17 +295,23 @@ const ProcessModal = <
 
 type ProcessInputsProps = {
   index: number;
+  initialName?: string;
 };
 
-const ProcessInputs = ({ index }: ProcessInputsProps) => {
+const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
   const environment = useEnvironment();
   const session = useSession();
   const path = usePathname();
   const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
-  const validateProcessName = async (name: string, callback: Function) => {
+  const validateProcessName = async (name: string, callback: Function, initialName?: string) => {
     if (!name) {
       callback(new Error('Please fill out the Process name'));
+      return;
+    }
+
+    if (initialName && name === initialName) {
+      callback();
       return;
     }
 
@@ -337,8 +343,10 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
           {
             validator: (_, value) =>
               new Promise((resolve, reject) =>
-                validateProcessName(value, (error?: Error) =>
-                  error ? reject(error) : resolve(true),
+                validateProcessName(
+                  value,
+                  (error?: Error) => (error ? reject(error) : resolve(true)),
+                  initialName,
                 ),
               ),
           },

@@ -1,6 +1,7 @@
 import { Localization } from '@/lib/data/locale';
 import {
   AbstractConfig,
+  ConfigCategories,
   MachineConfig,
   Parameter,
   ParentConfig,
@@ -35,6 +36,8 @@ export function defaultParameter(
 export function defaultConfiguration(
   environmentId: string,
   name?: string,
+  shortname?: string,
+  categories?: Array<ConfigCategories>,
   description?: string,
 ): AbstractConfig {
   const date = new Date();
@@ -44,6 +47,8 @@ export function defaultConfiguration(
     environmentId: environmentId,
     metadata: {},
     name: name || 'Default Configuration',
+    shortname: shortname || '',
+    categories: categories || [],
     variables: [],
     departments: [],
     inEditingBy: [],
@@ -67,13 +72,15 @@ export function defaultConfiguration(
 }
 
 export const defaultParentConfiguration = (
-  environmentId: string,
-  name: string,
-  description: string,
   folderId: string,
+  environmentId: string,
+  name?: string,
+  shortname?: string,
+  categories?: Array<ConfigCategories>,
+  description?: string,
 ): ParentConfig => {
   return {
-    ...defaultConfiguration(environmentId, name, description),
+    ...defaultConfiguration(environmentId, name, shortname, categories, description),
     type: 'config',
     folderId,
     targetConfig: undefined,
@@ -83,11 +90,18 @@ export const defaultParentConfiguration = (
 
 export const defaultMachineConfiguration = (
   environmentId: string,
-  name: string,
-  description: string,
+  name?: string,
+  shortname?: string,
+  description?: string,
 ): MachineConfig => {
   return {
-    ...defaultConfiguration(environmentId, name, description),
+    ...defaultConfiguration(
+      environmentId,
+      name || 'Default Machine Configuration',
+      shortname,
+      [],
+      description,
+    ),
     type: 'machine-config',
     parameters: {},
   };
@@ -96,11 +110,12 @@ export const defaultMachineConfiguration = (
 export const customMachineConfiguration = (
   environmentId: string,
   name: string,
+  shortname: string,
   description: string,
   targetCon: TargetConfig,
 ): MachineConfig => {
   const config: MachineConfig = {
-    ...defaultConfiguration(environmentId, name, description),
+    ...defaultConfiguration(environmentId, name, shortname, [], description),
     type: 'machine-config',
     parameters: targetCon.parameters,
     metadata: targetCon.metadata,
@@ -111,11 +126,18 @@ export const customMachineConfiguration = (
 
 export const defaultTargetConfiguration = (
   environmentId: string,
-  name: string,
-  description: string,
+  name?: string,
+  shortname?: string,
+  description?: string,
 ): TargetConfig => {
   return {
-    ...defaultConfiguration(environmentId, name, description),
+    ...defaultConfiguration(
+      environmentId,
+      name || 'Default Target Configuration',
+      shortname,
+      [],
+      description,
+    ),
     type: 'target-config',
     parameters: {},
   };

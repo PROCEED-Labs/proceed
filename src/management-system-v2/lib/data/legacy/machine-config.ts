@@ -19,7 +19,7 @@ import {
 } from '../machine-config-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { UserErrorType, userError } from '@/lib/user-error';
-import { v4 } from 'uuid';
+import { v4, validate } from 'uuid';
 import eventHandler from './eventHandler.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
@@ -398,7 +398,7 @@ export async function updateParentConfig(configId: string, changes: Partial<Stor
  */
 export async function copyParameter(
   parameterId: string,
-  parentId?: string,
+  parentId: string,
   parentType?: StoredParameter['parentType'],
 ) {
   const storedParameter = storedData.parameters[parameterId];
@@ -496,8 +496,9 @@ export async function copyParentConfig(
       createdBy: environmentId,
       createdOn: date,
       lastEditedOn: date,
-      ...parentConfigData,
-      name: parentConfigData.name || `${originalConfig.name} (Copy)`,
+      ...machineConfigInput,
+      name: machineConfigInput.name || `${originalConfig.name} (Copy)`,
+      shortname: machineConfigInput.shortname || `${originalConfig.shortname} (Copy)`,
       metadata: await asyncMap(originalConfig.metadata, (id) => copyParameter(id, newId)),
       targetConfig:
         originalConfig.targetConfig &&
@@ -507,6 +508,21 @@ export async function copyParentConfig(
       ),
       originalId,
     };
+
+    let parameters = Object.values(nestedParametersFromStorage(copy?.metadata));
+    let parameter = parameters.find((item) => item.key == 'description');
+    let desc = parameter?.content ?? [];
+    desc[0] = {
+      displayName: 'Description',
+      value: machineConfigInput.metadata['description'].content[0].value,
+      unit: undefined,
+      language: 'en',
+    };
+    if (parameter?.id) {
+      updateParameter(parameter.id, {
+        content: desc,
+      });
+    }
 
     // if no folder ID is given, set ID to root folder's
     if (!copy.folderId) {
@@ -538,54 +554,27 @@ export async function copyParentConfig(
 
 export async function addParentConfig(machineConfigInput: ParentConfig, environmentId: string) {
   try {
-    // TODO this doesn't do anything since every property is optional
-    const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
-    // TODO to be replaced by defaultConfiguration
-    const date = new Date();
-    const metadata: ParentConfig = {
-      ...({
-        id: v4(),
-        type: 'config',
-        name: 'Default Parent Configuration',
-        variables: [],
-        createdBy: environmentId,
-        lastEditedBy: environmentId,
-        metadata: {},
-        departments: [],
-        inEditingBy: [],
-        createdOn: date,
-        lastEditedOn: date,
-        sharedAs: 'protected',
-        shareTimestamp: 0,
-        allowIframeTimestamp: 0,
-        versions: [],
-        folderId: '',
-        targetConfig: undefined,
-        machineConfigs: [],
-        environmentId: environmentId,
-      } as ParentConfig),
-      ...machineConfigInput,
-    };
+    AbstractConfigInputSchema.parse(machineConfigInput);
 
-    metadata.folderId = (await getRootFolder(environmentId)).id;
-    metadata.environmentId = environmentId;
+    machineConfigInput.folderId = (await getRootFolder(environmentId)).id;
+    machineConfigInput.environmentId = environmentId;
 
-    const folderData = foldersMetaObject.folders[metadata.folderId];
+    const folderData = foldersMetaObject.folders[machineConfigInput.folderId];
     if (!folderData) throw new Error('Folder not found');
     let idCollision = false;
-    const { id: parentConfigId } = metadata;
-    if (storedData.parentConfigs[parentConfigId]) {
+    const { id: parentConfigId } = machineConfigInput;
+    if (storedData.parentConfigs[parentConfigId] || !validate(parentConfigId)) {
       // throw new Error(`A parent configuration with the id ${parentConfigId} already exists!`);
       idCollision = true;
     }
 
-    parentConfigToStorage(metadata, idCollision);
+    parentConfigToStorage(machineConfigInput, idCollision);
     store.set('techData', 'parentConfigs', storedData.parentConfigs);
     store.set('techData', 'machineConfigs', storedData.machineConfigs);
     store.set('techData', 'targetConfigs', storedData.targetConfigs);
     store.set('techData', 'parameters', storedData.parameters);
 
-    return metadata;
+    return machineConfigInput;
   } catch (e: unknown) {
     const error = e as Error;
     return userError(error.message ?? "Couldn't create Machine Config");

@@ -1,11 +1,12 @@
-//TODO
-
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, Checkbox } from 'antd';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Checkbox, Select } from 'antd';
 import { UserError } from '@/lib/user-error';
-import { useAddControlCallback } from '@/lib/controls-store';
+import { getConfigurationCategories } from '@/lib/data/db/machine-config';
+import { string } from 'zod';
+import { useEnvironment } from './auth-can';
+// import { categoriesList } from '@/lib/data/machine-config-schema';
 
 type ConfigModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -30,8 +31,29 @@ const ConfigModal = <T extends { name: string; description: string }>({
 }: ConfigModalProps<T>) => {
   const [form] = Form.useForm();
   const formRef = useRef(null);
+  const environment = useEnvironment();
   const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState<
+    {
+      label: string;
+      value: string;
+    }[]
+  >([]);
   const { message } = App.useApp();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const categories = await getConfigurationCategories(environment.spaceId);
+      if (categories) {
+        const categoriesList = categories.map((v) => ({
+          label: v,
+          value: v,
+        }));
+        setCategories(categoriesList);
+      }
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (initialData && formRef.current) {
@@ -104,9 +126,8 @@ const ConfigModal = <T extends { name: string; description: string }>({
         layout="vertical"
         name="config_form"
         initialValues={
-          initialData ?? (configType === 'machine' && targetConfigExists)
-            ? [{ copyTarget: true }]
-            : undefined
+          initialData ??
+          (configType === 'machine' && targetConfigExists ? [{ copyTarget: true }] : undefined)
         }
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
@@ -114,7 +135,12 @@ const ConfigModal = <T extends { name: string; description: string }>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <ConfigInputs index={0} configType={configType} targetConfigExists={targetConfigExists} />
+          <ConfigInputs
+            index={0}
+            configType={configType}
+            targetConfigExists={targetConfigExists}
+            categories={categories}
+          />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -127,9 +153,18 @@ type ConfigModalInputsProps = {
   index: number;
   configType?: string;
   targetConfigExists?: boolean;
+  categories?: {
+    label: string;
+    value: string;
+  }[];
 };
 
-const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInputsProps) => {
+const ConfigInputs = ({
+  index,
+  configType,
+  targetConfigExists,
+  categories,
+}: ConfigModalInputsProps) => {
   return (
     <>
       <Form.Item
@@ -139,6 +174,28 @@ const ConfigInputs = ({ index, configType, targetConfigExists }: ConfigModalInpu
       >
         <Input />
       </Form.Item>
+      <Form.Item
+        name={[index, 'shortname']}
+        label="ID"
+        rules={[{ required: true, message: 'Please fill out the ID' }]}
+      >
+        <Input />
+      </Form.Item>
+      {!configType && (
+        <Form.Item
+          name={[index, 'categories']}
+          label="Categories"
+          rules={[{ required: false, message: 'Please select a Category' }]}
+        >
+          <Select
+            mode="tags"
+            allowClear
+            style={{ width: '100%' }}
+            placeholder="Please select"
+            options={categories}
+          />
+        </Form.Item>
+      )}
       <Form.Item
         name={[index, 'description']}
         label="Configuration Description"

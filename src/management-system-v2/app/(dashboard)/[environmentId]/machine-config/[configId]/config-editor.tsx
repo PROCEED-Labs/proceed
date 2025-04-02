@@ -48,17 +48,17 @@ import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import AddButton from './add-button';
 import ConfigModal from '@/components/config-modal';
+import ActionButtons from './action-buttons';
 import {
-  addMachineConfig,
-  addParentConfigVersion,
   addTargetConfig,
+  addMachineConfig,
   removeTargetConfig,
-  setParentConfigVersionAsLatest,
   updateMachineConfig,
   updateParentConfig,
   updateTargetConfig,
-} from '@/lib/data/legacy/machine-config';
-import ActionButtons from './action-buttons';
+  addParentConfigVersion,
+  setParentConfigVersionAsLatest,
+} from '@/lib/data/db/machine-config';
 import ConfirmationButton from '@/components/confirmation-button';
 import { v4 } from 'uuid';
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -160,7 +160,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
 
   const makeConfigVersionLatest = async () => {
     wrapServerCall({
-      fn: () => setParentConfigVersionAsLatest(parentConfig),
+      fn: () => setParentConfigVersionAsLatest(parentConfig.version || ''),
       onSuccess: () => {
         const searchParams = new URLSearchParams(query);
         searchParams.delete('version');
@@ -220,15 +220,16 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   const handleCreateConfig = async (
     values: {
       name: string;
+      shortname: string;
       description: string;
       copyTarget: boolean;
     }[],
   ) => {
-    const { name, description, copyTarget } = values[0];
+    const { name, shortname, description, copyTarget } = values[0];
     if (createConfigType === 'target') {
       await addTargetConfig(
         parentConfig.id,
-        defaultTargetConfiguration(parentConfig.environmentId, name, description),
+        defaultTargetConfiguration(parentConfig.environmentId, name, shortname, description),
       );
     } else {
       if (copyTarget && parentConfig.targetConfig) {
@@ -237,6 +238,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           customMachineConfiguration(
             parentConfig.environmentId,
             name,
+            shortname,
             description,
             parentConfig.targetConfig,
           ),
@@ -245,7 +247,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
       } else {
         await addMachineConfig(
           parentConfig.id,
-          defaultMachineConfiguration(parentConfig.environmentId, name, description),
+          defaultMachineConfiguration(parentConfig.environmentId, name, shortname, description),
         );
       }
     }
@@ -283,7 +285,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           configId={selectedConfig.id}
           configType={selectedConfig.type === 'config' ? 'parent-config' : selectedConfig.type}
           parentConfig={parentConfig}
+          shortname={selectedConfig.shortname}
           data={selectedConfig.metadata}
+          categories={selectedConfig.categories}
           editingEnabled={editable}
         />
       ),
@@ -327,7 +331,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             editingEnabled={editable}
             configId={currentConfig.id}
             configType={currentConfig.type}
+            shortname={currentConfig.shortname}
             data={currentConfig.parameters}
+            categories={[]}
             parentConfig={parentConfig}
           />,
         ],

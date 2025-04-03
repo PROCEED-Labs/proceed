@@ -39,7 +39,7 @@ export async function requestEmailChange(newEmail: string) {
         'If you did not request this email change, you can ignore this email. Your account remains secure and can only be accessed with your original email address. The PROCEED Crew',
     });
 
-    sendEmail({
+    await sendEmail({
       to: email,
       subject: 'PROCEED: Change your email address',
       html: signinMail.html,

@@ -5,7 +5,7 @@ import { Spin, Tree, TreeProps } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
 import { ProcessListItemIcon } from './process-list';
-import { ProcessListProcess } from './processes';
+import { ProcessListProcess } from './processes/types';
 import ProceedLoadingIndicator from './loading-proceed';
 
 type FolderChildren = {

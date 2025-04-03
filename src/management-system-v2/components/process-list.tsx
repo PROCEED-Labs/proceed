@@ -22,7 +22,7 @@ import styles from './item-list-view.module.scss';
 import { generateDateString, generateTableDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan } from '@/components/auth-can';
-import { ProcessListProcess, rowActions } from './processes';
+import { ProcessListProcess, RowActions } from './processes/types';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
 import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
@@ -86,7 +86,7 @@ type BaseProcessListProps = PropsWithChildren<{
   setShowMobileMetaData?: Dispatch<SetStateAction<boolean>>;
   onExportProcess?: (process: ProcessListProcess) => void;
   tableProps?: TableProps<ProcessListProcess>;
-  processActions?: rowActions;
+  processActions?: RowActions;
   columnCustomRenderer?: {
     [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => JSX.Element;
   };
@@ -432,7 +432,7 @@ type ProcessManagementListProps = PropsWithChildren<{
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  processActions: rowActions;
+  processActions: RowActions;
 }>;
 
 const ProcessManagementList: FC<ProcessManagementListProps> = ({

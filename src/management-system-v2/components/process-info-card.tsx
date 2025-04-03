@@ -3,7 +3,7 @@
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { ProcessListProcess } from './processes';
+import { ProcessListProcess } from './processes/types';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import MetaDataContent from './process-info-card-content';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Grid, Row, TableColumnType, TableColumnsType, TableProps, Tooltip } from 'antd';
-import {
+import React, {
   useCallback,
   FC,
   PropsWithChildren,
@@ -13,21 +13,16 @@ import {
   useState,
 } from 'react';
 import {
-  CopyOutlined,
-  ExportOutlined,
-  EditOutlined,
-  DeleteOutlined,
   StarOutlined,
   InfoCircleOutlined,
   FolderOutlined as FolderFilled,
-  FileOutlined as FileFilled,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import styles from './item-list-view.module.scss';
-import { generateDateString } from '@/lib/utils';
+import { generateDateString, generateTableDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan } from '@/components/auth-can';
-import { ProcessActions, ProcessListProcess } from './processes';
-import ConfirmationButton from './confirmation-button';
+import { ProcessListProcess, RowActions } from './processes/types';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
 import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
@@ -37,7 +32,10 @@ import FavouriteStar from './favouriteStar';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
 import classNames from 'classnames';
-import { set } from 'zod';
+import { GrDocumentUser } from 'react-icons/gr';
+import { PiNotePencil } from 'react-icons/pi';
+import { LuNotebookPen } from 'react-icons/lu';
+import { BsFileEarmarkCheck } from 'react-icons/bs';
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -56,8 +54,27 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
 }
 
 export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess['type'] } }) {
-  return item.type === 'folder' ? <FolderFilled /> : <FileFilled />;
+  return item.type === 'folder' ? <FolderFilled /> : '';
 }
+
+const ListEntryLink: React.FC<React.PropsWithChildren<{ data: ProcessListProcess }>> = ({
+  children,
+  data,
+}) => {
+  return (
+    <SpaceLink
+      href={data.type === 'folder' ? `/processes/folder/${data.id}` : `/processes/${data.id}`}
+      style={{
+        color: 'inherit' /* or any color you want */,
+        textDecoration: 'none' /* removes underline */,
+        display: 'block',
+        padding: '5px 0px',
+      }}
+    >
+      {children}
+    </SpaceLink>
+  );
+};
 
 type BaseProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
@@ -69,7 +86,7 @@ type BaseProcessListProps = PropsWithChildren<{
   setShowMobileMetaData?: Dispatch<SetStateAction<boolean>>;
   onExportProcess?: (process: ProcessListProcess) => void;
   tableProps?: TableProps<ProcessListProcess>;
-  processActions?: ProcessActions;
+  processActions?: RowActions;
   columnCustomRenderer?: {
     [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => JSX.Element;
   };
@@ -81,10 +98,12 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   elementSelection,
   onExportProcess = () => {},
   tableProps,
-  processActions: { deleteItems, editItem, copyItem } = {
-    deleteItems: () => {},
-    editItem: () => {},
-    copyItem: () => {},
+  processActions: { viewDocumentation, openEditor, changeMetaData, releaseProcess, share } = {
+    viewDocumentation: () => {},
+    openEditor: () => {},
+    changeMetaData: () => {},
+    releaseProcess: () => {},
+    share: () => {},
   },
   setShowMobileMetaData,
   columnCustomRenderer = {},
@@ -108,63 +127,76 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     'Meta Data Button',
   ];
 
+  /* TODO:
+    User potentialOwner Store to get the username
+  */
+  const mapIdToUsername = useCallback((id: string | undefined | null) => {
+    return id;
+  }, []);
+
+  /* This is the 'action' buttons in the row itself (visible on hover) */
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
       const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
+
+      type ActionButtonProps = {
+        title: string;
+        action: (record: ProcessListProcess) => void;
+        icon: React.ReactNode;
+      } & ({ view: true } | { update: true });
+
+      const ActionButton: React.FC<ActionButtonProps> = ({ title, action, icon, ...actions }) => {
+        return (
+          <AuthCan {...resource} {...actions}>
+            <Tooltip placement="top" title={title}>
+              <Button
+                className={classNames(styles.ActionButton)}
+                type="text"
+                icon={icon}
+                onClick={() => action(record)}
+              />
+            </Tooltip>
+          </AuthCan>
+        );
+      };
+
       return (
         <>
           {record.type !== 'folder' && (
-            <AuthCan {...resource} create>
-              <Tooltip placement="top" title={'Copy'}>
-                <Button
-                  className={classNames(styles.ActionButton)}
-                  type="text"
-                  icon={<CopyOutlined />}
-                  onClick={() => copyItem([record])}
-                />
-              </Tooltip>
-            </AuthCan>
-          )}
-
-          {record.type !== 'folder' && (
-            <Tooltip placement="top" title={'Export'}>
-              <Button
-                className={classNames(styles.ActionButton)}
-                type="text"
-                icon={<ExportOutlined />}
-                onClick={() => onExportProcess(record)}
+            <>
+              <ActionButton
+                title={'View Documentation'}
+                action={viewDocumentation}
+                icon={<GrDocumentUser />}
+                view
               />
-            </Tooltip>
-          )}
-
-          <AuthCan {...resource} update>
-            <Tooltip placement="top" title={'Edit'}>
-              <Button
-                className={classNames(styles.ActionButton)}
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => editItem(record)}
+              <ActionButton
+                title={'Open Editor'}
+                action={openEditor}
+                icon={<PiNotePencil />}
+                update
               />
-            </Tooltip>
-          </AuthCan>
-
-          <AuthCan delete {...resource}>
-            <ConfirmationButton
-              tooltip="Delete"
-              title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-              description="Are you sure you want to delete the selected process?"
-              onConfirm={() => deleteItems([record])}
-              buttonProps={{
-                icon: <DeleteOutlined />,
-                type: 'text',
-                className: styles.ActionButton,
-              }}
-            />
-          </AuthCan>
+              <ActionButton
+                title={'Change Meta Data'}
+                action={changeMetaData}
+                icon={<LuNotebookPen />}
+                update
+              />
+              <ActionButton
+                title={'Release Process'}
+                action={releaseProcess}
+                icon={<BsFileEarmarkCheck />}
+                update
+              />
+              <ActionButton title={'Share'} action={share} icon={<ShareAltOutlined />} update />
+            </>
+          )}
         </>
       );
     },
-    [copyItem, deleteItems, editItem, onExportProcess],
+    [
+      /* copyItem, deleteItems, editItem, onExportProcess */
+    ],
   );
 
   let columns: TableColumnsType<ProcessListProcess> = [
@@ -190,18 +222,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       ellipsis: true,
       sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
       render: (_, record) => (
-        <SpaceLink
-          href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
-          }
-          style={{
-            color: 'inherit' /* or any color you want */,
-            textDecoration: 'none' /* removes underline */,
-            display: 'block',
-            // whiteSpace: 'nowrap',
-            // textOverflow: 'ellipsis',
-          }}
-        >
+        <ListEntryLink data={record}>
           <div
             className={
               breakpoint.xs
@@ -211,17 +232,17 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                   : styles.TabletTitleTruncation
             }
             style={{
-              // overflow: 'hidden',
-              // whiteSpace: 'nowrap',
-              // textOverflow: 'ellipsis',
-              // TODO: color
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%',
               color: record.id === folder.parentId ? 'grey' : undefined,
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
           >
             <ProcessListItemIcon item={record} /> {record.name.highlighted}
           </div>
-        </SpaceLink>
+        </ListEntryLink>
       ),
       responsive: ['xs', 'sm'],
     },
@@ -230,31 +251,22 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'description',
       key: 'Description',
       render: (_, record) => (
-        <SpaceLink
-          href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
-          }
-          style={{
-            color: 'inherit' /* or any color you want */,
-            textDecoration: 'none' /* removes underline */,
-            display: 'block',
-          }}
-        >
-          {/* <div
+        <ListEntryLink data={record}>
+          <div
             style={{
               overflow: 'hidden',
               whiteSpace: 'nowrap',
               textOverflow: 'ellipsis',
             }}
-          > */}
-          {(record.description.value ?? '').length == 0 ? (
-            <>&emsp;</>
-          ) : (
-            record.description.highlighted
-          )}
-          {/* Makes the link-cell clickable, when there is no description */}
-          {/* </div> */}
-        </SpaceLink>
+          >
+            {(record.description.value ?? '').length == 0 ? (
+              <>&emsp;</>
+            ) : (
+              record.description.highlighted
+            )}
+            {/* Makes the link-cell clickable, when there is no description */}
+          </div>
+        </ListEntryLink>
       ),
       responsive: ['sm'],
     },
@@ -262,7 +274,15 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       title: 'Last Edited',
       dataIndex: 'lastEditedOn',
       key: 'Last Edited',
-      render: (date: string) => generateDateString(date, true),
+      render: (date: string, record) => (
+        <>
+          <ListEntryLink data={record}>
+            <Tooltip title={generateDateString(date, true)}>
+              {generateTableDateString(date)}
+            </Tooltip>
+          </ListEntryLink>
+        </>
+      ),
       sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
       responsive: ['md'],
     },
@@ -270,23 +290,35 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       title: 'Created On',
       dataIndex: 'createdOn',
       key: 'Created On',
-      render: (date: Date) => generateDateString(date, false),
+      render: (date: Date, record) => (
+        <>
+          <ListEntryLink data={record}>
+            <Tooltip title={generateDateString(date, true)}>
+              {generateTableDateString(date)}
+            </Tooltip>
+          </ListEntryLink>
+        </>
+      ),
+      defaultSortOrder: 'descend',
       sorter: folderAwareSort((a, b) => b.createdOn!.getTime() - a.createdOn!.getTime()),
       responsive: ['md'],
     },
     {
-      title: 'File Size',
-      key: 'File Size',
-      // dataIndex:  /* TODO: */,
-      // sorter: folderAwareSort((a, b) => (parseInt(a) < parseInt(b) ? -1 : 1)),
-      responsive: ['md'],
-      render: (_, __, rowIndex) => <>{rowIndex} MB</> /* TODO: */,
-    },
-    {
-      title: 'Owner',
+      title: 'Created By',
       dataIndex: 'owner',
       key: 'Owner',
-      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.creatorId),
+      render: (_, item) => {
+        const name =
+          item.type === 'folder'
+            ? mapIdToUsername(item.createdBy)
+            : mapIdToUsername(item.creatorId);
+
+        return (
+          <>
+            <ListEntryLink data={item}>{name}</ListEntryLink>
+          </>
+        );
+      },
       sorter: folderAwareSort((a, b) =>
         (a.type === 'folder' ? a.createdBy ?? '' : a.creatorId).localeCompare(
           b.type === 'folder' ? b.createdBy ?? '' : b.creatorId,
@@ -295,12 +327,25 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       responsive: ['md'],
     },
     {
+      title: 'Responsibility',
+      dataIndex: 'owner',
+      key: 'Responsibility',
+      render: (_, item) => (
+        <>
+          <ListEntryLink data={item}>{item.type === 'folder' ? '' : 'tbd'}</ListEntryLink>
+        </>
+      ),
+      sorter: folderAwareSort((a, b) =>
+        (a.type === 'folder' ? '' : 'tbd').localeCompare(b.type === 'folder' ? '' : ''),
+      ),
+    },
+    {
       fixed: 'right',
       width: 160,
       dataIndex: 'id',
       key: 'Meta Data Button',
       title: '',
-      render: (id, record, index) =>
+      render: (id) =>
         id !== folder.parentId && (
           <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
             <InfoCircleOutlined />
@@ -348,7 +393,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           addPreferences({ 'columns-in-table-view-process-list': propcols });
         },
         selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
-        allColumnTitles: ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'],
+        allColumnTitles: ['Description', 'Last Edited', 'Created On', 'Owner', 'Responsibility'],
         columnProps: {
           width: '200px',
           responsive: ['xl'],
@@ -387,7 +432,7 @@ type ProcessManagementListProps = PropsWithChildren<{
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  processActions: ProcessActions;
+  processActions: RowActions;
 }>;
 
 const ProcessManagementList: FC<ProcessManagementListProps> = ({
@@ -401,7 +446,6 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
   setShowMobileMetaData,
 }) => {
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
-  const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
 
   const [scrollY, setScrollY] = useState('400px');
   useEffect(() => {
@@ -425,17 +469,10 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
         },
         pagination: { position: ['bottomCenter'], pageSize: 20 },
         onRow: (item) => ({
-          // onDoubleClick: () =>
-          //   router.push(
-          //     item.type === 'folder'
-          //       ? `/${space.spaceId}/processes/folder/${item.id}`
-          //       : `/${space.spaceId}/processes/${item.id}`,
-          //   ),
           onContextMenu: () => {
             if (selection.includes(item.id)) {
               setContextMenuItem(selectedElements);
             } else {
-              setSelectionElements([item]);
               setContextMenuItem([item]);
             }
           },

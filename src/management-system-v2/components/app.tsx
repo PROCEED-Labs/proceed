@@ -5,9 +5,10 @@ import Theme from './theme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntDesignApp } from 'antd';
-import { SessionProvider, signIn, useSession } from 'next-auth/react';
+import { SessionProvider, signIn } from 'next-auth/react';
 import { PublicEnv } from '@/lib/env-vars';
 import { EnvVarsProvider } from './env-vars-context';
+import { useSession } from './auth-can';
 
 const queryClient = new QueryClient();
 

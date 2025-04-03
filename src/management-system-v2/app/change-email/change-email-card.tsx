@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { changeEmail as serverChangeEmail } from '@/lib/change-email/server-actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRightOutlined } from '@ant-design/icons';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/components/auth-can';
 
 export default function ChangeEmailCard({
   previousEmail,

@@ -14,13 +14,13 @@ import {
   Typography,
   theme,
 } from 'antd';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signIn, signOut } from 'next-auth/react';
 import { FC, use, useContext, useState } from 'react';
 import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
 import { enableChatbot } from 'FeatureFlags';
-import { useEnvironment } from './auth-can';
+import { useEnvironment, useSession } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';

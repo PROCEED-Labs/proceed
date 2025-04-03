@@ -7,7 +7,7 @@ import { AppstoreOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { create } from 'zustand';
 import { Environment } from '@/lib/data/environment-schema';
 import UserAvatar from '@/components/user-avatar';
@@ -20,6 +20,7 @@ import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { enableUseFileManager } from 'FeatureFlags';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import { useSession } from '@/components/auth-can';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({

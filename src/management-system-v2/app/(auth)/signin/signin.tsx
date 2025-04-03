@@ -149,7 +149,7 @@ const SignIn: FC<{
 
         {userType === 'none' && signInTitle}
 
-        <Space direction="vertical" style={{ gap: verticalGap }}>
+        <Space direction="vertical" style={{ width: '100%', gap: verticalGap }}>
           {credentials.map((provider) => {
             if (provider.type === 'credentials') {
               return (

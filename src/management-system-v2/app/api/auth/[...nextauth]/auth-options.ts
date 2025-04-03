@@ -30,22 +30,6 @@ const nextAuthOptions: AuthOptions = {
         return addUser({ isGuest: true });
       },
     }),
-    EmailProvider({
-      sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail({
-          signInLink: params.url,
-          expires: params.expires,
-        });
-
-        sendEmail({
-          to: params.identifier,
-          subject: 'Sign in to PROCEED',
-          html: signinMail.html,
-          text: signinMail.text,
-        });
-      },
-      maxAge: 24 * 60 * 60, // one day
-    }),
   ],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
@@ -114,6 +98,27 @@ const nextAuthOptions: AuthOptions = {
     signIn: '/signin',
   },
 };
+
+if (env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE) {
+  nextAuthOptions.providers.push(
+    EmailProvider({
+      sendVerificationRequest(params) {
+        const signinMail = renderSigninLinkEmail({
+          signInLink: params.url,
+          expires: params.expires,
+        });
+
+        sendEmail({
+          to: params.identifier,
+          subject: 'Sign in to PROCEED',
+          html: signinMail.html,
+          text: signinMail.text,
+        });
+      },
+      maxAge: 24 * 60 * 60, // one day
+    }),
+  );
+}
 
 if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(

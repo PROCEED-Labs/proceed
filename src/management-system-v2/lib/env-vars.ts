@@ -33,15 +33,39 @@ const environmentVariables = {
     MQTT_USERNAME: z.string().optional(),
     MQTT_PASSWORD: z.string().optional(),
     MQTT_BASETOPIC: z.string().optional(),
+
+    PROCEED_PUBLIC_MAILSERVER_ACTIVE: z.coerce.boolean().optional(),
+    PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE: z
+      .string()
+      .optional()
+      .refine((val) => !val || process.env.PROCEED_PUBLIC_MAILSERVER_ACTIVE, {
+        message:
+          'PROCEED_PUBLIC_MAILSERVER_ACTIVE needs to be set to true, in ordre to use PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE',
+      }),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
     USE_AUTH0: z.coerce.boolean(),
 
-    SMTP_MAIL_USER: z.string(),
-    SMTP_MAIL_PORT: z.coerce.number(),
-    SMTP_MAIL_HOST: z.string(),
-    SMTP_MAIL_PASSWORD: z.string(),
+    SMTP_MAIL_USER: z.string().optional(),
+    SMTP_MAIL_PORT: z.coerce
+      .number()
+      .optional()
+      .refine((val) => !process.env.PROCEED_PUBLIC_MAILSERVER_ACTIVE || val, {
+        message: 'SMTP_MAIL_PORT is required when IAM_SIGNIN_MAIL_ACTIVE is set',
+      }),
+    SMTP_MAIL_HOST: z
+      .string()
+      .optional()
+      .refine((val) => !process.env.PROCEED_PUBLIC_MAILSERVER_ACTIVE || val, {
+        message: 'SMTP_MAIL_HOST is required when IAM_SIGNIN_MAIL_ACTIVE is set',
+      }),
+    SMTP_MAIL_PASSWORD: z
+      .string()
+      .optional()
+      .refine((val) => !process.env.PROCEED_PUBLIC_MAILSERVER_ACTIVE || val, {
+        message: 'SMTP_MAIL_PASSWORD is required when IAM_SIGNIN_MAIL_ACTIVE is set',
+      }),
 
     AUTH0_CLIENT_ID: z.string(),
     AUTH0_CLIENT_SECRET: z.string(),

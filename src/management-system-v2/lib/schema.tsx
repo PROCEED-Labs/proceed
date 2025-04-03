@@ -349,6 +349,28 @@ export const schema = {
       ],
     },
     {
+      name: 'basedOnTemplateId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'basedOnTemplateId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'basedOnTemplateVersion',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'basedOnTemplateVersion',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
       name: 'originalExporter',
       extends: ['bpmn:Definitions'],
       properties: [

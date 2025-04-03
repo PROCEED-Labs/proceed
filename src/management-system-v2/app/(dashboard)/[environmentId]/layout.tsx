@@ -72,7 +72,7 @@ const DashboardLayout = async ({
       ...children,
       {
         key: 'processes-templates',
-        label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Templates</Link>,
+        label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
         icon: <SnippetsOutlined />,
       },
     ];

@@ -18,7 +18,7 @@ import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/DTOs';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
-const ProcessesPage = async ({
+const TemplatesPage = async ({
   params,
 }: {
   params: { environmentId: string; folderId?: string };
@@ -27,30 +27,26 @@ const ProcessesPage = async ({
 
   const favs = await getUsersFavourites();
 
-  const rootFolderProcessPage = await getRootFolder(activeEnvironment.spaceId, 'process', ability);
-  const rootFolderTemplatepage = await getRootFolder(
-    activeEnvironment.spaceId,
-    'template',
-    ability,
-  );
+  const rootFolder = await getRootFolder(activeEnvironment.spaceId, 'template', ability);
 
   const folder = await getFolderById(
-    params.folderId ? decodeURIComponent(params.folderId) : rootFolderProcessPage.id,
+    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
-  const templatesFolder = await getFolderById(rootFolderTemplatepage.id);
 
   const folderContents = await getFolderContents(folder.id, ability);
 
-  const templateFolderContents = await getFolderContents(templatesFolder.id, ability);
+  const templateProcessesAndFolders = folderContents.filter(
+    (content) =>
+      content.type === 'template' || content.type === 'folder' || content.isTemplate == true,
+  );
 
-  //folderContents.push(...templateFolderContents);
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder: Folder | null = folder;
   do {
     pathToFolder.push({
       title: (
-        <Link href={spaceURL(activeEnvironment, `/processes/folder/${currentFolder.id}`)}>
-          {currentFolder.parentId ? currentFolder.name : 'Processes'}
+        <Link href={spaceURL(activeEnvironment, `/templates/folder/${currentFolder.id}`)}>
+          {currentFolder.parentId ? currentFolder.name : 'Templates'}
         </Link>
       ),
     });
@@ -64,7 +60,7 @@ const ProcessesPage = async ({
         title={
           <Space>
             {folder.parentId && (
-              <Link href={spaceURL(activeEnvironment, `/processes/folder/${folder.parentId}`)}>
+              <Link href={spaceURL(activeEnvironment, `/templates/folder/${folder.parentId}`)}>
                 <Button icon={<LeftOutlined />} type="text">
                   Back
                 </Button>
@@ -75,11 +71,16 @@ const ProcessesPage = async ({
         }
       >
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-          <Processes processes={folderContents} favourites={favs as string[]} folder={folder} />
+          <Processes
+            processes={templateProcessesAndFolders}
+            favourites={favs as string[]}
+            folder={folder}
+            type="template"
+          />
         </Space>
       </Content>
     </>
   );
 };
 
-export default ProcessesPage;
+export default TemplatesPage;

@@ -1,6 +1,6 @@
 import { Element } from '@craftjs/core';
 import { Button as AntButton } from 'antd';
-import React, { ReactNode, useContext } from 'react';
+import React, { ReactNode } from 'react';
 
 /* LuFormInput does not exist anymore (?) */
 import { LuTextCursorInput, LuImage, LuTable, LuText } from 'react-icons/lu';
@@ -23,7 +23,7 @@ import {
 } from '../elements';
 
 import { createPortal } from 'react-dom';
-import BuilderContext from '../BuilderContext';
+import { useCanEdit } from '../../modeler';
 
 type CreationButtonProps = React.PropsWithChildren<{
   title: string;
@@ -31,7 +31,7 @@ type CreationButtonProps = React.PropsWithChildren<{
 }>;
 
 const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }) => {
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   const id = `create-${title}-button`;
 

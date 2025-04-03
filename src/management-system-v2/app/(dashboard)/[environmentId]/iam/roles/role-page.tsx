@@ -20,13 +20,17 @@ import ConfirmationButton from '@/components/confirmation-button';
 import { useRouter } from 'next/navigation';
 import RoleSidePanel from './role-side-panel';
 import { deleteRoles as serverDeleteRoles } from '@/lib/data/roles';
-import { Role } from '@/lib/data/role-schema';
+import { RoleWithMembers } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
 import styles from './role-page.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 
-function getMembersRepresentation(members: Role['members']) {
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import SelectionActions from '@/components/selection-actions';
+import { spaceURL, userRepresentation } from '@/lib/utils';
+
+function getMembersRepresentation(members: RoleWithMembers['members']) {
   if (members.length === 0) return undefined;
 
   return members.map((member) => userRepresentation(member)).join(', ');
@@ -34,15 +38,10 @@ function getMembersRepresentation(members: Role['members']) {
 
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
-import { wrapServerCall } from '@/lib/wrap-server-call';
-import SelectionActions from '@/components/selection-actions';
-import { spaceURL, userRepresentation } from '@/lib/utils';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
 
-type ModifiedRole = Role & { members: AuthenticatedUser[] };
-export type FilteredRole = ReplaceKeysWithHighlighted<ModifiedRole, 'name'>;
+export type FilteredRole = ReplaceKeysWithHighlighted<RoleWithMembers, 'name'>;
 
-const RolesPage = ({ roles }: { roles: ModifiedRole[] }) => {
+const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
   const app = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();

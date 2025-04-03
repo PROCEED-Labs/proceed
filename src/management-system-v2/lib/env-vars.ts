@@ -2,6 +2,11 @@ import type { ZodType } from 'zod';
 import z from 'zod';
 import { resources } from './ability/caslAbility';
 
+function boolParser(value?: string) {
+  if (!value) return false;
+  return value.toLowerCase() === 'true' || value === '1';
+}
+
 // --------------------------------------------
 // Add environment variables here
 // --------------------------------------------
@@ -9,7 +14,7 @@ import { resources } from './ability/caslAbility';
 const environmentVariables = {
   all: {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
+    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
     PROCEED_PUBLIC_DEPLOYMENT_ENV: z.enum(['cloud', 'local']).optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     SHARING_ENCRYPTION_SECRET: z.string(),
@@ -35,7 +40,7 @@ const environmentVariables = {
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
-    USE_AUTH0: z.coerce.boolean(),
+    USE_AUTH0: z.string().transform(boolParser),
 
     SMTP_MAIL_USER: z.string(),
     SMTP_MAIL_PORT: z.coerce.number(),

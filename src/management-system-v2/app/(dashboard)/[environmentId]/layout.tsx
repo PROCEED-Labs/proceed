@@ -131,14 +131,6 @@ const DashboardLayout = async ({
     });
   }
 
-  if (env.ENABLE_MACHINE_CONFIG && can('view', 'MachineConfig')) {
-    layoutMenuItems.push({
-      key: 'machine-config',
-      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,
-      icon: <ToolOutlined />,
-    });
-  }
-
   if (
     ability.can('manage', 'User') ||
     ability.can('manage', 'RoleMapping') ||

@@ -4,6 +4,7 @@ import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from '
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type NavigatedViewerType from 'bpmn-js/lib/NavigatedViewer';
 import type ViewerType from 'bpmn-js/lib/Viewer';
+import type EventBus from 'diagram-js/lib/core/EventBus';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
@@ -97,6 +98,7 @@ export interface BPMNCanvasRef {
   getElement: (id: string) => Element | undefined;
   getAllElements: () => ElementLike[];
   getCurrentRoot: () => Element | undefined;
+  getEventBus: () => EventBus;
   getCanvas: () => Canvas;
   getZoomScroll: () => ZoomScroll;
   getSelection: () => Selection;
@@ -169,6 +171,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           .get(
             modeler.current!.get<Canvas>('canvas').getRootElement().businessObject.id,
           ) as Element;
+      },
+      getEventBus: () => {
+        return modeler.current!.get<EventBus>('eventBus');
       },
       getCanvas: () => {
         return modeler.current!.get<Canvas>('canvas');
@@ -341,7 +346,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
-
         loadingXML.current = false;
 
         if (m !== modeler.current) {

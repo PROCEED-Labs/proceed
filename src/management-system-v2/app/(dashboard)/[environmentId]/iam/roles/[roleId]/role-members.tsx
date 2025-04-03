@@ -7,7 +7,7 @@ import { App, Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
 import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';
 import { useRouter } from 'next/navigation';
-import { Role } from '@/lib/data/role-schema';
+import { Role, RoleWithMembers } from '@/lib/data/role-schema';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -89,7 +89,7 @@ const AddUserModal: FC<{
 
 const RoleMembers: FC<{
   role: Role;
-  usersInRole: AuthenticatedUser[];
+  usersInRole: RoleWithMembers['members'];
   usersNotInRole: AuthenticatedUser[];
 }> = ({ role, usersInRole, usersNotInRole }) => {
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);

@@ -6,12 +6,14 @@ import CollapsibleCard from '@/components/collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import { FilteredRole } from './role-page';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
 import UserAvatar from '@/components/user-avatar';
 import { userRepresentation } from '@/lib/utils';
+import { RoleWithMembers } from '@/lib/data/role-schema';
+
+export type MemberInfo = RoleWithMembers['members'][number];
 
 const RoleContent: FC<{
-  role: (Omit<FilteredRole, 'members'> & { members: AuthenticatedUser[] }) | null;
+  role: (Omit<FilteredRole, 'members'> & { members: MemberInfo[] }) | null;
 }> = ({ role }) => {
   return (
     <>
@@ -62,7 +64,7 @@ const RoleContent: FC<{
 };
 
 type RoleSidePanelProps = PropsWithChildren<{
-  role: (FilteredRole & { members: AuthenticatedUser[] }) | null;
+  role: (FilteredRole & { members: MemberInfo[] }) | null;
   setShowMobileRoleSider: Dispatch<SetStateAction<boolean>>;
   showMobileRoleSider: boolean;
 }>;

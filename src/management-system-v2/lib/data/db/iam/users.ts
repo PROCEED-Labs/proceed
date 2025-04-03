@@ -14,6 +14,7 @@ import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
+import { UserFacingError } from '@/lib/user-error';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -139,7 +140,7 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
     if (adminRole.members.length === 1) {
       orgsWithNoNextAdmin.push(environmentId);
     } else {
-      /* make the next available admin the owner of the organization, because once the user is deleted, 
+      /* make the next available admin the owner of the organization, because once the user is deleted,
       the space that the user owns will be deleted: ON DELETE CASCADE */
       await dbMutator.space.update({
         where: { id: environmentId },
@@ -177,7 +178,14 @@ export async function updateUser(
       const existingUser = await db.user.findUnique({ where: { email: newUserData.email } });
 
       if (existingUser && existingUser.id !== userId)
-        throw new Error('User with this email or username already exists');
+        throw new UserFacingError('User with this email or username already exists');
+    }
+
+    if (newUserData.username) {
+      const existingUser = await db.user.findUnique({ where: { username: newUserData.username } });
+
+      if (existingUser && existingUser.id !== userId)
+        throw new UserFacingError('The username is already taken');
     }
 
     updatedUser = { ...user, ...newUserData };

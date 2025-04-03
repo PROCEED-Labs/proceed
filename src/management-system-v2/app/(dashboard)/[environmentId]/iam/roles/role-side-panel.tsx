@@ -49,7 +49,7 @@ const RoleContent: FC<{
               <Typography.Title>Members</Typography.Title>
               {role.members.map((user) => (
                 <Space key={user.id}>
-                  <UserAvatar user={user} avatarProps={{ size: 30 }} />
+                  <UserAvatar user={user} size={30} />
                   <Typography.Text>{userRepresentation(user)}</Typography.Text>
                 </Space>
               ))}

@@ -16,11 +16,9 @@ const UserSiderContent: FC<{ user: (ListUser & { roles?: Role[] }) | null }> = (
     <>
       <UserAvatar
         user={{ ...user, firstName: user.firstName.value, lastName: user.lastName.value }}
-        avatarProps={{
-          size: 60,
-          style: {
-            marginBottom: '1rem',
-          },
+        size={60}
+        style={{
+          marginBottom: '1rem',
         }}
       />
 

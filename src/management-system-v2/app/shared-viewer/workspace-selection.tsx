@@ -1,5 +1,4 @@
 import React, { useEffect, useState, Suspense } from 'react';
-import { useSession } from 'next-auth/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { Avatar, message, Space, Button, Typography, Modal, Spin, Tooltip, Flex } from 'antd';
@@ -18,6 +17,7 @@ import { MdEdit } from 'react-icons/md';
 import { FolderTreeNode, getSpaceFolderTree } from '@/lib/data/folders';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useSession } from '@/components/auth-can';
 
 type WorkspaceSelectionProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;

@@ -14,6 +14,7 @@ import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
 import { enableUseDB } from 'FeatureFlags';
+import * as noIamUser from '@/lib/no-iam-user';
 
 const nextAuthOptions: AuthOptions = {
   secret: env.NEXTAUTH_SECRET,
@@ -49,6 +50,11 @@ const nextAuthOptions: AuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
+      if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+        token.user = noIamUser.user;
+        return token;
+      }
+
       let user = _user as User | undefined;
 
       if (trigger === 'update') user = (await getUserById(token.user.id)) as User;

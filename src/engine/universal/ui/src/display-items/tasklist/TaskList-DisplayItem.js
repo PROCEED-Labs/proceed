@@ -143,7 +143,12 @@ class TaskListTab extends DisplayItem {
 
       const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
 
-      const milestones = await getMilestonesFromElementById(bpmn, query.userTaskID);
+      let milestones = await getMilestonesFromElementById(bpmn, query.userTaskID);
+
+      milestones = milestones.map((milestone) => ({
+        ...milestone,
+        value: milestonesData[milestone.id] || 0,
+      }));
 
       const script = `
       const instanceID = '${query.instanceID}';

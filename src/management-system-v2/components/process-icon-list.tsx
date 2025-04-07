@@ -13,6 +13,7 @@ import { spaceURL } from '@/lib/utils';
 import { useEnvironment } from './auth-can';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
+import { OverflowTooltipTitle } from './overflow-tooltip';
 
 const DraggableDiv = DraggableElementGenerator('div', 'itemId');
 
@@ -45,7 +46,7 @@ const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMeta
     const cardTitle = (
       <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
         {item.type === 'folder' && <FolderOutlined style={{ marginRight: '.5rem' }} />}
-        {item?.name.highlighted}
+        <OverflowTooltipTitle>{item?.name.highlighted}</OverflowTooltipTitle>
         <span style={{ flex: 1 }}></span>
         {breakpoint.xl ? null : <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />}
       </div>

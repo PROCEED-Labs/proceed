@@ -1,6 +1,6 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getRoleById } from '@/lib/data/DTOs';
+import { getRoleWithMembersById } from '@/lib/data/DTOs';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { getMembers } from '@/lib/data/DTOs';
@@ -20,7 +20,7 @@ const Page = async ({
   params: { roleId: string; environmentId: string };
 }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-  const role = await getRoleById(roleId, ability);
+  const role = await getRoleWithMembersById(roleId, ability);
   if (role && !ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
 
   if (!role)
@@ -30,9 +30,7 @@ const Page = async ({
       </Content>
     );
 
-  const usersInRole = (await Promise.all(
-    role.members.map((member) => getUserById(member.userId)),
-  )) as AuthenticatedUser[];
+  const usersInRole = role.members;
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
 
   const memberships = await getMembers(activeEnvironment.spaceId, ability);

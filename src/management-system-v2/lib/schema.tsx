@@ -468,7 +468,7 @@ export const schema = {
       ],
     },
     {
-      name: 'Performer',
+      name: 'GenericResource',
       superClass: ['bpmn:Artifact'],
       properties: [
         {
@@ -476,20 +476,10 @@ export const schema = {
           isAttr: true,
           type: 'String',
         },
-      ],
-    },
-    {
-      name: 'HumanPerformer',
-      superClass: ['Performer'],
-    },
-    {
-      name: 'MachinePerformer',
-      superClass: ['Performer'],
-      properties: [
         {
-          name: 'machineType',
+          name: 'resourceType',
           isAttr: true,
-          type: 'MachinePerformerType',
+          type: 'ResourceType',
         },
       ],
     },
@@ -504,6 +494,23 @@ export const schema = {
         },
       ],
     },
+
+    {
+      name: 'ResponsibleParty',
+      superClass: ['bpmn:ResourceRole'],
+    },
+    {
+      name: 'ResposibilityElements',
+      extends: ['bpmn:Gateway', 'bpmn:Event'],
+      properties: [
+        {
+          name: 'resources',
+          type: 'ResourceRole',
+          isMany: true,
+        },
+      ],
+    },
+
     {
       name: 'placeholder',
       extends: ['bpmn:Task'],
@@ -1246,8 +1253,11 @@ export const schema = {
   },
   emumerations: [
     {
-      name: 'MachinePerformerTypes',
+      name: 'ResourceType',
       literalValues: [
+        {
+          name: 'User',
+        },
         {
           name: 'Screen',
         },

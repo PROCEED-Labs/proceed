@@ -2,7 +2,7 @@ import { Element } from '@craftjs/core';
 import { Button as AntButton } from 'antd';
 import React, { ReactNode } from 'react';
 
-import { LuFormInput, LuImage, LuTable, LuText } from 'react-icons/lu';
+import { LuTextCursorInput, LuImage, LuTable, LuText } from 'react-icons/lu';
 import { MdCheckBox, MdRadioButtonChecked, MdTitle, MdOutlineCheck } from 'react-icons/md';
 import { RxGroup } from 'react-icons/rx';
 
@@ -76,7 +76,7 @@ const Toolbox = () => {
       <CreationButton title="Text" icon={<LuText />}>
         <Text />
       </CreationButton>
-      <CreationButton title="Input" icon={<LuFormInput />}>
+      <CreationButton title="Input" icon={<LuTextCursorInput />}>
         <Input />
       </CreationButton>
       <CreationButton title="Radio" icon={<MdRadioButtonChecked />}>

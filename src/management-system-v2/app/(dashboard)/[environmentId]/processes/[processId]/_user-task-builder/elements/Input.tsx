@@ -1,4 +1,4 @@
-import { useContext, useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { Select, Input as AntInput } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
@@ -8,7 +8,7 @@ import { UserComponent, useNode } from '@craftjs/core';
 import { ContextMenu, Overlay, Setting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useBuilderStateStore from '../use-builder-state-store';
-import BuilderContext from '../BuilderContext';
+import { useCanEdit } from '../../modeler';
 
 type InputProps = {
   label?: string;
@@ -71,7 +71,7 @@ const Input: UserComponent<InputProps> = ({
     connectors: { connect },
     actions: { setProp },
   } = useNode();
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   const inputId = useId();
 

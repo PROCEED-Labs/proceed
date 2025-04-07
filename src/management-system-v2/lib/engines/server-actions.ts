@@ -292,3 +292,11 @@ export async function getAvailableSpaceEngines(spaceId: string) {
     return userError(message);
   }
 }
+
+export async function getDeployment(spaceId: string, definitionId: string) {
+  const engines = await getCorrectTargetEngines(spaceId);
+
+  const deployments = await getDeployments(engines);
+
+  return deployments.find((d) => d.definitionId === definitionId) || null;
+}

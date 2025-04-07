@@ -12,14 +12,13 @@ import {
 } from '@ant-design/icons';
 import { generateDateString } from '@/lib/utils';
 import { transformMilisecondsToDurationValues } from '@/lib/helpers/timeHelper';
-import { TaskListEntry } from '@/lib/engines/tasklist';
 import { ExtendedTaskListEntry } from './user-task-view';
 
 const OwnerInfo: React.FC<{ task: ExtendedTaskListEntry }> = ({ task }) => {
   let owner = '';
 
   if (task.actualOwner.length === 1) {
-    owner = task.actualOwner[0].name || task.actualOwner[0].userName;
+    owner = task.actualOwner[0].name || task.actualOwner[0].userName || '<unknown>';
   } else if (task.actualOwner.length > 1) {
     owner = task.actualOwner.map(({ name, userName }) => name || userName).join(' | ');
   }

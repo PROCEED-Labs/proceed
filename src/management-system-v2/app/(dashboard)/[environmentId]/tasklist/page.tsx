@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 import { env } from '@/lib/env-vars';
 import { getAvailableTaskListEntries } from '@/lib/engines/server-actions';
-import { getMembers, getRoles, getUsers } from '@/lib/data/DTOs';
+import { getRolesWithMembers } from '@/lib/data/DTOs';
 import { truthyFilter } from '@/lib/typescript-utils';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
@@ -30,28 +30,26 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
 
   const { userId } = await getCurrentUser();
 
-  const roles = isOrganization ? await getRoles(spaceId, ability) : [];
+  const roles = isOrganization ? await getRolesWithMembers(spaceId, ability) : [];
   const userRoles = roles.filter((role) => {
     return (
       role.environmentId === params.environmentId &&
-      role.members.some((member) => member.userId === userId)
+      role.members.some((member) => member.id === userId)
     );
   });
 
   const users = roles.reduce(
     (acc, role) => {
       role.members.forEach((member) => {
-        acc[member.userId] = {
-          // @ts-ignore    // types wrong?!
-          userName: member.user.username,
-          // @ts-ignore    // types wrong?!
-          name: member.user.firstName + ' ' + member.user.lastName,
+        acc[member.id] = {
+          userName: member.username,
+          name: member.firstName + ' ' + member.lastName,
         };
       });
 
       return acc;
     },
-    {} as { [key: string]: { userName: string; name: string } },
+    {} as { [key: string]: { userName?: string; name: string } },
   );
 
   userTasks = userTasks.filter((uT) => {

@@ -511,9 +511,9 @@ const Processes = ({
                     style={{
                       maxWidth: breakpoint.xl
                         ? metaPanelisOpened
-                          ? `calc(87vw - ${metaPanelWidth}px)`
-                          : '85.5vw'
-                        : '100%',
+                          ? `calc(100vw - ${metaPanelWidth}px - 200px - 20px - 10px - 10px)`
+                          : 'calc(100vw - 30px - 200px - 20px - 10px - 10px)'
+                        : 'calc(100vw - 75px - 10px - 10px)',
                     }}
                   >
                     <ProcessList

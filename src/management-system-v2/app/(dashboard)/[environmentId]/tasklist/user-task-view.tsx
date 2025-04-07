@@ -18,7 +18,7 @@ import styles from './tasklist.module.scss';
 import { TaskListEntry } from '@/lib/engines/tasklist';
 
 export type ExtendedTaskListEntry = Omit<TaskListEntry, 'actualOwner'> & {
-  actualOwner: { id: string; name: string; userName: string }[];
+  actualOwner: { id: string; name: string; userName?: string }[];
 };
 
 type UserTaskFormProps = {

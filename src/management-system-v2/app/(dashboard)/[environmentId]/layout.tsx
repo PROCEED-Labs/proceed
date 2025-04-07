@@ -103,7 +103,7 @@ const DashboardLayout = async ({
     layoutMenuItems = [
       {
         key: 'tasklist',
-        label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Your Tasks</Link>,
+        label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
         icon: <CheckSquareOutlined />,
       },
       ...layoutMenuItems,
@@ -128,14 +128,6 @@ const DashboardLayout = async ({
       label: 'Automations',
       icon: <PlaySquareOutlined />,
       children,
-    });
-  }
-
-  if (env.ENABLE_MACHINE_CONFIG && can('view', 'MachineConfig')) {
-    layoutMenuItems.push({
-      key: 'machine-config',
-      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,
-      icon: <ToolOutlined />,
     });
   }
 

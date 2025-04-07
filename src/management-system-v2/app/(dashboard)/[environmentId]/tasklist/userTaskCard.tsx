@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Col, Progress, Row } from 'antd';
+import { Card, Col, Progress, Row, Tooltip, Typography } from 'antd';
 import {
   UserOutlined,
   CalendarOutlined,
@@ -42,10 +42,19 @@ const UserTaskCard = ({
   return (
     <Card
       title={
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{userTaskData.name}</span>
-          <Progress type="circle" percent={userTaskData.progress} size={30} />
-        </div>
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{userTaskData.name}</span>
+            <Progress type="circle" percent={userTaskData.progress} size={30} />
+          </div>
+          {userTaskData.offline && !userTaskData.endTime && (
+            <Tooltip title="The engine this user task is running on is currently not reachable!">
+              <Typography.Text style={{ fontSize: '0.9em' }} italic type="warning">
+                Offline
+              </Typography.Text>
+            </Tooltip>
+          )}
+        </>
       }
       bordered={false}
       style={{

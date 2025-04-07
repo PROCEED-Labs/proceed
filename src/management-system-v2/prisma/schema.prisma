@@ -235,6 +235,7 @@ model UserTask {
  instanceID            String
  fileName              String
  html                  String?
+ state                 String
  priority              Int
  progress              Int
  startTime             DateTime

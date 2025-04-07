@@ -24,6 +24,7 @@ import {
 import { startInstanceOnMachine } from './instances';
 import { asyncFilter, asyncForEach, asyncMap } from '../helpers/javascriptHelpers';
 import {
+  activateUserTask,
   completeTasklistEntryOnMachine,
   getTaskListFromMachine,
   getUserTaskFileFromMachine,
@@ -245,7 +246,6 @@ export async function getAvailableTaskListEntries(spaceId: string) {
           (task) =>
             ({
               ...task,
-              state: 'UNREACHABLE',
               startTime: +task.startTime,
               endTime: task.endTime && +task.endTime,
             }) as UserTask,
@@ -268,7 +268,14 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       throw new Error('Failed to get stored user task data.');
     }
 
-    let { initialVariables, variableChanges, milestones, milestonesChanges, html } = storedUserTask;
+    let {
+      initialVariables,
+      variableChanges,
+      milestones,
+      milestonesChanges,
+      html,
+      state: storedState,
+    } = storedUserTask;
     const [taskId, instanceId, startTimeString] = userTaskId.split('|');
 
     if (!html || !milestones || !initialVariables) {
@@ -321,7 +328,12 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
 
       html = await getUserTaskFileFromMachine(deployments[0][0], definitionId, filename);
 
-      updateUserTask(userTaskId, { html, initialVariables, milestones });
+      if (storedState === 'READY') {
+        await activateUserTask(deployments[0][0], instanceId, taskId, startTime);
+        storedState = 'ACTIVE';
+      }
+
+      updateUserTask(userTaskId, { html, initialVariables, milestones, state: storedState });
     } else {
       variableChanges = { ...(initialVariables || {}), ...(variableChanges || {}) };
 

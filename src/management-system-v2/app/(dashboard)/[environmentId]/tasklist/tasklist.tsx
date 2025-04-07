@@ -45,10 +45,6 @@ const StatusSelection = ({
         COMPLETED
       </Checkbox>
 
-      <Checkbox value="UNREACHABLE" style={{ marginBottom: '0.25rem' }}>
-        UNREACHABLE
-      </Checkbox>
-
       <Checkbox value="PAUSED">PAUSED</Checkbox>
     </Checkbox.Group>
   );

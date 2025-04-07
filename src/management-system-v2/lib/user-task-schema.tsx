@@ -7,6 +7,7 @@ export const UserTaskInputSchema = z.object({
   instanceID: z.string(),
   fileName: z.string(),
   html: z.string().nullish(),
+  state: z.string(),
   priority: z.number(),
   progress: z.number(),
   startTime: z.number(),
@@ -24,6 +25,7 @@ export const UserTaskInputSchema = z.object({
     .optional(),
   milestonesChanges: z.record(z.string(), z.number()).optional(),
   machineId: z.string(),
+  offline: z.boolean().optional(),
 });
 
 export type UserTaskInput = z.infer<typeof UserTaskInputSchema>;

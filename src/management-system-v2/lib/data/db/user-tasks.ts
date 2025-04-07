@@ -5,7 +5,7 @@ import { UserTask, UserTaskInput, UserTaskInputSchema } from '@/lib/user-task-sc
 export async function getUserTasks() {
   const userTasks = await db.userTask.findMany();
 
-  return userTasks as unknown as UserTask[];
+  return userTasks.map((userTask) => ({ ...userTask, offline: true })) as unknown as UserTask[];
 }
 
 export async function getUserTaskById(userTaskId: string) {
@@ -19,7 +19,7 @@ export async function getUserTaskById(userTaskId: string) {
 
   // TODO: maybe handle view capability for specific user tasks
 
-  return userTask as unknown as UserTask;
+  return { ...userTask, offline: true } as unknown as UserTask;
 }
 
 const UserTaskArraySchema = UserTaskInputSchema.array();

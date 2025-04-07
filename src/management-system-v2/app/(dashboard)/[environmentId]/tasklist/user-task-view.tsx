@@ -58,7 +58,7 @@ const UserTaskForm: React.FC<{ task: UserTask; onSubmitFailure: () => void }> = 
                   onSuccess: () => router.refresh(),
                   onError: () => {
                     onSubmitFailure();
-                    if (task.state !== 'UNREACHABLE') router.refresh();
+                    if (!task.offline) router.refresh();
                   },
                 });
               }
@@ -101,7 +101,7 @@ const UserTaskView: React.FC<UserTaskViewProps> = ({ task }) => {
     >
       {task && (
         <Modal
-          open={failedToSubmit && task.state === 'UNREACHABLE'}
+          open={failedToSubmit && task.offline}
           title="The engine is offline!"
           onCancel={() => setFailedToSubmit(false)}
           footer={() => [

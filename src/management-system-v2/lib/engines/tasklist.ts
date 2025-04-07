@@ -29,6 +29,24 @@ export async function getTaskListFromMachine(machine: Engine) {
   return entries;
 }
 
+export async function activateUserTask(
+  machine: Engine,
+  instanceId: string,
+  userTaskId: string,
+  startTime: number,
+) {
+  await engineRequest({
+    method: 'get',
+    endpoint: '/tasklist/api/userTask',
+    engine: machine,
+    queryParams: {
+      instanceID: instanceId,
+      userTaskID: userTaskId,
+      startTime: `${startTime}`,
+    },
+  });
+}
+
 export async function getUserTaskFileFromMachine(
   engine: Engine,
   definitionId: string,

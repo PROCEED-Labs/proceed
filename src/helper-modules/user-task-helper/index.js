@@ -113,7 +113,7 @@ function getCorrectVariableState(userTask, instance) {
  * @param {string} bpmn the bpmn of the process the user task is part of
  * @param {UserTaskInfo} userTask information about the user task for which we want to get the data
  * @param {InstanceInfo} instance the instance information that contains the relevant data
- * @returns {Promise<{ milestonesData?: UserTaskInfo['milestones'], milestones: ReturnType<typeof getMilestonesFromElementById> }>}
+ * @returns {Promise<{ id: string; name: string; description?: string; value: number; }[]>}
  */
 async function getCorrectMilestoneState(bpmn, userTask, instance) {
   const userTaskToken = instance.tokens.find(
@@ -130,8 +130,10 @@ async function getCorrectMilestoneState(bpmn, userTask, instance) {
   }
 
   const milestones = await getMilestonesFromElementById(bpmn, userTask.id);
-
-  return { milestones, milestonesData };
+  return milestones.map((milestone) => ({
+    ...milestone,
+    value: milestonesData[milestone.id] || 0,
+  }));
 }
 
 /**
@@ -141,18 +143,10 @@ async function getCorrectMilestoneState(bpmn, userTask, instance) {
  * @param {string} instanceId the id of the instance the user task was triggered in
  * @param {string} userTaskId the id of the user task element that created this user task instance
  * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
- * @param {ReturnType<typeof getMilestonesFromElementById>} milestones the milestones assigned to the user task
- * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>['milestonesData']} [milestoneData] the values of milestones at the time the user task is executed
+ * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
  * @returns {string} the html with the placeholders replaced by the correct values
  */
-function inlineUserTaskData(
-  html,
-  instanceId,
-  userTaskId,
-  variables,
-  milestones,
-  milestonesData = {},
-) {
+function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones) {
   const script = `
     const instanceID = '${instanceId}';
     const userTaskID = '${userTaskId}';
@@ -247,7 +241,6 @@ function inlineUserTaskData(
 
   const finalHtml = whiskers.render(html, {
     ...variables,
-    ...milestonesData,
     milestones,
     script,
   });

@@ -268,11 +268,10 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       throw new Error('Failed to get stored user task data.');
     }
 
-    let { initialVariables, variableChanges, milestones, milestonesData, milestonesChanges, html } =
-      storedUserTask;
+    let { initialVariables, variableChanges, milestones, milestonesChanges, html } = storedUserTask;
     const [taskId, instanceId, startTimeString] = userTaskId.split('|');
 
-    if (!html || !milestones || !milestonesData || !initialVariables) {
+    if (!html || !milestones || !initialVariables) {
       const startTime = parseInt(startTimeString);
 
       const definitionId = instanceId.split('-_')[0];
@@ -317,34 +316,24 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       if (!userTask) throw new Error('Could not fetch user task data!');
 
       initialVariables = getCorrectVariableState(userTask, instance);
-      ({ milestones, milestonesData } = await getCorrectMilestoneState(
-        version.bpmn,
-        userTask,
-        instance,
-      ));
+      milestones = await getCorrectMilestoneState(version.bpmn, userTask, instance);
       variableChanges = initialVariables;
 
       html = await getUserTaskFileFromMachine(deployments[0][0], definitionId, filename);
 
-      updateUserTask(userTaskId, {
-        html,
-        initialVariables,
-        milestones,
-        milestonesData,
-      });
+      updateUserTask(userTaskId, { html, initialVariables, milestones });
     } else {
       variableChanges = { ...(initialVariables || {}), ...(variableChanges || {}) };
-      milestonesData = { ...(milestonesData || {}), ...(milestonesChanges || {}) };
+
+      if (milestonesChanges) {
+        milestones = milestones.map((milestone) => ({
+          ...milestone,
+          value: milestonesChanges[milestone.id] ?? milestone.value,
+        }));
+      }
     }
 
-    return inlineUserTaskData(
-      html,
-      instanceId,
-      taskId,
-      variableChanges,
-      milestones,
-      milestonesData,
-    );
+    return inlineUserTaskData(html, instanceId, taskId, variableChanges, milestones);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

@@ -242,7 +242,6 @@ model UserTask {
  initialVariables      Json?
  variableChanges       Json?
  milestones            Json?
- milestonesData        Json?
  milestonesChanges     Json?
  machineId             String
 

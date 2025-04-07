@@ -126,20 +126,9 @@ class TaskListTab extends DisplayItem {
       const html = await distribution.db.getHTML(definitionId, userTaskFileName);
 
       const variables = getCorrectVariableState(userTask, userTaskInstance);
-      const { milestones, milestonesData } = await getCorrectMilestoneState(
-        bpmn,
-        userTask,
-        userTaskInstance,
-      );
+      const milestones = await getCorrectMilestoneState(bpmn, userTask, userTaskInstance);
 
-      return await inlineUserTaskData(
-        html,
-        instanceId,
-        userTask.id,
-        variables,
-        milestones,
-        milestonesData,
-      );
+      return await inlineUserTaskData(html, instanceId, userTask.id, variables, milestones);
     }
   }
 

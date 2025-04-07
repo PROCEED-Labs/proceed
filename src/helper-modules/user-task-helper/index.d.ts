@@ -206,12 +206,14 @@ export function getCorrectVariableState(userTask: UserTaskInfo, instance: Instan
  * @param {string} bpmn the bpmn of the process the user task is part of
  * @param {UserTaskInfo} userTask information about the user task for which we want to get the data
  * @param {InstanceInfo} instance the instance information that contains the relevant data
- * @returns {Promise<{ milestonesData?: UserTaskInfo['milestones'], milestones: ReturnType<typeof getMilestonesFromElementById> }>}
+ * @returns {Promise<{ id: string; name: string; description?: string; value: number; }[]>}
  */
 export function getCorrectMilestoneState(bpmn: string, userTask: UserTaskInfo, instance: InstanceInfo): Promise<{
-    milestonesData?: UserTaskInfo['milestones'];
-    milestones: ReturnType<typeof getMilestonesFromElementById>;
-}>;
+    id: string;
+    name: string;
+    description?: string;
+    value: number;
+}[]>;
 /**
  * Function that replaces placeholders in html with the correct data
  *
@@ -219,9 +221,7 @@ export function getCorrectMilestoneState(bpmn: string, userTask: UserTaskInfo, i
  * @param {string} instanceId the id of the instance the user task was triggered in
  * @param {string} userTaskId the id of the user task element that created this user task instance
  * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
- * @param {ReturnType<typeof getMilestonesFromElementById>} milestones the milestones assigned to the user task
- * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>['milestonesData']} [milestoneData] the values of milestones at the time the user task is executed
+ * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
  * @returns {string} the html with the placeholders replaced by the correct values
  */
-export function inlineUserTaskData(html: string, instanceId: string, userTaskId: string, variables: ReturnType<typeof getCorrectVariableState>, milestones: ReturnType<typeof getMilestonesFromElementById>, milestonesData?: {}): string;
-import { getMilestonesFromElementById } from "@proceed/bpmn-helper/src/getters";
+export function inlineUserTaskData(html: string, instanceId: string, userTaskId: string, variables: ReturnType<typeof getCorrectVariableState>, milestones: Awaited<ReturnType<typeof getCorrectMilestoneState>>): string;

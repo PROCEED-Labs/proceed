@@ -4,8 +4,8 @@ import { getRoleById, roleMetaObjects } from './roles';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { z } from 'zod';
-import { getUserById, usersMetaObject } from './users';
-import { environmentsMetaObject, getEnvironmentById } from './environments';
+import { usersMetaObject } from './users';
+import { environmentsMetaObject } from './environments';
 
 const RoleMappingInputSchema = z.object({
   roleId: z.string(),

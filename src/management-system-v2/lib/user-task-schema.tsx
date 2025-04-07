@@ -14,10 +14,14 @@ export const UserTaskInputSchema = z.object({
   initialVariables: z.record(z.string(), z.any()).optional(),
   variableChanges: z.record(z.string(), z.any()).optional(),
   milestones: z
-    .object({ id: z.string(), name: z.string(), description: z.string().optional() })
+    .object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string().optional(),
+      value: z.number(),
+    })
     .array()
     .optional(),
-  milestonesData: z.record(z.string(), z.number()).optional(),
   milestonesChanges: z.record(z.string(), z.number()).optional(),
   machineId: z.string(),
 });

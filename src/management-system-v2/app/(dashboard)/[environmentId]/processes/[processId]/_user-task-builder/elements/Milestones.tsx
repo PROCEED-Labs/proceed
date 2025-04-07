@@ -1,47 +1,52 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import useModelerStateStore from '../../use-modeler-state-store';
 import { getMilestonesFromElement } from '@proceed/bpmn-helper';
-import { Button } from 'antd';
-import { Setting } from './utils';
+import { useMemo } from 'react';
 
-type MilestonesProps = {
-  milestones?: { id: string; name: string; description?: string }[];
-};
-
-export const ExportMilestones: UserComponent<MilestonesProps> = ({ milestones = [] }) => {
+export const ExportMilestones: UserComponent = () => {
   return (
     <div className="user-task-form-milestones">
       <p>Update your Milestones:</p>
-      {milestones &&
-        milestones.map((milestone) => {
-          return (
-            <div className="user-task-form-milestone" key={milestone.id}>
-              <label>
-                Milestone ID: {milestone.id} | Name: {milestone.name} | Description:{' '}
-                {milestone.description}
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={`{if ${milestone.id}}{${milestone.id}}{else}0{/if}`}
-                  className={`milestone-${milestone.id}`}
-                  onChange={() => {}}
-                />
-                <output
-                  name={`fulfillment_${milestone.id}`}
-                >{`{if ${milestone.id}}{${milestone.id}}%{else}0%{/if}`}</output>
-              </label>
-            </div>
-          );
-        })}
+      {'{for milestone in milestones}'}
+      <div className="user-task-form-milestone">
+        <label>
+          Milestone ID: {'{milestone.id}'} | Name: {'{milestone.name}'} | Description:{' '}
+          {'{milestone.description}'}
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={'{milestone.value}'}
+            className={`milestone-{milestone.id}`}
+            onChange={() => {}}
+          />
+          <output name={`fulfillment_{milestone.id}`}>{'{milestone.value}'}%</output>
+        </label>
+      </div>
+      {'{/for}'}
     </div>
   );
 };
 
-const Milestones: UserComponent<MilestonesProps> = ({ milestones = [] }) => {
+const Milestones: UserComponent = () => {
   const {
     connectors: { connect },
   } = useNode();
+
+  const { selectedElementId, modeler } = useModelerStateStore((state) => ({
+    selectedElementId: state.selectedElementId,
+    modeler: state.modeler,
+  }));
+
+  const milestones = useMemo(() => {
+    if (selectedElementId && modeler) {
+      const selectedElement = modeler.getElement(selectedElementId);
+
+      if (selectedElement) return getMilestonesFromElement(selectedElement.businessObject);
+    }
+
+    return [];
+  }, [selectedElementId, modeler]);
 
   return (
     <div
@@ -75,41 +80,9 @@ const Milestones: UserComponent<MilestonesProps> = ({ milestones = [] }) => {
   );
 };
 
-export const MilestonesSettings = () => {
-  const {
-    actions: { setProp },
-  } = useNode();
-
-  const { selectedElementId, modeler } = useModelerStateStore((state) => ({
-    selectedElementId: state.selectedElementId,
-    modeler: state.modeler,
-  }));
-
-  function loadMilestones() {
-    if (modeler && selectedElementId) {
-      const userTask = modeler.getElement(selectedElementId);
-
-      if (userTask) {
-        const ms = getMilestonesFromElement(userTask.businessObject);
-        setProp((props: MilestonesProps) => {
-          props.milestones = ms;
-        });
-      }
-    }
-  }
-
-  return <Setting label="Refresh" control={<Button onClick={loadMilestones}>Refresh</Button>} />;
-};
-
 Milestones.craft = {
   rules: {
     canDrag: () => false,
-  },
-  related: {
-    settings: MilestonesSettings,
-  },
-  props: {
-    milestones: [],
   },
 };
 

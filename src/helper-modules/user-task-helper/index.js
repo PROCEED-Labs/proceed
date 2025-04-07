@@ -222,8 +222,13 @@ async function inlineUserTaskData(bpmn, html, userTask, instance) {
     milestonesData = userTask.milestones;
   }
 
-  const milestones = await getMilestonesFromElementById(bpmn, userTask.id);
   const variables = getCorrectVariableState(userTask, instance);
+
+  let milestones = await getMilestonesFromElementById(bpmn, userTask.id);
+  milestones = milestones.map((milestone) => ({
+    ...milestone,
+    value: milestonesData[milestone.id] || 0,
+  }));
 
   const finalHtml = whiskers.render(html, {
     ...variables,

@@ -1,6 +1,5 @@
 import { test, expect } from './processes.fixtures';
 import { openModal, closeModal, waitForHydration } from '../testUtils';
-import { asyncMap } from 'proceed-management-system/src/shared-frontend-backend/helpers/javascriptHelpers';
 import { Page } from '@playwright/test';
 
 test('create a new process and remove it again', async ({ processListPage }) => {

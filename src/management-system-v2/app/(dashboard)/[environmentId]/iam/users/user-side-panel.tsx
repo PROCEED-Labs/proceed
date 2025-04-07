@@ -41,6 +41,7 @@ const UserSiderContent: FC<{ user: (ListUser & { roles?: Role[] }) | null }> = (
           <Typography.Title>Roles</Typography.Title>
           {user.roles.map((role) => (
             <SpaceLink
+              key={role.id}
               href={`/iam/roles/${role.id}`}
               style={{
                 display: 'block',

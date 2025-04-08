@@ -13,7 +13,7 @@ import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data/db';
-import { Prisma } from '@prisma/client';
+import { Prisma, PasswordAccount } from '@prisma/client';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -61,7 +61,14 @@ export async function getUserByUsername(username: string, opts?: { throwIfNotFou
   return user as User;
 }
 
-export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
+export async function addUser(
+  inputUser: OptionalKeys<User, 'id'>,
+  tx?: Prisma.TransactionClient,
+): Promise<User> {
+  if (!tx) {
+    return await db.$transaction((trx) => addUser(inputUser, trx));
+  }
+
   const user = UserSchema.parse(inputUser);
 
   if (
@@ -74,35 +81,34 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
   if (!user.id) user.id = v4();
 
   try {
-    const userExists = await db.user.findUnique({ where: { id: user.id } });
+    const userExists = await tx.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
-    await db.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.user.create({
+
+    await tx.user.create({
+      data: {
+        ...user,
+        isGuest: user.isGuest,
+      },
+    });
+
+    await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+
+    if ((await getSystemAdmins()).length === 0 && !user.isGuest)
+      await addSystemAdmin(
+        {
+          role: 'admin',
+          userId: user.id!,
+        },
+        tx,
+      );
+
+    if (user.isGuest) {
+      await tx.guestSignin.create({
         data: {
-          ...user,
-          isGuest: user.isGuest,
+          userId: user.id!,
         },
       });
-
-      await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
-
-      if ((await getSystemAdmins()).length === 0 && !user.isGuest)
-        await addSystemAdmin(
-          {
-            role: 'admin',
-            userId: user.id!,
-          },
-          tx,
-        );
-
-      if (user.isGuest) {
-        await tx.guestSignin.create({
-          data: {
-            userId: user.id!,
-          },
-        });
-      }
-    });
+    }
   } catch (error) {
     console.error('Error adding new user: ', error);
   }
@@ -286,4 +292,55 @@ export async function deleteInactiveGuestUsers(
       isGuest: true,
     },
   });
+}
+
+/** Note: make sure to save a salted hash of the password */
+export async function setUserPassword(
+  userId: string,
+  password: string,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const user = await dbMutator.user.findUnique({
+    where: { id: userId },
+    include: { passwordAccount: true },
+  });
+  if (!user) throw new Error('User not found');
+
+  if (user.passwordAccount) {
+    await dbMutator.passwordAccount.update({
+      where: { userId },
+      data: { password: password },
+    });
+  } else {
+    await dbMutator.passwordAccount.create({
+      data: { userId, password: password },
+    });
+  }
+}
+
+export async function getUserPassword(userId: string, tx?: Prisma.TransactionClient) {
+  const dbMutator = tx || db;
+
+  return await dbMutator.passwordAccount.findUnique({
+    where: { userId },
+  });
+}
+
+/** returns null if the user exists but has no password */
+export async function getUserAndPasswordByUsername(
+  username: string,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const userAndPassword = await dbMutator.user.findUnique({
+    where: { username },
+    include: { passwordAccount: true },
+  });
+
+  if (!userAndPassword) return null;
+  if (!userAndPassword.passwordAccount) return null;
+  return userAndPassword as typeof userAndPassword & { passwordAccount: PasswordAccount };
 }

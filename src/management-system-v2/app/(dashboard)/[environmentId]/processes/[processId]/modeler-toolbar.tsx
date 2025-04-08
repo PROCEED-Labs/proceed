@@ -222,7 +222,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                 label: name,
               }))}
             />
-            {!showMobileView && (
+            {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>
                 <Tooltip title="Create New Version">
                   <VersionCreationButton

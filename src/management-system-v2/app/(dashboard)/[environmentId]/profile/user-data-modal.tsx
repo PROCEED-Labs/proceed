@@ -52,7 +52,7 @@ const AuthenticatedUserDataModal: FC<{
         fn: () => updateUser(values as AuthenticatedUserData),
         onSuccess: () => {
           app.message.success({ content: 'Profile updated' });
-          session.update();
+          session.update(null);
           close();
         },
         app,

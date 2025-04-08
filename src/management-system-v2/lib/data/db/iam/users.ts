@@ -71,12 +71,16 @@ export async function addUser(
 
   const user = UserSchema.parse(inputUser);
 
-  if (
-    !user.isGuest &&
-    ((user.username && (await getUserByUsername(user.username))) ||
-      (await getUserByEmail(user.email!)))
-  )
-    throw new Error('User with this email or username already exists');
+  if (!user.isGuest) {
+    const checks = [];
+    if (user.username) checks.push(getUserByUsername(user.username));
+    if (user.email) checks.push(getUserByEmail(user.email));
+
+    const res = await Promise.all(checks);
+
+    if (res.some((user) => !!user))
+      throw new Error('User with this email or username already exists');
+  }
 
   if (!user.id) user.id = v4();
 

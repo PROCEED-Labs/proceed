@@ -4,7 +4,7 @@ const request = require('supertest')('localhost');
 const { startMockEngineProcesses } = require('./startEngines.js');
 const { ensureCorrectProceedNamespace } = require('@proceed/bpmn-helper');
 
-jest.setTimeout(200000);
+jest.setTimeout(100000);
 
 function killEngineProcess(engineProcess) {
   return new Promise((resolve) => {

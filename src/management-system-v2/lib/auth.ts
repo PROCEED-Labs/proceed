@@ -263,7 +263,7 @@ if (env.ENABLE_PASSWORD_SIGNIN) {
     CredentialsProvider({
       name: 'Sign in',
       type: 'credentials',
-      id: 'email-password-signin',
+      id: 'username-password-signin',
       credentials: {
         username: {
           label: 'Username',
@@ -292,7 +292,7 @@ if (env.ENABLE_PASSWORD_SIGNIN) {
     CredentialsProvider({
       name: 'Sign Up',
       type: 'credentials',
-      id: 'email-password-signup',
+      id: 'username-password-signup',
       credentials: {
         username: {
           type: 'string',

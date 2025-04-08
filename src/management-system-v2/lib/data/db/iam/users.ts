@@ -7,13 +7,14 @@ import {
   AuthenticatedUser,
   AuthenticatedUserSchema,
 } from '../../user-schema';
-import { addEnvironment, deleteEnvironment } from './environments';
+import { addEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
-import { getUserOrganizationEnvironments, removeMember } from './memberships';
+import { getUserOrganizationEnvironments } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data/db';
 import { Prisma, PasswordAccount } from '@prisma/client';
+import { UserFacingError } from '@/lib/user-error';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -201,7 +202,14 @@ export async function updateUser(
       const existingUser = await db.user.findUnique({ where: { email: newUserData.email } });
 
       if (existingUser && existingUser.id !== userId)
-        throw new Error('User with this email or username already exists');
+        throw new UserFacingError('User with this email or username already exists');
+    }
+
+    if (newUserData.username) {
+      const existingUser = await db.user.findUnique({ where: { username: newUserData.username } });
+
+      if (existingUser && existingUser.id !== userId)
+        throw new UserFacingError('The username is already taken');
     }
 
     updatedUser = { ...user, ...newUserData };

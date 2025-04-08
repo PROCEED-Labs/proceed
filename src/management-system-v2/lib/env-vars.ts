@@ -2,9 +2,15 @@ import type { ZodType } from 'zod';
 import z from 'zod';
 import { resources } from './ability/caslAbility';
 
-function boolParser(value?: string) {
-  if (!value) return false;
-  return value.toLowerCase() === 'true' || value === '1';
+function boolParser(value?: string, ctx?: z.RefinementCtx) {
+  const lowerValue = value?.toLowerCase();
+  if (lowerValue === 'true' || value === '1') return true;
+  if (lowerValue === 'false' || value === '0') return false;
+
+  if (value === undefined) return undefined;
+
+  ctx?.addIssue({ code: 'custom', message: 'Value has to be either "FALSE" or "TRUE"' });
+  return z.NEVER;
 }
 
 // --------------------------------------------

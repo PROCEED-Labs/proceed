@@ -54,16 +54,16 @@ const HeaderActions: FC = () => {
   let actionButton;
   const avatarDropdownItems: MenuProps['items'] = [];
 
-  if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (!envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
     avatarDropdownItems.push({
       key: 'profile',
       title: 'Profile Settings',
       label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
       icon: <FaUserEdit />,
     });
-  }
 
-  if (isGuest) {
+    actionButton = null;
+  } else if (isGuest) {
     actionButton = (
       <>
         <Button

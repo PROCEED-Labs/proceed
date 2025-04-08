@@ -26,6 +26,8 @@ import { useSession } from 'next-auth/react';
 import { LazyBPMNViewer } from '@/components/bpmn-viewer';
 import { usePathname } from 'next/navigation';
 
+export type ProcessModalMode = 'create' | 'edit' | 'copy' | 'import';
+
 type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
   title: string;
@@ -34,7 +36,7 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
   modalProps?: ModalProps;
-  isImportModal?: boolean;
+  mode: ProcessModalMode;
 };
 
 const ProcessModal = <
@@ -55,7 +57,7 @@ const ProcessModal = <
   onSubmit,
   initialData,
   modalProps,
-  isImportModal,
+  mode = 'create',
 }: ProcessModalProps<T>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -104,7 +106,7 @@ const ProcessModal = <
         // Unkown server error or was not sent from server (e.g. network error)
         message.open({
           type: 'error',
-          content: 'Someting went wrong while submitting the data',
+          content: 'Something went wrong while submitting the data',
         });
       }
       setSubmitting(false);
@@ -143,13 +145,13 @@ const ProcessModal = <
   );
 
   useEffect(() => {
-    if (open && initialData && isImportModal) {
+    if (open && initialData && ['import', 'copy'].includes(mode)) {
       validateImportedNames();
     }
-  }, [open, initialData]);
+  }, [open, initialData, mode]);
 
   const validateImportedNames = async () => {
-    if (!initialData || !isImportModal) return;
+    if (!initialData || !['import', 'copy'].includes(mode)) return;
 
     const collisions: { index: number; oldName: string; newName: string }[] = [];
 
@@ -163,7 +165,7 @@ const ProcessModal = <
       });
 
       if (exists) {
-        const newName = `${process.name}_import_${new Date().toISOString()}`;
+        const newName = `${process.name}_${mode}_${Date.now()}`;
         collisions.push({ index: i, oldName: process.name, newName });
         initialData[i].name = newName;
       }
@@ -178,6 +180,48 @@ const ProcessModal = <
     }
   };
 
+  const renderFormContent = () => {
+    if (!initialData) {
+      return <ProcessInputs index={0} mode={mode} />;
+    }
+    if (initialData && initialData.length === 1 && mode === 'edit') {
+      return <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} mode={mode} />;
+    }
+
+    if (initialData && initialData.length === 1 && mode === 'copy') {
+      return <ProcessInputs key={0} index={0} mode={mode} />;
+    }
+
+    if (initialData && ['import', 'copy'].includes(mode)) {
+      return (
+        <Carousel
+          arrows
+          infinite={false}
+          style={{ padding: '0px 25px 0px 25px' }}
+          afterChange={(current) => setCarouselIndex(current + 1)}
+          prevArrow={<MdArrowBackIos color="#000" />}
+          nextArrow={<MdArrowForwardIos color="#000" />}
+        >
+          {initialData.map((process, index) => (
+            <Card key={index}>
+              {mode === 'import' && process.bpmn && (
+                <>
+                  <LazyBPMNViewer previewBpmn={process.bpmn} reduceLogo={true} fitOnResize />
+                  <Divider style={{ width: '100%', marginLeft: '-20%' }} />
+                </>
+              )}
+              {mode === 'copy' ? (
+                <ProcessInputs key={index} index={index} mode={mode} />
+              ) : (
+                <ProcessInputsImport key={index} index={index} mode={mode} />
+              )}
+            </Card>
+          ))}
+        </Carousel>
+      );
+    }
+  };
+
   return (
     <>
       <Modal
@@ -186,7 +230,7 @@ const ProcessModal = <
             <Title level={4} style={{ margin: 0 }}>
               {title}
             </Title>
-            {initialData && initialData.length >= 1 && isImportModal && (
+            {initialData && initialData.length > 1 && (
               <Typography.Text type="secondary">{`Process ${carouselIndex} of ${initialData.length}`}</Typography.Text>
             )}
           </Flex>
@@ -262,30 +306,7 @@ const ProcessModal = <
             // doesn't work in production, that's why we use the useEffect above)
             preserve={false}
           >
-            {!initialData ? (
-              <ProcessInputs index={0} />
-            ) : isImportModal ? (
-              <Carousel
-                arrows
-                infinite={false}
-                style={{ padding: '0px 25px 0px 25px' }}
-                afterChange={(current) => setCarouselIndex(current + 1)}
-                prevArrow={<MdArrowBackIos color="#000" />}
-                nextArrow={<MdArrowForwardIos color="#000" />}
-              >
-                {initialData.map((process, index) => (
-                  <Card key={index}>
-                    <>
-                      <LazyBPMNViewer previewBpmn={process.bpmn} reduceLogo={true} fitOnResize />
-                      <Divider style={{ width: '100%', marginLeft: '-20%' }} />
-                    </>
-                    <ProcessInputsImport key={index} index={index} />
-                  </Card>
-                ))}
-              </Carousel>
-            ) : (
-              <ProcessInputs index={0} initialName={initialData?.[0]?.name} />
-            )}
+            {renderFormContent()}
           </Form>
         </div>
       </Modal>
@@ -296,9 +317,10 @@ const ProcessModal = <
 type ProcessInputsProps = {
   index: number;
   initialName?: string;
+  mode: ProcessModalMode;
 };
 
-const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
+const ProcessInputs = ({ index, initialName, mode = 'create' }: ProcessInputsProps) => {
   const environment = useEnvironment();
   const session = useSession();
   const path = usePathname();
@@ -310,7 +332,8 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
       return;
     }
 
-    if (initialName && name === initialName) {
+    // In edit mode, allow keeping the original name
+    if (mode === 'edit' && initialName && name === initialName) {
       callback();
       return;
     }
@@ -363,7 +386,6 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
             required: false,
             message: 'Please enter a unique ID for the process.',
           },
-          {},
         ]}
       >
         <Input />
@@ -373,20 +395,19 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
         label="Process Description"
         rules={[
           { max: 1000, message: 'Process description can be max 1000 characters long' },
-
           { required: false, message: 'Please fill out the Process description' },
         ]}
       >
-        <Input.TextArea showCount rows={4} maxLength={150} />
+        <Input.TextArea showCount rows={4} maxLength={1000} />
       </Form.Item>
     </>
   );
 };
 
-const ProcessInputsImport = ({ index }: ProcessInputsProps) => {
+const ProcessInputsImport = ({ index, mode }: ProcessInputsProps) => {
   return (
     <>
-      <ProcessInputs index={index} />
+      <ProcessInputs index={index} mode={mode} />
       <Form.Item name={[index, 'creator']} label="Original Creator" rules={[{ required: false }]}>
         <Input disabled />
       </Form.Item>

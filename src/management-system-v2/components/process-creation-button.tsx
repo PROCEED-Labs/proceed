@@ -66,6 +66,7 @@ export const ProcessCreationModal: React.FC<
       open={open}
       title="Create Process"
       okText="Create"
+      mode="create"
       onCancel={() => setOpen(false)}
       onSubmit={createNewProcess}
     />

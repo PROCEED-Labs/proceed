@@ -601,15 +601,17 @@ const Processes = ({
       />
       <ProcessModal
         open={openCopyModal}
+        mode="copy"
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={copySelection
           .filter((item) => item.type !== 'folder')
           .map((process) => ({
-            name: `${process.name.value} (Copy)`,
+            name: `${process.name.value}`,
             description: process.description.value ?? '',
             originalId: process.id,
             folderId: folder.id,
+            userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
           const res = await copyProcesses(values, space.spaceId);
@@ -623,6 +625,7 @@ const Processes = ({
       />
       <ProcessModal
         open={openEditModal}
+        mode="edit"
         title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData

@@ -483,7 +483,8 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
     );
   }
 
-  const version = importElement.processVersionId || importElement.$attrs['proceed:versionId'];
+  const version =
+    importElement.processVersionId || importElement.$attrs['proceed:processVersionId'];
 
   if (!version) {
     throw new Error(

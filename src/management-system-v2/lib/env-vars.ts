@@ -121,9 +121,9 @@ export const env: Extract<typeof parsingResult, { success: true }>['data'] = par
   ? parsingResult.data
   : ({} as any);
 
-export const publicEnv: PublicEnv = Object.fromEntries(
+export const publicEnv = Object.fromEntries(
   Object.entries(env).filter(([key]) => key.startsWith('PROCEED_PUBLIC_')),
-);
+) as PublicEnv;
 
 export type PrivateEnv = typeof env;
 

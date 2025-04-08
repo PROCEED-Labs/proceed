@@ -5,6 +5,7 @@ import { MdOutlineComputer } from 'react-icons/md';
 import { FaUsers } from 'react-icons/fa';
 import { RiAdminFill } from 'react-icons/ri';
 import { env } from '@/lib/env-vars';
+import { type ReactNode } from 'react';
 
 let adminViews = [
   {
@@ -37,7 +38,7 @@ let adminViews = [
 if (!env.PROCEED_PUBLIC_IAM_ACTIVATE)
   adminViews = adminViews.filter(({ key }) => !['users', 'systemadmins'].includes(key));
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <Layout
       activeSpace={{ spaceId: '', isOrganization: false }}

@@ -7,7 +7,14 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, deleteUser, getUserById, getUserByUsername, updateUser } from '@/lib/data/DTOs';
+import {
+  addUser,
+  deleteUser,
+  getUserById,
+  getUserByUsername,
+  setUserPassword,
+  updateUser,
+} from '@/lib/data/db/iam/users';
 import { usersMetaObject } from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles, Provider } from 'next-auth/providers';
 import Adapter from './auth-database-adapter';
@@ -16,7 +23,9 @@ import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
 import { enableUseDB } from 'FeatureFlags';
-import { updateGuestUserLastSigninTime } from './data/db/iam/users';
+import { getUserAndPasswordByUsername, updateGuestUserLastSigninTime } from './data/db/iam/users';
+import { comparePassword, hashPassword } from './password-hashes';
+import db from './data/db';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -242,6 +251,74 @@ if (env.NODE_ENV === 'development') {
         let user = usersMetaObject[userTemplate.id];
 
         if (!user) user = await addUser(userTemplate);
+
+        return user;
+      },
+    }),
+  );
+}
+
+if (env.ENABLE_PASSWORD_SIGNIN) {
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      name: 'Sign in',
+      type: 'credentials',
+      id: 'email-password-signin',
+      credentials: {
+        username: {
+          label: 'Username',
+          type: 'username',
+        },
+        password: {
+          label: 'Password',
+          type: 'password',
+        },
+      },
+      authorize: async (credentials) => {
+        const userAndPassword = await getUserAndPasswordByUsername(credentials.username as string);
+
+        if (
+          !userAndPassword ||
+          !(await comparePassword(
+            credentials.password as string,
+            userAndPassword.passwordAccount.password,
+          ))
+        )
+          return null;
+
+        return userAndPassword as User;
+      },
+    }),
+    CredentialsProvider({
+      name: 'Sign Up',
+      type: 'credentials',
+      id: 'email-password-signup',
+      credentials: {
+        username: {
+          type: 'string',
+          label: 'Username',
+        },
+        password: {
+          type: 'password',
+          label: 'Password',
+        },
+      },
+      authorize: async (credentials) => {
+        let user: User | null = null;
+
+        await db.$transaction(async (tx) => {
+          user = await addUser(
+            {
+              username: credentials.username as string,
+              isGuest: false,
+              emailVerifiedOn: null,
+            },
+            tx,
+          );
+
+          const hashedPassword = await hashPassword(credentials.password as string);
+          await setUserPassword(user.id, hashedPassword, tx);
+        });
 
         return user;
       },

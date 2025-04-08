@@ -36,7 +36,6 @@ model User {
   image           String?
   favourites      String[]
   processes       Process[]
-  configs         Config[]
   ownedSpaces     Space[]        @relation("spaceOwner")
   memberIn        Membership[]
   folders         Folder[]
@@ -142,7 +141,6 @@ model Space {
   processes          Process[]
   roles              Role[]
   engines            Engine[]
-  configs            Config[]
 
   @@map("space")
 }
@@ -229,54 +227,4 @@ model Engine {
   lastEditedOn  DateTime @updatedAt
 
   @@map("engine")
-}
-
-model Config {
-  id                    String    @id @default(uuid())
-  space                 Space     @relation(fields: [environmentId], references: [id], onDelete: Cascade)
-  environmentId         String  
-  creator               User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  creatorId             String  
-  createdOn             DateTime
-  lastEditedOn          DateTime  @updatedAt
-
-  data                  Json      @db.JsonB
-  
-  @@map("config")
-}
-
-model ConfigParameter {
-  id                        String    @id @default(uuid())
-  data                      Json      @db.JsonB
-  
-  @@map("config_parameter")
-}
-
-model MachineConfig {
-  id                        String    @id @default(uuid())
-  data                      Json      @db.JsonB
-  
-  @@map("machine_config")
-}
-
-model TargetConfig {
-  id                        String    @id @default(uuid())
-  data                      Json      @db.JsonB
-
-  @@map("target_config")
-}
-
-model ConfigVersion {
-  id                        String    @id @default(uuid())
-  parentId                  String
-  data                      Json      @db.JsonB
-
-  @@map("config_version")
-}
-
-model ConfigCategories {
-  id                        String    @id @default(uuid())
-  categories                String[]
-  
-  @@map("config_categories")
 }

@@ -48,11 +48,10 @@ declare const _exports: {
     exporterName: string,
     exporterVersion: string,
   ): Promise<string | object>;
-  updateBpmnXMLAttributes(
+  updateBpmnCreatorAttributes(
     bpmn: string | object,
     attributes: {
       id?: string;
-      originalId?: string;
       name?: string;
       creatorId?: string;
       creatorName?: string;
@@ -61,7 +60,13 @@ declare const _exports: {
       creatorSpaceName?: string;
       userDefinedId?: string;
       creationDate?: string;
-      // for copied/imported processes
+    },
+  ): Promise<string | object>;
+  updateBpmnOriginalAttributes(
+    bpmn: string | object,
+    attributes: {
+      originalId?: string;
+      originalName?: string;
       originalCreationDate?: string;
       originalCreatorId?: string;
       originalCreatorName?: string;
@@ -69,7 +74,6 @@ declare const _exports: {
       originalCreatorSpaceId?: string;
       originalCreatorSpaceName?: string;
       originalUserDefinedId?: string;
-      originalName?: string;
       originalVersionId?: string;
       originalVersionName?: string;
       originalProcessVersionId?: string;

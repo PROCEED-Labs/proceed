@@ -22,7 +22,8 @@ import {
   setUserTaskData,
   getScriptTaskFileNameMapping,
   setScriptTaskData,
-  updateBpmnXMLAttributes,
+  updateBpmnCreatorAttributes,
+  updateBpmnOriginalAttributes,
 } from '@proceed/bpmn-helper';
 import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
@@ -87,7 +88,7 @@ export async function createProcess(
 
   // if process is imported, add original attributes
   processInfo.bpmn
-    ? updateBpmnXMLAttributes(definitions, {
+    ? updateBpmnOriginalAttributes(definitions, {
         originalId: definitions.id,
         originalName: definitions.name,
         originalCreatorName: definitions.creatorName,
@@ -126,15 +127,9 @@ export async function createProcess(
     versionName: 'latest',
   });
 
-  // these attributes are updated with db_values
-  updateBpmnXMLAttributes(definitions, {
-    creatorId: 'DB_PLACEHOLDER',
-    creationDate: 'DB_PLACEHOLDER',
-    creatorName: 'DB_PLACEHOLDER',
-    creatorSpaceId: 'DB_PLACEHOLDER',
-    creatorSpaceName: 'DB_PLACEHOLDER',
-    creatorUsername: 'DB_PLACEHOLDER',
-    userDefinedId: processInfo.userDefinedId ?? 'DB_PLACEHOLDER',
+  // add dummy values, these are replaced by db values
+  updateBpmnCreatorAttributes(definitions, {
+    userDefinedId: processInfo.userDefinedId ?? '',
   });
 
   if (!metaInfo.name) {
@@ -319,11 +314,10 @@ export async function transformBpmnAttributes(
   if (transformType === BpmnAttributeType.DB_PLACEHOLDER) {
     const placeholders: Record<string, string> = {};
     Object.entries(XMLAttrDBProcessTableColsMap).forEach(([attrKey, dbPath]) => {
-      // @ts-ignore
-      definitions[attrKey] ? (placeholders[attrKey] = `PROCEED_DB_VALUE_${dbPath}`) : null;
+      placeholders[attrKey] = `PROCEED_DB_VALUE_${dbPath}`;
     });
 
-    updateBpmnXMLAttributes(definitions, placeholders);
+    updateBpmnCreatorAttributes(definitions, placeholders);
   } else {
     const processMeta = input as ProcessWithCreatorAndSpace;
     const actualValues: Record<string, string> = {};
@@ -332,17 +326,12 @@ export async function transformBpmnAttributes(
       if (dbPath.includes('+')) {
         const parts = dbPath.split('+').map((part) => part.trim());
         const values = parts.map((part) => getNestedValue(processMeta, part) || '');
-        // @ts-ignore
-        definitions[attrKey] ? (actualValues[attrKey] = values.join(' ').trim()) : null;
+        actualValues[attrKey] = values.join(' ').trim();
       } else {
-        // @ts-ignore
-        definitions[attrKey]
-          ? (actualValues[attrKey] = getNestedValue(processMeta, dbPath) || '')
-          : null;
+        actualValues[attrKey] = getNestedValue(processMeta, dbPath) || '';
       }
     });
-
-    updateBpmnXMLAttributes(definitions, actualValues);
+    updateBpmnCreatorAttributes(definitions, actualValues);
   }
   const transformedXml = await toBpmnXml(definitions);
   return transformedXml;

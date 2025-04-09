@@ -9,5 +9,4 @@ export const XMLAttrDBProcessTableColsMap: Record<string, string> = {
   creatorName: 'creator.firstName + creator.lastName',
   creatorUsername: 'creator.username',
   userDefinedId: 'userDefinedId',
-  documentation: 'description',
 };

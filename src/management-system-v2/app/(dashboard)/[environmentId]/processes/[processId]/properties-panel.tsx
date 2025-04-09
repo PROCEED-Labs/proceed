@@ -5,7 +5,7 @@ import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
 import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs } from 'antd';
-import type { TabsProps, Form } from 'antd';
+import type { TabsProps } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import { CloseOutlined } from '@ant-design/icons';
@@ -14,7 +14,7 @@ import {
   setDefinitionsName,
   setProceedElement,
   deepCopyElementById,
-  updateBpmnXMLAttributes,
+  updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -124,7 +124,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     if (selectedElement.type === 'bpmn:Process') {
       const definitions = selectedElement.businessObject.$parent;
       const bpmn = await modeler!.getXML();
-      const newBpmn = await updateBpmnXMLAttributes(bpmn!, {
+      const newBpmn = await updateBpmnCreatorAttributes(bpmn!, {
         userDefinedId: event.target.value,
       });
 

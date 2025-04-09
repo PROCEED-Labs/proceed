@@ -607,7 +607,7 @@ const Processes = ({
         initialData={copySelection
           .filter((item) => item.type !== 'folder')
           .map((process) => ({
-            name: `${process.name.value}`,
+            name: `${process.name.value} (Copy)`,
             description: process.description.value ?? '',
             originalId: process.id,
             folderId: folder.id,

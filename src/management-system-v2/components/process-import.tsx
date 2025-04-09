@@ -6,6 +6,7 @@ import { Button, Modal, Upload } from 'antd';
 import type { ButtonProps } from 'antd';
 
 import {
+  getDefinitionsId,
   getDefinitionsName,
   getElementsByTagName,
   getProcessDocumentation,
@@ -20,6 +21,7 @@ import { generateDateString } from '@/lib/utils';
 import { checkIfAllReferencedArtefactsAreProvided } from '@/lib/helpers/import-helpers';
 
 export type ProcessData = {
+  id: string;
   name: string;
   description: string;
   creator?: string;
@@ -134,6 +136,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
       }
 
       const processData: ProcessData = {
+        id: (await getDefinitionsId(bpmnObj)) || '',
         name: (await getDefinitionsName(bpmnObj)) || '',
         description: await getProcessDocumentation(bpmn),
         userDefinedId: definitions['userDefinedId'],

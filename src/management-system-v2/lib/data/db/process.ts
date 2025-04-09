@@ -130,13 +130,16 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
  *
  * @param {String} processDefinitionsId
  */
-export async function checkIfProcessExists(processDefinitionsId: string) {
+export async function checkIfProcessExists(
+  processDefinitionsId: string,
+  throwError: boolean = true,
+) {
   const existingProcess = await db.process.findUnique({
     where: {
       id: processDefinitionsId,
     },
   });
-  if (!existingProcess) {
+  if (!existingProcess && throwError) {
     throw new Error(`Process with id ${processDefinitionsId} does not exist!`);
   }
   return existingProcess;
@@ -383,14 +386,15 @@ export async function updateProcessMetaData(
   processDefinitionsId: string,
   metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
-  const existingrocess = await checkIfProcessExists(processDefinitionsId);
   try {
+    const existingrocess = await checkIfProcessExists(processDefinitionsId);
+
     const updatedProcess = await db.process.update({
       where: { id: processDefinitionsId },
       data: {
         ...(metaChanges as any),
         id: processDefinitionsId, // make sure the id is not changed
-        originalId: existingrocess.originalId || metaChanges.originalId, // originalId is only changed is not set yet
+        originalId: existingrocess?.originalId || metaChanges.originalId, // originalId is only changed is not set yet
       },
     });
 

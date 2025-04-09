@@ -228,9 +228,9 @@ async function updateBpmnCreatorAttributes(
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
     // userdefined id can be empty
     definitions.userDefinedId = userDefinedId;
-
-    creatorName && (definitions.creatorName = creatorName);
-    creatorUsername && (definitions.creatorUsername = creatorUsername);
+    // creator name and username can be empty for guest user
+    definitions.creatorName = creatorName;
+    definitions.creatorUsername = creatorUsername;
     // personal spaces can be no name
     definitions.creatorSpaceName = creatorSpaceName;
 

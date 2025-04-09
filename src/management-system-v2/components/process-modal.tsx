@@ -14,6 +14,7 @@ import {
   Alert,
   Collapse,
   Divider,
+  CollapseProps,
 } from 'antd';
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
@@ -184,15 +185,28 @@ const ProcessModal = <
     if (!initialData) {
       return <ProcessInputs index={0} mode={mode} />;
     }
-    if (initialData && initialData.length === 1 && mode === 'edit') {
+    if (initialData.length === 1 && mode === 'edit') {
       return <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} mode={mode} />;
     }
 
-    if (initialData && initialData.length === 1 && mode === 'copy') {
+    if (initialData.length === 1 && mode === 'copy') {
       return <ProcessInputs key={0} index={0} mode={mode} />;
     }
 
-    if (initialData && ['import', 'copy'].includes(mode)) {
+    if (initialData.length > 1 && mode === 'copy') {
+      const items: CollapseProps['items'] =
+        (initialData?.length ?? 0) > 1
+          ? initialData?.map((data, index) => ({
+              label: data.name,
+              children: <ProcessInputs index={index} mode={mode} />,
+            }))
+          : undefined;
+      return (
+        <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
+      );
+    }
+
+    if (mode === 'import') {
       return (
         <Carousel
           arrows
@@ -204,17 +218,13 @@ const ProcessModal = <
         >
           {initialData.map((process, index) => (
             <Card key={index}>
-              {mode === 'import' && process.bpmn && (
+              {process.bpmn && (
                 <>
                   <LazyBPMNViewer previewBpmn={process.bpmn} reduceLogo={true} fitOnResize />
                   <Divider style={{ width: '100%', marginLeft: '-20%' }} />
                 </>
               )}
-              {mode === 'copy' ? (
-                <ProcessInputs key={index} index={index} mode={mode} />
-              ) : (
-                <ProcessInputsImport key={index} index={index} mode={mode} />
-              )}
+              <ProcessInputsImport key={index} index={index} mode={mode} />
             </Card>
           ))}
         </Carousel>

@@ -269,7 +269,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                 <Title>{processData.name}</Title>
                 <div className={styles.TitleInfos}>
                   <div>Owner: {processData.creatorId?.split('|').pop()}</div>
-                  {version.id ? (
+                  {version.id !== 'latest' ? (
                     <>
                       <div>Version: {version.name || version.id}</div>
                       {version.description ? (
@@ -279,9 +279,9 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                   ) : (
                     <div>Version: Latest</div>
                   )}
-                  {version.id ? (
+                  {version.id !== 'latest' ? (
                     <div>
-                      Creation Time:{' '}
+                      Creation Time: {''}
                       {version.versionCreatedOn
                         ? fromCustomUTCString(version.versionCreatedOn).toUTCString()
                         : 'Unknown'}

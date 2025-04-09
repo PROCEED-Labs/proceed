@@ -1,4 +1,10 @@
 import { Page, Locator } from '@playwright/test';
+import {
+  getElementsByTagName,
+  toBpmnObject,
+  toBpmnXml,
+  updateBpmnOriginalAttributes,
+} from '@proceed/bpmn-helper';
 
 /**
  * this will mock the browsers clipboard API, since it might not be available in the test environment
@@ -114,3 +120,39 @@ export async function waitForHydration(page: Page) {
   await page.mouse.move(0, 0);
   await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'hidden' });
 }
+
+export function removeCreatorDefinitionAttributes(xml: string): string {
+  return xml.replace(
+    /\sproceed:(creatorUsername|creatorSpaceName|creationDate|creatorName|creatorId|creatorSpaceId)=\"[^\"]*\"/g,
+    '',
+  );
+}
+
+export const setBpmnOriginalArttributes = async (bpmn: string) => {
+  let definitions: any;
+  try {
+    const xmlObj = await toBpmnObject(bpmn);
+    [definitions] = getElementsByTagName(xmlObj, 'bpmn:Definitions');
+  } catch (err) {
+    throw new Error(`Invalid BPMN: ${err}`);
+  }
+
+  await updateBpmnOriginalAttributes(definitions, {
+    originalId: definitions.id,
+    originalName: definitions.name,
+    originalCreatorName: definitions.creatorName,
+    originalCreatorId: definitions.creatorId,
+    originalCreatorUsername: definitions.creatorUsername,
+    originalCreatorSpaceId: definitions.creatorSpaceId,
+    originalCreatorSpaceName: definitions.creatorSpaceName,
+    originalCreationDate: definitions.creationDate,
+    originalExporterVersion: definitions.exporterVersion,
+    originalProcessVersionId: definitions.processVersionId,
+    originalProcessVersionName: definitions.processVersionName,
+    originalTargetNamespace: definitions.targetNamespace,
+    originalUserDefinedId: definitions.userDefinedId,
+    originalExporter: definitions.exporter,
+  });
+
+  return await toBpmnXml(definitions);
+};

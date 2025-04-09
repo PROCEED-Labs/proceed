@@ -38,6 +38,7 @@ import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
 import {
   checkIfProcessAlreadyExistsForAUserInASpaceByName,
+  checkIfProcessExists,
   copyProcessArtifactReferences,
   copyProcessFiles,
 } from './db/process';
@@ -214,6 +215,7 @@ export const addProcesses = async (
     bpmn?: string;
     folderId?: string;
     userDefinedId?: string;
+    id?: string;
   }[],
   spaceId: string,
   generateNewId: boolean = false,
@@ -232,6 +234,11 @@ export const addProcesses = async (
       bpmn: value.bpmn,
       userDefinedId: value.userDefinedId,
     });
+
+    // if imported process has a id that is not present in system, we can use that
+    if (value.id && (await checkIfProcessExists(value.id, false))) {
+      generateNewId = true;
+    }
 
     if (generateNewId) {
       // new ID is required for imported/copied processes
@@ -352,7 +359,7 @@ export const updateProcesses = async (
 export const importProcesses = async (processData: ProcessData[], spaceId: string) => {
   await loadModules();
 
-  const importedProcesses = await addProcesses(processData, spaceId, true);
+  const importedProcesses = await addProcesses(processData, spaceId);
   if ('error' in importedProcesses) {
     return importedProcesses;
   }

@@ -21,15 +21,15 @@ export type VerificationToken = z.infer<typeof verificationTokenSchema>;
 export async function getVerificationToken(_: {
   identifier: string;
   token: string;
-}): Promise<any> { }
+}): Promise<any> {}
 
 export async function saveVerificationToken(_: {
   identifier: string;
   token: string;
   expires: Date;
-}): Promise<any> { }
+}): Promise<any> {}
 
 export async function deleteVerificationToken(_: {
   identifier: string;
   token: string;
-}): Promise<any> { }
+}): Promise<any> {}

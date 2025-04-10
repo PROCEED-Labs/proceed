@@ -87,19 +87,20 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
     }
     const newImageUrl = enableUseFileManager
       ? image &&
-      (await new Promise<string>((resolve) => {
-        getImage(processData.id, image, shareToken, {
-          onSuccess(data) {
-            resolve(data.fileUrl!);
-          },
-        });
-      }))
+        (await new Promise<string>((resolve) => {
+          getImage(processData.id, image, shareToken, {
+            onSuccess(data) {
+              resolve(data.fileUrl!);
+            },
+          });
+        }))
       : null;
 
     let imageURL =
       image &&
       (newImageUrl ??
-        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${processData.id
+        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${
+          processData.id
         }/images/${image}?shareToken=${shareToken}`);
 
     currentPages.push(

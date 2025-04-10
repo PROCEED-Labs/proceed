@@ -102,7 +102,7 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
       } else {
         folderContent.push({ ...(await getFolderById(child.id, ability)), type: 'folder' });
       }
-    } catch (e) { }
+    } catch (e) {}
   }
 
   return folderContent;

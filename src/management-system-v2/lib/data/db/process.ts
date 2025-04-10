@@ -169,6 +169,43 @@ export async function checkIfProcessAlreadyExistsForAUserInASpaceByName(
   }
 }
 
+export async function checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
+  processes: { name: string; folderId: string }[],
+  spaceId: string,
+  userId: string,
+) {
+  try {
+    const existingProcesses = await db.process.findMany({
+      where: {
+        AND: [
+          { environmentId: spaceId },
+          { creatorId: userId },
+          {
+            OR: processes.map(({ name, folderId }) => ({
+              name,
+              folderId,
+            })),
+          },
+        ],
+      },
+      select: {
+        name: true,
+        folderId: true,
+      },
+    });
+
+    // Turn into a Set or Map for fast lookup
+    const existingSet = new Set(existingProcesses.map((p) => `${p.name}:::${p.folderId}`));
+
+    // Return an array of booleans per process
+    return processes.map(({ name, folderId }) => {
+      return existingSet.has(`${name}:::${folderId}`);
+    });
+  } catch (err: any) {
+    throw new Error(`Error checking process names in batch: ${err.message}`);
+  }
+}
+
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
 export async function addProcess(
   processInput: ProcessServerInput & { bpmn: string },

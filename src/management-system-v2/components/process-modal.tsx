@@ -64,6 +64,7 @@ const ProcessModal = <
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
   const [carouselIndex, setCarouselIndex] = useState(1);
+  const [validatingNames, setValidatingNames] = useState(false);
   const [nameCollisions, setNameCollisions] = useState<
     { index: number; oldName: string; newName: string }[]
   >([]);
@@ -81,7 +82,25 @@ const ProcessModal = <
     }
   }, [form, initialData]);
 
+  useEffect(() => {
+    if (open && initialData && ['import', 'copy'].includes(mode)) {
+      validateImportedNames();
+    }
+  }, [open, initialData, mode]);
+
   const onOk = async () => {
+    // If validation is in progress, wait until it's done
+    if (validatingNames) {
+      await new Promise((resolve) => {
+        const interval = setInterval(() => {
+          if (!validatingNames) {
+            clearInterval(interval);
+            resolve(null);
+          }
+        }, 500);
+      });
+    }
+
     try {
       // form.validateFields() only contains field values (that have been
       // rendered), so we have to merge with initalData. If you only open
@@ -145,43 +164,47 @@ const ProcessModal = <
     { level: 2, blocking: open, dependencies: [open] },
   );
 
-  useEffect(() => {
-    if (open && initialData && ['import', 'copy'].includes(mode)) {
-      validateImportedNames();
-    }
-  }, [open, initialData, mode]);
-
   const validateImportedNames = async () => {
     if (!initialData || !['import', 'copy'].includes(mode)) return;
 
+    setValidatingNames(true);
     const collisions: { index: number; oldName: string; newName: string }[] = [];
 
-    const checkPromises = initialData.map((process, i) =>
-      checkIfProcessExistsByName({
-        processName: process.name,
+    try {
+      const processesToCheck = initialData.map((process) => ({
+        name: process.name,
+        folderId: currentFolderId,
+      }));
+
+      // use batched operation:
+      // for eg: copying 100 processes at once, validaiton of 100 process names should be done in one batched query
+      const existsResults = await checkIfProcessExistsByName({
+        batch: true,
+        processes: processesToCheck,
         spaceId: environment.spaceId,
         userId: session.data?.user.id!,
-        folderId: currentFolderId,
-      }).then((exists) => ({ exists, index: i })),
-    );
+      });
 
-    const results = await Promise.all(checkPromises);
+      existsResults.forEach((exists, index) => {
+        if (exists) {
+          const oldName = initialData[index].name;
+          const newName = `${oldName}_${mode}_${Date.now()}`;
+          collisions.push({ index, oldName, newName });
+          initialData[index].name = newName;
+        }
+      });
 
-    results.forEach(({ exists, index }) => {
-      if (exists) {
-        const oldName = initialData[index].name;
-        const newName = `${oldName}_${mode}_${Date.now()}`;
-        collisions.push({ index, oldName, newName });
-        initialData[index].name = newName;
+      if (collisions.length > 0) {
+        setNameCollisions(collisions);
+        form.setFieldsValue(initialData);
+        setShowCollisions(true);
+      } else {
+        setNameCollisions([]);
       }
-    });
-
-    if (collisions.length > 0) {
-      setNameCollisions(collisions);
-      form.setFieldsValue(initialData);
-      setShowCollisions(true);
-    } else {
-      setNameCollisions([]);
+    } catch (error) {
+      console.error('Error validating imported names:', error);
+    } finally {
+      setValidatingNames(false);
     }
   };
 
@@ -255,7 +278,7 @@ const ProcessModal = <
         // IMPORTANT: This prevents a modal being stored for every row in the
         // table.
         destroyOnClose
-        okButtonProps={{ loading: submitting }}
+        okButtonProps={{ loading: submitting || validatingNames }}
         okText={okText}
         wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}
         {...modalProps}

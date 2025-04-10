@@ -38,6 +38,7 @@ import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import { TProcessModule } from './module-import-types-temp';
 import {
   checkIfProcessAlreadyExistsForAUserInASpaceByName,
+  checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching,
   checkIfProcessExists,
   copyProcessArtifactReferences,
   copyProcessFiles,
@@ -737,22 +738,56 @@ export const getProcessImage = async (
   return _getProcessImage!(definitionId, imageFileName);
 };
 
-export const checkIfProcessExistsByName = async (processData: {
-  processName: string;
+interface BaseProcessCheckData {
   spaceId: string;
   userId: string;
+}
+
+interface SingleProcessCheckData extends BaseProcessCheckData {
+  batch?: false;
+  processName: string;
   folderId?: string;
-}): Promise<boolean> => {
+}
+
+interface BatchProcessCheckData extends BaseProcessCheckData {
+  batch: true;
+  processes: { name: string; folderId?: string }[];
+}
+
+type ProcessCheckData = SingleProcessCheckData | BatchProcessCheckData;
+
+export async function checkIfProcessExistsByName(data: SingleProcessCheckData): Promise<boolean>;
+export async function checkIfProcessExistsByName(data: BatchProcessCheckData): Promise<boolean[]>;
+export async function checkIfProcessExistsByName(
+  data: ProcessCheckData,
+): Promise<boolean | boolean[]> {
   try {
-    const { ability } = await getCurrentEnvironment(processData.spaceId);
-    return await checkIfProcessAlreadyExistsForAUserInASpaceByName(
-      processData.processName,
-      processData.spaceId,
-      processData.userId,
-      processData.folderId ?? (await getRootFolder(processData.spaceId, ability)).id,
-    );
+    const { ability } = await getCurrentEnvironment(data.spaceId);
+
+    if (data.batch === true) {
+      const processesWithFolderIds = await Promise.all(
+        data.processes.map(async (process) => ({
+          name: process.name,
+          folderId: process.folderId ?? (await getRootFolder(data.spaceId, ability)).id,
+        })),
+      );
+
+      return await checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
+        processesWithFolderIds,
+        data.spaceId,
+        data.userId,
+      );
+    } else {
+      const folderId = data.folderId ?? (await getRootFolder(data.spaceId, ability)).id;
+      return await checkIfProcessAlreadyExistsForAUserInASpaceByName(
+        data.processName,
+        data.spaceId,
+        data.userId,
+        folderId,
+      );
+    }
   } catch (error) {
     console.log(error);
-    return false;
+    return data.batch === true ? [] : false;
   }
-};
+}

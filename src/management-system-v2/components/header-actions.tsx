@@ -54,7 +54,7 @@ const HeaderActions: FC = () => {
   let actionButton;
   const avatarDropdownItems: MenuProps['items'] = [];
 
-  if (!envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
     avatarDropdownItems.push({
       key: 'profile',
       title: 'Profile Settings',

@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getProcesses, getUserById } from '@/lib/data/DTOs';
+import { getProcesses } from '@/lib/data/db/process';
+import { getUserById } from '@/lib/data/db/iam/users';
 import { Card, Result } from 'antd';
 import { redirect } from 'next/navigation';
 import ProcessTransferButtons from './transfer-processes-confirmation-buttons';

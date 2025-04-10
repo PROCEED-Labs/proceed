@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/components/auth';
 import UserProfile from './user-profile';
 import Content from '@/components/content';
-import { getUserById } from '@/lib/data/DTOs';
+import { getUserById } from '@/lib/data/db/iam/users';
 import { env } from '@/lib/env-vars';
 import { notFound } from 'next/navigation';
 

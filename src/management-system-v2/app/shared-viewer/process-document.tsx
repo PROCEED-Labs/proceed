@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { getProcess } from '@/lib/data/legacy/process';
+import { getProcess } from '@/lib/data/db/process';
 
 import { Typography, Table, Grid, Image, Spin } from 'antd';
 

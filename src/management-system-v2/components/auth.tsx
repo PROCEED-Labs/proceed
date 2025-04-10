@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
-import { isMember } from '@/lib/data/legacy/iam/memberships';
-import { getSystemAdminByUserId } from '@/lib/data/DTOs';
+import { isMember } from '@/lib/data/db/iam/memberships';
+import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import Ability from '@/lib/ability/abilityHelper';
 import {
   adminRules,

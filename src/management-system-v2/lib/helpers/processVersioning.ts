@@ -13,44 +13,19 @@ import {
 import { asyncForEach } from './javascriptHelpers';
 
 import { Process } from '../data/process-schema';
-import { enableUseDB } from 'FeatureFlags';
-import { TProcessModule } from '../data/module-import-types-temp';
-
+import {
+  getProcessVersionBpmn,
+  updateProcess,
+  getProcessBpmn,
+  deleteProcessUserTask,
+  getProcessUserTaskHtml,
+  saveProcessUserTask,
+  getProcessUserTaskJSON,
+  getProcessScriptTaskScript,
+  saveProcessScriptTask,
+  deleteProcessScriptTask,
+} from '@/lib/data/db/process';
 const { diff } = require('bpmn-js-differ');
-
-// remove later after legacy code is removed
-let getProcessVersionBpmn: TProcessModule['getProcessVersionBpmn'];
-let updateProcess: TProcessModule['updateProcess'];
-let getProcessBpmn: TProcessModule['getProcessBpmn'];
-let deleteProcessUserTask: TProcessModule['deleteProcessUserTask'];
-let getProcessUserTaskHtml: TProcessModule['getProcessUserTaskHtml'];
-let saveProcessUserTask: TProcessModule['saveProcessUserTask'];
-let getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
-
-let getProcessScriptTaskScript: TProcessModule['getProcessScriptTaskScript'];
-let saveProcessScriptTask: TProcessModule['saveProcessScriptTask'];
-let deleteProcessScriptTask: TProcessModule['deleteProcessScriptTask'];
-
-const loadModules = async () => {
-  const moduleImport = await (enableUseDB
-    ? import('@/lib/data/db/process')
-    : import('@/lib/data/legacy/_process'));
-
-  ({
-    getProcessVersionBpmn,
-    updateProcess,
-    getProcessBpmn,
-    deleteProcessUserTask,
-    getProcessUserTaskHtml,
-    saveProcessUserTask,
-    getProcessUserTaskJSON,
-    getProcessScriptTaskScript,
-    saveProcessScriptTask,
-    deleteProcessScriptTask,
-  } = moduleImport);
-};
-
-loadModules().catch(console.error);
 
 // TODO: This used to be a helper file in the old management system. It used
 // client-side local data from the Vue store and a lot of data sent to the

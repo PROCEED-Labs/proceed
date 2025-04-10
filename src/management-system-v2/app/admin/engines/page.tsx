@@ -4,7 +4,7 @@ import { getEngines } from '@/lib/engines/endpoints/mqtt-endpoints';
 import { Result, Skeleton } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { getSystemAdminByUserId } from '@/lib/data/DTOs';
+import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import EnginesTable from './engines-table';
 import { env } from '@/lib/env-vars';
 

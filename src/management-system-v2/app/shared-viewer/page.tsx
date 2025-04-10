@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getProcess, getSharedProcessWithBpmn } from '@/lib/data/processes';
-import { getProcesses, getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/DTOs';
+import { getProcesses, getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/db/process';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
@@ -13,7 +13,8 @@ import ErrorMessage from '../../components/error-message';
 import styles from './page.module.scss';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { Environment } from '@/lib/data/environment-schema';
-import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
+import { getEnvironmentById } from '@/lib/data/db/iam/environments';
+import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
@@ -130,11 +131,12 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     return <ErrorMessage message="Invalid Token " />;
   }
 
-  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
 
-  const orgEnvironments = await asyncMap(userOrgEnvs, (environmentId) =>
-    getEnvironmentById(environmentId),
+  const orgEnvironments = await asyncMap(
+    userOrgEnvs,
+    async (environmentId) => (await getEnvironmentById(environmentId))!,
   );
 
   userEnvironments.push(...orgEnvironments);
@@ -212,7 +214,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
               <BPMNSharedViewer
                 isOwner={isOwner}
                 userWorkspaces={userEnvironments}
-                processData={processData!}
+                processData={processData as any}
                 defaultSettings={defaultSettings}
                 availableImports={availableImports}
               />

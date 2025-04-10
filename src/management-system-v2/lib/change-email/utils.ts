@@ -2,7 +2,7 @@ import 'server-only';
 
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { z } from 'zod';
-import { VerificationToken } from '../data/legacy/verification-tokens';
+import { VerificationToken } from '@/lib/data/db/iam/verificaiton-tokens';
 
 async function createHash(message: string) {
   const msgUint8 = new TextEncoder().encode(message);

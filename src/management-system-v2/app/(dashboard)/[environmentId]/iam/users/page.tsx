@@ -2,8 +2,8 @@ import { getCurrentEnvironment } from '@/components/auth';
 import UsersPage from './users-page';
 import Content from '@/components/content';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
-import { getMembers } from '@/lib/data/DTOs';
-import { getUserById } from '@/lib/data/DTOs';
+import { getMembers } from '@/lib/data/db/iam/memberships';
+import { getUserById } from '@/lib/data/db/iam/users';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 

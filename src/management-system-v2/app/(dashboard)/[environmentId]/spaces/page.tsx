@@ -1,10 +1,10 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEnvironmentById } from '@/lib/data/DTOs';
-import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
+import { getEnvironmentById } from '@/lib/data/db/iam/environments';
+import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import EnvironmentsPage from './environments-page';
-import { getUserById } from '@/lib/data/DTOs';
+import { getUserById } from '@/lib/data/db/iam/users';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
 const Page = async () => {

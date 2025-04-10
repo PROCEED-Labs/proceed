@@ -2,8 +2,8 @@ import { PackedRulesForUser, computeRulesForUser } from './caslRules';
 import Ability from '../ability/abilityHelper';
 import { LRUCache } from 'lru-cache';
 import { TreeMap } from '../ability/caslAbility';
-import { getFolders } from '../data/DTOs';
-import { getEnvironmentById } from '../data/DTOs';
+import { getFolders } from '../data/db/folders';
+import { getEnvironmentById } from '../data/db/iam/environments';
 import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
 import { MSEnabledResources } from './globalRules';
 
@@ -72,7 +72,7 @@ export async function getUserRules(userId: string, environmentId: string) {
 
   if (userRules) return userRules;
 
-  const space = await getEnvironmentById(environmentId);
+  const space = (await getEnvironmentById(environmentId))!;
 
   if (!space.isOrganization) {
     const { rules, expiration } = computeRulesForUser({ userId, space });

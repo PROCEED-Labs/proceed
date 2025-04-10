@@ -8,8 +8,8 @@ import {
   saveVerificationToken,
   getVerificationToken,
   deleteVerificationToken,
-} from '@/lib/data/legacy/verification-tokens';
-import { updateUser } from '@/lib/data/DTOs';
+} from '@/lib/data/db/iam/verificaiton-tokens';
+import { updateUser } from '@/lib/data/db/iam/users';
 import { sendEmail } from '../email/mailer';
 import renderSigninLinkEmail from '../email/signin-link-email';
 
@@ -27,7 +27,7 @@ export async function requestEmailChange(newEmail: string) {
       userId,
     });
 
-    saveVerificationToken(verificationToken);
+    await saveVerificationToken(verificationToken);
 
     const signinMail = renderSigninLinkEmail({
       signInLink: redirectUrl,
@@ -58,7 +58,7 @@ export async function changeEmail(token: string, identifier: string, cancel: boo
     return userError('You must be signed in to change your email');
 
   const tokenParams = { identifier, token: await getTokenHash(token) };
-  const verificationToken = getVerificationToken(tokenParams);
+  const verificationToken = await getVerificationToken(tokenParams);
   if (
     !verificationToken ||
     !verificationToken.updateEmail ||
@@ -69,5 +69,5 @@ export async function changeEmail(token: string, identifier: string, cancel: boo
 
   if (!cancel) updateUser(userId, { email: verificationToken.identifier, isGuest: false });
 
-  deleteVerificationToken(tokenParams);
+  await deleteVerificationToken(tokenParams);
 }

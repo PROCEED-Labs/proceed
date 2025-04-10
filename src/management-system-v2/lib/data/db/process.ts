@@ -115,9 +115,12 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       typeof process.allowIframeTimestamp === 'bigint'
         ? Number(process.allowIframeTimestamp)
         : process.allowIframeTimestamp,
+    // TODO: implement inEditingBy
   };
 
-  return convertedProcess;
+  return convertedProcess as typeof convertedProcess & {
+    inEditingBy?: { id: string; task?: string }[];
+  };
 }
 
 /**
@@ -491,7 +494,7 @@ export async function addProcessVersion(
     throw new Error('Error creating the version');
   }
 
-  // add information about the new version to the meta information and inform others about its existance
+  // add information about the new version to the meta information and inform others about its existence
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
   //@ts-ignore

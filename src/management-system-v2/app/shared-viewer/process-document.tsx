@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { getProcess } from '@/lib/data/legacy/process';
+import { getProcess } from '@/lib/data/db/process';
 
 import { Typography, Table, Grid, Image, Spin } from 'antd';
 
@@ -87,20 +87,19 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
     }
     const newImageUrl = enableUseFileManager
       ? image &&
-        (await new Promise<string>((resolve) => {
-          getImage(processData.id, image, shareToken, {
-            onSuccess(data) {
-              resolve(data.fileUrl!);
-            },
-          });
-        }))
+      (await new Promise<string>((resolve) => {
+        getImage(processData.id, image, shareToken, {
+          onSuccess(data) {
+            resolve(data.fileUrl!);
+          },
+        });
+      }))
       : null;
 
     let imageURL =
       image &&
       (newImageUrl ??
-        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${
-          processData.id
+        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${processData.id
         }/images/${image}?shareToken=${shareToken}`);
 
     currentPages.push(

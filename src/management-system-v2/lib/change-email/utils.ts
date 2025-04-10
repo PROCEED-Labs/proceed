@@ -2,7 +2,7 @@ import 'server-only';
 
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { z } from 'zod';
-import { VerificationToken } from '../data/legacy/verification-tokens';
+import { VerificationToken } from '@/lib/data/db/iam/verificaiton-tokens';
 
 async function createHash(message: string) {
   const msgUint8 = new TextEncoder().encode(message);
@@ -39,10 +39,10 @@ export async function createChangeEmailVerificationToken({
 
   const redirectUrl = new URL(
     '/change-email?' +
-      new URLSearchParams({
-        token,
-        email: identifier,
-      }),
+    new URLSearchParams({
+      token,
+      email: identifier,
+    }),
     process.env.NEXTAUTH_URL ?? 'http://localhost:3000',
   ).toString();
 

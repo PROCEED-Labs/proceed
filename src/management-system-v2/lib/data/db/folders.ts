@@ -102,7 +102,7 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
       } else {
         folderContent.push({ ...(await getFolderById(child.id, ability)), type: 'folder' });
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   return folderContent;
@@ -317,6 +317,52 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
       parentFolder: {
         connect: { id: newParentId },
       },
+      lastEditedOn: new Date(),
+    },
+  });
+}
+
+export async function moveProcess(processId: string, newParentId: string, ability?: Ability) {
+  const process = await db.process.findUnique({
+    where: { id: processId },
+  });
+
+  if (!process) throw new Error('Folder not found');
+
+  if (process.folderId === newParentId) return;
+
+  const [oldParentFolder, newParentFolder] = await Promise.all([
+    db.folder.findUnique({
+      where: { id: process.folderId },
+    }),
+
+    db.folder.findUnique({
+      where: { id: newParentId },
+    }),
+  ]);
+
+  if (!newParentFolder) throw new Error('New parent folder not found');
+
+  if (newParentFolder.environmentId !== process.environmentId)
+    throw new Error('Cannot move folder to a different environment');
+
+  // Check permissions
+  if (
+    ability &&
+    !(
+      ability.can('update', toCaslResource('Process', process)) &&
+      ability.can('update', toCaslResource('Folder', newParentFolder)) &&
+      ability.can('update', toCaslResource('Folder', oldParentFolder!))
+    )
+  ) {
+    throw new Error('Permission denied');
+  }
+
+  // Update process
+  await db.process.update({
+    where: { id: processId },
+    data: {
+      folderId: newParentId,
       lastEditedOn: new Date(),
     },
   });

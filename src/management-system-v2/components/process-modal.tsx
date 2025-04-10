@@ -156,21 +156,25 @@ const ProcessModal = <
 
     const collisions: { index: number; oldName: string; newName: string }[] = [];
 
-    for (let i = 0; i < initialData.length; i++) {
-      const process = initialData[i];
-      const exists = await checkIfProcessExistsByName({
+    const checkPromises = initialData.map((process, i) =>
+      checkIfProcessExistsByName({
         processName: process.name,
         spaceId: environment.spaceId,
         userId: session.data?.user.id!,
         folderId: currentFolderId,
-      });
+      }).then((exists) => ({ exists, index: i })),
+    );
 
+    const results = await Promise.all(checkPromises);
+
+    results.forEach(({ exists, index }) => {
       if (exists) {
-        const newName = `${process.name}_${mode}_${Date.now()}`;
-        collisions.push({ index: i, oldName: process.name, newName });
-        initialData[i].name = newName;
+        const oldName = initialData[index].name;
+        const newName = `${oldName}_${mode}_${Date.now()}`;
+        collisions.push({ index, oldName, newName });
+        initialData[index].name = newName;
       }
-    }
+    });
 
     if (collisions.length > 0) {
       setNameCollisions(collisions);

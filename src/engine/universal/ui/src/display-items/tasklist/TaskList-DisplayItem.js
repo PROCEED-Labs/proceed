@@ -166,7 +166,12 @@ class TaskListTab extends DisplayItem {
 
       const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
 
-      const milestones = await getMilestonesFromElementById(bpmn, query.userTaskID);
+      let milestones = await getMilestonesFromElementById(bpmn, query.userTaskID);
+
+      milestones = milestones.map((milestone) => ({
+        ...milestone,
+        value: milestonesData[milestone.id] || 0,
+      }));
 
       const script = `
       const instanceID = '${query.instanceID}';
@@ -208,6 +213,9 @@ class TaskListTab extends DisplayItem {
           'input[class^="milestone-"]'
         );
         Array.from(milestoneInputs).forEach((milestoneInput) => {
+          milestoneInput.addEventListener('input', (event) => {
+            milestoneInput.nextElementSibling.value = milestoneInput.value + '%'
+          });
           milestoneInput.addEventListener('click', (event) => {
             const milestoneName = Array.from(event.target.classList)
             .find((className) => className.includes('milestone-'))

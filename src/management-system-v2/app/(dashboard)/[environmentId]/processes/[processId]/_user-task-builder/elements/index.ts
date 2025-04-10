@@ -1,6 +1,7 @@
 import CheckBoxOrRadioGroup from './CheckboxOrRadioGroup';
 import Column from './Column';
 import Container from './Container';
+import Milestones, { ExportMilestones } from './Milestones';
 import { EditImage, ExportImage } from './Image';
 import Input, { ExportInput } from './Input';
 import Row from './Row';
@@ -20,4 +21,6 @@ export {
   SubmitButton,
   Table,
   Text,
+  Milestones,
+  ExportMilestones,
 };

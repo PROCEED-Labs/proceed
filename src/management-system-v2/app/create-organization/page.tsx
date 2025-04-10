@@ -4,6 +4,8 @@ import { getProviders } from '../api/auth/[...nextauth]/auth-options';
 import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema';
 import { addEnvironment } from '@/lib/data/legacy/iam/environments';
 import { userError } from '@/lib/user-error';
+import { env } from '@/lib/env-vars';
+import { notFound } from 'next/navigation';
 
 async function createInactiveEnvironment(data: UserOrganizationEnvironmentInput) {
   'use server';
@@ -18,6 +20,8 @@ export type createInactiveEnvironment = typeof createInactiveEnvironment;
 const unallowedProviders = ['guest-signin', 'development-users'];
 
 const Page = async () => {
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
+
   const { session } = await getCurrentUser();
   const needsToAuthenticate = !session?.user || session?.user.isGuest;
 

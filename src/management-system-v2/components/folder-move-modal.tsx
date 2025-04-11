@@ -27,7 +27,7 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
   return (
     <>
       <Modal
-        title={`Move ${selectedElements.length} item(s) to a folder`}
+        title={`Move ${selectedElements.length} Item${selectedElements.length > 1 && 's'} to a Folder`}
         open={open}
         width={600}
         destroyOnClose

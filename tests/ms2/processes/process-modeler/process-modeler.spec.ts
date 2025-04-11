@@ -13,7 +13,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   /* While the xml editor is there, the xml is still loading, wait for it to load, before closing the modal */
   await expect(page.getByText('<?xml version="1.0" encoding')).toBeVisible();
   //todo: check xml for startevent
-  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Ok' }).click());
+  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Save' }).click());
 
   // Open/collapse/close properties panel
   const propertiesPanel = page.getByRole('region', { name: 'Properties' });
@@ -98,12 +98,16 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
 
   // Fill process creation dialog and create new process, check for url change
   await processCreationDialog.getByLabel('Process Name').fill('New Process');
+  const stringWith1000Chars = stringWith150Chars
+    .repeat(Math.ceil(1000 / stringWith150Chars.length))
+    .slice(0, 1000);
   await processCreationDialog
     .getByLabel('Process Description')
-    .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`);
+    .fill(`${stringWith1000Chars}, characters passing the 1000 mark should not be visible`);
   await expect(processCreationDialog.getByLabel('Process Description')).toHaveText(
-    stringWith150Chars,
+    stringWith1000Chars,
   );
+
   await closeModal(processCreationDialog, () =>
     processCreationDialog.getByRole('button', { name: 'Create' }).click(),
   );

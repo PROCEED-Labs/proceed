@@ -1,4 +1,4 @@
-import { TableColumnsType, TableProps, Tooltip } from 'antd';
+import { TableColumnsType, TableProps, Tooltip, Typography } from 'antd';
 import React, {
   FC,
   PropsWithChildren,
@@ -243,7 +243,13 @@ export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']
             : () => fallBackText;
           return (
             <>
-              <TruncatedCell width={column.width} innerRender={newRender} />
+              {/* <TruncatedCell width={column.width} innerRender={newRender} /> */}
+              <Typography.Text
+                style={{ width: column.width }}
+                ellipsis={{ tooltip: { title: newRender } }}
+              >
+                {newRender()}
+              </Typography.Text>
             </>
           );
         },

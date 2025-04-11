@@ -172,6 +172,7 @@ const HeaderActions: FC = () => {
           menu={{
             items: avatarDropdownItems,
           }}
+          trigger={['click']}
         >
           {envVars.PROCEED_PUBLIC_IAM_ACTIVATE ? (
             <SpaceLink href={`/profile`}>

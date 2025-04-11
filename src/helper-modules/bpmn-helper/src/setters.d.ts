@@ -84,6 +84,7 @@ export function setStandardDefinitions(
   exporterVersion: string,
 ): Promise<string | object>;
 /**
+/**
  * Sets deployment method of a process
  *
  * @param {(string|object)} bpmn the process definition as XML string or BPMN-Moddle Object
@@ -228,4 +229,57 @@ export function updatePerformersOnElementById(
   bpmn: string | object,
   elementId: string,
   performers: any[],
+): Promise<string | object>;
+
+/**
+ * Updates the general BPMN XML attributes of the given BPMN process.
+ *
+ * @param bpmn - The BPMN process definition as an XML string or a BPMN-Moddle object.
+ * @param attributes - The attributes to update in the BPMN process.
+ * @returns A promise that resolves to the modified BPMN process,
+ * either as a BPMN-Moddle object or an XML string, depending on the input format.
+ */
+export function updateBpmnCreatorAttributes(
+  bpmn: string | object,
+  attributes: {
+    id?: string;
+    name?: string;
+    creatorId?: string;
+    creatorName?: string;
+    creatorUsername?: string;
+    creatorSpaceId?: string;
+    creatorSpaceName?: string;
+    userDefinedId?: string;
+    creationDate?: string;
+  },
+): Promise<string | object>;
+
+/**
+ * Updates the original attributes of a copied/imported BPMN process.
+ *
+ * @param bpmn - The BPMN process definition as an XML string or a BPMN-Moddle object.
+ * @param attributes - The original attributes to update in the BPMN process.
+ * @returns A promise that resolves to the modified BPMN process,
+ * either as a BPMN-Moddle object or an XML string, depending on the input format.
+ */
+export function updateBpmnOriginalAttributes(
+  bpmn: string | object,
+  attributes: {
+    originalId?: string;
+    originalName?: string;
+    originalCreationDate?: string;
+    originalCreatorId?: string;
+    originalCreatorName?: string;
+    originalCreatorUsername?: string;
+    originalCreatorSpaceId?: string;
+    originalCreatorSpaceName?: string;
+    originalUserDefinedId?: string;
+    originalVersionId?: string;
+    originalVersionName?: string;
+    originalProcessVersionId?: string;
+    originalProcessVersionName?: string;
+    originalExporter?: string;
+    originalExporterVersion?: string;
+    originalTargetNamespace?: string;
+  },
 ): Promise<string | object>;

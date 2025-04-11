@@ -2,8 +2,7 @@ import { Element } from '@craftjs/core';
 import { Button as AntButton } from 'antd';
 import React, { ReactNode } from 'react';
 
-/* LuFormInput does not exist anymore (?) */
-import { LuTextCursorInput, LuImage, LuTable, LuText } from 'react-icons/lu';
+import { LuTextCursorInput, LuImage, LuTable, LuText, LuMilestone } from 'react-icons/lu';
 import { MdCheckBox, MdRadioButtonChecked, MdTitle, MdOutlineCheck } from 'react-icons/md';
 import { RxGroup } from 'react-icons/rx';
 
@@ -20,6 +19,7 @@ import {
   Table,
   EditImage as Image,
   SubmitButton,
+  Milestones,
 } from '../elements';
 
 import { createPortal } from 'react-dom';
@@ -100,6 +100,9 @@ const Toolbox = () => {
       </CreationButton>
       <CreationButton title="Image" icon={<LuImage />}>
         <Image />
+      </CreationButton>
+      <CreationButton title="Milestones" icon={<LuMilestone />}>
+        <Milestones />
       </CreationButton>
       <CreationButton title="Submit" icon={<MdOutlineCheck />}>
         <SubmitButton />

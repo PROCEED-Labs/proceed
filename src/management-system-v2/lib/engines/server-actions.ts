@@ -212,7 +212,6 @@ export async function stopInstance(definitionId: string, instanceId: string, spa
     const engines = await getCorrectTargetEngines(spaceId, undefined, async (engine: Engine) => {
       const deployments = await getDeployments([engine]);
 
-      // TODO: check if the instance is still running on this machine
       return deployments.some((deployment) => {
         if (deployment.definitionId !== definitionId) return false;
 

@@ -51,9 +51,10 @@ export default function ProcessDeploymentView({
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
   const [selectedElement, setSelectedElement] = useState<ElementLike | undefined>();
 
-  const [resuming, setResuming] = useState(false);
-  const [pausing, setPausing] = useState(false);
-  const [stopping, setStopping] = useState(false);
+  const [startingInstance, setStartingInstance] = useState(false);
+  const [resumingInstance, setResumingInstance] = useState(false);
+  const [pausingInstance, setPausingInstance] = useState(false);
+  const [stoppingInstance, setStoppingInstance] = useState(false);
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
@@ -173,16 +174,21 @@ export default function ProcessDeploymentView({
               <Tooltip title="Start new instance">
                 <Button
                   icon={<PlusOutlined />}
+                  loading={startingInstance}
                   onClick={() => {
                     wrapServerCall({
-                      fn: () =>
-                        startInstance(
+                      fn: () => {
+                        setStartingInstance(true);
+                        return startInstance(
                           deploymentInfo.definitionId,
                           getLatestDeployment(deploymentInfo).versionId,
                           spaceId,
-                        ),
-                      onSuccess: (instanceId) => {
+                        );
+                      },
+                      onSuccess: async (instanceId) => {
+                        await refetch();
                         setSelectedInstanceId(instanceId);
+                        setStartingInstance(false);
                         router.refresh();
                       },
                     });
@@ -259,12 +265,12 @@ export default function ProcessDeploymentView({
                   <Button
                     className={styles.PlayIcon}
                     icon={<CaretRightOutlined />}
-                    loading={resuming}
+                    loading={resumingInstance}
                     disabled={!instanceIsPausing && !instanceIsPaused}
                     onClick={() => {
                       wrapServerCall({
                         fn: async () => {
-                          setResuming(true);
+                          setResumingInstance(true);
                           await resumeInstance(
                             processId,
                             selectedInstance.processInstanceId,
@@ -273,7 +279,7 @@ export default function ProcessDeploymentView({
                         },
                         onSuccess: async () => {
                           await refetch();
-                          setResuming(false);
+                          setResumingInstance(false);
                         },
                       });
                     }}
@@ -284,12 +290,12 @@ export default function ProcessDeploymentView({
                   <Button
                     className={styles.PauseIcon}
                     icon={<PauseOutlined />}
-                    loading={pausing || instanceIsPausing}
+                    loading={pausingInstance || instanceIsPausing}
                     disabled={!instanceIsRunning || instanceIsPausing || instanceIsPaused}
                     onClick={() => {
                       wrapServerCall({
                         fn: async () => {
-                          setPausing(true);
+                          setPausingInstance(true);
                           await pauseInstance(
                             processId,
                             selectedInstance.processInstanceId,
@@ -298,7 +304,7 @@ export default function ProcessDeploymentView({
                         },
                         onSuccess: async () => {
                           await refetch();
-                          setPausing(false);
+                          setPausingInstance(false);
                         },
                       });
                     }}
@@ -309,12 +315,12 @@ export default function ProcessDeploymentView({
                   <Button
                     className={styles.StopIcon}
                     icon={<StopOutlined />}
-                    loading={stopping}
+                    loading={stoppingInstance}
                     disabled={!instanceIsRunning}
                     onClick={() => {
                       wrapServerCall({
                         fn: async () => {
-                          setStopping(true);
+                          setStoppingInstance(true);
                           await stopInstance(
                             processId,
                             selectedInstance.processInstanceId,
@@ -323,7 +329,7 @@ export default function ProcessDeploymentView({
                         },
                         onSuccess: async () => {
                           await refetch();
-                          setStopping(false);
+                          setStoppingInstance(false);
                         },
                       });
                     }}

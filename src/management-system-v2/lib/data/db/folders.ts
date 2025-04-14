@@ -13,11 +13,16 @@ import db from '@/lib/data/db';
 import { getProcess } from './process';
 import { Prisma } from '@prisma/client';
 
-export async function getRootFolder(environmentId: string, ability?: Ability) {
+export async function getRootFolder(
+  environmentId: string,
+  type: 'process' | 'template',
+  ability?: Ability,
+) {
   const rootFolder = await db.folder.findFirst({
     where: {
       environmentId: environmentId,
       parentId: null,
+      category: type as string,
     },
   });
 
@@ -97,7 +102,13 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
       if (child.type !== 'folder') {
         const process = (await getProcess(child.id)) as unknown as Process;
         // NOTE: this check should probably done inside inside getprocess
-        if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
+        if (
+          ability &&
+          process.type === 'process' &&
+          !ability.can('view', toCaslResource('Process', process))
+        ) {
+          continue;
+        }
         folderContent.push(process);
       } else {
         folderContent.push({ ...(await getFolderById(child.id, ability)), type: 'folder' });
@@ -109,7 +120,7 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
 }
 
 export async function createFolder(
-  folderInput: FolderInput,
+  folderInput: FolderInput & { type: 'process' | 'template' },
   ability?: Ability,
   tx?: Prisma.TransactionClient,
 ): Promise<Folder> {
@@ -162,6 +173,7 @@ export async function createFolder(
       where: {
         environmentId: folder.environmentId,
         parentId: null,
+        category: folderInput.type as string,
       },
     });
 
@@ -179,6 +191,7 @@ export async function createFolder(
       createdBy: folder.createdBy!,
       environmentId: folder.environmentId,
       createdOn: new Date(),
+      category: folderInput.type,
     },
   });
 

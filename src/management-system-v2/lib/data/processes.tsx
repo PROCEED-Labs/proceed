@@ -4,10 +4,14 @@ import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { toCaslResource } from '../ability/caslAbility';
 import {
   addDocumentation,
+  convertISODurationToMiliseconds,
   generateDefinitionsId,
   getDefinitionsVersionInformation,
   getUserTaskFileNameMapping,
+  setDefinitionsId,
   setDefinitionsName,
+  setDefinitionsTemplateId,
+  setDefinitionsTemplateVersion,
   setDefinitionsVersionInformation,
   setUserTaskData,
   toBpmnObject,
@@ -38,6 +42,7 @@ import { TProcessModule } from './module-import-types-temp';
 import { copyProcessArtifactReferences, copyProcessFiles } from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
+import { getRootFolder } from './db/folders';
 
 // Declare variables to hold the process module functions
 let removeProcess: TProcessModule['removeProcess'];
@@ -200,7 +205,14 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
+  values: {
+    type: 'process' | 'template';
+    name: string;
+    description: string;
+    bpmn?: string;
+    templateId?: string;
+    folderId?: string;
+  }[],
   spaceId: string,
 ) => {
   await loadModules();
@@ -215,6 +227,8 @@ export const addProcesses = async (
       name: value.name,
       description: value.description,
       bpmn: value.bpmn,
+      basedOnTemplateId: value.templateId,
+      basedOnTemplateVersion: value.templateId,
     });
 
     const newProcess = {
@@ -228,7 +242,12 @@ export const addProcesses = async (
     }
 
     // bpmn prop gets deleted in addProcess()
-    const process = await _addProcess({ ...newProcess, folderId: value.folderId });
+    const process = await _addProcess({
+      ...newProcess,
+      folderId:
+        value.folderId ?? (await getRootFolder(activeEnvironment.spaceId, value.type, ability)).id,
+      type: value.type,
+    });
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');
@@ -329,6 +348,7 @@ export const copyProcesses = async (
     originalId: string;
     originalVersion?: string;
     folderId?: string;
+    type: 'process' | 'template';
   }[],
   spaceId: string,
   destinationfolderId?: string,
@@ -342,6 +362,10 @@ export const copyProcesses = async (
 
   for (const copyProcess of processes) {
     // Copy the original BPMN and update it for the new process.
+    const destination =
+      !destinationfolderId && copyProcess.type === 'template'
+        ? (await getRootFolder(activeEnvironment.spaceId, copyProcess.type)).id
+        : null;
     const newId = generateDefinitionsId();
     // Copy either a process or a specific version.
     const originalBpmn = copyProcess.originalVersion
@@ -357,7 +381,8 @@ export const copyProcesses = async (
       definitionId: newId,
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,
-      folderId: destinationfolderId,
+      folderId: destinationfolderId ?? destination!,
+      type: copyProcess.type,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {

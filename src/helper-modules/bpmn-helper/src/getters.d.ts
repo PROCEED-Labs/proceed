@@ -12,6 +12,14 @@ export type DefinitionsInfos = {
    */
   originalId?: string;
   /**
+   * - definitions template id
+   */
+  basedOnTemplateId?: string;
+  /**
+   * - definitions template version
+   */
+  basedOnTemplateVersion?: string;
+  /**
    * - definitions name
    */
   name?: string;
@@ -221,6 +229,8 @@ export function getDefinitionsName(bpmn: string | object): Promise<string | unde
  * @type {object}
  * @property {string} id - definitions id
  * @property {string} [originalId] - definitions original id
+ * @property {string} [basedOnTemplateId] - definitions template id
+ * @property {string} [basedOnTemplateVersion] - definitions template version
  * @property {string} [name] - definitions name
  * @property {string} [exporter] - definitions exporter
  * @property {string} [exporterVersion] - definitions exporterVersion
@@ -480,11 +490,13 @@ export function getTaskConstraintMapping(bpmn: string | object): Promise<{
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, basedOnTemplateId: string, basedOnTemplateVersion: string, processIds: string[], name: string, description: string }> } object containing the identifying information
  */
 export function getIdentifyingInfos(bpmn: string | object): Promise<{
   id: string;
   originalId?: string;
+  basedOnTemplateId: string;
+  basedOnTemplateVersion: string;
   processIds: string[];
   name: string;
   description: string;

@@ -55,6 +55,30 @@ async function setDefinitionsName(bpmn, name) {
 }
 
 /**
+ *  Sets basedOnTemplateId in definitions element to given id,
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} id - the id we want to set the definitions element to
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
+ */
+async function setDefinitionsTemplateId(bpmn, id) {
+  return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
+    definitions.basedOnTemplateId = id;
+  });
+}
+
+/**
+ *  Sets basedOnTemplateId in definitions element to given id,
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} id - the id we want to set the definitions element to
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
+ */
+async function setDefinitionsTemplateVersion(bpmn, id) {
+  return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
+    definitions.basedOnTemplateVersion = id;
+  });
+}
+
+/**
  * Will set a version in the definitions element
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -578,6 +602,8 @@ async function removeColorFromAllElements(bpmn) {
 module.exports = {
   setDefinitionsId,
   setDefinitionsName,
+  setDefinitionsTemplateId,
+  setDefinitionsTemplateVersion,
   setDefinitionsVersionInformation,
   setProcessId,
   setTemplateId,

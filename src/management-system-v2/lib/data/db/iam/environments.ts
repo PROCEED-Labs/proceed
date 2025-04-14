@@ -135,16 +135,21 @@ export async function addEnvironment(
   }
 
   // add root folder
-  await createFolder(
-    {
-      environmentId: id,
-      name: '',
-      parentId: null,
-      createdBy: null,
-    },
-    undefined,
-    tx,
-  );
+  const folderTypes = ['process', 'template'] as const;
+
+  for (const type of folderTypes) {
+    await createFolder(
+      {
+        environmentId: id,
+        name: '',
+        parentId: null,
+        createdBy: null,
+        type,
+      },
+      undefined,
+      tx,
+    );
+  }
 
   return newEnvironmentWithId;
 }

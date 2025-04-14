@@ -271,16 +271,16 @@ export default function ProcessDeploymentView({
                       wrapServerCall({
                         fn: async () => {
                           setResumingInstance(true);
-                          await resumeInstance(
+                          const res = await resumeInstance(
                             processId,
                             selectedInstance.processInstanceId,
                             spaceId,
                           );
-                        },
-                        onSuccess: async () => {
-                          await refetch();
+                          if (!res) await refetch();
                           setResumingInstance(false);
+                          return res;
                         },
+                        onSuccess: () => {},
                       });
                     }}
                   />
@@ -296,16 +296,16 @@ export default function ProcessDeploymentView({
                       wrapServerCall({
                         fn: async () => {
                           setPausingInstance(true);
-                          await pauseInstance(
+                          const res = await pauseInstance(
                             processId,
                             selectedInstance.processInstanceId,
                             spaceId,
                           );
-                        },
-                        onSuccess: async () => {
-                          await refetch();
+                          if (!res) await refetch();
                           setPausingInstance(false);
+                          return res;
                         },
+                        onSuccess: () => {},
                       });
                     }}
                   />
@@ -321,16 +321,16 @@ export default function ProcessDeploymentView({
                       wrapServerCall({
                         fn: async () => {
                           setStoppingInstance(true);
-                          await stopInstance(
+                          const res = await stopInstance(
                             processId,
                             selectedInstance.processInstanceId,
                             spaceId,
                           );
-                        },
-                        onSuccess: async () => {
-                          await refetch();
+                          if (!res) await refetch();
                           setStoppingInstance(false);
+                          return res;
                         },
+                        onSuccess: () => {},
                       });
                     }}
                   />

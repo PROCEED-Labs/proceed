@@ -2,6 +2,7 @@
 
 import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
+  InstanceInfo,
   deployProcess as _deployProcess,
   getDeployments,
   removeDeploymentFromMachines,
@@ -143,11 +144,14 @@ export async function startInstance(
 }
 
 const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
-export async function resumeInstance(definitionId: string, instanceId: string, spaceId: string) {
+async function changeInstanceState(
+  definitionId: string,
+  instanceId: string,
+  spaceId: string,
+  stateValidator: (state: InstanceInfo['instanceState']) => boolean,
+  stateChangeFunction: typeof resumeInstanceOnMachine,
+) {
   try {
-    // TODO: manage permissions for starting an instance
-    if (!enableUseDB) throw new Error('resumeInstance is only available with enableUseDB');
-
     const engines = await getCorrectTargetEngines(spaceId, undefined, async (engine: Engine) => {
       const deployments = await getDeployments([engine]);
 
@@ -159,78 +163,56 @@ export async function resumeInstance(definitionId: string, instanceId: string, s
         );
         if (!instance) return false;
 
-        return instance.instanceState.some((tokenState) => tokenState === 'PAUSED');
+        return stateValidator(instance.instanceState);
       });
     });
 
     await asyncForEach(engines, async (engine) => {
-      await resumeInstanceOnMachine(definitionId, instanceId, engine);
+      await stateChangeFunction(definitionId, instanceId, engine);
     });
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
   }
+}
+export async function resumeInstance(definitionId: string, instanceId: string, spaceId: string) {
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('resumeInstance is only available with enableUseDB');
+
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) => tokenStates.some((tokenState) => tokenState === 'PAUSED'),
+    resumeInstanceOnMachine,
+  );
 }
 
 export async function pauseInstance(definitionId: string, instanceId: string, spaceId: string) {
-  try {
-    // TODO: manage permissions for starting an instance
-    if (!enableUseDB) throw new Error('pauseInstance is only available with enableUseDB');
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('pauseInstance is only available with enableUseDB');
 
-    const engines = await getCorrectTargetEngines(spaceId, undefined, async (engine: Engine) => {
-      const deployments = await getDeployments([engine]);
-
-      // TODO: check if the instance is running on this machine
-      return deployments.some((deployment) => {
-        if (deployment.definitionId !== definitionId) return false;
-
-        const instance = deployment.instances.find(
-          (instance) => instance.processInstanceId === instanceId,
-        );
-        if (!instance) return false;
-
-        return instance.instanceState.some(
-          (state) => activeStates.includes(state) && state !== 'PAUSED',
-        );
-      });
-    });
-
-    await asyncForEach(engines, async (engine) => {
-      await pauseInstanceOnMachine(definitionId, instanceId, engine);
-    });
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) =>
+      tokenStates.some((state) => activeStates.includes(state) && state !== 'PAUSED'),
+    pauseInstanceOnMachine,
+  );
 }
 
 export async function stopInstance(definitionId: string, instanceId: string, spaceId: string) {
-  try {
-    // TODO: manage permissions for starting an instance
-    if (!enableUseDB) throw new Error('stopInstance is only available with enableUseDB');
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('stopInstance is only available with enableUseDB');
 
-    const engines = await getCorrectTargetEngines(spaceId, undefined, async (engine: Engine) => {
-      const deployments = await getDeployments([engine]);
-
-      return deployments.some((deployment) => {
-        if (deployment.definitionId !== definitionId) return false;
-
-        const instance = deployment.instances.find(
-          (instance) => instance.processInstanceId === instanceId,
-        );
-        if (!instance) return false;
-
-        return instance.instanceState.some((state) => activeStates.includes(state));
-      });
-    });
-
-    await asyncForEach(engines, async (engine) => {
-      await stopInstanceOnMachine(definitionId, instanceId, engine);
-    });
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) => tokenStates.some((state) => activeStates.includes(state)),
+    stopInstanceOnMachine,
+  );
 }
 
 /** Returns space engines that are currently online */

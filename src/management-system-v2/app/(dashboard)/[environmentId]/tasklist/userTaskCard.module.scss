@@ -1,0 +1,27 @@
+.UserTaskCard {
+  width: 100%;
+  cursor: pointer;
+
+  .UserTaskCardBody {
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    white-space: nowrap;
+  }
+
+  .UserTaskCardHeader {
+    padding-inline: 0.75rem;
+    padding-block: 0.25rem;
+    font-size: 0.875rem;
+    min-height: 1rem;
+  }
+
+  .UserTaskCardTitle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.UserTaskCard.selected {
+  background-color: #eae9e9;
+}

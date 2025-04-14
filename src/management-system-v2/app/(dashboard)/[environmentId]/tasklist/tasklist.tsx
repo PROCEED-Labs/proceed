@@ -1,9 +1,7 @@
 'use client';
-import { Button, Checkbox, Dropdown, Grid, List, MenuProps, Select, Slider, Space } from 'antd';
+import { Button, Grid, MenuProps, Pagination, Space } from 'antd';
 import UserTaskCard from './userTaskCard';
-import { useMemo, useState } from 'react';
-
-import { FaFilter, FaSort } from 'react-icons/fa6';
+import { useEffect, useMemo, useState } from 'react';
 
 import { FaLongArrowAltDown, FaLongArrowAltUp } from 'react-icons/fa';
 import { IoArrowBack } from 'react-icons/io5';
@@ -13,85 +11,40 @@ import ScrollBar from '@/components/scrollbar';
 
 import { TaskListEntry } from '@/lib/engines/tasklist';
 import UserTaskView from './user-task-view';
+import { ItemType } from 'antd/es/menu/interface';
+import {
+  FilterOrSortButton,
+  PerformerSelection,
+  SliderRangeWithText,
+  StatusSelection,
+  stateOrder,
+} from './components';
 
-const StatusSelection = ({
-  selectedValues,
-  onSelectionChange,
-}: {
-  selectedValues: string[];
-  onSelectionChange: (selectedValues: string[]) => void;
-}) => {
-  return (
-    <Checkbox.Group
-      style={{
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-      value={selectedValues}
-      onChange={(checkedValues: string[]) => {
-        onSelectionChange(checkedValues);
-      }}
-    >
-      <Checkbox value="READY" style={{ marginBottom: '0.25rem' }}>
-        READY
-      </Checkbox>
-
-      <Checkbox value="ACTIVE" style={{ marginBottom: '0.25rem' }}>
-        ACTIVE
-      </Checkbox>
-
-      <Checkbox value="COMPLETED" style={{ marginBottom: '0.25rem' }}>
-        COMPLETED
-      </Checkbox>
-
-      <Checkbox value="PAUSED">PAUSED</Checkbox>
-    </Checkbox.Group>
-  );
-};
-
-const SliderRangeWithText = ({
-  min = 0,
-  max = 100,
-  selectedRangeValues = [0, 100],
-  onRangeChange,
-}: {
-  min?: number;
-  max?: number;
-  selectedRangeValues?: [number, number];
-  onRangeChange: (selectedRangeValues: [number, number]) => void;
-}) => {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-      <Slider
-        style={{ flexGrow: 1 }}
-        range
-        value={selectedRangeValues}
-        min={min}
-        max={max}
-        onChange={([newLowerValue, newUpperValue]) => {
-          onRangeChange([newLowerValue, newUpperValue]);
-        }}
-      />
-      <span style={{ marginLeft: '1rem' }}>
-        {selectedRangeValues[0]} - {selectedRangeValues[1]}
-      </span>
-    </div>
-  );
-};
+const sortValues = ['startTime', 'deadline', 'progress', 'priority', 'state'] as const;
+type SortValue = (typeof sortValues)[number];
+const sortValueMap = {
+  startTime: 'startTime',
+  deadline: 'endTime',
+  progress: 'progress',
+  priority: 'priority',
+  state: 'state',
+} as const;
 
 const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
-  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [stateSelectionFilter, setStateSelectionFilter] = useState(['READY', 'ACTIVE', 'PAUSED']);
   const [priorityRangeFilter, setPriorityRangeFilter] = useState<[number, number]>([1, 10]);
   const [progressRangeFilter, setProgressRangeFilter] = useState<[number, number]>([0, 100]);
   const [usersFilter, setUsersFilter] = useState<string[]>([]);
   const [groupsFilter, setGroupsFilter] = useState<string[]>([]);
-  const [selectedSortItem, setSelectedSortItem] = useState({ ascending: true, value: 'startTime' });
+  const [currentListPage, setCurrentListPage] = useState(1);
+
+  const [selectedSortItem, setSelectedSortItem] = useState<{
+    ascending: boolean;
+    value: SortValue;
+  }>({ ascending: true, value: 'startTime' });
 
   const filteredAndSortedUserTasks = useMemo(() => {
     const showingUserTasks = userTasks.filter((uT) => {
@@ -104,212 +57,130 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
       );
     });
 
-    switch (selectedSortItem.value) {
-      case 'startTime':
-        showingUserTasks.sort((a, b) =>
-          selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime,
-        );
-        break;
-      case 'deadline':
-        showingUserTasks.sort((a, b) => {
-          if (a.endTime === b.endTime) {
-            selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
-          }
-          return selectedSortItem.ascending ? a.endTime - b.endTime : b.endTime - a.endTime;
-        });
-        break;
-      case 'progress':
-        showingUserTasks.sort((a, b) => {
-          if (a.progress === b.progress) {
-            selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
-          }
-          return selectedSortItem.ascending ? a.progress - b.progress : b.progress - a.progress;
-        });
-        break;
-      case 'priority':
-        showingUserTasks.sort((a, b) => {
-          if (a.priority === b.priority) {
-            selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
-          }
-          return selectedSortItem.ascending ? a.priority - b.priority : b.priority - a.priority;
-        });
-        break;
-      case 'state':
-        showingUserTasks.sort((a, b) => {
-          const stateOrder = ['READY', 'ACTIVE', 'COMPLETED', 'PAUSED'];
-          if (a.state === b.state) {
-            selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
-          }
+    const getSortFunction = (name: SortValue) => {
+      const key = sortValueMap[name];
+      return (a: TaskListEntry, b: TaskListEntry) => {
+        // tiebreak equal value by comparing the startTime
+        if (a[key] === b[key]) {
+          return selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
+        }
+
+        if (key === 'state') {
           const indexA = stateOrder.findIndex((state) => a.state === state);
           const indexB = stateOrder.findIndex((state) => b.state === state);
           return selectedSortItem.ascending ? indexA - indexB : indexB - indexA;
-        });
-        break;
-    }
+        }
+
+        return selectedSortItem.ascending ? a[key] - b[key] : b[key] - a[key];
+      };
+    };
+
+    showingUserTasks.sort(getSortFunction(selectedSortItem.value));
 
     return showingUserTasks;
-  }, [
-    stateSelectionFilter,
-    priorityRangeFilter,
-    progressRangeFilter,
-    usersFilter,
-    groupsFilter,
-    selectedSortItem,
-    userTasks,
-  ]);
+  }, [stateSelectionFilter, priorityRangeFilter, progressRangeFilter, selectedSortItem, userTasks]);
+
+  const itemsPerPage = 10;
+  const pageStartItemIndex = (currentListPage - 1) * itemsPerPage;
+  const userTasksToDisplay = filteredAndSortedUserTasks.slice(
+    pageStartItemIndex,
+    pageStartItemIndex + itemsPerPage,
+  );
+
+  const userTaskSelectedOnMobile = selectedUserTaskID && !breakpoint.xl;
+  const selectedUserTask = filteredAndSortedUserTasks.find((uT) => uT.id === selectedUserTaskID);
+
+  useEffect(() => {
+    if (selectedUserTask) {
+      const newIndex = filteredAndSortedUserTasks.findIndex((task) => task === selectedUserTask);
+      const newPageIndex = 1 + newIndex / itemsPerPage;
+      setCurrentListPage(Math.floor(newPageIndex));
+      return;
+    }
+
+    const numPages = 1 + (filteredAndSortedUserTasks.length - 1) / itemsPerPage;
+    if (numPages < currentListPage) {
+      setCurrentListPage(1);
+    }
+  }, [userTasksToDisplay]);
 
   const users = ['Max Mustermann', 'John Doe', 'Bob Smith'];
-
   const groups = ['Example Group A', 'Example Group B', 'Example Group C'];
 
-  const filterDropdownItems: MenuProps['items'] = [
-    {
-      key: '1',
-      type: 'group',
-      label: 'Status',
-      children: [
-        {
-          key: '1-1',
-          label: (
-            <StatusSelection
-              selectedValues={stateSelectionFilter}
-              onSelectionChange={(selectedValues) => {
-                setStateSelectionFilter(selectedValues);
-              }}
-            ></StatusSelection>
-          ),
-        },
-      ],
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: '2',
-      type: 'group',
-      label: 'Priority',
-      children: [
-        {
-          key: '2-1',
-          label: (
-            <SliderRangeWithText
-              min={1}
-              max={10}
-              selectedRangeValues={priorityRangeFilter}
-              onRangeChange={(selectedRangeValues) => {
-                setPriorityRangeFilter(selectedRangeValues);
-              }}
-            />
-          ),
-        },
-      ],
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: '3',
-      type: 'group',
-      label: 'Progress',
-      children: [
-        {
-          key: '3-1',
-          label: (
-            <SliderRangeWithText
-              selectedRangeValues={progressRangeFilter}
-              onRangeChange={(selectedRangeValues) => {
-                setProgressRangeFilter(selectedRangeValues);
-              }}
-            />
-          ),
-        },
-      ],
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: '4',
-      type: 'group',
-      label: 'Users',
-      children: [
-        {
-          key: '4-1',
-          label: (
-            <Select
-              mode="multiple"
-              allowClear
-              placeholder="Select User(s)"
-              maxTagCount={5}
-              options={users.map((user) => ({ label: user, value: user }))}
-              value={usersFilter}
-              style={{ width: '100%' }}
-              onChange={(_, selectedUsers) => {
-                setUsersFilter(
-                  (selectedUsers as { label: string; value: string }[]).map((user) => user.value),
-                );
-              }}
-            ></Select>
-          ),
-        },
-      ],
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: '5',
-      type: 'group',
-      label: 'Groups',
-      children: [
-        {
-          key: '5-1',
-          label: (
-            <Select
-              mode="multiple"
-              allowClear
-              placeholder="Select Group(s)"
-              maxTagCount={5}
-              options={groups.map((group) => ({ label: group, value: group }))}
-              value={groupsFilter}
-              style={{ width: '100%' }}
-              onChange={(_, selectedGroups) => {
-                setGroupsFilter(
-                  (selectedGroups as { label: string; value: string }[]).map(
-                    (group) => group.value,
-                  ),
-                );
-              }}
-            ></Select>
-          ),
-        },
-      ],
-    },
-  ];
+  const filterDropdownItems: MenuProps['items'] = Object.entries({
+    Status: (
+      <StatusSelection
+        selectedValues={stateSelectionFilter}
+        onSelectionChange={(selectedValues) => {
+          setStateSelectionFilter(selectedValues);
+        }}
+      />
+    ),
+    Priority: (
+      <SliderRangeWithText
+        min={1}
+        max={10}
+        selectedRangeValues={priorityRangeFilter}
+        onRangeChange={(selectedRangeValues) => {
+          setPriorityRangeFilter(selectedRangeValues);
+        }}
+      />
+    ),
+    Progress: (
+      <SliderRangeWithText
+        selectedRangeValues={progressRangeFilter}
+        onRangeChange={(selectedRangeValues) => {
+          setProgressRangeFilter(selectedRangeValues);
+        }}
+      />
+    ),
+    Users: (
+      <PerformerSelection
+        type="User"
+        data={users}
+        selected={usersFilter}
+        onChange={setUsersFilter}
+      />
+    ),
+    Groups: (
+      <PerformerSelection
+        type="Group"
+        data={groups}
+        selected={groupsFilter}
+        onChange={setGroupsFilter}
+      />
+    ),
+  }).reduce((curr, [label, content], index) => {
+    if (index > 0) {
+      curr.push({ type: 'divider' });
+    }
 
-  const sortValues = ['startTime', 'deadline', 'progress', 'priority', 'state'];
+    curr.push({
+      key: index,
+      type: 'group',
+      label,
+      children: [{ key: `${index}-1`, label: content }],
+    });
+
+    return curr;
+  }, [] as ItemType[]);
 
   const sortDropdownItems: MenuProps['items'] = sortValues.map((sortValue, index) => {
+    const currentlySelected = selectedSortItem.value === sortValue;
+    const ascending = selectedSortItem.ascending;
+
     return {
       key: index,
       label: (
         <div
-          style={{ display: 'flex', alignItems: 'center' }}
+          className={styles.SortListEntry}
           onClick={() => {
-            if (selectedSortItem.value === sortValue) {
-              setSelectedSortItem({ ascending: !selectedSortItem.ascending, value: sortValue });
-            } else {
-              setSelectedSortItem({ ascending: true, value: sortValue });
-            }
+            const sortAscending = currentlySelected ? !ascending : true;
+            setSelectedSortItem({ ascending: sortAscending, value: sortValue });
           }}
         >
-          <span style={{ marginRight: '0.25rem' }}>{sortValue}</span>
-          {selectedSortItem.value === sortValue && selectedSortItem.ascending && (
-            <FaLongArrowAltUp></FaLongArrowAltUp>
-          )}
-          {selectedSortItem.value === sortValue && !selectedSortItem.ascending && (
-            <FaLongArrowAltDown></FaLongArrowAltDown>
-          )}
+          <span>{sortValue}</span>
+          {currentlySelected && <>{ascending ? <FaLongArrowAltUp /> : <FaLongArrowAltDown />}</>}
         </div>
       ),
     };
@@ -317,111 +188,64 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
 
   return (
     <div className={styles.Tasklist}>
-      <div className={selectedUserTaskID !== null ? `${styles.list} selected` : styles.list}>
-        <div className={styles.actionWrapper}>
-          {selectedUserTaskID && !breakpoint.xl ? (
+      <div
+        className={styles.ControlSection}
+        style={{ flexGrow: !breakpoint.xl && !selectedUserTaskID ? 1 : undefined }}
+      >
+        {userTaskSelectedOnMobile ? (
+          <div className={styles.MobileHeader}>
+            <div className={styles.SelectedCardOnMobile}>
+              <UserTaskCard userTaskData={selectedUserTask!} />
+            </div>
             <Button
-              className={styles.backButton}
-              icon={<IoArrowBack></IoArrowBack>}
+              icon={<IoArrowBack />}
               onClick={() => {
                 setSelectedUserTaskID(null);
               }}
-            ></Button>
-          ) : (
-            <Space.Compact className={styles.dropdownWrapper}>
-              <Dropdown
-                open={filterDropdownOpen}
-                onOpenChange={(nextOpen: boolean, info: { source: string }) => {
-                  if (info.source === 'trigger' || nextOpen) {
-                    setFilterDropdownOpen(nextOpen);
-                  }
-                }}
-                autoFocus
-                trigger={['click']}
-                menu={{ items: filterDropdownItems }}
-                overlayStyle={{ width: '18rem' }}
-              >
-                <Button>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FaFilter style={{ marginRight: '0.25rem' }}> </FaFilter>
-                    {breakpoint.sm && <span>Filter Tasks</span>}
-                  </div>
-                </Button>
-              </Dropdown>
-              <Dropdown
-                open={sortDropdownOpen}
-                onOpenChange={(nextOpen: boolean, info: { source: string }) => {
-                  if (info.source === 'trigger' || nextOpen) {
-                    setSortDropdownOpen(nextOpen);
-                  }
-                }}
-                autoFocus
-                trigger={['click']}
-                menu={{ items: sortDropdownItems }}
-              >
-                <Button>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FaSort style={{ marginRight: '0.25rem' }}> </FaSort>
-                    {breakpoint.sm && <span>Sort Tasks</span>}
-                  </div>
-                </Button>
-              </Dropdown>
-            </Space.Compact>
-          )}
-        </div>
-        <div className={styles.cardWrapper}>
-          {selectedUserTaskID !== null && !breakpoint.xl ? (
-            <div style={{ minWidth: '300px', maxWidth: '600px', margin: 'auto' }}>
-              <div style={{ marginInline: '1rem' }}>
-                <UserTaskCard
-                  userTaskData={
-                    filteredAndSortedUserTasks.find((uT) => uT.id === selectedUserTaskID)!
-                  }
-                ></UserTaskCard>
-              </div>
-            </div>
-          ) : (
-            <ScrollBar>
-              <List
-                split={false}
-                style={{ maxWidth: breakpoint.xl ? '300px' : undefined }}
-                bordered={false}
-                dataSource={filteredAndSortedUserTasks}
-                pagination={{
-                  size: 'small',
-                  position: 'bottom',
-                  align: 'center',
-                  responsive: true,
-                  pageSize: 20,
-                  showSizeChanger: false,
-                }}
-              >
-                <div className={styles.cardList}>
-                  {filteredAndSortedUserTasks.map((item) => {
-                    return (
-                      <UserTaskCard
-                        key={item.id}
-                        userTaskData={filteredAndSortedUserTasks.find((uT) => uT.id === item.id)!}
-                        selected={item.id === selectedUserTaskID}
-                        clickHandler={() => {
-                          if (selectedUserTaskID === item.id) {
-                            setSelectedUserTaskID(null);
-                          } else {
-                            setSelectedUserTaskID(item.id);
-                          }
-                        }}
-                      ></UserTaskCard>
-                    );
-                  })}
+            />
+          </div>
+        ) : (
+          <Space.Compact className={styles.FilterAndSort}>
+            <FilterOrSortButton type="Filter" items={filterDropdownItems} />
+            <FilterOrSortButton type="Sort" items={sortDropdownItems} />
+          </Space.Compact>
+        )}
+        {!userTaskSelectedOnMobile && (
+          <div className={styles.UserTaskCardList}>
+            <div className={styles.ScrollableSection}>
+              <ScrollBar>
+                <div
+                  style={{
+                    maxWidth: breakpoint.xl ? '300px' : undefined,
+                  }}
+                  className={styles.CardList}
+                >
+                  {userTasksToDisplay.map((item) => (
+                    <UserTaskCard
+                      key={item.id}
+                      userTaskData={item}
+                      selected={item.id === selectedUserTaskID}
+                      clickHandler={() =>
+                        setSelectedUserTaskID(selectedUserTaskID === item.id ? null : item.id)
+                      }
+                    />
+                  ))}
                 </div>
-              </List>
-            </ScrollBar>
-          )}
-        </div>
+              </ScrollBar>
+            </div>
+            <Pagination
+              style={{ alignSelf: 'center' }}
+              current={currentListPage}
+              onChange={setCurrentListPage}
+              size="small"
+              responsive
+              pageSize={itemsPerPage}
+              total={filteredAndSortedUserTasks.length}
+            />
+          </div>
+        )}
       </div>
-      {(selectedUserTaskID ?? breakpoint.xl) && (
-        <UserTaskView task={userTasks.find((uT) => uT.id === selectedUserTaskID)} />
-      )}
+      {(selectedUserTaskID ?? breakpoint.xl) && <UserTaskView task={selectedUserTask} />}
     </div>
   );
 };

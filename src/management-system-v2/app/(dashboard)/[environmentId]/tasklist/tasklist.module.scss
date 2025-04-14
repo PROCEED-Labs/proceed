@@ -5,34 +5,45 @@
   height: 100%;
 
   @media (max-width: 1199px) {
-    display: flex;
     flex-direction: column;
-    width: 100%;
-    height: 100%;
   }
 
-  .list {
+  .ControlSection {
     display: flex;
     flex-direction: column;
-    overflow-y: hidden;
 
-    @media (min-width: 601px) and (max-width: 1199px) {
-      position: relative;
-    }
-
-    @media (max-width: 1199px) {
+    .MobileHeader {
+      display: flex;
+      flex-direction: row;
       padding-bottom: 0.5rem;
-      border-right: none;
-      border-bottom: 1px solid #eee;
-      flex-grow: 1;
+
+      .SelectedCardOnMobile {
+        flex-grow: 1;
+
+        > :first-child {
+          width: 320px;
+          margin: auto;
+        }
+      }
     }
 
-    .cardWrapper {
+    .UserTaskCardList {
       height: 100%;
       overflow-y: auto;
       padding-right: 0.25rem;
+      display: flex;
+      flex-direction: column;
 
-      .cardList {
+      @media (min-width: 1199px) {
+        width: 320px;
+      }
+
+      .ScrollableSection {
+        max-height: calc(100% - 30px);
+        flex: 1 1 0;
+      }
+
+      .CardList {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         justify-content: space-between;
@@ -43,81 +54,29 @@
           grid-template-columns: repeat(auto-fill, minmax(40vw, 1fr));
         }
       }
-
-      :global(.ant-list) {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-
-        :global(.ant-list-item) {
-          margin: 0 !important;
-        }
-      }
     }
 
-    .actionWrapper {
+    .FilterAndSort {
       padding-right: 1.25rem;
       padding-bottom: 0.5rem;
 
-      @media (max-width: 1199px) {
-        display: flex;
-        justify-content: flex-end;
-      }
+      display: flex;
+      justify-content: center;
 
-      .dropdownWrapper {
-        display: flex;
-        justify-content: center;
-
-        :global(.ant-btn) {
+      :global(.ant-btn) {
+        @media (min-width: 1199px) {
           flex-grow: 1;
         }
       }
     }
   }
+}
 
-  @media (max-width: 1199px) {
-    .list:global(.selected) {
-      flex-direction: row;
-      justify-content: center;
-      flex-grow: 0;
+.SortListEntry {
+  display: flex;
+  align-items: center;
 
-      .cardWrapper {
-        flex-grow: 1;
-        overflow-y: hidden;
-        padding: 0;
-      }
-      .actionWrapper {
-        padding: 0;
-        order: 2;
-      }
-    }
-  }
-
-  .taskView {
-    flex-grow: 1;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    .overlay {
-      position: absolute;
-      text-align: center;
-      color: rgb(70, 70, 70);
-
-      h1 {
-        font-size: 28px;
-        font-weight: bold;
-      }
-    }
-  }
-
-  .completed,
-  .paused {
-    iframe {
-      opacity: 0.25;
-      pointer-events: none;
-    }
+  > span {
+    margin-right: 0.25rem;
   }
 }

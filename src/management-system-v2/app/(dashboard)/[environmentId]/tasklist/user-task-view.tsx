@@ -13,7 +13,7 @@ import {
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 
-import styles from './tasklist.module.scss';
+import styles from './user-task-view.module.scss';
 import { TaskListEntry } from '@/lib/engines/tasklist';
 
 type UserTaskFormProps = {
@@ -44,9 +44,9 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
 
   return (
     <div
-      className={cn(styles.taskView, {
-        [styles.completed]: isCompleted,
-        [styles.paused]: isPaused,
+      className={cn(styles.TaskView, {
+        [styles.Completed]: isCompleted,
+        [styles.Paused]: isPaused,
       })}
     >
       {html && (
@@ -94,7 +94,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
             }}
             srcDoc={html}
             style={{ width: '100%', height: '100%', border: 0 }}
-          ></iframe>
+          />
           {(isCompleted || isPaused) && (
             <div className={styles.overlay}>
               {isCompleted && <h1>This task is completed!</h1>}

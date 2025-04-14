@@ -534,22 +534,27 @@ const Management = {
     const allInactiveUserTasks = this._engines.flatMap((engine) => engine.getInactiveUserTasks());
     // get inactive userTasks of already archived instances
     const allProcesses = await distribution.db.getAllProcesses();
-    const allArchivedInstances = await allProcesses.reduce(async (acc, currentDefinitionId) => {
-      const archivedInstancesForDefinitionId =
-        await distribution.db.getArchivedInstances(currentDefinitionId);
 
-      const nonDuplicateArchivedInstancesForDefinitionId = {};
+    const allArchivedInstances = (
+      await Promise.all(
+        allProcesses.map(async (currentDefinitionId) => {
+          const archivedInstancesForDefinitionId =
+            await distribution.db.getArchivedInstances(currentDefinitionId);
 
-      Object.keys(archivedInstancesForDefinitionId).forEach((instanceId) => {
-        const executingEngine = this.getEngineWithID(instanceId);
-        if (!executingEngine) {
-          nonDuplicateArchivedInstancesForDefinitionId[instanceId] =
-            archivedInstancesForDefinitionId[instanceId];
-        }
-      });
+          const nonDuplicateArchivedInstancesForDefinitionId = {};
 
-      return { ...acc, ...nonDuplicateArchivedInstancesForDefinitionId };
-    }, {});
+          Object.keys(archivedInstancesForDefinitionId).forEach((instanceId) => {
+            const executingEngine = this.getEngineWithID(instanceId);
+            if (!executingEngine) {
+              nonDuplicateArchivedInstancesForDefinitionId[instanceId] =
+                archivedInstancesForDefinitionId[instanceId];
+            }
+          });
+
+          return Object.values(nonDuplicateArchivedInstancesForDefinitionId);
+        }),
+      )
+    ).flat();
 
     const allArchivedUserTasks = Object.values(allArchivedInstances).flatMap((archivedInstance) => {
       if (archivedInstance.userTasks) {

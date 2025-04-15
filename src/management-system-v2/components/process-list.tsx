@@ -1,6 +1,15 @@
 'use client';
 
-import { Button, Grid, Row, TableColumnType, TableColumnsType, TableProps, Tooltip } from 'antd';
+import {
+  Button,
+  Grid,
+  Row,
+  TableColumnType,
+  TableColumnsType,
+  TableProps,
+  Tooltip,
+  Typography,
+} from 'antd';
 import React, {
   useCallback,
   FC,
@@ -63,13 +72,17 @@ export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess
   return item.type === 'folder' ? <FolderFilled /> : '';
 }
 
-const ListEntryLink: React.FC<React.PropsWithChildren<{ data: ProcessListProcess }>> = ({
-  children,
-  data,
-}) => {
+const ListEntryLink: React.FC<
+  React.PropsWithChildren<{
+    data: ProcessListProcess;
+    style?: React.CSSProperties;
+    className?: string;
+  }>
+> = ({ children, data, style, className }) => {
   return (
     <SpaceLink
       href={data.type === 'folder' ? `/processes/folder/${data.id}` : `/processes/${data.id}`}
+      className={className}
       style={{
         color: 'inherit' /* or any color you want */,
         textDecoration: 'none' /* removes underline */,
@@ -77,7 +90,9 @@ const ListEntryLink: React.FC<React.PropsWithChildren<{ data: ProcessListProcess
         padding: '5px 0px',
       }}
     >
-      {children}
+      <Typography.Text className={className} style={style} ellipsis={{ tooltip: <>{children}</> }}>
+        {children}
+      </Typography.Text>
     </SpaceLink>
   );
 };
@@ -228,26 +243,14 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       ellipsis: true,
       sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
       render: (_, record) => (
-        <ListEntryLink data={record}>
-          <span
-            className={
-              breakpoint.xs
-                ? styles.MobileTitleTruncation
-                : breakpoint.xl
-                  ? styles.TitleTruncation
-                  : styles.TabletTitleTruncation
-            }
-            style={{
-              // overflow: 'hidden',
-              // whiteSpace: 'nowrap',
-              // textOverflow: 'ellipsis',
-              // maxWidth: '100%',
-              color: record.id === folder.parentId ? 'grey' : undefined,
-              fontStyle: record.id === folder.parentId ? 'italic' : undefined,
-            }}
-          >
-            <ProcessListItemIcon item={record} /> {record.name.highlighted}
-          </span>
+        <ListEntryLink
+          data={record}
+          style={{
+            color: record.id === folder.parentId ? 'grey' : undefined,
+            fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+          }}
+        >
+          <ProcessListItemIcon item={record} /> {record.name.highlighted}
         </ListEntryLink>
       ),
       responsive: ['xs', 'sm'],
@@ -258,22 +261,12 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       key: 'Description',
       render: (_, record) => (
         <ListEntryLink data={record}>
-          <div
-            style={
-              {
-                // overflow: 'hidden',
-                // whiteSpace: 'nowrap',
-                // textOverflow: 'ellipsis',
-              }
-            }
-          >
-            {(record.description.value ?? '').length == 0 ? (
-              <>&emsp;</>
-            ) : (
-              record.description.highlighted
-            )}
-            {/* Makes the link-cell clickable, when there is no description */}
-          </div>
+          {(record.description.value ?? '').length == 0 ? (
+            <>&emsp;</>
+          ) : (
+            record.description.highlighted
+          )}
+          {/* Makes the link-cell clickable, when there is no description */}
         </ListEntryLink>
       ),
       responsive: ['sm'],

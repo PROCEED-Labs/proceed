@@ -24,23 +24,9 @@ export const useResizeableColumnWidth = <T extends any>(
   const addPreferences = useUserPreferences.use.addPreferences();
   const hydrated = useUserPreferences.use._hydrated();
 
-  /* Wrap all cell entries with overflow ellipsis */
-  const wrappedColumns = columns.map((column: any) => {
-    if (column.render) {
-      return {
-        ...column,
-        render: (...args: any[]) => {
-          const rendered = column.render(...args);
-          return <Typography.Text ellipsis={{ tooltip: rendered }}>{rendered}</Typography.Text>;
-        },
-      };
-    }
-    return column;
-  });
-
   /* Initialise every column, that has no width with min-width */
   const [resizeableColumns, setResizeableColumns] = useState(
-    wrappedColumns.map((col) => ({ ...col, width: col.width || minWidth })),
+    columns.map((col) => ({ ...col, width: col.width || minWidth })),
   );
   const initialisedWithHydratedValues =
     useRef(
@@ -49,7 +35,7 @@ export const useResizeableColumnWidth = <T extends any>(
   const convertedWidthsToNumbers = useRef(false); /* Similar switch */
 
   const computeNewColumns = useCallback(() => {
-    return wrappedColumns.map((column: any) => {
+    return columns.map((column: any) => {
       const columnInPreferences = columnsInPreferences.find(
         (col: any) => col.name === column.title,
       );
@@ -60,7 +46,7 @@ export const useResizeableColumnWidth = <T extends any>(
         width: columnInPreferences.width,
       };
     });
-  }, [wrappedColumns, columnsInPreferences]);
+  }, [columns, columnsInPreferences]);
 
   /* Once hydrated, get the correct values from the localstorage and update state */
   useEffect(() => {
@@ -201,7 +187,6 @@ export const useResizeableColumnWidth = <T extends any>(
     responsive: ['xl'],
   });
 
-  // return useTruncateColumnText(columsWithResize);
   return columsWithResize;
 };
 
@@ -240,196 +225,3 @@ export const ResizeableTitle: FC<ResizeableTitleProps> = ({ onResize, width, ...
     </Resizable>
   );
 };
-
-const useTruncateColumnText = (columns: NonNullable<TableProps['columns']>) => {
-  const truncatedColumns = useMemo(() => {
-    return columns.map((column: any) => {
-      return {
-        ...column,
-        render: (text: any, record: any, rowIndex: number) => {
-          const fallBackText = text?.highlighted
-            ? text.highlighted
-            : text
-              ? text
-              : 'Missing-Display-Name'; /* In case fuzzy-search is used */
-          const newRender = column.render
-            ? () => column.render(text, record, rowIndex)
-            : () => fallBackText;
-          return (
-            <>
-              {/* <TruncatedCell width={column.width} innerRender={newRender} /> */}
-              <Typography.Text
-                style={{ width: column.width }}
-                ellipsis={{ tooltip: { title: newRender } }}
-              >
-                {newRender()}
-              </Typography.Text>
-            </>
-          );
-        },
-      };
-    });
-  }, [columns]);
-
-  return truncatedColumns;
-};
-
-type TruncateType = {
-  width: number | string;
-  innerRender: () => React.ReactNode;
-  tooltip?: string;
-};
-
-const TruncatedCell: FC<TruncateType> = ({ width, innerRender, tooltip }) => {
-  const [overFlowing, setOverFlowing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current || typeof width !== 'number') return;
-
-    const widths = getWidthsOfInnerElements(containerRef.current);
-    const innerWidth =
-      containerRef.current.getClientRects()[0]
-        ?.width; /* This is the width, without padding and border (i.e. the actual width its children can fill) */
-
-    if (innerWidth === undefined) return;
-
-    if (widths.some((w) => w > innerWidth)) {
-      setOverFlowing(true);
-    } else {
-      setOverFlowing(false);
-    }
-  }, [width, innerRender]);
-
-  // Function to recursively remove wrapping/truncating styles from elements
-  const removeTextWrap = (element: string | ReactNode): ReactNode => {
-    if (typeof element === 'string') {
-      return element;
-    }
-
-    if (React.isValidElement(element)) {
-      const elementProps = element.props;
-      const newStyle = { ...elementProps.style };
-
-      // Remove styles related to text wrapping or truncation
-      delete newStyle.overflow;
-      delete newStyle.textOverflow;
-      delete newStyle.whiteSpace;
-      delete newStyle.maxWidth;
-
-      // Recursively process children
-      const children = React.Children.map(elementProps.children, (child) => removeTextWrap(child));
-
-      // Return the new element with updated styles and children
-      return React.cloneElement(element, {
-        ...elementProps,
-        style: newStyle,
-        children,
-      });
-    }
-
-    return element;
-  };
-
-  const renderedContent = innerRender();
-  const tooltipTitle = tooltip ? tooltip : removeTextWrap(renderedContent);
-  return (
-    <>
-      <div ref={containerRef}>
-        {overFlowing ? (
-          <Tooltip title={tooltipTitle} overlayStyle={{ maxWidth: width }} autoAdjustOverflow>
-            <div
-              style={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                maxWidth: '100%',
-              }}
-            >
-              {innerRender()}
-            </div>
-          </Tooltip>
-        ) : (
-          <div
-            style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              maxWidth: '100%',
-            }}
-          >
-            {innerRender()}
-          </div>
-        )}
-      </div>
-    </>
-  );
-};
-
-function getWidthsOfInnerElements(element: HTMLElement | Element): number[] {
-  if (typeof window === 'undefined' || !document) {
-    // Return an empty array if executed on the server
-    return [];
-  }
-
-  // https://stackoverflow.com/questions/118241/calculate-text-width-with-javascript
-  const widths: number[] = [];
-  const context = document.createElement('canvas').getContext('2d');
-
-  if (!context) {
-    return widths;
-  }
-
-  // Get the computed style for the font properties of the element
-  const getFontStyle = (el: Element) => {
-    const styles = getComputedStyle(el);
-    return `${styles.fontStyle} ${styles.fontVariant} ${styles.fontWeight} ${styles.fontSize}/${styles.lineHeight} ${styles.fontFamily}`;
-  };
-
-  // Measure text width
-  const getTextWidth = (el: Element): number => {
-    const text = el.textContent || '';
-    if (!text) return 0;
-
-    context.font = getFontStyle(el); // Set canvas font to element's font
-    return context.measureText(text).width; // Measure the text width
-  };
-
-  // Measure each child's widths
-  const children = Array.from(element.children);
-  children.forEach((child) => {
-    const childElement = child as HTMLElement;
-
-    // Add the computed width of the element
-    widths.push(childElement.getBoundingClientRect().width);
-
-    if (context) {
-      // Add the text width of the element
-      widths.push(getTextWidth(childElement));
-    }
-  });
-
-  // Measure inline children combined width
-  const inlineChildrenWidth = children.reduce((acc, child) => {
-    const childStyles = getComputedStyle(child);
-    if (
-      childStyles.display === 'inline' ||
-      childStyles.display === 'inline-block' ||
-      childStyles.display === 'inline-flex' ||
-      childStyles.display === 'inline-grid' ||
-      childStyles.display === 'inline-table'
-    ) {
-      return acc + Math.max(child.getBoundingClientRect().width, getTextWidth(child));
-    }
-    return acc;
-  }, 0);
-
-  widths.push(inlineChildrenWidth);
-
-  /* Append nested children recursively */
-  children.forEach((child) => {
-    widths.push(...getWidthsOfInnerElements(child));
-  });
-
-  return widths;
-}

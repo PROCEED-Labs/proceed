@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useEffect, useState } from 'react';
+import { FC, Fragment, useEffect, useState } from 'react';
 import {
   Typography,
   Alert,
@@ -13,7 +13,16 @@ import {
   Tooltip,
   ButtonProps,
   ConfigProvider,
+  TabsProps,
+  Tabs,
+  Grid,
 } from 'antd';
+
+import { GoOrganization } from 'react-icons/go';
+import { MdLogin } from 'react-icons/md';
+import { BsFillPersonPlusFill } from 'react-icons/bs';
+import { MdEmail } from 'react-icons/md';
+import { FaCircleArrowUp } from 'react-icons/fa6';
 
 import styles from './login.module.scss';
 import { useSearchParams } from 'next/navigation';
@@ -55,11 +64,41 @@ const signInTitle = (
   </Typography.Title>
 );
 
+const CredentialsSignIn = ({
+  provider,
+  callbackUrl,
+}: {
+  provider: Extract<ExtractedProvider, { type: 'credentials' }>;
+  callbackUrl?: string;
+}) => {
+  return (
+    <Form
+      onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
+      key={provider.id}
+      layout="vertical"
+    >
+      {Object.keys(provider.credentials).map((key) => (
+        <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
+          <Input
+            placeholder={provider.credentials[key].label}
+            type={provider.credentials[key].type}
+            defaultValue={provider.credentials[key].value}
+          />
+        </Form.Item>
+      ))}
+      <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
+        {provider.name}
+      </Button>
+    </Form>
+  );
+};
+
 const SignIn: FC<{
   providers: ExtractedProvider[];
   userType: 'guest' | 'user' | 'none';
   guestReferenceToken?: string;
 }> = ({ providers, userType, guestReferenceToken }) => {
+  const breakpoint = Grid.useBreakpoint();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? undefined;
   const callbackUrlWithGuestRef = guestReferenceToken
@@ -69,9 +108,19 @@ const SignIn: FC<{
 
   const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
-  const credentials = providers.filter(
-    (provider) => provider.type !== 'oauth' && provider.id !== 'guest-signin',
+
+  const emailProvider = providers.find((provider) => provider.type === 'email');
+  const passwordSigninProvider = providers.find(
+    (provider) => provider.id === 'username-password-signin',
   );
+  const passwordSignupProvider = providers.find(
+    (provider) => provider.id === 'username-password-signup',
+  );
+  const developmentUsersProvider = providers.find(
+    (provider) => provider.id === 'development-users',
+  );
+
+  const [_activeIndex, setActiveIndex] = useState<string | null>(null);
 
   // We need to wait until the component is mounted on the client
   // to open the modal, otherwise it will cause a hydration mismatch
@@ -79,6 +128,103 @@ const SignIn: FC<{
   useEffect(() => {
     setOpen(true);
   }, [setOpen]);
+
+  type Tab = NonNullable<TabsProps['items']>[number];
+  const tabs: (Tab & { href?: string })[] = [];
+
+  if (developmentUsersProvider) {
+    tabs.push({
+      icon: <FaCircleArrowUp size={26} />,
+      label: 'Development Users',
+      key: 'development-users',
+      children: (
+        <CredentialsSignIn
+          provider={developmentUsersProvider as any}
+          callbackUrl={callbackUrlWithGuestRef}
+        />
+      ),
+    });
+  }
+
+  if (emailProvider) {
+    tabs.push({
+      icon: <MdEmail size={26} />,
+      label: 'Email',
+      key: 'signin-email',
+      children: (
+        <>
+          <Form
+            onFinish={(values) =>
+              signIn(emailProvider.id, { ...values, callbackUrl: callbackUrlWithGuestRef })
+            }
+            key={emailProvider.id}
+            layout="vertical"
+            style={{ marginBottom: verticalGap }}
+          >
+            <Form.Item
+              name="email"
+              rules={[{ type: 'email', required: true }]}
+              style={{ marginBottom: verticalGap }}
+            >
+              <Input placeholder="E-Mail" />
+            </Form.Item>
+            <Button htmlType="submit">Continue with E-Mail</Button>
+          </Form>
+
+          <Alert
+            message="Note: Simply sign in with your e-mail address and we will send you an access link."
+            type="info"
+          />
+        </>
+      ),
+    });
+  }
+
+  if (passwordSigninProvider) {
+    tabs.push({
+      icon: <MdLogin size={26} />,
+      label: 'Sign in with Password',
+      key: 'signin-password',
+      children: (
+        <CredentialsSignIn
+          provider={passwordSigninProvider as any}
+          callbackUrl={callbackUrlWithGuestRef}
+        />
+      ),
+    });
+  }
+
+  if (passwordSignupProvider) {
+    tabs.push({
+      icon: <BsFillPersonPlusFill size={26} />,
+      label: 'Register',
+      key: 'signup-password',
+      children: (
+        <CredentialsSignIn
+          provider={passwordSignupProvider as any}
+          callbackUrl={callbackUrlWithGuestRef}
+        />
+      ),
+    });
+  }
+
+  // TODO: disable this when only one organization is enabled
+  if (true) {
+    tabs.push({
+      icon: <GoOrganization size={26} />,
+      label: 'Create Organization',
+      key: 'create-organization',
+      href: '/create-organization',
+      children: (
+        <CredentialsSignIn
+          provider={passwordSignupProvider as any}
+          callbackUrl={callbackUrlWithGuestRef}
+        />
+      ),
+    });
+  }
+
+  const activeIndex = _activeIndex || tabs[0]?.key;
 
   return (
     <ConfigProvider
@@ -127,6 +273,19 @@ const SignIn: FC<{
           signInTitle
         )}
 
+        {userType === 'guest' && guestProvider && (
+          <>
+            {divider}
+            <Button href="/processes" style={{ marginBottom: verticalGap }}>
+              Continue as Guest
+            </Button>
+
+            <Alert
+              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              type="info"
+            />
+          </>
+        )}
         {userType === 'none' && guestProvider && (
           <>
             <Form
@@ -147,60 +306,70 @@ const SignIn: FC<{
           </>
         )}
 
+        {/* If the user isn't none, we already show the signIn title at the top of the modal */}
         {userType === 'none' && signInTitle}
 
-        <Space direction="vertical" style={{ gap: verticalGap }}>
-          {credentials.map((provider) => {
-            if (provider.type === 'credentials') {
-              return (
-                <Form
-                  onFinish={(values) =>
-                    signIn(provider.id, { ...values, callbackUrl: callbackUrlWithGuestRef })
-                  }
-                  key={provider.id}
-                  layout="vertical"
-                >
-                  {Object.keys(provider.credentials).map((key) => (
-                    <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
-                      <Input placeholder={provider.credentials[key].label} />
-                    </Form.Item>
-                  ))}
-                  <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
-                    {provider.name}
-                  </Button>
-                </Form>
-              );
-            } else if (provider.type === 'email') {
-              return (
-                <>
-                  <Form
-                    onFinish={(values) =>
-                      signIn(provider.id, { ...values, callbackUrl: callbackUrlWithGuestRef })
-                    }
-                    key={provider.id}
-                    layout="vertical"
-                  >
-                    <Form.Item
-                      name="email"
-                      rules={[{ type: 'email', required: true }]}
-                      style={{ marginBottom: '.5rem' }}
-                    >
-                      <Input placeholder="E-Mail" />
-                    </Form.Item>
-                    <Button htmlType="submit">Continue with E-Mail</Button>
-                  </Form>
+        <Tabs
+          items={tabs}
+          renderTabBar={() => (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: breakpoint.lg ? 'row' : 'column',
+                  flexWrap: breakpoint.lg ? 'nowrap' : 'wrap',
+                  alignItems: '',
+                  justifyContent: 'center',
+                  gap: '1rem',
+                  width: '100%',
+                }}
+              >
+                {tabs.map((option, index) => {
+                  const Wrapper = option.href ? Link : Fragment;
 
-                  <Alert
-                    message="Note: Simply sign in with your e-mail address and we will send you an access link."
-                    type="info"
-                  />
-                </>
-              );
-            }
-          })}
-        </Space>
+                  return (
+                    <Wrapper key={index} href={option.href as any} passHref legacyBehavior>
+                      <AntDesignButton
+                        style={{
+                          flex: breakpoint.lg ? '1 1 0' : '', // evenly fill container
+                          height: 'auto', // Allow for vertical stretching
+                          minHeight: 'min-content',
+                          padding: '.5rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          overflow: 'hidden',
+                          whiteSpace: 'normal',
+                          textOverflow: 'ellipsis',
+                          width: '100%',
+                        }}
+                        color={option.key === activeIndex ? 'primary' : 'default'}
+                        variant="outlined"
+                        onClick={() => !option.href && setActiveIndex(option.key)}
+                      >
+                        {option.icon}
+                        <Typography.Text
+                          style={{
+                            textAlign: 'center',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          {option.label}
+                        </Typography.Text>
+                      </AntDesignButton>
+                    </Wrapper>
+                  );
+                })}
+              </div>
 
-        {divider}
+              {breakpoint.lg && <Divider />}
+            </>
+          )}
+          activeKey={activeIndex}
+        />
+
+        {oauthProviders.length > 0 && divider}
 
         <Space wrap style={{ justifyContent: 'center', width: '100%' }}>
           {oauthProviders.map((provider, idx) => {
@@ -225,20 +394,6 @@ const SignIn: FC<{
             );
           })}
         </Space>
-
-        {userType === 'guest' && guestProvider && (
-          <>
-            {divider}
-            <Button href="/processes" style={{ marginBottom: verticalGap }}>
-              Continue as Guest
-            </Button>
-
-            <Alert
-              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
-              type="info"
-            />
-          </>
-        )}
 
         <Typography.Paragraph
           style={{

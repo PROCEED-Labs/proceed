@@ -169,7 +169,7 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
         label="Process Description"
         rules={[{ required: false, message: 'Please fill out the Process description' }]}
       >
-        <Input.TextArea showCount rows={4} maxLength={150} />
+        <Input.TextArea showCount rows={4} /* maxLength={150} */ />
       </Form.Item>
     </>
   );

@@ -41,6 +41,12 @@ import { BsFileEarmarkCheck } from 'react-icons/bs';
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
   const sorter: TableColumnType<ProcessListProcess>['sorter'] = (a, b, sortOrder) => {
     const factor = sortOrder === 'ascend' ? 1 : -1;
+    /* Root Folder is always on top */
+    if (a.type === 'folder' && a.parentId === null) {
+      return factor * -1;
+    } else if (b.type === 'folder' && b.parentId === null) {
+      return factor;
+    }
     if (a.type === 'folder' && b.type !== 'folder') {
       return factor * -1;
     } else if (a.type !== 'folder' && b.type === 'folder') {
@@ -223,7 +229,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
       render: (_, record) => (
         <ListEntryLink data={record}>
-          <div
+          <span
             className={
               breakpoint.xs
                 ? styles.MobileTitleTruncation
@@ -232,16 +238,16 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                   : styles.TabletTitleTruncation
             }
             style={{
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-              maxWidth: '100%',
+              // overflow: 'hidden',
+              // whiteSpace: 'nowrap',
+              // textOverflow: 'ellipsis',
+              // maxWidth: '100%',
               color: record.id === folder.parentId ? 'grey' : undefined,
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
           >
             <ProcessListItemIcon item={record} /> {record.name.highlighted}
-          </div>
+          </span>
         </ListEntryLink>
       ),
       responsive: ['xs', 'sm'],
@@ -253,11 +259,13 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       render: (_, record) => (
         <ListEntryLink data={record}>
           <div
-            style={{
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-            }}
+            style={
+              {
+                // overflow: 'hidden',
+                // whiteSpace: 'nowrap',
+                // textOverflow: 'ellipsis',
+              }
+            }
           >
             {(record.description.value ?? '').length == 0 ? (
               <>&emsp;</>

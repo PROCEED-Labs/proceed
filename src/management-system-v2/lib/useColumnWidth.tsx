@@ -24,9 +24,23 @@ export const useResizeableColumnWidth = <T extends any>(
   const addPreferences = useUserPreferences.use.addPreferences();
   const hydrated = useUserPreferences.use._hydrated();
 
+  /* Wrap all cell entries with overflow ellipsis */
+  const wrappedColumns = columns.map((column: any) => {
+    if (column.render) {
+      return {
+        ...column,
+        render: (...args: any[]) => {
+          const rendered = column.render(...args);
+          return <Typography.Text ellipsis={{ tooltip: rendered }}>{rendered}</Typography.Text>;
+        },
+      };
+    }
+    return column;
+  });
+
   /* Initialise every column, that has no width with min-width */
   const [resizeableColumns, setResizeableColumns] = useState(
-    columns.map((col) => ({ ...col, width: col.width || minWidth })),
+    wrappedColumns.map((col) => ({ ...col, width: col.width || minWidth })),
   );
   const initialisedWithHydratedValues =
     useRef(
@@ -35,7 +49,7 @@ export const useResizeableColumnWidth = <T extends any>(
   const convertedWidthsToNumbers = useRef(false); /* Similar switch */
 
   const computeNewColumns = useCallback(() => {
-    return columns.map((column: any) => {
+    return wrappedColumns.map((column: any) => {
       const columnInPreferences = columnsInPreferences.find(
         (col: any) => col.name === column.title,
       );
@@ -46,7 +60,7 @@ export const useResizeableColumnWidth = <T extends any>(
         width: columnInPreferences.width,
       };
     });
-  }, [columns, columnsInPreferences]);
+  }, [wrappedColumns, columnsInPreferences]);
 
   /* Once hydrated, get the correct values from the localstorage and update state */
   useEffect(() => {
@@ -227,7 +241,7 @@ export const ResizeableTitle: FC<ResizeableTitleProps> = ({ onResize, width, ...
   );
 };
 
-export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']>) => {
+const useTruncateColumnText = (columns: NonNullable<TableProps['columns']>) => {
   const truncatedColumns = useMemo(() => {
     return columns.map((column: any) => {
       return {

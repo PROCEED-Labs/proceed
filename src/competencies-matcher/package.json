@@ -1,0 +1,23 @@
+{
+  "name": "competencies-matcher",
+  "version": "0.0.1",
+  "description": "Matching microservice that allows to allows to define and match on data criteria",
+  "main": "server.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PROCEED-Labs/proceed.git"
+  },
+  "keywords": [
+    "embedding",
+    "matching"
+  ],
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PROCEED-Labs/proceed/issues"
+  },
+  "homepage": "https://github.com/PROCEED-Labs/proceed#readme"
+}

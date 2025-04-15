@@ -26,22 +26,23 @@ model SystemAdmin {
 }
 
 model User {
-  id              String         @id @default(uuid())
-  firstName       String?
-  lastName        String?
-  username        String?        @unique
-  email           String?        @unique
-  isGuest         Boolean
-  emailVerifiedOn DateTime?
-  image           String?
-  favourites      String[]
-  processes       Process[]
-  ownedSpaces     Space[]        @relation("spaceOwner")
-  memberIn        Membership[]
-  folders         Folder[]
-  oauthAccounts   OauthAccount[]
-  roleMembers     RoleMember[]
-  systemAdmin     SystemAdmin?   @relation("systemAdmin")
+  id                 String         @id @default(uuid())
+  firstName          String?
+  lastName           String?
+  username           String?        @unique
+  email              String?        @unique
+  isGuest            Boolean
+  emailVerifiedOn    DateTime?
+  image              String?
+  favourites         String[]
+  processes          Process[]
+  ownedSpaces        Space[]        @relation("spaceOwner")
+  memberIn           Membership[]
+  folders            Folder[]
+  oauthAccounts      OauthAccount[]
+  roleMembers        RoleMember[]
+  systemAdmin        SystemAdmin?   @relation("systemAdmin")
+  verificationTokens VerificationToken[]   @relation("verificationToken")
 
   @@map("user")
 }
@@ -227,3 +228,12 @@ model Engine {
 
   @@map("engine")
 }
+
+model VerificationToken {
+  token      String   @id
+  identifier String
+  expires    DateTime
+  user       User?     @relation(name: "verificationToken", fields: [userId], references: [id])
+  userId     String? /// If this is set, then the token is for an email change and the idenrtifier is the new email
+}
+  

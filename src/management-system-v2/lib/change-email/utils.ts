@@ -2,7 +2,7 @@ import 'server-only';
 
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { z } from 'zod';
-import { VerificationToken } from '../data/legacy/verification-tokens';
+import { VerificationToken } from '../data/db/verification-tokens';
 
 async function createHash(message: string) {
   const msgUint8 = new TextEncoder().encode(message);
@@ -33,7 +33,6 @@ export async function createChangeEmailVerificationToken({
     token: await getTokenHash(token),
     expires,
     identifier,
-    updateEmail: true,
     userId,
   } satisfies VerificationToken;
 
@@ -49,9 +48,7 @@ export async function createChangeEmailVerificationToken({
   return { verificationToken, redirectUrl };
 }
 
-export async function notExpired(
-  verificationToken: Extract<VerificationToken, { updateEmail: true }>,
-) {
+export async function notExpired(verificationToken: VerificationToken) {
   if (verificationToken.expires.valueOf() < Date.now()) return false;
   return true;
 }

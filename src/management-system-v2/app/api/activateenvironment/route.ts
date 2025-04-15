@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import nextAuthOptions from '../auth/[...nextauth]/auth-options';
-import { activateEnvrionment } from '@/lib/data/legacy/iam/environments';
+import { activateEnvrionment } from '@/lib/data/db/iam/environments';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { redirect } from 'next/navigation';
 

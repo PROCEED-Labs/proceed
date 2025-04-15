@@ -34,53 +34,26 @@ import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
-import { TProcessModule } from './module-import-types-temp';
 import { copyProcessArtifactReferences, copyProcessFiles } from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
-
-// Declare variables to hold the process module functions
-let removeProcess: TProcessModule['removeProcess'];
-let _addProcess: TProcessModule['addProcess'];
-let _getProcess: TProcessModule['getProcess'];
-let _updateProcess: TProcessModule['updateProcess'];
-let getProcessVersionBpmn: TProcessModule['getProcessVersionBpmn'];
-let addProcessVersion: TProcessModule['addProcessVersion'];
-
-let updateProcessMetaData: TProcessModule['updateProcessMetaData'];
-
-let _getProcessImage: TProcessModule['getProcessImage'];
-let _getProcessBpmn: TProcessModule['getProcessBpmn'];
-let _saveProcessUserTask: TProcessModule['saveProcessUserTask'];
-let _getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
-let _getProcessUserTaskHtml: TProcessModule['getProcessUserTaskHtml'];
-let _saveProcessScriptTask: TProcessModule['saveProcessScriptTask'];
-let _deleteProcessScriptTask: TProcessModule['deleteProcessScriptTask'];
-let _getProcessScriptTaskScript: TProcessModule['getProcessScriptTaskScript'];
-
-const loadModules = async () => {
-  const moduleImport = await (enableUseDB ? import('./db/process') : import('./legacy/_process'));
-
-  ({
-    removeProcess,
-    addProcess: _addProcess,
-    getProcess: _getProcess,
-    updateProcess: _updateProcess,
-    getProcessVersionBpmn,
-    addProcessVersion,
-    updateProcessMetaData,
-    getProcessBpmn: _getProcessBpmn,
-    saveProcessUserTask: _saveProcessUserTask,
-    getProcessUserTaskJSON: _getProcessUserTaskJSON,
-    getProcessImage: _getProcessImage,
-    getProcessUserTaskHtml: _getProcessUserTaskHtml,
-    saveProcessScriptTask: _saveProcessScriptTask,
-    deleteProcessScriptTask: _deleteProcessScriptTask,
-    getProcessScriptTaskScript: _getProcessScriptTaskScript,
-  } = moduleImport);
-};
-
-loadModules().catch(console.error);
+import {
+  removeProcess,
+  addProcess as _addProcess,
+  getProcess as _getProcess,
+  updateProcess as _updateProcess,
+  getProcessVersionBpmn,
+  addProcessVersion,
+  updateProcessMetaData,
+  getProcessBpmn as _getProcessBpmn,
+  saveProcessUserTask as _saveProcessUserTask,
+  getProcessUserTaskJSON as _getProcessUserTaskJSON,
+  getProcessImage as _getProcessImage,
+  getProcessUserTaskHtml as _getProcessUserTaskHtml,
+  saveProcessScriptTask as _saveProcessScriptTask,
+  deleteProcessScriptTask as _deleteProcessScriptTask,
+  getProcessScriptTaskScript as _getProcessScriptTaskScript,
+} from '@/lib/data/db/process';
 
 // Import necessary functions from processModule
 
@@ -89,8 +62,6 @@ export const checkValidity = async (
   operation: 'view' | 'update' | 'delete',
   spaceId: string,
 ) => {
-  await loadModules();
-
   const { ability } = await getCurrentEnvironment(spaceId);
 
   const process = await _getProcess(definitionId);
@@ -118,8 +89,6 @@ export const checkValidity = async (
 };
 
 const getBpmnVersion = async (definitionId: string, versionId?: string) => {
-  await loadModules();
-
   const process = await _getProcess(definitionId);
 
   if (versionId) {
@@ -139,8 +108,6 @@ const getBpmnVersion = async (definitionId: string, versionId?: string) => {
 };
 
 export const getSharedProcessWithBpmn = async (definitionId: string, versionCreatedOn?: string) => {
-  await loadModules();
-
   const processMetaObj = await _getProcess(definitionId);
 
   if (!processMetaObj) {
@@ -167,7 +134,6 @@ export const getProcess = async (
   spaceId: string,
   skipValidityCheck = false,
 ) => {
-  await loadModules();
   if (!skipValidityCheck) {
     const error = await checkValidity(definitionId, 'view', spaceId);
 
@@ -178,8 +144,6 @@ export const getProcess = async (
 };
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: string) => {
-  await loadModules();
-
   const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
@@ -188,8 +152,6 @@ export const getProcessBPMN = async (definitionId: string, spaceId: string, vers
 };
 
 export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {
-  await loadModules();
-
   for (const definitionId of definitionIds) {
     const error = await checkValidity(definitionId, 'delete', spaceId);
 
@@ -203,8 +165,6 @@ export const addProcesses = async (
   values: { name: string; description: string; bpmn?: string; folderId?: string }[],
   spaceId: string,
 ) => {
-  await loadModules();
-
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
 
@@ -247,8 +207,6 @@ export const updateProcessShareInfo = async (
   allowIframeTimestamp: number | undefined,
   spaceId: string,
 ) => {
-  await loadModules();
-
   const error = await checkValidity(definitionsId, 'update', spaceId);
 
   if (error) return error;
@@ -268,8 +226,6 @@ export const updateProcess = async (
   name?: string,
   invalidate = false,
 ) => {
-  await loadModules();
-
   const error = await checkValidity(definitionsId, 'update', spaceId);
 
   if (error) return error;
@@ -303,8 +259,6 @@ export const updateProcesses = async (
   }[],
   spaceId: string,
 ) => {
-  await loadModules();
-
   const res = await Promise.all(
     processes.map(async (process) => {
       return await updateProcess(
@@ -334,8 +288,6 @@ export const copyProcesses = async (
   destinationfolderId?: string,
   referencedProcessId?: string,
 ) => {
-  await loadModules();
-
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
   const copiedProcesses: Process[] = [];

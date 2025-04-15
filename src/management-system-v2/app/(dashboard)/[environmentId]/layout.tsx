@@ -2,7 +2,7 @@ import { PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
-import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
+import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { MenuProps } from 'antd';
 
 import {
@@ -25,7 +25,7 @@ import {
 } from '@ant-design/icons';
 
 import Link from 'next/link';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/db/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { LuTable2 } from 'react-icons/lu';
@@ -43,9 +43,12 @@ const DashboardLayout = async ({
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
-  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironments = await asyncMap(userOrgEnvs, (envId) => getEnvironmentById(envId));
+  const orgEnvironments = await asyncMap(
+    userOrgEnvs,
+    async (envId) => (await getEnvironmentById(envId))!,
+  );
 
   userEnvironments.push(...orgEnvironments);
 

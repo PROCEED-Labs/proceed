@@ -213,7 +213,12 @@ if (env.NODE_ENV === 'development') {
       id: 'development-users',
       name: 'Continue with Development User',
       credentials: {
-        username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
+        username: {
+          label: 'Username',
+          type: 'text',
+          placeholder: 'johndoe | admin',
+          value: 'admin',
+        },
       },
       async authorize(credentials) {
         if (enableUseDB) {

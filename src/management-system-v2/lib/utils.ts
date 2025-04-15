@@ -15,6 +15,45 @@ export function generateDateString(date?: Date | string, includeTime: boolean = 
 
   return new Date(date).toLocaleDateString('en-UK', options);
 }
+
+export function generateTableDateString(date?: Date | string): string {
+  if (!date) {
+    return '';
+  }
+
+  const inputDate = new Date(date);
+  const now = new Date();
+
+  // Normalize both dates to midnight to compare calendar days (more intuitve)
+  const inputDateMidnight = new Date(
+    inputDate.getFullYear(),
+    inputDate.getMonth(),
+    inputDate.getDate(),
+  );
+  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const diff = nowMidnight.getTime() - inputDateMidnight.getTime();
+  const diffInDays = Math.floor(diff / (24 * 60 * 60 * 1000));
+
+  if (diffInDays === 0) {
+    // The same day
+    return `Today, ${inputDate.toLocaleTimeString('en-UK', { hour: 'numeric', minute: 'numeric' })}`;
+  } else if (diffInDays === 1) {
+    // Yesterday
+    return `Yesterday, ${inputDate.toLocaleTimeString('en-UK', { hour: 'numeric', minute: 'numeric' })}`;
+  } else if (diffInDays < 7) {
+    // Less than 7 days
+    return `${diffInDays} days ago`;
+  } else {
+    // 7 days or more
+    return inputDate.toLocaleDateString('en-UK', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    });
+  }
+}
+
 type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
 type JSONObject = { [key: string]: JSONValue };
 type JSONArray = JSONValue[];

@@ -187,8 +187,8 @@ export const useResizeableColumnWidth = <T extends any>(
     responsive: ['xl'],
   });
 
-  return useTruncateColumnText(columsWithResize);
-  // return columsWithResize;
+  // return useTruncateColumnText(columsWithResize);
+  return columsWithResize;
 };
 
 type ResizeableTitleProps = PropsWithChildren & {

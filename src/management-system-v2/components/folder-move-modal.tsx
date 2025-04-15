@@ -3,7 +3,7 @@
 import React, { FC } from 'react';
 import { FolderTree } from './FolderTree';
 import { Button, Modal } from 'antd';
-import { FolderChildren } from '@/lib/data/legacy/folders';
+import { FolderChildren } from '@/lib/data/folders';
 
 type MoveToFolderModalProps = {
   open: boolean;

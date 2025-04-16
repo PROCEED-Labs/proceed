@@ -320,8 +320,8 @@ const SignIn: FC<{
               <div
                 style={{
                   display: 'flex',
-                  flexDirection: breakpoint.lg ? 'row' : 'column',
-                  flexWrap: breakpoint.lg ? 'nowrap' : 'wrap',
+                  flexDirection: breakpoint.xs ? 'column' : 'row',
+                  flexWrap: breakpoint.xs ? 'wrap' : 'nowrap',
                   alignItems: '',
                   justifyContent: 'center',
                   gap: '1rem',
@@ -335,7 +335,7 @@ const SignIn: FC<{
                     <Wrapper key={index} href={option.href as any} passHref legacyBehavior>
                       <AntDesignButton
                         style={{
-                          flex: breakpoint.lg ? '1 1 0' : '', // evenly fill container
+                          flex: breakpoint.xs ? '' : '1 1 0', // evenly fill container
                           height: 'auto', // Allow for vertical stretching
                           minHeight: 'min-content',
                           padding: '.5rem',
@@ -345,7 +345,7 @@ const SignIn: FC<{
                           alignItems: 'center',
                           overflow: 'hidden',
                           whiteSpace: 'normal',
-                          textOverflow: 'ellipsis',
+                          wordBreak: 'keep-all',
                           width: '100%',
                         }}
                         color={option.key === activeIndex ? 'primary' : 'default'}
@@ -367,7 +367,7 @@ const SignIn: FC<{
                 })}
               </div>
 
-              {breakpoint.lg && <Divider />}
+              <Divider />
             </>
           )}
           activeKey={activeIndex}

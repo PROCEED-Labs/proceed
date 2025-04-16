@@ -135,7 +135,7 @@ const SignIn: FC<{
   if (developmentUsersProvider) {
     tabs.push({
       icon: <FaCircleArrowUp size={26} />,
-      label: 'Development Users',
+      label: 'Sign In as Development User',
       key: 'development-users',
       children: (
         <CredentialsSignIn
@@ -149,7 +149,11 @@ const SignIn: FC<{
   if (emailProvider) {
     tabs.push({
       icon: <MdEmail size={26} />,
-      label: 'Email',
+      label: (
+        <span>
+          Sign In with <span style={{ whiteSpace: 'nowrap' }}>E-Mail</span>
+        </span>
+      ),
       key: 'signin-email',
       children: (
         <>
@@ -183,7 +187,7 @@ const SignIn: FC<{
   if (passwordSigninProvider) {
     tabs.push({
       icon: <MdLogin size={26} />,
-      label: 'Sign in with Password',
+      label: 'Sign In with Password',
       key: 'signin-password',
       children: (
         <CredentialsSignIn
@@ -197,7 +201,7 @@ const SignIn: FC<{
   if (passwordSignupProvider) {
     tabs.push({
       icon: <BsFillPersonPlusFill size={26} />,
-      label: 'Register',
+      label: 'Register as New User',
       key: 'signup-password',
       children: (
         <CredentialsSignIn

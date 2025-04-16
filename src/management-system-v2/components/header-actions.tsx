@@ -175,11 +175,7 @@ const HeaderActions: FC = () => {
             <SpaceLink href={`/profile`}>
               <UserAvatar user={session.data.user} />
             </SpaceLink>
-          ) : (
-            <div>
-              <UserAvatar user={session.data.user} />
-            </div>
-          )}
+          ) : null}
         </Dropdown>
       </Space>
     </>

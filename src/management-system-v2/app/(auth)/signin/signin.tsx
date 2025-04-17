@@ -16,6 +16,7 @@ import {
   TabsProps,
   Tabs,
   Grid,
+  Select,
 } from 'antd';
 
 import { GoOrganization } from 'react-icons/go';
@@ -138,10 +139,27 @@ const SignIn: FC<{
       label: 'Sign In as Development User',
       key: 'development-users',
       children: (
-        <CredentialsSignIn
-          provider={developmentUsersProvider as any}
-          callbackUrl={callbackUrlWithGuestRef}
-        />
+        <Form
+          onFinish={(values) =>
+            signIn(developmentUsersProvider.id, { ...values, callbackUrl: callbackUrlWithGuestRef })
+          }
+          key={developmentUsersProvider.id}
+          layout="vertical"
+        >
+          <Form.Item name="username" initialValue="admin">
+            <Select
+              options={[
+                {
+                  value: 'admin',
+                },
+                { value: 'johndoe' },
+              ]}
+            />
+          </Form.Item>
+          <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
+            {developmentUsersProvider.name}
+          </Button>
+        </Form>
       ),
     });
   }

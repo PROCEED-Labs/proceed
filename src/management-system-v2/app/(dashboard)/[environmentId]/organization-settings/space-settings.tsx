@@ -102,12 +102,25 @@ const SpaceSettings = ({
           },
           {
             key: 'contactPhoneNumber',
-            title: 'Phone Number',
+            title: 'Contact Phone Number',
             value: (
               <Form.Item
                 name="contactPhoneNumber"
                 style={{ margin: '0', width: '100%' }}
                 {...antDesignInputProps(errors, 'contactPhoneNumber')}
+              >
+                <PhoneInput />
+              </Form.Item>
+            ),
+          },
+          {
+            key: 'contactEmail',
+            title: 'Contact E-Mail',
+            value: (
+              <Form.Item
+                name="contactEmail"
+                style={{ margin: '0', width: '100%' }}
+                {...antDesignInputProps(errors, 'contactEmail')}
               >
                 <PhoneInput />
               </Form.Item>

@@ -218,7 +218,10 @@ export async function getOrganizationLogo(organizationId: string) {
   if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
 
   try {
-    return await db.space.findUnique({ where: { id: organizationId }, select: { logo: true } });
+    return await db.space.findUnique({
+      where: { id: organizationId },
+      select: { spaceLogo: true },
+    });
   } catch (err) {
     return undefined;
   }
@@ -227,9 +230,9 @@ export async function getOrganizationLogo(organizationId: string) {
 export async function organizationHasLogo(organizationId: string) {
   const res = await db.space.findUnique({
     where: { id: organizationId },
-    select: { logo: true },
+    select: { spaceLogo: true },
   });
-  if (res?.logo) {
+  if (res?.spaceLogo) {
     return true;
   }
   return false;

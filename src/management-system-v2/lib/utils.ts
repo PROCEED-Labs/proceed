@@ -1,4 +1,6 @@
-import { AuthenticatedUser, User } from './data/user-schema';
+import { AuthenticatedUser } from './data/user-schema';
+import z from 'zod';
+import parsePhoneNumberFromString, { CountryCode } from 'libphonenumber-js';
 
 export function generateDateString(date?: Date | string, includeTime: boolean = false): string {
   if (!date) {
@@ -455,4 +457,24 @@ export function userRepresentation(
   if (!!member.firstName !== !!member.lastName) return member.firstName || member.lastName;
 
   return member.username || 'unknown';
+}
+
+export function zodPhoneNumber(defaultCountry: CountryCode = 'DE') {
+  return z.string().transform((arg, ctx) => {
+    const phone = parsePhoneNumberFromString(arg, {
+      defaultCountry,
+      extract: false,
+    });
+
+    if (phone && phone.isValid()) {
+      return phone.number.toString();
+    }
+
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Invalid phone number',
+    });
+
+    return z.NEVER;
+  });
 }

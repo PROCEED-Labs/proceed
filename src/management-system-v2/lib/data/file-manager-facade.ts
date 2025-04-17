@@ -89,7 +89,7 @@ export const cleanUpFailedUploadEntry = async (
   if (EntityType.ORGANIZATION === entityType) {
     // Maybe add ability check here, if the user is admin of the organisation
     try {
-      await db.space.update({ where: { id: entityId }, data: { logo: null } });
+      await db.space.update({ where: { id: entityId }, data: { spaceLogo: null } });
       return true;
     } catch (error) {
       console.error('Failed to clean up failed upload entry:', error);
@@ -308,7 +308,7 @@ export async function saveOrganizationLogo(
 
   await db.space.update({
     where: { id: organizationId },
-    data: { logo: filePath },
+    data: { spaceLogo: filePath },
   });
 
   return { presignedUrl, fileName: newFileName };
@@ -317,11 +317,11 @@ export async function saveOrganizationLogo(
 export async function getOrganizationLogo(organizationId: string) {
   const result = await db.space.findUnique({
     where: { id: organizationId },
-    select: { logo: true },
+    select: { spaceLogo: true },
   });
 
-  if (result?.logo) {
-    return retrieveFile(result.logo);
+  if (result?.spaceLogo) {
+    return retrieveFile(result.spaceLogo);
   }
 
   return null;
@@ -330,15 +330,15 @@ export async function getOrganizationLogo(organizationId: string) {
 export async function deleteOrganizationLogo(organizationId: string): Promise<boolean> {
   const result = await db.space.findUnique({
     where: { id: organizationId },
-    select: { logo: true },
+    select: { spaceLogo: true },
   });
 
-  if (result?.logo) {
-    const isDeleted = await deleteFile(result.logo);
+  if (result?.spaceLogo) {
+    const isDeleted = await deleteFile(result.spaceLogo);
     if (isDeleted) {
       await db.space.update({
         where: { id: organizationId },
-        data: { logo: null },
+        data: { spaceLogo: null },
       });
     }
     return isDeleted;

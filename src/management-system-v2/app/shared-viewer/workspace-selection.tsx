@@ -155,7 +155,7 @@ const WorkspaceSelection: React.FC<
     label: workspace.isOrganization ? workspace.name : 'My Space',
     key: `${workspace.id}`,
     logo:
-      workspace.isOrganization && workspace.logo ? (
+      workspace.isOrganization && workspace.spaceLogo ? (
         <Tooltip title={workspace.name}>
           <Avatar
             size={64}

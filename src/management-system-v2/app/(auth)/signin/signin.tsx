@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, Fragment, useEffect, useState } from 'react';
+import { FC, Fragment, ReactNode, useEffect, useState } from 'react';
 import {
   Typography,
   Alert,
@@ -130,7 +130,7 @@ const SignIn: FC<{
   }, [setOpen]);
 
   type Tab = NonNullable<TabsProps['items']>[number];
-  const tabs: (Tab & { href?: string })[] = [];
+  const tabs: (Tab & { href?: string; onClick?: () => void })[] = [];
 
   if (developmentUsersProvider) {
     tabs.push({
@@ -223,6 +223,22 @@ const SignIn: FC<{
         <CredentialsSignIn
           provider={passwordSignupProvider as any}
           callbackUrl={callbackUrlWithGuestRef}
+        />
+      ),
+    });
+  }
+
+  for (const provider of oauthProviders) {
+    tabs.push({
+      key: provider.id,
+      label: `Sign in with ${provider.name}`,
+      onClick: () => signIn(provider.id, { callbackUrl: callbackUrlWithGuestRef }),
+      icon: (
+        // eslint-disable-next-line
+        <img
+          src={`https://authjs.dev/img/providers${(provider as any).style?.logo}`}
+          alt={provider.name}
+          style={{ width: '1.5rem', height: 'auto' }}
         />
       ),
     });
@@ -321,9 +337,9 @@ const SignIn: FC<{
                 style={{
                   display: 'flex',
                   flexDirection: breakpoint.xs ? 'column' : 'row',
-                  flexWrap: breakpoint.xs ? 'wrap' : 'nowrap',
-                  alignItems: '',
-                  justifyContent: 'center',
+                  flexWrap: 'wrap',
+                  alignItems: 'stretch',
+                  justifyContent: 'stretch',
                   gap: '1rem',
                   width: '100%',
                 }}
@@ -346,11 +362,14 @@ const SignIn: FC<{
                           overflow: 'hidden',
                           whiteSpace: 'normal',
                           wordBreak: 'keep-all',
-                          width: '100%',
+                          minWidth: '22%', // -> 4 per row
                         }}
                         color={option.key === activeIndex ? 'primary' : 'default'}
                         variant="outlined"
-                        onClick={() => !option.href && setActiveIndex(option.key)}
+                        onClick={() => {
+                          if (option.onClick) option.onClick();
+                          else if (!option.href) setActiveIndex(option.key);
+                        }}
                       >
                         {option.icon}
                         <Typography.Text
@@ -372,32 +391,6 @@ const SignIn: FC<{
           )}
           activeKey={activeIndex}
         />
-
-        {oauthProviders.length > 0 && divider}
-
-        <Space wrap style={{ justifyContent: 'center', width: '100%' }}>
-          {oauthProviders.map((provider, idx) => {
-            if (provider.type !== 'oauth') return null;
-            return (
-              <Tooltip title={`Sign in with ${provider.name}`} key={provider.id}>
-                <AntDesignButton
-                  key={idx}
-                  style={{
-                    padding: '1.6rem',
-                  }}
-                  icon={
-                    <img
-                      src={`https://authjs.dev/img/providers${provider.style?.logo}`}
-                      alt={provider.name}
-                      style={{ width: '1.5rem', height: 'auto' }}
-                    />
-                  }
-                  onClick={() => signIn(provider.id, { callbackUrl: callbackUrlWithGuestRef })}
-                />
-              </Tooltip>
-            );
-          })}
-        </Space>
 
         <Typography.Paragraph
           style={{

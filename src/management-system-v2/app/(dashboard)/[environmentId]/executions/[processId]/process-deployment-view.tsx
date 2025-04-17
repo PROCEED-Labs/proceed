@@ -1,21 +1,34 @@
 // TODO: remove the use client if this page is used in server
 'use client';
 
-import { Button, Select, Tooltip, Space, Dropdown, Result, Skeleton } from 'antd';
+import { Button, Select, Tooltip, Space, Dropdown, Result } from 'antd';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
-import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
-import { Suspense, useCallback, useMemo, useRef, useState } from 'react';
+import {
+  PlusOutlined,
+  InfoCircleOutlined,
+  FilterOutlined,
+  CaretRightOutlined,
+  PauseOutlined,
+  StopOutlined,
+} from '@ant-design/icons';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
-import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
+import toolbarStyles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
+import styles from './process-deployment-view.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
 import { MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import { startInstance } from '@/lib/engines/server-actions';
+import {
+  startInstance,
+  pauseInstance,
+  resumeInstance,
+  stopInstance,
+} from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import { useRouter } from 'next/navigation';
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -38,17 +51,35 @@ export default function ProcessDeploymentView({
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
   const [selectedElement, setSelectedElement] = useState<ElementLike | undefined>();
 
+  const [startingInstance, setStartingInstance] = useState(false);
+  const [resumingInstance, setResumingInstance] = useState(false);
+  const [pausingInstance, setPausingInstance] = useState(false);
+  const [stoppingInstance, setStoppingInstance] = useState(false);
+
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
   const { spaceId } = useEnvironment();
 
-  const { data: deploymentInfo } = useDeployment(processId, initialDeploymentInfo);
+  const { data: deploymentInfo, refetch } = useDeployment(processId, initialDeploymentInfo);
 
   const router = useRouter();
 
-  const { selectedVersion, instances, selectedInstance, currentVersion } = useMemo(() => {
+  const {
+    selectedVersion,
+    instances,
+    selectedInstance,
+    currentVersion,
+    instanceIsRunning,
+    instanceIsPausing,
+    instanceIsPaused,
+  } = useMemo(() => {
     let selectedVersion, instances, selectedInstance, currentVersion;
+    let instanceIsRunning = false;
+    let instanceIsPausing = false;
+    let instanceIsPaused = false;
+
+    const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
 
     if (deploymentInfo) {
       selectedVersion = deploymentInfo.versions.find((v) => v.versionId === selectedVersionId);
@@ -61,6 +92,11 @@ export default function ProcessDeploymentView({
       let currentVersionId = getLatestDeployment(deploymentInfo).versionId;
       if (selectedInstance) {
         currentVersionId = selectedInstance.processVersion;
+        instanceIsRunning = selectedInstance.instanceState.some((state) =>
+          activeStates.includes(state),
+        );
+        instanceIsPausing = selectedInstance.instanceState.some((state) => state === 'PAUSING');
+        instanceIsPaused = selectedInstance.instanceState.some((state) => state === 'PAUSED');
       } else if (selectedVersionId) {
         currentVersionId = selectedVersionId;
       }
@@ -69,7 +105,15 @@ export default function ProcessDeploymentView({
       );
     }
 
-    return { selectedVersion, instances, selectedInstance, currentVersion };
+    return {
+      selectedVersion,
+      instances,
+      selectedInstance,
+      currentVersion,
+      instanceIsRunning,
+      instanceIsPausing,
+      instanceIsPaused,
+    };
   }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
 
   const selectedBpmn = useMemo(() => {
@@ -103,7 +147,7 @@ export default function ProcessDeploymentView({
           height: '100%',
         }}
       >
-        <Toolbar className={styles.Toolbar}>
+        <Toolbar className={toolbarStyles.Toolbar}>
           <Space
             aria-label="general-modeler-toolbar"
             style={{
@@ -130,16 +174,21 @@ export default function ProcessDeploymentView({
               <Tooltip title="Start new instance">
                 <Button
                   icon={<PlusOutlined />}
+                  loading={startingInstance}
                   onClick={() => {
                     wrapServerCall({
-                      fn: () =>
-                        startInstance(
+                      fn: () => {
+                        setStartingInstance(true);
+                        return startInstance(
                           deploymentInfo.definitionId,
                           getLatestDeployment(deploymentInfo).versionId,
                           spaceId,
-                        ),
-                      onSuccess: (instanceId) => {
+                        );
+                      },
+                      onSuccess: async (instanceId) => {
+                        await refetch();
                         setSelectedInstanceId(instanceId);
+                        setStartingInstance(false);
                         router.refresh();
                       },
                     });
@@ -208,9 +257,90 @@ export default function ProcessDeploymentView({
               </Tooltip>
             </ToolbarGroup>
 
+            {selectedInstance && (
+              <ToolbarGroup>
+                <Tooltip
+                  title={instanceIsPausing ? 'Abort pausing the instance' : 'Resume the instance'}
+                >
+                  <Button
+                    className={styles.PlayIcon}
+                    icon={<CaretRightOutlined />}
+                    loading={resumingInstance}
+                    disabled={!instanceIsPausing && !instanceIsPaused}
+                    onClick={() => {
+                      wrapServerCall({
+                        fn: async () => {
+                          setResumingInstance(true);
+                          const res = await resumeInstance(
+                            processId,
+                            selectedInstance.processInstanceId,
+                            spaceId,
+                          );
+                          if (!res) await refetch();
+                          setResumingInstance(false);
+                          return res;
+                        },
+                        onSuccess: () => {},
+                      });
+                    }}
+                  />
+                </Tooltip>
+
+                <Tooltip title="Pause the instance">
+                  <Button
+                    className={styles.PauseIcon}
+                    icon={<PauseOutlined />}
+                    loading={pausingInstance || instanceIsPausing}
+                    disabled={!instanceIsRunning || instanceIsPausing || instanceIsPaused}
+                    onClick={() => {
+                      wrapServerCall({
+                        fn: async () => {
+                          setPausingInstance(true);
+                          const res = await pauseInstance(
+                            processId,
+                            selectedInstance.processInstanceId,
+                            spaceId,
+                          );
+                          if (!res) await refetch();
+                          setPausingInstance(false);
+                          return res;
+                        },
+                        onSuccess: () => {},
+                      });
+                    }}
+                  />
+                </Tooltip>
+
+                <Tooltip title="Stop the instance">
+                  <Button
+                    className={styles.StopIcon}
+                    icon={<StopOutlined />}
+                    loading={stoppingInstance}
+                    disabled={!instanceIsRunning}
+                    onClick={() => {
+                      wrapServerCall({
+                        fn: async () => {
+                          setStoppingInstance(true);
+                          const res = await stopInstance(
+                            processId,
+                            selectedInstance.processInstanceId,
+                            spaceId,
+                          );
+                          if (!res) await refetch();
+                          setStoppingInstance(false);
+                          return res;
+                        },
+                        onSuccess: () => {},
+                      });
+                    }}
+                  />
+                </Tooltip>
+              </ToolbarGroup>
+            )}
+
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
-                <Tooltip title="Start new instance">
+                <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
                   <Button
                     icon={<InfoCircleOutlined />}
                     onClick={() => setInfoPanelOpen((prev) => !prev)}

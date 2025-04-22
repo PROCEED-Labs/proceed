@@ -27,19 +27,20 @@ export async function getEnvironmentById(
   id: string,
   ability?: Ability,
   opts?: { throwOnNotFound?: boolean },
+  tx?: Prisma.TransactionClient,
 ) {
+  const dbMutator = tx || db;
+
   // TODO: check ability
-  if (enableUseDB) {
-    const environment = await db.space.findUnique({
-      where: {
-        id: id,
-      },
-    });
+  const environment = await dbMutator.space.findUnique({
+    where: {
+      id: id,
+    },
+  });
 
-    if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
+  if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
 
-    return environment as Environment;
-  }
+  return environment as Environment;
 }
 
 /** Sets an environment to active, and adds the given user as an admin */

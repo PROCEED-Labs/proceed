@@ -38,8 +38,14 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
   };
 }
 
-export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = await db.user.findUnique({ where: { id: id } });
+export async function getUserById(
+  id: string,
+  opts?: { throwIfNotFound?: boolean },
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const user = await dbMutator.user.findUnique({ where: { id: id } });
 
   if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
 

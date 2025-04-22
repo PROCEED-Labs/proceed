@@ -79,8 +79,13 @@ export async function getRoleByName(environmentId: string, name: string, ability
  *
  * @throws {UnauthorizedError}
  */
-export async function getRoleById(roleId: string, ability?: Ability) {
-  const role = await db.role.findUnique({
+export async function getRoleById(
+  roleId: string,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+  const role = await dbMutator.role.findUnique({
     where: {
       id: roleId,
     },

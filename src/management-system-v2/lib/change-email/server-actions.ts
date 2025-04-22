@@ -8,7 +8,7 @@ import {
   saveVerificationToken,
   getVerificationToken,
   deleteVerificationToken,
-} from '@/lib/data/db/verification-tokens';
+} from '@/lib/data/db/iam/verification-tokens';
 import { updateUser } from '@/lib/data/db/iam/users';
 import { sendEmail } from '../email/mailer';
 import renderSigninLinkEmail from '../email/signin-link-email';

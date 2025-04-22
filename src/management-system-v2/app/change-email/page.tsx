@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/components/auth';
 import { getTokenHash, notExpired } from '@/lib/change-email/utils';
-import { getVerificationToken } from '@/lib/data/db/verification-tokens';
+import { getVerificationToken } from '@/lib/data/db/iam/verification-tokens';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import ChangeEmailCard from './change-email-card';

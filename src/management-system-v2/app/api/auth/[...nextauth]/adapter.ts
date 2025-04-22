@@ -9,7 +9,7 @@ import {
 import {
   saveVerificationToken,
   deleteVerificationToken,
-} from '@/lib/data/db/iam/verificaiton-tokens';
+} from '@/lib/data/db/iam/verification-tokens';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { type Adapter, AdapterAccount, VerificationToken } from 'next-auth/adapters';
 

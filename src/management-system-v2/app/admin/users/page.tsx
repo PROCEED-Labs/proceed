@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/components/auth';
-import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
-import { getSystemAdminByUserId } from '@/lib/data/DTOs';
-import { deleteUser, getUsers } from '@/lib/data/DTOs';
+import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
+import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
+import { deleteUser, getUsers } from '@/lib/data/db/iam/users';
 import { notFound, redirect } from 'next/navigation';
 import UserTable from './user-table';
 import { UserErrorType, userError } from '@/lib/user-error';

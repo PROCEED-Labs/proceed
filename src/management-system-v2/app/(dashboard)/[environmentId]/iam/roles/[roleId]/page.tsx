@@ -1,10 +1,10 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getRoleWithMembersById } from '@/lib/data/DTOs';
+import { getRoleWithMembersById } from '@/lib/data/db/iam/roles';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { getMembers } from '@/lib/data/DTOs';
-import { getUserById } from '@/lib/data/DTOs';
+import { getMembers } from '@/lib/data/db/iam/memberships';
+import { getUserById } from '@/lib/data/db/iam/users';
 import { Button, Card, Space, Tabs } from 'antd';
 import { LeftOutlined } from '@ant-design/icons';
 import RoleGeneralData from './roleGeneralData';

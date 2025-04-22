@@ -5,8 +5,11 @@ import {
   updateUser,
   addOauthAccount,
   getOauthAccountByProviderId,
-} from '@/lib/data/DTOs';
-import { saveVerificationToken, deleteVerificationToken } from '@/lib/data/db/verification-tokens';
+} from '@/lib/data/db/iam/users';
+import {
+  saveVerificationToken,
+  deleteVerificationToken,
+} from '@/lib/data/db/iam/verificaiton-tokens';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { type Adapter, AdapterAccount, VerificationToken } from 'next-auth/adapters';
 
@@ -31,10 +34,11 @@ const Adapter = {
     return getUserByEmail(email) ?? null;
   },
   createVerificationToken: async (token: VerificationToken) => {
-    return saveVerificationToken(token);
+    return await saveVerificationToken(token);
   },
   useVerificationToken: async (params: { identifier: string; token: string }) => {
     try {
+      // next-auth checks if the token is expired
       const token = await deleteVerificationToken(params);
       return token;
     } catch (_) {

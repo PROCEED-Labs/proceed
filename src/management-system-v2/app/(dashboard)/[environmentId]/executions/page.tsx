@@ -3,7 +3,7 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import { env } from '@/lib/env-vars';
 import DeploymentsView from './deployments-view';
-import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/DTOs';
+import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/folders';
 import { getUsersFavourites } from '@/lib/data/users';
 import { DeployedProcessInfo, getDeployments } from '@/lib/engines/deployment';
 import { getProceedEngines } from '@/lib/engines/machines';

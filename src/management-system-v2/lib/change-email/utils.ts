@@ -38,10 +38,10 @@ export async function createChangeEmailVerificationToken({
 
   const redirectUrl = new URL(
     '/change-email?' +
-    new URLSearchParams({
-      token,
-      email: identifier,
-    }),
+      new URLSearchParams({
+        token,
+        email: identifier,
+      }),
     process.env.NEXTAUTH_URL ?? 'http://localhost:3000',
   ).toString();
 

@@ -6,5 +6,8 @@ export async function register() {
 
     if (!process.env.PROCEED_PUBLIC_IAM_ACTIVATE && !(await getUserById(userId)))
       await addUser(createUserArgs);
+
+    const { importSeed } = await import('./lib/db-seed');
+    await importSeed();
   }
 }

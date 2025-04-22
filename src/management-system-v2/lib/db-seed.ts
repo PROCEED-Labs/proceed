@@ -253,10 +253,13 @@ async function writeSeedToDb(seed: Seed) {
  * Import Seed + Verification + Write to DB
  * -----------------------------------------------------------------------------------------------*/
 
-import { seedDbConfig } from '@/seed-db-with-spaces.config';
-
 export async function importSeed() {
-  if (!seedDbConfig) return;
+  let seedDbConfig: unknown | undefined;
+  try {
+    seedDbConfig = (await import('../seed-db-with-spaces.config')).seedDbConfig;
+  } catch (_) {
+    return;
+  }
 
   try {
     const parseResult = seedSchema.safeParse(seedDbConfig);

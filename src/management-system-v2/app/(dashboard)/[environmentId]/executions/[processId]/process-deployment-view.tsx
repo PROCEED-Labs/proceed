@@ -30,7 +30,6 @@ import {
   stopInstance,
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
-import { useRouter } from 'next/navigation';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useDeployment from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
@@ -62,8 +61,6 @@ export default function ProcessDeploymentView({
   const { spaceId } = useEnvironment();
 
   const { data: deploymentInfo, refetch } = useDeployment(processId, initialDeploymentInfo);
-
-  const router = useRouter();
 
   const {
     selectedVersion,
@@ -175,23 +172,21 @@ export default function ProcessDeploymentView({
                 <Button
                   icon={<PlusOutlined />}
                   loading={startingInstance}
-                  onClick={() => {
-                    wrapServerCall({
-                      fn: () => {
-                        setStartingInstance(true);
-                        return startInstance(
+                  onClick={async () => {
+                    setStartingInstance(true);
+                    await wrapServerCall({
+                      fn: () =>
+                        startInstance(
                           deploymentInfo.definitionId,
                           getLatestDeployment(deploymentInfo).versionId,
                           spaceId,
-                        );
-                      },
+                        ),
                       onSuccess: async (instanceId) => {
                         await refetch();
                         setSelectedInstanceId(instanceId);
-                        setStartingInstance(false);
-                        router.refresh();
                       },
                     });
+                    setStartingInstance(false);
                   }}
                 />
               </Tooltip>
@@ -207,11 +202,11 @@ export default function ProcessDeploymentView({
                       },
                       ...(selectedVersion
                         ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
                         : []),
                       ...deploymentInfo.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
@@ -267,21 +262,14 @@ export default function ProcessDeploymentView({
                     icon={<CaretRightOutlined />}
                     loading={resumingInstance}
                     disabled={!instanceIsPausing && !instanceIsPaused}
-                    onClick={() => {
-                      wrapServerCall({
-                        fn: async () => {
-                          setResumingInstance(true);
-                          const res = await resumeInstance(
-                            processId,
-                            selectedInstance.processInstanceId,
-                            spaceId,
-                          );
-                          if (!res) await refetch();
-                          setResumingInstance(false);
-                          return res;
-                        },
-                        onSuccess: () => {},
+                    onClick={async () => {
+                      setResumingInstance(true);
+                      await wrapServerCall({
+                        fn: () =>
+                          resumeInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        onSuccess: async () => await refetch(),
                       });
+                      setResumingInstance(false);
                     }}
                   />
                 </Tooltip>
@@ -292,21 +280,14 @@ export default function ProcessDeploymentView({
                     icon={<PauseOutlined />}
                     loading={pausingInstance || instanceIsPausing}
                     disabled={!instanceIsRunning || instanceIsPausing || instanceIsPaused}
-                    onClick={() => {
-                      wrapServerCall({
-                        fn: async () => {
-                          setPausingInstance(true);
-                          const res = await pauseInstance(
-                            processId,
-                            selectedInstance.processInstanceId,
-                            spaceId,
-                          );
-                          if (!res) await refetch();
-                          setPausingInstance(false);
-                          return res;
-                        },
-                        onSuccess: () => {},
+                    onClick={async () => {
+                      setPausingInstance(true);
+                      await wrapServerCall({
+                        fn: async () =>
+                          pauseInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        onSuccess: async () => await refetch(),
                       });
+                      setPausingInstance(false);
                     }}
                   />
                 </Tooltip>
@@ -317,21 +298,14 @@ export default function ProcessDeploymentView({
                     icon={<StopOutlined />}
                     loading={stoppingInstance}
                     disabled={!instanceIsRunning}
-                    onClick={() => {
-                      wrapServerCall({
-                        fn: async () => {
-                          setStoppingInstance(true);
-                          const res = await stopInstance(
-                            processId,
-                            selectedInstance.processInstanceId,
-                            spaceId,
-                          );
-                          if (!res) await refetch();
-                          setStoppingInstance(false);
-                          return res;
-                        },
-                        onSuccess: () => {},
+                    onClick={async () => {
+                      setStoppingInstance(true);
+                      await wrapServerCall({
+                        fn: async () =>
+                          stopInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        onSuccess: async () => await refetch(),
                       });
+                      setStoppingInstance(false);
                     }}
                   />
                 </Tooltip>

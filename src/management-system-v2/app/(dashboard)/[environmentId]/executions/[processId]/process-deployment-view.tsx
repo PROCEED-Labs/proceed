@@ -6,7 +6,7 @@ import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import { PlusOutlined, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
-import { Suspense, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
 import styles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
@@ -23,6 +23,7 @@ import useDeployment from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
 
 import useColors from './use-colors';
+import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 
 export default function ProcessDeploymentView({
@@ -75,12 +76,17 @@ export default function ProcessDeploymentView({
     return { bpmn: currentVersion?.bpmn || '' };
   }, [currentVersion]);
 
+  const { refreshTokens } = useTokens(selectedInstance || null, canvasRef);
   const { refreshColoring } = useColors(
     selectedBpmn,
     selectedColoring,
     selectedInstance,
     canvasRef,
   );
+  const refreshVisuals = useCallback(() => {
+    refreshTokens();
+    refreshColoring();
+  }, [refreshTokens, refreshColoring]);
 
   if (!deploymentInfo) {
     return (
@@ -246,7 +252,7 @@ export default function ProcessDeploymentView({
               setSelectedElement(element ?? canvasRef.current?.getCurrentRoot());
               setInfoPanelOpen(true);
             }}
-            onRootChange={refreshColoring}
+            onRootChange={refreshVisuals}
           />
         </div>
       </div>

@@ -18,7 +18,7 @@ export default function UserTable({
   users: {
     isGuest: false;
     id: string;
-    email?: string;
+    email?: string | null;
     username?: string;
     firstName?: string;
     lastName?: string;

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { z } from 'zod';
-import { VerificationToken } from '../data/legacy/verification-tokens';
+import { VerificationToken } from '@/lib/data/db/iam/verificaiton-tokens';
 import { env } from '../env-vars';
 
 async function createHash(message: string) {

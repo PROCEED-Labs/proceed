@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { activateEnvrionment } from '@/lib/data/legacy/iam/environments';
+import { activateEnvrionment } from '@/lib/data/db/iam/environments';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { redirect } from 'next/navigation';
 

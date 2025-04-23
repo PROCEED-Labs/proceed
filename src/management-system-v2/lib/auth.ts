@@ -7,16 +7,21 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, deleteUser, getUserById, getUserByUsername, updateUser } from '@/lib/data/DTOs';
-import { usersMetaObject } from '@/lib/data/legacy/iam/users';
+import {
+  addUser,
+  deleteUser,
+  getUserById,
+  getUserByUsername,
+  updateUser,
+} from '@/lib/data/db/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles, Provider } from 'next-auth/providers';
 import Adapter from './auth-database-adapter';
 import { User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
-import { enableUseDB } from 'FeatureFlags';
 import { updateGuestUserLastSigninTime } from './data/db/iam/users';
+import * as noIamUser from '@/lib/no-iam-user';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -67,6 +72,11 @@ const nextAuthOptions: NextAuthConfig = {
   ],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
+      if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+        token.user = noIamUser.user;
+        return token;
+      }
+
       let user = _user as User | undefined;
 
       if (trigger === 'update') user = (await getUserById(token.user.id)) as User;
@@ -221,26 +231,12 @@ if (env.NODE_ENV === 'development') {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },
       async authorize(credentials) {
-        if (enableUseDB) {
-          const userTemplate = developmentUsers.find(
-            (user) => user.username === credentials?.username,
-          );
-
-          if (!userTemplate) return null;
-
-          let user = await getUserByUsername(userTemplate.username);
-          if (!user) user = await addUser(userTemplate);
-
-          return user;
-        }
         const userTemplate = developmentUsers.find(
           (user) => user.username === credentials?.username,
         );
-
         if (!userTemplate) return null;
 
-        let user = usersMetaObject[userTemplate.id];
-
+        let user = await getUserByUsername(userTemplate.username);
         if (!user) user = await addUser(userTemplate);
 
         return user;

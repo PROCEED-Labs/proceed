@@ -4,33 +4,20 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { redirect } from 'next/navigation';
 import { UserErrorType, userError } from '../user-error';
 import { RedirectType } from 'next/dist/client/components/redirect';
-import Ability, { UnauthorizedError } from '../ability/abilityHelper';
-import { enableUseDB } from 'FeatureFlags';
-import { TRolesModule } from './module-import-types-temp';
-
-let deleteRole: TRolesModule['deleteRole'];
-let _addRole: TRolesModule['addRole'];
-let _updateRole: TRolesModule['updateRole'];
-let _getRoles: TRolesModule['getRoles'];
-
-const loadModules = async () => {
-  const moduleImport = await (enableUseDB
-    ? import('./db/iam/roles')
-    : import('./legacy/iam/roles'));
-
-  ({ deleteRole, addRole: _addRole, updateRole: _updateRole } = moduleImport);
-};
-
-loadModules().catch(console.error);
+import {
+  deleteRole,
+  addRole as _addRole,
+  updateRole as _updateRole,
+  getRoles as _getRoles,
+} from '@/lib/data/db/iam/roles';
+import { UnauthorizedError } from '../ability/abilityHelper';
 
 export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
-  await loadModules();
-
   const { ability } = await getCurrentEnvironment(envitonmentId);
 
   try {
     for (const roleId of roleIds) {
-      deleteRole(roleId, ability);
+      await deleteRole(roleId, ability);
     }
   } catch (e) {
     if (e instanceof UnauthorizedError)
@@ -40,8 +27,6 @@ export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
 }
 
 export async function addRole(environmentId: string, role: Parameters<typeof _addRole>[0]) {
-  await loadModules();
-
   const { activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   let newRoleId;
@@ -64,10 +49,13 @@ export async function updateRole(
   roleId: string,
   updatedRole: Omit<Parameters<typeof _updateRole>[1], 'environmentId'>,
 ) {
-  await loadModules();
   try {
     const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-    _updateRole(roleId, { ...updatedRole, environmentId: activeEnvironment.spaceId }, ability);
+    await _updateRole(
+      roleId,
+      { ...updatedRole, environmentId: activeEnvironment.spaceId },
+      ability,
+    );
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
@@ -76,8 +64,6 @@ export async function updateRole(
 }
 
 export async function getRoles(environmentId: string) {
-  await loadModules();
-
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
 

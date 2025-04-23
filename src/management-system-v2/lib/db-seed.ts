@@ -63,15 +63,14 @@ const organizationSchema = UserOrganizationEnvironmentInputSchema.extend({
   admins: z.array(z.string()).min(1, 'At least one admin is required'),
   roles: z.array(roleSchema).optional(),
 });
-type Organization = z.infer<typeof organizationSchema>;
 
 const seedSchema = z.object({
   users: z.array(userSchema),
   organizations: z.array(organizationSchema),
 });
-export type Seed = z.infer<typeof seedSchema>;
+export type DBSeed = z.infer<typeof seedSchema>;
 
-function verifySeed(seed: Seed) {
+function verifySeed(seed: DBSeed) {
   // verify users
   const users = new Set<string>();
   const userNames = new Set<string>();
@@ -122,7 +121,7 @@ function verifySeed(seed: Seed) {
  * Seed to DB
  * -----------------------------------------------------------------------------------------------*/
 
-async function writeSeedToDb(seed: Seed) {
+async function writeSeedToDb(seed: DBSeed) {
   await db.$transaction(async (tx) => {
     // create users
     // TODO: passwords

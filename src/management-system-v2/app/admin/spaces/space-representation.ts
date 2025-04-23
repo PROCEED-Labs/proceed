@@ -1,6 +1,6 @@
 import 'server-only';
 import { Environment } from '@/lib/data/environment-schema';
-import { getUserById } from '@/lib/data/DTOs';
+import { getUserById } from '@/lib/data/db/iam/users';
 import { User } from '@/lib/data/user-schema';
 
 export function getUserName(user: User) {

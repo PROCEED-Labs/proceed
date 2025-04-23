@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/components/auth';
 import CreateOrganizationPage from './client-page';
 import { getProviders } from '../api/auth/[...nextauth]/auth-options';
 import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema';
-import { addEnvironment } from '@/lib/data/legacy/iam/environments';
+import { addEnvironment } from '@/lib/data/db/iam/environments';
 import { userError } from '@/lib/user-error';
 import { env } from '@/lib/env-vars';
 import { notFound } from 'next/navigation';

@@ -5,9 +5,10 @@ import {
   deleteOrganizationLogo,
   getEnvironmentById,
   getOrganizationLogo,
-} from '@/lib/data/legacy/iam/environments';
+} from '@/lib/data/db/iam/environments';
 import { fileTypeFromBuffer } from 'file-type';
-import { saveLogo } from '@/lib/data/legacy/fileHandling';
+import { saveEntityFile, saveOrganizationLogo } from '@/lib/data/file-manager-facade';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
 export async function GET(
   _: NextRequest,
@@ -38,28 +39,28 @@ export async function GET(
     });
   }
 
-  const imageBuffer = await getOrganizationLogo(decodeURIComponent(environmentId));
-
-  if (!imageBuffer)
-    return new NextResponse(null, {
-      status: 204,
-      statusText: 'Organization has no logo',
-    });
-
-  const fileType = await fileTypeFromBuffer(imageBuffer);
-  console.log(fileType);
-
-  if (!fileType) {
-    return new NextResponse(null, {
-      status: 415,
-      statusText: 'Can not read file type of requested image',
-    });
-  }
-
-  const headers = new Headers();
-  headers.set('Content-Type', fileType.mime);
-
-  return new NextResponse(imageBuffer, { status: 200, statusText: 'OK', headers });
+  // TODO: implement this here
+  // const imageBuffer = (await getOrganizationLogo(decodeURIComponent(environmentId)))?.logo;
+  //
+  // if (!imageBuffer)
+  //   return new NextResponse(null, {
+  //     status: 204,
+  //     statusText: 'Organization has no logo',
+  //   });
+  //
+  // const fileType = await fileTypeFromBuffer(imageBuffer);
+  //
+  // if (!fileType) {
+  //   return new NextResponse(null, {
+  //     status: 415,
+  //     statusText: 'Can not read file type of requested image',
+  //   });
+  // }
+  //
+  // const headers = new Headers();
+  // headers.set('Content-Type', fileType.mime);
+  //
+  // return new NextResponse(imageBuffer, { status: 200, statusText: 'OK', headers });
 }
 
 async function updateOrgLogo(
@@ -87,7 +88,8 @@ async function updateOrgLogo(
   const readImageResult = await readImage(request);
   if (readImageResult.error) return readImageResult.error;
 
-  saveLogo(activeEnvironment.spaceId, readImageResult.buffer);
+  // TODO: implement this here
+  // saveEntityFile(EntityType.ORGANIZATION,
 
   return new NextResponse(activeEnvironment.spaceId, { status: 201, statusText: 'Created' });
 }

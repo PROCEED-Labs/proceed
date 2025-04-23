@@ -1,11 +1,10 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { environmentsMetaObject } from '@/lib/data/legacy/iam/environments';
-import { getSystemAdminByUserId } from '@/lib/data/DTOs';
-import { usersMetaObject } from '@/lib/data/legacy/iam/users';
+import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import { Card, Space, Statistic } from 'antd';
 import { redirect } from 'next/navigation';
 import { CSSProperties } from 'react';
+import db from '@/lib/data/db';
 
 export default async function AdminDashboard() {
   const user = await getCurrentUser();
@@ -16,8 +15,8 @@ export default async function AdminDashboard() {
 
   // NOTE: this should be replaced to a more efficient count query
   // when the data persistence layer is implemented
-  const usersAmount = Object.keys(usersMetaObject).length;
-  const spacesAmount = Object.keys(environmentsMetaObject).length;
+
+  const [usersAmount, spacesAmount] = await Promise.all([db.user.count(), db.space.count()]);
 
   const cardStyle: CSSProperties = {
     width: '80%',

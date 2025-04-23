@@ -9,23 +9,11 @@ import renderOrganizationInviteEmail from '../organization-invite-email';
 import { OrganizationEnvironment } from './environment-schema';
 import { generateInvitationToken } from '../invitation-tokens';
 import { toCaslResource } from '../ability/caslAbility';
-import { RoleMapping } from './legacy/iam/role-mappings';
-import { enableUseDB } from 'FeatureFlags';
-import { TMembershipsModule, TUsersModule } from './module-import-types-temp';
-import { getUserByEmail, getRoleById, getEnvironmentById, isMember } from './DTOs';
-
-let addMember: TMembershipsModule['addMember'];
-let removeMember: TMembershipsModule['removeMember'];
-// Function to load modules based on feature flag
-const loadModules = async () => {
-  const [membershipModuleImport] = await Promise.all([
-    enableUseDB ? import('./db/iam/memberships') : import('./legacy/iam/memberships'),
-  ]);
-
-  removeMember = membershipModuleImport.removeMember;
-};
-
-loadModules().catch(console.error);
+import { getRoleById } from '@/lib/data/db/iam/roles';
+import { type RoleMapping } from '@/lib/data/db/iam/role-mappings';
+import { getUserByEmail } from '@/lib/data/db/iam/users';
+import { getEnvironmentById } from '@/lib/data/db/iam/environments';
+import { isMember, removeMember } from '@/lib/data/db/iam/memberships';
 
 const EmailListSchema = z.array(z.string().email());
 
@@ -113,7 +101,7 @@ export async function removeUsersFromEnvironment(environmentId: string, userIdsI
       );
 
     for (const userId of userIds) {
-      removeMember(environmentId, userId, ability);
+      await removeMember(environmentId, userId, ability);
     }
   } catch (_) {
     return userError('Error removing users from environment');

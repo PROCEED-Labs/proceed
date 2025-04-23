@@ -2,7 +2,7 @@ import Content from '@/components/content';
 import { Skeleton } from 'antd';
 import { notFound } from 'next/navigation';
 import SavedEnginesList from './saved-engines-list';
-import { getSpaceEngines } from '@/lib/data/DTOs';
+import { getSpaceEngines } from '@/lib/data/db/space-engines';
 import { getCurrentEnvironment } from '@/components/auth';
 import Ability from '@/lib/ability/abilityHelper';
 import { Suspense } from 'react';

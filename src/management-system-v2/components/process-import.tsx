@@ -7,6 +7,7 @@ import type { ButtonProps } from 'antd';
 
 import {
   getDefinitionsId,
+  getDefinitionsInfos,
   getDefinitionsName,
   getElementsByTagName,
   getProcessDocumentation,
@@ -134,10 +135,11 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
         });
         return;
       }
+      const { id, name } = await getDefinitionsInfos(bpmnObj);
 
       const processData: ProcessData = {
-        id: (await getDefinitionsId(bpmnObj)) || '',
-        name: (await getDefinitionsName(bpmnObj)) || '',
+        id: id || '',
+        name: name || '',
         description: await getProcessDocumentation(bpmn),
         userDefinedId: definitions['userDefinedId'],
         creator: definitions['creatorName'],

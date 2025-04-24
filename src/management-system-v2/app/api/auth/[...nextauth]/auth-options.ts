@@ -5,15 +5,19 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, deleteUser, getUserById, getUserByUsername, updateUser } from '@/lib/data/DTOs';
-import { usersMetaObject } from '@/lib/data/legacy/iam/users';
+import {
+  addUser,
+  deleteUser,
+  getUserById,
+  getUserByUsername,
+  updateUser,
+} from '@/lib/data/db/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
-import { enableUseDB } from 'FeatureFlags';
 import * as noIamUser from '@/lib/no-iam-user';
 
 const nextAuthOptions: AuthOptions = {
@@ -222,26 +226,12 @@ if (env.NODE_ENV === 'development') {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },
       async authorize(credentials) {
-        if (enableUseDB) {
-          const userTemplate = developmentUsers.find(
-            (user) => user.username === credentials?.username,
-          );
-
-          if (!userTemplate) return null;
-
-          let user = await getUserByUsername(userTemplate.username);
-          if (!user) user = await addUser(userTemplate);
-
-          return user;
-        }
         const userTemplate = developmentUsers.find(
           (user) => user.username === credentials?.username,
         );
-
         if (!userTemplate) return null;
 
-        let user = usersMetaObject[userTemplate.id];
-
+        let user = await getUserByUsername(userTemplate.username);
         if (!user) user = await addUser(userTemplate);
 
         return user;

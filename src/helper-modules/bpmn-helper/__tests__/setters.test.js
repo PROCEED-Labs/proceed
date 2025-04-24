@@ -40,7 +40,6 @@ describe('Tests for setter functions of this library', () => {
     await setters.setDefinitionsId(baseXML, '12345');
 
     baseObj.id = '12345';
-    //baseObj.originalId = 'sample-diagram';
 
     expect(mockToXML.mock.calls[0][0]).toStrictEqual(baseObj);
   });
@@ -57,7 +56,6 @@ describe('Tests for setter functions of this library', () => {
     await setters.setTargetNamespace(baseXML, '12345');
 
     baseObj.targetNamespace += '12345';
-    //baseObj.originalTargetNamespace = 'https://docs.proceed-labs.org/';
 
     expect(mockToXML.mock.calls[0][0]).toStrictEqual(baseObj);
   });

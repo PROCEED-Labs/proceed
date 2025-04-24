@@ -63,7 +63,7 @@ const ProcessModal = <
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
   const [carouselIndex, setCarouselIndex] = useState(1);
-  const [validatingNames, setValidatingNames] = useState(false);
+  const [validationPromise, setValidationPromise] = useState<Promise<void> | null>(null);
   const [nameCollisions, setNameCollisions] = useState<
     { index: number; oldName: string; newName: string }[]
   >([]);
@@ -81,6 +81,51 @@ const ProcessModal = <
     }
   }, [form, initialData]);
 
+  const validateImportedNames = async () => {
+    if (!initialData || !['import', 'copy'].includes(mode)) return;
+
+    const promise = new Promise<void>(async (resolve) => {
+      const collisions: { index: number; oldName: string; newName: string }[] = [];
+      try {
+        const processesToCheck = initialData.map((process) => ({
+          name: process.name,
+          folderId: currentFolderId,
+        }));
+
+        const existsResults = await checkIfProcessExistsByName({
+          batch: true,
+          processes: processesToCheck,
+          spaceId: environment.spaceId,
+          userId: session.data?.user.id!,
+        });
+
+        existsResults.forEach((exists, index) => {
+          if (exists) {
+            const oldName = initialData[index].name;
+            const newName = `${oldName}_${mode}_${Date.now()}`;
+            collisions.push({ index, oldName, newName });
+            initialData[index].name = newName;
+          }
+        });
+
+        if (collisions.length > 0) {
+          setNameCollisions(collisions);
+          form.setFieldsValue(initialData);
+          setShowCollisions(true);
+        } else {
+          setNameCollisions([]);
+        }
+      } catch (error) {
+        console.error('Error validating imported names:', error);
+      } finally {
+        resolve();
+      }
+    });
+
+    setValidationPromise(promise);
+    return promise;
+  };
+
   useEffect(() => {
     if (open && initialData && ['import', 'copy'].includes(mode)) {
       validateImportedNames();
@@ -89,16 +134,7 @@ const ProcessModal = <
 
   const onOk = async () => {
     // If validation is in progress, wait until it's done
-    if (validatingNames) {
-      await new Promise((resolve) => {
-        const interval = setInterval(() => {
-          if (!validatingNames) {
-            clearInterval(interval);
-            resolve(null);
-          }
-        }, 500);
-      });
-    }
+    await validationPromise;
 
     try {
       // form.validateFields() only contains field values (that have been
@@ -163,50 +199,6 @@ const ProcessModal = <
     { level: 2, blocking: open, dependencies: [open] },
   );
 
-  const validateImportedNames = async () => {
-    if (!initialData || !['import', 'copy'].includes(mode)) return;
-
-    setValidatingNames(true);
-    const collisions: { index: number; oldName: string; newName: string }[] = [];
-
-    try {
-      const processesToCheck = initialData.map((process) => ({
-        name: process.name,
-        folderId: currentFolderId,
-      }));
-
-      // use batched operation:
-      // for eg: copying 100 processes at once, validaiton of 100 process names should be done in one batched query
-      const existsResults = await checkIfProcessExistsByName({
-        batch: true,
-        processes: processesToCheck,
-        spaceId: environment.spaceId,
-        userId: session.data?.user.id!,
-      });
-
-      existsResults.forEach((exists, index) => {
-        if (exists) {
-          const oldName = initialData[index].name;
-          const newName = `${oldName}_${mode}_${Date.now()}`;
-          collisions.push({ index, oldName, newName });
-          initialData[index].name = newName;
-        }
-      });
-
-      if (collisions.length > 0) {
-        setNameCollisions(collisions);
-        form.setFieldsValue(initialData);
-        setShowCollisions(true);
-      } else {
-        setNameCollisions([]);
-      }
-    } catch (error) {
-      console.error('Error validating imported names:', error);
-    } finally {
-      setValidatingNames(false);
-    }
-  };
-
   const renderFormContent = () => {
     if (!initialData) {
       return <ProcessInputs index={0} mode={mode} />;
@@ -228,6 +220,7 @@ const ProcessModal = <
             }))
           : undefined;
       return (
+        //TODO: maybe use Carousel for copy mode as well, need to adjust the e2e tests as well
         <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
       );
     }
@@ -267,7 +260,7 @@ const ProcessModal = <
             <Typography.Title level={4} style={{ margin: 0 }}>
               {title}
             </Typography.Title>
-            {initialData && initialData.length > 1 && (
+            {initialData && initialData.length > 1 && mode === 'import' && (
               <Typography.Text type="secondary">{`Process ${carouselIndex} of ${initialData.length}`}</Typography.Text>
             )}
           </Flex>
@@ -278,7 +271,7 @@ const ProcessModal = <
         // IMPORTANT: This prevents a modal being stored for every row in the
         // table.
         destroyOnClose
-        okButtonProps={{ loading: submitting || validatingNames }}
+        okButtonProps={{ loading: submitting }}
         okText={okText}
         wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}
         {...modalProps}

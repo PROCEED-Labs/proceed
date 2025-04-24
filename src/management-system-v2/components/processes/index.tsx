@@ -21,7 +21,7 @@ import { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   checkIfProcessExistsByName,
   copyProcesses,
@@ -31,7 +31,7 @@ import {
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
-import { ProcessMetadata } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
@@ -54,10 +54,7 @@ import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { ShareModal } from '../share-modal/share-modal';
-import { resolve } from 'path';
-import process from 'process';
 import { useSession } from 'next-auth/react';
-import { error } from 'console';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -153,6 +150,9 @@ const Processes = ({
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
   // Folders on top
   filteredData.sort((a, b) => {
@@ -312,22 +312,27 @@ const Processes = ({
     startMovingItemTransition(async () => {
       await wrapServerCall({
         fn: async () => {
-          for (const item of items) {
-            if (item.type === 'process') {
-              const process = processes.find((process) => process.id === item.id);
-              const res = await checkIfProcessExistsByName({
-                processName: process?.name!,
-                spaceId: space.spaceId,
-                userId: user?.id!,
-                folderId: folderId,
-              });
-              if (res) {
-                throw new Error(
-                  `Errror: Process with name ${process?.name} already exists in the destination folder`,
-                );
-              }
+          const processesToCheck = items
+            .filter((item) => item.type === 'process')
+            .map((process) => ({
+              name: processes.find((el) => el.id === process.id)!.name,
+              folderId: folderId,
+            }));
+
+          const existsResults = await checkIfProcessExistsByName({
+            batch: true,
+            processes: processesToCheck,
+            spaceId: space.spaceId,
+            userId: user?.id!,
+          });
+          existsResults.forEach((exists, idx) => {
+            if (exists) {
+              throw new Error(
+                `Errror: Process with name ${processesToCheck[idx].name} already exists in the destination folder`,
+              );
             }
-          }
+          });
+
           return moveIntoFolder(items, folderId);
         },
         onSuccess: router.refresh,
@@ -614,7 +619,7 @@ const Processes = ({
             userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
-          const res = await copyProcesses(values, space.spaceId);
+          const res = await copyProcesses(values, space.spaceId, currentFolderId);
           // Errors are handled in the modal.
           if ('error' in res) {
             return res;

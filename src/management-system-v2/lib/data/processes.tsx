@@ -256,7 +256,6 @@ export const addProcesses = async (
       bpmn,
       creatorId: userId,
       environmentId: activeEnvironment.spaceId,
-      //userDefinedId: value.userDefinedId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {

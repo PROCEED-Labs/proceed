@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import cn from 'classnames';
 
@@ -15,6 +15,7 @@ import { useEnvironment } from '@/components/auth-can';
 
 import styles from './tasklist.module.scss';
 import { TaskListEntry } from '@/lib/engines/tasklist';
+import { useQuery } from '@tanstack/react-query';
 
 type UserTaskFormProps = {
   task?: TaskListEntry;
@@ -24,20 +25,17 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
   const router = useRouter();
   const { spaceId } = useEnvironment();
 
-  const [html, setHtml] = useState<string | undefined>();
-
-  useEffect(() => {
-    if (task) {
-      wrapServerCall({
+  const { data: html } = useQuery({
+    queryFn: async () => {
+      if (!task) return;
+      return wrapServerCall({
         fn: () => getTasklistEntryHTML(spaceId, task.instanceID, task.taskId, task.startTime),
-        onSuccess: (html) => {
-          setHtml(html);
-        },
+        onSuccess: false,
       });
-
-      return () => setHtml(undefined);
-    }
-  }, [spaceId, task]);
+    },
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
+    queryKey: ['user-task-html', task?.id],
+  });
 
   const isCompleted = task?.state === 'COMPLETED';
   const isPaused = task?.state === 'PAUSED';

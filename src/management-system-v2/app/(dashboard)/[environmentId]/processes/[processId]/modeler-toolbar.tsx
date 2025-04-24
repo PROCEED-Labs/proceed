@@ -230,13 +230,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                     createVersion={createProcessVersion}
                   ></VersionCreationButton>
                 </Tooltip>
-                <Tooltip title="Back to parent">
-                  <Button
-                    icon={<ArrowUpOutlined />}
-                    disabled={!subprocessId}
-                    onClick={handleReturnToParent}
-                  />
-                </Tooltip>
+
                 <Tooltip title="Undo">
                   <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
                 </Tooltip>
@@ -244,6 +238,15 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                   <Button icon={<RedoOutlined />} onClick={handleRedo} disabled={!canRedo}></Button>
                 </Tooltip>
               </>
+            )}{' '}
+            {!showMobileView && (
+              <Tooltip title="Back to parent">
+                <Button
+                  icon={<ArrowUpOutlined />}
+                  disabled={!subprocessId}
+                  onClick={handleReturnToParent}
+                />
+              </Tooltip>
             )}
           </ToolbarGroup>
 

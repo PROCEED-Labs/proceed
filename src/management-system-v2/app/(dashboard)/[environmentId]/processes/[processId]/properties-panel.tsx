@@ -4,17 +4,15 @@ import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
-import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs } from 'antd';
+import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs, message } from 'antd';
 import type { TabsProps } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
   getMetaDataFromElement,
-  setDefinitionsName,
   setProceedElement,
   deepCopyElementById,
-  updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -25,12 +23,14 @@ import PlannedDurationInput from './planned-duration-input';
 import DescriptionSection from './description-section';
 
 import PlannedCostInput from './planned-cost-input';
-import { updateProcess } from '@/lib/data/processes';
+import { checkIfProcessExistsByName, updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
 import { Shape } from 'bpmn-js/lib/model/Types';
+import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -43,6 +43,10 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const environment = useEnvironment();
 
   const { spaceId } = useEnvironment();
+  const { data: session } = useSession();
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
+
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
   const backgroundColor = getBackgroundColor(selectedElement as Shape);
   const textColor = getTextColor(selectedElement as Shape);
@@ -99,17 +103,33 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     if (selectedElement.type === 'bpmn:Process') {
       const definitions = selectedElement.businessObject.$parent;
       // prevent empty process name
-      if (!event.target.value) {
+      if (!event.target.value || event.target.value === definitions.name) {
         setName(definitions.name);
         return;
       }
+      // check if the process name already exists in the folder scope
+      if (
+        await checkIfProcessExistsByName({
+          batch: false,
+          processName: event.target.value,
+          spaceId: spaceId,
+          userId: session?.user.id!,
+          folderId: currentFolderId,
+        })
+      ) {
+        message.error(
+          `A process with the name ${event.target.value} already exists in current folder`,
+        );
+        setName(definitions.name);
+        return;
+      }
+
       const bpmn = await modeler!.getXML();
-      const newBpmn = (await setDefinitionsName(bpmn!, event.target.value)) as string;
 
       await updateProcess(
         definitions.id,
         spaceId,
-        newBpmn as string,
+        bpmn as string,
         undefined,
         event.target.value,
         true,
@@ -124,11 +144,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     if (selectedElement.type === 'bpmn:Process') {
       const definitions = selectedElement.businessObject.$parent;
       const bpmn = await modeler!.getXML();
-      const newBpmn = await updateBpmnCreatorAttributes(bpmn!, {
-        userDefinedId: event.target.value,
-      });
-
-      await updateProcess(definitions.id, spaceId, newBpmn as string, undefined, undefined, true);
+      await updateProcess(definitions.id, spaceId, bpmn as string, undefined, undefined, true);
       definitions.userDefinedId = event.target.value;
     }
   };

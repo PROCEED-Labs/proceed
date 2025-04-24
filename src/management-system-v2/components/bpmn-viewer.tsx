@@ -27,7 +27,7 @@ const BPMNViewer: FC<BPMNViewerProps> = ({
   const environment = useEnvironment();
 
   const { data } = useSuspenseQuery({
-    queryKey: definitionId ? [environment.spaceId, 'process', definitionId, 'bpmn'] : [],
+    queryKey: [environment.spaceId, 'process', definitionId || 'null', 'bpmn'],
     queryFn: async () => {
       // If no `definitionId`, return empty string
       if (!definitionId) return '';
@@ -44,12 +44,15 @@ const BPMNViewer: FC<BPMNViewerProps> = ({
   });
 
   // Allows for rerendering when the process changes but not the BPMN.
-  const bpmn = useMemo(() => ({ bpmn: data }), [data]);
+  const bpmn = useMemo(
+    () => ({ bpmn: previewBpmn && !definitionId ? previewBpmn : data }),
+    [previewBpmn, definitionId, data],
+  );
 
   return (
     <BPMNCanvas
       ref={viewer}
-      bpmn={previewBpmn && !definitionId ? { bpmn: previewBpmn } : bpmn}
+      bpmn={bpmn}
       type="viewer"
       className={cn({ reduceLogo: reduceLogo })}
       resizeWithContainer={fitOnResize}

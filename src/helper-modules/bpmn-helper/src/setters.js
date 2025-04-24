@@ -284,21 +284,21 @@ async function updateBpmnOriginalAttributes(
   },
 ) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    originalId && (definitions.originalId ??= originalId);
-    originalName && (definitions.originalName ??= originalName);
-    originalUserDefinedId && (definitions.originalUserDefinedId ??= originalUserDefinedId);
-    originalCreationDate && (definitions.originalCreationDate ??= originalCreationDate);
-    originalProcessVersionId && (definitions.originalProcessVersionId ??= originalProcessVersionId);
-    originalProcessVersionName &&
-      (definitions.originalProcessVersionName ??= originalProcessVersionName);
-    originalExporter && (definitions.originalExporter ??= originalExporter);
-    originalExporterVersion && (definitions.originalExporterVersion ??= originalExporterVersion);
-    originalCreatorId && (definitions.originalCreatorId ??= originalCreatorId);
-    originalCreatorName && (definitions.originalCreatorName ??= originalCreatorName);
-    originalCreatorUsername && (definitions.originalCreatorUsername ??= originalCreatorUsername);
-    originalCreatorSpaceId && (definitions.originalCreatorSpaceId ??= originalCreatorSpaceId);
-    originalCreatorSpaceName && (definitions.originalCreatorSpaceName ??= originalCreatorSpaceName);
-    originalTargetNamespace && (definitions.originalTargetNamespace ??= originalTargetNamespace);
+    definitions.originalId ??= originalId;
+    definitions.originalName ??= originalName;
+    definitions.originalUserDefinedId ??= originalUserDefinedId;
+    definitions.originalCreationDate ??= originalCreationDate;
+    definitions.originalProcessVersionId ??= originalProcessVersionId;
+
+    definitions.originalProcessVersionName ??= originalProcessVersionName;
+    definitions.originalExporter ??= originalExporter;
+    definitions.originalExporterVersion ??= originalExporterVersion;
+    definitions.originalCreatorId ??= originalCreatorId;
+    definitions.originalCreatorName ??= originalCreatorName;
+    definitions.originalCreatorUsername ??= originalCreatorUsername;
+    definitions.originalCreatorSpaceId ??= originalCreatorSpaceId;
+    definitions.originalCreatorSpaceName ??= originalCreatorSpaceName;
+    definitions.originalTargetNamespace ??= originalTargetNamespace;
   });
 }
 

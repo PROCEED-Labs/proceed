@@ -2,6 +2,17 @@ import type { ZodType } from 'zod';
 import z from 'zod';
 import { resources } from './ability/caslAbility';
 
+function boolParser(value?: string, ctx?: z.RefinementCtx) {
+  const lowerValue = value?.toLowerCase();
+  if (lowerValue === 'true' || value === '1') return true;
+  if (lowerValue === 'false' || value === '0') return false;
+
+  if (value === undefined) return undefined;
+
+  ctx?.addIssue({ code: 'custom', message: 'Value has to be either "FALSE" or "TRUE"' });
+  return z.NEVER;
+}
+
 // --------------------------------------------
 // Add environment variables here
 // --------------------------------------------
@@ -9,7 +20,7 @@ import { resources } from './ability/caslAbility';
 const environmentVariables = {
   all: {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
+    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
     PROCEED_PUBLIC_DEPLOYMENT_ENV: z.enum(['cloud', 'local']).optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     SHARING_ENCRYPTION_SECRET: z.string(),
@@ -33,11 +44,11 @@ const environmentVariables = {
     MQTT_PASSWORD: z.string().optional(),
     MQTT_BASETOPIC: z.string().optional(),
 
-    PROCEED_PUBLIC_IAM_ACTIVATE: z.string().optional(),
+    PROCEED_PUBLIC_IAM_ACTIVATE: z.string().transform(boolParser).optional(),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
-    USE_AUTH0: z.coerce.boolean(),
+    USE_AUTH0: z.string().transform(boolParser),
 
     SMTP_MAIL_USER: z.string(),
     SMTP_MAIL_PORT: z.coerce.number(),
@@ -118,9 +129,9 @@ export const env: Extract<typeof parsingResult, { success: true }>['data'] = par
   ? parsingResult.data
   : ({} as any);
 
-export const publicEnv: PublicEnv = Object.fromEntries(
+export const publicEnv = Object.fromEntries(
   Object.entries(env).filter(([key]) => key.startsWith('PROCEED_PUBLIC_')),
-);
+) as PublicEnv;
 
 export type PrivateEnv = typeof env;
 

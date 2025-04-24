@@ -10,11 +10,11 @@ const { Title } = Typography;
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 
-import { moddle } from '@proceed/bpmn-helper';
+import { getDefinitionsId, getDefinitionsName, moddle } from '@proceed/bpmn-helper';
 
 import { debounce } from '@/lib/utils';
-import { downloadFile } from '@/lib/process-export/util';
 import { MdOutlineEditOff, MdOutlineModeEdit, MdRedo, MdUndo } from 'react-icons/md';
+import { hashString } from '@/lib/helpers/javascriptHelpers';
 
 type XmlEditorProps = {
   bpmn?: string;
@@ -26,10 +26,10 @@ type XmlEditorProps = {
 };
 
 type EditorError = {
-  startLineNumber: number;
-  endLineNumber: number;
-  startColumn: number;
-  endColumn: number;
+  startLineNumber?: number;
+  endLineNumber?: number;
+  startColumn?: number;
+  endColumn?: number;
   message: string;
 };
 
@@ -48,52 +48,51 @@ type SaveStateType = {
  */
 async function checkBpmn(bpmn: string) {
   // check the bpmn (xml) for syntax errors using the domparser
-  const domParser = new DOMParser();
-  var dom = domParser.parseFromString(bpmn, 'text/xml');
-  const parserErrors = dom.getElementsByTagName('parsererror');
-  if (parserErrors.length) {
-    const match = parserErrors[0].textContent!.match(
-      /This page contains the following errors:error on line (\d+) at column (\d+): (.+)\nBelow is a rendering of the page up to the first error./,
-    );
+  try {
+    const domParser = new DOMParser();
+    var dom = domParser.parseFromString(bpmn, 'text/xml');
+    const parserErrors = dom.getElementsByTagName('parsererror');
+    if (parserErrors.length) {
+      const match = parserErrors[0].textContent!.match(
+        /This page contains the following errors:error on line (\d+) at column (\d+): (.+)\nBelow is a rendering of the page up to the first error./,
+      );
 
-    if (match) {
-      // convert the positional information into a format that can be passed to the monaco editor
-      let [_, lineString, columnString, message] = match;
-      const line = parseInt(lineString);
-      const column = parseInt(columnString);
+      if (match) {
+        // convert the positional information into a format that can be passed to the monaco editor
+        let [_, lineString, columnString, message] = match;
+        const line = parseInt(lineString);
+        const column = parseInt(columnString);
+        return {
+          error: {
+            startLineNumber: line,
+            endLineNumber: line,
+            startColumn: column,
+            endColumn: column + message.length,
+            message,
+          },
+        };
+      }
+    }
+
+    // check for bpmn related mistakes (nonconformity with the underlying model [e.g. unknown elements or attributes])
+    const { warnings } = await moddle.fromXML(bpmn);
+    return { warnings };
+  } catch (error: any) {
+    // only firefox throws this error
+    if (error.message.includes('unparsable content')) {
       return {
         error: {
-          startLineNumber: line,
-          endLineNumber: line,
-          startColumn: column,
-          endColumn: column + match[0].length,
-          message,
+          message: error.message,
         },
       };
     }
+    return {
+      error: {
+        message: 'Unexpected error occured:' + error.message,
+      },
+    };
   }
-
-  // check for bpmn related mistakes (nonconformity with the underlying model [e.g. unknown elements or attributes])
-  const { warnings } = await moddle.fromXML(bpmn);
-  return { warnings };
 }
-
-/*
- Gets the line and column position for a given match in the BPMN string
- */
-const getErrorPosition = (bpmn: string, matchString: string, matchIndex: number) => {
-  const textBeforeMatch = bpmn.substring(0, matchIndex);
-  const lines = textBeforeMatch.split('\n');
-  const lineNumber = lines.length;
-  const columnNumber = lines[lines.length - 1].length + 1;
-
-  return {
-    startLineNumber: lineNumber,
-    endLineNumber: lineNumber,
-    startColumn: columnNumber,
-    endColumn: columnNumber + matchString.length,
-  };
-};
 
 const XmlEditor: FC<XmlEditorProps> = ({
   bpmn,
@@ -105,7 +104,6 @@ const XmlEditor: FC<XmlEditorProps> = ({
 }) => {
   const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
-  const overlayRef = useRef<HTMLDivElement | null>(null);
   const [saveState, setSaveState] = useState<SaveStateType>({
     state: 'none',
     errorMessages: [],
@@ -115,42 +113,9 @@ const XmlEditor: FC<XmlEditorProps> = ({
   const [editWarningVisible, setEditWarningVisible] = useState(false);
   const [saveConfirmVisible, setSaveConfirmVisible] = useState(false);
 
-  // Overlay for readonly mode
-  const toggleOverlay = (show: boolean) => {
-    if (!editorRef.current) return;
-    const editorElement = editorRef.current.getDomNode();
-    if (!editorElement) return;
-
-    if (overlayRef.current && overlayRef.current.parentElement) {
-      overlayRef.current.parentElement.removeChild(overlayRef.current);
-      overlayRef.current = null;
-    }
-
-    if (show) {
-      const overlay = document.createElement('div');
-      overlay.style.position = 'absolute';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100%';
-      overlay.style.height = '100%';
-      overlay.style.backgroundColor = 'rgba(200, 200, 200, 0.3)';
-      overlay.style.pointerEvents = 'none';
-      overlay.style.zIndex = '10';
-
-      editorElement.style.position = 'relative';
-      editorElement.appendChild(overlay);
-      overlayRef.current = overlay;
-    }
-  };
-
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
-
-    // Apply overlay if in read-only mode
-    if (isReadOnly) {
-      toggleOverlay(true);
-    }
   };
 
   const handleSave = async () => {
@@ -184,22 +149,20 @@ const XmlEditor: FC<XmlEditorProps> = ({
       if (bpmnError) {
         errors.push(bpmnError);
         errorMessages.push(bpmnError.message);
-        errorLocations.push(`Line ${bpmnError.startLineNumber}, Column ${bpmnError.startColumn}`);
+        bpmnError.startLineNumber
+          ? errorLocations.push(
+              `Line ${bpmnError.startLineNumber}, Column ${bpmnError.startColumn}`,
+            )
+          : null;
       }
 
       if (definitionIdChangeError) {
         errors.push(definitionIdChangeError);
         errorMessages.push(definitionIdChangeError.message);
-        errorLocations.push(
-          `Line ${definitionIdChangeError.startLineNumber}, Column ${definitionIdChangeError.startColumn}`,
-        );
       }
       if (processNameError) {
         errors.push(processNameError);
         errorMessages.push(processNameError.message);
-        errorLocations.push(
-          `Line ${processNameError.startLineNumber}, Column ${processNameError.startColumn}`,
-        );
       }
 
       if (errors.length > 0) {
@@ -211,9 +174,22 @@ const XmlEditor: FC<XmlEditorProps> = ({
         // add new error markings
         errors.map((error) => {
           if (error) {
-            monacoRef.current!.editor.setModelMarkers(editorRef.current!.getModel()!, 'owner', [
-              { ...error, severity: monacoRef.current!.MarkerSeverity.Error },
-            ]);
+            monacoRef.current!.editor.setModelMarkers(
+              editorRef.current!.getModel()!,
+              'owner',
+              errors
+                .filter(
+                  (error): error is Required<EditorError> =>
+                    error.startLineNumber !== undefined &&
+                    error.endLineNumber !== undefined &&
+                    error.startColumn !== undefined &&
+                    error.endColumn !== undefined,
+                )
+                .map((error) => ({
+                  ...error,
+                  severity: monacoRef.current!.MarkerSeverity.Error,
+                })),
+            );
           }
         });
 
@@ -232,54 +208,55 @@ const XmlEditor: FC<XmlEditorProps> = ({
   }
 
   const checkDefinitionIdChange = async (bpmn: string, expectedId: string) => {
-    const idMatch = bpmn.match(/id=["']([^"']*)["']/i);
-    if (idMatch && idMatch[1] !== expectedId) {
-      return {
-        error: {
-          ...getErrorPosition(bpmn, idMatch[0], bpmn.indexOf(idMatch[0])),
-          message: 'Modification of definitionId is not allowed!',
-        },
-      };
+    try {
+      const currentId = await getDefinitionsId(bpmn);
+      if (currentId && currentId !== expectedId) {
+        return {
+          error: {
+            message: 'Modification of definitionId is not allowed!',
+          },
+        };
+      }
+      return { error: null };
+    } catch (error: any) {
+      // handle unparsable content error thrown by getDefinitionsId if xml is malformed (eg. missing closing tag)
+      // errors like missing closing tags is already accounted by checkBpmn function (see above)
+      if (error.message.includes('unparsable content')) {
+        return { error: null };
+      }
+      return { error: { message: 'Unexpected error occured: ' + error.message } };
     }
-    return { error: null };
   };
 
   const checkProcessNameDefinitionAttribute = async (bpmn: string) => {
-    const definitionsMatch = bpmn.match(/<definitions\s([^>]*)>/i);
+    try {
+      const definitionsMatch = await getDefinitionsId(bpmn);
+      if (!definitionsMatch) {
+        return {
+          error: {
+            message: 'BPMN must contain a definitions tag',
+          },
+        };
+      }
 
-    if (!definitionsMatch) {
-      return {
-        error: {
-          startLineNumber: 1,
-          endLineNumber: 1,
-          startColumn: 1,
-          endColumn: 1,
-          message: 'BPMN must contain a definitions tag',
-        },
-      };
+      const nameMatch = await getDefinitionsName(bpmn);
+      if (!nameMatch) {
+        return {
+          error: {
+            message: 'Process name attribute is missing in definitions tag',
+          },
+        };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      // handle unparsable content error thrown by getDefinitionsName if xml is malformed(eg. missing closing tag).
+      // errors like missing closing tags is already accounted by checkBpmn function (see above)
+      if (error.message.includes('unparsable content')) {
+        return { error: null };
+      }
+      return { error: { message: 'Unexpected error occured: ' + error.message } };
     }
-
-    const nameMatch = definitionsMatch[1].match(/\bname\s*=\s*["']([^"']*)["']/i);
-
-    if (!nameMatch) {
-      return {
-        error: {
-          ...getErrorPosition(bpmn, definitionsMatch[0], bpmn.indexOf(definitionsMatch[0])),
-          message: 'Process name attribute is missing in definitions tag',
-        },
-      };
-    }
-
-    if (!nameMatch[1]?.trim()) {
-      return {
-        error: {
-          ...getErrorPosition(bpmn, nameMatch[0], bpmn.indexOf(nameMatch[0])),
-          message: 'Process name cannot be null or empty!',
-        },
-      };
-    }
-
-    return { error: null };
   };
 
   // run the validation when something changes and add code highlighting (with debounce)
@@ -297,7 +274,9 @@ const XmlEditor: FC<XmlEditorProps> = ({
       const { error } = await checkBpmn(newBpmn);
 
       if (!error) {
-        !isReadOnly ? setSaveConfirmVisible(true) : handleSave();
+        const [oldHash, newHash] = await Promise.all([hashString(bpmn!), hashString(newBpmn)]);
+
+        oldHash !== newHash ? setSaveConfirmVisible(true) : handleSave();
       }
     }
   };
@@ -314,14 +293,12 @@ const XmlEditor: FC<XmlEditorProps> = ({
     }
     if (!isReadOnly) {
       setIsReadOnly(true);
-      toggleOverlay(true);
     }
   };
 
   const confirmEditMode = () => {
     setIsReadOnly(false);
     setEditWarningVisible(false);
-    toggleOverlay(false);
   };
 
   const getAlertMessage = () => {
@@ -332,8 +309,10 @@ const XmlEditor: FC<XmlEditorProps> = ({
           <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
             {saveState.errorMessages.map((msg, index) => (
               <li key={index}>
-                {msg}{' '}
-                <span style={{ fontWeight: 'bold' }}>({saveState.errorLocations[index]})</span>
+                {msg}
+                {saveState.errorLocations[index] && (
+                  <span style={{ fontWeight: 'bold' }}>({saveState.errorLocations[index]})</span>
+                )}
               </li>
             ))}
           </ul>
@@ -483,6 +462,19 @@ const XmlEditor: FC<XmlEditorProps> = ({
           height="85vh"
           className="Hide-Scroll-Bar"
         />
+        {isReadOnly && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 70,
+              left: 0,
+              width: '85vw',
+              height: '85vh',
+              backgroundColor: 'rgba(200, 200, 200, 0.4)',
+              zIndex: 10,
+            }}
+          />
+        )}
       </Modal>
 
       {/* Edit Warning Modal */}
@@ -510,7 +502,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
       </Modal>
 
       {/* Save Confirmation Modal */}
-      {!isReadOnly && canSave && (
+      {canSave && (
         <Modal
           title={
             <>

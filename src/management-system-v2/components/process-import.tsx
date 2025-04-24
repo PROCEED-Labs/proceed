@@ -170,7 +170,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
               if (['.png', '.jpg', '.jpeg', '.gif', '.webp'].some((ext) => name.endsWith(ext))) {
                 const content = await file.async('base64');
                 processData.artefacts!.images!.push({ name, content });
-              } else if (['.js', '.ts'].some((ext) => name.endsWith(ext))) {
+              } else if (['.js', '.ts', '.xml'].some((ext) => name.endsWith(ext))) {
                 const content = await file.async('text');
                 processData.artefacts!.scriptTasks!.push({ name, content });
               } else if (['.json', '.html'].some((ext) => name.endsWith(ext))) {

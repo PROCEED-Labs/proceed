@@ -470,7 +470,8 @@ const XmlEditor: FC<XmlEditorProps> = ({
               left: 0,
               width: '85vw',
               height: '85vh',
-              backgroundColor: 'rgba(200, 200, 200, 0.4)',
+              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+              pointerEvents: 'none',
               zIndex: 10,
             }}
           />

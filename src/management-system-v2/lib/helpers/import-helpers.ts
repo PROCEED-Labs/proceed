@@ -37,13 +37,13 @@ export async function checkIfAllReferencedArtefactsAreProvided(
     };
     const versionUserTasks = Object.keys(await getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn));
 
-    for (const filename of versionUserTasks) referencedArtefacts.userTasks.push(filename);
+    referencedArtefacts.userTasks = versionUserTasks;
 
     const versionScripts = Object.values(await getScriptTaskFileNameMapping(bpmn))
       .map(({ fileName }) => fileName)
       .filter(truthyFilter);
 
-    for (const filename of versionScripts) referencedArtefacts.scriptTasks.push(filename);
+    referencedArtefacts.scriptTasks = versionScripts;
 
     const flowElements = await getAllBpmnFlowElements(bpmn);
 
@@ -69,12 +69,39 @@ export async function checkIfAllReferencedArtefactsAreProvided(
       );
     });
 
+    // Check missing script tasks (expecting .js + .xml OR .js + .ts)
     const missingScriptTasks: string[] = referencedArtefacts.scriptTasks.flatMap((task) => {
-      return [`${task}.js`, `${task}.ts`].every(
-        (file) => !importedArtefacts.scriptTasks.includes(file),
-      )
-        ? [`${task}.js`, `${task}.ts`]
-        : [];
+      const jsFile = `${task}.js`;
+      const xmlFile = `${task}.xml`;
+      const tsFile = `${task}.ts`;
+
+      const hasJs = importedArtefacts.scriptTasks.includes(jsFile);
+      const hasXml = importedArtefacts.scriptTasks.includes(xmlFile);
+      const hasTs = importedArtefacts.scriptTasks.includes(tsFile);
+
+      // Determine if a valid pair exists
+      const isXmlPairValid = hasJs && hasXml;
+      const isTsPairValid = hasJs && hasTs;
+
+      const missingFilesForTask: string[] = [];
+
+      if (!isXmlPairValid && !isTsPairValid) {
+        if (!hasJs) {
+          missingFilesForTask.push(jsFile);
+          // If JS is missing AND neither XML nor TS is present,
+          if (!hasXml && !hasTs) {
+            missingFilesForTask.push(xmlFile);
+            missingFilesForTask.push(tsFile);
+          }
+        } else {
+          // If JS is present, but no valid pair exists,
+          // then both XML Or TS must be missing.
+          missingFilesForTask.push(xmlFile);
+          missingFilesForTask.push(tsFile);
+        }
+      }
+
+      return missingFilesForTask;
     });
 
     const missingImages = referencedArtefacts.images.filter(

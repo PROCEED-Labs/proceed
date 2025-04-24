@@ -156,17 +156,6 @@ async function writeSeedToDb(seed: DBSeed) {
 
     // Create / Update organizations
     for (const organization of seed.organizations) {
-      const a = {
-        ownerId: usernameToId.get(organization.owner)!,
-        name: organization.name,
-        description: organization.description,
-        contactPhoneNumber: organization.contactPhoneNumber,
-        contactEmail: organization.contactEmail,
-        isOrganization: true,
-        isActive: true,
-      };
-      environmentSchema.parse(a);
-
       // create org
       let org = await getEnvironmentById(organization.id);
       if (!org)

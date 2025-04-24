@@ -19,6 +19,8 @@ import {
   getDefinitionsAndProcessIdForEveryCallActivity,
   getScriptTaskFileNameMapping,
   toBpmnXml,
+  manipulateElementsByTagName,
+  getAllElements,
 } from '@proceed/bpmn-helper';
 
 import {
@@ -129,12 +131,6 @@ function getImagesReferencedByJSON(json: string) {
         return nodeType === 'Image' && node.props.src;
       })
       .map((node) => node.props.src as string);
-
-    // get the referenced images that are stored locally
-    // const seperatelyStored = images
-    //   .filter((src) => src.startsWith('/api/'))
-    //   .map((src) => src.split('/').pop())
-    //   .filter((imageName): imageName is string => !!imageName);
 
     // remove duplicates
     return [...new Set(images)];
@@ -487,7 +483,6 @@ export async function prepareExport(
       // determine the images that are used inside user tasks
       for (const { json } of exportData[definitionId].userTasks) {
         const referencedImages = getImagesReferencedByJSON(json);
-        console.log(referencedImages);
         for (const filename of referencedImages) {
           allRequiredImageFiles.add(filename);
         }
@@ -513,13 +508,20 @@ export async function prepareExport(
       */
       for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
         const bpmnObj = await toBpmnObject(bpmn);
+
+        ['bpmn:ScriptTask', 'bpmn:UserTask'].map((tagName) =>
+          manipulateElementsByTagName(bpmnObj, tagName, (el: any) => {
+            delete el.fileName;
+          }),
+        );
+
         // filter the object based on attribute and value and delete a specific key from the object
         const filters = [
-          {
-            filterAttribute: '$type',
-            filterValues: ['bpmn:ScriptTask', 'bpmn:UserTask'],
-            attributesToBeRemoved: ['fileName'],
-          },
+          // {
+          //   filterAttribute: '$type',
+          //   filterValues: ['bpmn:ScriptTask', 'bpmn:UserTask'],
+          //   attributesToBeRemoved: ['fileName'],
+          // },
           { filterAttribute: '$type', filterValues: ['proceed:overviewImage'] },
         ];
         removeArtefactReferencesFromBpmn(bpmnObj, filters);

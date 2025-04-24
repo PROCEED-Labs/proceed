@@ -128,7 +128,7 @@ export function removeCreatorDefinitionAttributes(xml: string): string {
   );
 }
 
-export const setBpmnOriginalArttributes = async (bpmn: string) => {
+export const setBpmnOriginalAttributes = async (bpmn: string) => {
   let definitions: any;
   try {
     const xmlObj = await toBpmnObject(bpmn);

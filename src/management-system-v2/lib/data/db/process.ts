@@ -424,14 +424,14 @@ export async function updateProcessMetaData(
   metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
   try {
-    const existingrocess = await checkIfProcessExists(processDefinitionsId);
+    const existingProcess = await checkIfProcessExists(processDefinitionsId);
 
     const updatedProcess = await db.process.update({
       where: { id: processDefinitionsId },
       data: {
         ...(metaChanges as any),
         id: processDefinitionsId, // make sure the id is not changed
-        originalId: existingrocess?.originalId || metaChanges.originalId, // originalId is only changed is not set yet
+        originalId: existingProcess?.originalId || metaChanges.originalId, // originalId is only changed is not set yet
       },
     });
 
@@ -1008,7 +1008,9 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
     },
   });
 
-  const filenameMapping = {
+  type typesWithFilename = Extract<ArtifactType, 'user-tasks' | 'script-tasks'>;
+
+  const filenameMapping: Record<typesWithFilename, Map<string, string>> = {
     'user-tasks': new Map<string, string>(),
     'script-tasks': new Map<string, string>(),
   };
@@ -1018,24 +1020,21 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
     const sourceFilePath = artifact.filePath;
     const fileNameParts = artifact.fileName.split('.');
     const ext = fileNameParts.pop();
+
     const baseName = fileNameParts.join('.');
     const destinationFilePath = generateProcessFilePath(artifact.fileName, destinationProcessId);
 
-    type typesWithFilename = Extract<ArtifactType, 'user-tasks' | 'script-tasks'>;
     const filenameGenerators: Record<typesWithFilename, () => string> = {
       'user-tasks': generateUserTaskFileName,
       'script-tasks': generateScriptTaskFileName,
     };
 
     let newFileName;
-    if (artifact.artifactType === 'user-tasks') {
+    if (artifact.artifactType === 'user-tasks' || artifact.artifactType === 'script-tasks') {
       newFileName =
-        filenameMapping['user-tasks'].get(baseName) || filenameGenerators['user-tasks']();
-      filenameMapping['user-tasks'].set(baseName, newFileName);
-    } else if (artifact.artifactType === 'script-tasks') {
-      newFileName =
-        filenameMapping['script-tasks'].get(baseName) || filenameGenerators['script-tasks']();
-      filenameMapping['script-tasks'].set(baseName, newFileName);
+        filenameMapping[artifact.artifactType].get(baseName) ||
+        filenameGenerators[artifact.artifactType]();
+      filenameMapping[artifact.artifactType].set(baseName, newFileName);
     }
 
     const { status, newFilename, newFilepath } = await copyFile(

@@ -4,7 +4,7 @@ import {
   closeModal,
   waitForHydration,
   removeCreatorDefinitionAttributes,
-  setBpmnOriginalArttributes,
+  setBpmnOriginalAttributes,
 } from '../testUtils';
 import { Page } from '@playwright/test';
 
@@ -38,7 +38,6 @@ test('import a process', async ({ processListPage }) => {
   const { page } = processListPage;
 
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
-  console.log(definitionId);
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
@@ -58,7 +57,7 @@ test('export a single process', async ({ processListPage }) => {
   const { definitionId, bpmn: importBpmn } = await processListPage.importProcess(
     'process1.bpmn',
     undefined,
-    setBpmnOriginalArttributes,
+    setBpmnOriginalAttributes,
   );
 
   /*************************** BPMN Export ********************************/
@@ -220,13 +219,13 @@ test('export multiple processes', async ({ processListPage }) => {
     definitionId: process1Id,
     definitionName: process1Name,
     bpmn: process1Bpmn,
-  } = await processListPage.importProcess('process1.bpmn', undefined, setBpmnOriginalArttributes);
+  } = await processListPage.importProcess('process1.bpmn', undefined, setBpmnOriginalAttributes);
   const { definitionName: process2Name } = await processListPage.importProcess('process2.bpmn');
   const {
     definitionId: process3Id,
     definitionName: process3Name,
     bpmn: process3Bpmn,
-  } = await processListPage.importProcess('process3.bpmn', undefined, setBpmnOriginalArttributes);
+  } = await processListPage.importProcess('process3.bpmn', undefined, setBpmnOriginalAttributes);
 
   /*************************** BPMN Export ********************************/
 

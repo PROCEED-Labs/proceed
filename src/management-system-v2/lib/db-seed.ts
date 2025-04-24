@@ -1,5 +1,4 @@
 import z from 'zod';
-import { RoleInputSchema } from './data/role-schema';
 import db from '@/lib/data/db';
 import { addUser, getUserById } from './data/db/iam/users';
 import { addRoleMappings } from './data/db/iam/role-mappings';
@@ -13,6 +12,8 @@ import { addEnvironment, getEnvironmentById } from './data/db/iam/environments';
 import { addMember, isMember } from './data/db/iam/memberships';
 import { getRoleMappingByUserId } from './data/db/iam/role-mappings';
 import { zodPhoneNumber } from './utils';
+import { permissionIdentifiersToNumber } from './authorization/permissionHelpers';
+import { ResourceType, resourceAction, resources } from './ability/caslAbility';
 
 /* -------------------------------------------------------------------------------------------------
  * Schema + Verification
@@ -46,7 +47,22 @@ const userSchema = z.object({
   profileImage: z.string().url().nullable().optional(),
 });
 
-const roleSchema = RoleInputSchema.extend({
+const roleActions = z.array(z.enum(resourceAction));
+
+type Permissions = Record<ResourceType, typeof roleActions>;
+const rolePermissions: Partial<Permissions> = {};
+for (const resource of resources) {
+  rolePermissions[resource] = roleActions;
+}
+
+const roleSchema = z.object({
+  name: z.string(),
+  description: z.string().nullish().optional(),
+  note: z.string().nullish().optional(),
+  permissions: z.object(rolePermissions as Permissions).partial(),
+  expiration: z.date().nullish().optional(),
+  default: z.boolean().optional().nullable(),
+
   members: z.array(z.string()),
 });
 
@@ -217,9 +233,14 @@ async function writeSeedToDb(seed: DBSeed) {
           const roleMembers = role.members;
           delete (role as any)['members'];
 
+          const rolePermissions: Partial<Record<ResourceType, number>> = {};
+          for (const [action, permissions] of Object.entries(role.permissions))
+            rolePermissions[action as ResourceType] = permissionIdentifiersToNumber(permissions);
+
           const newRole = await addRole(
             {
               ...role,
+              permissions: rolePermissions,
               environmentId: org.id,
             },
             undefined,

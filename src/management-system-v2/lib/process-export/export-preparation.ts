@@ -18,7 +18,6 @@ import {
   getDefinitionsVersionInformation,
   getDefinitionsAndProcessIdForEveryCallActivity,
   getScriptTaskFileNameMapping,
-  getBPMNProcessElement,
   toBpmnXml,
 } from '@proceed/bpmn-helper';
 
@@ -467,7 +466,10 @@ export async function prepareExport(
 
       // determine the images that are needed per version and across all versions
       for (const { bpmn } of Object.values(exportData[definitionId].versions)) {
-        const rootProcessElement = await getBPMNProcessElement(bpmn);
+        const rootProcessElement = getElementsByTagName(
+          await toBpmnObject(bpmn),
+          'bpmn:Process',
+        )[0];
 
         const flowElements = await getAllBpmnFlowElements(bpmn);
 

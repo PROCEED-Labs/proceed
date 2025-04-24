@@ -1,9 +1,10 @@
 import {
   getAllBpmnFlowElements,
   getAllUserTaskFileNamesAndUserTaskIdsMapping,
-  getBPMNProcessElement,
+  getElementsByTagName,
   getMetaDataFromElement,
   getScriptTaskFileNameMapping,
+  toBpmnObject,
 } from '@proceed/bpmn-helper';
 import { truthyFilter } from '../typescript-utils';
 
@@ -47,7 +48,10 @@ export async function checkIfAllReferencedArtefactsAreProvided(
     const flowElements = await getAllBpmnFlowElements(bpmn);
 
     // add process overview image associated with the root <Process> element as well
-    const rootProcessElement = await getBPMNProcessElement(bpmn);
+    const rootProcessElement = getElementsByTagName(
+      typeof bpmn !== 'string' ? bpmn : await toBpmnObject(bpmn),
+      'bpmn:Process',
+    )[0];
 
     flowElements.push(rootProcessElement);
 

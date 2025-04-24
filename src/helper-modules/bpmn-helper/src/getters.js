@@ -133,6 +133,8 @@ function getProcessDocumentationByObject(processObject) {
  * @property {string} [exporter] - definitions exporter
  * @property {string} [exporterVersion] - definitions exporterVersion
  * @property {string} [targetNamespace] - definitions targetNamespace
+ * @property {string} [creatorName] - definitions creatorName
+ * @property {string} [userDefinedId] - definitions userDefinedId
  */
 
 /**
@@ -344,23 +346,6 @@ async function getProcessIds(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
   const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
   return processes.map((process) => process.id);
-}
-
-/**
- * Gets process elements / top root element inside a BPMN process
- *
- * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<object>} process element inside a BPMN process
- */
-async function getBPMNProcessElement(bpmn) {
-  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
-  const allElements = getAllElements(bpmnObj);
-  return allElements.filter(
-    (element) =>
-      typeof element.$type === 'string' &&
-      element.$type.startsWith('bpmn:') &&
-      element.$type.includes('Process'),
-  )[0];
 }
 
 /**
@@ -627,7 +612,7 @@ async function getProcessConstraints(bpmn) {
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string, userDefinedId: string }> } object containing the identifying information
  */
 async function getIdentifyingInfos(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -1233,5 +1218,4 @@ module.exports = {
   getPerformersFromElementById,
   parseISODuration,
   convertISODurationToMiliseconds,
-  getBPMNProcessElement,
 };

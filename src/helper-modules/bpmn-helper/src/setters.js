@@ -32,11 +32,6 @@ const constraintParser = new ConstraintParser();
  */
 async function setDefinitionsId(bpmn, id) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    // store the current id as originalId if there is one and we provide a new one
-    // if (id && definitions.id && definitions.id !== id) {
-    //   definitions.originalId = definitions.id;
-    // }
-
     definitions.id = id;
   });
 }
@@ -122,10 +117,6 @@ async function setTargetNamespace(bpmn, id) {
     if (id) {
       const targetNamespace = generateTargetNamespace(id);
 
-      // if (definitions.targetNamespace && definitions.targetNamespace !== targetNamespace) {
-      //   definitions.originalTargetNamespace = definitions.targetNamespace;
-      // }
-
       definitions.targetNamespace = targetNamespace;
     } else {
       definitions.targetNamespace = undefined;
@@ -144,15 +135,6 @@ async function setTargetNamespace(bpmn, id) {
  */
 async function setStandardDefinitions(bpmn, exporterName, exporterVersion) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    // if (definitions.exporter && definitions.exporter !== exporterName) {
-    //   definitions.originalExporter = definitions.exporter;
-    //   definitions.originalExporterVersion = definitions.exporterVersion;
-    // }
-
-    // if (definitions.exporterVersion && definitions.exporterVersion !== exporterVersion) {
-    //   definitions.originalExporterVersion = definitions.exporterVersion;
-    // }
-
     definitions.exporter = exporterName;
     definitions.exporterVersion = exporterVersion;
     definitions.expressionLanguage = 'https://ecma-international.org/ecma-262/8.0/';

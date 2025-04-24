@@ -19,13 +19,12 @@ import {
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
-import './process-modal-carousel.css';
-import Title from 'antd/es/typography/Title';
 import { checkIfProcessExistsByName } from '@/lib/data/processes';
 import { useEnvironment } from './auth-can';
 import { useSession } from 'next-auth/react';
 import { LazyBPMNViewer } from '@/components/bpmn-viewer';
 import { usePathname } from 'next/navigation';
+import styles from './process-modal-carousel.module.scss';
 
 export type ProcessModalMode = 'create' | 'edit' | 'copy' | 'import';
 
@@ -236,6 +235,7 @@ const ProcessModal = <
     if (mode === 'import') {
       return (
         <Carousel
+          className={styles['process-modal-carousel-wrapper']}
           arrows
           infinite={false}
           style={{ padding: '0px 25px 0px 25px' }}
@@ -264,9 +264,9 @@ const ProcessModal = <
       <Modal
         title={
           <Flex justify="space-between" style={{ width: '100%', paddingRight: '25px' }}>
-            <Title level={4} style={{ margin: 0 }}>
+            <Typography.Title level={4} style={{ margin: 0 }}>
               {title}
-            </Title>
+            </Typography.Title>
             {initialData && initialData.length > 1 && (
               <Typography.Text type="secondary">{`Process ${carouselIndex} of ${initialData.length}`}</Typography.Text>
             )}

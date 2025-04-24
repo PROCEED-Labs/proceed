@@ -34,7 +34,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
       });
     },
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: ['user-task-html', task?.id],
+    queryKey: ['user-task-html', spaceId, task?.instanceID, task?.taskId, task?.startTime],
   });
 
   const isCompleted = task?.state === 'COMPLETED';

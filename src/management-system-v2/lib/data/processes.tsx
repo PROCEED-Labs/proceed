@@ -58,6 +58,7 @@ import {
   deleteProcessScriptTask as _deleteProcessScriptTask,
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
 } from '@/lib/data/db/process';
+import { getRootFolder } from './db/folders';
 
 // Import necessary functions from processModule
 

@@ -116,6 +116,7 @@ const Processes = ({
         createdBy: '',
         lastEditedOn: null,
         environmentId: '',
+        category: type,
       },
       ...processes,
     ];

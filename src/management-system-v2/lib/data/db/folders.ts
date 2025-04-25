@@ -1,11 +1,5 @@
 import Ability from '@/lib/ability/abilityHelper.js';
-import {
-  Folder,
-  FolderInput,
-  FolderSchema,
-  FolderUserInput,
-  FolderUserInputSchema,
-} from '../folder-schema';
+import { Folder, FolderInput, FolderSchema, FolderUserInput } from '../folder-schema';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
@@ -54,8 +48,7 @@ export async function getFolderById(folderId: string, ability?: Ability) {
   if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
     throw new Error('Permission denied');
   }
-
-  return folder;
+  return folder as Folder;
 }
 
 export async function getFolders(spaceId?: string) {
@@ -195,7 +188,7 @@ export async function createFolder(
     },
   });
 
-  return createdFolder;
+  return createdFolder as Folder;
 }
 
 /** Deletes a folder and every child recursively */

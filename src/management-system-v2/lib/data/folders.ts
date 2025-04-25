@@ -21,7 +21,9 @@ import { Process } from './process-schema';
 
 export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
 
-export async function createFolder(folderInput: FolderUserInput) {
+export async function createFolder(
+  folderInput: FolderUserInput & { type: 'template' | 'process' },
+) {
   try {
     const folder = FolderUserInputSchema.parse(folderInput);
     const { ability } = await getCurrentEnvironment(folder.environmentId);
@@ -83,7 +85,7 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
     return userError('Permission denied');
 
   for (const item of items) {
-    if (['process', 'project', 'process-instance'].includes(item.type)) {
+    if (['process', 'project', 'process-instance', 'template'].includes(item.type)) {
       await moveProcess(item.id, folderId, ability);
     } else if (item.type === 'folder') {
       await moveFolder(item.id, folderId, ability);

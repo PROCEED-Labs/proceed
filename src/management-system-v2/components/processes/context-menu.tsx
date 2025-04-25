@@ -17,8 +17,7 @@ import { MdOpenWith } from 'react-icons/md';
 import { IoOpenOutline } from 'react-icons/io5';
 import { spaceURL } from '@/lib/utils';
 import { useEnvironment } from '../auth-can';
-import { addProcesses, copyProcesses, getProcessBPMN } from '@/lib/data/processes';
-import { getProcess, getRootFolder } from '@/lib/data/DTOs';
+import { addProcesses, copyProcesses, getProcess, getProcessBPMN } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
 import {
   generateDefinitionsId,
@@ -161,7 +160,7 @@ const ConextMenuArea: FC<
           let templateProcessBPMN;
           const template = selectedContextMenuItems[0];
           if (template.id) {
-            const templateProcess = await getProcess(template.id);
+            const templateProcess = await getProcess(template.id, space.spaceId);
 
             if (!templateProcess) {
               throw new Error('Could not find selected template');

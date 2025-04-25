@@ -148,12 +148,7 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
         scrollbars: true,
         ...blocklyOptions,
       }}
-      onWorkspaceChange={(workspace) => {
-        const isBlockScriptValid = validateBlockScript();
-        const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
-        const javascriptCode = javascriptGenerator.workspaceToCode(workspace);
-        onChange(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
-      }}
+      onWorkspaceChange={onWorkspaceChange}
     />
   ) : (
     <BlocklyWorkspace

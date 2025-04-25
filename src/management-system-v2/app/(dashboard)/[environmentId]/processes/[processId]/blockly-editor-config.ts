@@ -1038,7 +1038,7 @@ Blocks['timeout_async'] = {
           check: 'Number',
         },
         {
-          type: 'input_value',
+          type: 'input_statement',
           name: 'callback',
           check: 'PROCEDURE',
         },
@@ -1055,33 +1055,41 @@ Blocks['timeout_async'] = {
 
 javascriptGenerator.forBlock['timeout_async'] = function (block) {
   const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
-  const callback = javascriptGenerator.valueToCode(
-    block,
-    'callback',
-    BlocklyJavaScript.Order.COMMA,
-  );
+  const callback = javascriptGenerator.statementToCode(block, 'callback');
 
-  return `await setTimeoutAsync(async () => ${callback}, ${delay});\n`;
+  return `await setTimeoutAsync(async () => {${callback}}, ${delay});\n`;
 };
 
 function isTimeoutCallbackConnection(connection: Blockly.Connection) {
   const blockType = connection.getSourceBlock().type;
   const parentInput = connection.getParentInput();
+
   return (
     (blockType === 'interval_async' || blockType === 'timeout_async') &&
-    connection.type === Blockly.ConnectionType.INPUT_VALUE &&
+    (connection.type === Blockly.ConnectionType.INPUT_VALUE ||
+      connection.type === Blockly.ConnectionType.NEXT_STATEMENT) &&
     parentInput &&
     parentInput.name === 'callback'
   );
 }
 function timeoutsConnectionChecker(a: Blockly.Connection, b: Blockly.Connection) {
   // Check for connections to the callback input of interval_async and timeout_async
-  let otherConnection;
-  if (isTimeoutCallbackConnection(a)) otherConnection = b;
-  if (isTimeoutCallbackConnection(b)) otherConnection = a;
-  else return null;
+  let timeout, otherConnection;
+  if (isTimeoutCallbackConnection(a)) {
+    timeout = a;
+    otherConnection = b;
+  }
+  if (isTimeoutCallbackConnection(b)) {
+    timeout = b;
+    otherConnection = a;
+  } else return null;
 
-  return otherConnection.getSourceBlock().type === 'procedures_callreturn';
+  const inputType = otherConnection.getSourceBlock().type;
+
+  if (timeout.getSourceBlock().type === 'timeout_async')
+    return inputType === 'procedures_callnoreturn';
+
+  return inputType === 'procedures_callreturn';
 }
 connectionTypeCheckers.push(timeoutsConnectionChecker);
 

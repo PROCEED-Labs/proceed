@@ -1204,7 +1204,7 @@ for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
         args0: args,
         output: null,
         colour: 75,
-        tooltip: 'Throws error with given reference and explanation',
+        tooltip: 'Perform a network request.',
         helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#getservicenetwork',
       });
     },

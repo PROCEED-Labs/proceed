@@ -1,6 +1,5 @@
 import { test, expect } from './processes.fixtures';
 import { openModal, closeModal, waitForHydration } from '../testUtils';
-import { asyncMap } from 'proceed-management-system/src/shared-frontend-backend/helpers/javascriptHelpers';
 import { Page } from '@playwright/test';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
@@ -986,11 +985,17 @@ test.describe('Click-Controls in Process-List', () => {
     await page.getByRole('button', { name: 'appstore' }).click();
 
     /* Variables */
-    const counter = await page.getByRole('note');
-    const processA = await page.getByRole('button', { name: /Process A/ });
-    const processB = await page.getByRole('button', { name: /Process B/ });
-    const processC = await page.getByRole('button', { name: /Process C/ });
-    const processD = await page.getByRole('button', { name: /Process D/ });
+    const counter = page.getByRole('note');
+
+    // Since the order that the objects will appear on the list isn't predictable, we just index
+    // them by their order instead of their name
+    const processes = page.getByRole('button', { name: /Process [A-Z]/, exact: true });
+    expect(processes).toHaveCount(4);
+
+    const processA = processes.nth(0);
+    const processB = processes.nth(1);
+    const processC = processes.nth(2);
+    const processD = processes.nth(3);
 
     /* Select B (while pressing shift) */
     await processB.click({ modifiers: ['Shift'] });

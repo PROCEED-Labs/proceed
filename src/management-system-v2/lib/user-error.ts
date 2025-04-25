@@ -53,3 +53,15 @@ export function isUserError(value: any): value is UserError {
 export function isUserErrorResponse(value: any): value is { error: UserError } {
   return value && typeof value === 'object' && 'error' in value && isUserError(value.error);
 }
+
+/** These errors will be sent down to the user */
+export class UserFacingError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export function getErrorMessage(error: any): string {
+  if (error instanceof UserFacingError) return error.message;
+  else return 'Something went wrong';
+}

@@ -72,7 +72,7 @@ context.global.setSync('_stdout_log', function (...args) {
 // TODO: setProgress(<number between 0 - 100>)
 
 const structure = {
-  log: ['get'],
+  log: ['trace', 'debug', 'info', 'warn', 'error'],
   console: ['trace', 'debug', 'info', 'warn', 'error', 'log', 'time', 'timeEnd'],
   variable: ['get', 'set', 'getAll'],
 };

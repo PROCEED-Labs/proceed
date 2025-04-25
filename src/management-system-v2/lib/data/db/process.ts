@@ -115,9 +115,12 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       typeof process.allowIframeTimestamp === 'bigint'
         ? Number(process.allowIframeTimestamp)
         : process.allowIframeTimestamp,
+    // TODO: implement inEditingBy
   };
 
-  return convertedProcess;
+  return convertedProcess as typeof convertedProcess & {
+    inEditingBy?: { id: string; task?: string }[];
+  };
 }
 
 /**
@@ -209,13 +212,6 @@ export async function addProcess(
   } catch (error) {
     console.error('Error adding new process: ', error);
   }
-
-  await moveProcess({
-    processDefinitionsId,
-    newFolderId: metadata.folderId,
-    dontUpdateOldFolder: true,
-    tx,
-  });
 
   //if referencedProcessId is present, the process was copied from a shared process
   if (referencedProcessId) {
@@ -382,7 +378,7 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
     });
   }
 
-  const process = await db.process.findUnique({
+  const process = await tx.process.findUnique({
     where: { id: processDefinitionsId },
     include: { artifactProcessReferences: { include: { artifact: true } } },
   });
@@ -390,13 +386,13 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
   if (!process) {
     throw new Error(`Process with id: ${processDefinitionsId} not found`);
   }
+
   await Promise.all(
     process.artifactProcessReferences.map((artifactRef) => {
-      deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
+      return deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
     }),
   );
 
-  // Remove from database
   await tx.process.delete({ where: { id: processDefinitionsId } });
 
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
@@ -498,7 +494,7 @@ export async function addProcessVersion(
     throw new Error('Error creating the version');
   }
 
-  // add information about the new version to the meta information and inform others about its existance
+  // add information about the new version to the meta information and inform others about its existence
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
   //@ts-ignore

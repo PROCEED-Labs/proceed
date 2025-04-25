@@ -8,10 +8,6 @@ import { useState } from 'react';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import SpaceLink from '@/components/space-link';
 import processListStyles from '@/components/process-icon-list.module.scss';
-import { removeDeployment } from '@/lib/engines/server-actions';
-import { useEnvironment } from '@/components/auth-can';
-import { useRouter } from 'next/navigation';
-import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type InputItem = {
   id: string;
@@ -24,14 +20,13 @@ export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, '
 const DeploymentsList = ({
   processes,
   tableProps,
+  removeDeployment,
 }: {
   processes: DeployedProcessListProcess[];
   tableProps?: TableProps<DeployedProcessListProcess>;
+  removeDeployment: (id: string) => void;
 }) => {
   const breakpoint = Grid.useBreakpoint();
-
-  const space = useEnvironment();
-  const router = useRouter();
 
   const columns: TableColumnsType<DeployedProcessListProcess> = [
     {
@@ -142,17 +137,12 @@ const DeploymentsList = ({
           columnProps: {
             width: '150px',
             responsive: ['xl'],
-            render: (id, record) => {
+            render: (_, record) => {
               return (
                 <Button
                   style={{ float: 'right' }}
                   type="text"
-                  onClick={() => {
-                    wrapServerCall({
-                      fn: () => removeDeployment(record.id, space.spaceId),
-                      onSuccess: () => router.refresh(),
-                    });
-                  }}
+                  onClick={() => removeDeployment(record.id)}
                 >
                   <DeleteOutlined color="red" />
                 </Button>

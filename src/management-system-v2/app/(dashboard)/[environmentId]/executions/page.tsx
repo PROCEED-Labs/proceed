@@ -3,13 +3,15 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import { env } from '@/lib/env-vars';
 import DeploymentsView from './deployments-view';
-import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/DTOs';
+import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/folders';
 import { getUsersFavourites } from '@/lib/data/users';
 import { DeployedProcessInfo, getDeployments } from '@/lib/engines/deployment';
 import { getProceedEngines } from '@/lib/engines/machines';
 import { getDbEngines } from '@/lib/data/engines';
 import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
 import { isUserErrorResponse } from '@/lib/user-error';
+import { Skeleton } from 'antd';
+import { Suspense } from 'react';
 
 function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
   deployments: T[],
@@ -29,12 +31,8 @@ function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'
   return deployments as (T & { name: string })[];
 }
 
-export default async function ExecutionsPage({ params }: { params: { environmentId: string } }) {
-  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
-    return notFound();
-  }
-
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+async function Executions({ environmentId }: { environmentId: string }) {
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   // TODO: check ability
 
@@ -69,13 +67,25 @@ export default async function ExecutionsPage({ params }: { params: { environment
   const deployedProcesses = getDeploymentNames(deployedWithRemappedIds);
 
   return (
+    <DeploymentsView
+      processes={folderContents}
+      folder={folder}
+      favourites={favs as string[]}
+      deployedProcesses={deployedProcesses}
+    />
+  );
+}
+
+export default function ExecutionsPage({ params }: { params: { environmentId: string } }) {
+  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+    return notFound();
+  }
+
+  return (
     <Content title="Executions">
-      <DeploymentsView
-        processes={folderContents}
-        folder={folder}
-        favourites={favs as string[]}
-        deployedProcesses={deployedProcesses}
-      ></DeploymentsView>
+      <Suspense fallback={<Skeleton active />}>
+        <Executions environmentId={params.environmentId} />
+      </Suspense>
     </Content>
   );
 }

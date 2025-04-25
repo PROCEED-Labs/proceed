@@ -58,6 +58,27 @@ class TaskListTab extends DisplayItem {
     let variables;
     let milestonesData;
 
+    function getVariableStateAtUserTaskEnd(userTask, instance) {
+      let variables = {};
+
+      Object.entries(instance.variables).map(([key, { value, log }]) => {
+        for (const entry of log) {
+          if (userTask.endTime && entry.changedTime > userTask.endTime + 10) {
+            value = entry.oldValue;
+            break;
+          }
+        }
+
+        variables[key] = value;
+      });
+
+      if (userTask.variableChanges) {
+        variables = { ...variables, ...userTask.variableChanges };
+      }
+
+      return variables;
+    }
+
     if (engine) {
       userTask = engine.userTasks.find(
         (userTask) =>
@@ -78,8 +99,9 @@ class TaskListTab extends DisplayItem {
         // get the data from the instance (will look at the data of the token that currently resides on this user task)
         milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
       } else {
+        const instance = engine.getInstanceInformation(instanceId);
         // use the data in the user task if it exists (this is the case when the user task has already ended)
-        variables = userTask.variableChanges || {};
+        variables = getVariableStateAtUserTaskEnd(userTask, instance);
         // use the data in the user task if it exists (this is the case when the user task has already ended)
         milestonesData = userTask.milestones || {};
       }
@@ -100,7 +122,8 @@ class TaskListTab extends DisplayItem {
       );
 
       definitionId = userTask.definitionId;
-      variables = userTaskInstance.variables;
+
+      variables = getVariableStateAtUserTaskEnd(userTask, userTaskInstance);
 
       if (userTaskToken) {
         milestonesData = userTaskToken.milestones;
@@ -143,7 +166,12 @@ class TaskListTab extends DisplayItem {
 
       const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
 
-      const milestones = await getMilestonesFromElementById(bpmn, query.userTaskID);
+      let milestones = await getMilestonesFromElementById(bpmn, query.userTaskID);
+
+      milestones = milestones.map((milestone) => ({
+        ...milestone,
+        value: milestonesData[milestone.id] || 0,
+      }));
 
       const script = `
       const instanceID = '${query.instanceID}';
@@ -160,11 +188,11 @@ class TaskListTab extends DisplayItem {
           const [key, value] = entry.value;
           if (variables[key]) {
             if (!Array.isArray(variables[key])) {
-              variables[key] = [variables[key]]; 
+              variables[key] = [variables[key]];
             }
             variables[key].push(value);
           } else {
-            variables[key] = value; 
+            variables[key] = value;
           }
           entry = entries.next();
         }
@@ -185,6 +213,9 @@ class TaskListTab extends DisplayItem {
           'input[class^="milestone-"]'
         );
         Array.from(milestoneInputs).forEach((milestoneInput) => {
+          milestoneInput.addEventListener('input', (event) => {
+            milestoneInput.nextElementSibling.value = milestoneInput.value + '%'
+          });
           milestoneInput.addEventListener('click', (event) => {
             const milestoneName = Array.from(event.target.classList)
             .find((className) => className.includes('milestone-'))

@@ -3,16 +3,26 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
-import { isMember } from '@/lib/data/legacy/iam/memberships';
-import { getSystemAdminByUserId } from '@/lib/data/DTOs';
+import { isMember } from '@/lib/data/db/iam/memberships';
+import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import Ability from '@/lib/ability/abilityHelper';
 import {
   adminRules,
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
+import { env } from '@/lib/env-vars';
+import * as noIamUser from '@/lib/no-iam-user';
 
 export const getCurrentUser = cache(async () => {
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    return {
+      session: noIamUser.session,
+      userId: noIamUser.userId,
+      systemAdmin: noIamUser.systemAdmin,
+    };
+  }
+
   const session = await getServerSession(nextAuthOptions);
   const userId = session?.user.id || '';
   const systemAdmin = await getSystemAdminByUserId(userId);
@@ -36,17 +46,20 @@ export const getCurrentEnvironment = cache(
   ) => {
     const { userId, systemAdmin } = await getCurrentUser();
 
-    // Use hardcoded environment /my/processes for personal spaces.
-    if (spaceIdParam === 'my') {
+    if (
+      spaceIdParam === 'my' || // Use hardcoded environment /my/processes for personal spaces.
+      !env.PROCEED_PUBLIC_IAM_ACTIVATE // when iam isn't active we hardcode the space to be the no-iam user's personal space
+    ) {
       // Note: will be undefined for not logged in users
       spaceIdParam = userId;
     }
-    const activeSpace = decodeURIComponent(spaceIdParam);
 
+    const activeSpace = decodeURIComponent(spaceIdParam);
     const isOrganization = activeSpace !== userId;
 
     // TODO: account for bought resources
-    if (systemAdmin) {
+
+    if (systemAdmin || !env.PROCEED_PUBLIC_IAM_ACTIVATE) {
       let rules;
       if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
       else rules = adminRules.concat(packedGlobalUserRules);

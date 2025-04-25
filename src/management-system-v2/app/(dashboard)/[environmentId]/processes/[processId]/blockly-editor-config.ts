@@ -679,7 +679,7 @@ javascriptGenerator.forBlock['object_create'] = function (block) {
   do {
     entries += javascriptGenerator.statementToCode(block, 'entry' + n);
     n++;
-  } while (block.getInput('IF' + n));
+  } while (block.getInput('entry' + n));
 
   // order is atomic because we add the parentheses ourselves
   return [`({\n${entries}})`, BlocklyJavaScript.Order.ATOMIC];

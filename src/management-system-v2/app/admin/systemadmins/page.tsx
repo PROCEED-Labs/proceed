@@ -6,8 +6,8 @@ import {
   deleteSystemAdmin,
   getSystemAdminByUserId,
   getSystemAdmins,
-} from '@/lib/data/DTOs';
-import { getUserById, getUsers } from '@/lib/data/DTOs';
+} from '@/lib/data/db/iam/system-admins';
+import { getUserById, getUsers } from '@/lib/data/db/iam/users';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { notFound, redirect } from 'next/navigation';

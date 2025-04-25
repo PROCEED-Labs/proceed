@@ -49,11 +49,12 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
   const filteredAndSortedUserTasks = useMemo(() => {
     const showingUserTasks = userTasks.filter((uT) => {
       return (
-        stateSelectionFilter.includes(uT.state) &&
-        uT.priority >= priorityRangeFilter[0] &&
-        uT.priority <= priorityRangeFilter[1] &&
-        uT.progress >= progressRangeFilter[0] &&
-        uT.progress <= progressRangeFilter[1]
+        uT.id === selectedUserTaskID ||
+        (stateSelectionFilter.includes(uT.state) &&
+          uT.priority >= priorityRangeFilter[0] &&
+          uT.priority <= priorityRangeFilter[1] &&
+          uT.progress >= progressRangeFilter[0] &&
+          uT.progress <= progressRangeFilter[1])
       );
     });
 
@@ -87,8 +88,8 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
     pageStartItemIndex + itemsPerPage,
   );
 
-  const userTaskSelectedOnMobile = selectedUserTaskID && !breakpoint.xl;
   const selectedUserTask = filteredAndSortedUserTasks.find((uT) => uT.id === selectedUserTaskID);
+  const userTaskSelectedOnMobile = selectedUserTask && !breakpoint.xl;
 
   useEffect(() => {
     if (selectedUserTask) {

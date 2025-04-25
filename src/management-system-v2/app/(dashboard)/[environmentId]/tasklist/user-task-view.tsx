@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import cn from 'classnames';
 
@@ -24,20 +26,26 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
   const router = useRouter();
   const { spaceId } = useEnvironment();
 
-  const [html, setHtml] = useState<string | undefined>();
+  const { data: html } = useQuery({
+    queryFn: async () => {
+      if (!task) return null;
+      return wrapServerCall({
+        fn: async () => {
+          const html = await getTasklistEntryHTML(
+            spaceId,
+            task.instanceID,
+            task.taskId,
+            task.startTime,
+          );
 
-  useEffect(() => {
-    if (task) {
-      wrapServerCall({
-        fn: () => getTasklistEntryHTML(spaceId, task.instanceID, task.taskId, task.startTime),
-        onSuccess: (html) => {
-          setHtml(html);
+          return html || null;
         },
+        onSuccess: false,
       });
-
-      return () => setHtml(undefined);
-    }
-  }, [spaceId, task]);
+    },
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
+    queryKey: ['user-task-html', spaceId, task?.instanceID, task?.taskId, task?.startTime],
+  });
 
   const isCompleted = task?.state === 'COMPLETED';
   const isPaused = task?.state === 'PAUSED';
@@ -52,48 +60,59 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
       {html && (
         <>
           <iframe
-            ref={(r) => {
-              if (r?.contentWindow) {
-                (r.contentWindow as any).PROCEED_DATA = {
-                  post: async (
-                    path: string,
-                    body: { [key: string]: any },
-                    query: { instanceID: string; userTaskID: string },
-                  ) => {
-                    if (path === '/tasklist/api/userTask') {
-                      wrapServerCall({
-                        fn: () =>
-                          completeTasklistEntry(spaceId, query.instanceID, query.userTaskID, body),
-                        onSuccess: () => router.refresh(),
-                      });
-                    }
-                  },
-                  put: async (
-                    path: string,
-                    body: { [key: string]: any },
-                    query: { instanceID: string; userTaskID: string },
-                  ) => {
-                    // if (path === '/tasklist/api/milestone') {
-                    // TODO: implement milestone handling
-                    // }
-                    if (path === '/tasklist/api/variable') {
-                      wrapServerCall({
-                        fn: () =>
-                          setTasklistEntryVariableValues(
-                            spaceId,
-                            query.instanceID,
-                            query.userTaskID,
-                            body,
-                          ),
-                        onSuccess: () => router.refresh(),
-                      });
-                    }
-                  },
-                };
-              }
-            }}
             srcDoc={html}
             style={{ width: '100%', height: '100%', border: 0 }}
+            onLoad={(ev) => {
+              const iframe = ev.currentTarget;
+              if (!iframe.contentWindow) return;
+
+              // block the user from interacting with paused or completed user tasks while allowing scrolling of
+              // the form itself
+              if (isCompleted || isPaused) {
+                Array.from(iframe.contentWindow.document.body.getElementsByTagName('form')).forEach(
+                  (form) => {
+                    form.style.pointerEvents = 'none';
+                  },
+                );
+              }
+
+              (iframe.contentWindow as any).PROCEED_DATA = {
+                post: async (
+                  path: string,
+                  body: { [key: string]: any },
+                  query: { instanceID: string; userTaskID: string },
+                ) => {
+                  if (path === '/tasklist/api/userTask') {
+                    wrapServerCall({
+                      fn: () =>
+                        completeTasklistEntry(spaceId, query.instanceID, query.userTaskID, body),
+                      onSuccess: () => router.refresh(),
+                    });
+                  }
+                },
+                put: async (
+                  path: string,
+                  body: { [key: string]: any },
+                  query: { instanceID: string; userTaskID: string },
+                ) => {
+                  // if (path === '/tasklist/api/milestone') {
+                  // TODO: implement milestone handling
+                  // }
+                  if (path === '/tasklist/api/variable') {
+                    wrapServerCall({
+                      fn: () =>
+                        setTasklistEntryVariableValues(
+                          spaceId,
+                          query.instanceID,
+                          query.userTaskID,
+                          body,
+                        ),
+                      onSuccess: () => router.refresh(),
+                    });
+                  }
+                },
+              };
+            }}
           />
           {(isCompleted || isPaused) && (
             <div className={styles.overlay}>

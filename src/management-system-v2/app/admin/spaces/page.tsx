@@ -1,17 +1,22 @@
 import { getCurrentUser } from '@/components/auth';
-import { deleteEnvironment, getEnvironmentById, getEnvironments } from '@/lib/data/DTOs';
-import { getSystemAdminByUserId } from '@/lib/data/DTOs';
+import {
+  deleteEnvironment,
+  getEnvironmentById,
+  getEnvironments,
+} from '@/lib/data/db/iam/environments';
+import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import { redirect } from 'next/navigation';
 import SpacesTable from './spaces-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
 import { getSpaceRepresentation, getUserName } from './space-representation';
-import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
-import { getUserById } from '@/lib/data/DTOs';
+import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
+import { getUserById } from '@/lib/data/db/iam/users';
 import { Button, Space } from 'antd';
 import { ReactNode } from 'react';
 import { LeftOutlined } from '@ant-design/icons';
 import { User } from '@/lib/data/user-schema';
+import { Environment } from '@/lib/data/environment-schema';
 
 async function deleteSpace(spaceIds: string[]) {
   'use server';
@@ -58,7 +63,9 @@ export default async function SysteAdminDashboard({ params }: { params?: { userI
 
     spacesTableRepresentation = await getSpaceRepresentation(userSpaces);
   } else {
-    spacesTableRepresentation = await getSpaceRepresentation(await getEnvironments());
+    spacesTableRepresentation = await getSpaceRepresentation(
+      (await getEnvironments()) as Environment[],
+    );
   }
 
   return (

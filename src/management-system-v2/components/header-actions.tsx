@@ -54,16 +54,7 @@ const HeaderActions: FC = () => {
   let actionButton;
   const avatarDropdownItems: MenuProps['items'] = [];
 
-  if (!envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
-    avatarDropdownItems.push({
-      key: 'profile',
-      title: 'Profile Settings',
-      label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-      icon: <FaUserEdit />,
-    });
-
-    actionButton = null;
-  } else if (isGuest) {
+  if (isGuest) {
     actionButton = (
       <>
         <Button
@@ -93,7 +84,14 @@ const HeaderActions: FC = () => {
         }),
       icon: <FaSignOutAlt />,
     });
-  } else {
+  } else if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    avatarDropdownItems.push({
+      key: 'profile',
+      title: 'Profile Settings',
+      label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
+      icon: <FaUserEdit />,
+    });
+
     // userSpaces is null when the component is outside of the UserSpaces provider
     if (userSpaces) {
       actionButton = (
@@ -177,11 +175,7 @@ const HeaderActions: FC = () => {
             <SpaceLink href={`/profile`}>
               <UserAvatar user={session.data.user} />
             </SpaceLink>
-          ) : (
-            <div>
-              <UserAvatar user={session.data.user} />
-            </div>
-          )}
+          ) : null}
         </Dropdown>
       </Space>
     </>

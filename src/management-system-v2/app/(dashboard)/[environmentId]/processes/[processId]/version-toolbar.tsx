@@ -43,6 +43,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
                       ...values,
                       originalId: processId as string,
                       originalVersion: selectedVersionId,
+                      type: 'process',
                     },
                   ],
                   environment.spaceId,

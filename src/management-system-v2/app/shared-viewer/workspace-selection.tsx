@@ -18,6 +18,8 @@ import { FolderTreeNode, getSpaceFolderTree } from '@/lib/data/folders';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useSession } from '@/components/auth-can';
+import { Folder } from '@/lib/data/folder-schema';
+import { Process } from '@/lib/data/process-schema';
 
 type WorkspaceSelectionProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
@@ -266,6 +268,7 @@ const WorkspaceSelectionModalButton: React.FC<WorkspaceSelectionProps> = ({
         description: processData.description,
         originalId: processData.id,
         originalVersion: typeof versionInfo.id === 'number' ? `${versionInfo.id}` : undefined,
+        type: 'process' as 'template' | 'process',
       },
     ];
 

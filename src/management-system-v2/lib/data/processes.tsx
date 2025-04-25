@@ -168,7 +168,7 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 
 export const addProcesses = async (
   values: {
-    type: 'process' | 'template';
+    type?: 'process' | 'template';
     name: string;
     description: string;
     bpmn?: string;
@@ -183,6 +183,7 @@ export const addProcesses = async (
   const newProcesses: Process[] = [];
 
   for (const value of values) {
+    const type = value.type ?? 'process';
     const { bpmn } = await createProcess({
       name: value.name,
       description: value.description,
@@ -205,8 +206,8 @@ export const addProcesses = async (
     const process = await _addProcess({
       ...newProcess,
       folderId:
-        value.folderId ?? (await getRootFolder(activeEnvironment.spaceId, value.type, ability)).id,
-      type: value.type,
+        value.folderId ?? (await getRootFolder(activeEnvironment.spaceId, type, ability)).id,
+      type: type,
     });
 
     if (typeof process !== 'object') {

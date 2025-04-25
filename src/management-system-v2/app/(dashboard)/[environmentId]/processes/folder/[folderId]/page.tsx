@@ -1,4 +1,4 @@
-import Processes from '@/components/processes';
+import Processes, { Template } from '@/components/processes';
 import Content from '@/components/content';
 import { Button, Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
@@ -16,6 +16,7 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
+import { getReleasedProcessTemplates } from '@/lib/data/db/process';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async ({
@@ -28,20 +29,14 @@ const ProcessesPage = async ({
   const favs = await getUsersFavourites();
 
   const rootFolderProcessPage = await getRootFolder(activeEnvironment.spaceId, 'process', ability);
-  const rootFolderTemplatepage = await getRootFolder(
-    activeEnvironment.spaceId,
-    'template',
-    ability,
-  );
 
   const folder = await getFolderById(
     params.folderId ? decodeURIComponent(params.folderId) : rootFolderProcessPage.id,
   );
-  const templatesFolder = await getFolderById(rootFolderTemplatepage.id);
 
   const folderContents = await getFolderContents(folder.id, ability);
 
-  const templateFolderContents = await getFolderContents(templatesFolder.id, ability);
+  const releasedTemplates = await getReleasedProcessTemplates(activeEnvironment.spaceId, ability);
 
   //folderContents.push(...templateFolderContents);
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
@@ -75,7 +70,12 @@ const ProcessesPage = async ({
         }
       >
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-          <Processes processes={folderContents} favourites={favs as string[]} folder={folder} />
+          <Processes
+            processes={folderContents}
+            favourites={favs as string[]}
+            folder={folder}
+            releasedTemplates={releasedTemplates}
+          />
         </Space>
       </Content>
     </>

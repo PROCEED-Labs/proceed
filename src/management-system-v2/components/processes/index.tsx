@@ -33,7 +33,7 @@ import {
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
-import { ProcessMetadata } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
@@ -89,17 +89,23 @@ export type ProcessActions = {
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
+export type Template = Pick<
+  Process,
+  'id' | 'name' | 'description' | 'bpmn' | 'creatorId' | 'environmentId' | 'folderId'
+>;
 
 const Processes = ({
   processes: unfilteredProcesses,
   favourites,
   folder,
   type = 'process',
+  releasedTemplates,
 }: {
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
   type?: 'process' | 'template';
+  releasedTemplates?: Template[];
 }) => {
   let processes = unfilteredProcesses.filter(
     (process) => process.type === type || process.type === 'folder',
@@ -121,7 +127,7 @@ const Processes = ({
       ...processes,
     ];
 
-  const templates = unfilteredProcesses.filter((process) => process.type === 'template');
+  //const templates = unfilteredProcesses.filter((process) => process.type === 'template');
 
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
@@ -659,7 +665,7 @@ const Processes = ({
       <ProcessCreationModal
         open={openCreateProcessModal}
         setOpen={setOpenCreateProcessModal}
-        templates={templates}
+        templates={releasedTemplates}
         modalProps={{
           onCancel: deleteCreateProcessSearchParams,
           onOk: deleteCreateProcessSearchParams,
@@ -668,7 +674,9 @@ const Processes = ({
         customAction={async (values) => {
           let templateProcessBPMN;
           if (values.templateId) {
-            const templateProcess = templates.find((template) => template.id === values.templateId);
+            const templateProcess = releasedTemplates?.find(
+              (template) => template.id === values.templateId,
+            );
 
             if (!templateProcess) {
               throw new Error('Could not find selected template');

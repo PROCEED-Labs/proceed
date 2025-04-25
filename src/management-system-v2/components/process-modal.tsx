@@ -11,9 +11,14 @@ import {
   Typography,
   ModalProps,
   Select,
+  Button,
+  Space,
 } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
+import { LazyBPMNViewer } from './bpmn-viewer';
+import Search from 'antd/es/input/Search';
+import { Template } from './processes';
 
 type ProcessModalProps<T extends { name: string; description: string; templateId?: string }> = {
   open: boolean;
@@ -120,6 +125,10 @@ const ProcessModal = <T extends { name: string; description: string; templateId?
     { level: 2, blocking: open, dependencies: [open] },
   );
 
+  const handleTemplateSelection = (index: number, templateId: string) => {
+    form.setFieldValue([index, 'templateId'], templateId);
+  };
+
   return (
     <Modal
       title={title}
@@ -153,7 +162,12 @@ const ProcessModal = <T extends { name: string; description: string; templateId?
         preserve={false}
       >
         {!initialData ? (
-          <ProcessCreationInputs type={type} index={0} templates={templates} />
+          <ProcessCreationInputs
+            type={type}
+            index={0}
+            templates={templates}
+            handleTemplateSelection={handleTemplateSelection}
+          />
         ) : initialData.length === 1 ? (
           <ProcessInputs type={type} index={0} />
         ) : (
@@ -172,7 +186,8 @@ type ProcessInputsProps = {
 type ProcessCreationInputsProps = {
   index: number;
   type?: 'process' | 'template';
-  templates?: any[];
+  templates?: Template[];
+  handleTemplateSelection?: (index: number, templateId: string) => void;
 };
 
 const ProcessInputs = ({ index, type = 'process' }: ProcessInputsProps) => {
@@ -208,22 +223,89 @@ const ProcessInputs = ({ index, type = 'process' }: ProcessInputsProps) => {
   );
 };
 
-const ProcessCreationInputs = ({ index, type, templates = [] }: ProcessCreationInputsProps) => {
-  const templateOptions = templates.map((template) => ({
-    value: template.id,
-    label: template.name,
-  }));
+const ProcessCreationInputs = ({
+  index,
+  type,
+  templates = [],
+  handleTemplateSelection,
+}: ProcessCreationInputsProps) => {
+  const [selectedTemplate, setSelectedTemplate] = React.useState<Template | null>(null);
+  const [filteredTemplates, setFilteredTemplates] = React.useState(templates);
+
+  const handleSearch = (value: string) => {
+    const filtered = templates.filter((template) =>
+      template.name.toLowerCase().includes(value.toLowerCase()),
+    );
+    setFilteredTemplates(filtered);
+  };
 
   return (
     <>
       <ProcessInputs index={index} type={type} />
-      <Form.Item
-        name={[index, 'templateId']}
-        label="Template"
-        rules={[{ required: false, message: 'Please select Template' }]}
-      >
-        <Select showSearch options={templateOptions} />
-      </Form.Item>
+      {type === 'process' && (
+        <>
+          {/* <Search
+            placeholder="input search text"
+            onSearch={handleSearch}
+            style={{ width: '100%' }}
+            value={selectedTemplate?.id}
+          /> */}
+          <Form.Item name={[index, 'templateId']} label="Template">
+            <Input />
+          </Form.Item>
+
+          {/* Horizontal Scrollable Template Selection */}
+          <div style={{ width: '100%', overflowX: 'auto', minHeight: '220px' }}>
+            <Space
+              style={{
+                display: 'flex',
+                overflowX: 'auto',
+                whiteSpace: 'nowrap',
+                padding: '8px 0',
+                gap: '8px',
+                flexWrap: 'nowrap',
+                scrollbarWidth: 'thin',
+              }}
+            >
+              {filteredTemplates.length > 0 ? (
+                filteredTemplates.map((template) => (
+                  <Button
+                    type="default"
+                    key={template.id}
+                    className="template-button"
+                    onClick={() => {
+                      setSelectedTemplate(template);
+                      handleTemplateSelection ? handleTemplateSelection(index, template.id) : null;
+                    }}
+                    style={{
+                      backgroundColor: selectedTemplate?.id === template.id ? '#dcf0fa' : 'white',
+                      color: selectedTemplate?.id === template.id ? 'white' : 'black',
+                      border: '1px solid #d9d9d9',
+                      minWidth: '200px',
+                      maxWidth: '200px',
+                      height: '200px',
+                      padding: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <LazyBPMNViewer definitionId={template.id} reduceLogo fitOnResize />
+                    <Typography.Text>{template.name}</Typography.Text>
+                  </Button>
+                ))
+              ) : (
+                <Typography.Text type="secondary" style={{ padding: '10px' }}>
+                  No matching templates found
+                </Typography.Text>
+              )}
+            </Space>
+          </div>
+        </>
+      )}
     </>
   );
 };

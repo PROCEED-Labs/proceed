@@ -128,6 +128,33 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   };
 }
 
+export async function getReleasedProcessTemplates(spaceId: string, ability?: Ability) {
+  //TODO: ability check
+
+  try {
+    const releasedTemplates = await db.process.findMany({
+      where: {
+        environmentId: spaceId,
+        versions: { some: {} }, // at lease one version should exist
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        folderId: true,
+        environmentId: true,
+        creatorId: true,
+        bpmn: true,
+      },
+    });
+
+    return releasedTemplates;
+  } catch (error) {
+    console.error('Error fetching released process templates:', error);
+    throw new Error('Failed to fetch released process templates.');
+  }
+}
+
 /**
  * Throws if process with given id doesn't exist
  *

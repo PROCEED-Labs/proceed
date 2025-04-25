@@ -201,14 +201,14 @@ const ProcessModal = <
 
   const renderFormContent = () => {
     if (!initialData) {
-      return <ProcessInputs index={0} mode={mode} />;
+      return <ProcessInputs index={0} />;
     }
     if (initialData.length === 1 && mode === 'edit') {
-      return <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} mode={mode} />;
+      return <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} />;
     }
 
     if (initialData.length === 1 && mode === 'copy') {
-      return <ProcessInputs key={0} index={0} mode={mode} />;
+      return <ProcessInputs key={0} index={0} />;
     }
 
     if (initialData.length > 1 && mode === 'copy') {
@@ -216,7 +216,7 @@ const ProcessModal = <
         (initialData?.length ?? 0) > 1
           ? initialData?.map((data, index) => ({
               label: data.name,
-              children: <ProcessInputs index={index} mode={mode} />,
+              children: <ProcessInputs index={index} />,
             }))
           : undefined;
       return (
@@ -244,7 +244,7 @@ const ProcessModal = <
                   <Divider style={{ width: '100%', marginLeft: '-20%' }} />
                 </>
               )}
-              <ProcessInputsImport key={index} index={index} mode={mode} />
+              <ProcessInputsImport key={index} index={index} />
             </Card>
           ))}
         </Carousel>
@@ -347,10 +347,9 @@ const ProcessModal = <
 type ProcessInputsProps = {
   index: number;
   initialName?: string;
-  mode: ProcessModalMode;
 };
 
-const ProcessInputs = ({ index, initialName, mode = 'create' }: ProcessInputsProps) => {
+const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
   const environment = useEnvironment();
   const session = useSession();
   const path = usePathname();
@@ -363,7 +362,7 @@ const ProcessInputs = ({ index, initialName, mode = 'create' }: ProcessInputsPro
     }
 
     // In edit mode, allow keeping the original name
-    if (mode === 'edit' && initialName && name === initialName) {
+    if (initialName && name === initialName) {
       callback();
       return;
     }
@@ -434,10 +433,10 @@ const ProcessInputs = ({ index, initialName, mode = 'create' }: ProcessInputsPro
   );
 };
 
-const ProcessInputsImport = ({ index, mode }: ProcessInputsProps) => {
+const ProcessInputsImport = ({ index }: ProcessInputsProps) => {
   return (
     <>
-      <ProcessInputs index={index} mode={mode} />
+      <ProcessInputs index={index} />
       <Form.Item name={[index, 'creator']} label="Original Creator" rules={[{ required: false }]}>
         <Input disabled />
       </Form.Item>

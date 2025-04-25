@@ -1,13 +1,8 @@
 import Content from '@/components/content';
 import { Skeleton } from 'antd';
 import { notFound } from 'next/navigation';
-<<<<<<< HEAD
 import SavedEnginesList from '@/components/saved-engines-list';
 import { getDbEngines } from '@/lib/data/db/engines';
-=======
-import SavedEnginesList from './saved-engines-list';
-import { getSpaceEngines } from '@/lib/data/db/space-engines';
->>>>>>> origin/main
 import { getCurrentEnvironment } from '@/components/auth';
 import Ability from '@/lib/ability/abilityHelper';
 import { Suspense } from 'react';

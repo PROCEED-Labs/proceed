@@ -19,15 +19,10 @@ import {
   getDefinitionsAndProcessIdForEveryCallActivity,
   getScriptTaskFileNameMapping,
   toBpmnXml,
-  manipulateElementsByTagName,
   getAllElements,
 } from '@proceed/bpmn-helper';
 
-import {
-  asyncMap,
-  asyncFilter,
-  removeSubObjects as removeArtefactReferencesFromBpmn,
-} from '../helpers/javascriptHelpers';
+import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
 import { getImageDimensions, getSVGFromBPMN, isSelectedOrInsideSelected } from './util';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
@@ -509,22 +504,15 @@ export async function prepareExport(
       for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
         const bpmnObj = await toBpmnObject(bpmn);
 
-        ['bpmn:ScriptTask', 'bpmn:UserTask'].map((tagName) =>
-          manipulateElementsByTagName(bpmnObj, tagName, (el: any) => {
+        const elements = getAllElements(bpmnObj);
+        elements.forEach((el) => {
+          if (el['$type'] === 'bpmn:ScriptTask' || el['$type'] === 'bpmn:UserTask') {
             delete el.fileName;
-          }),
-        );
-
-        // filter the object based on attribute and value and delete a specific key from the object
-        const filters = [
-          // {
-          //   filterAttribute: '$type',
-          //   filterValues: ['bpmn:ScriptTask', 'bpmn:UserTask'],
-          //   attributesToBeRemoved: ['fileName'],
-          // },
-          { filterAttribute: '$type', filterValues: ['proceed:overviewImage'] },
-        ];
-        removeArtefactReferencesFromBpmn(bpmnObj, filters);
+          }
+          if (el['$type'] === 'proceed:Meta') {
+            el.overviewImage ? delete el.overviewImage : null;
+          }
+        });
 
         const bpmnObjWithNoArtefactRefsXml = await toBpmnXml(bpmnObj);
         exportData[definitionId].versions[version].bpmn = bpmnObjWithNoArtefactRefsXml;

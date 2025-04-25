@@ -136,9 +136,6 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
       className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
       toolboxConfiguration={INITIAL_TOOLBOX_JSON} // this must be a JSON toolbox definition
       workspaceConfiguration={{
-        plugins: {
-          ...connectionCheckerPlugin,
-        },
         grid: {
           spacing: 20,
           length: 3,
@@ -157,6 +154,9 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
       className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
       toolboxConfiguration={INITIAL_TOOLBOX_JSON} // this must be a JSON toolbox definition
       workspaceConfiguration={{
+        plugins: {
+          ...connectionCheckerPlugin,
+        },
         grid: {
           spacing: 20,
           length: 3,

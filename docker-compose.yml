@@ -2,32 +2,8 @@ services:
   management_system:
     image: proceed/ms-server:${MS_TAG:-edge}
     container_name: management_system
-    environment:
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=
-
-      - ENABLE_MACHINE_CONFIG=true
-      - PROCEED_PUBLIC_NEW_LAYOUT=true
-      - PROCEED_PUBLIC_ENABLE_EXECUTION=true
-      - INVITATION_ENCRYPTION_SECRET=T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=
-      - SMTP_MAIL_HOST=
-      - SMTP_MAIL_PORT=
-      - SMTP_MAIL_USER=
-      - SMTP_MAIL_PASSWORD=T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=
-      - USE_AUTH0=false
-      - AUTH0_CLIENT_ID=
-      - AUTH0_CLIENT_SECRET=
-      - AUTH0_ISSUER=
-      - AUTH0_SCOPE=
-      - GOOGLE_CLIENT_ID=
-      - GOOGLE_CLIENT_SECRET=
-      - DISCORD_CLIENT_ID=
-      - DISCORD_CLIENT_SECRET=
-      - TWITTER_CLIENT_ID=
-      - TWITTER_CLIENT_SECRET=
-      - SHARING_ENCRYPTION_SECRET=T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=
-      - GUEST_REFERENCE_SECRET=T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=
-      - DATABASE_URL=postgresql://proceed:proceed@postgres:5432/proceed_db?schema=public
+    env_file:
+      - .env
     ports:
       - '3000:33081'
     depends_on:

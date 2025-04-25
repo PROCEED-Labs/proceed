@@ -12,7 +12,7 @@ export class PropertiesPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.generalSection = page.getByRole('group', { name: 'General' });
+    this.generalSection = page.getByRole('group', { name: 'General Properties' });
     this.imageSection = page.getByRole('group', { name: 'image-section' });
     this.descriptionSection = page.getByRole('group', { name: 'Description' });
     this.milestonesSection = page.getByRole('group', { name: 'Milestones' });

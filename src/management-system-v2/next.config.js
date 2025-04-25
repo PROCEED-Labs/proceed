@@ -5,6 +5,7 @@ const nextConfig = {
   output: 'standalone',
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../../'),
+    //instrumentationHook: true,
   },
   /**
    *
@@ -57,7 +58,6 @@ const nextConfig = {
       'iam',
       'profile',
       'projects',
-      'machine-config',
     ].map((folder) => ({
       // TODO: when building techserver separately, this can be set to rewrite
       // all unused paths to /404.

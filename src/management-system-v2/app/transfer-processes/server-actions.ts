@@ -2,16 +2,9 @@
 
 import { getCurrentUser } from '@/components/auth';
 import { Folder } from '@/lib/data/folder-schema';
-import {
-  getProcesses,
-  getFolders,
-  getRootFolder,
-  moveFolder,
-  updateFolderMetaData,
-  updateProcess,
-  getUserById,
-  deleteUser,
-} from '@/lib/data/DTOs';
+import { getFolders, getRootFolder, moveFolder, updateFolderMetaData } from '@/lib/data/db/folders';
+import { getProcesses, updateProcess } from '@/lib/data/db/process';
+import { getUserById, deleteUser } from '@/lib/data/db/iam/users';
 import { Process } from '@/lib/data/process-schema';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
 import { UserErrorType, userError } from '@/lib/user-error';

@@ -11,6 +11,11 @@ import type ViewerType from 'bpmn-js/lib/Viewer';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import { ProcessExportOptions } from './export-preparation';
 
+import { ResourceViewModule } from '@/lib/modeler-extensions/GenericResources';
+import { CustomAnnotationViewModule } from '@/lib/modeler-extensions/TextAnnotation';
+
+import schema from '@/lib/schema';
+
 /**
  * Transforms a definitionName of a process into a valid file path by replacing spaces
  *
@@ -128,7 +133,13 @@ export async function getSVGFromBPMN(
     document.body.appendChild(viewerElement);
 
     //Create a viewer to transform the bpmn into an svg
-    viewer = new Viewer({ container: '#' + viewerElement.id });
+    viewer = new Viewer({
+      container: '#' + viewerElement.id,
+      moddleExtensions: {
+        proceed: schema,
+      },
+      additionalModules: [ResourceViewModule, CustomAnnotationViewModule],
+    });
     await viewer.importXML(bpmnOrViewer);
   } else {
     viewer = bpmnOrViewer;

@@ -5,22 +5,23 @@ import { UserErrorType, userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
 
 import Ability, { UnauthorizedError } from '../ability/abilityHelper';
-import { FolderChildren } from './legacy/folders';
-import { getFolders } from './DTOs';
+
 import {
+  getFolders,
+  createFolder as _createFolder,
+  getFolderContents as _getFolderContent,
+  getFolderById,
   getRootFolder,
   moveFolder,
-  createFolder as _createFolder,
-  getFolderById,
-  getFolderContents as _getFolderContent,
   updateFolderMetaData,
   deleteFolder as _deleteFolder,
-} from './db/folders';
-import { moveProcess } from './db/process';
+  moveProcess,
+} from '@/lib/data/db/folders';
+import { Process } from './process-schema';
 
-export async function createFolder(
-  folderInput: FolderUserInput & { type: 'process' | 'template' },
-) {
+export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
+
+export async function createFolder(folderInput: FolderUserInput) {
   try {
     const folder = FolderUserInputSchema.parse(folderInput);
     const { ability } = await getCurrentEnvironment(folder.environmentId);
@@ -83,13 +84,9 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
 
   for (const item of items) {
     if (['process', 'project', 'process-instance'].includes(item.type)) {
-      moveProcess({
-        processDefinitionsId: item.id,
-        newFolderId: folderId,
-        ability: ability,
-      });
+      await moveProcess(item.id, folderId, ability);
     } else if (item.type === 'folder') {
-      moveFolder(item.id, folderId, ability);
+      await moveFolder(item.id, folderId, ability);
     }
   }
 }
@@ -146,7 +143,7 @@ export async function updateFolder(
     const folderUpdate = FolderUserInputSchema.partial().parse(folderInput);
     if (folderUpdate.parentId) return userError('Wrong method for moving folders');
 
-    updateFolderMetaData(folderId, folderUpdate, ability);
+    await updateFolderMetaData(folderId, folderUpdate, ability);
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
@@ -159,7 +156,7 @@ export async function deleteFolder(folderIds: string[], spaceId: string) {
   try {
     const { ability } = await getCurrentEnvironment(spaceId);
 
-    for (const folderId of folderIds) _deleteFolder(folderId, ability);
+    for (const folderId of folderIds) await _deleteFolder(folderId, ability);
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);

@@ -5,18 +5,15 @@ import { Space, Button, Table, Grid } from 'antd';
 import { UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
 import styles from './user-list.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 import ElementList from './item-list-view';
 import UserAvatar from './user-avatar';
 import SelectionActions from './selection-actions';
+import { RoleWithMembers } from '@/lib/data/role-schema';
 
-type _ListUser = Partial<
-  Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
-> &
-  Pick<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
+type _ListUser = RoleWithMembers['members'][number];
 export type ListUser = ReplaceKeysWithHighlighted<
   _ListUser,
   'firstName' | 'lastName' | 'username' | 'email'

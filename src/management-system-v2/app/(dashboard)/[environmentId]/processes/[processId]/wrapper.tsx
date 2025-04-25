@@ -30,6 +30,7 @@ import { isPlane } from 'bpmn-js/lib/util/DrilldownUtil';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { spaceURL } from '@/lib/utils';
 import { updateProcess } from '@/lib/data/processes';
+import usePotentialOwnerStore, { UserType, RoleType } from './use-potentialOwner-store';
 
 type SubprocessInfo = {
   id?: string;
@@ -39,15 +40,29 @@ type SubprocessInfo = {
 type WrapperProps = PropsWithChildren<{
   processName: string;
   processes: { id: string; name: string }[];
+  potentialOwner: { user: UserType; roles: RoleType };
 }>;
 
-const Wrapper = ({ children, processName, processes }: WrapperProps) => {
+const Wrapper = ({
+  children,
+  processName,
+  processes,
+  potentialOwner: { user, roles },
+}: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
   const { spaceId } = useEnvironment();
   const pathname = usePathname();
   const environment = useEnvironment();
+  const setUser = usePotentialOwnerStore((state) => state.setUser);
+  const setRoles = usePotentialOwnerStore((state) => state.setRoles);
+
+  useEffect(() => {
+    setUser(user);
+    setRoles(roles);
+  }, []);
+
   const [closed, setClosed] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);

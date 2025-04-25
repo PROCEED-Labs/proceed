@@ -1061,7 +1061,7 @@ javascriptGenerator.forBlock['timeout_async'] = function (block) {
     BlocklyJavaScript.Order.COMMA,
   );
 
-  return `setTimeoutAsync(async () => ${callback}, ${delay});\n`;
+  return `await setTimeoutAsync(async () => ${callback}, ${delay});\n`;
 };
 
 function isTimeoutCallbackConnection(connection: Blockly.Connection) {

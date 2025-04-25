@@ -94,23 +94,15 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
   const [selectedSortItem, setSelectedSortItem] = useState({ ascending: true, value: 'startTime' });
 
   const filteredAndSortedUserTasks = useMemo(() => {
-    const showingUserTasks = userTasks
-      .map(({ id, instanceID, startTime, ...rest }) => ({
-        ...rest,
-        id: `${id}|${instanceID}|${startTime}`,
-        taskId: id,
-        instanceID,
-        startTime,
-      }))
-      .filter((uT) => {
-        return (
-          stateSelectionFilter.includes(uT.state) &&
-          uT.priority >= priorityRangeFilter[0] &&
-          uT.priority <= priorityRangeFilter[1] &&
-          uT.progress >= progressRangeFilter[0] &&
-          uT.progress <= progressRangeFilter[1]
-        );
-      });
+    const showingUserTasks = userTasks.filter((uT) => {
+      return (
+        stateSelectionFilter.includes(uT.state) &&
+        uT.priority >= priorityRangeFilter[0] &&
+        uT.priority <= priorityRangeFilter[1] &&
+        uT.progress >= progressRangeFilter[0] &&
+        uT.progress <= progressRangeFilter[1]
+      );
+    });
 
     switch (selectedSortItem.value) {
       case 'startTime':
@@ -428,12 +420,7 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
         </div>
       </div>
       {(selectedUserTaskID ?? breakpoint.xl) && (
-        <UserTaskView
-          task={userTasks.find(
-            ({ id, instanceID, startTime }) =>
-              `${id}|${instanceID}|${startTime}` === selectedUserTaskID,
-          )}
-        />
+        <UserTaskView task={userTasks.find((uT) => uT.id === selectedUserTaskID)} />
       )}
     </div>
   );

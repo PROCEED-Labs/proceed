@@ -2,6 +2,7 @@
 
 import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
+  InstanceInfo,
   deployProcess as _deployProcess,
   DeployedProcessInfo,
   getDeployments,
@@ -21,17 +22,21 @@ import {
   getSpaceEngineByAddress as getSpaceEngineByAddressFromDb,
 } from '@/lib/data/db/space-engines';
 
-import { startInstanceOnMachine } from './instances';
-import { asyncFilter, asyncMap } from '../helpers/javascriptHelpers';
+import {
+  startInstanceOnMachine,
+  pauseInstanceOnMachine,
+  resumeInstanceOnMachine,
+  stopInstanceOnMachine,
+} from './instances';
+import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
 import {
   completeTasklistEntryOnMachine,
   getTaskListFromMachine,
   getUserTaskFileFromMachine,
-  setTasklistEntryMilestoneValuesOnMachine,
   setTasklistEntryVariableValuesOnMachine,
+  setTasklistEntryMilestoneValuesOnMachine,
 } from './tasklist';
 import { truthyFilter } from '../typescript-utils';
-
 import { inlineUserTaskData } from '@proceed/user-task-helper';
 
 async function getCorrectTargetEngines(
@@ -140,9 +145,6 @@ export async function startInstance(
       );
     });
 
-    if (engines.length === 0)
-      return userError('Could not find an engine that the selected process could be started on.');
-
     // TODO: if there are multiple possible engines maybe try to find the one that fits the best
     // (e.g. the one with the least load)
     return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
@@ -225,12 +227,16 @@ export async function getTasklistEntryHTML(
     const version = deployment.versions.find((v) => v.versionId === instance.processVersion)!;
     const userTasks = await getTaskListFromMachine(deployments[0][0]);
     const userTask = userTasks.find(
-      (uT) => uT.instanceID === instanceId && uT.id === userTaskId && uT.startTime == startTime,
+      (uT) => uT.instanceID === instanceId && uT.taskId === userTaskId && uT.startTime == startTime,
     );
 
     if (!userTask) throw new Error('Could not fetch user task data!');
-
-    return await inlineUserTaskData(version.bpmn, html, userTask, instance);
+    return await inlineUserTaskData(
+      version.bpmn,
+      html,
+      { ...userTask, id: userTask.taskId },
+      instance,
+    );
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -331,6 +337,79 @@ export async function completeTasklistEntry(
     const message = getErrorMessage(e);
     return userError(message);
   }
+}
+
+const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
+async function changeInstanceState(
+  definitionId: string,
+  instanceId: string,
+  spaceId: string,
+  stateValidator: (state: InstanceInfo['instanceState']) => boolean,
+  stateChangeFunction: typeof resumeInstanceOnMachine,
+) {
+  try {
+    const engines = await getCorrectTargetEngines(spaceId, undefined, async (engine: Engine) => {
+      const deployments = await getDeployments([engine]);
+
+      return deployments.some((deployment) => {
+        if (deployment.definitionId !== definitionId) return false;
+
+        const instance = deployment.instances.find(
+          (instance) => instance.processInstanceId === instanceId,
+        );
+        if (!instance) return false;
+
+        return stateValidator(instance.instanceState);
+      });
+    });
+
+    await asyncForEach(engines, async (engine) => {
+      await stateChangeFunction(definitionId, instanceId, engine);
+    });
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function resumeInstance(definitionId: string, instanceId: string, spaceId: string) {
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('resumeInstance is only available with enableUseDB');
+
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) => tokenStates.some((tokenState) => tokenState === 'PAUSED'),
+    resumeInstanceOnMachine,
+  );
+}
+
+export async function pauseInstance(definitionId: string, instanceId: string, spaceId: string) {
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('pauseInstance is only available with enableUseDB');
+
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) =>
+      tokenStates.some((state) => activeStates.includes(state) && state !== 'PAUSED'),
+    pauseInstanceOnMachine,
+  );
+}
+
+export async function stopInstance(definitionId: string, instanceId: string, spaceId: string) {
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('stopInstance is only available with enableUseDB');
+
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) => tokenStates.some((state) => activeStates.includes(state)),
+    stopInstanceOnMachine,
+  );
 }
 
 /** Returns space engines that are currently online */

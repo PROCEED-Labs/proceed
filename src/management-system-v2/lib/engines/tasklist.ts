@@ -6,6 +6,7 @@ import { engineRequest } from './endpoints';
 export type TaskListEntry = {
   id: string;
   name: string;
+  taskId: string;
   instanceID: string;
   attrs: {
     'proceed:fileName': string;
@@ -27,7 +28,13 @@ export async function getTaskListFromMachine(machine: Engine) {
     engine: machine,
   })) as TaskListEntry[];
 
-  return entries;
+  return entries.map(({ id, instanceID, startTime, ...rest }) => ({
+    ...rest,
+    id: `${id}|${instanceID}|${startTime}`,
+    taskId: id,
+    instanceID,
+    startTime,
+  }));
 }
 
 export async function getUserTaskFileFromMachine(
@@ -44,6 +51,7 @@ export async function getUserTaskFileFromMachine(
       fileName,
     },
   });
+
   return html as string;
 }
 

@@ -382,6 +382,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
         onOk={handleValidationAndSave}
         onCancel={onClose}
         centered
+        styles={{ body: { position: 'relative' } }}
         width="85vw"
         title={
           <Flex justify="space-between">
@@ -464,12 +465,15 @@ const XmlEditor: FC<XmlEditorProps> = ({
         />
         {isReadOnly && (
           <div
+            className="readonly-overlay"
             style={{
               position: 'absolute',
-              top: 70,
-              left: 0,
-              width: '85vw',
-              height: '85vh',
+              top: 0,
+              width: '100%',
+              height: '100%',
+              // left: 0,
+              // width: '85vw',
+              // height: '85vh',
               backgroundColor: 'rgba(200, 200, 200, 0.3)',
               pointerEvents: 'none',
               zIndex: 10,

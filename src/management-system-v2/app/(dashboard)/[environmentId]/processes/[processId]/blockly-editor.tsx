@@ -7,7 +7,12 @@ import React, {
   useRef,
 } from 'react';
 import { BlocklyWorkspace } from 'react-blockly';
-import { INITIAL_TOOLBOX_JSON, javascriptGenerator, Blockly } from './blockly-editor-config';
+import {
+  INITIAL_TOOLBOX_JSON,
+  javascriptGenerator,
+  Blockly,
+  connectionCheckerPlugin,
+} from './blockly-editor-config';
 
 import './blockly-editor.css';
 
@@ -141,9 +146,6 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
         ...blocklyOptions,
       }}
       onWorkspaceChange={onWorkspaceChange}
-      onInject={(newWorkspace) => {
-        blocklyEditorRef.current = newWorkspace;
-      }}
     />
   ) : (
     <BlocklyWorkspace
@@ -152,6 +154,9 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
       className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
       toolboxConfiguration={INITIAL_TOOLBOX_JSON} // this must be a JSON toolbox definition
       workspaceConfiguration={{
+        plugins: {
+          ...connectionCheckerPlugin,
+        },
         grid: {
           spacing: 20,
           length: 3,

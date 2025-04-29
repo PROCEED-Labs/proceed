@@ -379,8 +379,8 @@ test('toggle process list columns', async ({ processListPage }) => {
 test('test that selected columns are persisted on reload', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const VisibleColumns = ['Created On', 'File Size'];
-  const HiddenColumns = ['Description', 'Last Edited'];
+  const VisibleColumns = ['Description ', 'Last Edited '];
+  const HiddenColumns = ['Created On ', 'Created By '];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
@@ -438,8 +438,12 @@ test('create a new folder and remove it with context menu', async ({ processList
 
   folderLocator.click({ button: 'right' });
   const menuLocator = page.getByRole('menuitem', { name: 'delete Delete' });
-  await menuLocator.click();
-  await expect(menuLocator).not.toBeVisible(); //wait for context menu to close
+  /* Confirm delete */
+  modal = await openModal(page, () => menuLocator.click());
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
+
+  // await menuLocator.click();
+  // await expect(menuLocator).not.toBeVisible(); //wait for context menu to close
 
   // NOTE: testing the folderLocator is flaky, because even after deletion the
   // popover with folder title can hang around for a short while.
@@ -451,7 +455,7 @@ test('create a new folder with new button and remove it', async ({ processListPa
   const folderId = crypto.randomUUID();
 
   // NOTE: this could easily break
-  await page.getByRole('button', { name: 'ellipsis' }).hover();
+  await page.getByRole('button', { name: 'ellipsis' }).click();
   let modal = await openModal(page, () =>
     page.getByRole('menuitem', { name: 'Create Folder' }).click(),
   );
@@ -461,8 +465,10 @@ test('create a new folder with new button and remove it', async ({ processListPa
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
-  const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
-  modal = await openModal(page, () => folderRow.getByRole('button', { name: 'delete' }).click());
+  const folderRow = await page.locator(`tr:has(td:has-text("${folderId}"))`);
+  // await page.getByLabel('', { exact: true }).check();
+  await folderRow.getByRole('checkbox').check();
+  modal = await openModal(page, () => page.getByRole('button', { name: 'delete' }).click());
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
   await expect(folderLocator).not.toBeVisible();
@@ -481,7 +487,7 @@ test('create a new folder and process, move process to folder and then delete bo
   );
   await modal.getByLabel('Folder name').fill(folderId);
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
-  const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
+  const folderRow = page.locator(`tr:has(td:has-text("${folderId}"))`);
   await expect(folderRow).toBeVisible();
 
   // create process
@@ -512,16 +518,22 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // check for process and delete it
   await expect(processLocator).toBeVisible();
-  modal = await openModal(page, () =>
-    processLocator.getByRole('button', { name: 'delete' }).click(),
-  );
+  modal = await openModal(page, async () => {
+    await processLocator.getByRole('checkbox').check();
+    await page.getByRole('button', { name: /delete/i }).click();
+    // processLocator.getByRole('button', { name: 'delete' }).click()
+  });
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
   await expect(processLocator).not.toBeVisible();
   processListPage.getDefinitionIds().splice(0, 1);
 
   // go back and delete folder
   await page.goBack();
-  modal = await openModal(page, () => folderRow.getByRole('button', { name: 'delete' }).click());
+  modal = await openModal(page, async () => {
+    await folderRow.getByRole('checkbox').check();
+    await page.getByRole('button', { name: /delete/i }).click();
+    // folderRow.getByRole('button', { name: 'delete' }).click()
+  });
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
   await expect(folderRow).not.toBeVisible();
 });

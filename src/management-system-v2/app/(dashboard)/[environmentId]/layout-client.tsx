@@ -13,7 +13,7 @@ import {
   Modal,
   Tooltip,
 } from 'antd';
-import { AppstoreOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
@@ -84,36 +84,42 @@ const Layout: FC<
 
   let layoutMenuItems = _layoutMenuItems;
 
-  const personal: MenuProps['items'] = [
-    {
-      key: 'personal-profile',
-      label: userData?.isGuest ? (
-        <div onClick={() => setShowLoginRequest(true)}>My Profile</div>
-      ) : (
-        <SpaceLink href={'/profile'}>My Profile</SpaceLink>
-      ),
-      icon: <TbUserEdit />,
-    },
-    {
-      key: 'personal-spaces',
-      label: userData?.isGuest ? (
-        <div onClick={() => setShowLoginRequest(true)}>My Spaces</div>
-      ) : (
-        <SpaceLink href={'/spaces'}>My Spaces</SpaceLink>
-      ),
-      icon: <AppstoreOutlined />,
-    },
-  ];
+  if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    const personal: MenuProps['items'] = [
+      {
+        key: 'personal-profile',
+        label: userData?.isGuest ? (
+          <div onClick={() => setShowLoginRequest(true)}>My Profile</div>
+        ) : (
+          <SpaceLink href={'/profile'}>My Profile</SpaceLink>
+        ),
+        icon: <TbUserEdit />,
+      },
+      {
+        key: 'personal-spaces',
+        label: userData?.isGuest ? (
+          <div onClick={() => setShowLoginRequest(true)}>My Spaces</div>
+        ) : (
+          <SpaceLink href={'/spaces'}>My Spaces</SpaceLink>
+        ),
+        icon: <AppstoreOutlined />,
+      },
+    ];
 
-  layoutMenuItems = [
-    ...layoutMenuItems,
-    {
-      key: 'iam-personal',
-      label: 'Personal',
-      icon: <TbUser />,
-      children: personal,
-    },
-  ];
+    layoutMenuItems = [
+      ...layoutMenuItems,
+      {
+        key: 'iam-personal',
+        label: 'Personal',
+        icon: <TbUser />,
+        children: personal,
+      },
+    ];
+  }
+
+      label: userData?.isGuest ? (
+      ) : (
+      ),
 
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(

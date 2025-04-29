@@ -19,18 +19,14 @@ import {
   PlaySquareOutlined,
   LaptopOutlined,
   SettingOutlined,
-  ToolOutlined,
   SolutionOutlined,
   HomeOutlined,
-  AppstoreOutlined,
 } from '@ant-design/icons';
 
 import Link from 'next/link';
 import { getEnvironmentById, organizationHasLogo } from '@/lib/data/db/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
-import { LuTable2 } from 'react-icons/lu';
-import { TbUser, TbUserEdit } from 'react-icons/tb';
 import { spaceURL } from '@/lib/utils';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import { env } from '@/lib/env-vars';
@@ -135,26 +131,6 @@ const DashboardLayout = async ({
       children,
     });
   }
-
-  const personal: MenuProps['items'] = [
-    {
-      key: 'personal-profile',
-      label: <Link href={spaceURL(activeEnvironment, '/profile')}>My Profile</Link>,
-      icon: <TbUserEdit />,
-    },
-    {
-      key: 'personal-spaces',
-      label: <Link href={spaceURL(activeEnvironment, '/spaces')}>My Spaces</Link>,
-      icon: <AppstoreOutlined />,
-    },
-  ];
-
-  layoutMenuItems.push({
-    key: 'iam-personal',
-    label: 'Personal',
-    icon: <TbUser />,
-    children: personal,
-  });
 
   if (
     ability.can('manage', 'User') ||

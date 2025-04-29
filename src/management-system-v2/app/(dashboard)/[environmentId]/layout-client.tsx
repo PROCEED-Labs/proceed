@@ -2,7 +2,17 @@
 
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
-import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
+import {
+  Alert,
+  Layout as AntLayout,
+  Button,
+  Drawer,
+  Grid,
+  Menu,
+  MenuProps,
+  Modal,
+  Tooltip,
+} from 'antd';
 import { AppstoreOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
@@ -15,7 +25,7 @@ import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
-import { FaUserEdit } from 'react-icons/fa';
+import { TbUser, TbUserEdit } from 'react-icons/tb';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { enableUseFileManager } from 'FeatureFlags';
@@ -68,43 +78,47 @@ const Layout: FC<
 
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
+  const [showLoginRequest, setShowLoginRequest] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
   let layoutMenuItems = _layoutMenuItems;
+
+  const personal: MenuProps['items'] = [
+    {
+      key: 'personal-profile',
+      label: userData?.isGuest ? (
+        <div onClick={() => setShowLoginRequest(true)}>My Profile</div>
+      ) : (
+        <SpaceLink href={'/profile'}>My Profile</SpaceLink>
+      ),
+      icon: <TbUserEdit />,
+    },
+    {
+      key: 'personal-spaces',
+      label: userData?.isGuest ? (
+        <div onClick={() => setShowLoginRequest(true)}>My Spaces</div>
+      ) : (
+        <SpaceLink href={'/spaces'}>My Spaces</SpaceLink>
+      ),
+      icon: <AppstoreOutlined />,
+    },
+  ];
+
+  layoutMenuItems = [
+    ...layoutMenuItems,
+    {
+      key: 'iam-personal',
+      label: 'Personal',
+      icon: <TbUser />,
+      children: personal,
+    },
+  ];
+
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(
       (item) => !(item && 'type' in item && item.type === 'divider'),
     );
-
-    if (userData && !userData.isGuest) {
-      const mobileLayoutItems = [];
-
-      if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
-        mobileLayoutItems.push({
-          key: 'profile',
-          title: 'Profile Settings',
-          label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-          icon: <FaUserEdit />,
-        });
-      }
-
-      mobileLayoutItems.push({
-        key: 'spaces',
-        title: 'My Spaces',
-        label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
-        icon: <AppstoreOutlined />,
-      });
-
-      layoutMenuItems = [
-        {
-          label: 'Profile',
-          key: 'profile-settings',
-          children: mobileLayoutItems,
-        },
-        ...layoutMenuItems,
-      ];
-    }
   }
 
   useEffect(() => {
@@ -242,6 +256,26 @@ const Layout: FC<
         >
           {menu}
         </Drawer>
+
+        <Modal
+          title={null}
+          footer={null}
+          closable={false}
+          open={showLoginRequest}
+          onCancel={() => setShowLoginRequest(false)}
+          styles={{ mask: { backdropFilter: 'blur(10px)' }, content: { padding: 0 } }}
+        >
+          <Alert
+            type="warning"
+            style={{ zIndex: '1000' }}
+            message={
+              <>
+                To store and change settings,{' '}
+                <SpaceLink href={'/signin'}>please log in as user.</SpaceLink>
+              </>
+            }
+          />
+        </Modal>
       </SpaceContext.Provider>
     </UserSpacesContext.Provider>
   );

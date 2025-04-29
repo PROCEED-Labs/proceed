@@ -11,7 +11,7 @@ test('show process information', async ({ page, processListPage }) => {
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -64,7 +64,7 @@ test('show content of collapsed subprocesses in a separate section', async ({
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -110,7 +110,7 @@ test('show version information', async ({ page, processListPage, processModelerP
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -135,7 +135,7 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -267,7 +267,7 @@ test('recursively show information about imports', async ({
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -489,7 +489,7 @@ test('a setting allows to show the subprocess element instead of its content', a
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -617,7 +617,7 @@ test('a setting allows to show a call activity instead of the imported process',
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -709,7 +709,7 @@ test('a setting allows to show elements that have no meta data which are not sho
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -802,7 +802,7 @@ test('the page shows only imported processes that are shared themselves to other
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -890,7 +890,7 @@ test('allow a different user that was given the share link to import the shared 
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();

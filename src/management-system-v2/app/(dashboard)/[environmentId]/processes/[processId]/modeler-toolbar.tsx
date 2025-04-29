@@ -281,6 +281,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
               <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
               <Tooltip title="View Process Documentation">
                 <Button
+                  aria-label="view-documentation"
                   icon={<GrDocumentUser />}
                   onClick={() => {
                     handleOpenDocumentation(processId, selectedVersionId || undefined);

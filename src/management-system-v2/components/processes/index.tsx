@@ -486,6 +486,7 @@ const Processes = ({
                             <div>
                               <Tooltip placement="top" title={'View Process Documentation'}>
                                 <Button
+                                  aria-label="view-documentation"
                                   type="text"
                                   icon={<GrDocumentUser className={styles.Icon} />}
                                   onClick={() => {

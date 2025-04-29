@@ -81,6 +81,7 @@ import MoveToFolderModal from '../folder-move-modal';
 import { FolderTree } from '../FolderTree';
 import { ContextActions, InputItem, ProcessActions, ProcessListProcess, RowActions } from './types';
 import { canDoActionOnResource } from './helpers';
+import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-potentialOwner-store';
 
 const Processes = ({
   processes,
@@ -118,6 +119,8 @@ const Processes = ({
   const space = useEnvironment();
   const router = useRouter();
   const environment = useEnvironment();
+
+  useInitialisePotentialOwnerStore(environment.spaceId);
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -583,6 +586,7 @@ const Processes = ({
                               <>
                                 <Tooltip placement="top" title={'Share'}>
                                   <Button
+                                    aria-label="Share"
                                     type="text"
                                     onClick={() => {
                                       setExportModalTab('share-public-link');
@@ -595,6 +599,7 @@ const Processes = ({
                             )}
                           <Tooltip placement="top" title={'Download'}>
                             <Button
+                              aria-label="Download"
                               type="text"
                               onClick={() => {
                                 setExportModalTab('bpmn');

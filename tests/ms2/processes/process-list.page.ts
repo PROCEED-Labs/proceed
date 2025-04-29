@@ -49,7 +49,7 @@ export class ProcessListPage {
     // import the test process
     const modal = await openModal(this.page, async () => {
       const fileChooserPromise = page.waitForEvent('filechooser');
-      await page.getByRole('button', { name: 'Import Process' }).click();
+      await page.getByRole('button', { name: /import/i }).click();
       const filechooser = await fileChooserPromise;
 
       await filechooser.setFiles({
@@ -207,7 +207,7 @@ export class ProcessListPage {
         await page.getByLabel('Select all').check();
 
         const modal = await openModal(this.page, () =>
-          page.getByRole('button', { name: 'delete' }).first().click(),
+          page.getByRole('button', { name: 'delete' }).click(),
         );
         await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
         /* Remove entries from the process list */

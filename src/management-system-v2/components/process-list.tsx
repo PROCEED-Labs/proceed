@@ -20,6 +20,7 @@ import React, {
   ReactElement,
   useEffect,
   useState,
+  useMemo,
 } from 'react';
 import {
   StarOutlined,
@@ -45,6 +46,7 @@ import { GrDocumentUser } from 'react-icons/gr';
 import { PiNotePencil } from 'react-icons/pi';
 import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
+import usePotentialOwnerStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-potentialOwner-store';
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -148,12 +150,32 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     'Meta Data Button',
   ];
 
-  /* TODO:
+  /* 
     User potentialOwner Store to get the username
   */
-  const mapIdToUsername = useCallback((id: string | undefined | null) => {
-    return id;
-  }, []);
+  const { user: userMap, roles: rolesMap } = usePotentialOwnerStore();
+  // console.log(`out userMap ${JSON.stringify(userMap)}`);
+  // Not sure, why this is not working, but using the user from the store as a dependency or directly does not work (does not cause a rerender of table with fresh values)
+  // using the hook once in the component and then once in the function (i.e. dynamically) works
+
+  // const mapIdToUsername = useCallback(
+  //   (id?: string | null) => {
+  //     console.log(`in userMap ${JSON.stringify(userMap)}`);
+  //     if (!id) return '';
+  //     const u = userMap[id];
+  //     return u?.userName || u?.name || '';
+  //   },
+  //   [userMap],
+  // );
+
+  const mapIdToUsername = (id?: string | null) => {
+    const userMap = usePotentialOwnerStore.getState().user; // dynamically fetched
+    const rolesMap = usePotentialOwnerStore.getState().roles;
+    if (!id) return '';
+    const u = userMap[id];
+    const r = rolesMap[id];
+    return u?.userName || u?.name || r || '';
+  };
 
   /* This is the 'action' buttons in the row itself (visible on hover) */
   const actionBarGenerator = useCallback(
@@ -220,141 +242,146 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     ],
   );
 
-  let columns: TableColumnsType<ProcessListProcess> = [
-    {
-      title: <StarOutlined />,
-      dataIndex: 'id',
-      key: 'Favorites',
-      width: '40px',
-      render: (id, _, index) =>
-        id !== folder.parentId && <FavouriteStar id={id} className={styles.HoverableTableCell} />,
-      sorter: folderAwareSort((a, b) =>
-        favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
-          ? 0
-          : favProcesses?.includes(a.id)
-            ? -1
-            : 1,
-      ),
-    },
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'Name',
-      ellipsis: true,
-      sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
-      render: (_, record) => (
-        <ListEntryLink
-          data={record}
-          style={{
-            color: record.id === folder.parentId ? 'grey' : undefined,
-            fontStyle: record.id === folder.parentId ? 'italic' : undefined,
-          }}
-        >
-          <ProcessListItemIcon item={record} /> {record.name.highlighted}
-        </ListEntryLink>
-      ),
-      responsive: ['xs', 'sm'],
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'Description',
-      render: (_, record) => (
-        <ListEntryLink data={record}>
-          {(record.description.value ?? '').length == 0 ? (
-            <>&emsp;</>
-          ) : (
-            record.description.highlighted
-          )}
-          {/* Makes the link-cell clickable, when there is no description */}
-        </ListEntryLink>
-      ),
-      responsive: ['sm'],
-    },
-    {
-      title: 'Last Edited',
-      dataIndex: 'lastEditedOn',
-      key: 'Last Edited',
-      render: (date: string, record) => (
-        <>
-          <ListEntryLink data={record}>
-            <Tooltip title={generateDateString(date, true)}>
-              {generateTableDateString(date)}
-            </Tooltip>
-          </ListEntryLink>
-        </>
-      ),
-      sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
-      responsive: ['md'],
-    },
-    {
-      title: 'Created On',
-      dataIndex: 'createdOn',
-      key: 'Created On',
-      render: (date: Date, record) => (
-        <>
-          <ListEntryLink data={record}>
-            <Tooltip title={generateDateString(date, true)}>
-              {generateTableDateString(date)}
-            </Tooltip>
-          </ListEntryLink>
-        </>
-      ),
-      defaultSortOrder: 'descend',
-      sorter: folderAwareSort((a, b) => b.createdOn!.getTime() - a.createdOn!.getTime()),
-      responsive: ['md'],
-    },
-    {
-      title: 'Created By',
-      dataIndex: 'owner',
-      key: 'Owner',
-      render: (_, item) => {
-        const name =
-          item.type === 'folder'
-            ? mapIdToUsername(item.createdBy)
-            : mapIdToUsername(item.creatorId);
-
-        return (
-          <>
-            <ListEntryLink data={item}>{name}</ListEntryLink>
-          </>
-        );
+  let columns: TableColumnsType<ProcessListProcess> = useMemo(() => {
+    return [
+      {
+        title: <StarOutlined />,
+        dataIndex: 'id',
+        key: 'Favorites',
+        width: '40px',
+        render: (id, _, index) =>
+          id !== folder.parentId && <FavouriteStar id={id} className={styles.HoverableTableCell} />,
+        sorter: folderAwareSort((a, b) =>
+          favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
+            ? 0
+            : favProcesses?.includes(a.id)
+              ? -1
+              : 1,
+        ),
       },
-      sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? a.createdBy ?? '' : a.creatorId).localeCompare(
-          b.type === 'folder' ? b.createdBy ?? '' : b.creatorId,
+      {
+        title: 'Name',
+        dataIndex: 'name',
+        key: 'Name',
+        ellipsis: true,
+        sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
+        render: (_, record) => (
+          <ListEntryLink
+            data={record}
+            style={{
+              color: record.id === folder.parentId ? 'grey' : undefined,
+              fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+            }}
+          >
+            <ProcessListItemIcon item={record} /> {record.name.highlighted}
+          </ListEntryLink>
         ),
-      ),
-      responsive: ['md'],
-    },
-    {
-      title: 'Responsibility',
-      dataIndex: 'owner',
-      key: 'Responsibility',
-      render: (_, item) => (
-        <>
-          <ListEntryLink data={item}>{item.type === 'folder' ? '' : 'tbd'}</ListEntryLink>
-        </>
-      ),
-      sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? '' : 'tbd').localeCompare(b.type === 'folder' ? '' : ''),
-      ),
-    },
-    {
-      fixed: 'right',
-      width: 160,
-      dataIndex: 'id',
-      key: 'Meta Data Button',
-      title: '',
-      render: (id) =>
-        id !== folder.parentId && (
-          <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
-            <InfoCircleOutlined />
-          </Button>
+        responsive: ['xs', 'sm'],
+      },
+      {
+        title: 'Description',
+        dataIndex: 'description',
+        key: 'Description',
+        render: (_, record) => (
+          <ListEntryLink data={record}>
+            {(record.description.value ?? '').length == 0 ? (
+              <>&emsp;</>
+            ) : (
+              record.description.highlighted
+            )}
+            {/* Makes the link-cell clickable, when there is no description */}
+          </ListEntryLink>
         ),
-      responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
-    },
-  ];
+        responsive: ['sm'],
+      },
+      {
+        title: 'Last Edited',
+        dataIndex: 'lastEditedOn',
+        key: 'Last Edited',
+        render: (date: string, record) => (
+          <>
+            <ListEntryLink data={record}>
+              <Tooltip title={generateDateString(date, true)}>
+                {generateTableDateString(date)}
+              </Tooltip>
+            </ListEntryLink>
+          </>
+        ),
+        sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
+        responsive: ['md'],
+      },
+      {
+        title: 'Created On',
+        dataIndex: 'createdOn',
+        key: 'Created On',
+        render: (date: Date, record) => (
+          <>
+            <ListEntryLink data={record}>
+              <Tooltip title={generateDateString(date, true)}>
+                {generateTableDateString(date)}
+              </Tooltip>
+            </ListEntryLink>
+          </>
+        ),
+        defaultSortOrder: 'descend',
+        sorter: folderAwareSort((a, b) => b.createdOn!.getTime() - a.createdOn!.getTime()),
+        responsive: ['md'],
+      },
+      {
+        title: 'Created By',
+        dataIndex: 'id',
+        key: 'Created By',
+        render: (_, item) => {
+          const name =
+            item.type === 'folder'
+              ? mapIdToUsername(item.createdBy)
+              : mapIdToUsername(item.creatorId);
+          return (
+            <>
+              <ListEntryLink data={item}>{name}</ListEntryLink>
+            </>
+          );
+        },
+        sorter: folderAwareSort((a, b) =>
+          (a.type === 'folder' ? a.createdBy ?? '' : a.creatorId).localeCompare(
+            b.type === 'folder' ? b.createdBy ?? '' : b.creatorId,
+          ),
+        ),
+        responsive: ['md'],
+      },
+      {
+        title: 'Responsibility',
+        dataIndex: 'id',
+        key: 'Responsibility',
+        render: (_, item) => {
+          const name = item.type === 'folder' ? '' : ''; // TODO: mapIdToUsername(item.responsiblilityId);
+
+          return (
+            <>
+              <ListEntryLink data={item}>{name}</ListEntryLink>
+            </>
+          );
+        },
+        sorter: folderAwareSort((a, b) =>
+          (a.type === 'folder' ? '' : 'tbd').localeCompare(b.type === 'folder' ? '' : ''),
+        ),
+      },
+      {
+        fixed: 'right',
+        width: 160,
+        dataIndex: 'id',
+        key: 'Meta Data Button',
+        title: '',
+        render: (id) =>
+          id !== folder.parentId && (
+            <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
+              <InfoCircleOutlined />
+            </Button>
+          ),
+        responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
+      },
+    ];
+  }, [folder, favProcesses, mapIdToUsername, folderAwareSort]);
 
   columns = columns.map((column) => ({
     ...column,
@@ -383,7 +410,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
             cols = cols(
               selectedColumns.map((col: any) => col.name) as string[],
             ); /* TODO: When are cols a function -> cols need to be in preference format */
-
           /* Add other properties and add to preferences */
           const propcols = cols.map((col: string) => ({
             name: col,
@@ -394,7 +420,13 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           addPreferences({ 'columns-in-table-view-process-list': propcols });
         },
         selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
-        allColumnTitles: ['Description', 'Last Edited', 'Created On', 'Owner', 'Responsibility'],
+        allColumnTitles: [
+          'Description',
+          'Last Edited',
+          'Created On',
+          'Created By',
+          'Responsibility',
+        ],
         columnProps: {
           width: '200px',
           responsive: ['xl'],

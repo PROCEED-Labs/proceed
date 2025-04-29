@@ -944,11 +944,9 @@ test('allow a different user that was given the share link to import the shared 
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 
   // cleanup the process added by the guest user
-  const deleteModal = await openModal(newPage, () =>
-    newPage
-      .locator(`tr[data-row-key="${newProcessId}"]`)
-      .getByRole('button', { name: 'delete' })
-      .click(),
-  );
+  const deleteModal = await openModal(newPage, async () => {
+    await newPage.locator(`tr[data-row-key="${newProcessId}"]`).getByRole('checkbox').check();
+    await newPage.getByRole('button', { name: 'Delete' }).click();
+  });
   await closeModal(deleteModal, () => deleteModal.getByRole('button', { name: 'OK' }).click());
 });

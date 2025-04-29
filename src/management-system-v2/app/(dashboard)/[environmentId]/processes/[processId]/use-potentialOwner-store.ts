@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { useEffect } from 'react';
 import { fetchPotentialOwner } from './potentialOwner-server-action';
+import { useEnvironment } from '@/components/auth-can';
 
 export type UserType = {
   [key: string]: {
@@ -42,21 +43,21 @@ const usePotentialOwnerStore = create<PotentailOwnerStore>()(
  *
  * @example
  * ```typescript
- * const environment = useEnvironment();
  * useInitialisePotentialOwnerStore(environment.spaceId);
  * ```
  */
-export const useInitialisePotentialOwnerStore = (environmentId: string) => {
+export const useInitialisePotentialOwnerStore = () => {
+  const environment = useEnvironment();
   useEffect(() => {
     const initialiseStore = async () => {
-      const { user, roles } = await fetchPotentialOwner(environmentId);
+      const { user, roles } = await fetchPotentialOwner(environment.spaceId);
       const store = usePotentialOwnerStore.getState();
       store.setUser(user);
       store.setRoles(roles);
     };
 
-    initialiseStore();
-  }, [environmentId]);
+    environment.isOrganization && initialiseStore();
+  }, [environment.spaceId, environment.isOrganization]);
 };
 
 export default usePotentialOwnerStore;

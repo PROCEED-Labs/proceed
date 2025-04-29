@@ -14,8 +14,13 @@ export class MS2Page {
       this.page.goto('/');
     });
     await modal.getByRole('button', { name: 'Create a Process' }).click();
-    await this.page.waitForURL('**/processes?createprocess');
-    await this.page.getByLabel('Close', { exact: true }).click();
+
+    /* Flaky: only happens sometimes(?): ?createprocess */
+    await this.page.waitForLoadState('load');
+    if (this.page.url().endsWith('/processes?createprocess')) {
+      await this.page.getByLabel('Close', { exact: true }).click();
+    }
+
     await this.page.waitForURL('**/processes');
   }
 

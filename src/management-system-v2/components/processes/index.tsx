@@ -120,7 +120,7 @@ const Processes = ({
   const router = useRouter();
   const environment = useEnvironment();
 
-  useInitialisePotentialOwnerStore(environment.spaceId);
+  useInitialisePotentialOwnerStore();
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -269,7 +269,11 @@ const Processes = ({
       label: (
         <>
           {/* This is a small workaround, because you cant trigger AntDesigns Upload other than a child button */}
-          <ProcessImportButton type="default" className={styles['Process-Import-Context-Menu']}>
+          <ProcessImportButton
+            type="default"
+            className={styles['Process-Import-Context-Menu']}
+            aria-label="import-right-click-context"
+          >
             Import Process
           </ProcessImportButton>
         </>
@@ -472,7 +476,11 @@ const Processes = ({
                         >
                           <AiOutlinePartition /> Create Process
                         </Dropdown.Button>
-                        <ProcessImportButton type="default" icon={<PiFolderOpen />}>
+                        <ProcessImportButton
+                          type="default"
+                          icon={<PiFolderOpen />}
+                          aria-label="import-button"
+                        >
                           Import
                         </ProcessImportButton>
                       </Space>

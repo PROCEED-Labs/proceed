@@ -49,7 +49,7 @@ export class ProcessListPage {
     // import the test process
     const modal = await openModal(this.page, async () => {
       const fileChooserPromise = page.waitForEvent('filechooser');
-      await page.getByRole('button', { name: /import/i }).click();
+      await page.getByRole('button', { name: 'import-button' }).click();
       const filechooser = await fileChooserPromise;
 
       await filechooser.setFiles({

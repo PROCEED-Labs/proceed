@@ -59,14 +59,8 @@ const Wrapper = ({
   const { spaceId } = useEnvironment();
   const pathname = usePathname();
   const environment = useEnvironment();
-  // const setUser = usePotentialOwnerStore((state) => state.setUser);
-  // const setRoles = usePotentialOwnerStore((state) => state.setRoles);
 
-  // useEffect(() => {
-  //   setUser(user);
-  //   setRoles(roles);
-  // }, []);
-  useInitialisePotentialOwnerStore(environment.spaceId);
+  useInitialisePotentialOwnerStore();
 
   const [closed, setClosed] = useState(false);
   const router = useRouter();

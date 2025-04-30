@@ -3,10 +3,11 @@ import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
-import { env } from '@/lib/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 

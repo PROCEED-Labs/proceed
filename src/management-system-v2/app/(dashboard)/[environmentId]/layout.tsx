@@ -31,9 +31,10 @@ import { Environment } from '@/lib/data/environment-schema';
 import { LuTable2 } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
-import { env } from '@/lib/env-vars';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { env } from '@/lib/ms-config/env-vars';
 
 const DashboardLayout = async ({
   children,
@@ -49,6 +50,7 @@ const DashboardLayout = async ({
     userOrgEnvs,
     async (envId) => (await getEnvironmentById(envId))!,
   );
+  const msConfig = await getMSConfig();
 
   userEnvironments.push(...orgEnvironments);
 
@@ -88,7 +90,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     let children: MenuProps['items'] = [];
 
     children.push({

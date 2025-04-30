@@ -4,8 +4,9 @@ import { AreaChartOutlined, AppstoreOutlined, FileOutlined } from '@ant-design/i
 import { MdOutlineComputer } from 'react-icons/md';
 import { FaUsers } from 'react-icons/fa';
 import { RiAdminFill } from 'react-icons/ri';
-import { env } from '@/lib/env-vars';
 import { type ReactNode } from 'react';
+import { FaGear } from 'react-icons/fa6';
+import { env } from '@/lib/ms-config/env-vars';
 
 let adminViews = [
   {
@@ -32,6 +33,11 @@ let adminViews = [
     key: 'engines',
     label: <Link href="/admin/engines">Engines</Link>,
     icon: <MdOutlineComputer />,
+  },
+  {
+    key: 'ms-config',
+    label: <Link href="/admin/ms-config">MS Config</Link>,
+    icon: <FaGear />,
   },
 ];
 

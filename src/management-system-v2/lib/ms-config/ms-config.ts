@@ -10,6 +10,7 @@ import {
   mSConfigEnvironmentOnlyKeys,
   PrivateMSConfig,
   configurableMSConfigSchemaKeys,
+  msConfigConfigurableKeys,
 } from './config-schema';
 import { env } from './env-vars';
 import { z } from 'zod';
@@ -116,12 +117,13 @@ const onBuild = process.env.NEXT_PHASE === 'phase-production-build';
 async function _getMSConfig() {
   const config = await db.mSConfig.findFirst({ where: { id: MS_CONFIG_ROW_ID } });
   const filteredConfig = onBuild ? {} : configurableMSConfigSchema.parse(config?.config);
+
   const msConfig: Record<string, any> = { _overwrittenByEnv: [] };
   for (const key of Object.keys(env)) {
     const envValue = env[key as keyof EnvironmentOnlyMSConfig];
 
-    if (envValue !== undefined && key in filteredConfig) {
-      msConfig._overwrittenByEnv.push(key);
+    if (envValue !== undefined) {
+      if (msConfigConfigurableKeys.includes(key as any)) msConfig._overwrittenByEnv.push(key);
       msConfig[key] = envValue;
     } else {
       msConfig[key] = filteredConfig[key];

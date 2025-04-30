@@ -227,3 +227,9 @@ model Engine {
 
   @@map("engine")
 }
+
+// Global config for the MS, this table should only have one entry
+model MSConfig { 
+  id      Int   @id @default(0) 
+  config  Json
+}

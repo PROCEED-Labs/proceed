@@ -50,7 +50,10 @@ const DashboardLayout = async ({
     userOrgEnvs,
     async (envId) => (await getEnvironmentById(envId))!,
   );
+<<<<<<< HEAD
   const msConfig = await getMSConfig();
+=======
+>>>>>>> origin/main
 
   userEnvironments.push(...orgEnvironments);
 

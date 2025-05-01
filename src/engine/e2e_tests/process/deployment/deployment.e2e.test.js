@@ -2141,7 +2141,7 @@ describe('Test deploying a process', () => {
                   performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
-                  endTime: null,
+                  endTime: expect.any(Number),
                   state: 'SKIPPED',
                 },
               ]);
@@ -2197,7 +2197,7 @@ describe('Test deploying a process', () => {
                   performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
-                  endTime: null,
+                  endTime: expect.any(Number),
                   state: 'SKIPPED',
                 },
               ]);

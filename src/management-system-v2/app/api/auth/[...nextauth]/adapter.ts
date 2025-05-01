@@ -19,8 +19,8 @@ const Adapter = {
     user: Omit<AuthenticatedUser, 'id'> | { email: string; emailVerified: Date },
   ) => {
     return addUser({
-      image: null,
       ...user,
+      profileImage: 'image' in user && typeof user.image === 'string' ? user.image : null,
       isGuest: false,
       emailVerifiedOn: null,
     });

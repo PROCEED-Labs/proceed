@@ -82,11 +82,10 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
   }, [stateSelectionFilter, priorityRangeFilter, progressRangeFilter, selectedSortItem, userTasks]);
 
   const itemsPerPage = 10;
-  const pageStartItemIndex = (currentListPage - 1) * itemsPerPage;
-  const userTasksToDisplay = filteredAndSortedUserTasks.slice(
-    pageStartItemIndex,
-    pageStartItemIndex + itemsPerPage,
-  );
+  const userTasksToDisplay = useMemo(() => {
+    const pageStartItemIndex = (currentListPage - 1) * itemsPerPage;
+    return filteredAndSortedUserTasks.slice(pageStartItemIndex, pageStartItemIndex + itemsPerPage);
+  }, [filteredAndSortedUserTasks, currentListPage]);
 
   const selectedUserTask = filteredAndSortedUserTasks.find((uT) => uT.id === selectedUserTaskID);
   const userTaskSelectedOnMobile = selectedUserTask && !breakpoint.xl;

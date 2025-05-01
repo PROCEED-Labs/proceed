@@ -26,22 +26,23 @@ model SystemAdmin {
 }
 
 model User {
-  id                 String         @id @default(uuid())
-  firstName          String?
-  lastName           String?
-  username           String?        @unique
-  email              String?        @unique
-  isGuest            Boolean
-  emailVerifiedOn    DateTime?
-  image              String?
-  favourites         String[]
-  processes          Process[]
-  ownedSpaces        Space[]        @relation("spaceOwner")
-  memberIn           Membership[]
-  folders            Folder[]
-  oauthAccounts      OauthAccount[]
-  roleMembers        RoleMember[]
-  systemAdmin        SystemAdmin?   @relation("systemAdmin")
+  id              String         @id @default(uuid())
+  firstName       String?
+  lastName        String?
+  username        String?        @unique
+  email           String?        @unique
+  phoneNumber     String?
+  isGuest         Boolean
+  emailVerifiedOn DateTime?
+  profileImage    String?
+  favourites      String[]
+  processes       Process[]
+  ownedSpaces     Space[]        @relation("spaceOwner")
+  memberIn        Membership[]
+  folders         Folder[]
+  oauthAccounts   OauthAccount[]
+  roleMembers     RoleMember[]
+  systemAdmin     SystemAdmin?   @relation("systemAdmin")
   verificationTokens VerificationToken[]   @relation("verificationToken")
 
   @@map("user")
@@ -133,7 +134,8 @@ model Space {
   isActive           Boolean?
   description        String?
   contactPhoneNumber String?
-  logo               String?
+  contactEmail       String?
+  spaceLogo          String?
   owner              User?        @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId            String
   members            Membership[]

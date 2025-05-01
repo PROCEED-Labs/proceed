@@ -111,6 +111,7 @@ body {
   display: flex;
   align-items: center;
 }
+  
 .user-task-form-milestone input[type="range"] {
   margin: 5px 10px;
 }
@@ -178,6 +179,7 @@ export function toHtml(json: string) {
         resolver={{
           ...Elements,
           Image: Elements.ExportImage,
+          Input: Elements.ExportInput,
           Milestones: Elements.ExportMilestones,
         }}
       >

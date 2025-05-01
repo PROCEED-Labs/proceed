@@ -281,13 +281,18 @@ const Management = {
    */
   async resumeInstance(definitionId, instanceId) {
     let instanceInformation;
+    let userTasks = [];
 
     const existingEngine = this.getEngineWithID(instanceId);
     if (existingEngine) {
       instanceInformation = existingEngine.getInstanceInformation(instanceId);
+      userTasks = existingEngine.userTasks.filter(
+        (userTask) => userTask.processInstance.id === instanceID,
+      );
       this.removeInstance(instanceId);
     } else {
       instanceInformation = (await distribution.db.getArchivedInstances(definitionId))[instanceId];
+      userTasks = instanceInformation.userTasks;
 
       if (!enableInterruptedInstanceRecovery) {
         // remove intermediate state when the instance recovery is not used; when it is finally implemented this should be removed
@@ -326,6 +331,14 @@ const Management = {
       importedInstance.variables,
       importedInstance,
       (newInstance) => {
+        engine.userTasks.push(
+          ...userTasks
+            .filter((userTask) => userTask.state !== 'PAUSED')
+            .map((userTask) => ({
+              ...userTask,
+              processInstance: newInstance,
+            })),
+        );
         engine._log.info({
           msg: `Resuming process instance. Id = ${resumedInstanceInformation.processInstanceId}`,
           instanceId: resumedInstanceInformation.instanceId,
@@ -521,24 +534,17 @@ const Management = {
     const allInactiveUserTasks = this._engines.flatMap((engine) => engine.getInactiveUserTasks());
     // get inactive userTasks of already archived instances
     const allProcesses = await distribution.db.getAllProcesses();
-    const allArchivedInstances = await allProcesses.reduce(async (acc, currentDefinitionId) => {
-      const archivedInstancesForDefinitionId =
-        await distribution.db.getArchivedInstances(currentDefinitionId);
 
-      const nonDuplicateArchivedInstancesForDefinitionId = {};
+    const allArchivedInstances = await Promise.all(
+      allProcesses.map(async (definitionId) => {
+        const instances = await distribution.db.getArchivedInstances(definitionId);
+        return Object.entries(instances)
+          .filter(([instanceId]) => !this.getEngineWithID(instanceId))
+          .map(([_, instance]) => instance);
+      }),
+    );
 
-      Object.keys(archivedInstancesForDefinitionId).forEach((instanceId) => {
-        const executingEngine = this.getEngineWithID(instanceId);
-        if (!executingEngine) {
-          nonDuplicateArchivedInstancesForDefinitionId[instanceId] =
-            archivedInstancesForDefinitionId[instanceId];
-        }
-      });
-
-      return { ...acc, ...nonDuplicateArchivedInstancesForDefinitionId };
-    }, {});
-
-    const allArchivedUserTasks = Object.values(allArchivedInstances).flatMap((archivedInstance) => {
+    const allArchivedUserTasks = allArchivedInstances.flat().flatMap((archivedInstance) => {
       if (archivedInstance.userTasks) {
         const instanceUserTasks = archivedInstance.userTasks.map((uT) => {
           const userTaskToken = archivedInstance.tokens.find(

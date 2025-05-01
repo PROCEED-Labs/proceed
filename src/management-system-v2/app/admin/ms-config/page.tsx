@@ -8,6 +8,7 @@ import {
   getMSConfig,
   getMSConfigDBValues,
   updateMSConfig,
+  writeDefaultMSConfig,
 } from '@/lib/ms-config/ms-config';
 import MSConfigForm from './ms-config-form';
 import { userError } from '@/lib/user-error';
@@ -22,6 +23,17 @@ async function saveConfig(newConfig: Record<string, string>) {
   }
 }
 export type saveConfig = typeof saveConfig;
+
+async function restoreDefaultValues() {
+  'use server';
+  try {
+    await writeDefaultMSConfig(true);
+  } catch (e) {
+    console.error(e);
+    return userError('Error writing default values');
+  }
+}
+export type restoreDefaultValues = typeof restoreDefaultValues;
 
 async function ConfigPage() {
   const user = await getCurrentUser();
@@ -45,6 +57,7 @@ async function ConfigPage() {
       serverSaveConfig={saveConfig}
       config={config}
       overwrittenByEnv={msConfig._overwrittenByEnv}
+      restoreDefaultValues={restoreDefaultValues}
     />
   );
 }

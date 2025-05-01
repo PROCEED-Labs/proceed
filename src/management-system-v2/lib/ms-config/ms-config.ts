@@ -18,8 +18,6 @@ import { z } from 'zod';
 // Always use the same id for the config table to avoid having multiple entries
 const MS_CONFIG_ROW_ID = 0;
 
-const MSConfigReadOnlyKeysSet = new Set(mSConfigEnvironmentOnlyKeys as string[]);
-
 const configurableMSConfigSchema = z.object(configurableMSConfigSchemaKeys);
 const configurableMSConfigSchemaStrict = configurableMSConfigSchema.strict();
 
@@ -31,9 +29,7 @@ export function filterMSConfigurableValues<T extends Record<string, any>>(
   const filtered: Record<string, any> = {};
 
   for (const [key, value] of Object.entries(object)) {
-    if (!MSConfigReadOnlyKeysSet.has(key)) {
-      filtered[key] = value;
-    }
+    if (msConfigConfigurableKeys.includes(key as any)) filtered[key] = value;
   }
 
   return filtered;

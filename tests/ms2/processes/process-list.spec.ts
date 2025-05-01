@@ -595,9 +595,14 @@ test.describe('shortcuts in process-list', () => {
 
     await waitForHydration(page);
 
+    /* Wait for modeler to load */
+    await page.locator('svg[data-element-id^="Process_"]').waitFor({
+      state: 'visible',
+    });
+
     /* Go back to process list by pressing esc twice */
-    await page.getByRole('main').press('Escape');
-    await page.getByRole('main').press('Escape', { delay: 10 });
+    await page.getByRole('main').press('Escape', { delay: 100 });
+    await page.getByRole('main').press('Escape', { delay: 100 });
 
     /* The /processes page should be visibe again */
     // await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);

@@ -117,7 +117,8 @@ export class ProcessListPage {
     const { page } = this;
 
     const modal = await openModal(page, async () => {
-      await page.locator(`tr[data-ow-key=${definitionId}]`).getByRole('checkbox').check();
+      await page.locator(`tr[data-row-key=${definitionId}]`).getByRole('checkbox').check();
+      await page.getByRole('button', { name: 'delete' }).click();
     });
 
     await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());

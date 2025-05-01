@@ -112,9 +112,9 @@ export async function waitForHydration(page: Page, isGuestUser = true) {
     .and(page.locator('.ant-dropdown:not(.ant-slide-up)'));
 
   if (isGuestUser) {
-    profileLocator = profileLocator.getByRole('menuitem', { name: 'Delete Data' });
+    profileLocator = await profileLocator.getByRole('menuitem', { name: 'Delete Data' });
   } else {
-    profileLocator = profileLocator.getByRole('link', { name: 'Profile Settings' });
+    profileLocator = await profileLocator.getByRole('link', { name: 'Profile Settings' });
   }
 
   await profileLocator.waitFor({ state: 'visible' });

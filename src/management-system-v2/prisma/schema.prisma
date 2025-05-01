@@ -31,9 +31,10 @@ model User {
   lastName        String?
   username        String?        @unique
   email           String?        @unique
+  phoneNumber     String?
   isGuest         Boolean
   emailVerifiedOn DateTime?
-  image           String?
+  profileImage    String?
   favourites      String[]
   processes       Process[]
   ownedSpaces     Space[]        @relation("spaceOwner")
@@ -132,7 +133,8 @@ model Space {
   isActive           Boolean?
   description        String?
   contactPhoneNumber String?
-  logo               String?
+  contactEmail       String?
+  spaceLogo          String?
   owner              User?        @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId            String
   members            Membership[]

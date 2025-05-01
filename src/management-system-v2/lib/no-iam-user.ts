@@ -10,9 +10,10 @@ export const user = {
   lastName: 'Admin',
   username: 'default',
   email: null,
+  phoneNumber: null,
   isGuest: false,
   emailVerifiedOn: null,
-  image: null,
+  profileImage: null,
   favourites: [],
 } satisfies UserDB;
 

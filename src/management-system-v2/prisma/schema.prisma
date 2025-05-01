@@ -43,6 +43,7 @@ model User {
   oauthAccounts   OauthAccount[]
   roleMembers     RoleMember[]
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
+  verificationTokens VerificationToken[]   @relation("verificationToken")
 
   @@map("user")
 }
@@ -229,3 +230,12 @@ model Engine {
 
   @@map("engine")
 }
+
+model VerificationToken {
+  token      String   @id
+  identifier String
+  expires    DateTime
+  user       User?     @relation(name: "verificationToken", fields: [userId], references: [id])
+  userId     String? /// If this is set, then the token is for an email change and the idenrtifier is the new email
+}
+  

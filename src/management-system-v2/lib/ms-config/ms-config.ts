@@ -14,6 +14,7 @@ import {
 } from './config-schema';
 import { env } from './env-vars';
 import { z } from 'zod';
+import { headers } from 'next/headers';
 
 // Always use the same id for the config table to avoid having multiple entries
 const MS_CONFIG_ROW_ID = 0;
@@ -111,6 +112,9 @@ export async function getMSConfigDBValues() {
 const onBuild = process.env.NEXT_PHASE === 'phase-production-build';
 // TODO: make this not async, it's not that good for performance
 async function _getMSConfig() {
+  // To make every page that calls this function dynamic
+  headers();
+
   const config = await db.mSConfig.findFirst({ where: { id: MS_CONFIG_ROW_ID } });
   const filteredConfig = onBuild ? {} : configurableMSConfigSchema.parse(config?.config);
 

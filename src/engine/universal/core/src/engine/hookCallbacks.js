@@ -381,7 +381,11 @@ module.exports = {
             );
 
             if (index > -1) {
-              const newUserTask = { ...engine.userTasks[index], state: execution.executionState };
+              const newUserTask = {
+                ...engine.userTasks[index],
+                endTime: execution.endTime,
+                state: execution.executionState,
+              };
               engine.userTasks.splice(index, 1, newUserTask);
             }
           }

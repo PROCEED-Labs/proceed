@@ -4,6 +4,7 @@ import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from '
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type NavigatedViewerType from 'bpmn-js/lib/NavigatedViewer';
 import type ViewerType from 'bpmn-js/lib/Viewer';
+import type EventBus from 'diagram-js/lib/core/EventBus';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
@@ -17,6 +18,7 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
+import type Overlays from 'diagram-js/lib/features/overlays/Overlays';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
 import {
@@ -96,10 +98,12 @@ export interface BPMNCanvasRef {
   getElement: (id: string) => Element | undefined;
   getAllElements: () => ElementLike[];
   getCurrentRoot: () => Element | undefined;
+  getEventBus: () => EventBus;
   getCanvas: () => Canvas;
   getZoomScroll: () => ZoomScroll;
   getSelection: () => Selection;
   getModeling: () => Modeling;
+  getOverlays: () => Overlays;
   getFactory: () => BpmnFactory;
   loadBPMN: (bpmn: string) => Promise<void>;
   activateKeyboard: () => void;
@@ -168,6 +172,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
             modeler.current!.get<Canvas>('canvas').getRootElement().businessObject.id,
           ) as Element;
       },
+      getEventBus: () => {
+        return modeler.current!.get<EventBus>('eventBus');
+      },
       getCanvas: () => {
         return modeler.current!.get<Canvas>('canvas');
       },
@@ -179,6 +186,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       },
       getModeling: () => {
         return modeler.current!.get<Modeling>('modeling');
+      },
+      getOverlays: () => {
+        return modeler.current!.get<Overlays>('overlays');
       },
       getFactory: () => {
         return modeler.current!.get<BpmnFactory>('bpmnFactory');
@@ -336,7 +346,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
-
         loadingXML.current = false;
 
         if (m !== modeler.current) {

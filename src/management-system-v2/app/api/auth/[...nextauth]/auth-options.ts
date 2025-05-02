@@ -5,15 +5,20 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, deleteUser, getUserById, getUserByUsername, updateUser } from '@/lib/data/DTOs';
-import { usersMetaObject } from '@/lib/data/legacy/iam/users';
+import {
+  addUser,
+  deleteUser,
+  getUserById,
+  getUserByUsername,
+  updateUser,
+} from '@/lib/data/db/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
-import { enableUseDB } from 'FeatureFlags';
+import * as noIamUser from '@/lib/no-iam-user';
 
 const nextAuthOptions: AuthOptions = {
   secret: env.NEXTAUTH_SECRET,
@@ -33,6 +38,11 @@ const nextAuthOptions: AuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
+      if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+        token.user = noIamUser.user;
+        return token;
+      }
+
       let user = _user as User | undefined;
 
       if (trigger === 'update') user = (await getUserById(token.user.id)) as User;
@@ -69,7 +79,7 @@ const nextAuthOptions: AuthOptions = {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,
-            image: user.image ?? undefined,
+            profileImage: user.profileImage ?? undefined,
             email: user.email ?? undefined,
             isGuest: false,
           });
@@ -199,7 +209,7 @@ if (env.NODE_ENV === 'development') {
       id: 'development-id|johndoe',
       isGuest: false,
       emailVerifiedOn: null,
-      image: null,
+      profileImage: null,
     },
     {
       username: 'admin',
@@ -209,7 +219,7 @@ if (env.NODE_ENV === 'development') {
       id: 'development-id|admin',
       isGuest: false,
       emailVerifiedOn: null,
-      image: null,
+      profileImage: null,
     },
   ] satisfies User[];
 
@@ -218,29 +228,20 @@ if (env.NODE_ENV === 'development') {
       id: 'development-users',
       name: 'Continue with Development User',
       credentials: {
-        username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
+        username: {
+          label: 'Username',
+          type: 'text',
+          placeholder: 'johndoe | admin',
+          value: 'admin',
+        },
       },
       async authorize(credentials) {
-        if (enableUseDB) {
-          const userTemplate = developmentUsers.find(
-            (user) => user.username === credentials?.username,
-          );
-
-          if (!userTemplate) return null;
-
-          let user = await getUserByUsername(userTemplate.username);
-          if (!user) user = await addUser(userTemplate);
-
-          return user;
-        }
         const userTemplate = developmentUsers.find(
           (user) => user.username === credentials?.username,
         );
-
         if (!userTemplate) return null;
 
-        let user = usersMetaObject[userTemplate.id];
-
+        let user = await getUserByUsername(userTemplate.username);
         if (!user) user = await addUser(userTemplate);
 
         return user;

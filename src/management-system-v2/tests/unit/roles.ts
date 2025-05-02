@@ -116,6 +116,7 @@ function buildAbility(roles: Pick<Role, 'permissions' | 'parentId'>[]) {
       description: 'This is a testing environment',
       isOrganization: true,
       contactPhoneNumber: '+4911111111111',
+      contactEmail: 'fakemockemail@proceed-labs.org',
     },
     roles: roles.map((role, idx) => ({
       name: 'scoped-view-1-5',

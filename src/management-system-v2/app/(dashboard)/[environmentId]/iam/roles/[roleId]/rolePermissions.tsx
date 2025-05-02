@@ -232,31 +232,6 @@ const basePermissionOptions: PermissionCategory[] = [
   //   ],
   // },
   {
-    key: 'machine_config',
-    title: 'Machine Config',
-    resource: 'MachineConfig',
-    permissions: [
-      {
-        key: 'machine_config_view',
-        title: 'View Machine Configurations',
-        description: 'Allows a user to view machine configurations',
-        permission: 'view',
-      },
-      {
-        key: 'machine_config_manage',
-        title: 'Manage Machine Configurations',
-        description: 'Allows a user to create, modify and delete machine configurations',
-        permission: 'manage',
-      },
-      {
-        key: 'machine_config_admin',
-        title: 'Administrate Machine Configurations',
-        description: 'Allows a user perform any action on Machine Configurations.',
-        permission: 'admin',
-      },
-    ],
-  },
-  {
     key: 'all',
     title: 'ALL',
     resource: 'All',

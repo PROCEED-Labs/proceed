@@ -3,7 +3,7 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
-import BuilderContext from './BuilderContext';
+import { CanEditContext } from '../modeler';
 
 const styles = `
 body {
@@ -107,6 +107,15 @@ body {
   margin: 3px 3px 6px 0;
 }
 
+.user-task-form-milestone label {
+  display: flex;
+  align-items: center;
+}
+  
+.user-task-form-milestone input[type="range"] {
+  margin: 5px 10px;
+}
+
 .user-task-form-button {
   background-color: #eee;
   box-shadow: rgba(0,0,0, 0.02) 0 2px 0 0;
@@ -164,18 +173,20 @@ p, h1, h2, h3, h4, h5, th, td {
 
 export function toHtml(json: string) {
   const markup = ReactDOMServer.renderToStaticMarkup(
-    <BuilderContext.Provider value={{ editingEnabled: true }}>
+    <CanEditContext.Provider value={true}>
       <Editor
         enabled={false}
         resolver={{
           ...Elements,
           Image: Elements.ExportImage,
+          Input: Elements.ExportInput,
+          Milestones: Elements.ExportMilestones,
         }}
       >
         <Frame data={json} />
       </Editor>
       ,
-    </BuilderContext.Provider>,
+    </CanEditContext.Provider>,
   );
 
   return `

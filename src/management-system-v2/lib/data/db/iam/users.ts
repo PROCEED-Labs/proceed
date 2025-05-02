@@ -14,6 +14,7 @@ import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
+import { UserFacingError } from '@/lib/user-error';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -37,8 +38,14 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
   };
 }
 
-export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = await db.user.findUnique({ where: { id: id } });
+export async function getUserById(
+  id: string,
+  opts?: { throwIfNotFound?: boolean },
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const user = await dbMutator.user.findUnique({ where: { id: id } });
 
   if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
 
@@ -61,13 +68,20 @@ export async function getUserByUsername(username: string, opts?: { throwIfNotFou
   return user as User;
 }
 
-export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
+export async function addUser(
+  inputUser: OptionalKeys<User, 'id'>,
+  tx?: Prisma.TransactionClient,
+): Promise<User> {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => addUser(inputUser, trx));
+  }
+
   const user = UserSchema.parse(inputUser);
 
   if (
     !user.isGuest &&
     ((user.username && (await getUserByUsername(user.username))) ||
-      (await getUserByEmail(user.email!)))
+      (user.email && (await getUserByEmail(user.email!))))
   )
     throw new Error('User with this email or username already exists');
 
@@ -76,23 +90,21 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
   try {
     const userExists = await db.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
-    await db.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.user.create({
-        data: {
-          ...user,
-          isGuest: user.isGuest,
-        },
-      });
-      await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
-      if ((await getSystemAdmins()).length === 0 && !user.isGuest)
-        await addSystemAdmin(
-          {
-            role: 'admin',
-            userId: user.id!,
-          },
-          tx,
-        );
+    await tx.user.create({
+      data: {
+        ...user,
+        isGuest: user.isGuest,
+      },
     });
+    await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+    if ((await getSystemAdmins()).length === 0 && !user.isGuest)
+      await addSystemAdmin(
+        {
+          role: 'admin',
+          userId: user.id!,
+        },
+        tx,
+      );
   } catch (error) {
     console.error('Error adding new user: ', error);
   }
@@ -139,7 +151,7 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
     if (adminRole.members.length === 1) {
       orgsWithNoNextAdmin.push(environmentId);
     } else {
-      /* make the next available admin the owner of the organization, because once the user is deleted, 
+      /* make the next available admin the owner of the organization, because once the user is deleted,
       the space that the user owns will be deleted: ON DELETE CASCADE */
       await dbMutator.space.update({
         where: { id: environmentId },
@@ -177,7 +189,14 @@ export async function updateUser(
       const existingUser = await db.user.findUnique({ where: { email: newUserData.email } });
 
       if (existingUser && existingUser.id !== userId)
-        throw new Error('User with this email or username already exists');
+        throw new UserFacingError('User with this email or username already exists');
+    }
+
+    if (newUserData.username) {
+      const existingUser = await db.user.findUnique({ where: { username: newUserData.username } });
+
+      if (existingUser && existingUser.id !== userId)
+        throw new UserFacingError('The username is already taken');
     }
 
     updatedUser = { ...user, ...newUserData };

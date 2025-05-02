@@ -55,7 +55,7 @@ const Page = async () => {
     ],
   };
 
-  return <SettingsSection group={settings} />;
+  return <SettingsSection sectionName="processDocumentation" group={settings} priority={1000} />;
 };
 
 export default Page;

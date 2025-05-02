@@ -12,7 +12,7 @@ export default function Layout({
 }) {
   return (
     <Content title="Settings">
-      <SettingsPage>{...Object.values(children)}</SettingsPage>
+      <SettingsPage {...children} />
     </Content>
   );
 }

@@ -10,8 +10,12 @@ const mergeKeys = (setting: SettingType | SettingGroupType, parentKey?: string) 
   return parentKey ? `${parentKey}.${setting.key}` : setting.key;
 };
 
-const SettingsPage: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const settings = useSettingsPageStore((state) => state.settings);
+type SettingsPageProps = {
+  [sectionName: string]: React.ReactNode;
+} & React.PropsWithChildren;
+
+const SettingsPage: React.FC<SettingsPageProps> = ({ children, ...sections }) => {
+  const { settings, priorities } = useSettingsPageStore();
 
   const mapToLink: (
     group: SettingGroupType,
@@ -27,7 +31,17 @@ const SettingsPage: React.FC<React.PropsWithChildren> = ({ children }) => {
     };
   };
 
-  const links = Object.values(settings).map((setting) => mapToLink(setting));
+  const [content, links] = (Object.entries(sections) as [string, React.ReactNode][])
+    .sort((a, b) => {
+      return (priorities[b[0]] || 0) - (priorities[a[0]] || 0);
+    })
+    .reduce(
+      (acc, curr) => {
+        const setting = settings[curr[0]];
+        return [[...acc[0], curr[1]], setting ? [...acc[1], mapToLink(setting)] : acc[1]];
+      },
+      [[], []] as [React.ReactNode[], ReturnType<typeof mapToLink>[]],
+    );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +51,7 @@ const SettingsPage: React.FC<React.PropsWithChildren> = ({ children }) => {
         <Anchor items={links} getContainer={() => scrollContainerRef.current!} />
       </Col>
       <Col style={{ height: '100%', overflowY: 'auto' }} ref={scrollContainerRef} span={20}>
-        <Form>{children}</Form>
+        <Form>{...content}</Form>
       </Col>
     </Row>
   );

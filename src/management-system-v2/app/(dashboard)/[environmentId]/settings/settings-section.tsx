@@ -102,15 +102,22 @@ const SettingsGroup: React.FC<SettingsGroupProps> = ({ group, parentKey = '' }) 
 };
 
 type SettingsSectionProps = {
+  sectionName: string;
   group: SettingGroup;
+  priority?: number;
 };
 
-const SettingsSection: React.FC<SettingsSectionProps> = ({ group }) => {
-  const registerGroup = useSettingsPageStore((state) => state.registerGroup);
+const SettingsSection: React.FC<SettingsSectionProps> = ({
+  sectionName,
+  group,
+  priority = 1000,
+}) => {
+  const { registerSection, setPriority } = useSettingsPageStore();
 
   useEffect(() => {
-    registerGroup(group.name, group);
-  }, [registerGroup, group]);
+    registerSection(sectionName, group);
+    setPriority(sectionName, priority);
+  }, [registerSection, setPriority, sectionName, priority, group]);
 
   return <SettingsGroup key={group.key} group={group} />;
 };

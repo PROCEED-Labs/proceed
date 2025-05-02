@@ -54,7 +54,13 @@ export const ExportInput: UserComponent<InputProps> = ({
           </div>
         )}
 
-        <input id={inputId} type={type} defaultValue={value} name={variable} />
+        <input
+          id={inputId}
+          className={variable ? `variable-${variable}` : undefined}
+          type={type}
+          defaultValue={value}
+          name={variable}
+        />
       </div>
     </ContextMenu>
   );
@@ -135,6 +141,7 @@ const Input: UserComponent<InputProps> = ({
 
         <input
           id={inputId}
+          className={variable ? `variable-${variable}` : undefined}
           disabled={!editingEnabled}
           type={type}
           value={defaultValue}

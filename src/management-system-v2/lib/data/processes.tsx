@@ -31,7 +31,7 @@ import {
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
-import { Process } from './process-schema';
+import { Process, ProcessMetadata } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
@@ -51,7 +51,7 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
-  updateProcessMetaData,
+  updateProcessMetaData as _updateProcessMetaData,
   getProcessBpmn as _getProcessBpmn,
   saveProcessUserTask as _saveProcessUserTask,
   getProcessUserTaskJSON as _getProcessUserTaskJSON,
@@ -246,7 +246,7 @@ export const updateProcessShareInfo = async (
 
   if (error) return error;
 
-  await updateProcessMetaData(definitionsId, {
+  await _updateProcessMetaData(definitionsId, {
     sharedAs: sharedAs,
     shareTimestamp: shareTimestamp,
     allowIframeTimestamp: allowIframeTimestamp,
@@ -283,6 +283,23 @@ export const updateProcess = async (
   }
 
   await _updateProcess(definitionsId, { bpmn: newBpmn });
+};
+
+export const updateProcessMetaData = async (
+  definitionsId: string,
+  spaceId: string,
+  metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
+  invalidate = false,
+) => {
+  const error = await checkValidity(definitionsId, 'update', spaceId);
+
+  if (error) return error;
+
+  await _updateProcessMetaData(definitionsId, metaChanges);
+
+  if (invalidate) {
+    revalidatePath(`/processes/${definitionsId}`);
+  }
 };
 
 export const updateProcesses = async (

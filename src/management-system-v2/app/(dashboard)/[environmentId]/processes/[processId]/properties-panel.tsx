@@ -13,6 +13,7 @@ import {
   getMetaDataFromElement,
   setProceedElement,
   deepCopyElementById,
+  setDefinitionsName,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -23,7 +24,7 @@ import PlannedDurationInput from './planned-duration-input';
 import DescriptionSection from './description-section';
 
 import PlannedCostInput from './planned-cost-input';
-import { checkIfProcessExistsByName, updateProcess } from '@/lib/data/processes';
+import { checkIfProcessExistsByName, updateProcessMetaData } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
@@ -124,16 +125,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         return;
       }
 
-      const bpmn = await modeler!.getXML();
+      await updateProcessMetaData(definitions.id, spaceId, { name: event.target.value }, true);
 
-      await updateProcess(
-        definitions.id,
-        spaceId,
-        bpmn as string,
-        undefined,
-        event.target.value,
-        true,
-      );
       definitions.name = event.target.value;
     } else {
       modeling.updateProperties(selectedElement as any, { name: event.target.value });
@@ -143,8 +136,12 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const handleUserDefinedIdChange = async (event: FocusEvent<HTMLInputElement>) => {
     if (selectedElement.type === 'bpmn:Process') {
       const definitions = selectedElement.businessObject.$parent;
-      const bpmn = await modeler!.getXML();
-      await updateProcess(definitions.id, spaceId, bpmn as string, undefined, undefined, true);
+      await updateProcessMetaData(
+        definitions.id,
+        spaceId,
+        { userDefinedId: event.target.value },
+        true,
+      );
       definitions.userDefinedId = event.target.value;
     }
   };

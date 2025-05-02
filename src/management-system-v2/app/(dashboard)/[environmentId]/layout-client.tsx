@@ -117,9 +117,17 @@ const Layout: FC<
     ];
   }
 
+  if (!activeSpace.isOrganization) {
+    layoutMenuItems.push({
+      key: 'personal-space-settings',
       label: userData?.isGuest ? (
+        <div onClick={() => setShowLoginRequest(true)}>Settings</div>
       ) : (
+        <SpaceLink href={'/settings'}>Settings</SpaceLink>
       ),
+      icon: <SettingOutlined />,
+    });
+  }
 
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(

@@ -7,6 +7,7 @@ import {
   TableColumnType,
   TableColumnsType,
   TableProps,
+  Tag,
   Tooltip,
   Typography,
 } from 'antd';
@@ -79,8 +80,9 @@ const ListEntryLink: React.FC<
     data: ProcessListProcess;
     style?: React.CSSProperties;
     className?: string;
+    tooltip?: boolean | ReactNode;
   }>
-> = ({ children, data, style, className }) => {
+> = ({ children, data, style, className, tooltip = true }) => {
   return (
     <SpaceLink
       href={data.type === 'folder' ? `/processes/folder/${data.id}` : `/processes/${data.id}`}
@@ -92,7 +94,11 @@ const ListEntryLink: React.FC<
         padding: '5px 0px',
       }}
     >
-      <Typography.Text className={className} style={style} ellipsis={{ tooltip: <>{children}</> }}>
+      <Typography.Text
+        className={className}
+        style={style}
+        ellipsis={{ tooltip: tooltip === true ? <>{children}</> : tooltip }}
+      >
         {children}
       </Typography.Text>
     </SpaceLink>
@@ -367,6 +373,37 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         ),
       },
       {
+        title: 'Released-Version',
+        dataIndex: 'id',
+        key: 'Released-Version',
+        render: (_, item) => {
+          const cellValue =
+            item.type === 'folder' ? (
+              ''
+            ) : (
+              <>
+                <Tooltip title="No Version released, yet.">
+                  <Tag>None</Tag>
+                </Tooltip>
+                <Tooltip title="The latest version is released.">
+                  <Tag color="green">Latest</Tag>
+                </Tooltip>
+                <Tooltip title="The currently released version is not the latest (i.e. a newer version is available).">
+                  <Tag color="orange">Old</Tag>
+                </Tooltip>
+              </>
+            );
+
+          return (
+            <>
+              <ListEntryLink data={item} tooltip={false}>
+                {cellValue}
+              </ListEntryLink>
+            </>
+          );
+        },
+      },
+      {
         fixed: 'right',
         width: 160,
         dataIndex: 'id',
@@ -426,6 +463,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           'Created On',
           'Created By',
           'Responsibility',
+          'Released-Version',
         ],
         columnProps: {
           width: '200px',

@@ -2,9 +2,10 @@
 
 import React, { forwardRef, useState } from 'react';
 
-import { Button, Modal, Form, Input } from 'antd';
+import { Button, Modal, Form, Input, Alert } from 'antd';
 import type { ButtonProps } from 'antd';
 import FormSubmitButton from './form-submit-button';
+import { Typography } from 'antd';
 
 type VersionModalProps = {
   show: boolean;
@@ -16,7 +17,7 @@ export const VersionModal: React.FC<VersionModalProps> = ({ show, close, loading
 
   return (
     <Modal
-      title="Create New Version"
+      title="Release the latest Process Changes"
       open={show}
       onCancel={() => {
         if (!loading) close();
@@ -35,13 +36,21 @@ export const VersionModal: React.FC<VersionModalProps> = ({ show, close, loading
           key="submit"
           form={form}
           onSubmit={close}
-          submitText="Create Version"
+          submitText="Release"
           buttonProps={{
             loading,
           }}
         ></FormSubmitButton>,
       ]}
     >
+      <Alert
+        style={{ marginBottom: 24 }}
+        // message="Note:"
+        description="A process is released to publish a specific state for documentation or automation. Releasing a process means that a new version of the current process is created. All process versions can be reloaded and further developed at any time."
+        // message="A process is released to publish a specific state for documentation or automation. Releasing a process means that a new version of the current process is created. All process versions can be reloaded and further developed at any time."
+        type="info"
+        showIcon
+      />
       <Form form={form} name="versioning" wrapperCol={{ span: 24 }} autoComplete="off">
         <Form.Item
           name="versionName"

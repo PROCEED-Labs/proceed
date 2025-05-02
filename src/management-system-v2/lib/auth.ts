@@ -112,7 +112,7 @@ const nextAuthOptions: NextAuthConfig = {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,
-            profileImage: user.profileImage ?? undefined,
+            profileImage: user.image ?? undefined,
             email: user.email ?? undefined,
             isGuest: false,
           });

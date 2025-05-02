@@ -82,8 +82,8 @@ const CredentialsSignIn = ({
         <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
           <Input
             placeholder={provider.credentials[key].label}
-            type={provider.credentials[key].type}
-            defaultValue={provider.credentials[key].value}
+            type={provider.credentials[key].type as string}
+            defaultValue={provider.credentials[key].value as string}
           />
         </Form.Item>
       ))}

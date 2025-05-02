@@ -11,7 +11,7 @@ export class MS2Page {
   async login() {
     await mockClipboardAPI(this.page);
     const modal = await openModal(this.page, async () => {
-      this.page.goto('/');
+      this.page.goto('/signin?callbackUrl=/processes');
     });
     await modal.getByRole('button', { name: 'Create a Process' }).click();
     await this.page.waitForURL('**/processes');

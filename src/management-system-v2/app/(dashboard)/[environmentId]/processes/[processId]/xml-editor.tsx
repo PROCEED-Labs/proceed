@@ -171,27 +171,23 @@ const XmlEditor: FC<XmlEditorProps> = ({
           errorMessages,
           errorLocations,
         });
-        // add new error markings
-        errors.map((error) => {
-          if (error) {
-            monacoRef.current!.editor.setModelMarkers(
-              editorRef.current!.getModel()!,
-              'owner',
-              errors
-                .filter(
-                  (error): error is Required<EditorError> =>
-                    error.startLineNumber !== undefined &&
-                    error.endLineNumber !== undefined &&
-                    error.startColumn !== undefined &&
-                    error.endColumn !== undefined,
-                )
-                .map((error) => ({
-                  ...error,
-                  severity: monacoRef.current!.MarkerSeverity.Error,
-                })),
-            );
-          }
-        });
+
+        monacoRef.current!.editor.setModelMarkers(
+          editorRef.current!.getModel()!,
+          'owner',
+          errors
+            .filter(
+              (error): error is Required<EditorError> =>
+                error.startLineNumber !== undefined &&
+                error.endLineNumber !== undefined &&
+                error.startColumn !== undefined &&
+                error.endColumn !== undefined,
+            )
+            .map((error) => ({
+              ...error,
+              severity: monacoRef.current!.MarkerSeverity.Error,
+            })),
+        );
 
         return false;
       } else if (warnings && warnings.length) {

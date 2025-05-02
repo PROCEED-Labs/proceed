@@ -135,7 +135,10 @@ function getProcessDocumentationByObject(processObject) {
  * @property {string} [targetNamespace] - definitions targetNamespace
  * @property {string} [creatorName] - definitions creatorName
  * @property {string} [userDefinedId] - definitions userDefinedId
- */
+ * @property {string} [creatorUsername] - definitions creatorUsername
+ * @property {string} [creationDate] - definitions creationDate
+
+*/
 
 /**
  * Gets the 'definitions' root element from the given BPMN XML
@@ -154,6 +157,8 @@ async function getDefinitionsInfos(bpmn) {
     targetNamespace: bpmnObj.targetNamespace,
     creatorName: bpmnObj.creatorName,
     userDefinedId: bpmnObj.userDefinedId,
+    creatorUsername: bpmnObj.creatorUsername,
+    creationDate: bpmnObj.creationDate,
   };
 }
 

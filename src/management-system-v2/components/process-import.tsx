@@ -127,24 +127,18 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   ) => {
     try {
       const bpmnObj = await toBpmnObject(bpmn);
-      const [definitions] = await getElementsByTagName(bpmnObj, 'bpmn:Definitions');
-      if (!definitions) {
-        errors.push({
-          fileName: bpmnFilePath,
-          error: 'Invalid BPMN file: missing Definitions element',
-        });
-        return;
-      }
-      const { id, name } = await getDefinitionsInfos(bpmnObj);
+
+      const { id, name, userDefinedId, creatorName, creationDate, creatorUsername } =
+        await getDefinitionsInfos(bpmnObj);
 
       const processData: ProcessData = {
         id: id || '',
         name: name || '',
         description: await getProcessDocumentation(bpmn),
-        userDefinedId: definitions['userDefinedId'],
-        creator: definitions['creatorName'],
-        creatorUsername: definitions['creatorUsername'],
-        createdOn: generateDateString(definitions['creationDate'], true),
+        userDefinedId: userDefinedId,
+        creator: creatorName,
+        creatorUsername: creatorUsername,
+        createdOn: generateDateString(creationDate, true),
         folderId: currentFolderId,
         bpmn,
         artefacts: {

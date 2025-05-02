@@ -45,7 +45,7 @@ const BPMNViewer: FC<BPMNViewerProps> = ({
 
   // Allows for rerendering when the process changes but not the BPMN.
   const bpmn = useMemo(
-    () => ({ bpmn: previewBpmn && !definitionId ? previewBpmn : data }),
+    () => ({ bpmn: data || previewBpmn || '' }),
     [previewBpmn, definitionId, data],
   );
 

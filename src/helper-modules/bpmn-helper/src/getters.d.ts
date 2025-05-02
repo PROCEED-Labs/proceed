@@ -35,6 +35,14 @@ export type DefinitionsInfos = {
      * - definitions userDefinedId
      */
     userDefinedId?: string;
+    /**
+     * - definitions creatorUsername
+     */
+    creatorUsername?: string;
+    /**
+     * - definitions creationDate
+     */
+    creationDate?: string;
 };
 /**
  * An object containing properties from defined companies
@@ -235,7 +243,10 @@ export function getDefinitionsName(bpmn: (string | object)): Promise<string | un
  * @property {string} [targetNamespace] - definitions targetNamespace
  * @property {string} [creatorName] - definitions creatorName
  * @property {string} [userDefinedId] - definitions userDefinedId
- */
+ * @property {string} [creatorUsername] - definitions creatorUsername
+ * @property {string} [creationDate] - definitions creationDate
+
+*/
 /**
  * Gets the 'definitions' root element from the given BPMN XML
  *

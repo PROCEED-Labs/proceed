@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { z } from 'zod';
-import { VerificationToken } from '../data/legacy/verification-tokens';
+import { VerificationToken } from '@/lib/data/db/iam/verification-tokens';
 import { env } from '../env-vars';
 
 async function createHash(message: string) {
@@ -33,7 +33,6 @@ export async function createChangeEmailVerificationToken({
     token: await getTokenHash(token),
     expires,
     identifier,
-    updateEmail: true,
     userId,
   } satisfies VerificationToken;
 
@@ -49,9 +48,7 @@ export async function createChangeEmailVerificationToken({
   return { verificationToken, redirectUrl };
 }
 
-export async function notExpired(
-  verificationToken: Extract<VerificationToken, { updateEmail: true }>,
-) {
+export async function notExpired(verificationToken: VerificationToken) {
   if (verificationToken.expires.valueOf() < Date.now()) return false;
   return true;
 }

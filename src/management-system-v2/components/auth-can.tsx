@@ -2,7 +2,7 @@
 
 import { ReactElement, useEffect, useMemo, FC, PropsWithChildren, use } from 'react';
 import { useAbilityStore } from '@/lib/abilityStore';
-import { useSession } from 'next-auth/react';
+import { useSession as nextAuthUseSession } from 'next-auth/react';
 import { Route } from 'next';
 import {
   ResourceActionType,
@@ -13,6 +13,8 @@ import {
 } from '@/lib/ability/caslAbility';
 import { usePathname, useRouter } from 'next/navigation';
 import { SpaceContext } from '@/app/(dashboard)/[environmentId]/layout-client';
+import { EnvVarsContext } from './env-vars-context';
+import { session } from '@/lib/no-iam-user';
 
 /** Makes at least one key of an object required */
 type OneOf<Key, Object> = Key extends keyof Object ? Partial<Object> & Pick<Object, Key> : never;
@@ -98,4 +100,17 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
 export const useEnvironment = () => {
   const environment = use(SpaceContext);
   return environment;
+};
+
+export const useSession: typeof nextAuthUseSession<false> = () => {
+  const env = use(EnvVarsContext);
+
+  const nextAuthSession = nextAuthUseSession();
+  if (env.PROCEED_PUBLIC_IAM_ACTIVATE) return nextAuthSession;
+
+  return {
+    data: session,
+    status: 'authenticated',
+    update: () => Promise.resolve(session),
+  };
 };

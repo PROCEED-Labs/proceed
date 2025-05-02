@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { zodPhoneNumber } from '../utils';
 
 export const AuthenticatedUserDataSchema = z.object({
   firstName: z
@@ -20,7 +21,8 @@ export const AuthenticatedUserDataSchema = z.object({
     .min(1, 'The Username must be at least 1 character long')
     .max(35, 'The Username cannot be longer than 35 characters')
     .optional(),
-  image: z.string().url().nullable().optional(),
+  phoneNumber: zodPhoneNumber().optional().nullable(),
+  profileImage: z.string().url().nullable().optional(),
   favourites: z.array(z.string()).optional(),
 });
 export type AuthenticatedUserData = z.infer<typeof AuthenticatedUserDataSchema>;
@@ -31,7 +33,7 @@ export const AuthenticatedUserSchema = AuthenticatedUserDataSchema.extend({
   // NOTE: maybe email should be moved to user data as the user could change their email
   // TODO: email is optional because Twitter doesn't return an email for the time being,
   // once it does this type should be non-optional and the commit d34be03d9a89cd11418f4b550a04b3664ce1de71 reverted
-  email: z.string().optional(),
+  email: z.string().optional().nullable(),
   emailVerifiedOn: z.date().nullable(),
 });
 export type AuthenticatedUser = z.infer<typeof AuthenticatedUserSchema> & { id: string };

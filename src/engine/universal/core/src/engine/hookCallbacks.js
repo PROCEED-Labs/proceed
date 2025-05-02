@@ -282,7 +282,7 @@ module.exports = {
 
       newInstance.onFlowNodeExecuted((execution) => {
         const token = engine.getToken(newInstance.id, execution.tokenId);
-        // move information about milestones to log and delete from token
+        // move information from the token to the log and update the token
         if (token) {
           if (token.currentFlowNodeProgress && token.currentFlowNodeProgress.manual) {
             newInstance.updateLog(execution.flowElementId, execution.tokenId, {
@@ -381,7 +381,11 @@ module.exports = {
             );
 
             if (index > -1) {
-              const newUserTask = { ...engine.userTasks[index], state: execution.executionState };
+              const newUserTask = {
+                ...engine.userTasks[index],
+                endTime: execution.endTime,
+                state: execution.executionState,
+              };
               engine.userTasks.splice(index, 1, newUserTask);
             }
           }

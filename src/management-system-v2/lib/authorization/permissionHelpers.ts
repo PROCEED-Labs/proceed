@@ -36,3 +36,16 @@ export function permissionNumberToIdentifiers(permission: number): ResourceActio
 
   return actions;
 }
+
+export function permissionIdentifiersToNumber(actions: ResourceActionType[]): number {
+  let permissionNumber = 0;
+
+  for (const action of actions) {
+    const bitFlag = ResourceActionsMapping[action];
+
+    // If this where a sum, we would have to check for duplicates in the array;
+    permissionNumber |= bitFlag;
+  }
+
+  return permissionNumber;
+}

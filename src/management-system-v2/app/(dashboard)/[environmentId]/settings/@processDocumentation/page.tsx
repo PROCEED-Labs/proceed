@@ -1,7 +1,9 @@
+import { populateSpaceSettingsGroup } from '@/lib/data/db/space-settings';
 import SettingsSection from '../settings-section';
-import { SettingGroup } from '../type-util';
+import { Setting, SettingGroup } from '../type-util';
+import { getCurrentEnvironment } from '@/components/auth';
 
-const Page = async () => {
+const Page = async ({ params }: { params: { environmentId: string } }) => {
   const settings: SettingGroup = {
     key: 'process-documentation',
     name: 'Process Documentation',
@@ -11,7 +13,7 @@ const Page = async () => {
         name: 'Enabled',
         type: 'boolean',
         description: 'Controls whether this view is activated in this space.',
-        value: true,
+        value: false,
       },
       {
         key: 'list',
@@ -35,7 +37,7 @@ const Page = async () => {
             name: 'Enabled',
             type: 'boolean',
             description: 'Controls whether this view is activated in this space.',
-            value: true,
+            value: false,
           },
         ],
       },
@@ -54,6 +56,13 @@ const Page = async () => {
       },
     ],
   };
+
+  const {
+    ability,
+    activeEnvironment: { spaceId },
+  } = await getCurrentEnvironment(params.environmentId);
+
+  await populateSpaceSettingsGroup(spaceId, settings, ability);
 
   return <SettingsSection sectionName="processDocumentation" group={settings} priority={1000} />;
 };

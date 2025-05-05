@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useId } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 
-import { Typography, Input, Select, Checkbox, InputNumber, Form } from 'antd';
+import { Typography, Input, Select, Checkbox, InputNumber } from 'antd';
 import {
   Setting as SettingType,
   SettingGroup as SettingGroupType,
@@ -10,6 +10,8 @@ import {
   SettingGroup,
 } from './type-util';
 import useSettingsPageStore from './use-settings-page-store';
+import { updateSpaceSettings } from '@/lib/data/db/space-settings';
+import { useEnvironment } from '@/components/auth-can';
 
 const mergeKeys = (setting: SettingType | SettingGroupType, parentKey?: string) => {
   return parentKey ? `${parentKey}.${setting.key}` : setting.key;
@@ -18,22 +20,46 @@ const mergeKeys = (setting: SettingType | SettingGroupType, parentKey?: string) 
 type SettingProps = {
   setting: SettingType;
   parentKey: string;
+  onUpdate: (value: SettingType) => void;
 };
 
-const Setting: React.FC<SettingProps> = ({ setting, parentKey }) => {
+const Setting: React.FC<SettingProps> = ({ setting, parentKey, onUpdate }) => {
   const id = useId();
+
+  const { spaceId } = useEnvironment();
 
   let input = <></>;
 
+  const update = async (value: any) => {
+    onUpdate({ ...setting, value });
+    await updateSpaceSettings(spaceId, mergeKeys(setting, parentKey), value);
+  };
+
   switch (setting.type) {
     case 'string':
-      input = <Input id={id} style={{ maxWidth: '500px' }} />;
+      input = (
+        <Input
+          id={id}
+          style={{ maxWidth: '500px' }}
+          value={setting.value}
+          onChange={(e) => update(e.target.value)}
+        />
+      );
       break;
     case 'boolean':
-      input = <Checkbox id={id} />;
+      input = (
+        <Checkbox id={id} checked={setting.value} onChange={(e) => update(e.target.checked)} />
+      );
       break;
     case 'number':
-      input = <InputNumber id={id} style={{ maxWidth: '500px' }} />;
+      input = (
+        <InputNumber
+          id={id}
+          style={{ maxWidth: '500px' }}
+          value={setting.value}
+          onChange={(val) => update(val)}
+        />
+      );
       break;
     case 'select':
       input = (
@@ -42,6 +68,7 @@ const Setting: React.FC<SettingProps> = ({ setting, parentKey }) => {
           popupMatchSelectWidth={false}
           value={setting.value}
           options={setting.options}
+          onChange={(val) => update(val)}
         />
       );
   }
@@ -68,14 +95,7 @@ const Setting: React.FC<SettingProps> = ({ setting, parentKey }) => {
         </label>
       </div>
       {descriptionPosition === 'above' && <div>{description}</div>}
-      <Form.Item
-        initialValue={setting.value}
-        valuePropName={setting.type === 'boolean' ? 'checked' : 'value'}
-        name={mergeKeys(setting, parentKey)}
-        noStyle
-      >
-        {input}
-      </Form.Item>{' '}
+      {input}
       {descriptionPosition === 'right' && description}
     </div>
   );
@@ -84,17 +104,39 @@ const Setting: React.FC<SettingProps> = ({ setting, parentKey }) => {
 type SettingsGroupProps = {
   group: SettingGroupType;
   parentKey?: string;
+  onUpdate: (changedGroup: SettingGroupType) => void;
 };
 
-const SettingsGroup: React.FC<SettingsGroupProps> = ({ group, parentKey = '' }) => {
+const SettingsGroup: React.FC<SettingsGroupProps> = ({ group, parentKey = '', onUpdate }) => {
+  const update = (childIndex: number, changedChild: SettingGroupType | SettingType) => {
+    onUpdate({
+      ...group,
+      children: [
+        ...group.children.slice(0, childIndex),
+        changedChild,
+        ...group.children.slice(childIndex + 1),
+      ],
+    });
+  };
+
   return (
     <div id={mergeKeys(group, parentKey)}>
       <Typography.Title level={parentKey ? 4 : 2}>{group.name}</Typography.Title>
-      {group.children.map((el) =>
+      {group.children.map((el, index) =>
         isGroup(el) ? (
-          <SettingsGroup key={el.key} group={el} parentKey={mergeKeys(group, parentKey)} />
+          <SettingsGroup
+            key={el.key}
+            group={el}
+            parentKey={mergeKeys(group, parentKey)}
+            onUpdate={(changed) => update(index, changed)}
+          />
         ) : (
-          <Setting key={el.key} setting={el} parentKey={mergeKeys(group, parentKey)} />
+          <Setting
+            key={el.key}
+            setting={el}
+            parentKey={mergeKeys(group, parentKey)}
+            onUpdate={(changed) => update(index, changed)}
+          />
         ),
       )}
     </div>
@@ -114,12 +156,14 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({
 }) => {
   const { registerSection, setPriority } = useSettingsPageStore();
 
+  const [upToDateGroup, setUpToDateGroup] = useState(group);
+
   useEffect(() => {
     registerSection(sectionName, group);
     setPriority(sectionName, priority);
   }, [registerSection, setPriority, sectionName, priority, group]);
 
-  return <SettingsGroup key={group.key} group={group} />;
+  return <SettingsGroup key={group.key} group={upToDateGroup} onUpdate={setUpToDateGroup} />;
 };
 
 export default SettingsSection;

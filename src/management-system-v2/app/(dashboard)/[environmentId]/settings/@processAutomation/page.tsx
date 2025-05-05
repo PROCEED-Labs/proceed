@@ -1,7 +1,12 @@
-import { SettingGroup } from '../type-util';
+import { Setting, SettingGroup } from '../type-util';
 import SettingsSection from '../settings-section';
+import { env } from '@/lib/env-vars';
+import { populateSpaceSettingsGroup } from '@/lib/data/db/space-settings';
+import { getCurrentEnvironment } from '@/components/auth';
 
-const Page = async () => {
+const Page = async ({ params }: { params: { environmentId: string } }) => {
+  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) return null;
+
   const settings: SettingGroup = {
     key: 'process-automation',
     name: 'Process Automation',
@@ -48,7 +53,7 @@ const Page = async () => {
             name: 'Enabled',
             type: 'boolean',
             description: 'Controls whether this view is activated in this space.',
-            value: true,
+            value: false,
           },
         ],
       },
@@ -69,7 +74,7 @@ const Page = async () => {
             type: 'select',
             optionType: 'string',
             description: 'Controls the type of machines that are used by this space',
-            value: 'http+mqtt',
+            value: '',
             options: [
               { value: 'http', label: 'HTTP' },
               { value: 'mqtt', label: 'MQTT' },
@@ -80,6 +85,13 @@ const Page = async () => {
       },
     ],
   };
+
+  const {
+    ability,
+    activeEnvironment: { spaceId },
+  } = await getCurrentEnvironment(params.environmentId);
+
+  await populateSpaceSettingsGroup(spaceId, settings, ability);
 
   return <SettingsSection sectionName="processAutomation" group={settings} priority={900} />;
 };

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 import { env } from '@/lib/env-vars';
 import { getAvailableTaskListEntries } from '@/lib/engines/server-actions';
+import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
@@ -13,7 +14,14 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
 
   const {
     activeEnvironment: { spaceId },
+    ability,
   } = await getCurrentEnvironment(params.environmentId);
+
+  const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation', ability);
+
+  if (automationSettings.active === false || automationSettings.tasklist?.active === false) {
+    return notFound();
+  }
 
   const userTasks = await getAvailableTaskListEntries(spaceId);
 

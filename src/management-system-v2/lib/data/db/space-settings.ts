@@ -6,6 +6,40 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
 import { Record } from '@prisma/client/runtime/library';
 
+export async function getSpaceSettingsValues(
+  environmentId: string,
+  searchKey: string,
+  ability?: Ability,
+) {
+  const settings = await db.spaceSettings.findUnique({
+    where: { environmentId },
+  });
+
+  // TODO: Handle access rights
+  // const filtered =  ability ? ability.filter('view', 'Setting', settings) : settings;
+
+  const res = {} as Record<string, any>;
+
+  if (settings) {
+    Object.entries(settings.settings as Record<string, any>).forEach(([key, value]) => {
+      if (key.startsWith(searchKey + '.')) {
+        let targetObject = res;
+        const path = key.split(searchKey + '.')[1].split('.');
+
+        if (path.length) {
+          for (let i = 0; i < path.length - 1; ++i) {
+            if (targetObject[path[i]] === undefined) targetObject[path[i]] = {};
+            targetObject = targetObject[path[i]];
+          }
+          targetObject[path.at(-1) as string] = value;
+        }
+      }
+    });
+  }
+
+  return res;
+}
+
 export async function populateSpaceSettingsGroup(
   environmentId: string,
   settingsGroup: SettingGroup,
@@ -19,17 +53,6 @@ export async function populateSpaceSettingsGroup(
   // const filtered =  ability ? ability.filter('view', 'Setting', settings) : settings;
 
   if (!settings) return;
-
-  const insertValues = (settings: Setting | SettingGroup, storedSettings?: Record<string, any>) => {
-    if (!storedSettings) return;
-
-    if ('children' in settings) {
-      settings.children.forEach((child) => insertValues(child, storedSettings[child.name]));
-      return;
-    }
-
-    if (storedSettings[settings.name]) settings.value = storedSettings[settings.name];
-  };
 
   Object.entries(settings.settings as Record<string, any>).forEach(([key, value]) => {
     const path = key.split('.');

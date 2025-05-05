@@ -56,7 +56,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ children, ...sections }) =>
       <Col style={{ height: '100%', overflowY: 'auto' }} ref={scrollContainerRef} span={20}>
         {content.map((entry) => {
           const [[key, node]] = Object.entries(entry);
-          return <div key={key}>{node}</div>;
+          return (
+            <div style={{ display: key in priorities ? 'block' : 'none' }} key={key}>
+              {node}
+            </div>
+          );
         })}
       </Col>
     </Row>

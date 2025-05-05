@@ -8,14 +8,14 @@ import {
   SettingGroup as SettingGroupType,
   isGroup,
   SettingGroup,
+  mergeKeys,
 } from './type-util';
 import useSettingsPageStore from './use-settings-page-store';
 import { updateSpaceSettings } from '@/lib/data/db/space-settings';
 import { useEnvironment } from '@/components/auth-can';
 
-const mergeKeys = (setting: SettingType | SettingGroupType, parentKey?: string) => {
-  return parentKey ? `${parentKey}.${setting.key}` : setting.key;
-};
+import cn from 'classnames';
+import styles from './settings-section.module.scss';
 
 type SettingProps = {
   setting: SettingType;
@@ -40,7 +40,7 @@ const Setting: React.FC<SettingProps> = ({ setting, parentKey, onUpdate }) => {
       input = (
         <Input
           id={id}
-          style={{ maxWidth: '500px' }}
+          className={styles.SettingInput}
           value={setting.value}
           onChange={(e) => update(e.target.value)}
         />
@@ -55,7 +55,7 @@ const Setting: React.FC<SettingProps> = ({ setting, parentKey, onUpdate }) => {
       input = (
         <InputNumber
           id={id}
-          style={{ maxWidth: '500px' }}
+          className={styles.SettingInput}
           value={setting.value}
           onChange={(val) => update(val)}
         />
@@ -64,7 +64,7 @@ const Setting: React.FC<SettingProps> = ({ setting, parentKey, onUpdate }) => {
     case 'select':
       input = (
         <Select
-          style={{ maxWidth: '500px' }}
+          className={styles.SettingInput}
           popupMatchSelectWidth={false}
           value={setting.value}
           options={setting.options}
@@ -76,20 +76,18 @@ const Setting: React.FC<SettingProps> = ({ setting, parentKey, onUpdate }) => {
   const descriptionPosition = setting.type === 'boolean' ? 'right' : 'above';
   const description = setting.description && (
     <Typography.Text
-      style={{
-        marginLeft: descriptionPosition === 'right' ? '5px' : undefined,
-        marginBottom: descriptionPosition === 'above' ? '10px' : undefined,
-        display: descriptionPosition === 'above' ? 'block' : undefined,
-        color: '#969696',
-      }}
+      className={cn(
+        styles.SettingHint,
+        descriptionPosition === 'above' ? styles.Above : styles.Right,
+      )}
     >
       {setting.description}
     </Typography.Text>
   );
 
   return (
-    <div style={{ padding: '10px 0 20px 0' }}>
-      <div style={{ marginBottom: '5px' }}>
+    <div className={styles.Setting}>
+      <div className={styles.SettingLabel}>
         <label htmlFor={id}>
           <Typography.Text strong>{setting.name}</Typography.Text>
         </label>

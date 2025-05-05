@@ -1,4 +1,4 @@
-import { Setting, SettingGroup } from '../type-util';
+import { SettingGroup } from '../type-util';
 import SettingsSection from '../settings-section';
 import { env } from '@/lib/env-vars';
 import { populateSpaceSettingsGroup } from '@/lib/data/db/space-settings';

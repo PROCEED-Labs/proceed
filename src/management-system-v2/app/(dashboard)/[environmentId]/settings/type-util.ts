@@ -38,4 +38,8 @@ export function isGroup(setting: Setting | SettingGroup): setting is SettingGrou
   return (setting as SettingGroup).children !== undefined;
 }
 
+export const mergeKeys = (setting: Setting | SettingGroup, parentKey?: string) => {
+  return parentKey ? `${parentKey}.${setting.key}` : setting.key;
+};
+
 export type Settings = Record<string, SettingGroup>;

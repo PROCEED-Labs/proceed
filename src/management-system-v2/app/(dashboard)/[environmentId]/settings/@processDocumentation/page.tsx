@@ -1,6 +1,6 @@
 import { populateSpaceSettingsGroup } from '@/lib/data/db/space-settings';
 import SettingsSection from '../settings-section';
-import { Setting, SettingGroup } from '../type-util';
+import { SettingGroup } from '../type-util';
 import { getCurrentEnvironment } from '@/components/auth';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
@@ -14,6 +14,13 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
         type: 'boolean',
         description: 'Controls whether this view is activated in this space.',
         value: true,
+      },
+      {
+        key: 'active',
+        name: 'Enabled',
+        type: 'string',
+        description: 'This is just a Test 123 aksdjfklasdfjklasjdlfj;asfjl;a',
+        value: 'Some Value',
       },
       {
         key: 'list',

@@ -3,12 +3,8 @@
 import React, { useRef } from 'react';
 import { Anchor, Col, Row, AnchorProps } from 'antd';
 
-import { Setting as SettingType, SettingGroup as SettingGroupType, isGroup } from './type-util';
+import { SettingGroup as SettingGroupType, isGroup, mergeKeys } from './type-util';
 import useSettingsPageStore from './use-settings-page-store';
-
-const mergeKeys = (setting: SettingType | SettingGroupType, parentKey?: string) => {
-  return parentKey ? `${parentKey}.${setting.key}` : setting.key;
-};
 
 type SettingsPageProps = {
   [sectionName: string]: React.ReactNode;
@@ -50,7 +46,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ children, ...sections }) =>
 
   return (
     <Row style={{ height: '100%' }}>
-      <Col style={{ height: '100%' }} span={4}>
+      <Col style={{ height: '100%', overflowY: 'auto' }} span={4}>
         <Anchor items={links} getContainer={() => scrollContainerRef.current!} />
       </Col>
       <Col style={{ height: '100%', overflowY: 'auto' }} ref={scrollContainerRef} span={20}>

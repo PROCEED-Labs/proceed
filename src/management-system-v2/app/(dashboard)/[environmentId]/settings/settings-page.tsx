@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Anchor, Col, Row, AnchorProps, Form } from 'antd';
+import { Anchor, Col, Row, AnchorProps } from 'antd';
 
 import { Setting as SettingType, SettingGroup as SettingGroupType, isGroup } from './type-util';
 import useSettingsPageStore from './use-settings-page-store';
@@ -38,9 +38,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ children, ...sections }) =>
     .reduce(
       (acc, curr) => {
         const setting = settings[curr[0]];
-        return [[...acc[0], curr[1]], setting ? [...acc[1], mapToLink(setting)] : acc[1]];
+        return [
+          [...acc[0], { [curr[0]]: curr[1] }],
+          setting ? [...acc[1], mapToLink(setting)] : acc[1],
+        ];
       },
-      [[], []] as [React.ReactNode[], ReturnType<typeof mapToLink>[]],
+      [[], []] as [{ [key: string]: React.ReactNode }[], ReturnType<typeof mapToLink>[]],
     );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -51,7 +54,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ children, ...sections }) =>
         <Anchor items={links} getContainer={() => scrollContainerRef.current!} />
       </Col>
       <Col style={{ height: '100%', overflowY: 'auto' }} ref={scrollContainerRef} span={20}>
-        <Form>{...content}</Form>
+        {content.map((entry) => {
+          const [[key, node]] = Object.entries(entry);
+          return <div key={key}>{node}</div>;
+        })}
       </Col>
     </Row>
   );

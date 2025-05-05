@@ -38,8 +38,14 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
   };
 }
 
-export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = await db.user.findUnique({ where: { id: id } });
+export async function getUserById(
+  id: string,
+  opts?: { throwIfNotFound?: boolean },
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const user = await dbMutator.user.findUnique({ where: { id: id } });
 
   if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
 
@@ -62,7 +68,14 @@ export async function getUserByUsername(username: string, opts?: { throwIfNotFou
   return user as User;
 }
 
-export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
+export async function addUser(
+  inputUser: OptionalKeys<User, 'id'>,
+  tx?: Prisma.TransactionClient,
+): Promise<User> {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => addUser(inputUser, trx));
+  }
+
   const user = UserSchema.parse(inputUser);
 
   if (
@@ -77,23 +90,21 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
   try {
     const userExists = await db.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
-    await db.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.user.create({
-        data: {
-          ...user,
-          isGuest: user.isGuest,
-        },
-      });
-      await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
-      if ((await getSystemAdmins()).length === 0 && !user.isGuest)
-        await addSystemAdmin(
-          {
-            role: 'admin',
-            userId: user.id!,
-          },
-          tx,
-        );
+    await tx.user.create({
+      data: {
+        ...user,
+        isGuest: user.isGuest,
+      },
     });
+    await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+    if ((await getSystemAdmins()).length === 0 && !user.isGuest)
+      await addSystemAdmin(
+        {
+          role: 'admin',
+          userId: user.id!,
+        },
+        tx,
+      );
   } catch (error) {
     console.error('Error adding new user: ', error);
   }

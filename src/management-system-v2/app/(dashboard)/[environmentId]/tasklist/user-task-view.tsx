@@ -12,11 +12,14 @@ import {
   completeTasklistEntry,
   getTasklistEntryHTML,
   setTasklistEntryVariableValues,
+  setTasklistMilestoneValues,
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 
 import styles from './user-task-view.module.scss';
 import { TaskListEntry } from '@/lib/engines/tasklist';
+
+import { Skeleton } from 'antd';
 
 type UserTaskFormProps = {
   task?: TaskListEntry;
@@ -35,6 +38,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
             spaceId,
             task.instanceID,
             task.taskId,
+            task.attrs['proceed:fileName'],
             task.startTime,
           );
 
@@ -44,8 +48,17 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
       });
     },
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: ['user-task-html', spaceId, task?.instanceID, task?.taskId, task?.startTime],
+    queryKey: [
+      'user-task-html',
+      spaceId,
+      task?.instanceID,
+      task?.taskId,
+      task?.attrs['proceed:fileName'],
+      task?.startTime,
+    ],
   });
+
+  if (task && !html) return <Skeleton active style={{ alignSelf: 'baseline' }} />;
 
   const isCompleted = task?.state === 'COMPLETED';
   const isPaused = task?.state === 'PAUSED';
@@ -95,9 +108,18 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
                   body: { [key: string]: any },
                   query: { instanceID: string; userTaskID: string },
                 ) => {
-                  // if (path === '/tasklist/api/milestone') {
-                  // TODO: implement milestone handling
-                  // }
+                  if (path === '/tasklist/api/milestone') {
+                    wrapServerCall({
+                      fn: () =>
+                        setTasklistMilestoneValues(
+                          spaceId,
+                          query.instanceID,
+                          query.userTaskID,
+                          body,
+                        ),
+                      onSuccess: () => {},
+                    });
+                  }
                   if (path === '/tasklist/api/variable') {
                     wrapServerCall({
                       fn: () =>
@@ -107,7 +129,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
                           query.userTaskID,
                           body,
                         ),
-                      onSuccess: () => router.refresh(),
+                      onSuccess: () => {},
                     });
                   }
                 },

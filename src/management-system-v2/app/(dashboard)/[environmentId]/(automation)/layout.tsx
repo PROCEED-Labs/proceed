@@ -4,11 +4,11 @@ import { notFound } from 'next/navigation';
 import { env } from '@/lib/env-vars';
 import { getCurrentEnvironment } from '@/components/auth';
 
-type ExecutionLayoutProps = {
+type AutomationLayoutProps = {
   params: { environmentId: string };
 } & React.PropsWithChildren;
 
-const ExecutionsLayout: React.FC<ExecutionLayoutProps> = async ({ params, children }) => {
+const AutomationsLayout: React.FC<AutomationLayoutProps> = async ({ params, children }) => {
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
@@ -21,11 +21,11 @@ const ExecutionsLayout: React.FC<ExecutionLayoutProps> = async ({ params, childr
     ability,
   );
 
-  if (automationSettings.active === false || automationSettings.executions?.active === false) {
+  if (automationSettings.active === false) {
     return notFound();
   }
 
   return <>{children}</>;
 };
 
-export default ExecutionsLayout;
+export default AutomationsLayout;

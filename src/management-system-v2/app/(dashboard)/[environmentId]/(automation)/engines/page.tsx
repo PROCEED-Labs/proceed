@@ -17,19 +17,19 @@ const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ab
 };
 
 const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
+  if (!enableUseDB) {
     return notFound();
   }
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
 
-  const automationSettings = await getSpaceSettingsValues(
+  const machinesSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
-    'process-automation',
+    'process-automation.machines',
     ability,
   );
 
-  if (automationSettings.active === false || automationSettings.machines?.active === false) {
+  if (machinesSettings.active === false) {
     return notFound();
   }
 

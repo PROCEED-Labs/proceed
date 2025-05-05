@@ -16,13 +16,6 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
         value: true,
       },
       {
-        key: 'active',
-        name: 'Enabled',
-        type: 'string',
-        description: 'This is just a Test 123 aksdjfklasdfjklasjdlfj;asfjl;a',
-        value: 'Some Value',
-      },
-      {
         key: 'list',
         name: 'Process List',
         children: [

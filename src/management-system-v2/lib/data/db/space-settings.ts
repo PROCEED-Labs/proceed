@@ -61,7 +61,7 @@ export async function populateSpaceSettingsGroup(
 
     for (let i = 1; i < path.length; ++i) {
       if (!('children' in el)) return;
-      const child = el.children.find((c) => c.key == path[i]);
+      const child = el.children.find((c) => c.key == path[i]) as SettingGroup | Setting | undefined;
       if (!child) return;
       el = child;
     }

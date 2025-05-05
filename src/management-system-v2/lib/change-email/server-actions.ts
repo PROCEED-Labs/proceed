@@ -8,7 +8,7 @@ import {
   saveVerificationToken,
   getVerificationToken,
   deleteVerificationToken,
-} from '@/lib/data/db/iam/verificaiton-tokens';
+} from '@/lib/data/db/iam/verification-tokens';
 import { updateUser } from '@/lib/data/db/iam/users';
 import { sendEmail } from '../email/mailer';
 import renderSigninLinkEmail from '../email/signin-link-email';
@@ -61,7 +61,6 @@ export async function changeEmail(token: string, identifier: string, cancel: boo
   const verificationToken = await getVerificationToken(tokenParams);
   if (
     !verificationToken ||
-    !verificationToken.updateEmail ||
     verificationToken.userId !== userId ||
     !(await notExpired(verificationToken))
   )

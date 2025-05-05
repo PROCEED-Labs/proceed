@@ -45,11 +45,11 @@ import { Environment } from '@/lib/data/environment-schema';
 const markdownEditor: Promise<ToastEditorType> =
   typeof window !== 'undefined'
     ? import('@toast-ui/editor')
-        .then((mod) => mod.Editor)
-        .then((Editor) => {
-          const div = document.createElement('div');
-          return new Editor({ el: div });
-        })
+      .then((mod) => mod.Editor)
+      .then((Editor) => {
+        const div = document.createElement('div');
+        return new Editor({ el: div });
+      })
     : (Promise.resolve(null) as any);
 
 type BPMNSharedViewerProps = {
@@ -190,7 +190,7 @@ const BPMNSharedViewer = ({
     Object.fromEntries(checkedSettings.map((key) => [key, true]));
 
   // automatically scrolls the content table if a link that becomes active is not currently visible due to the table being too long
-  const handleContentTableChange = function (currentActiveLink: string) {
+  const handleContentTableChange = function(currentActiveLink: string) {
     if (contentTableRef.current) {
       const contentTableDiv = contentTableRef.current;
 

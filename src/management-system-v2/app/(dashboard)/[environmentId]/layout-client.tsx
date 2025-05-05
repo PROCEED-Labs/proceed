@@ -13,7 +13,7 @@ import {
   Modal,
   Tooltip,
 } from 'antd';
-import { AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, SettingOutlined, HomeOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
@@ -118,15 +118,23 @@ const Layout: FC<
   }
 
   if (!activeSpace.isOrganization) {
-    layoutMenuItems.push({
-      key: 'personal-space-settings',
-      label: userData?.isGuest ? (
-        <div onClick={() => setShowLoginRequest(true)}>Settings</div>
-      ) : (
-        <SpaceLink href={'/settings'}>Settings</SpaceLink>
-      ),
-      icon: <SettingOutlined />,
-    });
+    const home = {
+      key: 'personal-space-home',
+      label: 'Home',
+      icon: <HomeOutlined />,
+      children: [
+        {
+          key: 'personal-space-settings',
+          label: userData?.isGuest ? (
+            <div onClick={() => setShowLoginRequest(true)}>Settings</div>
+          ) : (
+            <SpaceLink href={'/settings'}>Settings</SpaceLink>
+          ),
+          icon: <SettingOutlined />,
+        },
+      ],
+    };
+    layoutMenuItems.push(home);
   }
 
   if (breakpoint.xs) {

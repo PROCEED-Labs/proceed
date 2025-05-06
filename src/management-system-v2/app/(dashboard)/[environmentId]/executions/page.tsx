@@ -78,7 +78,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
 
 export default async function ExecutionsPage({ params }: { params: { environmentId: string } }) {
   const msConfig = await getMSConfig();
-  console.log('Executions MSConfig', msConfig);
+
   if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }

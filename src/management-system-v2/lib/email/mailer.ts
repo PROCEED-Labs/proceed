@@ -30,7 +30,10 @@ export function sendEmail({
     return;
   }
 
-  transport.sendMail({
+  if (!env.PROCEED_PUBLIC_MAILSERVER_ACTIVE)
+    throw new Error('Email sending is not enabled, set IAM_SIGNIN_MAIL_ACTIVE to true');
+
+  return transport.sendMail({
     from: env.SMTP_MAIL_USER,
     to,
     subject,

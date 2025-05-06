@@ -25,7 +25,7 @@ if (!parsingResult.success && !onBuild) {
   process.exit(1);
 }
 
-// '_' prefix to signal that this shouldn't just be used internally for the MS Config
+// '_' prefix to signal that this should only be used internally in the ms-config "module"
 export const _env: Extract<typeof parsingResult, { success: true }>['data'] = parsingResult.success
   ? parsingResult.data
   : ({} as any);

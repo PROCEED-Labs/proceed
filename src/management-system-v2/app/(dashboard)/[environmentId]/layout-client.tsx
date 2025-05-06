@@ -47,6 +47,7 @@ const Layout: FC<
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;
     customLogo?: string;
+    disableUserDataModal?: boolean;
   }>
 > = ({
   loggedIn,
@@ -56,6 +57,7 @@ const Layout: FC<
   children,
   hideSider,
   customLogo,
+  disableUserDataModal = false,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -126,7 +128,7 @@ const Layout: FC<
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
       <SpaceContext.Provider value={activeSpace}>
-        {userData && !userData.isGuest ? (
+        {!disableUserDataModal && userData && !userData.isGuest ? (
           <AuthenticatedUserDataModal
             modalOpen={!userData.username || !userData.lastName || !userData.firstName}
             userData={userData}

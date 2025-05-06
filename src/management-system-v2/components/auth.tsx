@@ -1,8 +1,7 @@
 import { cache } from 'react';
-import { getServerSession } from 'next-auth/next';
+import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
-import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { isMember } from '@/lib/data/db/iam/memberships';
 import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import Ability from '@/lib/ability/abilityHelper';
@@ -13,6 +12,8 @@ import {
 } from '@/lib/authorization/globalRules';
 import { env } from '@/lib/env-vars';
 import * as noIamUser from '@/lib/no-iam-user';
+import { getUserById } from '@/lib/data/db/iam/users';
+import { cookies } from 'next/headers';
 
 export const getCurrentUser = cache(async () => {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
@@ -23,9 +24,23 @@ export const getCurrentUser = cache(async () => {
     };
   }
 
-  const session = await getServerSession(nextAuthOptions);
+  const session = await auth();
   const userId = session?.user.id || '';
-  const systemAdmin = await getSystemAdminByUserId(userId);
+  const [systemAdmin, user] = await Promise.all([
+    getSystemAdminByUserId(userId),
+    userId !== '' && getUserById(userId),
+  ]);
+
+  // Sign out user if the id doesn't correspond to a user in the db
+  // We need to reset the cookie that stores the user id, this isn't possible
+  // inside a server components, so we need to redirect the user to an endpoint
+  // that logs him out, this endpoint needs to csrf protected, for this we use
+  // the user's csrf token (which was added by next-auth)
+  if (userId !== '' && !user) {
+    const cookieStore = cookies();
+    const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
+    redirect(`/api/private/signout?csrfToken=${csrfToken}`);
+  }
 
   return { session, userId, systemAdmin };
 });

@@ -30,6 +30,6 @@ export const _env: Extract<typeof parsingResult, { success: true }>['data'] = pa
   ? parsingResult.data
   : ({} as any);
 
-// Change type to ReadOnlyMSConfig, such that this is only used for variables we know that come
+// Change type to EnvironmentOnlyMSConfig, such that this is only used for variables we know that come
 // from the env
 export const env = _env as EnvironmentOnlyMSConfig;

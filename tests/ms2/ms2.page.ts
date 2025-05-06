@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { mockClipboardAPI, openModal, waitForHydration } from './testUtils';
 
 export class MS2Page {
@@ -10,11 +10,14 @@ export class MS2Page {
 
   async login() {
     await mockClipboardAPI(this.page);
-    const modal = await openModal(this.page, async () => {
-      this.page.goto('/');
-    });
-    await modal.getByRole('button', { name: 'Create a Process' }).click();
-    await this.page.waitForURL('**/processes');
+    await this.page.goto('/signin?callbackUrl=/processes');
+
+    const guestSigninButton = this.page.getByRole('button', { name: 'Create a Process' });
+    await expect(guestSigninButton).toBeVisible();
+    await guestSigninButton.click();
+
+    // url that doesn't contain 'callbackUrl' but has 'processes'
+    await this.page.waitForURL(/^(?:(?!callbackUrl).)*?processes/);
   }
 
   async readClipboard(readAsText) {

@@ -11,6 +11,7 @@ export const UserTaskInputSchema = z.object({
   priority: z.number(),
   progress: z.number(),
   startTime: z.number(),
+  owner: z.string().optional(),
   endTime: z.number().nullish(),
   initialVariables: z.record(z.string(), z.any()).optional(),
   variableChanges: z.record(z.string(), z.any()).optional(),

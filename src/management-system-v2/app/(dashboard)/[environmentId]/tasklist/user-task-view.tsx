@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import cn from 'classnames';
 
@@ -14,115 +16,109 @@ import {
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 
-import styles from './tasklist.module.scss';
-import { Button, Modal, Skeleton } from 'antd';
+import styles from './user-task-view.module.scss';
+
+import { Skeleton } from 'antd';
 import { UserTask } from '@/lib/user-task-schema';
 
-type UserTaskViewProps = {
+type UserTaskFormProps = {
   task?: UserTask;
 };
 
-const UserTaskForm: React.FC<{ task: UserTask; onSubmitFailure: () => void }> = ({
-  task,
-  onSubmitFailure,
-}) => {
+const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
   const router = useRouter();
   const { spaceId } = useEnvironment();
 
-  const [html, setHtml] = useState<string | undefined>();
+  const { data: html } = useQuery({
+    queryFn: async () => {
+      if (!task) return null;
+      return wrapServerCall({
+        fn: async () => {
+          const html = await getTasklistEntryHTML(spaceId, task.taskId, task.fileName);
 
-  useEffect(() => {
-    if (task) {
-      wrapServerCall({
-        fn: () => getTasklistEntryHTML(spaceId, task.id, task.fileName),
-        onSuccess: (html) => {
-          setHtml(html);
+          return html || null;
         },
+        onSuccess: false,
       });
+    },
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
+    queryKey: [
+      'user-task-html',
+      spaceId,
+      task?.instanceID,
+      task?.taskId,
+      task?.fileName,
+      task?.startTime,
+    ],
+  });
 
-      return () => setHtml(undefined);
-    }
-  }, [spaceId, task]);
+  if (task && !html) return <Skeleton active style={{ alignSelf: 'baseline' }} />;
 
-  if (!html) return <Skeleton active style={{ alignSelf: 'baseline' }} />;
-
-  return (
-    <iframe
-      ref={(r) => {
-        if (r?.contentWindow) {
-          (r.contentWindow as any).PROCEED_DATA = {
-            post: async (path: string, body: { [key: string]: any }) => {
-              if (path === '/tasklist/api/userTask') {
-                await wrapServerCall({
-                  fn: async () => await completeTasklistEntry(spaceId, task.id, body),
-                  onSuccess: () => router.refresh(),
-                  onError: () => {
-                    onSubmitFailure();
-                    if (!task.offline) router.refresh();
-                  },
-                });
-              }
-            },
-            put: async (path: string, body: { [key: string]: any }) => {
-              if (path === '/tasklist/api/milestone') {
-                await wrapServerCall({
-                  fn: () => setTasklistMilestoneValues(spaceId, task.id, body),
-                  onSuccess: () => {},
-                });
-              }
-              if (path === '/tasklist/api/variable') {
-                await wrapServerCall({
-                  fn: () => setTasklistEntryVariableValues(spaceId, task.id, body),
-                  onSuccess: () => {},
-                });
-              }
-            },
-          };
-        }
-      }}
-      srcDoc={html}
-      style={{ width: '100%', height: '100%', border: 0 }}
-    ></iframe>
-  );
-};
-
-const UserTaskView: React.FC<UserTaskViewProps> = ({ task }) => {
-  const isCompleted = !!task?.endTime;
+  const isCompleted = task?.state === 'COMPLETED';
   const isPaused = task?.state === 'PAUSED';
-
-  const [failedToSubmit, setFailedToSubmit] = useState(false);
 
   return (
     <div
-      className={cn(styles.taskView, {
-        [styles.completed]: isCompleted,
-        [styles.paused]: isPaused,
+      className={cn(styles.TaskView, {
+        [styles.Completed]: isCompleted,
+        [styles.Paused]: isPaused,
       })}
     >
-      {task && (
-        <Modal
-          open={failedToSubmit && task.offline}
-          title="The engine is offline!"
-          onCancel={() => setFailedToSubmit(false)}
-          footer={() => [
-            <Button type="primary" key="ok" onClick={() => setFailedToSubmit(false)}>
-              Ok
-            </Button>,
-          ]}
-        >
-          The engine this user task is running on is currently not reachable. Changes you make to
-          the task are saved and can be submitted once the engine is reachable again!
-        </Modal>
-      )}
-      {task ? <UserTaskForm task={task} onSubmitFailure={() => setFailedToSubmit(true)} /> : <></>}
-      {(isCompleted || isPaused) && (
-        <div className={styles.overlay}>
-          {isCompleted && <h1>This task is completed!</h1>}
-          {isPaused && <h1>This task is paused!</h1>}
-        </div>
+      {task && html && (
+        <>
+          <iframe
+            srcDoc={html}
+            style={{ width: '100%', height: '100%', border: 0 }}
+            onLoad={(ev) => {
+              const iframe = ev.currentTarget;
+              if (!iframe.contentWindow) return;
+
+              // block the user from interacting with paused or completed user tasks while allowing scrolling of
+              // the form itself
+              if (isCompleted || isPaused) {
+                Array.from(iframe.contentWindow.document.body.getElementsByTagName('form')).forEach(
+                  (form) => {
+                    form.style.pointerEvents = 'none';
+                  },
+                );
+              }
+
+              (iframe.contentWindow as any).PROCEED_DATA = {
+                post: async (path: string, body: { [key: string]: any }) => {
+                  if (path === '/tasklist/api/userTask') {
+                    wrapServerCall({
+                      fn: () => completeTasklistEntry(spaceId, task.id, body),
+                      onSuccess: () => router.refresh(),
+                    });
+                  }
+                },
+                put: async (path: string, body: { [key: string]: any }) => {
+                  if (path === '/tasklist/api/milestone') {
+                    wrapServerCall({
+                      fn: () => setTasklistMilestoneValues(spaceId, task.id, body),
+                      onSuccess: () => {},
+                    });
+                  }
+                  if (path === '/tasklist/api/variable') {
+                    wrapServerCall({
+                      fn: () => setTasklistEntryVariableValues(spaceId, task.id, body),
+                      onSuccess: () => {},
+                    });
+                  }
+                },
+              };
+            }}
+          />
+          {(isCompleted || isPaused) && (
+            <div className={styles.overlay}>
+              {isCompleted && <h1>This task is completed!</h1>}
+              {isPaused && <h1>This task is paused!</h1>}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 };
 
-export default UserTaskView;
+export default UserTaskForm;

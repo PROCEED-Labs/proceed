@@ -134,13 +134,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           )}
           <Typography.Title level={3}>Profile data</Typography.Title>
 
-          <UserAvatar
-            user={userData}
-            avatarProps={{
-              size: 90,
-              style: { marginBottom: '1rem' },
-            }}
-          />
+          <UserAvatar user={userData} size={90} style={{ marginBottom: '1rem' }} />
 
           <div
             style={{

@@ -1,4 +1,3 @@
-import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
 import { packRules } from '@casl/ability/extra';
 import {
   AbilityRule,
@@ -17,7 +16,6 @@ import {
 } from './globalRules';
 import { Environment } from '../data/environment-schema';
 import { Role } from '../data/role-schema';
-import { env } from '../env-vars';
 
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
 
@@ -129,114 +127,6 @@ function rulesForRoles(ability: CaslAbility, userId: string) {
         });
       }
     }
-  }
-
-  return rules;
-}
-
-async function rulesForSharedResources(ability: CaslAbility, userId: string) {
-  const rules: AbilityRule[] = [];
-
-  // we have to check permissions before allowing access through shares
-  // since shares also depend on permissions granted by roles
-  for (const share of await sharedWitOrByhUser(userId)) {
-    const sharePermissions = permissionNumberToIdentifiers(share.permissions);
-
-    rules.push({
-      subject: 'Share',
-      action: 'view',
-      conditions: {
-        conditions: {
-          resourceId: { $eq: share.resourceId },
-          type: { $eq: SHARE_TYPE['USER_TO_USER'] },
-          expiredAt: { $not_expired_property: null },
-        },
-      },
-    });
-
-    rules.push({
-      subject: 'Share',
-      action: 'view',
-      conditions: {
-        conditions: {
-          resourceId: { $eq: share.resourceId },
-          type: { $eq: SHARE_TYPE['LINK_SHARING'] },
-          sharedBy: { $eq: userId },
-          expiredAt: { $not_expired_property: null },
-        },
-      },
-    });
-
-    // address each permission of the share sepparetly
-    for (const permission of sharePermissions) {
-      if (ability.can(permission, share.resourceType)) {
-        rules.push({
-          subject: share.resourceType,
-          action: sharePermissions,
-          conditions: {
-            conditions: {
-              id: { $eq: share.resourceId },
-              $: { $not_expired_value: share.expiredAt ?? null },
-            },
-          },
-        });
-      }
-    }
-  }
-
-  return rules;
-}
-
-function rulesForShares(resource: ResourceType, userId: string, expiration: string | null) {
-  const rules: AbilityRule[] = [];
-
-  // owner of the share
-  rules.push({
-    subject: 'Share',
-    action: ['view', 'update', 'delete', 'create'],
-    conditions: {
-      conditions: {
-        resourceOwner: { $eq: userId },
-        resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration ?? null },
-      },
-      conditionsOperator: 'and',
-    },
-  });
-
-  rules.push({
-    subject: 'Share',
-    action: ['view', 'update', 'delete', 'create'],
-    conditions: {
-      conditions: {
-        sharedBy: { $eq: userId },
-        resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration ?? null },
-      },
-      conditionsOperator: 'and',
-    },
-  });
-
-  return rules;
-}
-
-function rulesForAlteringShares(ability: CaslAbility) {
-  const rules: AbilityRule[] = [];
-
-  for (const resource of sharedResources.values()) {
-    if (ability.can('admin', resource)) continue;
-
-    rules.push({
-      inverted: true,
-      subject: resource,
-      action: ['create', 'delete', 'update'],
-      conditions: {
-        conditions: {
-          resourceType: { $eq_string_case_insensitive: resource },
-          permissions: { $gte: adminPermissions },
-        },
-      },
-    });
   }
 
   return rules;

@@ -1,6 +1,8 @@
 'use client';
-
+import React, { ReactNode } from 'react';
 import { Card, Col, Progress, Row, Tooltip, Typography } from 'antd';
+import cn from 'classnames';
+
 import {
   UserOutlined,
   CalendarOutlined,
@@ -12,6 +14,24 @@ import {
 import { generateDateString } from '@/lib/utils';
 import { transformMilisecondsToDurationValues } from '@/lib/helpers/timeHelper';
 import { UserTask } from '@/lib/user-task-schema';
+import styles from './userTaskCard.module.scss';
+
+type CardLineEntry = { icon: ReactNode; text: ReactNode };
+const CardInfoLine: React.FC<{ entries: CardLineEntry[] }> = ({ entries }) => {
+  return (
+    <>
+      <Row gutter={16}>
+        {entries.map(({ icon, text }, index) => (
+          <Col span={10} key={index}>
+            <span style={{ fontSize: '0.75rem' }}>
+              {icon} {text}
+            </span>
+          </Col>
+        ))}
+      </Row>
+    </>
+  );
+};
 
 const UserTaskCard = ({
   userTaskData,
@@ -39,11 +59,35 @@ const UserTaskCard = ({
     (durationValues.hours ? `${durationValues.hours}h, ` : '') +
     `${durationValues.minutes}min`;
 
+  const lines = [
+    [
+      { icon: <UserOutlined />, text: userTaskData.owner },
+      {
+        icon: <CalendarOutlined />,
+        text: generateDateString(new Date(userTaskData.startTime), true),
+      },
+    ],
+    [
+      { icon: <StarOutlined />, text: `${userTaskData.priority}/10` },
+      {
+        icon: <FieldTimeOutlined />,
+        text: durationString,
+      },
+    ],
+    [
+      { icon: <QuestionCircleOutlined />, text: userTaskData.state },
+      {
+        icon: <ClockCircleOutlined />,
+        text: generateDateString(new Date(userTaskData.endTime || 0), true),
+      },
+    ],
+  ] as CardLineEntry[][];
+
   return (
     <Card
       title={
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className={styles.UserTaskCardTitle}>
             <span>{userTaskData.name}</span>
             <Progress type="circle" percent={userTaskData.progress} size={30} />
           </div>
@@ -57,68 +101,18 @@ const UserTaskCard = ({
         </>
       }
       bordered={false}
-      style={{
-        width: '100%',
-        cursor: 'pointer',
-        backgroundColor: selected ? '#eae9e9' : '',
-      }}
-      className="shaded-card"
-      styles={{
-        body: {
-          paddingInline: '0.75rem',
-          paddingBlock: '0.5rem',
-          whiteSpace: 'nowrap',
-        },
-        header: {
-          paddingInline: '0.75rem',
-          paddingBlock: '0.25rem',
-          fontSize: '0.875rem',
-          minHeight: '1rem',
-        },
+      className={cn(styles.UserTaskCard, { [styles.selected]: selected })}
+      classNames={{
+        body: styles.UserTaskCardBody,
+        header: styles.UserTaskCardHeader,
       }}
       onClick={() => {
         clickHandler?.();
       }}
     >
-      <Row gutter={16}>
-        <Col span={10}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <UserOutlined></UserOutlined> {''}
-          </span>
-        </Col>
-        <Col span={14}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <CalendarOutlined></CalendarOutlined>
-            {' ' + generateDateString(new Date(userTaskData.startTime), true)}
-          </span>
-        </Col>
-      </Row>
-      <Row gutter={16}>
-        <Col span={10}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <StarOutlined></StarOutlined> {userTaskData.priority}/10
-          </span>
-        </Col>
-        <Col span={14}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <FieldTimeOutlined></FieldTimeOutlined>
-            {durationString}
-          </span>
-        </Col>
-      </Row>
-      <Row gutter={16}>
-        <Col span={10}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <QuestionCircleOutlined></QuestionCircleOutlined> {userTaskData.state}
-          </span>
-        </Col>
-        <Col span={14}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <ClockCircleOutlined></ClockCircleOutlined>
-            {endTimeString}
-          </span>
-        </Col>
-      </Row>
+      {lines.map((line, index) => (
+        <CardInfoLine entries={line} key={index} />
+      ))}
     </Card>
   );
 };

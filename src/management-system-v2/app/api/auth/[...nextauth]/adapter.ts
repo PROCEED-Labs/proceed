@@ -5,12 +5,11 @@ import {
   updateUser,
   addOauthAccount,
   getOauthAccountByProviderId,
-} from '@/lib/data/DTOs';
+} from '@/lib/data/db/iam/users';
 import {
   saveVerificationToken,
   deleteVerificationToken,
-  getVerificationToken,
-} from '@/lib/data/legacy/verification-tokens';
+} from '@/lib/data/db/iam/verification-tokens';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { type Adapter, AdapterAccount, VerificationToken } from 'next-auth/adapters';
 
@@ -19,8 +18,8 @@ const Adapter = {
     user: Omit<AuthenticatedUser, 'id'> | { email: string; emailVerified: Date },
   ) => {
     return addUser({
-      image: null,
       ...user,
+      profileImage: 'image' in user && typeof user.image === 'string' ? user.image : null,
       isGuest: false,
       emailVerifiedOn: null,
     });
@@ -35,14 +34,16 @@ const Adapter = {
     return getUserByEmail(email) ?? null;
   },
   createVerificationToken: async (token: VerificationToken) => {
-    return saveVerificationToken(token);
+    return await saveVerificationToken(token);
   },
   useVerificationToken: async (params: { identifier: string; token: string }) => {
-    // next-auth checks if the token is expired
-    const token = getVerificationToken(params);
-    if (token) deleteVerificationToken(params);
-
-    return token ?? null;
+    try {
+      // next-auth checks if the token is expired
+      const token = await deleteVerificationToken(params);
+      return token;
+    } catch (_) {
+      return null;
+    }
   },
   linkAccount: async (account: AdapterAccount) => {
     return addOauthAccount({

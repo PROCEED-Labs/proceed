@@ -1,6 +1,5 @@
 import 'server-only';
 import nodemailer from 'nodemailer';
-import { env } from '../ms-config/env-vars';
 import { getMSConfig } from '../ms-config/ms-config';
 
 let transport: nodemailer.Transporter;
@@ -16,14 +15,14 @@ export async function sendEmail({
   html: string;
   text: string;
 }) {
-  if (env.NODE_ENV === 'development') {
+  const msConfig = await getMSConfig();
+
+  if (msConfig.NODE_ENV === 'development') {
     console.log(`Email sent to ${to} with subject: ${subject} and text: ${text}`);
     return;
   }
 
-  const msConfig = await getMSConfig();
-
-  if (env.NODE_ENV === 'production' && !transport)
+  if (msConfig.NODE_ENV === 'production' && !transport)
     transport = nodemailer.createTransport({
       host: msConfig.SMTP_MAIL_HOST,
       secure: true,

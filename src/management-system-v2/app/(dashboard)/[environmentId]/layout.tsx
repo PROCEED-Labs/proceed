@@ -34,7 +34,6 @@ import { RemoveReadOnly } from '@/lib/typescript-utils';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { env } from '@/lib/ms-config/env-vars';
 
 const DashboardLayout = async ({
   children,
@@ -172,7 +171,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (systemAdmin && env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) {
     layoutMenuItems.push({
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,

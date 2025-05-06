@@ -4,6 +4,7 @@ import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
   InstanceInfo,
   deployProcess as _deployProcess,
+  DeployedProcessInfo,
   getDeployments,
   removeDeploymentFromMachines,
 } from './deployment';
@@ -28,13 +29,16 @@ import {
   stopInstanceOnMachine,
 } from './instances';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
+
 import {
   completeTasklistEntryOnMachine,
   getTaskListFromMachine,
-  getTasklistEntryHTMLFromMachine,
+  getUserTaskFileFromMachine,
   setTasklistEntryVariableValuesOnMachine,
+  setTasklistEntryMilestoneValuesOnMachine,
 } from './tasklist';
 import { truthyFilter } from '../typescript-utils';
+import { inlineUserTaskData } from '@proceed/user-task-helper';
 
 async function getCorrectTargetEngines(
   spaceId: string,
@@ -179,38 +183,61 @@ export async function getTasklistEntryHTML(
   spaceId: string,
   instanceId: string,
   userTaskId: string,
+  filename: string,
   startTime: number,
 ) {
   try {
     if (!enableUseDB)
       throw new Error('getAvailableTaskListEntries only available with enableUseDB');
 
-    // find the engine the user task is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
-      const deployments = await getDeployments([engine]);
+    const definitionId = instanceId.split('-_')[0];
 
-      const instance = deployments
-        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
-        ?.instances.find((i) => i.processInstanceId === instanceId);
+    let engines = await getCorrectTargetEngines(spaceId);
+    let deployments = await asyncMap(engines, async (engine) => {
+      return [engine, await getDeployments([engine])] as [Engine, DeployedProcessInfo[]];
+    });
+    deployments = deployments.filter(([_, ds]) => {
+      if (!ds) return false;
 
-      if (!instance) return false;
+      return ds.some((d) => {
+        const instance = d.instances.find((i) => i.processInstanceId === instanceId);
 
-      const userTaskIsCurrentlyRunning = instance.tokens.some(
-        (token) =>
-          token.currentFlowElementId === userTaskId &&
-          token.currentFlowElementStartTime === startTime,
-      );
+        if (!instance) return false;
 
-      const userTaskWasCompleted = instance.log.some(
-        (entry) => entry.flowElementId === userTaskId && entry.startTime === startTime,
-      );
+        const userTaskIsCurrentlyRunning = instance.tokens.some(
+          (token) =>
+            token.currentFlowElementId === userTaskId &&
+            token.currentFlowElementStartTime === startTime,
+        );
 
-      return userTaskIsCurrentlyRunning || userTaskWasCompleted;
+        const userTaskWasCompleted = instance.log.some(
+          (entry) => entry.flowElementId === userTaskId && entry.startTime === startTime,
+        );
+
+        return userTaskIsCurrentlyRunning || userTaskWasCompleted;
+      });
     });
 
-    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+    if (!deployments.length)
+      throw new Error('Failed to find the engine the user task is running on!');
 
-    return await getTasklistEntryHTMLFromMachine(engines[0], instanceId, userTaskId, startTime);
+    const html = await getUserTaskFileFromMachine(deployments[0][0], definitionId, filename);
+
+    const deployment = deployments[0][1].find((d) => d.definitionId === definitionId)!;
+    const instance = deployment.instances.find((i) => i.processInstanceId === instanceId)!;
+    const version = deployment.versions.find((v) => v.versionId === instance.processVersion)!;
+    const userTasks = await getTaskListFromMachine(deployments[0][0]);
+    const userTask = userTasks.find(
+      (uT) => uT.instanceID === instanceId && uT.taskId === userTaskId && uT.startTime == startTime,
+    );
+
+    if (!userTask) throw new Error('Could not fetch user task data!');
+    return await inlineUserTaskData(
+      version.bpmn,
+      html,
+      { ...userTask, id: userTask.taskId },
+      instance,
+    );
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -243,6 +270,38 @@ export async function setTasklistEntryVariableValues(
     if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
 
     await setTasklistEntryVariableValuesOnMachine(engines[0], instanceId, userTaskId, variables);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function setTasklistMilestoneValues(
+  spaceId: string,
+  instanceId: string,
+  userTaskId: string,
+  milestones: { [key: string]: any },
+) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await getDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      return instance.tokens.some((token) => token.currentFlowElementId === userTaskId);
+    });
+
+    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+
+    await setTasklistEntryMilestoneValuesOnMachine(engines[0], instanceId, userTaskId, milestones);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

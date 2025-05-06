@@ -95,7 +95,7 @@ const nextAuthOptions: AuthOptions = {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,
-            image: user.image ?? undefined,
+            profileImage: user.profileImage ?? undefined,
             email: user.email ?? undefined,
             isGuest: false,
           });
@@ -204,7 +204,7 @@ if (env.NODE_ENV === 'development') {
       id: 'development-id|johndoe',
       isGuest: false,
       emailVerifiedOn: null,
-      image: null,
+      profileImage: null,
     },
     {
       username: 'admin',
@@ -214,7 +214,7 @@ if (env.NODE_ENV === 'development') {
       id: 'development-id|admin',
       isGuest: false,
       emailVerifiedOn: null,
-      image: null,
+      profileImage: null,
     },
   ] satisfies User[];
 
@@ -223,7 +223,12 @@ if (env.NODE_ENV === 'development') {
       id: 'development-users',
       name: 'Continue with Development User',
       credentials: {
-        username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
+        username: {
+          label: 'Username',
+          type: 'text',
+          placeholder: 'johndoe | admin',
+          value: 'admin',
+        },
       },
       async authorize(credentials) {
         const userTemplate = developmentUsers.find(

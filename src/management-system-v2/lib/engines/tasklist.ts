@@ -28,13 +28,7 @@ export async function getTaskListFromMachine(machine: Engine) {
     engine: machine,
   })) as TaskListEntry[];
 
-  return entries.map(({ id, instanceID, startTime, ...rest }) => ({
-    ...rest,
-    id: `${id}|${instanceID}|${startTime}`,
-    taskId: id,
-    instanceID,
-    startTime,
-  }));
+  return entries;
 }
 
 export async function activateUserTask(

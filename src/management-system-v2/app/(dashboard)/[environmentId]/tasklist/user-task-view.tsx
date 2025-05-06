@@ -34,7 +34,7 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
       if (!task) return null;
       return wrapServerCall({
         fn: async () => {
-          const html = await getTasklistEntryHTML(spaceId, task.taskId, task.fileName);
+          const html = await getTasklistEntryHTML(spaceId, task.id, task.fileName);
 
           return html || null;
         },

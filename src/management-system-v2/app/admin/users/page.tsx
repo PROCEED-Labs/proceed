@@ -7,7 +7,7 @@ import UserTable from './user-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
 import { UserHasToDeleteOrganizationsError } from '@/lib/data/db/iam/users';
-import { env } from '@/lib/env-vars';
+import { env } from '@/lib/ms-config/env-vars';
 
 async function deleteUsers(userIds: string[]) {
   'use server';

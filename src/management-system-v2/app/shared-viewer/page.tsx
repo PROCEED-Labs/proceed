@@ -19,8 +19,8 @@ import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
 import { SettingsOption } from './settings-modal';
-import { env } from '@/lib/env-vars';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { env } from '@/lib/ms-config/env-vars';
 
 interface PageProps {
   searchParams: {

@@ -6,10 +6,10 @@ import { headers } from 'next/headers';
 import { Environment } from '../data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
-import { env } from '@/lib/env-vars';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import Ability from '../ability/abilityHelper';
 import { UserErrorType, userError } from '../user-error';
+import { env } from '../ms-config/env-vars';
 
 export interface TokenPayload {
   processId: string | string[];

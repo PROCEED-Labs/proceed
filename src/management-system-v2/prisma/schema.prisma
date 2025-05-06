@@ -239,3 +239,8 @@ model VerificationToken {
   userId     String? /// If this is set, then the token is for an email change and the idenrtifier is the new email
 }
   
+// Global config for the MS, this table should only have one entry
+model MSConfig { 
+  id      Int   @id @default(0) 
+  config  Json
+}

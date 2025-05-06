@@ -92,7 +92,7 @@ export async function writeDefaultMSConfig(force = false) {
 
 export async function updateMSConfig(config: Record<keyof ConfigurableMSConfig, string>) {
   // Throws an error if a key has a wrong value or if a key is not in the schema
-  // This should also ensure that the all config values are strings
+  // This should also ensure that all config values are strings
   configurableMSConfigSchemaStrict.parse(config);
 
   const dbConfig = await db.mSConfig.findFirst({ select: { config: true } });

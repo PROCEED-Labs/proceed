@@ -2,135 +2,135 @@
  * An object containing information about a user task execution
  */
 export type UserTaskInfo = {
-    /**
-     * - the id of the user task
-     */
-    id: string;
-    /**
-     * - the time at which execution of the element started
-     */
-    startTime: number;
-    /**
-     * - the time at which execution of the element ended
-     */
-    endTime?: number;
-    /**
-     * - the current execution state of the user task
-     */
-    state: string;
-    /**
-     * - the values of the milestones of the user task
-     */
-    milestones?: {
-        [key: string]: number;
-    };
-    /**
-     * - the variables that were changed by the user task
-     */
-    variableChanges?: {
-        [key: string]: any;
-    };
+  /**
+   * - the id of the user task
+   */
+  id: string;
+  /**
+   * - the time at which execution of the element started
+   */
+  startTime: number;
+  /**
+   * - the time at which execution of the element ended
+   */
+  endTime?: number;
+  /**
+   * - the current execution state of the user task
+   */
+  state: string;
+  /**
+   * - the values of the milestones of the user task
+   */
+  milestones?: {
+    [key: string]: number;
+  };
+  /**
+   * - the variables that were changed by the user task
+   */
+  variableChanges?: {
+    [key: string]: any;
+  };
 };
 /**
  * An object containing information about a token in an instance
  */
 export type TokenInfo = {
-    /**
-     * - the id of the token
-     */
-    tokenId: string;
-    /**
-     * - the state the token is in
-     */
-    state: string;
-    /**
-     * - the flow element the token resides on
-     */
-    currentFlowElementId: string;
-    /**
-     * - the time the current execution of the current flow element started
-     */
-    currentFlowElementStartTime: number;
-    /**
-     * - the values of variables changed during the tokens execution that are not yet committed to the instance
-     */
-    intermediateVariablesState?: {
-        [key: string]: any;
-    };
+  /**
+   * - the id of the token
+   */
+  tokenId: string;
+  /**
+   * - the state the token is in
+   */
+  state: string;
+  /**
+   * - the flow element the token resides on
+   */
+  currentFlowElementId: string;
+  /**
+   * - the time the current execution of the current flow element started
+   */
+  currentFlowElementStartTime: number;
+  /**
+   * - the values of variables changed during the tokens execution that are not yet committed to the instance
+   */
+  intermediateVariablesState?: {
+    [key: string]: any;
+  };
 };
 /**
  * An object containing information about a token in an instance
  */
 export type VariableInfo = {
-    /**
-     * - the value of the variable
-     */
-    value: any;
-    log: {
-        changedTime: number;
-        changedBy: string;
-        oldValue?: any;
-    }[];
+  /**
+   * - the value of the variable
+   */
+  value: any;
+  log: {
+    changedTime: number;
+    changedBy: string;
+    oldValue?: any;
+  }[];
 };
 /**
  * An object containing information about already executed flow nodes
  */
 export type LogEntry = {
-    /**
-     * - id of the executed element
-     */
-    flowElementId: string;
-    /**
-     * - id of the token that activated the element
-     */
-    tokenId: string;
-    /**
-     * - the with which the execution of the element ended
-     */
-    executionState: string;
-    /**
-     * - the time at which execution of the element started
-     */
-    startTime: number;
-    /**
-     * - the time at which execution of the element ended
-     */
-    endTime: number;
+  /**
+   * - id of the executed element
+   */
+  flowElementId: string;
+  /**
+   * - id of the token that activated the element
+   */
+  tokenId: string;
+  /**
+   * - the with which the execution of the element ended
+   */
+  executionState: string;
+  /**
+   * - the time at which execution of the element started
+   */
+  startTime: number;
+  /**
+   * - the time at which execution of the element ended
+   */
+  endTime: number;
 };
 /**
  * An object containing information about a process execution
  */
 export type InstanceInfo = {
-    /**
-     * - the id of the process that is being executed
-     */
-    processId: string;
-    /**
-     * - the id of the instance
-     */
-    processInstanceId: string;
-    /**
-     * - the time the instance was started
-     */
-    globalStartTime: number;
-    /**
-     * - the states of the tokens in the instance
-     */
-    instanceState: string[];
-    /**
-     * - the tokens currently existing in the instance
-     */
-    tokens: TokenInfo[];
-    /**
-     * - the variables in the instance (state and change log)
-     */
-    variables: {
-        [key: string]: VariableInfo;
-    };
-    /**
-     * - execution log with info about already executed flow nodes
-     */
-    log: LogEntry[];
+  /**
+   * - the id of the process that is being executed
+   */
+  processId: string;
+  /**
+   * - the id of the instance
+   */
+  processInstanceId: string;
+  /**
+   * - the time the instance was started
+   */
+  globalStartTime: number;
+  /**
+   * - the states of the tokens in the instance
+   */
+  instanceState: string[];
+  /**
+   * - the tokens currently existing in the instance
+   */
+  tokens: TokenInfo[];
+  /**
+   * - the variables in the instance (state and change log)
+   */
+  variables: {
+    [key: string]: VariableInfo;
+  };
+  /**
+   * - execution log with info about already executed flow nodes
+   */
+  log: LogEntry[];
 };
 /**
  * @module @proceed/user-task-helper
@@ -197,8 +197,11 @@ export type InstanceInfo = {
  * @param {InstanceInfo} instance the instance information that contains the relevant data
  * @returns {{ [key: string]: any }} the value for all variables at the time the user task was executed
  */
-export function getCorrectVariableState(userTask: UserTaskInfo, instance: InstanceInfo): {
-    [key: string]: any;
+export function getCorrectVariableState(
+  userTask: UserTaskInfo,
+  instance: InstanceInfo,
+): {
+  [key: string]: any;
 };
 /**
  * Returns the relevant milestone state for a user task that is being executed or was executed at some point in the past
@@ -208,12 +211,18 @@ export function getCorrectVariableState(userTask: UserTaskInfo, instance: Instan
  * @param {InstanceInfo} instance the instance information that contains the relevant data
  * @returns {Promise<{ id: string; name: string; description?: string; value: number; }[]>}
  */
-export function getCorrectMilestoneState(bpmn: string, userTask: UserTaskInfo, instance: InstanceInfo): Promise<{
+export function getCorrectMilestoneState(
+  bpmn: string,
+  userTask: UserTaskInfo,
+  instance: InstanceInfo,
+): Promise<
+  {
     id: string;
     name: string;
     description?: string;
     value: number;
-}[]>;
+  }[]
+>;
 /**
  * Function that replaces placeholders in html with the correct data
  *
@@ -224,4 +233,10 @@ export function getCorrectMilestoneState(bpmn: string, userTask: UserTaskInfo, i
  * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
  * @returns {string} the html with the placeholders replaced by the correct values
  */
-export function inlineUserTaskData(html: string, instanceId: string, userTaskId: string, variables: ReturnType<typeof getCorrectVariableState>, milestones: Awaited<ReturnType<typeof getCorrectMilestoneState>>): string;
+export function inlineUserTaskData(
+  html: string,
+  instanceId: string,
+  userTaskId: string,
+  variables: ReturnType<typeof getCorrectVariableState>,
+  milestones: Awaited<ReturnType<typeof getCorrectMilestoneState>>,
+): string;

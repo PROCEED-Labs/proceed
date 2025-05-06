@@ -23,6 +23,17 @@ type SettingProps = {
   onUpdate: (value: SettingType) => void;
 };
 
+let timer: ReturnType<typeof setTimeout>;
+let changes: Record<string, any> = {};
+const debouncedSettingsUpdate = (spaceId: string, key: string, value: any) => {
+  clearTimeout(timer);
+  changes[key] = value;
+  timer = setTimeout(() => {
+    updateSpaceSettings(spaceId, changes);
+    changes = {};
+  }, 1000);
+};
+
 const Setting: React.FC<SettingProps> = ({ setting, parentKey, onUpdate }) => {
   const id = useId();
 
@@ -32,7 +43,7 @@ const Setting: React.FC<SettingProps> = ({ setting, parentKey, onUpdate }) => {
 
   const update = async (value: any) => {
     onUpdate({ ...setting, value });
-    await updateSpaceSettings(spaceId, mergeKeys(setting, parentKey), value);
+    debouncedSettingsUpdate(spaceId, mergeKeys(setting, parentKey), value);
   };
 
   switch (setting.type) {

@@ -72,8 +72,7 @@ export async function populateSpaceSettingsGroup(
 
 export async function updateSpaceSettings(
   environmentId: string,
-  key: string,
-  data: any,
+  data: Record<string, any>,
   ability?: Ability,
 ) {
   // TODO: Handle access rights
@@ -85,7 +84,7 @@ export async function updateSpaceSettings(
 
   if (!existingSettings) {
     await db.spaceSettings.create({
-      data: { environmentId, settings: { [key]: data } },
+      data: { environmentId, settings: data },
     });
 
     return;
@@ -96,7 +95,7 @@ export async function updateSpaceSettings(
       environmentId,
     },
     data: {
-      settings: { ...(existingSettings.settings as Record<string, any>), [key]: data },
+      settings: { ...(existingSettings.settings as Record<string, any>), ...data },
     },
   });
 }

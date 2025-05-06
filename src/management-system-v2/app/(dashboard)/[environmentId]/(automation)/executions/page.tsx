@@ -1,6 +1,5 @@
 import Content from '@/components/content';
 import { getCurrentEnvironment } from '@/components/auth';
-import { notFound } from 'next/navigation';
 import DeploymentsView from './deployments-view';
 import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/folders';
 import { getUsersFavourites } from '@/lib/data/users';
@@ -11,7 +10,6 @@ import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engine
 import { isUserErrorResponse } from '@/lib/user-error';
 import { Skeleton } from 'antd';
 import { Suspense } from 'react';
-import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
   deployments: T[],
@@ -76,13 +74,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
   );
 }
 
-export default async function ExecutionsPage({ params }: { params: { environmentId: string } }) {
-  const msConfig = await getMSConfig();
-
-  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
-    return notFound();
-  }
-
+export default function ExecutionsPage({ params }: { params: { environmentId: string } }) {
   return (
     <Content title="Executions">
       <Suspense fallback={<Skeleton active />}>

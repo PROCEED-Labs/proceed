@@ -143,6 +143,7 @@ model Space {
   processes          Process[]
   roles              Role[]
   engines            Engine[]
+  settings           SpaceSettings? @relation("spaceSettings")
 
   @@map("space")
 }
@@ -229,6 +230,15 @@ model Engine {
   lastEditedOn  DateTime @updatedAt
 
   @@map("engine")
+}
+
+model SpaceSettings {
+  id            String     @id @default(uuid())
+  space         Space      @relation(name: "spaceSettings", fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String     @unique
+  settings      Json
+
+  @@map("space_settings")
 }
 
 model VerificationToken {

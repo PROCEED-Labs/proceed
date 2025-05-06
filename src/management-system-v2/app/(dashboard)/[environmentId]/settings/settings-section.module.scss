@@ -1,0 +1,24 @@
+.Setting {
+  padding: 0 0 20px 0;
+
+  .SettingHint {
+    color: #969696;
+  }
+
+  .Above {
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .Right {
+    margin-left: 5px;
+  }
+
+  .SettingInput {
+    max-width: 500px;
+  }
+
+  .SettingLabel {
+    margin-bottom: 5px;
+  }
+}

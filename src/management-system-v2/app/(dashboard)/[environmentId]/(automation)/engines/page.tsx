@@ -6,8 +6,8 @@ import { getSpaceEngines } from '@/lib/data/db/space-engines';
 import { getCurrentEnvironment } from '@/components/auth';
 import Ability from '@/lib/ability/abilityHelper';
 import { Suspense } from 'react';
-import { enableUseDB } from 'FeatureFlags';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ability }) => {
   const engines = await getSpaceEngines(spaceId, ability);
@@ -17,11 +17,19 @@ const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ab
 
 const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
-    return notFound();
-  }
+  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+
+  const machinesSettings = await getSpaceSettingsValues(
+    activeEnvironment.spaceId,
+    'process-automation.machines',
+    ability,
+  );
+
+  if (machinesSettings.active === false) {
+    return notFound();
+  }
 
   return (
     <Content title="Engines">

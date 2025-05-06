@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getAvailableTaskListEntries } from '@/lib/engines/server-actions';
+import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
@@ -14,7 +15,14 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
 
   const {
     activeEnvironment: { spaceId },
+    ability,
   } = await getCurrentEnvironment(params.environmentId);
+
+  const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation', ability);
+
+  if (automationSettings.active === false || automationSettings.tasklist?.active === false) {
+    return notFound();
+  }
 
   const userTasks = await getAvailableTaskListEntries(spaceId);
 

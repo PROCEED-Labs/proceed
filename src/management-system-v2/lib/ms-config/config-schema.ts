@@ -7,7 +7,7 @@ import { resources } from '@/lib/ability/caslAbility';
 
 // NOTE: order of default and optional matter, it's best not to mix them
 // default.optional -> input: undefined = output: undefined
-// optional.default -> input: undefined = output: default valuea
+// optional.default -> input: undefined = output: default value
 
 export const mSConfigEnvironmentOnlyKeys = [
   'NEXTAUTH_URL',

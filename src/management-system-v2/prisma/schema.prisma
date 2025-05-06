@@ -233,9 +233,8 @@ model Engine {
 }
 
 model SpaceSettings {
-  id            String     @id @default(uuid())
+  environmentId String     @id @unique
   space         Space      @relation(name: "spaceSettings", fields: [environmentId], references: [id], onDelete: Cascade)
-  environmentId String     @unique
   settings      Json
 
   @@map("space_settings")

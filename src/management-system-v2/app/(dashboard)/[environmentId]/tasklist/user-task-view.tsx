@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import cn from 'classnames';
 
@@ -14,9 +16,8 @@ import {
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 
-import styles from './tasklist.module.scss';
+import styles from './user-task-view.module.scss';
 import { TaskListEntry } from '@/lib/engines/tasklist';
-import { useQuery } from '@tanstack/react-query';
 
 import { Skeleton } from 'antd';
 
@@ -64,9 +65,9 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
 
   return (
     <div
-      className={cn(styles.taskView, {
-        [styles.completed]: isCompleted,
-        [styles.paused]: isPaused,
+      className={cn(styles.TaskView, {
+        [styles.Completed]: isCompleted,
+        [styles.Paused]: isPaused,
       })}
     >
       {html && (
@@ -77,6 +78,16 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
             onLoad={(ev) => {
               const iframe = ev.currentTarget;
               if (!iframe.contentWindow) return;
+
+              // block the user from interacting with paused or completed user tasks while allowing scrolling of
+              // the form itself
+              if (isCompleted || isPaused) {
+                Array.from(iframe.contentWindow.document.body.getElementsByTagName('form')).forEach(
+                  (form) => {
+                    form.style.pointerEvents = 'none';
+                  },
+                );
+              }
 
               (iframe.contentWindow as any).PROCEED_DATA = {
                 post: async (

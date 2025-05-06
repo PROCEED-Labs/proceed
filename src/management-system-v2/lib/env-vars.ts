@@ -45,7 +45,7 @@ const environmentVariables = {
     MQTT_BASETOPIC: z.string().optional(),
 
     PROCEED_PUBLIC_IAM_ACTIVATE: z.string().transform(boolParser).optional(),
-    PROCEED_PUBLIC_MAILSERVER_ACTIVE: z.coerce.boolean().optional(),
+    PROCEED_PUBLIC_MAILSERVER_ACTIVE: z.string().transform(boolParser).optional(),
     PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE: z
       .string()
       .optional()

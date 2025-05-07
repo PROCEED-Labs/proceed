@@ -1,9 +1,11 @@
 'use client';
 
 import {
+  Badge,
   Button,
   Grid,
   Row,
+  Space,
   TableColumnType,
   TableColumnsType,
   TableProps,
@@ -48,6 +50,7 @@ import { PiNotePencil } from 'react-icons/pi';
 import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
 import usePotentialOwnerStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-potentialOwner-store';
+import ReleaseTag from './process-release-tag';
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -382,23 +385,49 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               ''
             ) : (
               <>
-                <Tooltip title="No Version released, yet.">
-                  <Tag>None</Tag>
-                </Tooltip>
+                {/* Latest */}
                 <Tooltip title="The latest version is released.">
-                  <Tag color="green">Latest</Tag>
+                  <Badge status="success" count=" " style={{ backgroundColor: '#52c41a' }} />
                 </Tooltip>
+                {/* None */}
+                <Tooltip title="No Version released, yet.">
+                  <Badge
+                    status="default"
+                    count=" "
+                    style={{
+                      backgroundColor: '#bfbfbf',
+                    }}
+                  />
+                </Tooltip>
+                {/* Old */}
                 <Tooltip title="The currently released version is not the latest (i.e. a newer version is available).">
-                  <Tag color="orange">Old</Tag>
+                  <Badge
+                    status="warning"
+                    count=" "
+                    style={{
+                      backgroundColor: '#faad14',
+                    }}
+                  />
                 </Tooltip>
               </>
             );
 
           return (
             <>
-              <ListEntryLink data={item} tooltip={false}>
-                {cellValue}
-              </ListEntryLink>
+              <div
+                style={{
+                  width: 'auto',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span />
+                <ListEntryLink data={item} tooltip={false}>
+                  {cellValue}
+                </ListEntryLink>
+                <span />
+              </div>
             </>
           );
         },

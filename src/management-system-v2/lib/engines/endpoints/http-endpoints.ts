@@ -28,6 +28,8 @@ export async function httpRequest(
     return response.json();
   } else if (
     contentType.includes('text/plain') ||
+    contentType.includes('text/javascript') ||
+    contentType.includes('application/javascript') ||
     contentType.includes('application/xml') ||
     contentType.includes('text/xml')
   ) {

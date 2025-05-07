@@ -80,9 +80,8 @@ export function deepEquals(
 
     for (let i = 0; i < a.length; i++) {
       const result = deepEquals(a[i], b[i], `${path}[${i}]`, verbose);
-      if (result) {
-        return verbose ? result : false;
-      }
+      if (verbose && result) return result;
+      else if (!verbose && !result) return false;
     }
 
     return verbose ? null : true; // Arrays are equal
@@ -109,9 +108,8 @@ export function deepEquals(
     // Recursively compare all keys and values
     for (let key of aKeys) {
       const result = deepEquals(a[key], b[key], path ? `${path}.${key}` : key, verbose);
-      if (result) {
-        return verbose ? result : false;
-      }
+      if (verbose && result) return result;
+      else if (!verbose && !result) return false;
     }
 
     return verbose ? null : true; // Objects are equal

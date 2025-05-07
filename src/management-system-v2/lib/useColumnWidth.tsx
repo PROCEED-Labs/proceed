@@ -13,8 +13,8 @@ import { Resizable } from 'react-resizable';
 import styles from './useColumnWidth.module.scss';
 import classNames from 'classnames';
 
-export const useResizeableColumnWidth = (
-  columns: NonNullable<TableProps['columns']>,
+export const useResizeableColumnWidth = <T extends any>(
+  columns: NonNullable<TableProps<T>['columns']>,
   preferenceKey: string,
   notResizeabel: string[] = [],
   minWidth: number = 150,
@@ -64,7 +64,7 @@ export const useResizeableColumnWidth = (
   useEffect(() => {
     if (!hydrated) return;
 
-    /* This should only run if the length of the arrays is dfferent */
+    /* This should only run if the length of the arrays is different */
     if (columnsInPreferences.length === resizeableColumns.length) return;
 
     const newColumns = computeNewColumns();
@@ -144,8 +144,8 @@ export const useResizeableColumnWidth = (
         const newWidth = Math.max(thWidth, minWidth);
 
         /* Change state */
-        /* Note: changing the preferences should suffice (if it triggers a state change aswell), however, changing the state here seems to be smoother */
-        /* Therefore only column selection chaneges in the localstorage are changing the state (after hydration) */
+        /* Note: changing the preferences should suffice (if it triggers a state change as well), however, changing the state here seems to be smoother */
+        /* Therefore only column selection changes in the localstorage are changing the state (after hydration) */
         setResizeableColumns((old) => {
           const newWidths = [...old];
           // @ts-ignore
@@ -268,7 +268,9 @@ const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
     const widths = getWidthsOfInnerElements(containerRef.current);
     const innerWidth =
       containerRef.current.getClientRects()[0]
-        .width; /* This is the widht, without padding and border (i.e. the actual width its children can fill) */
+        ?.width; /* This is the width, without padding and border (i.e. the actual width its children can fill) */
+
+    if (innerWidth === undefined) return;
 
     if (widths.some((w) => w > innerWidth)) {
       setOverFlowing(true);
@@ -336,7 +338,7 @@ function getWidthsOfInnerElements(element: HTMLElement | Element) {
   /* Append width of elements, that are next to each other */
   widths.push(inlineChildrenWidth);
 
-  /* Append nested children recursivly */
+  /* Append nested children recursively */
   children.forEach((child) => {
     widths.push(...getWidthsOfInnerElements(child));
   });

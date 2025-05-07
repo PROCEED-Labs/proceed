@@ -11,6 +11,7 @@ import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
 import db from '@/lib/data/db';
 import { getProcess } from './process';
+import { Prisma } from '@prisma/client';
 
 export async function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolder = await db.folder.findFirst({
@@ -107,7 +108,17 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
   return folderContent;
 }
 
-export async function createFolder(folderInput: FolderInput, ability?: Ability) {
+export async function createFolder(
+  folderInput: FolderInput,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+): Promise<Folder> {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await createFolder(folderInput, ability, trx);
+    });
+  }
+
   const folder = FolderSchema.parse(folderInput);
   if (!folder.id) folder.id = v4();
 
@@ -138,7 +149,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
     if (parentFolder.environmentId !== folder.environmentId) {
       throw new Error('Parent folder is in a different environment');
     }
-    await db.folder.update({
+    await tx.folder.update({
       where: {
         id: folder.parentId,
       },
@@ -159,7 +170,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
     }
   }
 
-  const createdFolder = await db.folder.create({
+  const createdFolder = await tx.folder.create({
     data: {
       id: folder.id,
       name: folder.name,
@@ -167,7 +178,6 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
       parentId: folder.parentId,
       createdBy: folder.createdBy!,
       environmentId: folder.environmentId,
-      lastEditedOn: new Date(),
       createdOn: new Date(),
     },
   });
@@ -307,6 +317,52 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
       parentFolder: {
         connect: { id: newParentId },
       },
+      lastEditedOn: new Date(),
+    },
+  });
+}
+
+export async function moveProcess(processId: string, newParentId: string, ability?: Ability) {
+  const process = await db.process.findUnique({
+    where: { id: processId },
+  });
+
+  if (!process) throw new Error('Folder not found');
+
+  if (process.folderId === newParentId) return;
+
+  const [oldParentFolder, newParentFolder] = await Promise.all([
+    db.folder.findUnique({
+      where: { id: process.folderId },
+    }),
+
+    db.folder.findUnique({
+      where: { id: newParentId },
+    }),
+  ]);
+
+  if (!newParentFolder) throw new Error('New parent folder not found');
+
+  if (newParentFolder.environmentId !== process.environmentId)
+    throw new Error('Cannot move folder to a different environment');
+
+  // Check permissions
+  if (
+    ability &&
+    !(
+      ability.can('update', toCaslResource('Process', process)) &&
+      ability.can('update', toCaslResource('Folder', newParentFolder)) &&
+      ability.can('update', toCaslResource('Folder', oldParentFolder!))
+    )
+  ) {
+    throw new Error('Permission denied');
+  }
+
+  // Update process
+  await db.process.update({
+    where: { id: processId },
+    data: {
+      folderId: newParentId,
       lastEditedOn: new Date(),
     },
   });

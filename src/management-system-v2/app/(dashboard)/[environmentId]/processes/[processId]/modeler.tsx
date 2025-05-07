@@ -1,6 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  createContext,
+  useContext,
+} from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ModelerToolbar from './modeler-toolbar';
 import XmlEditor from './xml-editor';
@@ -8,7 +16,7 @@ import useModelerStateStore from './use-modeler-state-store';
 import { debounce, spaceURL } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { getProcessUserTaskFileMetaData, updateProcess } from '@/lib/data/processes';
+import { updateProcess } from '@/lib/data/processes';
 import { App, message } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
@@ -20,17 +28,24 @@ import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import {
   revertSoftDeleteProcessUserTask,
   softDeleteProcessUserTask,
+  revertSoftDeleteProcessScriptTask,
+  softDeleteProcessScriptTask,
   updateFileDeletableStatus,
 } from '@/lib/data/file-manager-facade';
-import { useSession } from 'next-auth/react';
+import { Process } from '@/lib/data/process-schema';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
-  process: { name: string; id: string; bpmn: string };
-  versions: { id: string; name: string; description: string; createdOn: Date }[];
+  process: Process;
 };
 
-const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
+export const CanEditContext = createContext<boolean>(true);
+
+export function useCanEdit() {
+  return useContext(CanEditContext);
+}
+
+const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
@@ -229,9 +244,13 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   }, [messageApi, subprocessId]);
 
   const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
+    if (!element.businessObject) return;
     const metaData = getMetaDataFromElement(element.businessObject);
     if (element.type === 'bpmn:UserTask' && element.businessObject.fileName) {
       softDeleteProcessUserTask(process.id, element.businessObject.fileName);
+    }
+    if (element.type === 'bpmn:ScriptTask' && element.businessObject.fileName) {
+      softDeleteProcessScriptTask(process.id, element.businessObject.fileName);
     }
     if (!metaData.overviewImage) {
       return;
@@ -244,6 +263,9 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     (element) => {
       if (element.$type === 'bpmn:UserTask' && element.fileName) {
         revertSoftDeleteProcessUserTask(process.id, element.fileName);
+      }
+      if (element.$type === 'bpmn:ScriptTask' && element.fileName) {
+        revertSoftDeleteProcessScriptTask(process.id, element.fileName);
       }
 
       const metaData = getMetaDataFromElement(element);
@@ -308,47 +330,48 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   );
 
   return (
-    <div className={styles.Modeler} style={{ height: '100%' }}>
-      {!minimized && (
-        <>
-          {loaded && (
-            <ModelerToolbar
-              processId={process.id}
-              onOpenXmlEditor={handleOpenXmlEditor}
-              versions={versions}
-              canRedo={canRedo}
-              canUndo={canUndo}
-            />
-          )}
-          {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
-          <ModelerZoombar></ModelerZoombar>
-          {!!xmlEditorBpmn && (
-            <XmlEditor
-              bpmn={xmlEditorBpmn}
-              canSave={!selectedVersionId}
-              onClose={handleCloseXmlEditor}
-              onSaveXml={handleXmlEditorSave}
-              process={process}
-              versionName={versionName}
-            />
-          )}
-        </>
-      )}
-      <BPMNCanvas
-        ref={modeler}
-        type={canEdit ? 'modeler' : 'navigatedviewer'}
-        bpmn={bpmn}
-        className={divProps.className}
-        onLoaded={onLoaded}
-        onUnload={canEdit ? onUnload : undefined}
-        onRootChange={onRootChange}
-        onChange={canEdit ? onChange : undefined}
-        onSelectionChange={onSelectionChange}
-        onZoom={onZoom}
-        onShapeRemove={onShapeRemove}
-        onShapeRemoveUndo={onShapeRemoveUndo}
-      />
-    </div>
+    <CanEditContext.Provider value={canEdit}>
+      <div className={styles.Modeler} style={{ height: '100%' }}>
+        {!minimized && (
+          <>
+            {loaded && (
+              <ModelerToolbar
+                process={process}
+                onOpenXmlEditor={handleOpenXmlEditor}
+                canRedo={canRedo}
+                canUndo={canUndo}
+              />
+            )}
+            {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
+            <ModelerZoombar></ModelerZoombar>
+            {!!xmlEditorBpmn && (
+              <XmlEditor
+                bpmn={xmlEditorBpmn}
+                canSave={!selectedVersionId}
+                onClose={handleCloseXmlEditor}
+                onSaveXml={handleXmlEditorSave}
+                process={process}
+                versionName={versionName}
+              />
+            )}
+          </>
+        )}
+        <BPMNCanvas
+          ref={modeler}
+          type={canEdit ? 'modeler' : 'navigatedviewer'}
+          bpmn={bpmn}
+          className={divProps.className}
+          onLoaded={onLoaded}
+          onUnload={canEdit ? onUnload : undefined}
+          onRootChange={onRootChange}
+          onChange={canEdit ? onChange : undefined}
+          onSelectionChange={onSelectionChange}
+          onZoom={onZoom}
+          onShapeRemove={onShapeRemove}
+          onShapeRemoveUndo={onShapeRemoveUndo}
+        />
+      </div>
+    </CanEditContext.Provider>
   );
 };
 

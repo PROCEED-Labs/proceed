@@ -276,7 +276,8 @@ test('open properties panel for element and fill property values', async ({
     .getByRole('textbox')
     .fill('#FF00AA');
 
-  await propertiesPanelPage.page.locator('.ant-popover-content').blur();
+  await propertiesPanelPage.page.locator('.ant-color-picker-trigger').first().click();
+  await expect(propertiesPanelPage.page.locator('.ant-popover-content')).not.toBeVisible();
 
   const startEvent = propertiesPanelPage.page.locator('g.djs-element circle').first();
   const fillColor = await startEvent.evaluate((element) => {
@@ -290,7 +291,7 @@ test('open properties panel for element and fill property values', async ({
 
   await propertiesPanelPage.page
     .getByRole('tooltip', { name: 'HEX' })
-    .locator('input[value="000000"]:visible')
+    .getByRole('textbox')
     .fill('#FF00AA');
 
   const strokeColor = await startEvent.evaluate((element) => {

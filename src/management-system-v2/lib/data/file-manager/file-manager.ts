@@ -28,7 +28,12 @@ let storage: Storage | null = null;
 let bucket: any = null;
 
 if (DEPLOYMENT_ENV === 'cloud') {
-  storage = new Storage({ keyFilename: process.env.GCP_KEY_PATH });
+  // Using ADC (Application Default Credentials) on Cloud Run.
+  storage = new Storage(
+    process.env.PROCEED_GCP_BUCKET_KEY_PATH
+      ? { keyFilename: process.env.PROCEED_GCP_BUCKET_KEY_PATH }
+      : undefined,
+  );
   bucket = storage.bucket(BUCKET_NAME);
 }
 

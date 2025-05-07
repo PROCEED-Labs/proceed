@@ -129,6 +129,42 @@ class Data extends System {
   }
 
   /**
+   * Return all script-tasks for given process
+   *
+   * @async
+   * @param {string} definitionId The definitionId of the process to read all script-tasks from
+   * @param {object|null} options The options for the read operation
+   */
+  async getAllScriptTasks(definitionId, options) {
+    return this.read(`${definitionId}/script-tasks/`, options);
+  }
+
+  /**
+   * Read the script for the given script-task in given process
+   *
+   * @async
+   * @param {string} definitionId The definitionId of the process to read from
+   * @param {string} fileName the fileName of the script-task
+   * @param {object|null} options The options for the read operation
+   */
+  async readScriptTaskScript(definitionId, fileName, options) {
+    return this.read(`${definitionId}/script-tasks/${fileName}.js`, options);
+  }
+
+  /**
+   * Write the script for the given fileName in the given process
+   *
+   * @async
+   * @param {string} definitionId The definitionId of the process to write in
+   * @param {string} fileName The fileName to store the script in
+   * @param {string} script The script to store
+   * @param {object|null} options The options for the write operation
+   */
+  async writeScriptTaskScript(definitionId, fileName, script, options) {
+    return this.write(`${definitionId}/script-tasks/${fileName}.js`, script, options);
+  }
+
+  /**
    * Store image at given path
    * @async
    * @param {string} definitionId The definitionId of the process to write in

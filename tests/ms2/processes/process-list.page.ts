@@ -6,7 +6,7 @@ import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proc
 import { v4 } from 'uuid';
 import { expect } from './processes.fixtures';
 import { closeModal, openModal, waitForHydration } from '../testUtils';
-import { asyncMap } from 'proceed-management-system/src/shared-frontend-backend/helpers/javascriptHelpers';
+import { asyncMap } from '../../../src/management-system-v2/lib/helpers/javascriptHelpers';
 
 export class ProcessListPage {
   readonly page: Page;

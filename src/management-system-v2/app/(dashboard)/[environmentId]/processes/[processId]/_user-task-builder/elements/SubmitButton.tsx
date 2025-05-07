@@ -9,6 +9,8 @@ import { Overlay, Setting } from './utils';
 import cn from 'classnames';
 import { Checkbox, Select } from 'antd';
 
+import { useCanEdit } from '../../modeler';
+
 type SubmitButtonProps = React.PropsWithChildren & {
   title?: string;
   type?: 'primary' | 'default';
@@ -28,6 +30,8 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
   const [textEditing, setTextEditing] = useState(false);
   const [hovered, setHovered] = useState(false);
 
+  const editingEnabled = useCanEdit();
+
   return (
     <div>
       <button
@@ -40,7 +44,7 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
         }}
       >
         <Overlay
-          show={hovered && !textEditing}
+          show={editingEnabled && hovered && !textEditing}
           onHide={() => setHovered(false)}
           controls={[
             {

@@ -1,7 +1,9 @@
 {
   "get": {
     "/machine/:properties": {
-      "params": true
+      "queryParams": {
+        "entries": true
+      }
     },
     "/machine/": {},
     "/capabilities/": {},
@@ -15,7 +17,13 @@
     "/logging/process/:definitionId/instance/:instanceId": {},
     "/monitoring/": {},
     "/tasklist/api/": {},
-    "/tasklist/api/userTask": {},
+    "/tasklist/api/userTask": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true,
+        "startTime": true
+      }
+    },
     "/configuration/api/config": {},
     "/logging/api/log": {},
     "/": {},
@@ -27,6 +35,8 @@
     "/process/:definitionId/instance/:instanceID": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/user-tasks": {},
+    "/process/:definitionId/script-tasks/:fileName": {},
+    "/process/:definitionId/script-tasks": {},
     "/status/": {},
     "/resources/process/:definitionId/images/:fileName": {},
     "/resources/process/:definitionId/images/": {}
@@ -35,7 +45,12 @@
     "/capabilities/execute": {},
     "/capabilities/return": {},
     "/evaluation/": {},
-    "/tasklist/api/userTask": {},
+    "/tasklist/api/userTask": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
     "/configuration/api/config": {},
     "/process/": {},
     "/process/:definitionId/versions/:version/instance": {},
@@ -45,13 +60,24 @@
   },
   "put": {
     "/configuration/": {},
-    "/tasklist/api/variable": {},
-    "/tasklist/api/milestone": {},
+    "/tasklist/api/variable": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
+    "/tasklist/api/milestone": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
     "/process/:definitionId/instance/:instanceID": {},
     "/process/:definitionId/instance/:instanceID/instanceState": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId/currentFlowNodeState": {},
     "/process/:definitionId/user-tasks/:fileName": {},
+    "/process/:definitionId/script-tasks/:fileName": {},
     "/resources/process/:definitionId/images/:fileName": {}
   },
   "delete": {

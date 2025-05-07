@@ -9,9 +9,16 @@ import { env } from '../env-vars';
 export const BuyableResources = Object.freeze([] satisfies ResourceType[]);
 export type BuyableResource = (typeof BuyableResources)[number];
 
-export const MSEnabledResources: ResourceType[] = env.MS_ENABLED_RESOURCES
+let _enabledResources: ResourceType[] = env.MS_ENABLED_RESOURCES
   ? JSON.parse(env.MS_ENABLED_RESOURCES)
   : resources;
+if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  _enabledResources = _enabledResources.filter(
+    (resource) => !['User', 'Role', 'RoleMapping'].includes(resource),
+  );
+}
+
+export const MSEnabledResources = Object.freeze(_enabledResources);
 
 /**
  * These resources are the ones hat are always allowed for admins, regardless of what additional features where

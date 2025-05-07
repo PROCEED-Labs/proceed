@@ -100,16 +100,24 @@ export async function closeModal(modal: Locator, triggerFunction: () => Promise<
  *
  * @param page the page to be hydrated
  */
-export async function waitForHydration(page: Page) {
+export async function waitForHydration(page: Page, isGuestUser = true) {
   // this button should be in the header on every page
   const accountButton = page.getByRole('link', { name: 'user' });
   // the menu that open when hovering over the accountButton only works after the page has been fully hydrated
   await accountButton.hover();
-  await page
+
+  let profileLocator = page
     .locator('.ant-dropdown:not(.ant-dropdown-hidden)')
-    .and(page.locator('.ant-dropdown:not(.ant-slide-up)'))
-    .getByRole('link', { name: 'Profile Settings' })
-    .waitFor({ state: 'visible' });
+    .and(page.locator('.ant-dropdown:not(.ant-slide-up)'));
+
+  if (isGuestUser) {
+    profileLocator = profileLocator.getByRole('menuitem', { name: 'Delete Data' });
+  } else {
+    profileLocator = profileLocator.getByRole('link', { name: 'Profile Settings' });
+  }
+
+  await profileLocator.waitFor({ state: 'visible' });
+
   // move the mouse away from the button to close the menu and go into a "clean" state for further testing
   await page.mouse.move(0, 0);
   await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'hidden' });

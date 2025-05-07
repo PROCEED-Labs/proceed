@@ -2,6 +2,9 @@ import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
 import * as Blockly from 'blockly/core';
 
+type BlockDeclaration = Partial<Blockly.Block> & ThisType<Blockly.Block>;
+const Blocks = Blockly.Blocks as Record<string, BlockDeclaration>;
+
 export const INITIAL_TOOLBOX_JSON = {
   kind: 'categoryToolbox',
   contents: [
@@ -99,6 +102,112 @@ export const INITIAL_TOOLBOX_JSON = {
             '      <field name="FLOW">BREAK</field>\n' +
             '    </block>\n',
         },
+      ],
+    },
+    {
+      kind: 'category',
+      name: 'Variables',
+      colour: 330,
+      custom: 'VARIABLE',
+    },
+    {
+      kind: 'category',
+      name: 'Objects',
+      colour: 230,
+      contents: [
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_create">\n' +
+            '        <value name="entry0">\n' +
+            '            <block type="object_key_value">\n' +
+            '              <value name="key">\n' +
+            '                <shadow type="text">\n' +
+            '                  <field name="TEXT">Key</field>\n' +
+            '                </shadow>\n' +
+            '              </value>\n' +
+            '              <value name="value">\n' +
+            '                <shadow type="text">\n' +
+            '                  <field name="TEXT">Value</field>\n' +
+            '                </shadow>\n' +
+            '              </value>\n' +
+            '            </block>\n' +
+            '        </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_key_value">\n' +
+            '      <value name="key">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">Key</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '      <value name="value">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">Value</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_set_key">\n' +
+            '      <value name="key">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">key</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '      <value name="value">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">value</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_get_key">\n' +
+            '      <value name="key">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">key</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="object_delete_key">\n' +
+            '      <value name="key">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">key</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+      ],
+    },
+    {
+      kind: 'category',
+      name: 'Lists',
+      colour: 280,
+      contents: [
+        { kind: 'block', type: 'lists_create_with' },
+        { kind: 'block', type: 'lists_getIndex' },
+        { kind: 'block', type: 'lists_setIndex' },
+        { kind: 'block', type: 'lists_length' },
+        { kind: 'block', type: 'lists_isEmpty' },
+        { kind: 'block', type: 'lists_indexOf' },
+        { kind: 'block', type: 'lists_repeat' },
+        { kind: 'block', type: 'lists_getSublist' },
+        { kind: 'block', type: 'lists_sort' },
+        { kind: 'block', type: 'lists_reverse' },
+        { kind: 'block', type: 'lists_split' },
       ],
     },
     {
@@ -316,30 +425,6 @@ export const INITIAL_TOOLBOX_JSON = {
             '      </value>\n' +
             '    </block>\n',
         },
-        {
-          kind: 'block',
-          blockxml:
-            '    <block type="text_print">\n' +
-            '      <value name="TEXT">\n' +
-            '        <shadow type="text">\n' +
-            '          <field name="TEXT">abc</field>\n' +
-            '        </shadow>\n' +
-            '      </value>\n' +
-            '    </block>\n',
-        },
-        {
-          kind: 'block',
-          blockxml:
-            '    <block type="text_prompt_ext">\n' +
-            '      <mutation type="TEXT"></mutation>\n' +
-            '      <field name="TYPE">TEXT</field>\n' +
-            '      <value name="TEXT">\n' +
-            '        <shadow type="text">\n' +
-            '          <field name="TEXT">abc</field>\n' +
-            '        </shadow>\n' +
-            '      </value>\n' +
-            '    </block>\n',
-        },
       ],
     },
     {
@@ -351,17 +436,121 @@ export const INITIAL_TOOLBOX_JSON = {
     { kind: 'sep' },
     {
       kind: 'category',
-      name: 'Variables',
+      name: 'Process Variables',
       colour: 290,
       contents: [
         {
           kind: 'block',
-          type: 'variables_get',
+          type: 'proceed_variables_get',
         },
         {
           kind: 'block',
-          type: 'variables_set',
+          type: 'proceed_variables_set',
         },
+        {
+          kind: 'block',
+          type: 'proceed_variables_get_all',
+        },
+      ],
+    },
+    {
+      kind: 'category',
+      name: 'Engine Log',
+      colour: 290,
+      contents: [
+        { kind: 'block', type: 'log_trace' },
+        { kind: 'block', type: 'log_debug' },
+        { kind: 'block', type: 'log_info' },
+        { kind: 'block', type: 'log_warn' },
+        { kind: 'block', type: 'log_error' },
+      ],
+    },
+    {
+      kind: 'category',
+      name: 'Console',
+      colour: 290,
+      contents: [
+        { kind: 'block', type: 'console_log' },
+        { kind: 'block', type: 'console_trace' },
+        { kind: 'block', type: 'console_debug' },
+        { kind: 'block', type: 'console_info' },
+        { kind: 'block', type: 'console_warn' },
+        { kind: 'block', type: 'console_error' },
+        { kind: 'block', type: 'console_time' },
+        { kind: 'block', type: 'console_timeend' },
+      ],
+    },
+    {
+      kind: 'category',
+      name: 'Network',
+      colour: 290,
+      contents: [
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="network_Get">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">https://jsonplaceholder.typicode.com/todos/1</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+
+          blockxml:
+            '    <block type="network_Post">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">http://localhost</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+
+          blockxml:
+            '    <block type="network_Put">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">http://localhost</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="network_Delete">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">http://localhost</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="network_Head">\n' +
+            '      <value name="url">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">http://localhost</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
+      ],
+    },
+    {
+      kind: 'category',
+      name: 'Timeouts',
+      colour: 290,
+      contents: [
+        { kind: 'block', type: 'interval_async' },
+        { kind: 'block', type: 'timeout_async' },
       ],
     },
     {
@@ -389,25 +578,309 @@ export const INITIAL_TOOLBOX_JSON = {
   ],
 };
 
-Blockly.Blocks['variables_get'] = {
+const connectionTypeCheckers: ((a: Blockly.Connection, b: Blockly.Connection) => boolean | null)[] =
+  [];
+export class ObjectsConnectionChecker extends Blockly.ConnectionChecker {
+  constructor() {
+    super();
+  }
+  // There is no guaranteed order of the connections.
+  doTypeChecks(a: Blockly.Connection, b: Blockly.Connection): boolean {
+    for (const checker of connectionTypeCheckers) {
+      const result = checker(a, b);
+      if (typeof result === 'boolean') return result;
+    }
+
+    const checkArrayOne = a.getCheck();
+    const checkArrayTwo = b.getCheck();
+
+    if (!checkArrayOne || !checkArrayTwo) {
+      // One or both sides are promiscuous enough that anything will fit.
+      return true;
+    }
+    // Find any intersection in the check lists.
+    for (let i = 0; i < checkArrayOne.length; i++) {
+      if (checkArrayTwo.includes(checkArrayOne[i])) {
+        return true;
+      }
+    }
+    // No intersection.
+    return false;
+  }
+}
+const registrationType = Blockly.registry.Type.CONNECTION_CHECKER;
+const registrationName = 'ObjectsConnectionChecker';
+Blockly.registry.register(registrationType, registrationName, ObjectsConnectionChecker);
+export const connectionCheckerPlugin = {
+  [registrationType.toString()]: registrationName,
+};
+
+// --------------------------------------------
+// Functions
+// Make every function async and await calls to them
+// --------------------------------------------
+
+type Generator = Exclude<BlocklyJavaScript.JavascriptGenerator['forBlock'][string], null>;
+
+for (const type of ['return', 'noreturn']) {
+  const defName = `procedures_def${type}`;
+  const defGenerator: Generator = javascriptGenerator.forBlock[defName];
+  javascriptGenerator.forBlock[defName] = function (block, generator) {
+    // this is necessary, otherwise the generated code will start with a comment and the await on front will be wrong
+    block.setCommentText(null);
+    defGenerator(block, generator);
+
+    const funcName = generator.getProcedureName(block.getFieldValue('NAME'));
+    // grab the generated code
+    const code = (generator as any).definitions_['%' + funcName];
+    (generator as any).definitions_['%' + funcName] = 'async ' + code;
+
+    return null;
+  };
+}
+
+// call no return uses callreturn so we only have to apply await here
+const callGenerator: Generator = javascriptGenerator.forBlock['procedures_callreturn'];
+javascriptGenerator.forBlock['procedures_callreturn'] = function (block, generator) {
+  const code = callGenerator(block, generator);
+
+  if (!code) return code;
+  else if (Array.isArray(code)) {
+    code[0] = 'await ' + code[0];
+    return code;
+  }
+  return 'await ' + code;
+};
+
+// --------------------------------------------
+// Objects
+// --------------------------------------------
+
+Blocks['object_create'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'Key-Value store\n%1',
+      args0: [
+        {
+          name: 'entry0',
+          type: 'input_statement',
+          check: 'object_building_block',
+        },
+      ],
+      output: 'OBJECT',
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_create'] = function (block) {
+  let entries = '';
+  let n = 0;
+  do {
+    entries += javascriptGenerator.statementToCode(block, 'entry' + n);
+    n++;
+  } while (block.getInput('entry' + n));
+
+  // order is atomic because we add the parentheses ourselves
+  return [`({\n${entries}})`, BlocklyJavaScript.Order.ATOMIC];
+};
+
+function isCreateObjectStatementConnection(connection: Blockly.Connection) {
+  return (
+    connection.getSourceBlock().type === 'object_create' &&
+    connection.type === Blockly.ConnectionType.NEXT_STATEMENT
+  );
+}
+function objectBuildingBlockConnectionCheck(a: Blockly.Connection, b: Blockly.Connection) {
+  // Check for connections to the statement input of object_create
+  let otherConnection;
+  if (isCreateObjectStatementConnection(a)) otherConnection = b;
+  else if (isCreateObjectStatementConnection(b)) otherConnection = a;
+  else return null;
+
+  return otherConnection.getSourceBlock().type === 'object_key_value';
+}
+connectionTypeCheckers.push(objectBuildingBlockConnectionCheck);
+
+Blocks['object_key_value'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'key %1 ',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'key',
+          check: 'String',
+        },
+      ],
+      message1: ' value %1 ',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'value',
+        },
+      ],
+      inputsInline: true,
+      previousStatement: ['object_building_block'],
+      nextStatement: ['object_building_block'],
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_key_value'] = function (block) {
+  const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '';
+  const value =
+    javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ASSIGNMENT) ||
+    'undefined';
+
+  // statementBlocks should just return a string
+  return `[${key}]: ${value},\n`;
+};
+
+function isOKeyValueBlockStatementConnection(connection: Blockly.Connection) {
+  return (
+    connection.getSourceBlock().type === 'object_key_value' &&
+    (connection.type === Blockly.ConnectionType.PREVIOUS_STATEMENT ||
+      connection.type === Blockly.ConnectionType.NEXT_STATEMENT)
+  );
+}
+function objectKeyValueChecker(a: Blockly.Connection, b: Blockly.Connection) {
+  // Check for next/previous connections to object_key_value
+  let otherConnection;
+  if (isOKeyValueBlockStatementConnection(a)) otherConnection = b;
+  if (isOKeyValueBlockStatementConnection(b)) otherConnection = a;
+  else return null;
+
+  return otherConnection.getSourceBlock().type === 'object_key_value';
+}
+connectionTypeCheckers.push(objectKeyValueChecker);
+
+Blocks['object_set_key'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'Set key of %1\n',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'input_object',
+        },
+      ],
+      message1: 'Key %1\nValue %2',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'key',
+          check: 'String',
+        },
+        {
+          type: 'input_value',
+          name: 'value',
+        },
+      ],
+      previousStatement: true,
+      nextStatement: true,
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_set_key'] = function (block) {
+  const object =
+    javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
+  const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
+  const value =
+    javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ASSIGNMENT) ||
+    'undefined';
+  return `${object}[${key}] = ${value};\n`;
+};
+
+Blocks['object_get_key'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'Get key of %1\n',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'input_object',
+        },
+      ],
+      message1: 'Key %1\n',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'key',
+          check: 'String',
+        },
+      ],
+      output: null,
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_get_key'] = function (block) {
+  const object =
+    javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
+  const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
+  return [`${object}[${key}]`, BlocklyJavaScript.Order.NONE];
+};
+
+Blocks['object_delete_key'] = {
+  init: function () {
+    this.jsonInit({
+      message0: 'Delete key of %1\n',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'input_object',
+        },
+      ],
+      message1: 'Key %1',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'key',
+          check: 'String',
+        },
+      ],
+      previousStatement: true,
+      nextStatement: true,
+      colour: 230,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['object_delete_key'] = function (block) {
+  const object =
+    javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
+  const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
+  return `delete ${object}[${key}];\n`;
+};
+
+// --------------------------------------------
+// Variables
+// --------------------------------------------
+
+Blocks['proceed_variables_get'] = {
   init: function () {
     this.appendDummyInput()
       .appendField('Variable')
       .appendField(new Blockly.FieldTextInput('variableName'), 'name');
     this.setOutput(true, null);
     this.setTooltip('Returns value for selected variable');
-    this.setHelpUrl('');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
     this.setColour(75);
   },
 };
 
-javascriptGenerator.forBlock['variables_get'] = function (block) {
+javascriptGenerator.forBlock['proceed_variables_get'] = function (block) {
   const variableName = block.getFieldValue('name');
-  const code = `variable.get("${variableName}");\n`;
-  return [code, BlocklyJavaScript.Order.ATOMIC];
+  const code = `variable.get("${variableName}")`;
+  return [code, BlocklyJavaScript.Order.FUNCTION_CALL];
 };
 
-Blockly.Blocks['variables_set'] = {
+Blocks['proceed_variables_set'] = {
   init: function () {
     this.appendValueInput('value')
       .appendField('Set variable')
@@ -415,14 +888,14 @@ Blockly.Blocks['variables_set'] = {
       .appendField('to');
     this.setInputsInline(true);
     this.setTooltip('');
-    this.setHelpUrl('');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
     this.setColour(75);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
   },
 };
 
-javascriptGenerator.forBlock['variables_set'] = function (block) {
+javascriptGenerator.forBlock['proceed_variables_set'] = function (block) {
   const variableName = block.getFieldValue('name');
   const variableValue = javascriptGenerator.valueToCode(
     block,
@@ -434,12 +907,204 @@ javascriptGenerator.forBlock['variables_set'] = function (block) {
   return code;
 };
 
-Blockly.Blocks['progress'] = {
+Blocks['proceed_variables_get_all'] = {
+  init: function () {
+    this.appendDummyInput().appendField('Get all variables');
+    this.setOutput(true, null);
+    this.setTooltip('Returns an object containing all variables and values');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
+    this.setColour(75);
+  },
+};
+
+javascriptGenerator.forBlock['proceed_variables_get_all'] = function (_) {
+  return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
+};
+
+// --------------------------------------------
+// Engine Log
+// --------------------------------------------
+
+for (const level of ['Trace', 'Debug', 'Info', 'Warn', 'Error']) {
+  const lowerCaseLevel = level.toLowerCase();
+  const blockName = `log_${lowerCaseLevel}`;
+  Blocks[blockName] = {
+    init: function (this: Blockly.Block) {
+      this.jsonInit({
+        message0: `${level} log %1`,
+        args0: [
+          {
+            type: 'input_value',
+            name: 'value',
+          },
+        ],
+        tooltip: 'Write a message to the logging system of the Engine.',
+        helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#log',
+        nextStatement: true,
+        previousStatement: true,
+        colour: 75,
+      });
+    },
+  };
+
+  javascriptGenerator.forBlock[blockName] = function (block) {
+    const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
+    return `log.${lowerCaseLevel}(${value});\n`;
+  };
+}
+
+// --------------------------------------------
+// Console Log
+// --------------------------------------------
+
+for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', 'TimeEnd']) {
+  const lowerCaseLevel = level.toLowerCase();
+  const blockName = `console_${lowerCaseLevel}`;
+  Blocks[blockName] = {
+    init: function (this: Blockly.Block) {
+      this.jsonInit({
+        message0: `Console ${level} %1`,
+        args0: [
+          {
+            type: 'input_value',
+            name: 'value',
+          },
+        ],
+        tooltip: 'Write a message to the console of the engine.',
+        helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#console',
+
+        nextStatement: true,
+        previousStatement: true,
+        colour: 75,
+      });
+    },
+  };
+
+  javascriptGenerator.forBlock[blockName] = function (block) {
+    const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
+    return `console.${lowerCaseLevel}(${value});\n`;
+  };
+}
+
+// --------------------------------------------
+// Timeouts
+// --------------------------------------------
+
+Blocks['interval_async'] = {
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      message0: 'Async interval %1 ms\nCallback function%2',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'delay',
+          check: 'Number',
+        },
+        {
+          type: 'input_value',
+          name: 'callback',
+          check: 'PROCEDURE',
+        },
+      ],
+      tooltip: 'An interval function which repeatedly calls a callback function after a timeout.',
+      helpUrl:
+        'https://docs.proceed-labs.org/developer/script-task-api#await-setintervalasync-clb-number-in-milliseconds-',
+      nextStatement: true,
+      previousStatement: true,
+      colour: 75,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['interval_async'] = function (block) {
+  const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
+  const callback = javascriptGenerator.valueToCode(
+    block,
+    'callback',
+    BlocklyJavaScript.Order.COMMA,
+  );
+
+  return `setIntervalAsync(async () => ${callback}, ${delay});\n`;
+};
+
+Blocks['timeout_async'] = {
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      message0: 'Async Timeout %1 ms\nCallback function%2',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'delay',
+          check: 'Number',
+        },
+        {
+          type: 'input_statement',
+          name: 'callback',
+          check: 'PROCEDURE',
+        },
+      ],
+      tooltip: 'A timeout function which executes a callback function after a timeout expired.',
+      helpUrl:
+        'https://docs.proceed-labs.org/developer/script-task-api#await-settimeoutasync-clb-number-in-milliseconds-',
+      nextStatement: true,
+      previousStatement: true,
+      colour: 75,
+    });
+  },
+};
+
+javascriptGenerator.forBlock['timeout_async'] = function (block) {
+  const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
+  const callback = javascriptGenerator.statementToCode(block, 'callback');
+
+  return `await setTimeoutAsync(async () => {${callback}}, ${delay});\n`;
+};
+
+function isTimeoutCallbackConnection(connection: Blockly.Connection) {
+  const blockType = connection.getSourceBlock().type;
+  const parentInput = connection.getParentInput();
+
+  return (
+    (blockType === 'interval_async' || blockType === 'timeout_async') &&
+    (connection.type === Blockly.ConnectionType.INPUT_VALUE ||
+      connection.type === Blockly.ConnectionType.NEXT_STATEMENT) &&
+    parentInput &&
+    parentInput.name === 'callback'
+  );
+}
+function timeoutsConnectionChecker(a: Blockly.Connection, b: Blockly.Connection) {
+  // Check for connections to the callback input of interval_async and timeout_async
+  let timeout, otherConnection;
+  if (isTimeoutCallbackConnection(a)) {
+    timeout = a;
+    otherConnection = b;
+  }
+  if (isTimeoutCallbackConnection(b)) {
+    timeout = b;
+    otherConnection = a;
+  } else return null;
+
+  const inputType = otherConnection.getSourceBlock().type;
+
+  if (timeout.getSourceBlock().type === 'timeout_async')
+    return inputType === 'procedures_callnoreturn';
+
+  return inputType === 'procedures_callreturn';
+}
+connectionTypeCheckers.push(timeoutsConnectionChecker);
+
+// --------------------------------------------
+// Progress
+// --------------------------------------------
+
+Blocks['progress'] = {
   init: function () {
     this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
     this.setInputsInline(true);
     this.setTooltip('');
-    this.setHelpUrl('');
+    this.setHelpUrl(
+      'https://docs.proceed-labs.org/developer/script-task-api#setprogressnumber-between-0---100',
+    );
     this.setColour(75);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -455,42 +1120,123 @@ javascriptGenerator.forBlock['progress'] = function (block) {
   return code;
 };
 
-Blockly.Blocks['throw_error'] = {
+// --------------------------------------------
+// Errors
+// --------------------------------------------
+
+Blocks['throw_error'] = {
   init: function () {
-    this.appendDummyInput()
-      .appendField('Throw')
-      .appendField(
-        new Blockly.FieldDropdown([
-          ['BpmnEscalation', 'BpmnEscalation'],
-          ['BpmnError', 'BpmnError'],
-        ]),
-        'name',
-      );
-
-    this.appendDummyInput()
-      .appendField('Reference')
-      .appendField(new Blockly.FieldTextInput(''), 'reference');
-
-    this.appendDummyInput()
-      .appendField('Explanation')
-      .appendField(new Blockly.FieldTextInput(''), 'explanation');
-
-    this.setInputsInline(false);
-    this.setTooltip('Throws error with given reference and explanation');
-    this.setHelpUrl('');
-    this.setColour(75);
-    this.setPreviousStatement(true);
-    this.setNextStatement(false);
+    this.jsonInit({
+      type: 'throw_block',
+      message0: 'Throw %1\n',
+      args0: [
+        {
+          type: 'field_dropdown',
+          name: 'name',
+          options: [
+            ['BpmnEscalation', 'BpmnEscalation'],
+            ['BpmnError', 'BpmnError'],
+          ],
+        },
+      ],
+      message1: 'Reference %1\n',
+      args1: [
+        {
+          type: 'input_value',
+          name: 'reference',
+          check: 'String',
+        },
+      ],
+      message2: 'Explanation %1',
+      args2: [
+        {
+          type: 'input_value',
+          name: 'explanation',
+          check: 'String',
+        },
+      ],
+      previousStatement: true,
+      colour: 75,
+      tooltip: 'Throws error with given reference and explanation',
+      helpUrl:
+        'https://docs.proceed-labs.org/developer/script-task-api#throw-new-bpmnerror-reference-explanation-',
+    });
   },
 };
 
 javascriptGenerator.forBlock['throw_error'] = function (block) {
   const errorType = block.getFieldValue('name');
-  const reference = block.getFieldValue('reference');
-  const explanation = block.getFieldValue('explanation');
+  const reference =
+    javascriptGenerator.valueToCode(block, 'reference', BlocklyJavaScript.Order.COMMA) ||
+    'undefined';
+  const explanation =
+    javascriptGenerator.valueToCode(block, 'explanation', BlocklyJavaScript.Order.COMMA) ||
+    undefined;
 
-  const code = `throw new ${errorType}("${reference}", "${explanation}");\n`;
-  return code;
+  return `throw new ${errorType}(${reference}, ${explanation});\n`;
 };
+
+// --------------------------------------------
+// Services
+// --------------------------------------------
+const methodsWithBody = ['Post', 'Put'];
+for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
+  const methodName = `network_${method}`;
+  const hasBody = methodsWithBody.includes(method);
+
+  const args: any = [
+    {
+      type: 'input_value',
+      name: 'url',
+      check: 'String',
+    },
+    {
+      type: 'input_value',
+      name: 'options',
+      check: 'OBJECT',
+    },
+  ];
+
+  if (hasBody)
+    args.push({
+      type: 'input_value',
+      name: 'body',
+      check: null,
+    });
+
+  Blocks[methodName] = {
+    init: function () {
+      this.jsonInit({
+        type: methodName,
+        message0: `${method} url %1\n${hasBody ? 'Body %3\n' : ''}Options %2`,
+        args0: args,
+        output: null,
+        colour: 75,
+        tooltip: 'Perform a network request.',
+        helpUrl: 'https://docs.proceed-labs.org/developer/script-task-api#getservicenetwork',
+      });
+    },
+  };
+
+  javascriptGenerator.forBlock[methodName] = function (block) {
+    const url = javascriptGenerator.valueToCode(block, 'url', BlocklyJavaScript.Order.COMMA) || '';
+    const options =
+      javascriptGenerator.valueToCode(block, 'options', BlocklyJavaScript.Order.COMMA) ||
+      'undefined';
+
+    let body = '';
+    if (hasBody) {
+      body =
+        javascriptGenerator.valueToCode(block, 'body', BlocklyJavaScript.Order.COMMA) ||
+        'undefined';
+      body += ',';
+    }
+
+    return [
+      `await getService('network').${method.toLowerCase()}(${url}, ${body}${options})`,
+      BlocklyJavaScript.Order.AWAIT,
+    ];
+  };
+}
 
 export { Blockly, javascriptGenerator };

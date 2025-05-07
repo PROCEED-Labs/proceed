@@ -5,12 +5,12 @@ declare const _exports: {
   removeEmptyContainerElement(element: any, containerType: any, containerElement: any): void;
   setMetaData(bpmn: string | object, elId: string, metaValues: object): Promise<string | object>;
   setProceedElement(
-    element: any,
-    proceedElementType: any,
+    element: object,
+    proceedElementType: string,
     value: any,
-    attributes?: {},
-    oldAttributes?: {},
-  ): {};
+    attributes?: object,
+    oldAttributes?: object,
+  ): object;
   getExporterName(): string;
   getExporterVersion(): string;
   generateBpmnId(prefix?: string): string;
@@ -64,6 +64,11 @@ declare const _exports: {
     newFileName: string,
     newImplementation?: string,
   ): Promise<string | object>;
+  setScriptTaskData(
+    bpmn: string | object,
+    scriptTaskId: string,
+    newFileName: string,
+  ): Promise<string | object>;
   addConstraintsToElementById(
     bpmn: string | object,
     elementId: string,
@@ -88,7 +93,7 @@ declare const _exports: {
     bpmn: string | object,
     elementId: string,
     performers: any[],
-  ): Promise<any>;
+  ): Promise<string | object>;
   getDefinitionsId(bpmn: string | object): Promise<string>;
   getOriginalDefinitionsId(bpmn: string | object): Promise<string>;
   getDefinitionsName(bpmn: string | object): Promise<string>;
@@ -99,7 +104,7 @@ declare const _exports: {
     name?: string;
     description?: string;
     versionBasedOn?: string;
-    versionCreatedOn: string;
+    versionCreatedOn?: string;
   }>;
   getProcessIds(bpmn: string | object): Promise<string[]>;
   getDeploymentMethod(bpmn: string | object): Promise<string>;
@@ -117,6 +122,11 @@ declare const _exports: {
   }>;
   getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn: string | object): Promise<{
     [userTaskFileName: string]: string[];
+  }>;
+  getScriptTaskFileNameMapping(bpmn: string | object): Promise<{
+    [scriptTaskId: string]: {
+      fileName?: string;
+    };
   }>;
   getSubprocess(bpmn: string | object, subprocessId: string): Promise<string>;
   getSubprocessContent(bpmn: string, subprocessId: string): Promise<string>;

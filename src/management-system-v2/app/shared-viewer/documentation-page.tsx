@@ -15,7 +15,7 @@ import { PrinterOutlined } from '@ant-design/icons';
 
 import Content from '@/components/content';
 
-import { getProcess } from '@/lib/data/legacy/process';
+import { getProcess } from '@/lib/data/db/process';
 import { useRouter } from 'next/navigation';
 
 import { getSVGFromBPMN } from '@/lib/process-export/util';

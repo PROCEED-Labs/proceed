@@ -430,6 +430,7 @@ class Messaging extends System {
           const params = {};
           const pathSegments = path.split('/').filter((segment) => !!segment);
           const topicSegments = topic
+            .split(this._baseTopic + '/')[1]
             .split('/')
             .slice(3)
             .filter((segment) => !!segment);

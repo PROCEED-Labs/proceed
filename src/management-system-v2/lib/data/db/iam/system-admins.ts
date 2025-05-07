@@ -9,6 +9,7 @@ import {
 } from '../../system-admin-schema';
 import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data/db';
+import { Prisma } from '@prisma/client';
 
 export async function getSystemAdmins() {
   const sysAdmins = await db.systemAdmin.findMany({});
@@ -23,8 +24,13 @@ export async function getSystemAdminByUserId(userId: string) {
   return (await db.systemAdmin.findUnique({ where: { userId: userId } })) as SystemAdmin;
 }
 
-export async function addSystemAdmin(adminInput: SystemAdminCreationInput) {
+export async function addSystemAdmin(
+  adminInput: SystemAdminCreationInput,
+  tx?: Prisma.TransactionClient,
+) {
   // TODO: decide if permissions should be checkded here
+
+  const dbMutator = tx ? tx : db;
 
   const now = new Date();
   const admin = SystemAdminSchema.parse({
@@ -34,7 +40,7 @@ export async function addSystemAdmin(adminInput: SystemAdminCreationInput) {
     lastEditedOn: now,
   });
 
-  await db.systemAdmin.create({ data: { ...admin } });
+  await dbMutator.systemAdmin.create({ data: { ...admin } });
 
   return admin;
 }

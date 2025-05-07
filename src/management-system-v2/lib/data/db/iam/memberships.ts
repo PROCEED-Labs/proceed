@@ -4,6 +4,7 @@ import { getEnvironmentById } from './environments';
 import { v4 } from 'uuid';
 import { Environment } from '../../environment-schema.js';
 import db from '@/lib/data/db';
+import { Prisma } from '@prisma/client';
 
 const MembershipInputSchema = z.object({
   userId: z.string(),
@@ -66,12 +67,18 @@ export async function getMembers(environmentId: string, ability?: Ability) {
   return workspace.members;
 }
 
-export async function isMember(environmentId: string, userId: string) {
-  const environment = await getEnvironmentById(environmentId);
+export async function isMember(
+  environmentId: string,
+  userId: string,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const environment = await getEnvironmentById(environmentId, undefined, undefined, tx);
   if (!environment?.isOrganization) {
     return userId === environmentId;
   }
-  const membership = await db.membership.findFirst({
+  const membership = await dbMutator.membership.findFirst({
     where: {
       environmentId: environmentId,
       userId: userId,
@@ -80,27 +87,33 @@ export async function isMember(environmentId: string, userId: string) {
   return membership ? true : false;
 }
 
-export async function addMember(environmentId: string, userId: string, ability?: Ability) {
-  const environment = await db.space.findUnique({
-    where: { id: environmentId },
-    select: { isOrganization: true },
-  });
+export async function addMember(
+  environmentId: string,
+  userId: string,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx ? tx : db;
+  // const environment = await db.space.findUnique({
+  //   where: { id: environmentId },
+  //   select: { isOrganization: true },
+  // });
 
-  if (!environment) {
-    throw new Error('Environment not found');
-  }
+  // if (!environment) {
+  //   throw new Error('Environment not found');
+  // }
 
   // TODO: ability check
   if (ability) ability;
 
-  const user = await db.user.findUnique({
+  const user = await dbMutator.user.findUnique({
     where: { id: userId },
   });
 
   if (!user) throw new Error('User not found');
   if (user.isGuest) throw new Error('Guest users cannot be added to environments');
 
-  await db.membership.create({
+  await dbMutator.membership.create({
     data: {
       id: v4(),
       userId: userId,

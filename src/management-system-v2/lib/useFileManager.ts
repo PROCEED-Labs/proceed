@@ -2,6 +2,7 @@ import { use, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
 import {
+  cleanUpFailedUploadEntry,
   deleteEntityFile,
   retrieveEntityFile,
   saveEntityFile,
@@ -59,7 +60,14 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
           throw new Error('Failed to get presignedUrl');
         }
 
-        await uploadToCloud(file, response.presignedUrl);
+        try {
+          await uploadToCloud(file, response.presignedUrl);
+        } catch (e) {
+          //if upload fails, delete the artifact from the database
+          console.error('Failed to upload file to cloud', e);
+          await cleanUpFailedUploadEntry(spaceId, entityId, entityType, fileName!);
+        }
+
         return { fileName: response.fileName };
       } else {
         return await handleLocalUpload(

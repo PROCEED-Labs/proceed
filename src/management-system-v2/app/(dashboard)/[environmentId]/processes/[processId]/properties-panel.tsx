@@ -1,21 +1,18 @@
 'use client';
 
-import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
-import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
-import React, { FocusEvent, useEffect, useRef, useState } from 'react';
+import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
-import { Input, ColorPicker, Space, Grid, Divider, Modal } from 'antd';
+import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs } from 'antd';
+import type { TabsProps } from 'antd';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
-  getElementById,
   getMetaDataFromElement,
   setDefinitionsName,
-  setMetaData,
   setProceedElement,
-  toBpmnObject,
   deepCopyElementById,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
@@ -29,7 +26,10 @@ import DescriptionSection from './description-section';
 import PlannedCostInput from './planned-cost-input';
 import { updateProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
-import { useRouter } from 'next/navigation';
+import { PotentialOwner, ResponsibleParty } from './potential-owner';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
+import { Shape } from 'bpmn-js/lib/model/Types';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -38,11 +38,14 @@ type PropertiesPanelContentProperties = {
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
 }) => {
-  const router = useRouter();
+  const env = use(EnvVarsContext);
+  const environment = useEnvironment();
+
   const { spaceId } = useEnvironment();
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
-  const backgroundColor = getFillColor(selectedElement, '#FFFFFFFF');
-  const strokeColor = getStrokeColor(selectedElement, '#000000FF');
+  const backgroundColor = getBackgroundColor(selectedElement as Shape);
+  const textColor = getTextColor(selectedElement as Shape);
+  const borderColor = getBorderColor(selectedElement as Shape);
 
   const [name, setName] = useState('');
 
@@ -115,10 +118,21 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       fill: backgroundColor,
     });
   };
-  const updateStrokeColor = (frameColor: string) => {
+  const updateTextColor = (textColor: string) => {
     const modeling = modeler!.getModeling();
-    modeling.setColor(selectedElement as any, {
-      stroke: frameColor,
+    // update the text color in the external label if one exists, otherwise update the text inside
+    // the element if possible
+    let element = selectedElement.label || selectedElement;
+    if (element) {
+      modeling.updateModdleProperties(element as any, element.di.label, {
+        color: textColor,
+      });
+    }
+  };
+  const updateBorderColor = (borderColor: string) => {
+    const modeling = modeler!.getModeling();
+    modeling.updateProperties(selectedElement as any, {
+      di: { 'border-color': borderColor },
     });
   };
 
@@ -144,118 +158,182 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     });
   };
 
-  return (
-    <Space
-      direction="vertical"
-      size="large"
-      style={{ width: '100%', fontSize: '0.75rem' }}
-      className={styles.PropertiesPanel}
-    >
-      <Space
-        direction="vertical"
-        style={{ width: '100%' }}
-        role="group"
-        aria-labelledby="general-title"
-      >
-        <Divider>
+  /* TABS: */
+  const [activeTab, setActiveTab] = useState('Property-Panel-General');
+
+  const changeToTab = (key: string) => {
+    setActiveTab(key);
+  };
+
+  const tabs: TabsProps['items'] = [
+    {
+      key: 'Property-Panel-General',
+      label: 'General Properties',
+      children: (
+        <>
+          <Space
+            direction="vertical"
+            style={{ width: '100%' }}
+            role="group"
+            aria-labelledby="general-title"
+            aria-label="General Properties"
+          >
+            {/* <Divider>
           <span id="general-title" style={{ fontSize: '0.85rem' }}>
             General
           </span>
-        </Divider>
-        <Input
-          name="Name"
-          placeholder="Element Name"
-          style={{ fontSize: '0.85rem' }}
-          addonBefore="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={handleNameChange}
-        />
+        </Divider> */}
+            <Input
+              name="Name"
+              placeholder="Element Name"
+              style={{ fontSize: '0.85rem' }}
+              addonBefore="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={handleNameChange}
+            />
 
-        <div
-          style={{
-            width: '75%',
-            display: 'flex',
-            justifyContent: 'center',
-            margin: 'auto',
-            marginTop: '1rem',
-          }}
-        >
-          <ImageSelectionSection
-            imageFileName={metaData.overviewImage && metaData.overviewImage.split('/images/').pop()}
-            onImageUpdate={(imageFileName) => {
-              updateMetaData('overviewImage', imageFileName);
-            }}
-          ></ImageSelectionSection>
-        </div>
-      </Space>
-
-      <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
-
-      <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
-
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
-        <PlannedCostInput
-          costsPlanned={
-            costsPlanned
-              ? { value: costsPlanned.value, currency: costsPlanned.unit }
-              : { currency: 'EUR' }
-          }
-          onInput={({ value, currency }) => {
-            updateMetaData('costsPlanned', value, { unit: currency });
-          }}
-        ></PlannedCostInput>
-        <PlannedDurationInput
-          onChange={(changedTimePlannedDuration) => {
-            updateMetaData('timePlannedDuration', changedTimePlannedDuration);
-          }}
-          timePlannedDuration={timePlannedDuration || ''}
-        ></PlannedDurationInput>
-      </Space>
-
-      <CustomPropertySection
-        metaData={metaData}
-        onChange={(name, value, oldName) => {
-          updateMetaData(
-            'property',
-            { value: value, attributes: { name } },
-            undefined,
-            oldName
-              ? {
-                  name: oldName,
+            <div
+              style={{
+                width: '75%',
+                display: 'flex',
+                justifyContent: 'center',
+                margin: 'auto',
+                marginTop: '1rem',
+              }}
+            >
+              <ImageSelectionSection
+                imageFileName={
+                  metaData.overviewImage && metaData.overviewImage.split('/images/').pop()
                 }
-              : undefined,
-          );
-        }}
-      ></CustomPropertySection>
+                onImageUpdate={(imageFileName) => {
+                  updateMetaData('overviewImage', imageFileName);
+                }}
+              ></ImageSelectionSection>
+            </div>
+          </Space>
+          <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
+          {/* Responsibility */}
+          <ResponsibleParty selectedElement={selectedElement} modeler={modeler} />
+          <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
+            <PlannedCostInput
+              costsPlanned={
+                costsPlanned
+                  ? { value: costsPlanned.value, currency: costsPlanned.unit }
+                  : { currency: 'EUR' }
+              }
+              onInput={({ value, currency }) => {
+                updateMetaData('costsPlanned', value, { unit: currency });
+              }}
+            ></PlannedCostInput>
+            <PlannedDurationInput
+              onChange={(changedTimePlannedDuration) => {
+                updateMetaData('timePlannedDuration', changedTimePlannedDuration);
+              }}
+              timePlannedDuration={timePlannedDuration || ''}
+            ></PlannedDurationInput>
+          </Space>
 
-      {selectedElement.type !== 'bpmn:Process' && (
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
-          <Space>
-            <ColorPicker
-              size="small"
-              disabledAlpha
-              presets={colorPickerPresets}
-              value={backgroundColor}
-              onChange={(_, hex) => updateBackgroundColor(hex)}
-            />
-            <span>Background Colour</span>
+          <CustomPropertySection
+            metaData={metaData}
+            onChange={(name, value, oldName) => {
+              updateMetaData(
+                'property',
+                { value: value, attributes: { name } },
+                undefined,
+                oldName
+                  ? {
+                      name: oldName,
+                    }
+                  : undefined,
+              );
+            }}
+          ></CustomPropertySection>
+
+          {selectedElement.type !== 'bpmn:Process' &&
+            selectedElement.type !== 'bpmn:Collaboration' && (
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
+                <Space>
+                  <ColorPicker
+                    size="small"
+                    disabledAlpha
+                    presets={colorPickerPresets}
+                    value={backgroundColor}
+                    onChange={(_, hex) => updateBackgroundColor(hex)}
+                  />
+                  <span>Background Color</span>
+                </Space>
+                <Space>
+                  <ColorPicker
+                    size="small"
+                    disabledAlpha
+                    presets={colorPickerPresets}
+                    value={borderColor}
+                    onChange={(_, hex) => updateBorderColor(hex)}
+                  />
+                  <span>Border Color</span>
+                </Space>
+
+                {selectedElement?.di?.label && (
+                  <Space>
+                    <ColorPicker
+                      size="small"
+                      disabledAlpha
+                      presets={colorPickerPresets}
+                      value={textColor}
+                      onChange={(_, hex) => updateTextColor(hex)}
+                    />
+                    <span>Text Color</span>
+                  </Space>
+                )}
+              </Space>
+            )}
+        </>
+      ),
+    },
+  ];
+
+  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+    tabs.push({
+      key: 'Property-Panel-Execution',
+      label: 'Automation Properties',
+      children: (
+        <>
+          <Space
+            direction="vertical"
+            style={{ width: '100%' }}
+            role="group"
+            aria-labelledby="general-title"
+          >
+            {environment?.isOrganization && (
+              <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
+            )}
           </Space>
-          <Space>
-            <ColorPicker
-              size="small"
-              disabledAlpha
-              presets={colorPickerPresets}
-              value={strokeColor}
-              onChange={(_, hex) => updateStrokeColor(hex)}
-            />
-            <span>Stroke Colour</span>
-          </Space>
-        </Space>
-      )}
-    </Space>
+        </>
+      ),
+    });
+  }
+  /* ---- */
+
+  return (
+    <>
+      <Space
+        direction="vertical"
+        size="large"
+        style={{ width: '100%', fontSize: '0.75rem', marginTop: '-40px' }}
+        className={styles.PropertiesPanel}
+      >
+        <Tabs
+          defaultActiveKey={activeTab}
+          items={tabs}
+          onChange={changeToTab}
+          activeKey={activeTab}
+        />
+      </Space>
+    </>
   );
 };
 

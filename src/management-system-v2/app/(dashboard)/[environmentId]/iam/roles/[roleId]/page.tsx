@@ -1,10 +1,10 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getRoleById } from '@/lib/data/legacy/iam/roles';
+import { getRoleWithMembersById } from '@/lib/data/db/iam/roles';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { getMembers } from '@/lib/data/DTOs';
-import { getUserById } from '@/lib/data/DTOs';
+import { getMembers } from '@/lib/data/db/iam/memberships';
+import { getUserById } from '@/lib/data/db/iam/users';
 import { Button, Card, Space, Tabs } from 'antd';
 import { LeftOutlined } from '@ant-design/icons';
 import RoleGeneralData from './roleGeneralData';
@@ -12,7 +12,7 @@ import RolePermissions from './rolePermissions';
 import RoleMembers from './role-members';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import SpaceLink from '@/components/space-link';
-import { getFolderById } from '@/lib/data/legacy/folders';
+import { getFolderById } from '@/lib/data/db/folders';
 
 const Page = async ({
   params: { roleId, environmentId },
@@ -20,7 +20,7 @@ const Page = async ({
   params: { roleId: string; environmentId: string };
 }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-  const role = await getRoleById(roleId, ability);
+  const role = await getRoleWithMembersById(roleId, ability);
   if (role && !ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
 
   if (!role)
@@ -30,9 +30,7 @@ const Page = async ({
       </Content>
     );
 
-  const usersInRole = (await Promise.all(
-    role.members.map((member) => getUserById(member.userId)),
-  )) as AuthenticatedUser[];
+  const usersInRole = role.members;
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
 
   const memberships = await getMembers(activeEnvironment.spaceId, ability);

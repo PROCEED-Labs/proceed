@@ -2,7 +2,7 @@
 
 import React, { PropsWithChildren } from 'react';
 
-import { Space } from 'antd';
+import { Space, theme } from 'antd';
 
 type ToolbarProps = {
   className?: string;
@@ -13,7 +13,12 @@ export const Toolbar: React.FC<PropsWithChildren<ToolbarProps>> = ({ children, c
     <div
       role="toolbar"
       className={className}
-      style={{ position: 'absolute', zIndex: 10, padding: '12px', width: '100%' }}
+      style={{
+        position: 'absolute',
+        zIndex: 10,
+        padding: '12px',
+        width: '100%',
+      }}
     >
       {children}
     </div>
@@ -21,5 +26,15 @@ export const Toolbar: React.FC<PropsWithChildren<ToolbarProps>> = ({ children, c
 };
 
 export const ToolbarGroup: React.FC<PropsWithChildren> = ({ children }) => {
-  return <Space.Compact size="large">{children}</Space.Compact>;
+  const { token } = theme.useToken();
+  return (
+    <Space.Compact
+      size="large"
+      style={{
+        backgroundColor: token.colorBgContainer,
+      }}
+    >
+      {children}
+    </Space.Compact>
+  );
 };

@@ -22,6 +22,7 @@ const environmentVariables = {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
     PROCEED_PUBLIC_DEPLOYMENT_ENV: z.enum(['cloud', 'local']).optional(),
+    PROCEED_PUBLIC_PROJECTS_HTA2: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     SHARING_ENCRYPTION_SECRET: z.string(),
     INVITATION_ENCRYPTION_SECRET: z.string(),

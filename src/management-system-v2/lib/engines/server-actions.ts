@@ -220,17 +220,18 @@ export async function getAvailableTaskListEntries(spaceId: string) {
           }) as UserTask,
       );
 
-    const [newTasks, changedTasks] = fetched.reduce(
-      (acc, task) => {
-        if ((stored as UserTask[]).some((t) => t.id === task.id)) {
-          // TODO: maybe check if the task actually changed
-          return [acc[0], [...acc[1], task]];
-        } else {
-          return [[...acc[0], task], acc[1]];
-        }
-      },
-      [[], []] as [UserTask[], UserTask[]],
-    );
+    const newTasks: UserTask[] = [];
+    const changedTasks: UserTask[] = [];
+
+    fetched.forEach((task) => {
+      const alreadyStored = (stored as UserTask[]).some((t) => t.id === task.id);
+      if (alreadyStored) {
+        // TODO: maybe check if the task actually changed
+        changedTasks.push(task);
+      } else {
+        newTasks.push(task);
+      }
+    });
 
     if (newTasks.length) await addUserTasks(newTasks);
     await asyncForEach(changedTasks, async (task) => {

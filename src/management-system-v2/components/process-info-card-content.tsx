@@ -3,7 +3,7 @@
 import { Divider, Spin } from 'antd';
 import React, { FC, Suspense } from 'react';
 import Viewer from './bpmn-viewer';
-import { ProcessListProcess } from './processes';
+import { ProcessListProcess } from './processes/types';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProceedLoadingIndicator from './loading-proceed';
 

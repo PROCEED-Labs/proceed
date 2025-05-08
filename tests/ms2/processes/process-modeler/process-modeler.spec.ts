@@ -55,7 +55,8 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal
     .getByPlaceholder('Version Description')
-    .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`);
+    // .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`); // we decided to remove this limit for now
+    .fill(stringWith150Chars);
   await expect(page.getByPlaceholder('Version Description')).toHaveText(stringWith150Chars);
   await expect(versionCreationSubmitButton).toBeEnabled();
   await closeModal(modal, () => versionCreationSubmitButton.click());
@@ -100,7 +101,8 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await processCreationDialog.getByLabel('Process Name').fill('New Process');
   await processCreationDialog
     .getByLabel('Process Description')
-    .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`);
+    // .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`); // we decided to remove this limit for now
+    .fill(stringWith150Chars);
   await expect(processCreationDialog.getByLabel('Process Description')).toHaveText(
     stringWith150Chars,
   );

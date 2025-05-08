@@ -49,7 +49,7 @@ export class ProcessListPage {
     // import the test process
     const modal = await openModal(this.page, async () => {
       const fileChooserPromise = page.waitForEvent('filechooser');
-      await page.getByRole('button', { name: 'Import Process' }).click();
+      await page.getByRole('button', { name: 'import-button' }).click();
       const filechooser = await fileChooserPromise;
 
       await filechooser.setFiles({
@@ -116,12 +116,10 @@ export class ProcessListPage {
   async removeProcess(definitionId: string) {
     const { page } = this;
 
-    const modal = await openModal(page, () =>
-      page
-        .locator(`tr[data-row-key="${definitionId}"]`)
-        .getByRole('button', { name: 'delete' })
-        .click(),
-    );
+    const modal = await openModal(page, async () => {
+      await page.locator(`tr[data-row-key=${definitionId}]`).getByRole('checkbox').check();
+      await page.getByRole('button', { name: 'delete' }).click();
+    });
 
     await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
@@ -207,7 +205,7 @@ export class ProcessListPage {
         await page.getByLabel('Select all').check();
 
         const modal = await openModal(this.page, () =>
-          page.getByRole('button', { name: 'delete' }).first().click(),
+          page.getByRole('button', { name: 'delete' }).click(),
         );
         await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
         /* Remove entries from the process list */

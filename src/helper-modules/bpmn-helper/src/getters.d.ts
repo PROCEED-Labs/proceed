@@ -654,6 +654,20 @@ export function getPerformersFromElement(element: object): any[];
  */
 export function getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
 /**
+ * Returrns the roles and users that may be owners of a specific element
+ *
+ * @param {string} elementId id of the element to get the potential owners for
+ * @param {(string|object)} bpmn the bpmn containing the element
+ * @returns {{ user: string[], roles: string[] }} the potential owners of the element
+ */
+export function getPotentialOwnersFromElementById(
+  elementId: string,
+  bpmn: string | object,
+): {
+  user: string[];
+  roles: string[];
+};
+/**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration
  * @returns {{years: number | null, months: number | null, days: number | null, hours: number | null, minutes: number | null, seconds: number | null}} Object with number of years, months, days, hours, minutes and seconds

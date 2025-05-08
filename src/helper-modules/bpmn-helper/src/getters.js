@@ -1090,6 +1090,39 @@ function getPerformersFromElement(element) {
 }
 
 /**
+ * Returrns the roles and users that may be owners of a specific element
+ *
+ * @param {string} elementId id of the element to get the potential owners for
+ * @param {(string|object)} bpmn the bpmn containing the element
+ * @returns {{ user: string[], roles: string[] }} the potential owners of the element
+ */
+async function getPotentialOwnersFromElementById(elementId, bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+
+  let user = [];
+  let roles = [];
+
+  const element = getElementById(bpmnObj, elementId);
+
+  element?.resources?.forEach((resource) => {
+    if (
+      resource.$type === 'bpmn:PotentialOwner' &&
+      resource.resourceAssignmentExpression?.expression?.body
+    ) {
+      try {
+        const { user: _user, roles: _roles } = JSON.parse(
+          resource.resourceAssignmentExpression.expression.body,
+        );
+        user = user.concat(_user);
+        roles = roles.concat(_roles);
+      } catch (err) {}
+    }
+  });
+
+  return { user, roles };
+}
+
+/**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration
  * @returns {{years: number | null, months: number | null, days: number | null, hours: number | null, minutes: number | null, seconds: number | null}} Object with number of years, months, days, hours, minutes and seconds
@@ -1210,6 +1243,7 @@ module.exports = {
   getLocationsFromElement,
   getPerformersFromElement,
   getPerformersFromElementById,
+  getPotentialOwnersFromElementById,
   parseISODuration,
   convertISODurationToMiliseconds,
 };

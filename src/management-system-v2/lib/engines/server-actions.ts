@@ -477,6 +477,8 @@ export async function completeTasklistEntry(
 
     const { variableChanges, milestonesChanges } = storedUserTask;
 
+    // push the values from the database to the engine so the instance state is correctly updated
+    // when the user task is completed as the next step
     await setTasklistEntryVariableValuesOnMachine(
       engines[0],
       instanceId,
@@ -489,6 +491,7 @@ export async function completeTasklistEntry(
       taskId,
       milestonesChanges || {},
     );
+
     await completeTasklistEntryOnMachine(engines[0], instanceId, taskId, variables);
   } catch (e) {
     const message = getErrorMessage(e);

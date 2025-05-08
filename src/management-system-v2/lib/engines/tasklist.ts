@@ -28,13 +28,25 @@ export async function getTaskListFromMachine(machine: Engine) {
     engine: machine,
   })) as TaskListEntry[];
 
-  return entries.map(({ id, instanceID, startTime, ...rest }) => ({
-    ...rest,
-    id: `${id}|${instanceID}|${startTime}`,
-    taskId: id,
-    instanceID,
-    startTime,
-  }));
+  return entries;
+}
+
+export async function activateUserTask(
+  machine: Engine,
+  instanceId: string,
+  userTaskId: string,
+  startTime: number,
+) {
+  await engineRequest({
+    method: 'get',
+    endpoint: '/tasklist/api/userTask',
+    engine: machine,
+    queryParams: {
+      instanceID: instanceId,
+      userTaskID: userTaskId,
+      startTime: `${startTime}`,
+    },
+  });
 }
 
 export async function getUserTaskFileFromMachine(

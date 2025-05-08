@@ -18,7 +18,7 @@ export async function deleteUser() {
   const { userId } = await getCurrentUser();
 
   try {
-    _deleteUser(userId);
+    await _deleteUser(userId);
   } catch (e) {
     let message: ReactNode = 'Error deleting user';
 

@@ -63,6 +63,7 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
               createdBy: '',
               lastEditedOn: new Date(),
               environmentId: '',
+              category: 'process',
             }}
           />
         </Content>

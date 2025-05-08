@@ -1,28 +1,47 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, ModalProps } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  App,
+  Collapse,
+  CollapseProps,
+  Typography,
+  ModalProps,
+  Select,
+  Button,
+  Space,
+} from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
+import { LazyBPMNViewer } from './bpmn-viewer';
+import Search from 'antd/es/input/Search';
+import { Template } from './processes';
 
-type ProcessModalProps<T extends { name: string; description: string }> = {
+type ProcessModalProps<T extends { name: string; description: string; templateId?: string }> = {
   open: boolean;
   title: string;
   okText?: string;
   onCancel: NonNullable<ModalProps['onCancel']>;
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
+  templates?: any[];
   modalProps?: ModalProps;
+  type?: 'process' | 'template';
 };
 
-const ProcessModal = <T extends { name: string; description: string }>({
+const ProcessModal = <T extends { name: string; description: string; templateId?: string }>({
   open,
   title,
   okText,
   onCancel,
   onSubmit,
   initialData,
+  templates = [],
   modalProps,
+  type = 'process',
 }: ProcessModalProps<T>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -106,6 +125,10 @@ const ProcessModal = <T extends { name: string; description: string }>({
     { level: 2, blocking: open, dependencies: [open] },
   );
 
+  const handleTemplateSelection = (index: number, templateId: string) => {
+    form.setFieldValue([index, 'templateId'], templateId);
+  };
+
   return (
     <Modal
       title={title}
@@ -138,8 +161,15 @@ const ProcessModal = <T extends { name: string; description: string }>({
         // doesn't work in production, that's why we use the useEffect above)
         preserve={false}
       >
-        {!initialData || initialData.length === 1 ? (
-          <ProcessInputs index={0} />
+        {!initialData ? (
+          <ProcessCreationInputs
+            type={type}
+            index={0}
+            templates={templates}
+            handleTemplateSelection={handleTemplateSelection}
+          />
+        ) : initialData.length === 1 ? (
+          <ProcessInputs type={type} index={0} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -150,25 +180,132 @@ const ProcessModal = <T extends { name: string; description: string }>({
 
 type ProcessInputsProps = {
   index: number;
+  type?: 'process' | 'template';
 };
 
-const ProcessInputs = ({ index }: ProcessInputsProps) => {
+type ProcessCreationInputsProps = {
+  index: number;
+  type?: 'process' | 'template';
+  templates?: Template[];
+  handleTemplateSelection?: (index: number, templateId: string) => void;
+};
+
+const ProcessInputs = ({ index, type = 'process' }: ProcessInputsProps) => {
+  const capatilizedType = type.charAt(0).toUpperCase() + type.slice(1); // Process or Template
+
   return (
     <>
       <Form.Item
         name={[index, 'name']}
-        label="Process Name"
-        rules={[{ required: true, message: 'Please fill out the Process name' }]}
+        label={`${capatilizedType} Name`}
+        rules={[
+          {
+            required: true,
+            message: `Please fill out the ${capatilizedType} name`,
+          },
+        ]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
-        label="Process Description"
-        rules={[{ required: false, message: 'Please fill out the Process description' }]}
+        label={`${capatilizedType} Description`}
+        rules={[
+          {
+            required: false,
+            message: `Please fill out the ${capatilizedType} description`,
+          },
+        ]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>
+    </>
+  );
+};
+
+const ProcessCreationInputs = ({
+  index,
+  type,
+  templates = [],
+  handleTemplateSelection,
+}: ProcessCreationInputsProps) => {
+  const [selectedTemplate, setSelectedTemplate] = React.useState<Template | null>(null);
+  const [filteredTemplates, setFilteredTemplates] = React.useState(templates);
+
+  const handleSearch = (value: string) => {
+    const filtered = templates.filter((template) =>
+      template.name.toLowerCase().includes(value.toLowerCase()),
+    );
+    setFilteredTemplates(filtered);
+  };
+
+  return (
+    <>
+      <ProcessInputs index={index} type={type} />
+      {type === 'process' && (
+        <>
+          {/* <Search
+            placeholder="input search text"
+            onSearch={handleSearch}
+            style={{ width: '100%' }}
+            value={selectedTemplate?.id}
+          /> */}
+          <Form.Item name={[index, 'templateId']} label="Template">
+            <Input />
+          </Form.Item>
+
+          {/* Horizontal Scrollable Template Selection */}
+          <div style={{ width: '100%', overflowX: 'auto', minHeight: '220px' }}>
+            <Space
+              style={{
+                display: 'flex',
+                overflowX: 'auto',
+                whiteSpace: 'nowrap',
+                padding: '8px 0',
+                gap: '8px',
+                flexWrap: 'nowrap',
+                scrollbarWidth: 'thin',
+              }}
+            >
+              {filteredTemplates.length > 0 ? (
+                filteredTemplates.map((template) => (
+                  <Button
+                    type="default"
+                    key={template.id}
+                    className="template-button"
+                    onClick={() => {
+                      setSelectedTemplate(template);
+                      handleTemplateSelection ? handleTemplateSelection(index, template.id) : null;
+                    }}
+                    style={{
+                      backgroundColor: selectedTemplate?.id === template.id ? '#dcf0fa' : 'white',
+                      color: selectedTemplate?.id === template.id ? 'white' : 'black',
+                      border: '1px solid #d9d9d9',
+                      minWidth: '200px',
+                      maxWidth: '200px',
+                      height: '200px',
+                      padding: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <LazyBPMNViewer definitionId={template.id} reduceLogo fitOnResize />
+                    <Typography.Text>{template.name}</Typography.Text>
+                  </Button>
+                ))
+              ) : (
+                <Typography.Text type="secondary" style={{ padding: '10px' }}>
+                  No matching templates found
+                </Typography.Text>
+              )}
+            </Space>
+          </div>
+        </>
+      )}
     </>
   );
 };

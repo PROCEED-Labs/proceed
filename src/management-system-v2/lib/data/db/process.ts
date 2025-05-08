@@ -8,7 +8,12 @@ import {
   getAllElements,
 } from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper';
-import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
+import {
+  Process,
+  ProcessMetadata,
+  ProcessServerInput,
+  ProcessServerInputSchema,
+} from '../process-schema';
 import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
@@ -123,6 +128,33 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   };
 }
 
+export async function getReleasedProcessTemplates(spaceId: string, ability?: Ability) {
+  //TODO: ability check
+
+  try {
+    const releasedTemplates = await db.process.findMany({
+      where: {
+        environmentId: spaceId,
+        versions: { some: {} }, // at lease one version should exist
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        folderId: true,
+        environmentId: true,
+        creatorId: true,
+        bpmn: true,
+      },
+    });
+
+    return releasedTemplates;
+  } catch (error) {
+    console.error('Error fetching released process templates:', error);
+    throw new Error('Failed to fetch released process templates.');
+  }
+}
+
 /**
  * Throws if process with given id doesn't exist
  *
@@ -141,7 +173,7 @@ export async function checkIfProcessExists(processDefinitionsId: string) {
 
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
 export async function addProcess(
-  processInput: ProcessServerInput & { bpmn: string },
+  processInput: ProcessServerInput & { bpmn: string; type: 'process' | 'template' },
   referencedProcessId?: string,
   tx?: Prisma.TransactionClient,
 ): Promise<ProcessMetadata> {
@@ -150,7 +182,7 @@ export async function addProcess(
       return await addProcess(processInput, referencedProcessId, trx);
     });
   }
-  const { bpmn } = processInput;
+  const { bpmn, type } = processInput;
 
   const processData = ProcessServerInputSchema.parse(processInput);
 
@@ -163,10 +195,11 @@ export async function addProcess(
     ...getDefaultProcessMetaInfo(),
     ...processData,
     ...(await getProcessInfo(bpmn)),
+    type,
   };
 
   if (!metadata.folderId) {
-    metadata.folderId = (await getRootFolder(metadata.environmentId)).id;
+    metadata.folderId = (await getRootFolder(metadata.environmentId, type)).id;
   }
 
   const folderData = await getFolderById(metadata.folderId);
@@ -191,6 +224,8 @@ export async function addProcess(
     await tx.process.create({
       data: {
         id: metadata.id,
+        basedOnTemplateId: null,
+        basedOnTemplateVersion: null,
         originalId: metadata.originalId ?? '',
         name: metadata.name,
         description: metadata.description,
@@ -204,6 +239,7 @@ export async function addProcess(
         allowIframeTimestamp: metadata.allowIframeTimestamp,
         environmentId: metadata.environmentId,
         creatorId: metadata.creatorId,
+        isTemplate: metadata.type! === 'template',
         //departments: { set: metadata.departments },
         //variables: { set: metadata.variables },
         bpmn: bpmn,

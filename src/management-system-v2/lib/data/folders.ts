@@ -1,9 +1,8 @@
 'use server';
-import * as util from 'util';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { FolderUserInput, FolderUserInputSchema } from './folder-schema';
 import { UserErrorType, userError } from '../user-error';
-import { TreeMap, toCaslResource } from '../ability/caslAbility';
+import { toCaslResource } from '../ability/caslAbility';
 
 import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 
@@ -22,15 +21,18 @@ import { Process } from './process-schema';
 
 export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
 
-export async function createFolder(folderInput: FolderUserInput) {
+export async function createFolder(
+  folderInput: FolderUserInput & { type: 'template' | 'process' },
+) {
   try {
     const folder = FolderUserInputSchema.parse(folderInput);
     const { ability } = await getCurrentEnvironment(folder.environmentId);
     const { userId } = await getCurrentUser();
 
-    if (!folder.parentId) folder.parentId = (await getRootFolder(folder.environmentId)).id;
+    if (!folder.parentId)
+      folder.parentId = (await getRootFolder(folder.environmentId, folderInput.type)).id;
 
-    await _createFolder({ ...folder, createdBy: userId }, ability);
+    _createFolder({ ...folder, type: folderInput.type, createdBy: userId }, ability);
   } catch (e) {
     return userError("Couldn't create folder");
   }
@@ -83,7 +85,7 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
     return userError('Permission denied');
 
   for (const item of items) {
-    if (['process', 'project', 'process-instance'].includes(item.type)) {
+    if (['process', 'project', 'process-instance', 'template'].includes(item.type)) {
       await moveProcess(item.id, folderId, ability);
     } else if (item.type === 'folder') {
       await moveFolder(item.id, folderId, ability);
@@ -91,11 +93,15 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
   }
 }
 
-export async function getFolder(environmentId: string, folderId?: string) {
+export async function getFolder(
+  environmentId: string,
+  folderId?: string,
+  type?: 'process' | 'template',
+) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
   let folder;
-  if (!folderId) folder = await getRootFolder(environmentId, ability);
+  if (!folderId) folder = await getRootFolder(environmentId, type!, ability);
   else folder = await getFolderById(folderId);
 
   if (folder && !ability.can('view', toCaslResource('Folder', folder)))
@@ -106,10 +112,14 @@ export async function getFolder(environmentId: string, folderId?: string) {
   return folder;
 }
 
-export async function getFolderContents(environmentId: string, folderId?: string) {
+export async function getFolderContents(
+  environmentId: string,
+  folderId?: string,
+  type?: 'process' | 'template',
+) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  if (!folderId) folderId = (await getRootFolder(environmentId)).id;
+  if (!folderId) folderId = (await getRootFolder(environmentId, type!)).id;
 
   try {
     return _getFolderContent(folderId, ability);

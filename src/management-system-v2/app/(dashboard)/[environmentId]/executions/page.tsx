@@ -41,7 +41,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
     await Promise.all([
       getUsersFavourites(),
       (async () => {
-        const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+        const rootFolder = await getRootFolder(activeEnvironment.spaceId, 'process', ability);
         const folder = await getFolderById(rootFolder.id);
         const folderContents = await getFolderContents(folder.id, ability);
         return [folder, folderContents];

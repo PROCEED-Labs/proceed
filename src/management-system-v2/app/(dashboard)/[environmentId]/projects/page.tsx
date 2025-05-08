@@ -23,6 +23,7 @@ const Projects = async ({ params }: { params: { environmentId: string } }) => {
             createdBy: '',
             lastEditedOn: new Date(),
             environmentId: '',
+            category: 'process',
           }}
         />
       </Space>

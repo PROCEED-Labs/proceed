@@ -20,5 +20,6 @@ export type Folder = Prettify<
     id: string;
     createdOn: Date | null;
     lastEditedOn: Date | null;
+    category: 'template' | 'process';
   }
 >;

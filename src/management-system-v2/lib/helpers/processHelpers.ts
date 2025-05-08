@@ -43,6 +43,8 @@ export function getDefaultProcessMetaInfo() {
     environmentId: '',
     type: 'process',
     originalId: '',
+    basedOnTemplateId: '',
+    basedOnTemplateVersion: '',
     name: 'Default Process',
     description: '',
     creatorId: '',
@@ -57,6 +59,7 @@ export function getDefaultProcessMetaInfo() {
     allowIframeTimestamp: 0,
     versions: [],
     folderId: '',
+    isTemplate: false,
   } satisfies ProcessMetadata;
 }
 

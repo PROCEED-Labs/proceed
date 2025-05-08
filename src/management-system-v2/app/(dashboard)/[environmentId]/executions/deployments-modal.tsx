@@ -182,6 +182,7 @@ const DeploymentsModal = ({
         createdBy: '',
         lastEditedOn: null,
         environmentId: '',
+        category: 'process',
       },
       ...initialProcesses,
     ];
@@ -234,13 +235,14 @@ const DeploymentsModal = ({
           createdBy: '',
           lastEditedOn: new Date(),
           environmentId: '',
+          category: 'process',
         },
         ...folderContents,
       ]);
     } else {
       setProcesses(folderContents);
     }
-    setFolder(folder);
+    setFolder(folder as Folder);
   };
 
   const dropdownItems: MenuProps['items'] = [

@@ -192,7 +192,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       render: (_, record) => (
         <SpaceLink
           href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
+            record.type === 'folder'
+              ? `/${record.category === 'template' ? 'templates' : 'processes'}/folder/${record.id}`
+              : `/processes/${record.id}`
           }
           style={{
             color: 'inherit' /* or any color you want */,
@@ -232,7 +234,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       render: (_, record) => (
         <SpaceLink
           href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
+            record.type === 'folder'
+              ? `/${record.category === 'template' ? 'templates' : 'processes'}/folder/${record.id}`
+              : `/processes/${record.id}`
           }
           style={{
             color: 'inherit' /* or any color you want */,

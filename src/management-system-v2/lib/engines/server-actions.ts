@@ -340,7 +340,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
 
       updateUserTask(userTaskId, { html, initialVariables, milestones, state: storedState });
     } else {
-      variableChanges = { ...(initialVariables || {}), ...(variableChanges || {}) };
+      variableChanges = { ...initialVariables, ...(variableChanges || {}) };
 
       if (milestonesChanges) {
         milestones = milestones.map((milestone) => ({

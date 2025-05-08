@@ -57,7 +57,7 @@ const UserTaskCard = ({
     ' ' +
     (durationValues.days ? `${durationValues.days}d, ` : '') +
     (durationValues.hours ? `${durationValues.hours}h, ` : '') +
-    `${durationValues.minutes}min`;
+    `${durationValues.minutes || 0}min`;
 
   const lines = [
     [

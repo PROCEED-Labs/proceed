@@ -1,38 +1,54 @@
 import { z } from 'zod';
 import db from '@/lib/data/db';
 
-const verificationTokenSchema = z.object({
-  token: z.string(),
+const baseEmailVerificationTokenSchema = z.object({
+  token: z.string().email(),
   identifier: z.string(),
   expires: z.date(),
-  userId: z.string().nullable().optional(),
 });
 
-export type VerificationToken = z.infer<typeof verificationTokenSchema>;
+const emailVerificationTokenSchemam = z.union([
+  baseEmailVerificationTokenSchema.extend({
+    type: z.literal('signin_with_email'),
+  }),
+  baseEmailVerificationTokenSchema.extend({
+    type: z.literal('change_email'),
+    userId: z.string(),
+  }),
+  baseEmailVerificationTokenSchema.extend({
+    type: z.literal('register_new_user'),
+    username: z.string(),
+    firstName: z.string(),
+    lastName: z.string(),
+    passwordHash: z.string().optional(),
+  }),
+]);
 
-export async function getVerificationToken({
+export type EmailVerificationToken = z.infer<typeof emailVerificationTokenSchemam>;
+
+export async function getEmailVerificationToken({
   token,
   identifier,
 }: {
   token: string;
   identifier: string;
 }) {
-  return await db.verificationToken.findFirst({
+  return (await db.emailVerificationToken.findFirst({
     where: {
       token,
       identifier,
     },
-  });
+  })) as EmailVerificationToken | null;
 }
 
-export async function deleteVerificationToken({
+export async function deleteEmailVerificationToken({
   token,
   identifier,
 }: {
   token: string;
   identifier: string;
 }) {
-  const result = await db.verificationToken.delete({
+  const result = await db.emailVerificationToken.delete({
     where: { token, identifier },
   });
 
@@ -41,10 +57,10 @@ export async function deleteVerificationToken({
   return result;
 }
 
-export async function saveVerificationToken(tokenInput: VerificationToken) {
-  const token = verificationTokenSchema.parse(tokenInput);
+export async function saveEmailVerificationToken(tokenInput: EmailVerificationToken) {
+  const token = emailVerificationTokenSchemam.parse(tokenInput);
 
-  return await db.verificationToken.create({
+  return await db.emailVerificationToken.create({
     data: token,
   });
 }

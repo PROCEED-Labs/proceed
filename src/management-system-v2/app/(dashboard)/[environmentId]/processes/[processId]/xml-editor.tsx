@@ -226,7 +226,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
 
   const checkProcessNameDefinitionAttribute = async (bpmn: string) => {
     try {
-      const definitionsMatch = await getDefinitionsId(bpmn);
+      const definitionsMatch = bpmn.match(/<definitions\s([^>]*)>/i);
       if (!definitionsMatch) {
         return {
           error: {

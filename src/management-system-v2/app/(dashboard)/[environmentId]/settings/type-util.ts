@@ -22,17 +22,10 @@ type SelectSetting = {
   options?: { value: string; label: string }[];
 };
 
-export type GenericSetting = {
-  type: string;
-  value: any;
-  [key: string]: any;
-};
-
 export type Setting = (
   | AtomicSetting<'boolean'>
   | AtomicSetting<'string'>
   | AtomicSetting<'number'>
-  | GenericSetting
   | SelectSetting
 ) &
   SettingsEntryInfo;

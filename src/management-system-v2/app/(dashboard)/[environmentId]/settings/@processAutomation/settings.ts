@@ -1,4 +1,6 @@
-export const settings = {
+import { SettingGroup } from '../type-util';
+
+export const settings: SettingGroup = {
   key: 'process-automation',
   name: 'Process Automation',
   children: [

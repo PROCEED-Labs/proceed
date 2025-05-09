@@ -2,7 +2,7 @@ import { Fragment, ReactNode } from 'react';
 import { Typography, Form, Input, Button, Image as AntDesignImage, Divider } from 'antd';
 
 import { signIn } from 'next-auth/react';
-import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
+import { type ExtractedProvider } from '@/lib/auth';
 
 export const SigninOptions = ({
   providers,

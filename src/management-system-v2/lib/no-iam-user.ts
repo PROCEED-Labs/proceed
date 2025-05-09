@@ -10,9 +10,10 @@ export const user = {
   lastName: 'Admin',
   username: 'default',
   email: null,
+  phoneNumber: null,
   isGuest: false,
   emailVerifiedOn: null,
-  image: null,
+  profileImage: null,
   favourites: [],
 } satisfies UserDB;
 
@@ -28,7 +29,6 @@ export const createUserArgs = {
 export const session = {
   user,
   expires: '',
-  csrfToken: 'csrf-token',
 } satisfies Session;
 
 export const systemAdmin = {

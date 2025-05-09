@@ -1,4 +1,4 @@
-import { getProviders } from '@/app/api/auth/[...nextauth]/auth-options';
+import { getProviders } from '@/lib/auth';
 import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';
 import SignIn from './signin';

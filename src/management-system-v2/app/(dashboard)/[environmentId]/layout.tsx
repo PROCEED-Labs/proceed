@@ -170,7 +170,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (systemAdmin) {
+  if (systemAdmin && env.PROCEED_PUBLIC_IAM_ACTIVATE) {
     layoutMenuItems.push({
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,

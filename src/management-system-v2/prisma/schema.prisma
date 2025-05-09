@@ -1,4 +1,4 @@
-// This is your Prisma schema file,
+  // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
@@ -31,9 +31,10 @@ model User {
   lastName        String?
   username        String?        @unique
   email           String?        @unique
+  phoneNumber     String?
   isGuest         Boolean
   emailVerifiedOn DateTime?
-  image           String?
+  profileImage    String?
   favourites      String[]
   processes       Process[]
   ownedSpaces     Space[]        @relation("spaceOwner")
@@ -42,6 +43,8 @@ model User {
   oauthAccounts   OauthAccount[]
   roleMembers     RoleMember[]
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
+  verificationTokens VerificationToken[]   @relation("verificationToken")
+  guestSignin     GuestSignin?
 
   @@map("user")
 }
@@ -132,7 +135,8 @@ model Space {
   isActive           Boolean?
   description        String?
   contactPhoneNumber String?
-  logo               String?
+  contactEmail       String?
+  spaceLogo          String?
   owner              User?        @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId            String
   members            Membership[]
@@ -226,4 +230,20 @@ model Engine {
   lastEditedOn  DateTime @updatedAt
 
   @@map("engine")
+}
+
+model VerificationToken {
+  token      String   @id
+  identifier String
+  expires    DateTime
+  user       User?     @relation(name: "verificationToken", fields: [userId], references: [id])
+  userId     String? /// If this is set, then the token is for an email change and the idenrtifier is the new email
+}
+  
+model GuestSignin {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastSigninAt DateTime @default(now())
+
+  @@map("guest_signin")
 }

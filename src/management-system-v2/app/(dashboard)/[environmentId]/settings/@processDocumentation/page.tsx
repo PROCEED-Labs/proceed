@@ -1,62 +1,10 @@
 import { populateSpaceSettingsGroup } from '@/lib/data/db/space-settings';
-import SettingsSection from '../settings-section';
-import { SettingGroup } from '../type-util';
 import { getCurrentEnvironment } from '@/components/auth';
+import SettingsInjector from '../settings-injector';
+import Wrapper from './wrapper';
+import { settings } from './settings';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
-  const settings: SettingGroup = {
-    key: 'process-documentation',
-    name: 'Process Documentation',
-    children: [
-      {
-        key: 'active',
-        name: 'Enabled',
-        type: 'boolean',
-        description: 'Controls whether this view is activated in this space.',
-        value: true,
-      },
-      {
-        key: 'list',
-        name: 'Process List',
-        children: [
-          {
-            key: 'active',
-            name: 'Enabled',
-            type: 'boolean',
-            description: 'Controls whether this view is activated in this space.',
-            value: true,
-          },
-        ],
-      },
-      {
-        key: 'editor',
-        name: 'Process Editor',
-        children: [
-          {
-            key: 'active',
-            name: 'Enabled',
-            type: 'boolean',
-            description: 'Controls whether this view is activated in this space.',
-            value: true,
-          },
-        ],
-      },
-      {
-        key: 'templates',
-        name: 'Process Templates',
-        children: [
-          {
-            key: 'active',
-            name: 'Enabled',
-            type: 'boolean',
-            description: 'Controls whether this view is activated in this space.',
-            value: true,
-          },
-        ],
-      },
-    ],
-  };
-
   const {
     ability,
     activeEnvironment: { spaceId },
@@ -64,7 +12,12 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
 
   await populateSpaceSettingsGroup(spaceId, settings, ability);
 
-  return <SettingsSection sectionName="processDocumentation" group={settings} priority={1000} />;
+  return (
+    <>
+      <SettingsInjector sectionName="processDocumentation" group={settings} priority={1000} />
+      <Wrapper group={settings} />
+    </>
+  );
 };
 
 export default Page;

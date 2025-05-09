@@ -123,8 +123,8 @@ export async function createProcess(
   setStandardDefinitions(definitions, getExporterName(), getExporterVersion());
 
   setDefinitionsVersionInformation(definitions, {
-    versionId: 'latest',
-    versionName: 'latest',
+    versionId: '',
+    versionName: '',
   });
 
   // add dummy values, these are replaced by db values

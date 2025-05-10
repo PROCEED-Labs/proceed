@@ -32,11 +32,6 @@ const constraintParser = new ConstraintParser();
  */
 async function setDefinitionsId(bpmn, id) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    // store the current id as originalId if there is one and we provide a new one
-    if (id && definitions.id && definitions.id !== id) {
-      definitions.originalId = definitions.id;
-    }
-
     definitions.id = id;
   });
 }
@@ -71,11 +66,11 @@ async function setDefinitionsVersionInformation(
   { versionId, versionName, versionDescription, versionBasedOn, versionCreatedOn },
 ) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    definitions.versionId = versionId;
-    definitions.versionName = versionName;
-    definitions.versionDescription = versionDescription;
-    definitions.versionBasedOn = versionBasedOn;
-    definitions.versionCreatedOn = versionCreatedOn;
+    definitions.processVersionId = versionId;
+    definitions.processVersionName = versionName;
+    definitions.processVersionDescription = versionDescription;
+    definitions.processVersionBasedOn = versionBasedOn;
+    definitions.processVersionCreatedOn = versionCreatedOn;
 
     // make sure that the targetnamespace is unique for the new version
     definitions.targetNamespace = generateTargetNamespace(
@@ -122,10 +117,6 @@ async function setTargetNamespace(bpmn, id) {
     if (id) {
       const targetNamespace = generateTargetNamespace(id);
 
-      if (definitions.targetNamespace && definitions.targetNamespace !== targetNamespace) {
-        definitions.originalTargetNamespace = definitions.targetNamespace;
-      }
-
       definitions.targetNamespace = targetNamespace;
     } else {
       definitions.targetNamespace = undefined;
@@ -144,15 +135,6 @@ async function setTargetNamespace(bpmn, id) {
  */
 async function setStandardDefinitions(bpmn, exporterName, exporterVersion) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
-    if (definitions.exporter && definitions.exporter !== exporterName) {
-      definitions.originalExporter = definitions.exporter;
-      definitions.originalExporterVersion = definitions.exporterVersion;
-    }
-
-    if (definitions.exporterVersion && definitions.exporterVersion !== exporterVersion) {
-      definitions.originalExporterVersion = definitions.exporterVersion;
-    }
-
     definitions.exporter = exporterName;
     definitions.exporterVersion = exporterVersion;
     definitions.expressionLanguage = 'https://ecma-international.org/ecma-262/8.0/';
@@ -176,12 +158,12 @@ async function setStandardDefinitions(bpmn, exporterName, exporterVersion) {
       definitions.$attrs['xsi:schemaLocation'] = '';
     }
 
-    if (typeof definitions.creatorEnvironmentId !== 'string') {
-      definitions.creatorEnvironmentId = '';
+    if (typeof definitions.creatorSpaceId !== 'string') {
+      definitions.creatorSpaceId = '';
     }
 
-    if (typeof definitions.creatorEnvironmentName !== 'string') {
-      definitions.creatorEnvironmentName = '';
+    if (typeof definitions.creatorSpaceName !== 'string') {
+      definitions.creatorSpaceName = '';
     }
 
     for (const xsi of proceedXSIs) {
@@ -191,6 +173,114 @@ async function setStandardDefinitions(bpmn, exporterName, exporterVersion) {
     }
 
     definitions.$attrs['xsi:schemaLocation'] = definitions.$attrs['xsi:schemaLocation'].trim();
+  });
+}
+
+/**
+ * Updates the creator BPMN XML attributes of the given BPMN process.
+ *
+ * @param {(string | object)} bpmn - The BPMN process definition as an XML string or a BPMN-Moddle object.
+ * @param {object} attributes - The attributes to update in the BPMN process.
+ * @param {string} [attributes.id] - The id of the BPMN process.
+ * @param {string} [attributes.name] - The name of the BPMN process.
+ * @param {string} [attributes.creatorId] - The unique identifier of the creator.
+ * @param {string} [attributes.creatorName] - The name of the creator.
+ * @param {string} [attributes.creatorUsername] - The username of the creator.
+ * @param {string} [attributes.creatorSpaceId] - The unique identifier of the creator's space.
+ * @param {string} [attributes.creatorSpaceName] - The name of the creator's space.
+ * @param {string} [attributes.userDefinedId] - The user-defined ID of the BPMN process.
+ * @param {string} [attributes.creationDate] - The creation date of the BPMN process in string format.
+ * @returns {Promise<string | object>} A promise that resolves to the modified BPMN process,
+ * either as a BPMN-Moddle object or an XML string, depending on the input format.
+ */
+async function updateBpmnCreatorAttributes(
+  bpmn,
+  {
+    id,
+    name,
+    creatorId,
+    creatorName,
+    creatorUsername,
+    creatorSpaceName,
+    creatorSpaceId,
+    userDefinedId,
+    creationDate,
+  },
+) {
+  return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
+    // userdefined id can be empty
+    definitions.userDefinedId = userDefinedId;
+    // creator name and username can be empty for guest user
+    definitions.creatorName = creatorName;
+    definitions.creatorUsername = creatorUsername;
+    // personal spaces can be no name
+    definitions.creatorSpaceName = creatorSpaceName;
+
+    creatorSpaceId && (definitions.creatorSpaceId = creatorSpaceId);
+    creatorId && (definitions.creatorId = creatorId);
+    creationDate && (definitions.creationDate = creationDate);
+    name && (definitions.name = name);
+    id && (definitions.id = id);
+  });
+}
+
+/**
+ * Updates the original attributes of a copied/imported BPMN process.
+ *
+ * @param {(string | object)} bpmn - The BPMN process definition as an XML string or a BPMN-Moddle object.
+ * @param {object} attributes - The original attributes to update in the BPMN process.
+ * @param {string} [attributes.originalId] - The original of a copied/imported BPMN process.
+ * @param {string} [attributes.originalName] - The original name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalUserDefinedId] - The original user-defined ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreationDate] - The original creation date of a copied/imported BPMN process.
+ * @param {string} [attributes.originalProcessVersionId] - The original process version ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalProcessVersionName] - The original process version name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalExporter] - The original exporter of a copied/imported BPMN process.
+ * @param {string} [attributes.originalExporterVersion] - The original exporter version of a copied/imported BPMN process.
+ * @param {string} [attributes.originalTargetNamespace] - The original target namespace of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorSpaceId] - The original creator space ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorSpaceName] - The original creator space name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorId] - The original creator ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorName] - The original creator name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorUsername] - The original creator username of a copied/imported BPMN process.
+ * @returns {Promise<string | object>} A promise that resolves to the modified BPMN process,
+ * either as a BPMN-Moddle object or an XML string, depending on the input format.
+ */
+async function updateBpmnOriginalAttributes(
+  bpmn,
+  {
+    originalId,
+    originalName,
+    originalUserDefinedId,
+    originalCreationDate,
+    originalProcessVersionId,
+    originalProcessVersionName,
+    originalExporter,
+    originalExporterVersion,
+    originalTargetNamespace,
+    originalCreatorSpaceId,
+    originalCreatorSpaceName,
+    originalCreatorId,
+    originalCreatorName,
+    originalCreatorUsername,
+  },
+) {
+  return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
+    definitions.originalId ??= originalId;
+    definitions.originalName ??= originalName;
+    definitions.originalUserDefinedId ??= originalUserDefinedId;
+    definitions.originalCreationDate ??= originalCreationDate;
+    definitions.originalProcessVersionId ??= originalProcessVersionId;
+
+    definitions.originalProcessVersionName ??= originalProcessVersionName;
+    definitions.originalExporter ??= originalExporter;
+    definitions.originalExporterVersion ??= originalExporterVersion;
+    definitions.originalCreatorId ??= originalCreatorId;
+    definitions.originalCreatorName ??= originalCreatorName;
+    definitions.originalCreatorUsername ??= originalCreatorUsername;
+    definitions.originalCreatorSpaceId ??= originalCreatorSpaceId;
+    definitions.originalCreatorSpaceName ??= originalCreatorSpaceName;
+    definitions.originalTargetNamespace ??= originalTargetNamespace;
   });
 }
 
@@ -596,4 +686,6 @@ module.exports = {
   addDocumentationToProcessObject,
   updatePerformersOnElement,
   updatePerformersOnElementById,
+  updateBpmnCreatorAttributes,
+  updateBpmnOriginalAttributes,
 };

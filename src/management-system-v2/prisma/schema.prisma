@@ -63,8 +63,9 @@ model OauthAccount {
 
 model Process {
   id                   String              @id @default(uuid())
+  userDefinedId        String?             
   originalId           String
-  name                 String
+  name                 String            
   description          String
   createdOn            DateTime
   lastEditedOn         DateTime            @updatedAt
@@ -84,7 +85,7 @@ model Process {
   creatorId            String
   //TODO: Departments and Variables add here if needed in future
   artifactProcessReferences   ArtifactProcessReference[]
-
+  @@unique([name,environmentId,creatorId,folderId])
   @@map("process")
 }
 

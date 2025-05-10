@@ -2,7 +2,7 @@
 
 import styles from './processes.module.scss';
 import { ComponentProps, useRef, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge } from 'antd';
+import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, message } from 'antd';
 import {
   CopyOutlined,
   EditOutlined,
@@ -21,12 +21,17 @@ import { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
-import { useRouter } from 'next/navigation';
-import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/processes';
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  checkIfProcessExistsByName,
+  copyProcesses,
+  deleteProcesses,
+  updateProcesses,
+} from '@/lib/data/processes';
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
-import { ProcessMetadata } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
@@ -49,6 +54,7 @@ import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { ShareModal } from '../share-modal/share-modal';
+import { useSession } from 'next-auth/react';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -103,6 +109,7 @@ const Processes = ({
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
   const router = useRouter();
+  const user = useSession().data?.user;
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -143,6 +150,9 @@ const Processes = ({
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
   // Folders on top
   filteredData.sort((a, b) => {
@@ -301,8 +311,32 @@ const Processes = ({
   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
     startMovingItemTransition(async () => {
       await wrapServerCall({
-        fn: () => moveIntoFolder(items, folderId),
+        fn: async () => {
+          const processesToCheck = items
+            .filter((item) => item.type === 'process')
+            .map((process) => ({
+              name: processes.find((el) => el.id === process.id)!.name,
+              folderId: folderId,
+            }));
+
+          const existsResults = await checkIfProcessExistsByName({
+            batch: true,
+            processes: processesToCheck,
+            spaceId: space.spaceId,
+            userId: user?.id!,
+          });
+          existsResults.forEach((exists, idx) => {
+            if (exists) {
+              throw new Error(
+                `Errror: Process with name ${processesToCheck[idx].name} already exists in the destination folder`,
+              );
+            }
+          });
+
+          return moveIntoFolder(items, folderId);
+        },
         onSuccess: router.refresh,
+        onError: (error) => app.message.error(error.message),
         app,
       });
     });
@@ -572,6 +606,7 @@ const Processes = ({
       />
       <ProcessModal
         open={openCopyModal}
+        mode="copy"
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={copySelection
@@ -581,9 +616,10 @@ const Processes = ({
             description: process.description.value ?? '',
             originalId: process.id,
             folderId: folder.id,
+            userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
-          const res = await copyProcesses(values, space.spaceId);
+          const res = await copyProcesses(values, space.spaceId, currentFolderId);
           // Errors are handled in the modal.
           if ('error' in res) {
             return res;
@@ -594,6 +630,7 @@ const Processes = ({
       />
       <ProcessModal
         open={openEditModal}
+        mode="edit"
         title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData
@@ -602,6 +639,7 @@ const Processes = ({
             id: process.id,
             name: process.name.value ?? '',
             description: process.description.value ?? '',
+            userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
           const res = await updateProcesses(values, space.spaceId);

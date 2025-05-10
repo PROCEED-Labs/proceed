@@ -5,11 +5,12 @@ import { toCaslResource } from '../ability/caslAbility';
 import {
   addDocumentation,
   generateDefinitionsId,
+  generateScriptTaskFileName,
+  generateUserTaskFileName,
+  getDefinitionsId,
   getDefinitionsVersionInformation,
-  getUserTaskFileNameMapping,
   setDefinitionsName,
   setDefinitionsVersionInformation,
-  setUserTaskData,
   toBpmnObject,
   toBpmnXml,
 } from '@proceed/bpmn-helper';
@@ -30,11 +31,17 @@ import {
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
-import { Process } from './process-schema';
+import { Process, ProcessMetadata } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
-import { copyProcessArtifactReferences, copyProcessFiles } from './db/process';
+import {
+  checkIfProcessAlreadyExistsForAUserInASpaceByName,
+  checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching,
+  checkIfProcessExists,
+  copyProcessArtifactReferences,
+  copyProcessFiles,
+} from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
 import {
@@ -44,7 +51,7 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
-  updateProcessMetaData,
+  updateProcessMetaData as _updateProcessMetaData,
   getProcessBpmn as _getProcessBpmn,
   saveProcessUserTask as _saveProcessUserTask,
   getProcessUserTaskJSON as _getProcessUserTaskJSON,
@@ -54,6 +61,9 @@ import {
   deleteProcessScriptTask as _deleteProcessScriptTask,
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
 } from '@/lib/data/db/process';
+import { ProcessData } from '@/components/process-import';
+import { saveProcessArtifact } from './file-manager-facade';
+import { getRootFolder } from './db/folders';
 
 // Import necessary functions from processModule
 
@@ -162,8 +172,16 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
+  values: {
+    name: string;
+    description: string;
+    bpmn?: string;
+    folderId?: string;
+    userDefinedId?: string;
+    id?: string;
+  }[],
   spaceId: string,
+  generateNewId: boolean = false,
 ) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
@@ -171,11 +189,28 @@ export const addProcesses = async (
   const newProcesses: Process[] = [];
 
   for (const value of values) {
-    const { bpmn } = await createProcess({
+    let { bpmn } = await createProcess({
       name: value.name,
       description: value.description,
       bpmn: value.bpmn,
+      userDefinedId: value.userDefinedId,
     });
+
+    // if imported process has a id that is not present in system, we can use that
+    if (value.id && (await checkIfProcessExists(value.id, false))) {
+      generateNewId = true;
+    }
+
+    if (generateNewId) {
+      // new ID is required for imported/copied processes
+      const newId = generateDefinitionsId();
+      bpmn = await getFinalBpmn({
+        id: newId,
+        name: value.name,
+        description: value.description,
+        bpmn: bpmn,
+      });
+    }
 
     const newProcess = {
       bpmn,
@@ -211,7 +246,7 @@ export const updateProcessShareInfo = async (
 
   if (error) return error;
 
-  await updateProcessMetaData(definitionsId, {
+  await _updateProcessMetaData(definitionsId, {
     sharedAs: sharedAs,
     shareTimestamp: shareTimestamp,
     allowIframeTimestamp: allowIframeTimestamp,
@@ -250,6 +285,23 @@ export const updateProcess = async (
   await _updateProcess(definitionsId, { bpmn: newBpmn });
 };
 
+export const updateProcessMetaData = async (
+  definitionsId: string,
+  spaceId: string,
+  metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
+  invalidate = false,
+) => {
+  const error = await checkValidity(definitionsId, 'update', spaceId);
+
+  if (error) return error;
+
+  await _updateProcessMetaData(definitionsId, metaChanges);
+
+  if (invalidate) {
+    revalidatePath(`/processes/${definitionsId}`);
+  }
+};
+
 export const updateProcesses = async (
   processes: {
     name?: string;
@@ -274,6 +326,97 @@ export const updateProcesses = async (
   const firstError = res.find((r) => r && 'error' in r);
 
   return firstError ?? res;
+};
+
+export const importProcesses = async (processData: ProcessData[], spaceId: string) => {
+  const importedProcesses = await addProcesses(processData, spaceId);
+  if ('error' in importedProcesses) {
+    return importedProcesses;
+  }
+
+  for (let idx = 0; idx < importedProcesses.length; idx++) {
+    const process = importedProcesses[idx];
+    const artefacts = processData[idx].artefacts;
+    const fileNameMapping = {
+      'user-tasks': new Map<string, string>(),
+      'script-tasks': new Map<string, string>(),
+    };
+    // Handle script tasks
+    if (artefacts?.scriptTasks) {
+      for (const script of artefacts.scriptTasks) {
+        const [baseName, ext] = script.name.split('.');
+        const newScriptFileName =
+          fileNameMapping['script-tasks'].get(baseName) || generateScriptTaskFileName();
+        fileNameMapping['script-tasks'].set(baseName, newScriptFileName);
+        await _saveProcessScriptTask(process.id, `${newScriptFileName}.${ext}`, script.content);
+      }
+    }
+
+    // Handle user tasks
+    if (artefacts?.userTasks) {
+      // Group user tasks by base name
+      const userTaskGroups = artefacts.userTasks.reduce((groups, file) => {
+        const [baseName, ext] = file.name.split(/\.(?=[^.]+$)/);
+        const group = groups.get(baseName) || { json: null, html: null };
+
+        if (ext === 'json') group.json = file.content;
+        if (ext === 'html') group.html = file.content;
+
+        groups.set(baseName, group);
+        return groups;
+      }, new Map<string, { json: string | null; html: string | null }>());
+
+      // Process grouped user tasks
+      for (const [baseName, { json, html }] of userTaskGroups) {
+        if (!json || !html) {
+          console.warn(`Incomplete user task pair for ${baseName}`);
+          continue;
+        }
+        const newUserTaskFileName =
+          fileNameMapping['user-tasks'].get(baseName) || generateUserTaskFileName();
+        fileNameMapping['user-tasks'].set(baseName, newUserTaskFileName);
+        try {
+          await _saveProcessUserTask(process.id, newUserTaskFileName, json, html);
+        } catch (error) {
+          console.error(`Error processing user task ${newUserTaskFileName}:`, error);
+        }
+      }
+    }
+
+    // update mapped filenames in bpmn
+    let newBpmn = process.bpmn;
+    for (const [type, mapping] of Object.entries(fileNameMapping)) {
+      for (const [oldFilename, newFilename] of mapping) {
+        switch (type) {
+          case 'user-tasks': {
+            ({ bpmn: newBpmn } = await updateUserTaskFileName(newBpmn, oldFilename, newFilename));
+            break;
+          }
+          case 'script-tasks': {
+            ({ bpmn: newBpmn } = await updateScriptTaskFileName(newBpmn, oldFilename, newFilename));
+            break;
+          }
+        }
+      }
+    }
+
+    await _updateProcess(process.id, { bpmn: newBpmn });
+
+    // Handle images
+    if (artefacts?.images) {
+      for (const image of artefacts.images) {
+        await saveProcessArtifact(
+          process.id,
+          image.name,
+          `image/${image.name.split('.').pop()}`,
+          Buffer.from(image.content, 'base64'),
+          { generateNewFileName: false },
+        );
+      }
+    }
+  }
+
+  return importedProcesses;
 };
 
 export const copyProcesses = async (
@@ -561,3 +704,57 @@ export const getProcessImage = async (
 
   return _getProcessImage!(definitionId, imageFileName);
 };
+
+interface BaseProcessCheckData {
+  spaceId: string;
+  userId: string;
+}
+
+interface SingleProcessCheckData extends BaseProcessCheckData {
+  batch?: false;
+  processName: string;
+  folderId?: string;
+}
+
+interface BatchProcessCheckData extends BaseProcessCheckData {
+  batch: true;
+  processes: { name: string; folderId?: string }[];
+}
+
+type ProcessCheckData = SingleProcessCheckData | BatchProcessCheckData;
+
+export async function checkIfProcessExistsByName(data: SingleProcessCheckData): Promise<boolean>;
+export async function checkIfProcessExistsByName(data: BatchProcessCheckData): Promise<boolean[]>;
+export async function checkIfProcessExistsByName(
+  data: ProcessCheckData,
+): Promise<boolean | boolean[]> {
+  try {
+    const { ability } = await getCurrentEnvironment(data.spaceId);
+
+    if (data.batch === true) {
+      const processesWithFolderIds = await Promise.all(
+        data.processes.map(async (process) => ({
+          name: process.name,
+          folderId: process.folderId ?? (await getRootFolder(data.spaceId, ability)).id,
+        })),
+      );
+
+      return await checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
+        processesWithFolderIds,
+        data.spaceId,
+        data.userId,
+      );
+    } else {
+      const folderId = data.folderId ?? (await getRootFolder(data.spaceId, ability)).id;
+      return await checkIfProcessAlreadyExistsForAUserInASpaceByName(
+        data.processName,
+        data.spaceId,
+        data.userId,
+        folderId,
+      );
+    }
+  } catch (error) {
+    console.log(error);
+    return data.batch === true ? [] : false;
+  }
+}

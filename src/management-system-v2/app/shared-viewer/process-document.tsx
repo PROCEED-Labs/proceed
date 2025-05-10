@@ -281,7 +281,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                   )}
                   {version.id ? (
                     <div>
-                      Creation Time:{' '}
+                      Creation Time: {''}
                       {version.versionCreatedOn
                         ? fromCustomUTCString(version.versionCreatedOn).toUTCString()
                         : 'Unknown'}

@@ -96,7 +96,17 @@ declare const _exports: {
   ): Promise<string | object>;
   updateBpmnCreatorAttributes(
     bpmn: string | object,
-    attributes: {
+    {
+      id,
+      name,
+      creatorId,
+      creatorName,
+      creatorUsername,
+      creatorSpaceName,
+      creatorSpaceId,
+      userDefinedId,
+      creationDate,
+    }: {
       id?: string;
       name?: string;
       creatorId?: string;
@@ -110,23 +120,36 @@ declare const _exports: {
   ): Promise<string | object>;
   updateBpmnOriginalAttributes(
     bpmn: string | object,
-    attributes: {
+    {
+      originalId,
+      originalName,
+      originalUserDefinedId,
+      originalCreationDate,
+      originalProcessVersionId,
+      originalProcessVersionName,
+      originalExporter,
+      originalExporterVersion,
+      originalTargetNamespace,
+      originalCreatorSpaceId,
+      originalCreatorSpaceName,
+      originalCreatorId,
+      originalCreatorName,
+      originalCreatorUsername,
+    }: {
       originalId?: string;
       originalName?: string;
-      originalCreationDate?: string;
-      originalCreatorId?: string;
-      originalCreatorName?: string;
-      originalCreatorUsername?: string;
-      originalCreatorSpaceId?: string;
-      originalCreatorSpaceName?: string;
       originalUserDefinedId?: string;
-      originalVersionId?: string;
-      originalVersionName?: string;
+      originalCreationDate?: string;
       originalProcessVersionId?: string;
       originalProcessVersionName?: string;
       originalExporter?: string;
       originalExporterVersion?: string;
       originalTargetNamespace?: string;
+      originalCreatorSpaceId?: string;
+      originalCreatorSpaceName?: string;
+      originalCreatorId?: string;
+      originalCreatorName?: string;
+      originalCreatorUsername?: string;
     },
   ): Promise<string | object>;
   getDefinitionsId(bpmn: string | object): Promise<string>;
@@ -206,6 +229,7 @@ declare const _exports: {
     processIds: string[];
     name: string;
     description: string;
+    userDefinedId: string;
   }>;
   getRootFromElement(businessObject: object): object;
   getMetaDataFromElement(element: object): {

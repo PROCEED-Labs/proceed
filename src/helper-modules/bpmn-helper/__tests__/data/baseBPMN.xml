@@ -14,8 +14,8 @@
   exporter="PROCEED Management System" 
   exporterVersion="0.1.0" 
   xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" 
-  proceed:creatorEnvironmentId="" 
-  proceed:creatorEnvironmentName=""
+  proceed:creatorSpaceId="" 
+  proceed:creatorSpaceName=""
   >
   
   <bpmn2:process id="_d1650d0e-7063-4583-ac59-f9ce26e3a550" name="PROCEED Main Process" processType="Private" isExecutable="true">

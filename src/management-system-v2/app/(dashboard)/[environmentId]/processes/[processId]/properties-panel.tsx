@@ -4,16 +4,16 @@ import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
-import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs } from 'antd';
+import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs, message } from 'antd';
 import type { TabsProps } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
   getMetaDataFromElement,
-  setDefinitionsName,
   setProceedElement,
   deepCopyElementById,
+  setDefinitionsName,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -24,12 +24,14 @@ import PlannedDurationInput from './planned-duration-input';
 import DescriptionSection from './description-section';
 
 import PlannedCostInput from './planned-cost-input';
-import { updateProcess } from '@/lib/data/processes';
+import { checkIfProcessExistsByName, updateProcessMetaData } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
 import { Shape } from 'bpmn-js/lib/model/Types';
+import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -42,12 +44,17 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const environment = useEnvironment();
 
   const { spaceId } = useEnvironment();
+  const { data: session } = useSession();
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
+
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
   const backgroundColor = getBackgroundColor(selectedElement as Shape);
   const textColor = getTextColor(selectedElement as Shape);
   const borderColor = getBorderColor(selectedElement as Shape);
 
   const [name, setName] = useState('');
+  const [userDefinedId, setUserDefinedId] = useState(metaData.userDefinedId);
 
   const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
   const timePlannedDuration: string | undefined = metaData.timePlannedDuration;
@@ -84,6 +91,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       if (selectedElement.type === 'bpmn:Process') {
         const definitions = selectedElement.businessObject.$parent;
         setName(definitions.name);
+        setUserDefinedId(definitions.userDefinedId);
       } else {
         setName(selectedElement.businessObject.name);
       }
@@ -95,20 +103,46 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 
     if (selectedElement.type === 'bpmn:Process') {
       const definitions = selectedElement.businessObject.$parent;
-      const bpmn = await modeler!.getXML();
-      const newBpmn = (await setDefinitionsName(bpmn!, event.target.value)) as string;
+      // prevent empty process name
+      if (!event.target.value || event.target.value === definitions.name) {
+        setName(definitions.name);
+        return;
+      }
+      // check if the process name already exists in the folder scope
+      if (
+        await checkIfProcessExistsByName({
+          batch: false,
+          processName: event.target.value,
+          spaceId: spaceId,
+          userId: session?.user.id!,
+          folderId: currentFolderId,
+        })
+      ) {
+        message.error(
+          `A process with the name ${event.target.value} already exists in current folder`,
+        );
+        setName(definitions.name);
+        return;
+      }
 
-      await updateProcess(
-        definitions.id,
-        spaceId,
-        newBpmn as string,
-        undefined,
-        event.target.value,
-        true,
-      );
+      await updateProcessMetaData(definitions.id, spaceId, { name: event.target.value }, true);
+
       definitions.name = event.target.value;
     } else {
       modeling.updateProperties(selectedElement as any, { name: event.target.value });
+    }
+  };
+
+  const handleUserDefinedIdChange = async (event: FocusEvent<HTMLInputElement>) => {
+    if (selectedElement.type === 'bpmn:Process') {
+      const definitions = selectedElement.businessObject.$parent;
+      await updateProcessMetaData(
+        definitions.id,
+        spaceId,
+        { userDefinedId: event.target.value },
+        true,
+      );
+      definitions.userDefinedId = event.target.value;
     }
   };
 
@@ -192,6 +226,18 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               onChange={(e) => setName(e.target.value)}
               onBlur={handleNameChange}
             />
+
+            {selectedElement.type === 'bpmn:Process' && (
+              <Input
+                name="ID"
+                placeholder="User Defined ID"
+                style={{ fontSize: '0.85rem' }}
+                addonBefore="ID"
+                value={userDefinedId}
+                onChange={(e) => setUserDefinedId(e.target.value)}
+                onBlur={handleUserDefinedIdChange}
+              />
+            )}
 
             <div
               style={{

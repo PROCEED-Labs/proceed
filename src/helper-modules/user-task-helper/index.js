@@ -108,18 +108,48 @@ function getCorrectVariableState(userTask, instance) {
 }
 
 /**
+ * Returns the relevant milestone state for a user task that is being executed or was executed at some point in the past
+ *
+ * @param {string} bpmn the bpmn of the process the user task is part of
+ * @param {UserTaskInfo} userTask information about the user task for which we want to get the data
+ * @param {InstanceInfo} instance the instance information that contains the relevant data
+ * @returns {Promise<{ id: string; name: string; description?: string; value: number; }[]>}
+ */
+async function getCorrectMilestoneState(bpmn, userTask, instance) {
+  const userTaskToken = instance.tokens.find(
+    (token) =>
+      token.currentFlowElementId === userTask.id &&
+      token.currentFlowElementStartTime === userTask.startTime,
+  );
+
+  let milestonesData;
+  if (userTaskToken) {
+    milestonesData = userTaskToken.milestones;
+  } else {
+    milestonesData = userTask.milestones;
+  }
+
+  const milestones = await getMilestonesFromElementById(bpmn, userTask.id);
+  return milestones.map((milestone) => ({
+    ...milestone,
+    value: milestonesData[milestone.id] || 0,
+  }));
+}
+
+/**
  * Function that replaces placeholders in html with the correct data
  *
- * @param {string} bpmn the bpmn of the process the user task is executed in
  * @param {string} html the html that contains placeholders to replace with some data
- * @param {UserTaskInfo} userTask the user Task for which the returned html will be used
- * @param {InstanceInfo} instance the instance information that contains the relevant data to inline
- * @returns {Promise<string>} the html with all placeholders replaced by the respective data
+ * @param {string} instanceId the id of the instance the user task was triggered in
+ * @param {string} userTaskId the id of the user task element that created this user task instance
+ * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
+ * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
+ * @returns {string} the html with the placeholders replaced by the correct values
  */
-async function inlineUserTaskData(bpmn, html, userTask, instance) {
+function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones) {
   const script = `
-    const instanceID = '${instance.processInstanceId}';
-    const userTaskID = '${userTask.id}';
+    const instanceID = '${instanceId}';
+    const userTaskID = '${userTaskId}';
 
     window.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -209,30 +239,8 @@ async function inlineUserTaskData(bpmn, html, userTask, instance) {
     })
     `;
 
-  const userTaskToken = instance.tokens.find(
-    (token) =>
-      token.currentFlowElementId === userTask.id &&
-      token.currentFlowElementStartTime === userTask.startTime,
-  );
-
-  let milestonesData;
-  if (userTaskToken) {
-    milestonesData = userTaskToken.milestones;
-  } else {
-    milestonesData = userTask.milestones;
-  }
-
-  const variables = getCorrectVariableState(userTask, instance);
-
-  let milestones = await getMilestonesFromElementById(bpmn, userTask.id);
-  milestones = milestones.map((milestone) => ({
-    ...milestone,
-    value: milestonesData[milestone.id] || 0,
-  }));
-
   const finalHtml = whiskers.render(html, {
     ...variables,
-    ...milestonesData,
     milestones,
     script,
   });
@@ -241,5 +249,7 @@ async function inlineUserTaskData(bpmn, html, userTask, instance) {
 }
 
 module.exports = {
+  getCorrectVariableState,
+  getCorrectMilestoneState,
   inlineUserTaskData,
 };

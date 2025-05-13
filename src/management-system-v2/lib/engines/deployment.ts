@@ -252,7 +252,7 @@ export type InstanceInfo = {
     intermediateVariablesState?: { [key: string]: any };
     localExecutionTime: number;
     currentFlowNodeProgress?: { value: number; manual: boolean };
-    milestones: any[];
+    milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
   }[];

@@ -1,27 +1,7 @@
 'use client';
 
-import {
-  CSSProperties,
-  DetailedHTMLProps,
-  FC,
-  HTMLAttributes,
-  ReactNode,
-  use,
-  useState,
-} from 'react';
-import {
-  Space,
-  Card,
-  Typography,
-  App,
-  Table,
-  Alert,
-  Modal,
-  Form,
-  Input,
-  Button,
-  theme,
-} from 'antd';
+import { DetailedHTMLProps, FC, HTMLAttributes, ReactNode, use, useState } from 'react';
+import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input, theme } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut } from 'next-auth/react';

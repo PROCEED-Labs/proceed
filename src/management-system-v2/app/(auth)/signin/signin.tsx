@@ -30,7 +30,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
-import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
+import { type ExtractedProvider } from '@/lib/auth';
 
 const verticalGap = '1rem';
 
@@ -82,8 +82,8 @@ const CredentialsSignIn = ({
         <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
           <Input
             placeholder={provider.credentials[key].label}
-            type={provider.credentials[key].type}
-            defaultValue={provider.credentials[key].value}
+            type={provider.credentials[key].type as string}
+            defaultValue={provider.credentials[key].value as string}
           />
         </Form.Item>
       ))}

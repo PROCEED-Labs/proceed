@@ -1,6 +1,8 @@
 'use client';
+import React, { ReactNode } from 'react';
+import { Card, Col, Progress, Row, Tooltip, Typography } from 'antd';
+import cn from 'classnames';
 
-import { Card, Col, Progress, Row } from 'antd';
 import {
   UserOutlined,
   CalendarOutlined,
@@ -11,27 +13,43 @@ import {
 } from '@ant-design/icons';
 import { generateDateString } from '@/lib/utils';
 import { transformMilisecondsToDurationValues } from '@/lib/helpers/timeHelper';
+import { UserTask } from '@/lib/user-task-schema';
+import styles from './userTaskCard.module.scss';
+
+type CardLineEntry = { icon: ReactNode; text: ReactNode };
+const CardInfoLine: React.FC<{ entries: CardLineEntry[] }> = ({ entries }) => {
+  return (
+    <>
+      <Row gutter={16}>
+        {entries.map(({ icon, text }, index) => (
+          <Col span={10} key={index}>
+            <span style={{ fontSize: '0.75rem' }}>
+              {icon} {text}
+            </span>
+          </Col>
+        ))}
+      </Row>
+    </>
+  );
+};
 
 const UserTaskCard = ({
   userTaskData,
   clickHandler,
   selected = false,
 }: {
-  userTaskData: {
-    id: string;
-    name: string;
-    state: string;
-    owner?: string;
-    startTime: number;
-    endTime: number;
-    priority: number;
-    progress: number;
-  };
+  userTaskData: UserTask;
   clickHandler?: () => void;
   selected?: boolean;
 }) => {
+  const endTime = userTaskData.endTime;
+
+  const endTimeString = endTime
+    ? generateDateString(new Date(userTaskData.endTime || 0), true)
+    : '';
+
   const durationValues = transformMilisecondsToDurationValues(
-    +new Date() - userTaskData.startTime,
+    (endTime || +new Date()) - userTaskData.startTime,
     true,
   );
 
@@ -39,79 +57,62 @@ const UserTaskCard = ({
     ' ' +
     (durationValues.days ? `${durationValues.days}d, ` : '') +
     (durationValues.hours ? `${durationValues.hours}h, ` : '') +
-    (durationValues.minutes ? `${durationValues.minutes}min` : '');
+    `${durationValues.minutes || 0}min`;
+
+  const lines = [
+    [
+      { icon: <UserOutlined />, text: userTaskData.owner },
+      {
+        icon: <CalendarOutlined />,
+        text: generateDateString(new Date(userTaskData.startTime), true),
+      },
+    ],
+    [
+      { icon: <StarOutlined />, text: `${userTaskData.priority}/10` },
+      {
+        icon: <FieldTimeOutlined />,
+        text: durationString,
+      },
+    ],
+    [
+      { icon: <QuestionCircleOutlined />, text: userTaskData.state },
+      {
+        icon: <ClockCircleOutlined />,
+        text: generateDateString(new Date(userTaskData.endTime || 0), true),
+      },
+    ],
+  ] as CardLineEntry[][];
 
   return (
     <Card
       title={
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{userTaskData.name}</span>
-          <Progress type="circle" percent={userTaskData.progress} size={30} />
-        </div>
+        <>
+          <div className={styles.UserTaskCardTitle}>
+            <span>{userTaskData.name}</span>
+            <Progress type="circle" percent={userTaskData.progress} size={30} />
+          </div>
+          {userTaskData.offline && !userTaskData.endTime && (
+            <Tooltip title="The engine this user task is running on is currently not reachable!">
+              <Typography.Text style={{ fontSize: '0.9em' }} italic type="warning">
+                Offline
+              </Typography.Text>
+            </Tooltip>
+          )}
+        </>
       }
       bordered={false}
-      style={{
-        width: '100%',
-        cursor: 'pointer',
-        backgroundColor: selected ? '#eae9e9' : '',
-      }}
-      className="shaded-card"
-      styles={{
-        body: {
-          paddingInline: '0.75rem',
-          paddingBlock: '0.5rem',
-          whiteSpace: 'nowrap',
-        },
-        header: {
-          paddingInline: '0.75rem',
-          paddingBlock: '0.25rem',
-          fontSize: '0.875rem',
-          minHeight: '1rem',
-        },
+      className={cn(styles.UserTaskCard, { [styles.selected]: selected })}
+      classNames={{
+        body: styles.UserTaskCardBody,
+        header: styles.UserTaskCardHeader,
       }}
       onClick={() => {
         clickHandler?.();
       }}
     >
-      <Row gutter={16}>
-        <Col span={10}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <UserOutlined></UserOutlined> {userTaskData.owner}
-          </span>
-        </Col>
-        <Col span={14}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <CalendarOutlined></CalendarOutlined>
-            {' ' + generateDateString(new Date(userTaskData.startTime), true)}
-          </span>
-        </Col>
-      </Row>
-      <Row gutter={16}>
-        <Col span={10}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <StarOutlined></StarOutlined> {userTaskData.priority}/10
-          </span>
-        </Col>
-        <Col span={14}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <FieldTimeOutlined></FieldTimeOutlined>
-            {durationString}
-          </span>
-        </Col>
-      </Row>
-      <Row gutter={16}>
-        <Col span={10}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <QuestionCircleOutlined></QuestionCircleOutlined> {userTaskData.state}
-          </span>
-        </Col>
-        <Col span={14}>
-          <span style={{ fontSize: '0.75rem' }}>
-            <ClockCircleOutlined></ClockCircleOutlined>
-            {' ' + generateDateString(new Date(userTaskData.endTime), true)}
-          </span>
-        </Col>
-      </Row>
+      {lines.map((line, index) => (
+        <CardInfoLine entries={line} key={index} />
+      ))}
     </Card>
   );
 };

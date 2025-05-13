@@ -1,4 +1,4 @@
-// This is your Prisma schema file,
+  // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
@@ -46,6 +46,7 @@ model User {
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
   guestSignin     GuestSignin?
   verificationTokens VerificationToken[]   @relation("verificationToken")
+  guestSignin     GuestSignin?
 
   @@map("user")
 }
@@ -73,8 +74,9 @@ model PasswordAccount {
 
 model Process {
   id                   String              @id @default(uuid())
+  userDefinedId        String?             
   originalId           String
-  name                 String
+  name                 String            
   description          String
   createdOn            DateTime
   lastEditedOn         DateTime            @updatedAt
@@ -94,7 +96,7 @@ model Process {
   creatorId            String
   //TODO: Departments and Variables add here if needed in future
   artifactProcessReferences   ArtifactProcessReference[]
-
+  @@unique([name,environmentId,creatorId,folderId])
   @@map("process")
 }
 
@@ -154,6 +156,7 @@ model Space {
   processes          Process[]
   roles              Role[]
   engines            Engine[]
+  settings           SpaceSettings? @relation("spaceSettings")
 
   @@map("space")
 }
@@ -242,12 +245,33 @@ model Engine {
   @@map("engine")
 }
 
-model GuestSignin {
-  userId      String   @id
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lastSigninAt DateTime @default(now())
+model SpaceSettings {
+  environmentId String     @id @unique
+  space         Space      @relation(name: "spaceSettings", fields: [environmentId], references: [id], onDelete: Cascade)
+  settings      Json
 
-  @@map("guest_signin")
+  @@map("space_settings")
+}
+
+model UserTask {
+ id                    String @id
+ taskId                String
+ name                  String?
+ instanceID            String
+ fileName              String
+ html                  String?
+ state                 String
+ priority              Int
+ progress              Int
+ startTime             DateTime
+ endTime               DateTime?
+ initialVariables      Json?
+ variableChanges       Json?
+ milestones            Json?
+ milestonesChanges     Json?
+ machineId             String
+
+ @@map("userTask")
 }
 
 model VerificationToken {
@@ -256,4 +280,12 @@ model VerificationToken {
   expires    DateTime
   user       User?     @relation(name: "verificationToken", fields: [userId], references: [id])
   userId     String? /// If this is set, then the token is for an email change and the idenrtifier is the new email
+}
+  
+model GuestSignin {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastSigninAt DateTime @default(now())
+
+  @@map("guest_signin")
 }

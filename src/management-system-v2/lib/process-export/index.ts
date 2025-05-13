@@ -63,7 +63,7 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
     }
     // export the images used either for flow elements or inside user tasks
     if (processData.images.length) {
-      const imageFolder = zipFolder.folder('images');
+      const imageFolder = zipFolder.folder('artefacts/images');
       for (const { filename, data: imageData } of processData.images) {
         imageFolder?.file(filename, imageData);
       }
@@ -76,7 +76,6 @@ export async function getExportblob(
   spaceId: string,
 ) {
   const exportData = await prepareExport(options, processes, spaceId);
-
   // for other export types we need one file for every kind of additional data (artefacts, collapsed subprocesses, imports)
   const numProcesses = exportData.length;
   // the following cases are only relevant if there is only one process to export (in any other case needsZip becomes true anyway)
@@ -112,7 +111,10 @@ export async function getExportblob(
 
   if (zip) {
     return {
-      filename: 'PROCEED_Multiple-Processes_bpmn.zip',
+      filename:
+        exportData.length === 1
+          ? `${exportData[0].definitionName}.zip`
+          : 'PROCEED_Multiple-Processes_bpmn.zip',
       blob: await zip.generateAsync({ type: 'blob' }),
       zip: true,
     };

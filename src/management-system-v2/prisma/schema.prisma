@@ -233,6 +233,27 @@ model Engine {
   @@map("engine")
 }
 
+model UserTask {
+ id                    String @id
+ taskId                String
+ name                  String?
+ instanceID            String
+ fileName              String
+ html                  String?
+ state                 String
+ priority              Int
+ progress              Int
+ startTime             DateTime
+ endTime               DateTime?
+ initialVariables      Json?
+ variableChanges       Json?
+ milestones            Json?
+ milestonesChanges     Json?
+ machineId             String
+
+ @@map("userTask")
+}
+
 model VerificationToken {
   token      String   @id
   identifier String

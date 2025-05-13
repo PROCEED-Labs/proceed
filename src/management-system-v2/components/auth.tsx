@@ -13,8 +13,17 @@ import {
 import { getUserById } from '@/lib/data/db/iam/users';
 import { cookies } from 'next/headers';
 import { env } from '@/lib/env-vars';
+import * as noIamUser from '@/lib/no-iam-user';
 
 export const getCurrentUser = cache(async () => {
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    return {
+      session: noIamUser.session,
+      userId: noIamUser.userId,
+      systemAdmin: noIamUser.systemAdmin,
+    };
+  }
+
   const session = await auth();
   const userId = session?.user.id || '';
   const [systemAdmin, user] = await Promise.all([

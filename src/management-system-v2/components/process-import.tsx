@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, use } from 'react';
 
 import { Button, Upload } from 'antd';
 import type { ButtonProps } from 'antd';
@@ -24,6 +24,7 @@ import type ElementFactory from 'diagram-js/lib/core/ElementFactory';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
+import { EnvVarsContext } from './env-vars-context';
 
 export type ProcessData = {
   name: string;
@@ -37,24 +38,122 @@ type JSONProcessSchema = {
     product_id: string;
     process: JSONProcessTaskSchema[];
   };
+  features: {
+    [key: string]: {
+      general: {
+        bore_length: number;
+        bore_radius: number;
+        id: number;
+        type: string;
+      };
+      geometry: {
+        [key: string]: {
+          geometry: {
+            angle: number;
+            area: number;
+            'face type': string;
+            length: number;
+            radius: number;
+            stepEntity: string;
+            stepID: number;
+          };
+          tolerances: {
+            actualHorizontal: {
+              Ra: number;
+              Rk: number;
+              Rpk: number;
+              Rt: number;
+              Rvk: number;
+              Rz: number;
+            };
+            actualVertical: {
+              Ra: number;
+              Rk: number;
+              Rpk: number;
+              Rt: number;
+              Rvk: number;
+              Rz: number;
+            };
+            targetHorizontal: {
+              Ra: number;
+              Rk: number;
+              Rpk: number;
+              Rt: number;
+              Rvk: number;
+              Rz: number;
+            };
+            targetVertical: {
+              Ra: number;
+              Rk: number;
+              Rpk: number;
+              Rt: number;
+              Rvk: number;
+              Rz: number;
+            };
+          };
+        };
+      };
+    };
+  };
+  production_facilities: {
+    production_facilities: Array<{
+      production_facility: string;
+      process: Array<{
+        process_position_id: number;
+        production_process: string;
+        description: string;
+        parameter: {
+          when: string;
+          manual_automated: string;
+          'machine hour rate [€/h]': string;
+        };
+        result: string;
+      }>;
+    }>;
+  };
 };
 
 type JSONProcessTaskSchema = {
   process_id: number;
   process_name: string;
-  process_position_ID: number;
-  production_facility: Array<string>;
+  process_position_id: number;
   production_process: string;
+  production_facility: {
+    [key: string]: {
+      facility_reference: string;
+      'total processing time [min]': string;
+      'total processing costs [€]': string;
+      parameter: Array<{
+        facility_reference: 'production_facilities.Chisel_system';
+        'total processing time [min]': '';
+        'total processing costs [€]': '';
+        parameter: Array<{
+          Schritt: number;
+          'Zeit von [min]': number;
+          'Zeit bis [min]': number;
+          Werkzeug: string;
+          'v_w [m/s]': number;
+          'z_w [mm]': number;
+          'f_a [Hz]': number;
+          'Ra von': number;
+          'Ra bis': number;
+        }>;
+      }>;
+    };
+  };
   results: Array<{
     feature_name: string;
-    feature_id: number;
-    face_ID: Array<string>;
+    face_ID: {
+      [key: string]: { geometry: string };
+    };
+    general: string;
   }>;
 };
 
 // TODO: maybe show import errors and warnings like in the old MS (e.g. id collisions if an existing process is reimported or two imports use the same id)
 
 const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
+  const env = use(EnvVarsContext);
   const [importProcessData, setImportProcessData] = useState<ProcessData[]>([]);
   const router = useRouter();
   const environment = useEnvironment();
@@ -62,6 +161,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   const createTaskShape = (
     bpmnModeler: BpmnModeler,
     taskInfo: JSONProcessTaskSchema,
+    processInfo: JSONProcessSchema,
     taskPosition: { x: number; y: number },
   ) => {
     const modeling = bpmnModeler.get('modeling') as Modeling;
@@ -77,7 +177,10 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
         '\n' + `| ${result.feature_name} | ${result.feature_id} | ${result.face_ID.join(', ')} |`;
     });
 
-    const isUserTask = taskInfo.production_facility.includes('Human');
+    const facility = processInfo.production_facilities.production_facilities.find(
+      (entry) => entry.production_facility === Object.keys(taskInfo.production_facility)[0],
+    );
+    const isUserTask = facility?.process;
     const taskShape = modeling.createShape(
       elementFactory.createShape({
         type: isUserTask ? 'bpmn:UserTask' : 'bpmn:ServiceTask',
@@ -104,21 +207,22 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   };
 
   const importJsonProcess = async (json: string) => {
+    console.log('importJsonProcess', json);
     const processInfo = JSON.parse(json) as JSONProcessSchema;
 
     const sortedTasks = processInfo.work_plan.process
-      .sort((taskA, taskB) => taskA.process_position_ID - taskB.process_position_ID)
+      .sort((taskA, taskB) => taskA.process_position_id - taskB.process_position_id)
       .reduce<{ positionID: number; tasks: JSONProcessTaskSchema[] }[]>((acc, curr) => {
-        const isAlreadyAdded = acc.find((t) => t.positionID === curr.process_position_ID);
+        const isAlreadyAdded = acc.find((t) => t.positionID === curr.process_position_id);
         if (isAlreadyAdded) {
           return acc;
         }
 
         const parallelTasks = processInfo.work_plan.process.filter(
-          (t) => t.process_position_ID === curr.process_position_ID,
+          (t) => t.process_position_ID === curr.process_position_id,
         );
 
-        return [...acc, { positionID: curr.process_position_ID, tasks: parallelTasks }];
+        return [...acc, { positionID: curr.process_position_id, tasks: parallelTasks }];
       }, []);
 
     const processId = `Process_${generateBpmnId()}`;
@@ -268,7 +372,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   return (
     <>
       <Upload
-        accept={process.env.PROCEED_PUBLIC_PROJECTS_HTA2 ? '.bpmn,.json' : '.bpmn'}
+        accept={env.PROCEED_PUBLIC_PROJECTS_HTA2 ? '.bpmn,.json' : '.bpmn'}
         multiple
         showUploadList={false}
         beforeUpload={async (_, fileList) => {
@@ -276,7 +380,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
             fileList.map(async (file) => {
               const fileText = await file.text();
               const bpmn =
-                process.env.PROCEED_PUBLIC_PROJECTS_HTA2 && file.type === 'application/json'
+                env.PROCEED_PUBLIC_PROJECTS_HTA2 && file.type === 'application/json'
                   ? await importJsonProcess(fileText)
                   : fileText;
 

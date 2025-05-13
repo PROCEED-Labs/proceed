@@ -46,7 +46,6 @@ model User {
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
   guestSignin     GuestSignin?
   verificationTokens VerificationToken[]   @relation("verificationToken")
-  guestSignin     GuestSignin?
 
   @@map("user")
 }

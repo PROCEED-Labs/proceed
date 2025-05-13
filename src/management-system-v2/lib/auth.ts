@@ -138,6 +138,9 @@ const nextAuthOptions: NextAuthConfig = {
 if (env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE) {
   nextAuthOptions.providers.push(
     EmailProvider({
+      id: 'email',
+      name: 'Sign in with E-mail',
+      server: {},
       sendVerificationRequest(params) {
         const signinMail = renderSigninLinkEmail({
           signInLink: params.url,
@@ -342,7 +345,7 @@ export type ExtractedProvider =
       type: 'credentials';
       name: string;
       credentials: Record<string, CredentialInput>;
-
+    };
 
 // Unfortunately, next-auth's getProviders() function does not return enough information to render the signin page.
 // So we need to manually map the providers

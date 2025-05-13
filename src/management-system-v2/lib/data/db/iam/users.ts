@@ -102,6 +102,32 @@ export async function addUser(
       },
     });
 
+    await tx.user.create({
+      data: {
+        ...user,
+        isGuest: user.isGuest,
+      },
+    });
+
+    await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+
+    if ((await getSystemAdmins()).length === 0 && !user.isGuest)
+      await addSystemAdmin(
+        {
+          role: 'admin',
+          userId: user.id!,
+        },
+        tx,
+      );
+
+    if (user.isGuest) {
+      await tx.guestSignin.create({
+        data: {
+          userId: user.id!,
+        },
+      });
+    }
+
     await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
 
     if ((await getSystemAdmins()).length === 0 && !user.isGuest)
@@ -173,10 +199,10 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
         data: { ownerId: adminRole.members.find((member) => member.userId !== userId)?.userId },
       });
     }
-
-    if (orgsWithNoNextAdmin.length > 0)
-      throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
   }
+
+  if (orgsWithNoNextAdmin.length > 0)
+    throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
 
   if (user.isGuest) {
     await dbMutator.guestSignin.delete({ where: { userId: userId } });

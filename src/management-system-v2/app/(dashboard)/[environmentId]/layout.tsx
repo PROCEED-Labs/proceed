@@ -22,6 +22,7 @@ import {
   ToolOutlined,
   SolutionOutlined,
   HomeOutlined,
+  OrderedListOutlined,
 } from '@ant-design/icons';
 
 import Link from 'next/link';
@@ -101,6 +102,12 @@ const DashboardLayout = async ({
       key: 'machines',
       label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Machines</Link>,
       icon: <LaptopOutlined />,
+    });
+
+    children.push({
+      key: 'competences',
+      label: <Link href={spaceURL(activeEnvironment, `/competences`)}>Competences</Link>,
+      icon: <OrderedListOutlined />,
     });
 
     layoutMenuItems = [

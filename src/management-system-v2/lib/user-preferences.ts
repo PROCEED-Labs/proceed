@@ -43,6 +43,8 @@ const defaultPreferences = {
   'process-meta-data': { open: false, width: 300 },
   'tech-data-open-tree-items': [] as { id: string; open: string[] }[],
   'tech-data-editor': { siderOpen: true, siderWidth: 300 },
+  'competences-table': { cardWidth: NaN },
+  'competences-viewer': { upperCardHeight: NaN },
 }; /* as const */ /* Does not work for strings */
 
 const partialUpdate = (

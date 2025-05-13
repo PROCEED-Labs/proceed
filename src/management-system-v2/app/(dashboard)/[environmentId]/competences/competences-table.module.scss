@@ -1,0 +1,20 @@
+.outerHandle {
+  width: 4px;
+  cursor: ew-resize;
+  display: flex;
+  justify-content: center;
+}
+
+.innerHandle {
+  width: 2px;
+  background-color: #a6adb5;
+  height: 100%;
+  border-radius: 4px;
+}
+.card {
+  flex: auto;
+}
+
+.table {
+  height: 100%;
+}

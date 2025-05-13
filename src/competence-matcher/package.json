@@ -1,5 +1,5 @@
 {
-  "name": "competencies-matcher",
+  "name": "competence-matcher",
   "version": "0.0.1",
   "description": "Matching microservice that allows to allows to define and match on data criteria",
   "main": "server.ts",

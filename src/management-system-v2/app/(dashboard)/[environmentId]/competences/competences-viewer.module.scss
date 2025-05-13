@@ -1,0 +1,23 @@
+.container {
+  flex: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+.outerHandle {
+  height: 4px;
+  width: 100%;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+}
+.innerHandle {
+  height: 2px;
+  background-color: #a6adb5;
+  width: 100%;
+  border-radius: 4px;
+}
+.card {
+  flex: auto;
+}

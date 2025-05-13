@@ -1,7 +1,8 @@
 'use client';
-
+import React, { ReactNode } from 'react';
+import { Card, Col, Progress, Row, Tooltip, Typography } from 'antd';
 import cn from 'classnames';
-import { Card, Col, Progress, Row } from 'antd';
+
 import {
   UserOutlined,
   CalendarOutlined,
@@ -12,8 +13,8 @@ import {
 } from '@ant-design/icons';
 import { generateDateString } from '@/lib/utils';
 import { transformMilisecondsToDurationValues } from '@/lib/helpers/timeHelper';
+import { UserTask } from '@/lib/user-task-schema';
 import styles from './userTaskCard.module.scss';
-import React, { ReactNode } from 'react';
 
 type CardLineEntry = { icon: ReactNode; text: ReactNode };
 const CardInfoLine: React.FC<{ entries: CardLineEntry[] }> = ({ entries }) => {
@@ -37,21 +38,18 @@ const UserTaskCard = ({
   clickHandler,
   selected = false,
 }: {
-  userTaskData: {
-    id: string;
-    name: string;
-    state: string;
-    owner?: string;
-    startTime: number;
-    endTime: number;
-    priority: number;
-    progress: number;
-  };
+  userTaskData: UserTask;
   clickHandler?: () => void;
   selected?: boolean;
 }) => {
+  const endTime = userTaskData.endTime;
+
+  const endTimeString = endTime
+    ? generateDateString(new Date(userTaskData.endTime || 0), true)
+    : '';
+
   const durationValues = transformMilisecondsToDurationValues(
-    +new Date() - userTaskData.startTime,
+    (endTime || +new Date()) - userTaskData.startTime,
     true,
   );
 
@@ -59,7 +57,7 @@ const UserTaskCard = ({
     ' ' +
     (durationValues.days ? `${durationValues.days}d, ` : '') +
     (durationValues.hours ? `${durationValues.hours}h, ` : '') +
-    (durationValues.minutes ? `${durationValues.minutes}min` : '');
+    `${durationValues.minutes || 0}min`;
 
   const lines = [
     [
@@ -80,7 +78,7 @@ const UserTaskCard = ({
       { icon: <QuestionCircleOutlined />, text: userTaskData.state },
       {
         icon: <ClockCircleOutlined />,
-        text: generateDateString(new Date(userTaskData.endTime), true),
+        text: generateDateString(new Date(userTaskData.endTime || 0), true),
       },
     ],
   ] as CardLineEntry[][];
@@ -88,10 +86,19 @@ const UserTaskCard = ({
   return (
     <Card
       title={
-        <div className={styles.UserTaskCardTitle}>
-          <span>{userTaskData.name}</span>
-          <Progress type="circle" percent={userTaskData.progress} size={30} />
-        </div>
+        <>
+          <div className={styles.UserTaskCardTitle}>
+            <span>{userTaskData.name}</span>
+            <Progress type="circle" percent={userTaskData.progress} size={30} />
+          </div>
+          {userTaskData.offline && !userTaskData.endTime && (
+            <Tooltip title="The engine this user task is running on is currently not reachable!">
+              <Typography.Text style={{ fontSize: '0.9em' }} italic type="warning">
+                Offline
+              </Typography.Text>
+            </Tooltip>
+          )}
+        </>
       }
       bordered={false}
       className={cn(styles.UserTaskCard, { [styles.selected]: selected })}

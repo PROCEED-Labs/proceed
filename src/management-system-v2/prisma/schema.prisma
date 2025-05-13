@@ -145,6 +145,7 @@ model Space {
   processes          Process[]
   roles              Role[]
   engines            Engine[]
+  settings           SpaceSettings? @relation("spaceSettings")
 
   @@map("space")
 }
@@ -231,6 +232,14 @@ model Engine {
   lastEditedOn  DateTime @updatedAt
 
   @@map("engine")
+}
+
+model SpaceSettings {
+  environmentId String     @id @unique
+  space         Space      @relation(name: "spaceSettings", fields: [environmentId], references: [id], onDelete: Cascade)
+  settings      Json
+
+  @@map("space_settings")
 }
 
 model UserTask {

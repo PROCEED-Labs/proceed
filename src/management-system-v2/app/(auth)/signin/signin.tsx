@@ -237,12 +237,7 @@ const SignIn: FC<{
       label: 'Create Organization',
       key: 'create-organization',
       href: '/create-organization',
-      children: (
-        <CredentialsSignIn
-          provider={passwordSignupProvider as any}
-          callbackUrl={callbackUrlWithGuestRef}
-        />
-      ),
+      children: null,
     });
   }
 

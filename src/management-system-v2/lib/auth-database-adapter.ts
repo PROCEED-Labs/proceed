@@ -40,7 +40,8 @@ const Adapter = {
     try {
       // next-auth checks if the token is expired
       const token = await deleteEmailVerificationToken(params);
-      return token;
+      if (token.type === 'signin_with_email' || token.type === 'register_new_user') return token;
+      else return null;
     } catch (_) {
       return null;
     }

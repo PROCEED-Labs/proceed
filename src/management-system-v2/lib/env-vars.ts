@@ -24,6 +24,7 @@ const environmentVariables = {
     ENABLE_PASSWORD_SIGNIN: z.string().optional(),
     PROCEED_PUBLIC_DEPLOYMENT_ENV: z.enum(['cloud', 'local']).optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
+    NEXTAUTH_SECRET: z.string().optional(),
     SHARING_ENCRYPTION_SECRET: z.string(),
     INVITATION_ENCRYPTION_SECRET: z.string(),
     MS_ENABLED_RESOURCES: z

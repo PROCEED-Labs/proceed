@@ -2,8 +2,8 @@ import { z } from 'zod';
 import db from '@/lib/data/db';
 
 const baseEmailVerificationTokenSchema = z.object({
-  token: z.string().email(),
-  identifier: z.string(),
+  token: z.string(),
+  identifier: z.string().email(),
   expires: z.date(),
 });
 

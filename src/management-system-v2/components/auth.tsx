@@ -10,10 +10,10 @@ import {
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
-import { getUserById } from '@/lib/data/db/iam/users';
-import { cookies } from 'next/headers';
 import { env } from '@/lib/env-vars';
 import * as noIamUser from '@/lib/no-iam-user';
+import { getUserById } from '@/lib/data/db/iam/users';
+import { cookies } from 'next/headers';
 
 export const getCurrentUser = cache(async () => {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {

@@ -102,32 +102,6 @@ export async function addUser(
       },
     });
 
-    await tx.user.create({
-      data: {
-        ...user,
-        isGuest: user.isGuest,
-      },
-    });
-
-    await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
-
-    if ((await getSystemAdmins()).length === 0 && !user.isGuest)
-      await addSystemAdmin(
-        {
-          role: 'admin',
-          userId: user.id!,
-        },
-        tx,
-      );
-
-    if (user.isGuest) {
-      await tx.guestSignin.create({
-        data: {
-          userId: user.id!,
-        },
-      });
-    }
-
     await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
 
     if ((await getSystemAdmins()).length === 0 && !user.isGuest)
@@ -341,7 +315,7 @@ export async function deleteInactiveGuestUsers(
 /** Note: make sure to save a salted hash of the password */
 export async function setUserPassword(
   userId: string,
-  password: string,
+  passwordHash: string,
   tx?: Prisma.TransactionClient,
 ) {
   const dbMutator = tx || db;
@@ -355,11 +329,11 @@ export async function setUserPassword(
   if (user.passwordAccount) {
     await dbMutator.passwordAccount.update({
       where: { userId },
-      data: { password: password },
+      data: { password: passwordHash },
     });
   } else {
     await dbMutator.passwordAccount.create({
-      data: { userId, password: password },
+      data: { userId, password: passwordHash },
     });
   }
 }

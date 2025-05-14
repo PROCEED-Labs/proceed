@@ -49,7 +49,41 @@ export async function createChangeEmailVerificationToken({
   return { verificationToken, redirectUrl };
 }
 
-export async function notExpired(verificationToken: { token: string; expires: Date }) {
+export async function createUserRegistrationToken({
+  identifier,
+  username,
+  firstName,
+  lastName,
+  passwordHash,
+}: {
+  identifier: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  passwordHash?: string;
+}) {
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+
+  const verificationToken = {
+    type: 'register_new_user',
+    token: await getTokenHash(token),
+    expires,
+    identifier,
+    username,
+    firstName,
+    lastName,
+    passwordHash,
+  } satisfies EmailVerificationToken;
+
+  const redirectUrl = new URL(`/api/register-new-user`, env.NEXTAUTH_URL);
+  redirectUrl.searchParams.set('token', token);
+  redirectUrl.searchParams.set('email', identifier);
+
+  return { verificationToken, redirectUrl: redirectUrl.toString() };
+}
+
+export async function notExpired(verificationToken: { expires: Date }) {
   if (verificationToken.expires.valueOf() < Date.now()) return false;
   return true;
 }

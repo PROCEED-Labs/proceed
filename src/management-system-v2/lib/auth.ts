@@ -25,6 +25,8 @@ import { env } from '@/lib/env-vars';
 import { getUserAndPasswordByUsername, updateGuestUserLastSigninTime } from './data/db/iam/users';
 import { comparePassword, hashPassword } from './password-hashes';
 import db from './data/db';
+import { createUserRegistrationToken } from './email-verification-tokens/utils';
+import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -289,36 +291,101 @@ if (env.ENABLE_PASSWORD_SIGNIN) {
         return userAndPassword as User;
       },
     }),
+  );
+}
+
+if (env.ENABLE_PASSWORD_SIGNIN || env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE) {
+  //Vorname, Nachname und Username input feldern,
+  const credentials: Record<string, CredentialInput> = {
+    firstName: {
+      type: 'string',
+      label: 'First Name',
+    },
+    lastName: {
+      type: 'string',
+      label: 'Last Name',
+    },
+    username: {
+      type: 'string',
+      label: 'Username',
+    },
+  };
+
+  if (env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE) {
+    credentials['email'] = {
+      type: 'email',
+      label: 'E-Mail',
+    };
+  }
+
+  if (env.ENABLE_PASSWORD_SIGNIN) {
+    credentials['password'] = {
+      type: 'password',
+      label: 'Password',
+    };
+  }
+
+  nextAuthOptions.providers.push(
     CredentialsProvider({
-      name: 'Sign Up',
+      name: 'Register as New User',
       type: 'credentials',
-      id: 'username-password-signup',
-      credentials: {
-        username: {
-          type: 'string',
-          label: 'Username',
-        },
-        password: {
-          type: 'password',
-          label: 'Password',
-        },
-      },
-      authorize: async (credentials) => {
+      id: 'register-as-new-user',
+      credentials,
+      authorize: async (
+        credentials: Partial<
+          Record<'firstName' | 'lastName' | 'username' | 'email' | 'password', string>
+        >,
+      ) => {
         let user: User | null = null;
+        // TODO: verify input
 
-        await db.$transaction(async (tx) => {
-          user = await addUser(
-            {
-              username: credentials.username as string,
-              isGuest: false,
-              emailVerifiedOn: null,
-            },
-            tx,
-          );
+        // Whenever the email is active, we create the user after he verifies his email
+        if (env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE) {
+          const tokenParams: any = {
+            identifier: credentials.email,
+            username: credentials.username,
+            firstName: credentials.firstName,
+            lastName: credentials.lastName,
+          };
 
-          const hashedPassword = await hashPassword(credentials.password as string);
-          await setUserPassword(user.id, hashedPassword, tx);
-        });
+          if (env.ENABLE_PASSWORD_SIGNIN)
+            tokenParams['passwordHash'] = await hashPassword(credentials.password as string);
+
+          const userRegistrationToken = await createUserRegistrationToken(tokenParams);
+
+          await saveEmailVerificationToken(userRegistrationToken.verificationToken);
+
+          const signinMail = renderSigninLinkEmail({
+            signInLink: userRegistrationToken.redirectUrl,
+            expires: userRegistrationToken.verificationToken.expires,
+          });
+
+          await sendEmail({
+            to: credentials.email as string,
+            subject: 'Sign in to PROCEED',
+            html: signinMail.html,
+            text: signinMail.text,
+          });
+
+          // TODO: show user a message that the email was sent
+        } else {
+          // Only password is enabled -> immediately create user
+          await db.$transaction(async (tx) => {
+            user = await addUser(
+              {
+                username: credentials.username,
+                firstName: credentials.firstName,
+                lastName: credentials.lastName,
+                isGuest: false,
+                emailVerifiedOn: null,
+              },
+              tx,
+            );
+
+            const hashedPassword = await hashPassword(credentials.password as string);
+            await setUserPassword(user.id, hashedPassword, tx);
+          });
+        }
 
         return user;
       },

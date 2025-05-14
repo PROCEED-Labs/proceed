@@ -112,7 +112,7 @@ const SignIn: FC<{
     (provider) => provider.id === 'username-password-signin',
   );
   const passwordSignupProvider = providers.find(
-    (provider) => provider.id === 'username-password-signup',
+    (provider) => provider.id === 'register-as-new-user',
   );
   const developmentUsersProvider = providers.find(
     (provider) => provider.id === 'development-users',

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import db from '@/lib/data/db';
+import { Prisma } from '@prisma/client';
 
 const baseEmailVerificationTokenSchema = z.object({
   token: z.string(),
@@ -62,5 +63,23 @@ export async function saveEmailVerificationToken(tokenInput: EmailVerificationTo
 
   return await db.emailVerificationToken.create({
     data: token,
+  });
+}
+
+export async function updateEmailVerificationTokenExpiration(
+  tokenIdentifier: {
+    token: string;
+    identifier: string;
+  },
+  newExpiration: Date,
+  tx?: Prisma.TransactionClient,
+) {
+  const mutator = tx || db;
+
+  return await mutator.emailVerificationToken.update({
+    where: tokenIdentifier,
+    data: {
+      expires: newExpiration,
+    },
   });
 }

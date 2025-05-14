@@ -29,7 +29,6 @@ export const createUserArgs = {
 export const session = {
   user,
   expires: '',
-  csrfToken: 'csrf-token',
 } satisfies Session;
 
 export const systemAdmin = {

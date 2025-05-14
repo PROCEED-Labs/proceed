@@ -9,7 +9,6 @@ import { IoArrowBack } from 'react-icons/io5';
 import styles from './tasklist.module.scss';
 import ScrollBar from '@/components/scrollbar';
 
-import { TaskListEntry } from '@/lib/engines/tasklist';
 import UserTaskView from './user-task-view';
 import { ItemType } from 'antd/es/menu/interface';
 import {
@@ -19,6 +18,7 @@ import {
   StatusSelection,
   stateOrder,
 } from './components';
+import { UserTask } from '@/lib/user-task-schema';
 
 const sortValues = ['startTime', 'deadline', 'progress', 'priority', 'state'] as const;
 type SortValue = (typeof sortValues)[number];
@@ -30,7 +30,7 @@ const sortValueMap = {
   state: 'state',
 } as const;
 
-const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
+const Tasklist = ({ userTasks }: { userTasks: UserTask[] }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
@@ -60,7 +60,7 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
 
     const getSortFunction = (name: SortValue) => {
       const key = sortValueMap[name];
-      return (a: TaskListEntry, b: TaskListEntry) => {
+      return (a: UserTask, b: UserTask) => {
         // tiebreak equal value by comparing the startTime
         if (a[key] === b[key]) {
           return selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
@@ -72,7 +72,9 @@ const Tasklist = ({ userTasks }: { userTasks: TaskListEntry[] }) => {
           return selectedSortItem.ascending ? indexA - indexB : indexB - indexA;
         }
 
-        return selectedSortItem.ascending ? a[key] - b[key] : b[key] - a[key];
+        return selectedSortItem.ascending
+          ? (a[key] || 0) - (b[key] || 0)
+          : (b[key] || 0) - (a[key] || 0);
       };
     };
 

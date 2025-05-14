@@ -94,7 +94,7 @@ const DashboardLayout = async ({
     }
   }
 
-  if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION)  {
+  if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     const automationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-automation',

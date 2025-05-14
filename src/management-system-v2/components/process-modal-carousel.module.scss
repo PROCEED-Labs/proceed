@@ -1,0 +1,9 @@
+.process-modal-carousel-wrapper {
+  :global(.slick-arrow) {
+    width: 30px;
+    height: 30px;
+  }
+  :global(svg.slick-arrow.slick-next) {
+    margin-right: -9px;
+  }
+}

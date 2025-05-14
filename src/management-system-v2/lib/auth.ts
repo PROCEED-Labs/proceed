@@ -1,6 +1,8 @@
-import { AuthOptions, getServerSession } from 'next-auth';
-import Auth0Provider from 'next-auth/providers/auth0';
-import EmailProvider from 'next-auth/providers/email';
+import NextAuth, { NextAuthConfig } from 'next-auth';
+import { JWT } from 'next-auth/jwt';
+import { User as ProviderUser } from '@auth/core/types';
+
+import EmailProvider from 'next-auth/providers/nodemailer';
 import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
@@ -12,20 +14,33 @@ import {
   getUserByUsername,
   updateUser,
 } from '@/lib/data/db/iam/users';
-import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
-import Adapter from './adapter';
-import { AuthenticatedUser, User } from '@/lib/data/user-schema';
+import { CredentialInput, OAuthProviderButtonStyles, Provider } from 'next-auth/providers';
+import Adapter from './auth-database-adapter';
+import { User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
+import { updateGuestUserLastSigninTime } from './data/db/iam/users';
 import * as noIamUser from '@/lib/no-iam-user';
 import { env } from '@/lib/ms-config/env-vars';
 
-const nextAuthOptions: AuthOptions = {
+const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
   adapter: Adapter,
   session: {
     strategy: 'jwt',
   },
+  cookies: {
+    csrfToken: {
+      name: 'proceed.csrf-token',
+    },
+    callbackUrl: {
+      name: 'proceed.callback-url',
+    },
+    sessionToken: {
+      name: 'proceed.session-token',
+    },
+  },
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'Continue as Guest',
@@ -36,6 +51,9 @@ const nextAuthOptions: AuthOptions = {
       },
     }),
     EmailProvider({
+      id: 'email',
+      name: 'Sign in with E-mail',
+      server: {},
       sendVerificationRequest(params) {
         const signinMail = renderSigninLinkEmail({
           signInLink: params.url,
@@ -68,13 +86,12 @@ const nextAuthOptions: AuthOptions = {
       return token;
     },
     session({ session, token }) {
-      if (token.user) session.user = token.user;
-      if (token.csrfToken) session.csrfToken = token.csrfToken;
+      if (token.user) (session.user as User) = token.user;
 
       return session;
     },
     signIn: async ({ account, user: _user, email }) => {
-      const session = await getServerSession(nextAuthOptions);
+      const session = await auth();
       const sessionUser = session?.user;
 
       // Guest account signs in with proper auth
@@ -87,15 +104,15 @@ const nextAuthOptions: AuthOptions = {
         const sessionUserInDb = await getUserById(sessionUser.id);
         if (!sessionUserInDb || !sessionUserInDb.isGuest) throw new Error('Something went wrong');
 
-        const user = _user as Partial<AuthenticatedUser>;
-        const userSigningIn = await getUserById(_user.id);
+        const userSigningIn = _user.id ? await getUserById(_user.id) : null;
 
         if (!userSigningIn) {
+          const user = _user as Partial<ProviderUser>;
           await updateUser(sessionUser.id, {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,
-            profileImage: user.profileImage ?? undefined,
+            profileImage: user.image ?? undefined,
             email: user.email ?? undefined,
             isGuest: false,
           });
@@ -106,7 +123,10 @@ const nextAuthOptions: AuthOptions = {
     },
   },
   events: {
-    async signOut({ token }) {
+    async signOut(message) {
+      // since we use jwt message contains a token
+      const token = (message as { token: JWT }).token;
+
       if (!token.user.isGuest) return;
 
       const user = await getUserById(token.user.id);
@@ -116,7 +136,13 @@ const nextAuthOptions: AuthOptions = {
           return;
         }
 
-        deleteUser(user.id);
+        await deleteUser(user.id);
+      }
+    },
+    async session({ session }) {
+      // TODO: this causes many db calls, we should debounce this with a significant delay
+      if (session.user.isGuest) {
+        await updateGuestUserLastSigninTime(session.user.id, new Date());
       }
     },
   },
@@ -127,26 +153,6 @@ const nextAuthOptions: AuthOptions = {
 
 if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
-    Auth0Provider({
-      clientId: env.AUTH0_CLIENT_ID,
-      clientSecret: env.AUTH0_CLIENT_SECRET,
-      issuer: env.AUTH0_ISSUER,
-      authorization: {
-        params: {
-          scope: env.AUTH0_SCOPE,
-        },
-      },
-      profile(profile) {
-        return {
-          id: profile.sub,
-          email: profile.email,
-          image: profile.picture,
-          firstName: profile.given_name,
-          lastName: profile.family_name,
-          username: profile.preferred_username,
-        };
-      },
-    }),
     GoogleProvider({
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
@@ -175,14 +181,13 @@ if (env.NODE_ENV === 'production') {
     TwitterProvider({
       clientId: env.TWITTER_CLIENT_ID,
       clientSecret: env.TWITTER_CLIENT_SECRET,
-      version: '2.0',
       profile({ data, email }) {
         const nameParts = data.name.split(' ');
         const fistName = nameParts[0];
         const lastName = nameParts.slice(1).join(' ');
 
         return {
-          email,
+          email: typeof email === 'string' ? email : undefined,
           username: data.username,
           id: data.id,
           image: data.profile_image_url,
@@ -245,6 +250,8 @@ if (env.NODE_ENV === 'development') {
   );
 }
 
+export const { auth, handlers, signIn, signOut } = NextAuth(nextAuthOptions);
+
 export type ExtractedProvider =
   | {
       id: string;
@@ -268,12 +275,10 @@ export type ExtractedProvider =
 // So we need to manually map the providers
 // NOTE be careful not to leak any sensitive information
 export const getProviders = () =>
-  nextAuthOptions.providers.map((provider) => ({
-    id: provider.options?.id ?? provider.id,
-    type: provider.type,
-    name: provider.options?.name ?? provider.name,
+  (nextAuthOptions.providers as Exclude<Provider, () => any>[]).map((provider) => ({
+    id: provider.options?.id as string,
+    type: provider.type as 'email' | 'oauth' | 'credentials',
+    name: (provider.options?.name ?? provider.name) as string,
     style: provider.type === 'oauth' ? provider.style : undefined,
-    credentials: provider.type === 'credentials' ? provider.options.credentials : undefined,
+    credentials: provider.type === 'credentials' ? provider?.options?.credentials : undefined,
   })) as ExtractedProvider[];
-
-export default nextAuthOptions;

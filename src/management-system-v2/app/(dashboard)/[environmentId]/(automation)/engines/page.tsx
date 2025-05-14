@@ -7,6 +7,7 @@ import { getCurrentEnvironment } from '@/components/auth';
 import Ability from '@/lib/ability/abilityHelper';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { enableUseDB } from 'FeatureFlags';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ability }) => {
@@ -18,6 +19,10 @@ const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ab
 const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
+
+  if (!enableUseDB) {
+    return notFound();
+  }
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
 

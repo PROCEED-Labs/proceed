@@ -134,7 +134,7 @@ const Layout: FC<
         },
       ],
     };
-    layoutMenuItems.push(home);
+    layoutMenuItems = [...layoutMenuItems, home];
   }
 
   if (breakpoint.xs) {

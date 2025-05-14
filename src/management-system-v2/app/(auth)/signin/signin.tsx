@@ -14,6 +14,7 @@ import {
   Tabs,
   Grid,
   Select,
+  AlertProps,
 } from 'antd';
 
 import { GoOrganization } from 'react-icons/go';
@@ -102,7 +103,14 @@ const SignIn: FC<{
   const callbackUrlWithGuestRef = guestReferenceToken
     ? `/transfer-processes?referenceToken=${guestReferenceToken}&callbackUrl=${callbackUrl}`
     : callbackUrl;
-  const authError = searchParams.get('error');
+
+  let authError = searchParams.get('error');
+  let authErrorType = 'error';
+  const errorTypeMatch = authError?.match(/^\$(?<type>\w+)\s+(?<message>.+)/);
+  if (errorTypeMatch?.groups) {
+    authError = errorTypeMatch.groups.message;
+    authErrorType = errorTypeMatch.groups.type;
+  }
 
   const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
@@ -282,7 +290,11 @@ const SignIn: FC<{
         }}
       >
         {authError && (
-          <Alert description={authError} type="error" style={{ marginBottom: verticalGap }} />
+          <Alert
+            description={authError}
+            type={authErrorType as AlertProps['type']}
+            style={{ marginBottom: verticalGap }}
+          />
         )}
 
         {userType === 'none' ? (

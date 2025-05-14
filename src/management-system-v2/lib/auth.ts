@@ -76,7 +76,12 @@ const nextAuthOptions: NextAuthConfig = {
 
       return session;
     },
-    signIn: async ({ account, user: _user, email }) => {
+    signIn: async (params) => {
+      const { account, user: _user, email } = params;
+      if (account?.provider === 'register-as-new-user' && (_user as any).notARealUser === true) {
+        return `/signin?error=${encodeURIComponent('$success Check your email: we sent you a link to sign in with your new user.')}`;
+      }
+
       const session = await auth();
       const sessionUser = session?.user;
 
@@ -367,7 +372,10 @@ if (env.ENABLE_PASSWORD_SIGNIN || env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE) {
             text: signinMail.text,
           });
 
-          // TODO: show user a message that the email was sent
+          // This allows nextauth to proceed in the signin flow.
+          // This dummy user will be caught by the signin callback and will redirect the user back
+          // to the signin page with a success message.
+          return { id: '', notARealUser: true };
         } else {
           // Only password is enabled -> immediately create user
           await db.$transaction(async (tx) => {

@@ -265,7 +265,7 @@ model EmailVerificationToken {
   userId       String? /// If this is set, then the token is for an email change: userId is the user who wants to change his email and the idenrtifier is the new email
   username     String?
   firstName    String?
-  latName      String?
+  lastName     String?
   passwordHash String?
 }
 

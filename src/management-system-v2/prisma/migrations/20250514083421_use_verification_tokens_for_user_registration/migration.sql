@@ -22,7 +22,7 @@ CREATE TABLE "EmailVerificationToken" (
     "userId" TEXT,
     "username" TEXT,
     "firstName" TEXT,
-    "latName" TEXT,
+    "lastName" TEXT,
     "passwordHash" TEXT,
 
     CONSTRAINT "EmailVerificationToken_pkey" PRIMARY KEY ("token")

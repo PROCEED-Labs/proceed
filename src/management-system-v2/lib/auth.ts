@@ -342,7 +342,6 @@ if (env.ENABLE_PASSWORD_SIGNIN || env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE) {
         >,
       ) => {
         let user: User | null = null;
-        // TODO: verify input
 
         // Whenever the email is active, we create the user after he verifies his email
         if (env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE) {

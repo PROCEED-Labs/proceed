@@ -30,7 +30,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
-import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
+import { type ExtractedProvider } from '@/lib/auth';
 
 const verticalGap = '1rem';
 
@@ -82,8 +82,8 @@ const CredentialsSignIn = ({
         <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
           <Input
             placeholder={provider.credentials[key].label}
-            type={provider.credentials[key].type}
-            defaultValue={provider.credentials[key].value}
+            type={provider.credentials[key].type as string}
+            defaultValue={provider.credentials[key].value as string}
           />
         </Form.Item>
       ))}
@@ -311,19 +311,6 @@ const SignIn: FC<{
           signInTitle
         )}
 
-        {userType === 'guest' && guestProvider && (
-          <>
-            {divider}
-            <Button href="/processes" style={{ marginBottom: verticalGap }}>
-              Continue as Guest
-            </Button>
-
-            <Alert
-              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
-              type="info"
-            />
-          </>
-        )}
         {userType === 'none' && guestProvider && (
           <>
             <Form
@@ -403,12 +390,25 @@ const SignIn: FC<{
                   );
                 })}
               </div>
-
               <Divider />
             </>
           )}
           activeKey={activeIndex}
         />
+
+        {userType === 'guest' && guestProvider && (
+          <>
+            {divider}
+            <Button href="/processes" style={{ marginBottom: verticalGap }}>
+              Continue as Guest
+            </Button>
+
+            <Alert
+              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              type="info"
+            />
+          </>
+        )}
 
         <Typography.Paragraph
           style={{

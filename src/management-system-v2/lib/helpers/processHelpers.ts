@@ -22,10 +22,13 @@ import {
   setUserTaskData,
   getScriptTaskFileNameMapping,
   setScriptTaskData,
+  updateBpmnCreatorAttributes,
+  updateBpmnOriginalAttributes,
 } from '@proceed/bpmn-helper';
 import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
 import { asyncForEach } from './javascriptHelpers';
+import { XMLAttrDBProcessTableColsMap } from './xmlAttr-db-process-cols-map';
 
 interface ProcessInfo {
   bpmn: string;
@@ -83,6 +86,26 @@ export async function createProcess(
     throw new Error(`Invalid bpmn: ${err}`);
   }
 
+  // if process is imported, add original attributes
+  processInfo.bpmn
+    ? updateBpmnOriginalAttributes(definitions, {
+        originalId: definitions.id,
+        originalName: definitions.name,
+        originalCreatorName: definitions.creatorName,
+        originalCreatorId: definitions.creatorId,
+        originalCreatorUsername: definitions.creatorUsername,
+        originalCreatorSpaceId: definitions.creatorSpaceId,
+        originalCreatorSpaceName: definitions.creatorSpaceName,
+        originalCreationDate: definitions.creationDate,
+        originalExporterVersion: definitions.exporterVersion,
+        originalProcessVersionId: definitions.processVersionId,
+        originalProcessVersionName: definitions.processVersionName,
+        originalTargetNamespace: definitions.targetNamespace,
+        originalUserDefinedId: definitions.userDefinedId,
+        originalExporter: definitions.exporter,
+      })
+    : null;
+
   // if we import a process not created in proceed we set the id to a proceed conform id
   const { exporter, id: importDefinitionsId } = await getDefinitionsInfos(definitions);
   if (
@@ -98,6 +121,16 @@ export async function createProcess(
   }
 
   setStandardDefinitions(definitions, getExporterName(), getExporterVersion());
+
+  setDefinitionsVersionInformation(definitions, {
+    versionId: '',
+    versionName: '',
+  });
+
+  // add dummy values, these are replaced by db values
+  updateBpmnCreatorAttributes(definitions, {
+    userDefinedId: processInfo.userDefinedId ?? '',
+  });
 
   if (!metaInfo.name) {
     throw new Error(
@@ -189,6 +222,7 @@ export const getFinalBpmn = async ({
 }) => {
   // write the necessary meta info into the bpmn to create the final bpmn that is sent to the backend
   const bpmnObj = await toBpmnObject(bpmn);
+
   await setDefinitionsId(bpmnObj, id);
   await setDefinitionsName(bpmnObj, name);
   await addDocumentation(bpmnObj, description);
@@ -238,4 +272,73 @@ export async function updateScriptTaskFileName(
   });
 
   return { bpmn: await toBpmnXml(bpmnObj), newFilename };
+}
+
+type ProcessWithCreatorAndSpace = {
+  bpmn: string;
+  userDefinedId: string | null;
+  id: string;
+  createdOn: string;
+  name: string;
+  originalId: string;
+} & {
+  creator: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    username: string | null;
+  } | null;
+  space: { name: string | null; id: string };
+};
+
+export enum BpmnAttributeType {
+  DB_PLACEHOLDER,
+  ACTUAL_VALUE,
+}
+
+export async function transformBpmnAttributes(
+  input: string | ProcessWithCreatorAndSpace,
+  transformType: BpmnAttributeType,
+): Promise<string> {
+  const bpmnString =
+    typeof input === 'string' ? input : `<?xml version="1.0" encoding="UTF-8"?>\n${input?.bpmn}`;
+
+  let definitions: object;
+  try {
+    const xmlObj = await toBpmnObject(bpmnString);
+    [definitions] = getElementsByTagName(xmlObj, 'bpmn:Definitions');
+  } catch (err) {
+    throw new Error(`Invalid BPMN: ${err}`);
+  }
+
+  if (transformType === BpmnAttributeType.DB_PLACEHOLDER) {
+    const placeholders: Record<string, string> = {};
+    Object.entries(XMLAttrDBProcessTableColsMap).forEach(([attrKey, dbPath]) => {
+      placeholders[attrKey] = `PROCEED_DB_VALUE_${dbPath}`;
+    });
+
+    updateBpmnCreatorAttributes(definitions, placeholders);
+  } else {
+    const processMeta = input as ProcessWithCreatorAndSpace;
+    const actualValues: Record<string, string> = {};
+
+    Object.entries(XMLAttrDBProcessTableColsMap).forEach(([attrKey, dbPath]) => {
+      if (dbPath.includes('+')) {
+        const parts = dbPath.split('+').map((part) => part.trim());
+        const values = parts.map((part) => getNestedValue(processMeta, part) || '');
+        actualValues[attrKey] = values.join(' ').trim();
+      } else {
+        actualValues[attrKey] = getNestedValue(processMeta, dbPath) || '';
+      }
+    });
+    updateBpmnCreatorAttributes(definitions, actualValues);
+  }
+  const transformedXml = await toBpmnXml(definitions);
+  return transformedXml;
+}
+
+// Helper function to access nested properties by path (e.g., "creator.firstName")
+function getNestedValue(obj: any, path: string): string | null {
+  const keys = path.split('.');
+  return keys.reduce((o, key) => (o ? o[key] : null), obj);
 }

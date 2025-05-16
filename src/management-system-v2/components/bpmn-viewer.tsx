@@ -11,34 +11,43 @@ import { useLazyRendering } from './scrollbar';
 import ProceedLoadingIndicator from './loading-proceed';
 
 type BPMNViewerProps = {
-  definitionId: string;
+  definitionId?: string;
   reduceLogo?: boolean;
   fitOnResize?: boolean;
+  previewBpmn?: string;
 };
 
-const BPMNViewer: FC<BPMNViewerProps> = ({ definitionId, reduceLogo, fitOnResize }) => {
+const BPMNViewer: FC<BPMNViewerProps> = ({
+  definitionId,
+  reduceLogo,
+  fitOnResize,
+  previewBpmn,
+}) => {
   const viewer = useRef<BPMNCanvasRef | null>(null);
   const environment = useEnvironment();
 
   const { data } = useSuspenseQuery({
-    queryKey: [environment.spaceId, 'process', definitionId, 'bpmn'],
+    queryKey: [environment.spaceId, 'process', definitionId || 'null', 'bpmn'],
     queryFn: async () => {
+      // If no `definitionId`, return empty string
+      if (!definitionId) return '';
+
       // Without this, we would call a server action as the first thing after
       // suspending. Apparently, this leads to an error that you can't call
       // setState while rendering. This little delay is already enough to
       // prevent that.
       await Promise.resolve();
-
       const res = await getProcessBPMN(definitionId, environment.spaceId);
-      if (typeof res === 'object' && 'error' in res) {
-        throw res.error;
-      }
+      if (typeof res === 'object' && 'error' in res) throw res.error;
       return res as string;
     },
   });
 
   // Allows for rerendering when the process changes but not the BPMN.
-  const bpmn = useMemo(() => ({ bpmn: data }), [data]);
+  const bpmn = useMemo(
+    () => ({ bpmn: data || previewBpmn || '' }),
+    [previewBpmn, definitionId, data],
+  );
 
   return (
     <BPMNCanvas

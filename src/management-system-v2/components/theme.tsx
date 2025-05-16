@@ -34,6 +34,7 @@ const Theme: FC<PropsWithChildren> = ({ children }) => {
           screenXSMax: 600,
           colorInfoBg: '#fafafa', // gray-3 (ant design colors)
           colorInfoBorder: '#d9d9d9', // gray-2 (ant design colors)
+          colorBgContainerDisabled: 'rgb(245,245,245)', // rgba(0,0,0,0.04) assuming white bg -> rgb(245,245,245)
         },
         components: {
           Layout: {

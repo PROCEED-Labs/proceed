@@ -1,5 +1,11 @@
 import { test, expect } from './processes.fixtures';
-import { openModal, closeModal, waitForHydration } from '../testUtils';
+import {
+  openModal,
+  closeModal,
+  waitForHydration,
+  removeCreatorDefinitionAttributes,
+  setBpmnOriginalAttributes,
+} from '../testUtils';
 import { Page } from '@playwright/test';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
@@ -38,7 +44,6 @@ test('import a process', async ({ processListPage }) => {
   const { page } = processListPage;
 
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
-
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
@@ -55,7 +60,11 @@ test('import a process', async ({ processListPage }) => {
 test('export a single process', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const { definitionId, bpmn: importBpmn } = await processListPage.importProcess('process1.bpmn');
+  const { definitionId, bpmn: importBpmn } = await processListPage.importProcess(
+    'process1.bpmn',
+    undefined,
+    setBpmnOriginalAttributes,
+  );
 
   /*************************** BPMN Export ********************************/
 
@@ -73,8 +82,11 @@ test('export a single process', async ({ processListPage }) => {
     'string',
   );
   expect(bpmnFilename).toMatch(/.bpmn$/);
+  // we need to remove creator attributes as they are set dynamically on import for the current user
+  const exportBpmnWithOutCreatorAttrs = removeCreatorDefinitionAttributes(exportBpmn);
+  const importBpmnWithOutCreatorAttrs = removeCreatorDefinitionAttributes(importBpmn);
   // check if the exported data is the expected bpmn (the one that was initially imported)
-  expect(exportBpmn).toBe(importBpmn);
+  expect(exportBpmnWithOutCreatorAttrs).toBe(importBpmnWithOutCreatorAttrs);
 
   /*************************** SVG Export ********************************/
 
@@ -236,13 +248,13 @@ test('export multiple processes', async ({ processListPage }) => {
     definitionId: process1Id,
     definitionName: process1Name,
     bpmn: process1Bpmn,
-  } = await processListPage.importProcess('process1.bpmn');
+  } = await processListPage.importProcess('process1.bpmn', undefined, setBpmnOriginalAttributes);
   const { definitionName: process2Name } = await processListPage.importProcess('process2.bpmn');
   const {
     definitionId: process3Id,
     definitionName: process3Name,
     bpmn: process3Bpmn,
-  } = await processListPage.importProcess('process3.bpmn');
+  } = await processListPage.importProcess('process3.bpmn', undefined, setBpmnOriginalAttributes);
 
   /*************************** BPMN Export ********************************/
 
@@ -284,14 +296,17 @@ test('export multiple processes', async ({ processListPage }) => {
   const process1FileContent = await zip
     .file(getFolderName(process1Name) + '/' + 'latest.bpmn')!
     .async('string');
-  expect(process1FileContent).toBe(process1Bpmn);
+  expect(await removeCreatorDefinitionAttributes(process1FileContent)).toBe(
+    await removeCreatorDefinitionAttributes(process1Bpmn),
+  );
 
   expect(zip.file(getFolderName(process3Name) + '/' + 'latest.bpmn')).toBeTruthy();
   const process3FileContent = await zip
     .file(getFolderName(process3Name) + '/' + 'latest.bpmn')!
     .async('string');
-  expect(process3FileContent).toBe(process3Bpmn);
-
+  expect(await removeCreatorDefinitionAttributes(process3FileContent)).toBe(
+    await removeCreatorDefinitionAttributes(process3Bpmn),
+  );
   /*************************** SVG Export ********************************/
 
   modal = await openModal(page, () => page.getByRole('button', { name: /download/i }).click());

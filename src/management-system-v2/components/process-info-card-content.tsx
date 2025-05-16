@@ -67,6 +67,14 @@ const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
             <b>Description</b>
           </h5>
           <p>{selectedElement.description.value}</p>
+          {selectedElement.type === 'process' && (
+            <>
+              <h5>
+                <b>ID</b>
+              </h5>
+              <p>{selectedElement.userDefinedId ?? 'undefined'}</p>
+            </>
+          )}
 
           <Divider style={{ width: '100%', marginLeft: '-20%' }} />
           {/* <h3>Access Rights</h3> */}

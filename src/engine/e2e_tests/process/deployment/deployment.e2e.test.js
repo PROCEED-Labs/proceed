@@ -2047,6 +2047,7 @@ describe('Test deploying a process', () => {
               expect(engineResponse.body[0]).toEqual({
                 id: 'Activity_1xguu75',
                 instanceID: instanceId,
+                milestones: {},
                 attrs: expect.any(Object),
                 priority: 1,
                 performers: [],
@@ -2125,6 +2126,7 @@ describe('Test deploying a process', () => {
                 {
                   id: 'Activity_1pgsbor',
                   instanceID: instanceId,
+                  milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
                   performers: [],
@@ -2136,12 +2138,13 @@ describe('Test deploying a process', () => {
                 {
                   id: 'Activity_1xguu75',
                   instanceID: instanceId,
+                  milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
                   performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
-                  endTime: null,
+                  endTime: expect.any(Number),
                   state: 'SKIPPED',
                 },
               ]);
@@ -2192,12 +2195,13 @@ describe('Test deploying a process', () => {
                 {
                   id: 'Activity_1xguu75',
                   instanceID: instanceId,
+                  milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
                   performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
-                  endTime: null,
+                  endTime: expect.any(Number),
                   state: 'SKIPPED',
                 },
               ]);
@@ -2276,6 +2280,7 @@ describe('Test deploying a process', () => {
                 instanceID: instanceId,
                 attrs: expect.any(Object),
                 priority: 1,
+                milestones: {},
                 performers: [],
                 progress: 0,
                 startTime: expect.any(Number),

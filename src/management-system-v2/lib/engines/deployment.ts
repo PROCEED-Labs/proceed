@@ -249,10 +249,10 @@ export type InstanceInfo = {
     currentFlowNodeState: string;
     currentFlowElementStartTime: number;
     previousFlowElementId: string;
-    intermediateVariablesState: null;
+    intermediateVariablesState?: { [key: string]: any };
     localExecutionTime: number;
     currentFlowNodeProgress?: { value: number; manual: boolean };
-    milestones: any[];
+    milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
   }[];

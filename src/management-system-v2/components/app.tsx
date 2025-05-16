@@ -13,16 +13,16 @@ const queryClient = new QueryClient();
 
 const App = ({ children, env }: { children: ReactNode; env: PublicEnv }) => {
   return (
-    <EnvVarsProvider env={env}>
-      <SessionProvider>
+    <SessionProvider>
+      <EnvVarsProvider env={env}>
         <QueryClientProvider client={queryClient}>
           <ReactQueryDevtools initialIsOpen={false} />
           <AntDesignApp>
             <Theme>{children}</Theme>
           </AntDesignApp>
         </QueryClientProvider>
-      </SessionProvider>
-    </EnvVarsProvider>
+      </EnvVarsProvider>
+    </SessionProvider>
   );
 };
 

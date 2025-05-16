@@ -73,14 +73,13 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
   // Force rerender when the BPMN changes.
   useModelerStateStore((state) => state.changeCounter);
 
+  const modalOpen =
+    showUserTaskEditor || showPropertiesPanel || showScriptTaskEditor || shareModalOpen;
   useEffect(() => {
-    if (modeler && showUserTaskEditor) {
-      // TODO: maybe  do this without an effect
-      modeler.deactivateKeyboard();
-    } else if (modeler) {
-      modeler.activateKeyboard();
-    }
-  }, [modeler, showUserTaskEditor]);
+    if (modalOpen) {
+      modeler?.deactivateKeyboard();
+    } else modeler?.activateKeyboard();
+  }, [modeler, modalOpen]);
 
   const selectedVersionId = query.get('version');
 
@@ -223,7 +222,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                 label: name,
               }))}
             />
-            {!showMobileView && (
+            {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>
                 <Tooltip title="Create New Version">
                   <VersionCreationButton
@@ -231,13 +230,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                     createVersion={createProcessVersion}
                   ></VersionCreationButton>
                 </Tooltip>
-                <Tooltip title="Back to parent">
-                  <Button
-                    icon={<ArrowUpOutlined />}
-                    disabled={!subprocessId}
-                    onClick={handleReturnToParent}
-                  />
-                </Tooltip>
+
                 <Tooltip title="Undo">
                   <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
                 </Tooltip>
@@ -245,11 +238,21 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                   <Button icon={<RedoOutlined />} onClick={handleRedo} disabled={!canRedo}></Button>
                 </Tooltip>
               </>
+            )}{' '}
+            {!showMobileView && (
+              <Tooltip title="Back to parent">
+                <Button
+                  icon={<ArrowUpOutlined />}
+                  disabled={!subprocessId}
+                  onClick={handleReturnToParent}
+                />
+              </Tooltip>
             )}
           </ToolbarGroup>
 
           <ToolbarGroup>
-            {selectedElement &&
+            {selectedElementId &&
+              selectedElement &&
               ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
                 <Tooltip title="Edit User Task Form">
                   <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />

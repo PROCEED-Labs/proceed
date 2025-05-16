@@ -59,14 +59,13 @@ export async function wrapServerCall<Return>(args: {
 
     if (typeof args.onSuccess === 'function') {
       args.onSuccess(response as Exclude<Return, ReturnType<typeof userError>>);
-      return;
+    } else if (args.onSuccess !== false) {
+      const content = args.onSuccess ?? 'Success';
+      if (args?.successDisplay === 'notification') notification.success({ message: content });
+      else message.success(content);
     }
 
-    if (args.onSuccess === false) return;
-
-    const content = args.onSuccess ?? 'Success';
-    if (args?.successDisplay === 'notification') notification.success({ message: content });
-    else message.success(content);
+    return response as Exclude<Return, ReturnType<typeof userError>>;
   } catch (error) {
     if (typeof args.onError === 'function') {
       args.onError(error as UserError | Error);

@@ -1,10 +1,10 @@
 'use client';
 
 import Content from '@/components/content';
-import { App, Button, Form, Grid, Input, InputRef, Steps, StepsProps, Typography } from 'antd';
+import { App, Button, Form, Grid, Input, Steps, StepsProps, Typography } from 'antd';
 import Image from 'next/image';
 import { SigninOptions } from '@/components/signin-options';
-import { ExtractedProvider } from '../api/auth/[...nextauth]/auth-options';
+import { type ExtractedProvider } from '@/lib/auth';
 import TextArea from 'antd/es/input/TextArea';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { UserOrganizationEnvironmentInputSchema } from '@/lib/data/environment-schema';
@@ -166,9 +166,16 @@ const CreateOrganizationPage = ({
                 <TextArea />
               </Form.Item>
               <Form.Item
-                label="Contact number"
+                label="Contact Phone Number"
                 name="contactPhoneNumber"
                 {...antDesignInputProps(formErrors, 'contactPhoneNumber')}
+              >
+                <PhoneInput />
+              </Form.Item>
+              <Form.Item
+                label="Contact Phone E-Mail"
+                name="contactEmail"
+                {...antDesignInputProps(formErrors, 'contactEmail')}
               >
                 <PhoneInput />
               </Form.Item>

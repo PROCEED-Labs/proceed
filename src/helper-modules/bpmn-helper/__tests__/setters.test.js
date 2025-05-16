@@ -40,7 +40,6 @@ describe('Tests for setter functions of this library', () => {
     await setters.setDefinitionsId(baseXML, '12345');
 
     baseObj.id = '12345';
-    baseObj.originalId = 'sample-diagram';
 
     expect(mockToXML.mock.calls[0][0]).toStrictEqual(baseObj);
   });
@@ -57,7 +56,6 @@ describe('Tests for setter functions of this library', () => {
     await setters.setTargetNamespace(baseXML, '12345');
 
     baseObj.targetNamespace += '12345';
-    baseObj.originalTargetNamespace = 'https://docs.proceed-labs.org/';
 
     expect(mockToXML.mock.calls[0][0]).toStrictEqual(baseObj);
   });
@@ -70,10 +68,10 @@ describe('Tests for setter functions of this library', () => {
     baseObj.expressionLanguage = 'https://ecma-international.org/ecma-262/8.0/';
     baseObj.typeLanguage =
       'https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf';
-    baseObj.creatorEnvironmentId = '';
-    baseObj.creatorEnvironmentName = '';
-    baseObj.originalExporter = 'PROCEED Management System';
-    baseObj.originalExporterVersion = '0.1.0';
+    baseObj.creatorSpaceId = '';
+    baseObj.creatorSpaceName = '';
+    // baseObj.originalExporter = 'PROCEED Management System';
+    // baseObj.originalExporterVersion = '0.1.0';
     baseObj.$attrs = {
       xmlns: 'http://www.omg.org/spec/BPMN/20100524/MODEL',
       'xmlns:proceed': 'https://docs.proceed-labs.org/BPMN',

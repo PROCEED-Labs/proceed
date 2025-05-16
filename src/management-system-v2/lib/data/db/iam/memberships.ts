@@ -67,12 +67,18 @@ export async function getMembers(environmentId: string, ability?: Ability) {
   return workspace.members;
 }
 
-export async function isMember(environmentId: string, userId: string) {
-  const environment = await getEnvironmentById(environmentId);
+export async function isMember(
+  environmentId: string,
+  userId: string,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const environment = await getEnvironmentById(environmentId, undefined, undefined, tx);
   if (!environment?.isOrganization) {
     return userId === environmentId;
   }
-  const membership = await db.membership.findFirst({
+  const membership = await dbMutator.membership.findFirst({
     where: {
       environmentId: environmentId,
       userId: userId,
@@ -100,7 +106,7 @@ export async function addMember(
   // TODO: ability check
   if (ability) ability;
 
-  const user = await db.user.findUnique({
+  const user = await dbMutator.user.findUnique({
     where: { id: userId },
   });
 

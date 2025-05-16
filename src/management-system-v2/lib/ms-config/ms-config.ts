@@ -11,7 +11,7 @@ import {
   msConfigConfigurableKeys,
   mergedMSConfigSchemaKeys,
 } from './config-schema';
-import { _env } from './env-vars';
+import { _env, env } from './env-vars';
 import { z } from 'zod';
 import { headers } from 'next/headers';
 
@@ -37,8 +37,7 @@ export function filterMSConfigurableValues<T extends Record<string, any>>(
 export async function getMSConfigDBValuesAndEnsureDefaults() {
   const currentConf = await db.mSConfig.findFirst({ select: { config: true } });
 
-  // TODO: should this always be production??
-  const defaults = getDefaultMSConfigValues('production');
+  const defaults = getDefaultMSConfigValues(env.NODE_ENV);
   const filteredDefaults = filterMSConfigurableValues(defaults);
 
   if (!currentConf || !currentConf.config)
@@ -76,8 +75,7 @@ export async function writeDefaultMSConfig(force = false) {
   const currentConf = await db.mSConfig.findFirst({ select: { id: true } });
   if (!force && currentConf) throw new Error('MS DB seed: Database already seeded');
 
-  // TODO: should this always be production??
-  const defaults = getDefaultMSConfigValues('production');
+  const defaults = getDefaultMSConfigValues(env.NODE_ENV);
   const filteredDefaults = filterMSConfigurableValues(defaults);
 
   if (currentConf)

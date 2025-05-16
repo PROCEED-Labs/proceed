@@ -83,7 +83,7 @@ const ListEntryLink: React.FC<
     data: ProcessListProcess;
     style?: React.CSSProperties;
     className?: string;
-    tooltip?: boolean | ReactNode;
+    tooltip?: boolean | React.ReactNode;
   }>
 > = ({ children, data, style, className, tooltip = true }) => {
   return (

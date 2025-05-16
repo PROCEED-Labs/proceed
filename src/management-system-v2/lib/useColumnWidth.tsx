@@ -1,7 +1,8 @@
-import { TableColumnsType, TableProps, Tooltip } from 'antd';
+import { TableColumnsType, TableProps, Tooltip, Typography } from 'antd';
 import React, {
   FC,
   PropsWithChildren,
+  ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -165,17 +166,21 @@ export const useResizeableColumnWidth = <T extends any>(
     [minWidth, columnsInPreferences, addPreferences, preferenceKey, columns],
   );
 
-  const columsWithResize = resizeableColumns.map((column: any, index: number) => {
-    if (notResizeabel.includes(column.key)) return column;
+  const columsWithResize = useMemo(() => {
+    return resizeableColumns.map((column: any, index: number) => {
+      if (notResizeabel.includes(column.key)) return column;
 
-    return {
-      ...column,
-      onHeaderCell: (column: any) => ({
-        width: column.width,
-        onResize: handleResize(index),
-      }),
-    };
-  }) as TableColumnsType<any>;
+      return {
+        ...column,
+        /* Ensure updates are passed through */
+        ...columns[index],
+        onHeaderCell: (column: any) => ({
+          width: column.width,
+          onResize: handleResize(index),
+        }),
+      };
+    }) as TableColumnsType<any>;
+  }, [resizeableColumns, notResizeabel, columns, handleResize]);
 
   columsWithResize.push({
     width: 'fit-content',
@@ -186,8 +191,7 @@ export const useResizeableColumnWidth = <T extends any>(
     responsive: ['xl'],
   });
 
-  return useTruncateColumnText(columsWithResize);
-  // return columsWithResize;
+  return columsWithResize;
 };
 
 type ResizeableTitleProps = PropsWithChildren & {
@@ -225,123 +229,3 @@ export const ResizeableTitle: FC<ResizeableTitleProps> = ({ onResize, width, ...
     </Resizable>
   );
 };
-
-export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']>) => {
-  const truncatedColumns = useMemo(() => {
-    return columns.map((column: any) => {
-      return {
-        ...column,
-        render: (text: any, record: any, rowIndex: number) => {
-          const fallBackText = text?.highlighted
-            ? text.highlighted
-            : text
-              ? text
-              : 'Missing-Display-Name'; /* In case fuzzy-search is used */
-          const newRender = column.render
-            ? () => column.render(text, record, rowIndex)
-            : () => fallBackText;
-          return (
-            <>
-              <TruncatedCell width={column.width} innerRender={newRender}></TruncatedCell>
-            </>
-          );
-        },
-      };
-    });
-  }, [columns]);
-
-  return truncatedColumns;
-};
-
-type TruncateType = {
-  width: number | string;
-  innerRender: () => React.ReactNode;
-};
-
-const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
-  const [overFlowing, setOverFlowing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current || typeof width !== 'number') return;
-
-    const widths = getWidthsOfInnerElements(containerRef.current);
-    const innerWidth =
-      containerRef.current.getClientRects()[0]
-        ?.width; /* This is the width, without padding and border (i.e. the actual width its children can fill) */
-
-    if (innerWidth === undefined) return;
-
-    if (widths.some((w) => w > innerWidth)) {
-      setOverFlowing(true);
-    } else {
-      setOverFlowing(false);
-    }
-  }, [width, innerRender]);
-
-  return (
-    <>
-      <div ref={containerRef}>
-        {overFlowing ? (
-          <Tooltip title={innerRender()} overlayStyle={{ maxWidth: width }} autoAdjustOverflow>
-            <div
-              style={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                maxWidth: '100%',
-              }}
-            >
-              {innerRender()}
-            </div>
-          </Tooltip>
-        ) : (
-          <div
-            style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              maxWidth: '100%',
-            }}
-          >
-            {innerRender()}
-          </div>
-        )}
-      </div>
-    </>
-  );
-};
-
-function getWidthsOfInnerElements(element: HTMLElement | Element) {
-  const widths: number[] = [];
-  /*  Get width of direct children */
-  const children = Array.from(element.children);
-  children.forEach((child) => {
-    widths.push(child.getBoundingClientRect().width);
-  });
-
-  /* Check is child elements are displayed next to each other */
-  /* If they are displayed next to each other, add the sum of their width to widths */
-  const inlineChildrenWidth = children.reduce((acc, child) => {
-    const childStyles = getComputedStyle(child);
-    if (
-      childStyles.display === 'inline' ||
-      childStyles.display === 'inline-block' ||
-      childStyles.display === 'inline-flex' ||
-      childStyles.display === 'inline-grid' ||
-      childStyles.display === 'inline-table'
-    ) {
-      return acc + child.getBoundingClientRect().width;
-    }
-    return acc;
-  }, 0);
-  /* Append width of elements, that are next to each other */
-  widths.push(inlineChildrenWidth);
-
-  /* Append nested children recursively */
-  children.forEach((child) => {
-    widths.push(...getWidthsOfInnerElements(child));
-  });
-
-  return widths;
-}

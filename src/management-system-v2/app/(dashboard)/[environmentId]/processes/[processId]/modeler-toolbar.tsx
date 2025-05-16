@@ -4,16 +4,16 @@ import { App, Tooltip, Button, Space, Select, SelectProps, Divider } from 'antd'
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
-  ExportOutlined,
   InfoCircleOutlined,
   PlusOutlined,
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
-  FilePdfOutlined,
   FormOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons';
+import { GrDocumentUser } from 'react-icons/gr';
+import { PiDownloadSimple } from 'react-icons/pi';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
@@ -26,12 +26,11 @@ import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import { wrapServerCall } from '@/lib/wrap-server-call';
 import { Process } from '@/lib/data/process-schema';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
@@ -166,15 +165,6 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
     }
   };
 
-  const handleOpenDocumentation = () => {
-    // the timestamp does not matter here since it is overridden by the user being an owner of the process
-    return wrapServerCall({
-      fn: () =>
-        generateSharedViewerUrl({ processId, timestamp: 0 }, selectedVersionId || undefined),
-      onSuccess: (url) => window.open(url, `${processId}-${selectedVersionId}-tab`),
-      app,
-    });
-  };
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
@@ -292,8 +282,14 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                 </Tooltip>
               )}
               <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
-              <Tooltip title="Open Documentation">
-                <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
+              <Tooltip title="View Process Documentation">
+                <Button
+                  aria-label="view-documentation"
+                  icon={<GrDocumentUser />}
+                  onClick={() => {
+                    handleOpenDocumentation(processId, selectedVersionId || undefined);
+                  }}
+                />
               </Tooltip>
               <Tooltip title="Share">
                 <Button
@@ -309,7 +305,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
               {!showMobileView && (
                 <Tooltip title="Download">
                   <Button
-                    icon={<ExportOutlined />}
+                    icon={<PiDownloadSimple />}
                     onClick={() => {
                       setShareModalOpen(true);
                       setShareModalDefaultOpenTab('bpmn');

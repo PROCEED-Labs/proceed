@@ -135,8 +135,8 @@ async function _getMSConfig() {
 }
 export const getMSConfig = cache(_getMSConfig);
 
-export function getPublicMSConfig() {
-  const msConfig = getMSConfig();
+export async function getPublicMSConfig() {
+  const msConfig = await getMSConfig();
   return Object.fromEntries(
     Object.entries(msConfig).filter(([key]) => key.startsWith('PROCEED_PUBLIC_')),
   ) as PublicMSConfig;

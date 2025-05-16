@@ -21,7 +21,7 @@ export const metadata = {
 type RootLayoutProps = PropsWithChildren;
 
 const RootLayout: FC<RootLayoutProps> = async ({ children }) => {
-  const publicEnv = getPublicMSConfig();
+  const publicEnv = await getPublicMSConfig();
   return (
     <html lang="en">
       <body className={classNames(inter.variable, myFont.variable)}>

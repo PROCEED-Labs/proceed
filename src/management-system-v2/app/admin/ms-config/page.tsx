@@ -3,12 +3,7 @@ import Content from '@/components/content';
 import { Skeleton } from 'antd';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import {
-  getMSConfig,
-  getMSConfigDBValues,
-  updateMSConfig,
-  writeDefaultMSConfig,
-} from '@/lib/ms-config/ms-config';
+import { getMSConfig, updateMSConfig, writeDefaultMSConfig } from '@/lib/ms-config/ms-config';
 import MSConfigForm from './ms-config-form';
 import { userError } from '@/lib/user-error';
 import { SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';

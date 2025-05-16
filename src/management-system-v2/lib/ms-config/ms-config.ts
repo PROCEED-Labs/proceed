@@ -11,6 +11,7 @@ import {
   PrivateMSConfig,
   configurableMSConfigSchemaKeys,
   msConfigConfigurableKeys,
+  mergedMSConfigSchemaKeys,
 } from './config-schema';
 import { env } from './env-vars';
 import { z } from 'zod';
@@ -119,7 +120,7 @@ async function _getMSConfig() {
   const filteredConfig = onBuild ? {} : configurableMSConfigSchema.parse(config?.config);
 
   const msConfig: Record<string, any> = { _overwrittenByEnv: [] };
-  for (const key of Object.keys(env)) {
+  for (const key of Object.keys(mergedMSConfigSchemaKeys)) {
     const envValue = env[key as keyof EnvironmentOnlyMSConfig];
 
     if (envValue !== undefined) {

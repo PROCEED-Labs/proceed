@@ -4,8 +4,11 @@ import { Space } from 'antd';
 import { FC, useLayoutEffect, useRef, useState } from 'react';
 import CompetencesTable from './competences-table';
 import CompetencesViewer from './competences-viewer';
+import { Competence } from '@/lib/data/competence-schema';
 
-type CompentencesContainerProps = React.PropsWithChildren<{}>;
+type CompentencesContainerProps = React.PropsWithChildren<{
+  competences: Competence[];
+}>;
 
 const CompentencesContainer: FC<CompentencesContainerProps> = ({ children }) => {
   const [containerWidth, setContainerWidth] = useState(0);

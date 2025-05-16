@@ -105,7 +105,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await processCreationDialog
     .getByLabel('Process Description')
     // .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`); // we decided to remove this limit for now
-    .fill(stringWith150Chars);
+    .fill(stringWith1000Chars);
   await expect(processCreationDialog.getByLabel('Process Description')).toHaveText(
     stringWith1000Chars,
   );

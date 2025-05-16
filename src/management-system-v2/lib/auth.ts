@@ -19,9 +19,9 @@ import Adapter from './auth-database-adapter';
 import { User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
-import { env } from '@/lib/env-vars';
 import { updateGuestUserLastSigninTime } from './data/db/iam/users';
 import * as noIamUser from '@/lib/no-iam-user';
+import { env } from '@/lib/ms-config/env-vars';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,

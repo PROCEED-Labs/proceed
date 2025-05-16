@@ -7,7 +7,7 @@ import { FC, PropsWithChildren } from 'react';
 import App from '@/components/app';
 
 import classNames from 'classnames';
-import { publicEnv } from '@/lib/env-vars';
+import { getPublicMSConfig } from '@/lib/ms-config/ms-config';
 
 const inter = Inter({ subsets: ['latin'], variable: '--inter' });
 
@@ -20,7 +20,8 @@ export const metadata = {
 
 type RootLayoutProps = PropsWithChildren;
 
-const RootLayout: FC<RootLayoutProps> = ({ children }) => {
+const RootLayout: FC<RootLayoutProps> = async ({ children }) => {
+  const publicEnv = await getPublicMSConfig();
   return (
     <html lang="en">
       <body className={classNames(inter.variable, myFont.variable)}>

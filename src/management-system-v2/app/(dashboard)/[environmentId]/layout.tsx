@@ -123,6 +123,11 @@ const DashboardLayout = async ({
           label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Machines</Link>,
           icon: <LaptopOutlined />,
         },
+        automationSettings.automations?.active !== false && {
+          key: 'competences',
+          label: <Link href={spaceURL(activeEnvironment, `/competences`)}>Competences</Link>,
+          icon: <OrderedListOutlined />,
+        },
       ].filter(truthyFilter);
 
       if (children.length)
@@ -133,41 +138,6 @@ const DashboardLayout = async ({
           children,
         });
 
-      children.push({
-        key: 'competences',
-        label: <Link href={spaceURL(activeEnvironment, `/competences`)}>Competences</Link>,
-        icon: <OrderedListOutlined />,
-      });
-
-      layoutMenuItems = [
-        {
-          key: 'tasklist',
-          label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
-          icon: <CheckSquareOutlined />,
-        },
-        ...layoutMenuItems,
-      ];
-
-      children = [
-        {
-          key: 'dashboard',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
-          icon: <BarChartOutlined />,
-        },
-        {
-          key: 'projects',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Projects</Link>,
-          icon: <HistoryOutlined />,
-        },
-        ...children,
-      ];
-
-      layoutMenuItems.push({
-        key: 'automations-group',
-        label: 'Automations',
-        icon: <PlaySquareOutlined />,
-        children,
-      });
       if (automationSettings.tasklist?.active !== false) {
         layoutMenuItems = [
           {

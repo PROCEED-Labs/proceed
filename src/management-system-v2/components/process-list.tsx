@@ -159,10 +159,11 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     'Meta Data Button',
   ];
 
-  /* 
+  /*
     User potentialOwner Store to get the username
   */
-  const { user: userMap, roles: rolesMap } = usePotentialOwnerStore();
+  const userMap = usePotentialOwnerStore((state) => state.user);
+  const rolesMap = usePotentialOwnerStore((state) => state.roles);
   // console.log(`out userMap ${JSON.stringify(userMap)}`);
   // Not sure, why this is not working, but using the user from the store as a dependency or directly does not work (does not cause a rerender of table with fresh values)
   // using the hook once in the component and then once in the function (i.e. dynamically) works
@@ -178,8 +179,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   // );
 
   const mapIdToUsername = (id?: string | null) => {
-    const userMap = usePotentialOwnerStore.getState().user; // dynamically fetched
-    const rolesMap = usePotentialOwnerStore.getState().roles;
     if (!id) return '';
     const u = userMap[id];
     const r = rolesMap[id];

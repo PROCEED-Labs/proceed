@@ -1,7 +1,6 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { ComponentProps, useRef, useState, useTransition } from 'react';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiNotePencil } from 'react-icons/pi';
 import { IoOpenOutline } from 'react-icons/io5';
@@ -26,6 +25,8 @@ import {
   MenuProps,
   Typography,
 } from 'antd';
+
+import { ComponentProps, useRef, useState, useTransition } from 'react';
 import {
   DeleteOutlined,
   UnorderedListOutlined,
@@ -42,9 +43,11 @@ import Bar from '@/components/bar';
 import { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
-import useFuzySearch from '@/lib/useFuzySearch';
-import { useRouter } from 'next/navigation';
+
+import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
+import { usePathname, useRouter } from 'next/navigation';
 import {
+  checkIfProcessExistsByName,
   copyProcesses,
   createVersion,
   deleteProcesses,
@@ -53,6 +56,7 @@ import {
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
@@ -79,9 +83,36 @@ import VersionCreationButton, { VersionModal } from '../version-creation-button'
 import { ShareModal } from '../share-modal/share-modal';
 import MoveToFolderModal from '../folder-move-modal';
 import { FolderTree } from '../FolderTree';
-import { ContextActions, InputItem, ProcessActions, ProcessListProcess, RowActions } from './types';
-import { canDoActionOnResource } from './helpers';
+import { ContextActions, RowActions } from './types';
+//import { canDoActionOnResource } from './helpers';
 import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-potentialOwner-store';
+import { useSession } from 'next-auth/react';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import Ability from '@/lib/ability/abilityHelper';
+
+export function canDoActionOnResource(
+  items: ProcessListProcess[],
+  action: Parameters<Ability['can']>[0],
+  ability: Ability,
+) {
+  for (const item of items) {
+    const resource = toCaslResource(item.type === 'folder' ? 'Folder' : 'Process', item);
+    if (!ability.can(action, resource)) return false;
+  }
+
+  return true;
+}
+
+// TODO: improve ordering
+export type ProcessActions = {
+  deleteItems: (items: ProcessListProcess[]) => void;
+  copyItem: (items: ProcessListProcess[]) => void;
+  editItem: (item: ProcessListProcess) => void;
+  moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
+};
+
+type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
+export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
 
 const Processes = ({
   processes,
@@ -121,6 +152,7 @@ const Processes = ({
   const environment = useEnvironment();
 
   useInitialisePotentialOwnerStore();
+  const user = useSession().data?.user;
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -176,6 +208,9 @@ const Processes = ({
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
   // Folders on top
   filteredData.sort((a, b) => {
@@ -359,10 +394,33 @@ const Processes = ({
   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
     startMovingItemTransition(async () => {
       await wrapServerCall({
-        fn: () => moveIntoFolder(items, folderId),
+        fn: async () => {
+          const processesToCheck = items
+            .filter((item) => item.type === 'process')
+            .map((process) => ({
+              name: processes.find((el) => el.id === process.id)!.name,
+              folderId: folderId,
+            }));
+
+          const existsResults = await checkIfProcessExistsByName({
+            batch: true,
+            processes: processesToCheck,
+            spaceId: space.spaceId,
+            userId: user?.id!,
+          });
+          existsResults.forEach((exists, idx) => {
+            if (exists) {
+              throw new Error(
+                `Errror: Process with name ${processesToCheck[idx].name} already exists in the destination folder`,
+              );
+            }
+          });
+
+          return moveIntoFolder(items, folderId);
+        },
         onSuccess: router.refresh,
+        onError: (error) => app.message.error(error.message),
         app,
-        onError: () => app.message.error('Could not move items'),
       });
     });
   };
@@ -772,6 +830,7 @@ const Processes = ({
       />
       <ProcessModal
         open={openCopyModal}
+        mode="copy"
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={closeCopyModal}
         initialData={copySelection
@@ -781,6 +840,7 @@ const Processes = ({
             description: process.description.value ?? '',
             originalId: process.id,
             folderId: folder.id,
+            userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
           const toCopy = values.map((value) => ({
@@ -815,7 +875,8 @@ const Processes = ({
       </ProcessModal>
       <ProcessModal
         open={openEditModal}
-        title={'Process Meta Data'}
+        mode="edit"
+        title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData
           .filter((process) => selectedRowKeys.includes(process.id))
@@ -823,6 +884,7 @@ const Processes = ({
             id: process.id,
             name: process.name.value ?? '',
             description: process.description.value ?? '',
+            userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
           const res = await updateProcesses(values, space.spaceId);

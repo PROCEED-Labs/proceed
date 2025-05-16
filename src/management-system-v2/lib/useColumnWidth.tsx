@@ -166,17 +166,21 @@ export const useResizeableColumnWidth = <T extends any>(
     [minWidth, columnsInPreferences, addPreferences, preferenceKey, columns],
   );
 
-  const columsWithResize = resizeableColumns.map((column: any, index: number) => {
-    if (notResizeabel.includes(column.key)) return column;
+  const columsWithResize = useMemo(() => {
+    return resizeableColumns.map((column: any, index: number) => {
+      if (notResizeabel.includes(column.key)) return column;
 
-    return {
-      ...column,
-      onHeaderCell: (column: any) => ({
-        width: column.width,
-        onResize: handleResize(index),
-      }),
-    };
-  }) as TableColumnsType<any>;
+      return {
+        ...column,
+        /* Ensure updates are passed through */
+        ...columns[index],
+        onHeaderCell: (column: any) => ({
+          width: column.width,
+          onResize: handleResize(index),
+        }),
+      };
+    }) as TableColumnsType<any>;
+  }, [resizeableColumns, notResizeabel, columns, handleResize]);
 
   columsWithResize.push({
     width: 'fit-content',

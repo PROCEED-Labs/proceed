@@ -1,21 +1,41 @@
 import { z } from 'zod';
 
-export const CompetenceAttributeInputSchema = z.object({
-  type: z.enum(['PLAIN_TEXT', 'SHORT_TEXT']),
-  text: z.string(),
-});
+export const CompetenceTypes = z.enum(['USER', 'SPACE']);
+export type CompetenceType = z.infer<typeof CompetenceTypes>;
 
-export type CompetenceAttributeInput = z.infer<typeof CompetenceAttributeInputSchema>;
-
-export const CompetenceInputSchema = z.array(CompetenceAttributeInputSchema);
-
-export type CompetenceInput = z.infer<typeof CompetenceInputSchema>;
-
-export const CompetenceAttributeTypes = { plain: 'PLAIN_TEXT', short: 'SHORT_TEXT' } as const;
-
-export type Competence = {
+export type SpaceCompetence = {
+  type: CompetenceType;
+  name: string;
   id: string;
-  userId: string | null;
-  ownerType: 'USER' | 'SPACE';
+  description: string;
   spaceId: string | null;
+  creatorUserId: string | null;
+  externalQualitficationNeeded: boolean;
+  renewalTimeInterval: number | null;
+  claimedBy: {
+    userId: string;
+    competenceId: string;
+    proficiency: string | null;
+    qualificationDate: Date | null;
+    lastUsage: Date | null;
+  }[];
+};
+
+export type UserCompetence = {
+  userId: string;
+  competenceId: string;
+  proficiency: string | null;
+  qualificationDate: Date | null;
+  lastUsage: Date | null;
+  competence: {
+    type: CompetenceType;
+
+    name: string;
+    id: string;
+    description: string;
+    spaceId: string | null;
+    creatorUserId: string | null;
+    externalQualitficationNeeded: boolean;
+    renewalTimeInterval: number | null;
+  };
 };

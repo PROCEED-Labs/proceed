@@ -46,6 +46,7 @@ model User {
   verificationTokens VerificationToken[]   @relation("verificationToken")
   guestSignin     GuestSignin?
   competences Competence[]
+  userCompetences UserCompetence[]
 
   @@map("user")
 }
@@ -281,10 +282,6 @@ model GuestSignin {
   @@map("guest_signin")
 }
 
-enum CompetenceAttributeType {
-  PLAIN_TEXT
-  SHORT_TEXT
-}
 
 enum CompetenceOwnerType {
   SPACE
@@ -293,25 +290,43 @@ enum CompetenceOwnerType {
 
 model Competence {
   id           String                  @id @default(uuid())
-  ownerType    CompetenceOwnerType    
+  type    CompetenceOwnerType           // SPACE or USER
 
-  spaceId      String?                 
-  userId       String?                 
-  space        Space?     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  user         User?      @relation(fields: [userId],  references: [id], onDelete: Cascade)
-  // Check constraint to ensure that either spaceId or userId is set, but not both was set via migration
-  
-  competences  CompetenceAttribute[]   
+  spaceId      String?                  // Nullable, if the competence is a user-competence
+  space      Space?       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  creatorUserId String?                 // Nullable, if the user is deleted, i.e. the user no longer exists
+  user        User?        @relation(fields: [creatorUserId], references: [id], onDelete: SetNull)   // Check: only eihter is nullable: spaceId or creatorUserId
+
+  name         String       @default("")  // Should this be nullable?
+  description  String       @default("")  // Should this be nullable?
+  externalQualitficationNeeded Boolean @default(false)
+  renewalTimeInterval Int? // in s (?)      // Nullable, if competence is valid indefinitely
+
+  userCompetences UserCompetence[] 
 
   @@map("competence")
+  
+  // Querying will be primarily via the spaceId and userId
+  @@index([spaceId])
+  @@index([creatorUserId])
 }
 
-model CompetenceAttribute {
-  id        String   @id @default(uuid())
-  text      String
-  type      CompetenceAttributeType  
-  competence Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+model UserCompetence {
   competenceId String
+  competence   Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade) // Not sure if cascade is the right option here (if a spaceCompetene is deleted, it disapears for all users that had claimed it)
 
-  @@map("competence_attribute")
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  proficiency String?
+  qualificationDate DateTime?
+  lastUsage DateTime?
+
+  @@id([competenceId, userId])
+  @@map("user_competence")
+
+  // Querying will be primarily via the competenceId and userId
+  @@index([competenceId])
+  @@index([userId])
 }

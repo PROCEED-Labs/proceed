@@ -1,297 +1,500 @@
 import { Prisma } from '@prisma/client';
 import db from '@/lib/data/db';
-import { CompetenceAttributeInput, CompetenceInput } from '@/lib/data/competence-schema';
+import { CompetenceTypes, SpaceCompetence, UserCompetence } from '@/lib/data/competence-schema';
 
-async function userOrSpaceID(environmentIdOrUserId: string) {
-  const user = await db.user.findUnique({
-    where: {
-      id: environmentIdOrUserId,
-    },
-  });
+/* Space Competences */
 
-  if (user) {
-    return 'USER';
-  }
+/* Helper that ensures only allowed columns are updateable  */
+function spaceCompetnceUpdateChecker({
+  spaceId,
+  creatorId,
+  name,
+  description,
+  externalQualificationNeeded,
+  renewalTimeInterval,
+  ..._
+}: {
+  spaceId?: string;
+  creatorId?: string;
+  name?: string;
+  description?: string;
+  externalQualificationNeeded?: boolean;
+  renewalTimeInterval?: number | null | undefined;
+  [key: string]: unknown;
+}) {
+  /* renewalTimeInterval has to be an int or undefined */
+  let renewalTimeIntervalInt = renewalTimeInterval;
+  if (renewalTimeInterval) renewalTimeIntervalInt = parseInt(renewalTimeInterval.toString(), 10);
 
-  const space = await db.space.findUnique({
-    where: {
-      id: environmentIdOrUserId,
-    },
-  });
+  return {
+    /* Not updateable: */
+    // type: CompetenceTypes.enum.SPACE,
+    // spaceId,
+    // creatorId,
 
-  if (space) {
-    return 'SPACE';
-  }
-
-  throw new Error(`Invalid ID (${environmentIdOrUserId}) passed to competence function`);
+    name,
+    description,
+    externalQualificationNeeded,
+    renewalTimeInterval: renewalTimeIntervalInt,
+  };
 }
 
 /**
- * Retrieves all competences for a given environment.
- * @param {string} environmentIdOrUserId - The ID of the environment.or User the competence is associated with
- * @param {boolean} includeAttributes - Whether to include attributes in the response.
+ * Retrieves all competences for a given space.
+ *
+ * @param {string} spaceId - The unique identifier of the space to fetch competences for.
+ * @param {Object} options - Optional settings.
+ * @param {boolean} [options.includeUserClaims] - If true, includes a list of users who have claimed each competence.
+ * @returns {Promise<Array>} A promise that resolves to an array of competences. If `includeUserClaims` is true,
+ *          each competence will include a `claimedBy` property listing the users who claimed it.
  */
-export async function getAllCompetences(environmentIdOrUserId: string, includeAttributes = true) {
-  const type = await userOrSpaceID(environmentIdOrUserId);
-
-  /* Get all competences */
+export async function getAllSpaceCompetences(
+  spaceId: string,
+  { includeUserClaims = true }: { includeUserClaims?: boolean } = {},
+): Promise<
+  typeof includeUserClaims extends true ? SpaceCompetence[] : Prisma.CompetenceGetPayload<{}>[]
+> {
   const competences = await db.competence.findMany({
-    where: type === 'USER' ? { userId: environmentIdOrUserId } : { spaceId: environmentIdOrUserId },
+    where: {
+      spaceId,
+      type: CompetenceTypes.enum.SPACE,
+    },
   });
 
-  if (!includeAttributes) {
-    return competences;
-  }
+  if (!includeUserClaims) return competences;
 
-  /* Get all respective Attributes */
-  const competencesWithAttributes = await Promise.all(
+  return await Promise.all(
     competences.map(async (competence) => {
-      const attributes = await db.competenceAttribute.findMany({
+      const user = await db.userCompetence.findMany({
         where: {
           competenceId: competence.id,
         },
       });
+
       return {
         ...competence,
-        attributes: attributes,
+        claimedBy: user,
       };
     }),
   );
-
-  return competencesWithAttributes;
 }
 
 /**
- * Retrieves competence by ID
- * @param {string} competenceId - The ID of the competence.
+ * Retrieves a competence of type SPACE by its unique identifier.
+ *
+ * @param {string} competenceId - The unique identifier of the competence to retrieve.
+ * @returns {Promise<Object>} A promise that resolves to the competence object if found, or null otherwise.
  */
-export async function getCompetence(competenceId: string) {
-  /* Get competence */
+export async function getSpaceCompetence(competenceId: string): Promise<SpaceCompetence | null> {
   const competence = await db.competence.findUnique({
     where: {
       id: competenceId,
+      type: CompetenceTypes.enum.SPACE,
     },
   });
 
-  if (!competence) {
-    throw new Error(`Competence ${competenceId} not found`);
-  }
-
-  /* Get attributes of competence */
-  const attributes = await db.competenceAttribute.findMany({
-    where: {
-      competenceId: competenceId,
-    },
-  });
+  if (!competence) return null;
 
   return {
     ...competence,
-    attributes: attributes,
+    claimedBy: await db.userCompetence.findMany({
+      where: {
+        competenceId: competence.id,
+      },
+    }),
   };
 }
 
 /**
- * Creates a new competence with the given attributes.
- * @param {string} environmentOrUserId - The ID of the environment or user.
- * @param {CompetenceInput} attributes - The attributes of the competence.
+ * Adds a new competence to a specific space in the database.
+ *
+ * @param {string} spaceId - The unique identifier of the space to which the competence will be added.
+ * @param {string} creatorId - The unique identifier of the user creating the competence.
+ * @param {Object} competence - The data for the competence to be created.
+ * @returns {Promise<Object>} A promise that resolves to the created competence object with an empty `claimedBy` array.
  */
-export async function addCompetence(environmentOrUserId: string, attributes: CompetenceInput = []) {
-  const type = await userOrSpaceID(environmentOrUserId);
+export async function addSpaceCompetence(
+  spaceId: string,
+  creatorId: string,
+  competence: Omit<Prisma.CompetenceCreateInput, 'type'>,
+): Promise<SpaceCompetence> {
+  const data = spaceCompetnceUpdateChecker(competence);
 
-  /* Create Competence */
-  const data: Prisma.CompetenceCreateInput = {
-    ownerType: type,
-    ...(type === 'USER' ? { userId: environmentOrUserId } : { spaceId: environmentOrUserId }),
-  };
-  const competence = await db.competence.create({ data });
-
-  /* Create Attributes */
-  const competenceAttributes = await db.competenceAttribute.createMany({
-    data: attributes.map((attribute) => ({
-      competenceId: competence.id,
-      type: attribute.type,
-      text: attribute.text,
+  return {
+    ...(await db.competence.create({
+      data: {
+        ...data,
+        spaceId,
+        creatorUserId: creatorId,
+        type: CompetenceTypes.enum.SPACE,
+      },
     })),
-  });
-
-  return {
-    ...competence,
-    attributes: competenceAttributes,
+    claimedBy: [] as Prisma.UserCompetenceGetPayload<{}>[],
   };
 }
 
 /**
- * Adds a new competence attribute to an existing competence.
- * @param {string} competenceId - The ID of the competence.
- * @param {CompetenceAttributeInput} attribute  - The attribute to add.
+ * Updates a competence within a specific space.
+ *
+ * @param {string} competenceId - The ID of the competence to update.
+ * @param {Object} competence - The updated competence data.
+ * @returns {Promise<Object>} The updated competence object, including a list of users who have claimed it.
  */
-export async function addCompetenceAttribute(
+export async function updateSpaceCompetence(
+  // spaceId: string,
+  // @param {string} spaceId - The ID of the space where the competence belongs.
   competenceId: string,
-  attribute: CompetenceAttributeInput,
-) {
-  const competence = await db.competence.findUnique({
+  competence: Prisma.CompetenceUpdateInput,
+): Promise<SpaceCompetence> {
+  // @ts-ignore
+  const data = spaceCompetnceUpdateChecker({
+    ...competence,
+  });
+
+  const updatedCompetence = await db.competence.update({
     where: {
       id: competenceId,
+      // spaceId
     },
+    data,
   });
 
-  if (!competence) {
-    throw new Error(`Competence ${competenceId} not found`);
-  }
-
-  return await db.competenceAttribute.create({
-    data: {
-      competenceId: competence.id,
-      type: attribute.type,
-      text: attribute.text,
-    },
-  });
+  return {
+    ...updatedCompetence,
+    claimedBy: await db.userCompetence.findMany({
+      where: {
+        competenceId: updatedCompetence.id,
+      },
+    }),
+  };
 }
 
 /**
- * Updates a competence by ID
- * i.e. overrides all attributes
- * @param {string} competenceId - The ID of the competence.
- * @param {CompetenceInput} attributes - The attributes to update.
+ * Deletes a competence from the database.
+ *
+ * @param {string} competenceId - The unique identifier of the competence to delete.
+ * @returns {Promise<Object>} A promise that resolves to the deleted competence object.
  */
-export async function updateCompetence(competenceId: string, attributes: CompetenceInput) {
-  const competence = await db.competence.findUnique({
+export async function deleteSpaceCompetence(competenceId: string): Promise<SpaceCompetence> {
+  const claimedBy = await db.userCompetence.findMany({
     where: {
-      id: competenceId,
-    },
-  });
-  if (!competence) {
-    throw new Error(`Competence ${competenceId} not found`);
-  }
-
-  await db.competenceAttribute.deleteMany({
-    where: {
-      competenceId: competence.id,
+      competenceId,
     },
   });
 
-  await db.competenceAttribute.createMany({
-    data: attributes.map((attribute) => ({
-      competenceId: competence.id,
-      type: attribute.type,
-      text: attribute.text,
+  return {
+    ...(await db.competence.delete({
+      where: {
+        id: competenceId,
+        type: CompetenceTypes.enum.SPACE,
+      },
     })),
-  });
+    claimedBy,
+  };
 }
 
 /**
- * Updates a competence attribute by ID
- * @param {string} competenceAttributeId - The ID of the competence attribute.
- * @param {CompetenceAttributeInput} attribute - The updated attribute.
+ * Deletes all competences of type SPACE for a given space.
+ *
+ * @param {string} spaceId - The unique identifier of the space whose competences will be deleted.
+ * @returns {Promise<Object>} A promise that resolves to the result of the delete operation.
  */
-export async function updateCompetenceAttribute(
-  competenceAttributeId: string,
-  attribute: CompetenceAttributeInput,
-) {
-  const competenceAttribute = await db.competenceAttribute.findUnique({
-    where: {
-      id: competenceAttributeId,
-    },
-  });
+export async function deleteAllSpaceCompetences(spaceId: string): Promise<SpaceCompetence[]> {
+  const competences = await getAllSpaceCompetences(spaceId);
 
-  if (!competenceAttribute) {
-    throw new Error(`Competence attribute ${competenceAttributeId} not found`);
-  }
-
-  return await db.competenceAttribute.update({
-    where: {
-      id: competenceAttribute.id,
-    },
-    data: {
-      type: attribute.type,
-      text: attribute.text,
-    },
-  });
-}
-
-/**
- * Deletes a competence by ID
- * @param {string} competenceId - The ID of the competence.
- */
-export async function deleteCompetence(competenceId: string) {
-  const competence = await db.competence.findUnique({
-    where: {
-      id: competenceId,
-    },
-  });
-
-  if (!competence) {
-    throw new Error(`Competence ${competenceId} not found`);
-  }
-
-  // Should not be necessary, as delete of competences should cascade:
-
-  // await db.competenceAttribute.deleteMany({
-  //   where: {
-  //     competenceId: competence.id,
-  //   },
-  // });
-
-  await db.competence.delete({
-    where: {
-      id: competence.id,
-    },
-  });
-}
-
-/**
- * Deletes a competence attribute by ID
- * @param {string} competenceAttributeId - The ID of the competence attribute.
- */
-export async function deleteCompetenceAttribute(competenceAttributeId: string) {
-  const competenceAttribute = await db.competenceAttribute.findUnique({
-    where: {
-      id: competenceAttributeId,
-    },
-  });
-
-  if (!competenceAttribute) {
-    throw new Error(`Competence attribute ${competenceAttributeId} not found`);
-  }
-
-  await db.competenceAttribute.delete({
-    where: {
-      id: competenceAttribute.id,
-    },
-  });
-}
-
-/**
- * Deletes all competences for a given environment.
- * @param {string} environmentIdOrUserId - The ID of the environment or user.
- */
-export async function deleteAllCompetences(environmentIdOrUserId: string) {
-  const type = await userOrSpaceID(environmentIdOrUserId);
-
-  /* Get all competences */
-  const competences = await db.competence.findMany({
-    where: type === 'USER' ? { userId: environmentIdOrUserId } : { spaceId: environmentIdOrUserId },
-  });
-
-  if (competences.length === 0) return;
-
-  // Should not be necessary, as delete of competences should cascade:
-
-  /* Delete all attributes */
-  // await db.competenceAttribute.deleteMany({
-  //   where: {
-  //     competenceId: {
-  //       in: competences.map((competence) => competence.id),
-  //     },
-  //   },
-  // });
-
-  /* Delete all competences */
   await db.competence.deleteMany({
     where: {
-      id: {
-        in: competences.map((competence) => competence.id),
+      spaceId,
+      type: CompetenceTypes.enum.SPACE,
+    },
+  });
+
+  return competences as SpaceCompetence[];
+}
+
+/* ------------------------------------------------------------------ */
+/* User Competences */
+
+/* Helper that ensures only allowed columns are updateable  */
+function userCompetenceUpdateChecker({
+  competenceId,
+  userId,
+  proficiency,
+  qualificationDate,
+  lastUsage,
+  ..._
+}: {
+  competenceId?: string;
+  userId?: string;
+  proficiency?: string | null;
+  qualificationDate?: Date | string | null;
+  lastUsage?: Date | string | null;
+  [key: string]: unknown;
+}) {
+  /* Check if dates are valid */
+  let qualificationDateParsed = qualificationDate;
+  if (qualificationDate) qualificationDateParsed = new Date(qualificationDate).toISOString();
+  let lastUsageParsed = lastUsage;
+  if (lastUsage) lastUsageParsed = new Date(lastUsage).toISOString();
+
+  return {
+    /* Not updateable: */
+    // type: CompetenceTypes.enum.USER,
+    // competenceId,
+    // userId,
+
+    proficiency,
+    qualificationDate: qualificationDateParsed,
+    lastUsage: lastUsageParsed,
+  };
+}
+
+/**
+ * Retrieves all competences for a given user.
+ *
+ * @param {string} userId - The unique identifier of the user to fetch competences for.
+ * @returns {Promise<Array>} A promise that resolves to an array of user-competences, where the property `competence`
+ *          contains the competence details.
+ */
+export async function getAllCompetencesOfUser(userId: string): Promise<UserCompetence[]> {
+  const userCompetences = await db.userCompetence.findMany({
+    where: {
+      userId,
+    },
+  });
+
+  /* Empty check */
+  if (userCompetences.length === 0) {
+    return [];
+  }
+
+  return await Promise.all(
+    userCompetences.map(async (userCompetence) => {
+      const competence = await db.competence.findUnique({
+        where: {
+          id: userCompetence.competenceId,
+        },
+      });
+
+      // competence should never be null because of db integrity
+      if (!competence)
+        throw new Error(
+          `Inconsistent Database: Competence not found for ID: ${userCompetence.competenceId}`,
+        );
+
+      return {
+        ...userCompetence,
+        competence,
+      };
+    }),
+  );
+}
+
+/**
+ * Retrieves a specific competence for a given user.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {string} competenceId - The unique identifier of the competence to retrieve.
+ * @returns {Promise<Object>} A promise that resolves to the user-competence object, including the competence details.
+ */
+export async function getUserCompetence(
+  userId: string,
+  competenceId: string,
+): Promise<UserCompetence | null> {
+  const userCompetence = await db.userCompetence.findUnique({
+    where: {
+      competenceId_userId: {
+        competenceId,
+        userId,
       },
     },
   });
+
+  if (!userCompetence) return null;
+
+  return {
+    ...userCompetence,
+    competence: await db.competence.findUnique({
+      where: {
+        id: userCompetence.competenceId,
+      },
+    }),
+  } as UserCompetence;
 }
+
+/**
+ * Claims a competence for a user.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {string} competenceId - The unique identifier of the competence to claim.
+ * @param {Object} userCompetence - The data for the user-competence to be created.
+ * @returns {Promise<Object>} A promise that resolves to the claimed user-competence object, including the competence details.
+ */
+export async function claimUserCompetence(
+  userId: string,
+  competenceId: string,
+  userCompetence: Omit<Prisma.CompetenceCreateInput, 'type'>,
+): Promise<UserCompetence> {
+  /* Check that competence exists */
+  const competence = await db.competence.findUnique({
+    where: {
+      id: competenceId,
+      type: CompetenceTypes.enum.SPACE, // has to be space competence
+    },
+  });
+  if (!competence) {
+    throw new Error(`Competence with ID ${competenceId} does not exist or is not of type SPACE.`);
+  }
+
+  const data = userCompetenceUpdateChecker(userCompetence);
+
+  const _userCompetence = await db.userCompetence.create({
+    data: {
+      ...data,
+      competenceId,
+      userId,
+    },
+  });
+
+  return {
+    ..._userCompetence,
+    competence,
+  };
+}
+
+/**
+ * Adds a new competence for a user.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {Object} competence - The data for the competence to be created.
+ * @param {Object} userCompetence - The data for the user-competence to be created.
+ * @returns {Promise<Object>} A promise that resolves to the created user-competence object, including the competence details.
+ */
+export async function addUserCompetence(
+  userId: string,
+  competence: Omit<Prisma.CompetenceCreateInput, 'type'>,
+  userCompetence: Prisma.UserCompetenceCreateInput,
+): Promise<UserCompetence> {
+  /* Create the competence */
+  const spaceData = spaceCompetnceUpdateChecker(competence);
+  const newCompetence = await db.competence.create({
+    data: {
+      ...spaceData,
+      type: CompetenceTypes.enum.USER,
+      creatorUserId: userId,
+    },
+  });
+
+  /* Create the user competence */
+  const userData = userCompetenceUpdateChecker(userCompetence);
+  const _userCompetence = await db.userCompetence.create({
+    data: {
+      ...userData,
+      competenceId: newCompetence.id,
+      userId,
+    },
+  });
+
+  return {
+    ..._userCompetence,
+    competence: newCompetence,
+  };
+}
+
+/**
+ * Updates a user's competence.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {string} competenceId - The unique identifier of the competence to update.
+ * @param {Object} userCompetence - The updated user-competence data.
+ * @returns {Promise<Object>} A promise that resolves to the updated user-competence object, including the competence details.
+ */
+export async function updateUserCompetence(
+  userId: string,
+  competenceId: string,
+  userCompetence: Prisma.UserCompetenceUpdateInput,
+): Promise<UserCompetence> {
+  // @ts-ignore
+  const data = userCompetenceUpdateChecker(userCompetence);
+
+  const updatedUserCompetence = await db.userCompetence.update({
+    where: {
+      competenceId_userId: {
+        competenceId,
+        userId,
+      },
+    },
+    data,
+  });
+
+  return {
+    ...updatedUserCompetence,
+    competence: await db.competence.findUnique({
+      where: {
+        id: updatedUserCompetence.competenceId,
+      },
+    }),
+  };
+}
+
+/**
+ * Deletes a user's competence.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {string} competenceId - The unique identifier of the competence to delete.
+ * @returns {Promise<Object>} A promise that resolves to the deleted user-competence object, including the competence details.
+ */
+export async function deleteUserCompetence(
+  userId: string,
+  competenceId: string,
+): Promise<UserCompetence> {
+  return {
+    ...(await db.userCompetence.delete({
+      where: {
+        competenceId_userId: {
+          competenceId,
+          userId,
+        },
+      },
+    })),
+    competence: await db.competence.findUnique({
+      where: {
+        id: competenceId,
+      },
+    }),
+  } as UserCompetence;
+}
+
+/**
+ * Deletes all competences of a user.
+ *
+ * @param {string} userId - The unique identifier of the user whose competences will be deleted.
+ * @returns {Promise<Array>} A promise that resolves to an array of deleted user-competences.
+ */
+export async function deleteAllUserCompetences(userId: string): Promise<UserCompetence[]> {
+  const userCompetences = await getAllCompetencesOfUser(userId);
+
+  await db.userCompetence.deleteMany({
+    where: {
+      userId,
+    },
+  });
+
+  return userCompetences;
+}
+
+export default {
+  getAllSpaceCompetences,
+  getSpaceCompetence,
+  addSpaceCompetence,
+  updateSpaceCompetence,
+  deleteSpaceCompetence,
+  deleteAllSpaceCompetences,
+  getAllCompetencesOfUser,
+  getUserCompetence,
+  claimUserCompetence,
+  addUserCompetence,
+  updateUserCompetence,
+  deleteUserCompetence,
+  deleteAllUserCompetences,
+};

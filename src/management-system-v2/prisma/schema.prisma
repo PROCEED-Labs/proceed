@@ -139,7 +139,7 @@ model Space {
   contactEmail       String?
   spaceLogo          String?
   owner              User?        @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId            String
+  ownerId            String?
   members            Membership[]
   folders            Folder[]
   processes          Process[]

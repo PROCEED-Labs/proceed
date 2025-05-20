@@ -82,6 +82,11 @@ const CreateOrganizationPage = ({
         content: 'An error occurred while creating the organization',
         type: 'error',
       });
+
+      if (needsToAuthenticate) {
+        // To stop the callbackUrl function so that the user isn't redirected to the signin page
+        throw e;
+      }
     }
   }
 
@@ -166,16 +171,16 @@ const CreateOrganizationPage = ({
                 <TextArea />
               </Form.Item>
               <Form.Item
+                label="Contact E-Mail"
+                name="contactEmail"
+                {...antDesignInputProps(formErrors, 'contactEmail')}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item
                 label="Contact Phone Number"
                 name="contactPhoneNumber"
                 {...antDesignInputProps(formErrors, 'contactPhoneNumber')}
-              >
-                <PhoneInput />
-              </Form.Item>
-              <Form.Item
-                label="Contact Phone E-Mail"
-                name="contactEmail"
-                {...antDesignInputProps(formErrors, 'contactEmail')}
               >
                 <PhoneInput />
               </Form.Item>

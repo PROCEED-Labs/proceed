@@ -24,17 +24,17 @@ export async function sendEmail({
 
   if (msConfig.NODE_ENV === 'production' && !transport)
     transport = nodemailer.createTransport({
-      host: msConfig.SMTP_MAIL_HOST,
+      host: msConfig.MAILSERVER_URL,
       secure: true,
-      port: msConfig.SMTP_MAIL_PORT,
+      port: msConfig.MAILSERVER_PORT,
       auth: {
-        user: msConfig.SMTP_MAIL_USER,
-        pass: msConfig.SMTP_MAIL_PASSWORD,
+        user: msConfig.MAILSERVER_MS_DEFAULT_MAIL_ADDRESS,
+        pass: msConfig.MAILSERVER_MS_DEFAULT_MAIL_PASSWORD,
       },
     });
 
   transport.sendMail({
-    from: msConfig.SMTP_MAIL_USER,
+    from: msConfig.MAILSERVER_MS_DEFAULT_MAIL_ADDRESS,
     to,
     subject,
     html,

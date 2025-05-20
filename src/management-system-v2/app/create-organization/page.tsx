@@ -20,7 +20,7 @@ export type createInactiveEnvironment = typeof createInactiveEnvironment;
 const unallowedProviders = ['guest-signin', 'development-users'];
 
 const Page = async () => {
-  if (!(await getMSConfig()).PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
+  if (!(await getMSConfig()).PROCEED_PUBLIC_IAM_ACTIVE) return notFound();
 
   const { session } = await getCurrentUser();
   const needsToAuthenticate = !session?.user || session?.user.isGuest;

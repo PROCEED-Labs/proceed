@@ -85,7 +85,7 @@ const HeaderActions: FC = () => {
         }),
       icon: <FaSignOutAlt />,
     });
-  } else if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  } else if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
     avatarDropdownItems.push({
       key: 'profile',
       title: 'Profile Settings',
@@ -134,7 +134,7 @@ const HeaderActions: FC = () => {
       icon: <AppstoreOutlined />,
     });
 
-    if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
       avatarDropdownItems.push({
         key: 'signout',
         title: 'Sign Out',
@@ -172,7 +172,7 @@ const HeaderActions: FC = () => {
             items: avatarDropdownItems,
           }}
         >
-          {envVars.PROCEED_PUBLIC_IAM_ACTIVATE ? (
+          {envVars.PROCEED_PUBLIC_IAM_ACTIVE ? (
             <SpaceLink href={`/profile`}>
               <UserAvatar user={session.data.user} />
             </SpaceLink>

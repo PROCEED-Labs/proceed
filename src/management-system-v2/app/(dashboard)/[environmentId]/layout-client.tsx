@@ -84,7 +84,7 @@ const Layout: FC<
 
   let layoutMenuItems = _layoutMenuItems;
 
-  if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
     const personal: MenuProps['items'] = [
       {
         key: 'personal-profile',

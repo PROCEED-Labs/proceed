@@ -82,6 +82,11 @@ const CreateOrganizationPage = ({
         content: 'An error occurred while creating the organization',
         type: 'error',
       });
+
+      if (needsToAuthenticate) {
+        // To stop the callbackUrl function so that the user isn't redirected to the signin page
+        throw e;
+      }
     }
   }
 

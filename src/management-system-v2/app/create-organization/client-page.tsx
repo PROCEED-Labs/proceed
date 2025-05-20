@@ -166,16 +166,16 @@ const CreateOrganizationPage = ({
                 <TextArea />
               </Form.Item>
               <Form.Item
+                label="Contact E-Mail"
+                name="contactEmail"
+                {...antDesignInputProps(formErrors, 'contactEmail')}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item
                 label="Contact Phone Number"
                 name="contactPhoneNumber"
                 {...antDesignInputProps(formErrors, 'contactPhoneNumber')}
-              >
-                <PhoneInput />
-              </Form.Item>
-              <Form.Item
-                label="Contact Phone E-Mail"
-                name="contactEmail"
-                {...antDesignInputProps(formErrors, 'contactEmail')}
               >
                 <PhoneInput />
               </Form.Item>

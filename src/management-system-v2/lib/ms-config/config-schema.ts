@@ -104,10 +104,10 @@ export const msConfigSchema = {
     NEXTAUTH_SECRET: z.string(),
     USE_AUTH0: z.string().transform(boolParser),
 
-    SMTP_MAIL_USER: z.string(),
-    SMTP_MAIL_PORT: z.coerce.number(),
-    SMTP_MAIL_HOST: z.string(),
-    SMTP_MAIL_PASSWORD: z.string(),
+    SMTP_MAIL_USER: z.string().default(''),
+    SMTP_MAIL_PORT: z.coerce.number().default(587),
+    SMTP_MAIL_HOST: z.string().default(''),
+    SMTP_MAIL_PASSWORD: z.string().default(''),
 
     AUTH0_CLIENT_ID: z.string(),
     AUTH0_CLIENT_SECRET: z.string(),

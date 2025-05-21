@@ -7,14 +7,15 @@ import {
   AuthenticatedUser,
   AuthenticatedUserSchema,
 } from '../../user-schema';
-import { addEnvironment, deleteEnvironment } from './environments';
+import { addEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
-import { getUserOrganizationEnvironments, removeMember } from './memberships';
+import { getUserOrganizationEnvironments } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 import { UserFacingError } from '@/lib/user-error';
+import { env } from '@/lib/ms-config/env-vars';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -97,7 +98,8 @@ export async function addUser(
       },
     });
 
-    await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+    if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
+      await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
 
     if ((await getSystemAdmins()).length === 0 && !user.isGuest)
       await addSystemAdmin(

@@ -33,6 +33,7 @@ import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { env } from '@/lib/ms-config/env-vars';
 
 const DashboardLayout = async ({
   children,
@@ -42,12 +43,17 @@ const DashboardLayout = async ({
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
-  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
+
+  const userEnvironments: Environment[] = [];
+  if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
+    userEnvironments.push(await getEnvironmentById(userId))!;
+
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
   const orgEnvironments = await asyncMap(
     userOrgEnvs,
     async (envId) => (await getEnvironmentById(envId))!,
   );
+
   const msConfig = await getMSConfig();
 
   userEnvironments.push(...orgEnvironments);

@@ -42,14 +42,6 @@ const nextAuthOptions: NextAuthConfig = {
   },
   trustHost: true,
   providers: [
-    CredentialsProvider({
-      name: 'Continue as Guest',
-      id: 'guest-signin',
-      credentials: {},
-      async authorize() {
-        return addUser({ isGuest: true });
-      },
-    }),
     EmailProvider({
       id: 'email',
       name: 'Sign in with E-mail',
@@ -194,6 +186,21 @@ if (env.NODE_ENV === 'production') {
           firstName: fistName.length > 0 ? fistName : undefined,
           lastName: lastName.length > 0 ? lastName : undefined,
         };
+      },
+    }),
+  );
+}
+
+// Guest users can only have a personal space, so it doesn't make sense to have guests when
+// personal spaces are deactivated
+if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      name: 'Continue as Guest',
+      id: 'guest-signin',
+      credentials: {},
+      async authorize() {
+        return addUser({ isGuest: true });
       },
     }),
   );

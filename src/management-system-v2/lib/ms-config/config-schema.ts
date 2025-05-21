@@ -22,11 +22,6 @@ export const mSConfigEnvironmentOnlyKeys = [
   'MQTT_BASETOPIC',
   'NODE_ENV',
 
-  'AUTH0_CLIENT_ID',
-  'AUTH0_CLIENT_SECRET',
-  'AUTH0_ISSUER',
-  'AUTH0_SCOPE',
-
   // TODO: remove this from environment only list
   'GOOGLE_CLOUD_BUCKET_NAME',
 
@@ -102,17 +97,11 @@ export const msConfigSchema = {
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
-    USE_AUTH0: z.string().transform(boolParser),
 
     SMTP_MAIL_USER: z.string().default(''),
     SMTP_MAIL_PORT: z.coerce.number().default(587),
     SMTP_MAIL_HOST: z.string().default(''),
     SMTP_MAIL_PASSWORD: z.string().default(''),
-
-    AUTH0_CLIENT_ID: z.string(),
-    AUTH0_CLIENT_SECRET: z.string(),
-    AUTH0_ISSUER: z.string(),
-    AUTH0_SCOPE: z.string(),
 
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),

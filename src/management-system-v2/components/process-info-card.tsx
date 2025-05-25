@@ -6,6 +6,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { ProcessListProcess } from './processes';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import MetaDataContent from './process-info-card-content';
+import { debounce } from '@/lib/utils';
 
 type MetaDataType = {
   selectedElement?: ProcessListProcess;
@@ -41,6 +42,15 @@ const MetaData = forwardRef<() => void, MetaDataType>(({ selectedElement }, ref)
 
   if (!hydrated) return null;
 
+  const finalPrefChange = debounce((width: number) => {
+    addPreferences({
+      'process-meta-data': {
+        open: showInfo,
+        width: width,
+      },
+    });
+  }, 300);
+
   return (
     <ResizableElement
       initialWidth={
@@ -55,14 +65,16 @@ const MetaData = forwardRef<() => void, MetaDataType>(({ selectedElement }, ref)
         marginLeft: '20px',
         maxWidth: '33%',
       }}
-      onWidthChange={(width) =>
+      onWidthChange={(width) => {
         addPreferences({
           'process-meta-data': {
             open: showInfo,
             width: width,
           },
-        })
-      }
+        });
+
+        finalPrefChange(width);
+      }}
       ref={resizableElementRef}
       lock={!showInfo}
     >

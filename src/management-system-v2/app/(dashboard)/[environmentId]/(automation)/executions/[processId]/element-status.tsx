@@ -36,6 +36,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     statusEntries.push([
       'Image',
       <div
+        key={metaData.overviewImage}
         style={{
           width: '75%',
           display: 'flex',
@@ -85,6 +86,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     statusEntries.push([
       'External:',
       <Checkbox
+        key="external"
         disabled
         value={info.element.businessObject && info.element.businessObject.external}
       />,
@@ -122,7 +124,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
       statusEntries.push([
         'Progress',
-        <Progress percent={progress.value} status={progressStatus} />,
+        <Progress key="progress" percent={progress.value} status={progressStatus} />,
       ]);
     }
   }
@@ -171,17 +173,17 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   // Activity time
   statusEntries.push([
-    <Space>
+    <Space key="started">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Started:</Typography.Text>
       <Typography.Text>{start?.toLocaleString()}</Typography.Text>
     </Space>,
-    <Space>
+    <Space key="planned-start">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Start:</Typography.Text>
       <Typography.Text>{plan.start?.toLocaleString() || ''}</Typography.Text>
     </Space>,
-    <Space>
+    <Space key="start-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
@@ -191,17 +193,17 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   ]);
 
   statusEntries.push([
-    <Space>
+    <Space key="duration">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Duration:</Typography.Text>
       <Typography.Text>{transformMillisecondsToTimeFormat(duration)}</Typography.Text>
     </Space>,
-    <Space>
+    <Space key="duration-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Duration:</Typography.Text>
       <Typography.Text>{transformMillisecondsToTimeFormat(plan.duration)}</Typography.Text>
     </Space>,
-    <Space>
+    <Space key="duration-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
@@ -211,17 +213,17 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   ]);
 
   statusEntries.push([
-    <Space>
+    <Space key="end">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Ended:</Typography.Text>
       <Typography.Text>{end?.toLocaleString()}</Typography.Text>
     </Space>,
-    <Space>
+    <Space key="end-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned End:</Typography.Text>
       <Typography.Text>{plan.end?.toLocaleString() || ''}</Typography.Text>
     </Space>,
-    <Space>
+    <Space key="end-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>

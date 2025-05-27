@@ -5,23 +5,7 @@ import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
-
-function transformMillisecondsToTimeFormat(milliseconds: number | undefined) {
-  if (!milliseconds || milliseconds < 0 || milliseconds < 1000) return;
-
-  const days = Math.floor(milliseconds / (3600000 * 24));
-  milliseconds -= days * (3600000 * 24);
-  const hours = Math.floor(milliseconds / 3600000);
-  milliseconds -= hours * 3600000;
-  // Minutes part from the difference
-  const minutes = Math.floor(milliseconds / 60000);
-  milliseconds -= minutes * 60000;
-  //Seconds part from the difference
-  const seconds = Math.floor(milliseconds / 1000);
-  milliseconds -= seconds * 1000;
-
-  return `${days} Days, ${hours}h, ${minutes}min, ${seconds}s`;
-}
+import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 
 export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   const statusEntries: ReactNode[][] = [];
@@ -36,7 +20,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     statusEntries.push([
       'Image',
       <div
-        key={metaData.overviewImage}
+        key="image"
         style={{
           width: '75%',
           display: 'flex',
@@ -145,8 +129,15 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   }
 
   // Planned costs
-  // TODO: Costs currency
-  statusEntries.push(['Planned Costs:', metaData['costsPlanned']]);
+  const costs: { value: string; unit: string } | undefined = metaData['costsPlanned'];
+  statusEntries.push([
+    'Planned Costs:',
+    costs &&
+    generateNumberString(+costs.value, {
+      style: 'currency',
+      currency: costs.unit,
+    }),
+  ]);
 
   // Real Costs
   // TODO: Set real costs
@@ -176,18 +167,18 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     <Space key="started">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Started:</Typography.Text>
-      <Typography.Text>{start?.toLocaleString()}</Typography.Text>
+      <Typography.Text>{generateDateString(start, true)}</Typography.Text>
     </Space>,
     <Space key="planned-start">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Start:</Typography.Text>
-      <Typography.Text>{plan.start?.toLocaleString() || ''}</Typography.Text>
+      <Typography.Text>{generateDateString(plan.start, true) || ''}</Typography.Text>
     </Space>,
     <Space key="start-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
-        {transformMillisecondsToTimeFormat(delays.start)}
+        {generateDurationString(delays.start)}
       </Typography.Text>
     </Space>,
   ]);
@@ -196,18 +187,18 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     <Space key="duration">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Duration:</Typography.Text>
-      <Typography.Text>{transformMillisecondsToTimeFormat(duration)}</Typography.Text>
+      <Typography.Text>{generateDurationString(duration)}</Typography.Text>
     </Space>,
     <Space key="duration-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Duration:</Typography.Text>
-      <Typography.Text>{transformMillisecondsToTimeFormat(plan.duration)}</Typography.Text>
+      <Typography.Text>{generateDurationString(plan.duration)}</Typography.Text>
     </Space>,
     <Space key="duration-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
-        {transformMillisecondsToTimeFormat(delays.duration)}
+        {generateDurationString(delays.duration)}
       </Typography.Text>
     </Space>,
   ]);
@@ -216,18 +207,18 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     <Space key="end">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Ended:</Typography.Text>
-      <Typography.Text>{end?.toLocaleString()}</Typography.Text>
+      <Typography.Text>{generateDateString(end, true)}</Typography.Text>
     </Space>,
     <Space key="end-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned End:</Typography.Text>
-      <Typography.Text>{plan.end?.toLocaleString() || ''}</Typography.Text>
+      <Typography.Text>{generateDateString(plan.end, true) || ''}</Typography.Text>
     </Space>,
     <Space key="end-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
       <Typography.Text type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
-        {transformMillisecondsToTimeFormat(delays.end)}
+        {generateDurationString(delays.end)}
       </Typography.Text>
     </Space>,
   ]);

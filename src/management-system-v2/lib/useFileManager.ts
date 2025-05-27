@@ -16,6 +16,7 @@ const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
 
 interface FileManagerHookProps {
   entityType: EntityType;
+  errorToasts?: boolean;
 }
 
 interface FileOperationResult {
@@ -24,7 +25,7 @@ interface FileOperationResult {
   fileUrl?: string;
 }
 
-export function useFileManager({ entityType }: FileManagerHookProps) {
+export function useFileManager({ entityType, errorToasts = true }: FileManagerHookProps) {
   const queryClient = useQueryClient();
   const { spaceId } = useEnvironment();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -87,7 +88,7 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
       }
     },
     onError: (error, variables) => {
-      message.error(error.message || 'Upload failed');
+      if (errorToasts) message.error(error.message || 'Upload failed');
       if (variables.onError) {
         variables.onError(error);
       }
@@ -121,7 +122,7 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
       }
     },
     onError: (error, variables) => {
-      message.error(error.message || 'Download failed');
+      if (errorToasts) message.error(error.message || 'Download failed');
       if (variables.onError) {
         variables.onError(error);
       }
@@ -144,7 +145,7 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
       });
     },
     onError: (error) => {
-      message.error(error.message || 'Delete failed');
+      if (errorToasts) message.error(error.message || 'Delete failed');
     },
   });
 
@@ -187,7 +188,7 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
       }
     },
     onError: (error) => {
-      message.error(error.message || 'Replace failed');
+      if (errorToasts) message.error(error.message || 'Replace failed');
     },
   });
 

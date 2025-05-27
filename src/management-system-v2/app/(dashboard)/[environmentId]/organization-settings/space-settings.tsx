@@ -169,6 +169,7 @@ const SpaceSettings = ({
                           useDefaultRemoveFunction: true,
                           fileName: '',
                         }}
+                        fileManagerErrorToasts={false}
                       />
                     ),
                   }}

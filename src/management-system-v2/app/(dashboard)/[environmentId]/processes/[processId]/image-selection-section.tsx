@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { Image, notification } from 'antd';
+import { App, Image } from 'antd';
 
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
@@ -26,15 +26,15 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   const { processId } = useParams();
   const { fileUrl: imageUrlfm, download: getImageURL } = useFileManager({
     entityType: EntityType.PROCESS,
+    errorToasts: false,
   });
   const environment = useEnvironment();
+  const { notification } = App.useApp();
 
   const [reloadParam, setReloadParam] = useState(0);
 
-  const [api, contextHolder] = notification.useNotification();
-
   const showImageUploadFailMessage = () => {
-    api.info({
+    notification.error({
       message: `Image upload failed`,
       description: 'Something went wrong while uploading the selected image.',
       placement: 'topRight',
@@ -54,44 +54,42 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   }, [imageFileName]);
 
   return (
-    <>
-      {contextHolder}
-      <Image
-        src={imageURL || fallbackImage}
-        alt="Image"
-        fallback={fallbackImage}
-        style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: '6px',
-          border: '1px solid #d9d9d9',
-        }}
-        preview={{
-          visible: false,
-          mask: (
-            <ImageUpload
-              imageExists={!!imageFileName}
-              onReload={() => setReloadParam(Date.now())}
-              onImageUpdate={onImageUpdate}
-              onUploadFail={() => showImageUploadFailMessage()}
-              endpoints={{
-                postEndpoint: baseUrl,
-                deleteEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
-                putEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
-              }}
-              config={{
-                entityType: EntityType.PROCESS,
-                entityId: processId as string,
-                useDefaultRemoveFunction: true,
-                fileName: imageFileName,
-              }}
-            />
-          ),
-        }}
-        role="group"
-        aria-label="image-section"
-      ></Image>
-    </>
+    <Image
+      src={imageURL || fallbackImage}
+      alt="Image"
+      fallback={fallbackImage}
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '6px',
+        border: '1px solid #d9d9d9',
+      }}
+      preview={{
+        visible: false,
+        mask: (
+          <ImageUpload
+            imageExists={!!imageFileName}
+            onReload={() => setReloadParam(Date.now())}
+            onImageUpdate={onImageUpdate}
+            onUploadFail={showImageUploadFailMessage}
+            endpoints={{
+              postEndpoint: baseUrl,
+              deleteEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
+              putEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
+            }}
+            config={{
+              entityType: EntityType.PROCESS,
+              entityId: processId as string,
+              useDefaultRemoveFunction: true,
+              fileName: imageFileName,
+            }}
+            fileManagerErrorToasts={false}
+          />
+        ),
+      }}
+      role="group"
+      aria-label="image-section"
+    />
   );
 };
 

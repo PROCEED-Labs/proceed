@@ -3,7 +3,7 @@
 
 import { packRules } from '@casl/ability/extra';
 import { AbilityRule, ResourceType, resourceAction, resources } from '../ability/caslAbility';
-import { env } from '../env-vars';
+import { env } from '../ms-config/env-vars';
 
 // NOTE: move this to the feature store once it exists
 export const BuyableResources = Object.freeze([] satisfies ResourceType[]);

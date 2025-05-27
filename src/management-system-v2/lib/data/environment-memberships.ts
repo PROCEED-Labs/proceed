@@ -3,7 +3,6 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import { UserErrorType, userError } from '../user-error';
 import { z } from 'zod';
-import { env } from '@/lib/env-vars';
 import { sendEmail } from '../email/mailer';
 import renderOrganizationInviteEmail from '../organization-invite-email';
 import { OrganizationEnvironment } from './environment-schema';
@@ -14,6 +13,7 @@ import { type RoleMapping } from '@/lib/data/db/iam/role-mappings';
 import { getUserByEmail } from '@/lib/data/db/iam/users';
 import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { isMember, removeMember } from '@/lib/data/db/iam/memberships';
+import { env } from '../ms-config/env-vars';
 
 const EmailListSchema = z.array(z.string().email());
 

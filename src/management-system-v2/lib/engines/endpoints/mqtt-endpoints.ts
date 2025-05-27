@@ -1,6 +1,5 @@
 import mqtt from 'mqtt';
-import { env } from '@/lib/env-vars';
-import { on } from 'events';
+import { env } from '@/lib/ms-config/env-vars';
 
 const mqttTimeout = 1000;
 

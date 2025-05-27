@@ -15,7 +15,7 @@ import {
   render,
 } from '@react-email/components';
 import * as React from 'react';
-import { env } from '@/lib/env-vars';
+import { env } from '../ms-config/env-vars';
 
 const baseUrl = env.NEXTAUTH_URL;
 

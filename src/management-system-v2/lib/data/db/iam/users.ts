@@ -90,34 +90,16 @@ export async function addUser(
   try {
     const userExists = await db.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
-    await db.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.user.create({
-        data: {
-          ...user,
-          isGuest: user.isGuest,
-        },
-      });
 
-      await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
-
-      if ((await getSystemAdmins()).length === 0 && !user.isGuest)
-        await addSystemAdmin(
-          {
-            role: 'admin',
-            userId: user.id!,
-          },
-          tx,
-        );
-
-      if (user.isGuest) {
-        await tx.guestSignin.create({
-          data: {
-            userId: user.id!,
-          },
-        });
-      }
+    await tx.user.create({
+      data: {
+        ...user,
+        isGuest: user.isGuest,
+      },
     });
+
     await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+
     if ((await getSystemAdmins()).length === 0 && !user.isGuest)
       await addSystemAdmin(
         {
@@ -126,6 +108,14 @@ export async function addUser(
         },
         tx,
       );
+
+    if (user.isGuest) {
+      await tx.guestSignin.create({
+        data: {
+          userId: user.id!,
+        },
+      });
+    }
   } catch (error) {
     console.error('Error adding new user: ', error);
   }

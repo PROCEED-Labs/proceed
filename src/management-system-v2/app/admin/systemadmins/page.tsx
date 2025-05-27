@@ -13,7 +13,7 @@ import { UserErrorType, userError } from '@/lib/user-error';
 import { notFound, redirect } from 'next/navigation';
 import SystemAdminsTable from './admins-table';
 import { SystemAdminCreationInput } from '@/lib/data/system-admin-schema';
-import { env } from '@/lib/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 async function deleteAdmins(userIds: string[]) {
   'use server';
@@ -82,7 +82,8 @@ async function getNonAdminUsers(page: number = 1, pageSize: number = 10) {
 export type getNonAdminUsers = typeof getNonAdminUsers;
 
 export default async function ManageAdminsPage() {
-  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
 
   const user = await getCurrentUser();
   if (!user.session) redirect('/');

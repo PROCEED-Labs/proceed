@@ -154,6 +154,7 @@ const nextAuthOptions: NextAuthConfig = {
 if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
     GoogleProvider({
+      id: 'google',
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       profile(profile) {
@@ -168,6 +169,7 @@ if (env.NODE_ENV === 'production') {
       },
     }),
     DiscordProvider({
+      id: 'discord',
       clientId: env.DISCORD_CLIENT_ID,
       clientSecret: env.DISCORD_CLIENT_SECRET,
       profile(profile) {
@@ -179,6 +181,7 @@ if (env.NODE_ENV === 'production') {
       },
     }),
     TwitterProvider({
+      id: 'twitter',
       clientId: env.TWITTER_CLIENT_ID,
       clientSecret: env.TWITTER_CLIENT_SECRET,
       profile({ data, email }) {

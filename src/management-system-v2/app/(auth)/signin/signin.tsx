@@ -107,7 +107,7 @@ const SignIn: FC<{
     : callbackUrl;
   const authError = searchParams.get('error');
 
-  const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
+  const oauthProviders = providers.filter((provider) => ['oauth', 'oidc'].includes(provider.type));
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
 
   const emailProvider = providers.find((provider) => provider.type === 'email');
@@ -254,7 +254,7 @@ const SignIn: FC<{
       icon: (
         // eslint-disable-next-line
         <img
-          src={`https://authjs.dev/img/providers${(provider as any).style?.logo}`}
+          src={`https://authjs.dev/img/providers/${provider.id}.svg`}
           alt={provider.name}
           style={{ width: '1.5rem', height: 'auto' }}
         />

@@ -826,15 +826,6 @@ class Engine {
     return inactiveUserTasksWithLogInfo;
   }
 
-  getMilestones(instanceID, userTaskID) {
-    const userTask = this.userTasks.find(
-      (uT) => uT.processInstance.id === instanceID && uT.id === userTaskID,
-    );
-
-    const token = this.getToken(instanceID, userTask.tokenId);
-
-    return token.milestones || {};
-  }
   updateMilestones(instanceID, userTaskID, milestones) {
     const userTask = this.userTasks.find(
       (uT) =>

@@ -1,18 +1,23 @@
 import { getCurrentUser } from '@/components/auth';
 import CreateOrganizationPage from './client-page';
-import { getProviders } from '../api/auth/[...nextauth]/auth-options';
+import { getProviders } from '@/lib/auth';
 import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema';
 import { addEnvironment } from '@/lib/data/db/iam/environments';
-import { userError } from '@/lib/user-error';
+import { getErrorMessage, userError } from '@/lib/user-error';
 import { env } from '@/lib/env-vars';
 import { notFound } from 'next/navigation';
 
 async function createInactiveEnvironment(data: UserOrganizationEnvironmentInput) {
   'use server';
-  const user = await getCurrentUser();
-  if (user.session?.user && !user.session?.user.isGuest)
-    return userError('This function is only for guest users and users that are not signed in');
-  return addEnvironment({ ...data, isOrganization: true, isActive: false });
+  try {
+    const user = await getCurrentUser();
+    if (user.session?.user && !user.session?.user.isGuest)
+      return userError('This function is only for guest users and users that are not signed in');
+    return addEnvironment({ ...data, isOrganization: true, isActive: false });
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 }
 
 export type createInactiveEnvironment = typeof createInactiveEnvironment;

@@ -229,3 +229,100 @@ export function updatePerformersOnElementById(
   elementId: string,
   performers: any[],
 ): Promise<string | object>;
+/**
+ * Updates the creator BPMN XML attributes of the given BPMN process.
+ *
+ * @param {(string | object)} bpmn - The BPMN process definition as an XML string or a BPMN-Moddle object.
+ * @param {object} attributes - The attributes to update in the BPMN process.
+ * @param {string} [attributes.id] - The id of the BPMN process.
+ * @param {string} [attributes.name] - The name of the BPMN process.
+ * @param {string} [attributes.creatorId] - The unique identifier of the creator.
+ * @param {string} [attributes.creatorName] - The name of the creator.
+ * @param {string} [attributes.creatorUsername] - The username of the creator.
+ * @param {string} [attributes.creatorSpaceId] - The unique identifier of the creator's space.
+ * @param {string} [attributes.creatorSpaceName] - The name of the creator's space.
+ * @param {string} [attributes.userDefinedId] - The user-defined ID of the BPMN process.
+ * @param {string} [attributes.creationDate] - The creation date of the BPMN process in string format.
+ * @returns {Promise<string | object>} A promise that resolves to the modified BPMN process,
+ * either as a BPMN-Moddle object or an XML string, depending on the input format.
+ */
+export function updateBpmnCreatorAttributes(
+  bpmn: string | object,
+  {
+    id,
+    name,
+    creatorId,
+    creatorName,
+    creatorUsername,
+    creatorSpaceName,
+    creatorSpaceId,
+    userDefinedId,
+    creationDate,
+  }: {
+    id?: string;
+    name?: string;
+    creatorId?: string;
+    creatorName?: string;
+    creatorUsername?: string;
+    creatorSpaceId?: string;
+    creatorSpaceName?: string;
+    userDefinedId?: string;
+    creationDate?: string;
+  },
+): Promise<string | object>;
+/**
+ * Updates the original attributes of a copied/imported BPMN process.
+ *
+ * @param {(string | object)} bpmn - The BPMN process definition as an XML string or a BPMN-Moddle object.
+ * @param {object} attributes - The original attributes to update in the BPMN process.
+ * @param {string} [attributes.originalId] - The original of a copied/imported BPMN process.
+ * @param {string} [attributes.originalName] - The original name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalUserDefinedId] - The original user-defined ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreationDate] - The original creation date of a copied/imported BPMN process.
+ * @param {string} [attributes.originalProcessVersionId] - The original process version ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalProcessVersionName] - The original process version name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalExporter] - The original exporter of a copied/imported BPMN process.
+ * @param {string} [attributes.originalExporterVersion] - The original exporter version of a copied/imported BPMN process.
+ * @param {string} [attributes.originalTargetNamespace] - The original target namespace of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorSpaceId] - The original creator space ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorSpaceName] - The original creator space name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorId] - The original creator ID of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorName] - The original creator name of a copied/imported BPMN process.
+ * @param {string} [attributes.originalCreatorUsername] - The original creator username of a copied/imported BPMN process.
+ * @returns {Promise<string | object>} A promise that resolves to the modified BPMN process,
+ * either as a BPMN-Moddle object or an XML string, depending on the input format.
+ */
+export function updateBpmnOriginalAttributes(
+  bpmn: string | object,
+  {
+    originalId,
+    originalName,
+    originalUserDefinedId,
+    originalCreationDate,
+    originalProcessVersionId,
+    originalProcessVersionName,
+    originalExporter,
+    originalExporterVersion,
+    originalTargetNamespace,
+    originalCreatorSpaceId,
+    originalCreatorSpaceName,
+    originalCreatorId,
+    originalCreatorName,
+    originalCreatorUsername,
+  }: {
+    originalId?: string;
+    originalName?: string;
+    originalUserDefinedId?: string;
+    originalCreationDate?: string;
+    originalProcessVersionId?: string;
+    originalProcessVersionName?: string;
+    originalExporter?: string;
+    originalExporterVersion?: string;
+    originalTargetNamespace?: string;
+    originalCreatorSpaceId?: string;
+    originalCreatorSpaceName?: string;
+    originalCreatorId?: string;
+    originalCreatorName?: string;
+    originalCreatorUsername?: string;
+  },
+): Promise<string | object>;

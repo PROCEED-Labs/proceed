@@ -24,8 +24,9 @@ import { useEnvironment, useSession } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
-import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
+import { FaSignOutAlt } from 'react-icons/fa';
 import { EnvVarsContext } from './env-vars-context';
+import { TbUserEdit } from 'react-icons/tb';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -89,7 +90,7 @@ const HeaderActions: FC = () => {
       key: 'profile',
       title: 'Profile Settings',
       label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-      icon: <FaUserEdit />,
+      icon: <TbUserEdit />,
     });
 
     // userSpaces is null when the component is outside of the UserSpaces provider
@@ -166,17 +167,22 @@ const HeaderActions: FC = () => {
       <Space style={{ float: 'right', padding: '16px' }}>
         {enableChatbot && <Assistant />}
         {actionButton}
-        <Dropdown
-          menu={{
-            items: avatarDropdownItems,
-          }}
-        >
-          {envVars.PROCEED_PUBLIC_IAM_ACTIVATE ? (
-            <SpaceLink href={`/profile`}>
-              <UserAvatar user={session.data.user} />
-            </SpaceLink>
-          ) : null}
-        </Dropdown>
+        <div id="PROCEED-profile-menu-button">
+          <Dropdown
+            menu={{
+              items: avatarDropdownItems,
+            }}
+            trigger={['click']}
+          >
+            {envVars.PROCEED_PUBLIC_IAM_ACTIVATE ? (
+              <span>
+                {/* <SpaceLink href={`/profile`}> */}
+                <UserAvatar user={session.data.user} style={{ cursor: 'pointer' }} />
+                {/* </SpaceLink> */}
+              </span>
+            ) : null}
+          </Dropdown>
+        </div>
       </Space>
     </>
   );

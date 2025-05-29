@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { zodPhoneNumber } from '../utils';
 
 export const AuthenticatedUserDataSchema = z.object({
   firstName: z
@@ -20,7 +21,8 @@ export const AuthenticatedUserDataSchema = z.object({
     .min(1, 'The Username must be at least 1 character long')
     .max(35, 'The Username cannot be longer than 35 characters')
     .optional(),
-  image: z.string().url().nullable().optional(),
+  phoneNumber: zodPhoneNumber().optional().nullable(),
+  profileImage: z.string().url().nullable().optional(),
   favourites: z.array(z.string()).optional(),
 });
 export type AuthenticatedUserData = z.infer<typeof AuthenticatedUserDataSchema>;
@@ -56,7 +58,7 @@ export type User = z.infer<typeof UserSchema> & { id: string };
 export const OauthAccountSchema = z.object({
   userId: z.string(),
   provider: z.string(),
-  type: z.enum(['oauth', 'email', 'credentials']),
+  type: z.enum(['oauth', 'email', 'credentials', 'oidc', 'webauthn']),
   providerAccountId: z.string(),
 
   // At the time we don't store tokens

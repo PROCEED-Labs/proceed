@@ -27,19 +27,20 @@ export async function getEnvironmentById(
   id: string,
   ability?: Ability,
   opts?: { throwOnNotFound?: boolean },
+  tx?: Prisma.TransactionClient,
 ) {
+  const dbMutator = tx || db;
+
   // TODO: check ability
-  if (enableUseDB) {
-    const environment = await db.space.findUnique({
-      where: {
-        id: id,
-      },
-    });
+  const environment = await dbMutator.space.findUnique({
+    where: {
+      id: id,
+    },
+  });
 
-    if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
+  if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
 
-    return environment as Environment;
-  }
+  return environment as Environment;
 }
 
 /** Sets an environment to active, and adds the given user as an admin */
@@ -78,7 +79,7 @@ export async function addEnvironment(
   const dbMutator = tx;
 
   const newEnvironment = environmentSchema.parse(environmentInput);
-  const id = newEnvironment.isOrganization ? v4() : newEnvironment.ownerId;
+  const id = newEnvironment.isOrganization ? newEnvironment.id ?? v4() : newEnvironment.ownerId;
 
   if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
 
@@ -218,7 +219,10 @@ export async function getOrganizationLogo(organizationId: string) {
   if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
 
   try {
-    return await db.space.findUnique({ where: { id: organizationId }, select: { logo: true } });
+    return await db.space.findUnique({
+      where: { id: organizationId },
+      select: { spaceLogo: true },
+    });
   } catch (err) {
     return undefined;
   }
@@ -227,9 +231,9 @@ export async function getOrganizationLogo(organizationId: string) {
 export async function organizationHasLogo(organizationId: string) {
   const res = await db.space.findUnique({
     where: { id: organizationId },
-    select: { logo: true },
+    select: { spaceLogo: true },
   });
-  if (res?.logo) {
+  if (res?.spaceLogo) {
     return true;
   }
   return false;

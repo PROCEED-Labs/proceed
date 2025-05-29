@@ -28,22 +28,16 @@ export async function getTaskListFromMachine(machine: Engine) {
     engine: machine,
   })) as TaskListEntry[];
 
-  return entries.map(({ id, instanceID, startTime, ...rest }) => ({
-    ...rest,
-    id: `${id}|${instanceID}|${startTime}`,
-    taskId: id,
-    instanceID,
-    startTime,
-  }));
+  return entries;
 }
 
-export async function getTasklistEntryHTMLFromMachine(
+export async function activateUserTask(
   machine: Engine,
   instanceId: string,
   userTaskId: string,
   startTime: number,
 ) {
-  return (await engineRequest({
+  await engineRequest({
     method: 'get',
     endpoint: '/tasklist/api/userTask',
     engine: machine,
@@ -52,7 +46,25 @@ export async function getTasklistEntryHTMLFromMachine(
       userTaskID: userTaskId,
       startTime: `${startTime}`,
     },
-  })) as string;
+  });
+}
+
+export async function getUserTaskFileFromMachine(
+  engine: Engine,
+  definitionId: string,
+  fileName: string,
+) {
+  const html = await engineRequest({
+    method: 'get',
+    endpoint: '/process/:definitionId/user-tasks/:fileName',
+    engine,
+    pathParams: {
+      definitionId,
+      fileName,
+    },
+  });
+
+  return html as string;
 }
 
 export async function setTasklistEntryVariableValuesOnMachine(
@@ -70,6 +82,24 @@ export async function setTasklistEntryVariableValuesOnMachine(
       userTaskID: userTaskId,
     },
     body: variables,
+  });
+}
+
+export async function setTasklistEntryMilestoneValuesOnMachine(
+  machine: Engine,
+  instanceId: string,
+  userTaskId: string,
+  milestones: { [key: string]: any },
+) {
+  await engineRequest({
+    method: 'put',
+    endpoint: '/tasklist/api/milestone',
+    engine: machine,
+    queryParams: {
+      instanceID: instanceId,
+      userTaskID: userTaskId,
+    },
+    body: milestones,
   });
 }
 

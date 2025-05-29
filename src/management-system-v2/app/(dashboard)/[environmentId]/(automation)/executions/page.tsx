@@ -1,7 +1,5 @@
 import Content from '@/components/content';
 import { getCurrentEnvironment } from '@/components/auth';
-import { notFound } from 'next/navigation';
-import { env } from '@/lib/env-vars';
 import DeploymentsView from './deployments-view';
 import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/folders';
 import { getUsersFavourites } from '@/lib/data/users';
@@ -77,10 +75,6 @@ async function Executions({ environmentId }: { environmentId: string }) {
 }
 
 export default function ExecutionsPage({ params }: { params: { environmentId: string } }) {
-  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
-    return notFound();
-  }
-
   return (
     <Content title="Executions">
       <Suspense fallback={<Skeleton active />}>

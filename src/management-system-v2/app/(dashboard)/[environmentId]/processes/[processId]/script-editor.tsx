@@ -80,30 +80,22 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryFn: async () => {
-      try {
-        if (!filename) return ['', null] as const;
-        console.debug('Fetching script task data');
+      if (!filename) return ['', null] as const;
 
-        // Check if script is stored in JS or blockly and set script and selected editor accordingly
-        const [jsScript, blocklyScript] = await Promise.all([
-          getProcessScriptTaskData(processId, filename, 'ts', environment.spaceId),
-          getProcessScriptTaskData(processId, filename, 'xml', environment.spaceId),
-        ]);
+      // Check if script is stored in JS or blockly and set script and selected editor accordingly
+      const [jsScript, blocklyScript] = await Promise.all([
+        getProcessScriptTaskData(processId, filename, 'ts', environment.spaceId),
+        getProcessScriptTaskData(processId, filename, 'xml', environment.spaceId),
+      ]);
 
-        const unsuccessful = +isUserErrorResponse(jsScript) + +isUserErrorResponse(blocklyScript);
-        console.debug('Unsuccessfull requests:', unsuccessful);
-        if (unsuccessful === 0) throw new Error('Inconsistency in script storage');
-        if (unsuccessful === 2) return ['', null] as const;
+      const unsuccessful = +isUserErrorResponse(jsScript) + +isUserErrorResponse(blocklyScript);
+      if (unsuccessful === 0) throw new Error('Inconsistency in script storage');
+      if (unsuccessful === 2) return ['', null] as const;
 
-        const scriptType = isUserErrorResponse(jsScript) ? 'blockly' : 'JS';
-        const script = scriptType === 'JS' ? (jsScript as string) : (blocklyScript as string);
+      const scriptType = isUserErrorResponse(jsScript) ? 'blockly' : 'JS';
+      const script = scriptType === 'JS' ? (jsScript as string) : (blocklyScript as string);
 
-        console.debug('Fetched script task', [script, scriptType]);
-        return [script, scriptType] as const;
-      } catch (error) {
-        console.debug('Error fetching script task data:', error);
-        throw error;
-      }
+      return [script, scriptType] as const;
     },
     // Refetch on close to update the script if it was changed
     enabled: !open,

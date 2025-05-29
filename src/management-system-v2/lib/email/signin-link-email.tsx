@@ -30,7 +30,7 @@ type MailProps = {
 
 function SigninUrlMail(mailProps: MailProps) {
   const expiresIn = mailProps.expires.getTime() - Date.now();
-  const linkDuration: number = Math.floor(expiresIn / 1000 / 60 / 60);
+  const linkDuration: number = Math.ceil(expiresIn / 1000 / 60 / 60);
 
   return (
     <Html>

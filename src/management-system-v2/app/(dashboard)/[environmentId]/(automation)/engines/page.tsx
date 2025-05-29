@@ -1,8 +1,8 @@
 import Content from '@/components/content';
 import { Skeleton } from 'antd';
 import { notFound } from 'next/navigation';
-import SavedEnginesList from './saved-engines-list';
-import { getSpaceEngines } from '@/lib/data/db/space-engines';
+import SavedEnginesList from '@/components/saved-engines-list';
+import { getDbEngines } from '@/lib/data/db/engines';
 import { getCurrentEnvironment } from '@/components/auth';
 import Ability from '@/lib/ability/abilityHelper';
 import { Suspense } from 'react';
@@ -11,7 +11,7 @@ import { env } from '@/lib/env-vars';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ability }) => {
-  const engines = await getSpaceEngines(spaceId, ability);
+  const engines = await getDbEngines(spaceId, ability);
 
   return <SavedEnginesList savedEngines={engines} />;
 };

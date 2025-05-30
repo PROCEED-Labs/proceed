@@ -1,11 +1,18 @@
 import { Prisma } from '@prisma/client';
 import db from '@/lib/data/db';
-import { CompetenceTypes, SpaceCompetence, UserCompetence } from '@/lib/data/competence-schema';
+import {
+  Competence,
+  CompetenceType,
+  CompetenceTypes,
+  SpaceCompetence,
+  User,
+  UserCompetence,
+} from '@/lib/data/competence-schema';
 
 /* Space Competences */
 
 /* Helper that ensures only allowed columns are updateable  */
-function spaceCompetnceUpdateChecker({
+function spaceCompetenceUpdateChecker({
   spaceId,
   creatorId,
   name,
@@ -48,20 +55,13 @@ function spaceCompetnceUpdateChecker({
  * @returns {Promise<Array>} A promise that resolves to an array of competences. If `includeUserClaims` is true,
  *          each competence will include a `claimedBy` property listing the users who claimed it.
  */
-export async function getAllSpaceCompetences(
-  spaceId: string,
-  { includeUserClaims = true }: { includeUserClaims?: boolean } = {},
-): Promise<
-  typeof includeUserClaims extends true ? SpaceCompetence[] : Prisma.CompetenceGetPayload<{}>[]
-> {
+export async function getAllSpaceCompetences(spaceId: string): Promise<SpaceCompetence[]> {
   const competences = await db.competence.findMany({
     where: {
       spaceId,
       type: CompetenceTypes.enum.SPACE,
     },
   });
-
-  if (!includeUserClaims) return competences;
 
   return await Promise.all(
     competences.map(async (competence) => {
@@ -118,7 +118,7 @@ export async function addSpaceCompetence(
   creatorId: string,
   competence: Omit<Prisma.CompetenceCreateInput, 'type'>,
 ): Promise<SpaceCompetence> {
-  const data = spaceCompetnceUpdateChecker(competence);
+  const data = spaceCompetenceUpdateChecker(competence);
 
   return {
     ...(await db.competence.create({
@@ -147,7 +147,7 @@ export async function updateSpaceCompetence(
   competence: Prisma.CompetenceUpdateInput,
 ): Promise<SpaceCompetence> {
   // @ts-ignore
-  const data = spaceCompetnceUpdateChecker({
+  const data = spaceCompetenceUpdateChecker({
     ...competence,
   });
 
@@ -323,17 +323,17 @@ export async function getUserCompetence(
 }
 
 /**
- * Claims a competence for a user.
+ * Claims a space-competence for a user.
  *
  * @param {string} userId - The unique identifier of the user.
  * @param {string} competenceId - The unique identifier of the competence to claim.
  * @param {Object} userCompetence - The data for the user-competence to be created.
  * @returns {Promise<Object>} A promise that resolves to the claimed user-competence object, including the competence details.
  */
-export async function claimUserCompetence(
+export async function claimSpaceCompetence(
   userId: string,
   competenceId: string,
-  userCompetence: Omit<Prisma.CompetenceCreateInput, 'type'>,
+  userCompetence: Omit<User, 'competenceId' | 'userId'>,
 ): Promise<UserCompetence> {
   /* Check that competence exists */
   const competence = await db.competence.findUnique({
@@ -363,6 +363,48 @@ export async function claimUserCompetence(
 }
 
 /**
+ * Unclaims a space-competence for a user.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {string} competenceId - The unique identifier of the competence to unclaim.
+ * @returns {Promise<Object>} A promise that resolves to the unclaimed user-competence object, including the competence details.
+ */
+export async function unclaimSpaceCompetence(
+  userId: string,
+  competenceId: string,
+): Promise<UserCompetence> {
+  const userCompetence = await db.userCompetence.findUnique({
+    where: {
+      competenceId_userId: {
+        competenceId,
+        userId,
+      },
+    },
+  });
+
+  if (!userCompetence) {
+    throw new Error(`User with ID ${userId} has not claimed competence with ID ${competenceId}.`);
+  }
+
+  return {
+    ...(await db.userCompetence.delete({
+      where: {
+        competenceId_userId: {
+          competenceId,
+          userId,
+        },
+      },
+    })),
+    competence:
+      (await db.competence.findUnique({
+        where: {
+          id: competenceId,
+        },
+      })) || ({} as Competence),
+  };
+}
+
+/**
  * Adds a new competence for a user.
  *
  * @param {string} userId - The unique identifier of the user.
@@ -372,11 +414,11 @@ export async function claimUserCompetence(
  */
 export async function addUserCompetence(
   userId: string,
-  competence: Omit<Prisma.CompetenceCreateInput, 'type'>,
-  userCompetence: Prisma.UserCompetenceCreateInput,
+  competence: Omit<Competence, 'type' | 'id' | 'spaceId' | 'creatorUserId'>,
+  userCompetence: Omit<User, 'userId' | 'competenceId'>,
 ): Promise<UserCompetence> {
   /* Create the competence */
-  const spaceData = spaceCompetnceUpdateChecker(competence);
+  const spaceData = spaceCompetenceUpdateChecker(competence);
   const newCompetence = await db.competence.create({
     data: {
       ...spaceData,
@@ -448,7 +490,7 @@ export async function deleteUserCompetence(
   userId: string,
   competenceId: string,
 ): Promise<UserCompetence> {
-  return {
+  const result = {
     ...(await db.userCompetence.delete({
       where: {
         competenceId_userId: {
@@ -457,12 +499,22 @@ export async function deleteUserCompetence(
         },
       },
     })),
-    competence: await db.competence.findUnique({
+    /* Delete competence */
+    competence: await db.competence.delete({
       where: {
         id: competenceId,
+        type: CompetenceTypes.enum.USER,
       },
     }),
-  } as UserCompetence;
+  };
+
+  if (!result) {
+    throw new Error(`User with ID ${userId} has not claimed competence with ID ${competenceId}.`);
+  }
+
+  // No check for competence (assuming db integrity)
+
+  return result;
 }
 
 /**
@@ -492,7 +544,8 @@ export default {
   deleteAllSpaceCompetences,
   getAllCompetencesOfUser,
   getUserCompetence,
-  claimUserCompetence,
+  claimSpaceCompetence,
+  unclaimSpaceCompetence,
   addUserCompetence,
   updateUserCompetence,
   deleteUserCompetence,

@@ -300,7 +300,7 @@ model Competence {
 
   name         String       @default("")  // Should this be nullable?
   description  String       @default("")  // Should this be nullable?
-  externalQualitficationNeeded Boolean @default(false)
+  externalQualificationNeeded Boolean @default(false)
   renewalTimeInterval Int? // in s (?)      // Nullable, if competence is valid indefinitely
 
   userCompetences UserCompetence[] 

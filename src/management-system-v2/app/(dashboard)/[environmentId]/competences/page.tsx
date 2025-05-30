@@ -1,12 +1,13 @@
 import Content from '@/components/content';
 import { env } from 'process';
 import FeatureFlags from 'FeatureFlags';
-import CompentencesContainer from './competences-container';
-import CompetencesTable from './competences-table';
-import CompetencesViewer from './competences-viewer';
-import { addCompetence, deleteAllCompetences, getAllCompetences } from '@/lib/data/db/competence';
-import { getCurrentEnvironment } from '@/components/auth';
-import { CompetenceAttributeTypes as attType, Competence } from '@/lib/data/competence-schema';
+import CompentencesContainer from '@/components/competences/competences-container';
+import CompetencesTable from '@/components/competences/competences-table';
+import CompetencesViewer from '@/components/competences/competences-viewer';
+import { getAllCompetencesOfUser, getAllSpaceCompetences } from '@/lib/data/competences';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { CompetenceTypes } from '@/lib/data/competence-schema';
+import type { CompetenceType } from '@/lib/data/competence-schema';
 
 const CompetencesPage = async ({
   params: { environmentId },
@@ -14,14 +15,18 @@ const CompetencesPage = async ({
   params: { environmentId: string };
 }) => {
   const { activeEnvironment, ability } = await getCurrentEnvironment(environmentId);
+  const { spaceId } = activeEnvironment;
+  const { userId } = await getCurrentUser();
 
-  const competences = await getAllCompetences(activeEnvironment.spaceId);
-
-  console.log('competences', JSON.stringify(competences));
+  const spaceCompetences = await getAllSpaceCompetences(environmentId);
+  const userCompetences = await getAllCompetencesOfUser(environmentId);
 
   return (
     <Content title="Competences">
-      <CompentencesContainer competences={competences}></CompentencesContainer>
+      <CompentencesContainer
+        competences={spaceCompetences}
+        environmentId={spaceId}
+      ></CompentencesContainer>
     </Content>
   );
 };

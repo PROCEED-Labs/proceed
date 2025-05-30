@@ -9,7 +9,7 @@ CREATE TABLE "competence" (
     "creatorUserId" TEXT,
     "name" TEXT NOT NULL DEFAULT '',
     "description" TEXT NOT NULL DEFAULT '',
-    "externalQualitficationNeeded" BOOLEAN NOT NULL DEFAULT false,
+    "externalQualificationNeeded" BOOLEAN NOT NULL DEFAULT false,
     "renewalTimeInterval" INTEGER,
 
     CONSTRAINT "competence_pkey" PRIMARY KEY ("id")

@@ -10,7 +10,7 @@ export type SpaceCompetence = {
   description: string;
   spaceId: string | null;
   creatorUserId: string | null;
-  externalQualitficationNeeded: boolean;
+  externalQualificationNeeded: boolean;
   renewalTimeInterval: number | null;
   claimedBy: {
     userId: string;
@@ -29,13 +29,31 @@ export type UserCompetence = {
   lastUsage: Date | null;
   competence: {
     type: CompetenceType;
-
     name: string;
     id: string;
     description: string;
     spaceId: string | null;
     creatorUserId: string | null;
-    externalQualitficationNeeded: boolean;
+    externalQualificationNeeded: boolean;
     renewalTimeInterval: number | null;
   };
+};
+
+export type User = {
+  userId: string;
+  competenceId: string;
+  proficiency: string | null | undefined;
+  qualificationDate: Date | null | undefined;
+  lastUsage: Date | null | undefined;
+};
+
+export type Competence = {
+  type: CompetenceType;
+  name: string;
+  id: string;
+  description: string;
+  spaceId: string | null | undefined;
+  creatorUserId: string | null | undefined;
+  externalQualificationNeeded: boolean | undefined;
+  renewalTimeInterval: number | null | undefined;
 };

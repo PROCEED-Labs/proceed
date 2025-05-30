@@ -55,6 +55,7 @@ const nextConfig = {
       'spaces',
       'executions',
       'engines',
+      'competences',
       'tasklist',
       'general-settings',
       'iam',

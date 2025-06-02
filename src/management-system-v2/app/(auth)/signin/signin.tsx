@@ -237,12 +237,7 @@ const SignIn: FC<{
       label: 'Create Organization',
       key: 'create-organization',
       href: '/create-organization',
-      children: (
-        <CredentialsSignIn
-          provider={passwordSignupProvider as any}
-          callbackUrl={callbackUrlWithGuestRef}
-        />
-      ),
+      children: null,
     });
   }
 
@@ -311,19 +306,6 @@ const SignIn: FC<{
           signInTitle
         )}
 
-        {userType === 'guest' && guestProvider && (
-          <>
-            {divider}
-            <Button href="/processes" style={{ marginBottom: verticalGap }}>
-              Continue as Guest
-            </Button>
-
-            <Alert
-              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
-              type="info"
-            />
-          </>
-        )}
         {userType === 'none' && guestProvider && (
           <>
             <Form
@@ -403,12 +385,25 @@ const SignIn: FC<{
                   );
                 })}
               </div>
-
               <Divider />
             </>
           )}
           activeKey={activeIndex}
         />
+
+        {userType === 'guest' && guestProvider && (
+          <>
+            {divider}
+            <Button href="/processes" style={{ marginBottom: verticalGap }}>
+              Continue as Guest
+            </Button>
+
+            <Alert
+              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              type="info"
+            />
+          </>
+        )}
 
         <Typography.Paragraph
           style={{

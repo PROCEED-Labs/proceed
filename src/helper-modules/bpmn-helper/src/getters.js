@@ -74,18 +74,18 @@ async function getDefinitionsVersionInformation(bpmn) {
   //   throw new Error('The process version has to be a number (time in ms since 1970)');
   // }
 
-  if (!bpmnObj.versionId) {
+  if (!bpmnObj.processVersionId) {
     return {
-      versionBasedOn: bpmnObj.versionBasedOn,
+      versionBasedOn: bpmnObj.processVersionBasedOn,
     };
   }
 
   return {
-    versionId: bpmnObj.versionId,
-    name: bpmnObj.versionName,
-    description: bpmnObj.versionDescription,
-    versionBasedOn: bpmnObj.versionBasedOn,
-    versionCreatedOn: bpmnObj.versionCreatedOn,
+    versionId: bpmnObj.processVersionId,
+    name: bpmnObj.processVersionName,
+    description: bpmnObj.processVersionDescription,
+    versionBasedOn: bpmnObj.processVersionBasedOn,
+    versionCreatedOn: bpmnObj.processVersionCreatedOn,
   };
 }
 
@@ -133,7 +133,12 @@ function getProcessDocumentationByObject(processObject) {
  * @property {string} [exporter] - definitions exporter
  * @property {string} [exporterVersion] - definitions exporterVersion
  * @property {string} [targetNamespace] - definitions targetNamespace
- */
+ * @property {string} [creatorName] - definitions creatorName
+ * @property {string} [userDefinedId] - definitions userDefinedId
+ * @property {string} [creatorUsername] - definitions creatorUsername
+ * @property {string} [creationDate] - definitions creationDate
+
+*/
 
 /**
  * Gets the 'definitions' root element from the given BPMN XML
@@ -150,6 +155,10 @@ async function getDefinitionsInfos(bpmn) {
     exporter: bpmnObj.exporter,
     exporterVersion: bpmnObj.exporterVersion,
     targetNamespace: bpmnObj.targetNamespace,
+    creatorName: bpmnObj.creatorName,
+    userDefinedId: bpmnObj.userDefinedId,
+    creatorUsername: bpmnObj.creatorUsername,
+    creationDate: bpmnObj.creationDate,
   };
 }
 
@@ -235,6 +244,7 @@ async function getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn) {
   const userTasks = getElementsByTagName(bpmnObj, 'bpmn:UserTask');
   const mapping = {};
   userTasks.forEach((task) => {
+    if (!task.fileName) return;
     if (mapping[task.fileName]) {
       mapping[task.fileName].push(task.id);
     } else {
@@ -463,7 +473,8 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
     );
   }
 
-  const version = importElement.versionId || importElement.$attrs['proceed:versionId'];
+  const version =
+    importElement.processVersionId || importElement.$attrs['proceed:processVersionId'];
 
   if (!version) {
     throw new Error(
@@ -606,12 +617,12 @@ async function getProcessConstraints(bpmn) {
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string, userDefinedId: string }> } object containing the identifying information
  */
 async function getIdentifyingInfos(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
-  const { id, originalId, name } = await getDefinitionsInfos(bpmnObj);
+  const { id, originalId, name, userDefinedId } = await getDefinitionsInfos(bpmnObj);
 
   const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
@@ -624,7 +635,7 @@ async function getIdentifyingInfos(bpmn) {
     description = '';
   }
 
-  return { id, originalId, processIds, name, description };
+  return { id, originalId, processIds, name, description, userDefinedId };
 }
 
 /**

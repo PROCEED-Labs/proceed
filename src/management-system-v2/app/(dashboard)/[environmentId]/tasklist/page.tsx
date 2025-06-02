@@ -8,6 +8,7 @@ import { getAvailableTaskListEntries } from '@/lib/engines/server-actions';
 import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { getUserById } from '@/lib/data/db/iam/users';
+import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
   if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
@@ -18,6 +19,12 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     ability,
     activeEnvironment: { spaceId, isOrganization },
   } = await getCurrentEnvironment(params.environmentId);
+
+  const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation', ability);
+
+  if (automationSettings.active === false || automationSettings.tasklist?.active === false) {
+    return notFound();
+  }
 
   let userTasks = await getAvailableTaskListEntries(spaceId);
 

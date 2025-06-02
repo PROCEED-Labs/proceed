@@ -207,6 +207,14 @@ export async function saveProcessArtifact(
   const usePresignedUrl = ['images', 'others'].includes(artifactType);
 
   try {
+    if (!generateNewFileName && !replaceFileContentOnly) {
+      const artifact = await getArtifactMetaData(newFileName, false);
+      // if artifact already exists, update the reference and return
+      if (artifact) {
+        await db.artifactProcessReference.create({ data: { artifactId: artifact.id, processId } });
+        return { presignedUrl: null, fileName: newFileName };
+      }
+    }
     // Save the file (local or presigned URL)
     const { presignedUrl, status } = await saveFile(
       filePath,
@@ -229,7 +237,10 @@ export async function saveProcessArtifact(
 
     return { presignedUrl, fileName: newFileName };
   } catch (error) {
-    console.error('Failed to save process artifact:', error);
+    console.error(
+      `Failed to save process artifact (${artifactType}, ${fileName}) for process ${processId}:`,
+      error,
+    );
     return { presignedUrl: null, fileName: null };
   }
 }

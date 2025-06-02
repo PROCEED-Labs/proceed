@@ -27,6 +27,22 @@ export type DefinitionsInfos = {
    * - definitions targetNamespace
    */
   targetNamespace?: string;
+  /**
+   * - definitions creatorName
+   */
+  creatorName?: string;
+  /**
+   * - definitions userDefinedId
+   */
+  userDefinedId?: string;
+  /**
+   * - definitions creatorUsername
+   */
+  creatorUsername?: string;
+  /**
+   * - definitions creationDate
+   */
+  creationDate?: string;
 };
 /**
  * An object containing properties from defined companies
@@ -225,7 +241,12 @@ export function getDefinitionsName(bpmn: string | object): Promise<string | unde
  * @property {string} [exporter] - definitions exporter
  * @property {string} [exporterVersion] - definitions exporterVersion
  * @property {string} [targetNamespace] - definitions targetNamespace
- */
+ * @property {string} [creatorName] - definitions creatorName
+ * @property {string} [userDefinedId] - definitions userDefinedId
+ * @property {string} [creatorUsername] - definitions creatorUsername
+ * @property {string} [creationDate] - definitions creationDate
+
+*/
 /**
  * Gets the 'definitions' root element from the given BPMN XML
  *
@@ -480,7 +501,7 @@ export function getTaskConstraintMapping(bpmn: string | object): Promise<{
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string, userDefinedId: string }> } object containing the identifying information
  */
 export function getIdentifyingInfos(bpmn: string | object): Promise<{
   id: string;
@@ -488,6 +509,7 @@ export function getIdentifyingInfos(bpmn: string | object): Promise<{
   processIds: string[];
   name: string;
   description: string;
+  userDefinedId: string;
 }>;
 /**
  * Returns the definitions object of the process

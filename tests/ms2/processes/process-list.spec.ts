@@ -1,5 +1,11 @@
 import { test, expect } from './processes.fixtures';
-import { openModal, closeModal, waitForHydration } from '../testUtils';
+import {
+  openModal,
+  closeModal,
+  waitForHydration,
+  removeCreatorDefinitionAttributes,
+  setBpmnOriginalAttributes,
+} from '../testUtils';
 import { Page } from '@playwright/test';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
@@ -13,12 +19,18 @@ test('create a new process and remove it again', async ({ processListPage }) => 
   await processListPage.goto();
 
   await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
+  /* Select Process */
+  await page.locator(`tr[data-row-key="${processDefinitionID}"]`).getByRole('checkbox').check();
+  // await page.getByLabel('', { exact: true }).check();
+  // await page.getByRole('button', { name: 'delete' }).click();
 
-  const modal = await openModal(page, () =>
-    page
-      .locator(`tr[data-row-key="${processDefinitionID}"]`)
-      .getByRole('button', { name: 'delete' })
-      .click(),
+  const modal = await openModal(
+    page,
+    async () => await page.getByRole('button', { name: /delete/i }).click(),
+    // page
+    // .locator(`tr[data-row-key="${processDefinitionID}"]`)
+    // .getByRole('button', { name: 'delete' })
+    // .click(),
   );
 
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
@@ -32,7 +44,6 @@ test('import a process', async ({ processListPage }) => {
   const { page } = processListPage;
 
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
-
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
@@ -49,13 +60,18 @@ test('import a process', async ({ processListPage }) => {
 test('export a single process', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const { definitionId, bpmn: importBpmn } = await processListPage.importProcess('process1.bpmn');
+  const { definitionId, bpmn: importBpmn } = await processListPage.importProcess(
+    'process1.bpmn',
+    undefined,
+    setBpmnOriginalAttributes,
+  );
 
   /*************************** BPMN Export ********************************/
 
-  let modal = await openModal(page, () =>
-    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
-  );
+  let modal = await openModal(page, async () => {
+    await page.locator(`tr[data-row-key="${definitionId}"]`).getByRole('checkbox').check();
+    return page.getByRole('button', { name: /download/i }).click();
+  });
   await expect(page.getByTestId('Share Modal').getByRole('dialog')).toBeVisible();
   await modal.getByRole('button', { name: 'Download Diagram as BPMN' }).click();
   const { filename: bpmnFilename, content: exportBpmn } = await processListPage.handleDownload(
@@ -66,15 +82,19 @@ test('export a single process', async ({ processListPage }) => {
     'string',
   );
   expect(bpmnFilename).toMatch(/.bpmn$/);
+  // we need to remove creator attributes as they are set dynamically on import for the current user
+  const exportBpmnWithOutCreatorAttrs = removeCreatorDefinitionAttributes(exportBpmn);
+  const importBpmnWithOutCreatorAttrs = removeCreatorDefinitionAttributes(importBpmn);
   // check if the exported data is the expected bpmn (the one that was initially imported)
-  expect(exportBpmn).toBe(importBpmn);
+  expect(exportBpmnWithOutCreatorAttrs).toBe(importBpmnWithOutCreatorAttrs);
 
   /*************************** SVG Export ********************************/
 
   // test the svg export with only a single file
-  modal = await openModal(page, () =>
-    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
-  );
+  modal = await openModal(page, async () => {
+    await page.locator(`tr[data-row-key="${definitionId}"]`).getByRole('checkbox').check();
+    return page.getByRole('button', { name: /download/i }).click();
+  });
   await modal.getByRole('button', { name: 'Download Diagram as SVG' }).click();
   const { filename: svgFilename, content: exportSvg } = await processListPage.handleDownload(
     async () =>
@@ -93,13 +113,20 @@ test('export a single process', async ({ processListPage }) => {
   expect(exportSvg).toMatch(/data-element-id="Flow_0evtfpc"/);
   expect(exportSvg).toMatch(/data-element-id="Event_1oxwp3r"/);
 
+  /* Deselect Process */
+  await page.locator(`tr[data-row-key="${definitionId}"]`).getByRole('checkbox').uncheck();
+
   // import a process containing collapsed subprocesses
   const { definitionId: subprocessDefinitionId, definitionName: subprocessDefinitionName } =
     await processListPage.importProcess('subprocess.bpmn');
   // test the svg export with an additional file being exported (export of subprocesses is being selected)
-  modal = await openModal(page, () =>
-    page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click(),
-  );
+  modal = await openModal(page, async () => {
+    await page
+      .locator(`tr[data-row-key="${subprocessDefinitionId}"]`)
+      .getByRole('checkbox')
+      .check();
+    return page.getByRole('button', { name: /download/i }).click();
+  });
   await modal.getByRole('button', { name: 'Download Diagram as SVG' }).click();
   await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
   const { filename: multiSvgFilename, content: svgZip } = await processListPage.handleDownload(
@@ -154,12 +181,19 @@ test('export a single process', async ({ processListPage }) => {
   expect(subprocessSvg).toMatch(/data-element-id="Flow_09xvh9n"/);
   expect(subprocessSvg).toMatch(/data-element-id="Event_0wq3coj"/);
 
+  /* Deselect Process */
+  await page
+    .locator(`tr[data-row-key="${subprocessDefinitionId}"]`)
+    .getByRole('checkbox')
+    .uncheck();
+
   /*************************** PNG Export ********************************/
 
   // test the png export with only a single file
-  modal = await openModal(page, () =>
-    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
-  );
+  modal = await openModal(page, async () => {
+    await page.locator(`tr[data-row-key="${definitionId}"]`).getByRole('checkbox').check();
+    return page.getByRole('button', { name: /download/i }).click();
+  });
   await page.getByRole('button', { name: 'Download Diagram as PNG' }).click();
   const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
     async () =>
@@ -172,11 +206,18 @@ test('export a single process', async ({ processListPage }) => {
   // check that a png has been exported
   expect(pngFilename).toMatch(/.png$/);
 
+  /* Deselect Process */
+  await page.locator(`tr[data-row-key="${definitionId}"]`).getByRole('checkbox').uncheck();
+
   // test the png export with an additional file being exported (export of subprocesses is being selected)
-  modal = await openModal(page, () =>
-    page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click(),
-  );
-  await page.getByRole('button', { name: 'Download Diagram as PNG' }).click();
+  modal = await openModal(page, async () => {
+    await page
+      .locator(`tr[data-row-key="${subprocessDefinitionId}"]`)
+      .getByRole('checkbox')
+      .check();
+    return page.getByRole('button', { name: /download/i }).click();
+  });
+  await modal.getByRole('button', { name: 'Download Diagram as PNG' }).click();
   await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
 
   const { filename: multiPngFilename, content: pngZip } = await processListPage.handleDownload(
@@ -207,13 +248,13 @@ test('export multiple processes', async ({ processListPage }) => {
     definitionId: process1Id,
     definitionName: process1Name,
     bpmn: process1Bpmn,
-  } = await processListPage.importProcess('process1.bpmn');
+  } = await processListPage.importProcess('process1.bpmn', undefined, setBpmnOriginalAttributes);
   const { definitionName: process2Name } = await processListPage.importProcess('process2.bpmn');
   const {
     definitionId: process3Id,
     definitionName: process3Name,
     bpmn: process3Bpmn,
-  } = await processListPage.importProcess('process3.bpmn');
+  } = await processListPage.importProcess('process3.bpmn', undefined, setBpmnOriginalAttributes);
 
   /*************************** BPMN Export ********************************/
 
@@ -221,7 +262,7 @@ test('export multiple processes', async ({ processListPage }) => {
   await page.locator(`tr[data-row-key="${process1Id}"]`).getByRole('checkbox').click();
   await page.locator(`tr[data-row-key="${process3Id}"]`).getByRole('checkbox').click();
 
-  let modal = await openModal(page, () => page.getByLabel('export').first().click());
+  let modal = await openModal(page, () => page.getByRole('button', { name: /download/i }).click());
 
   await modal.getByRole('button', { name: 'Download Diagram as BPMN' }).click();
 
@@ -255,17 +296,20 @@ test('export multiple processes', async ({ processListPage }) => {
   const process1FileContent = await zip
     .file(getFolderName(process1Name) + '/' + 'latest.bpmn')!
     .async('string');
-  expect(process1FileContent).toBe(process1Bpmn);
+  expect(await removeCreatorDefinitionAttributes(process1FileContent)).toBe(
+    await removeCreatorDefinitionAttributes(process1Bpmn),
+  );
 
   expect(zip.file(getFolderName(process3Name) + '/' + 'latest.bpmn')).toBeTruthy();
   const process3FileContent = await zip
     .file(getFolderName(process3Name) + '/' + 'latest.bpmn')!
     .async('string');
-  expect(process3FileContent).toBe(process3Bpmn);
-
+  expect(await removeCreatorDefinitionAttributes(process3FileContent)).toBe(
+    await removeCreatorDefinitionAttributes(process3Bpmn),
+  );
   /*************************** SVG Export ********************************/
 
-  modal = await openModal(page, () => page.getByLabel('export').first().click());
+  modal = await openModal(page, () => page.getByRole('button', { name: /download/i }).click());
 
   await modal.getByRole('button', { name: 'Download Diagram as SVG' }).click();
   await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
@@ -293,7 +337,7 @@ test('export multiple processes', async ({ processListPage }) => {
 
   /*************************** PNG Export ********************************/
 
-  modal = await openModal(page, () => page.getByLabel('export').first().click());
+  modal = await openModal(page, () => page.getByRole('button', { name: /download/i }).click());
 
   await expect(page.getByTestId('Share Modal').getByRole('dialog')).toBeVisible();
 
@@ -325,7 +369,7 @@ test('export multiple processes', async ({ processListPage }) => {
 test('toggle process list columns', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const ColumnHeader = ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
+  const ColumnHeader = ['Description', 'Last Edited', 'Created On', 'Created By', 'Responsibility'];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
@@ -350,8 +394,8 @@ test('toggle process list columns', async ({ processListPage }) => {
 test('test that selected columns are persisted on reload', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const VisibleColumns = ['Created On', 'File Size', 'Owner'];
-  const HiddenColumns = ['Description', 'Last Edited'];
+  const VisibleColumns = ['Description ', 'Last Edited '];
+  const HiddenColumns = ['Created On ', 'Created By '];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
@@ -409,8 +453,12 @@ test('create a new folder and remove it with context menu', async ({ processList
 
   folderLocator.click({ button: 'right' });
   const menuLocator = page.getByRole('menuitem', { name: 'delete Delete' });
-  await menuLocator.click();
-  await expect(menuLocator).not.toBeVisible(); //wait for context menu to close
+  /* Confirm delete */
+  modal = await openModal(page, () => menuLocator.click());
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
+
+  // await menuLocator.click();
+  // await expect(menuLocator).not.toBeVisible(); //wait for context menu to close
 
   // NOTE: testing the folderLocator is flaky, because even after deletion the
   // popover with folder title can hang around for a short while.
@@ -422,7 +470,7 @@ test('create a new folder with new button and remove it', async ({ processListPa
   const folderId = crypto.randomUUID();
 
   // NOTE: this could easily break
-  await page.getByRole('button', { name: 'ellipsis' }).hover();
+  await page.getByRole('button', { name: 'ellipsis' }).click();
   let modal = await openModal(page, () =>
     page.getByRole('menuitem', { name: 'Create Folder' }).click(),
   );
@@ -432,8 +480,10 @@ test('create a new folder with new button and remove it', async ({ processListPa
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
-  const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
-  modal = await openModal(page, () => folderRow.getByRole('button', { name: 'delete' }).click());
+  const folderRow = await page.locator(`tr:has(td:has-text("${folderId}"))`);
+  // await page.getByLabel('', { exact: true }).check();
+  await folderRow.getByRole('checkbox').check();
+  modal = await openModal(page, () => page.getByRole('button', { name: 'delete' }).click());
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
   await expect(folderLocator).not.toBeVisible();
@@ -452,7 +502,7 @@ test('create a new folder and process, move process to folder and then delete bo
   );
   await modal.getByLabel('Folder name').fill(folderId);
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
-  const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
+  const folderRow = page.locator(`tr:has(td:has-text("${folderId}"))`);
   await expect(folderRow).toBeVisible();
 
   // create process
@@ -483,16 +533,22 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // check for process and delete it
   await expect(processLocator).toBeVisible();
-  modal = await openModal(page, () =>
-    processLocator.getByRole('button', { name: 'delete' }).click(),
-  );
+  modal = await openModal(page, async () => {
+    await processLocator.getByRole('checkbox').check();
+    await page.getByRole('button', { name: /delete/i }).click();
+    // processLocator.getByRole('button', { name: 'delete' }).click()
+  });
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
   await expect(processLocator).not.toBeVisible();
   processListPage.getDefinitionIds().splice(0, 1);
 
   // go back and delete folder
   await page.goBack();
-  modal = await openModal(page, () => folderRow.getByRole('button', { name: 'delete' }).click());
+  modal = await openModal(page, async () => {
+    await folderRow.getByRole('checkbox').check();
+    await page.getByRole('button', { name: /delete/i }).click();
+    // folderRow.getByRole('button', { name: 'delete' }).click()
+  });
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
   await expect(folderRow).not.toBeVisible();
 });
@@ -554,9 +610,14 @@ test.describe('shortcuts in process-list', () => {
 
     await waitForHydration(page);
 
+    /* Wait for modeler to load */
+    await page.locator('svg[data-element-id^="Process_"]').waitFor({
+      state: 'visible',
+    });
+
     /* Go back to process list by pressing esc twice */
-    await page.getByRole('main').press('Escape');
-    await page.getByRole('main').press('Escape', { delay: 10 });
+    await page.getByRole('main').press('Escape', { delay: 100 });
+    await page.getByRole('main').press('Escape', { delay: 100 });
 
     /* The /processes page should be visibe again */
     // await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);

@@ -63,8 +63,9 @@ model OauthAccount {
 
 model Process {
   id                   String              @id @default(uuid())
+  userDefinedId        String?             
   originalId           String
-  name                 String
+  name                 String            
   description          String
   createdOn            DateTime
   lastEditedOn         DateTime            @updatedAt
@@ -84,7 +85,7 @@ model Process {
   creatorId            String
   //TODO: Departments and Variables add here if needed in future
   artifactProcessReferences   ArtifactProcessReference[]
-
+  @@unique([name,environmentId,creatorId,folderId])
   @@map("process")
 }
 
@@ -138,12 +139,13 @@ model Space {
   contactEmail       String?
   spaceLogo          String?
   owner              User?        @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId            String
+  ownerId            String?
   members            Membership[]
   folders            Folder[]
   processes          Process[]
   roles              Role[]
   engines            Engine[]
+  settings           SpaceSettings? @relation("spaceSettings")
 
   @@map("space")
 }
@@ -222,14 +224,22 @@ model RoleMember {
 
 model Engine {
   id            String   @id @default(uuid())
-  space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
-  environmentId String
+  space         Space?    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String? /// If the environmentId is null then it is a PROCEED engine
   address       String /// Either an http url for an engine or a mqtt url
   name          String?
   createdOn     DateTime @default(now())
   lastEditedOn  DateTime @updatedAt
 
   @@map("engine")
+}
+
+model SpaceSettings {
+  environmentId String     @id @unique
+  space         Space      @relation(name: "spaceSettings", fields: [environmentId], references: [id], onDelete: Cascade)
+  settings      Json
+
+  @@map("space_settings")
 }
 
 model UserTask {

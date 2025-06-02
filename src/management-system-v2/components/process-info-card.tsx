@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useLayoutEffect } from 'react';
 import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { ProcessListProcess } from './processes/types';
@@ -40,24 +40,21 @@ const MetaData = forwardRef<() => void, MetaDataType>(({ selectedElement }, ref)
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
 
-  if (!hydrated) return null;
+  const minWidth = 300,
+    maxWidth = 600;
+  const clampWidth = (width: number) => {
+    return Math.max(minWidth, Math.min(maxWidth, width));
+  };
 
-  const finalPrefChange = debounce((width: number) => {
-    addPreferences({
-      'process-meta-data': {
-        open: showInfo,
-        width: width,
-      },
-    });
-  }, 300);
+  if (!hydrated) return null;
 
   return (
     <ResizableElement
       initialWidth={
         showInfo ? useUserPreferences.getState().preferences['process-meta-data'].width : 30
       }
-      minWidth={showInfo ? 300 : 30}
-      maxWidth={600}
+      minWidth={showInfo ? minWidth : 30}
+      maxWidth={maxWidth}
       style={{
         // position: 'relative',
         // flex: !showViewer ? 'none' : 1,
@@ -69,11 +66,9 @@ const MetaData = forwardRef<() => void, MetaDataType>(({ selectedElement }, ref)
         addPreferences({
           'process-meta-data': {
             open: showInfo,
-            width: width,
+            width: clampWidth(width),
           },
         });
-
-        finalPrefChange(width);
       }}
       ref={resizableElementRef}
       lock={!showInfo}

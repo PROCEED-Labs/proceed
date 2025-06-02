@@ -76,7 +76,6 @@ import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { COLLAPSED_SIDER_WIDTH } from '@/app/(dashboard)/[environmentId]/layout-client';
 import { handleOpenDocumentation } from '@/app/(dashboard)/[environmentId]/processes/processes-helper';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton, { VersionModal } from '../version-creation-button';
@@ -173,12 +172,6 @@ const Processes = ({
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
   const { open: metaPanelisOpened, width: metaPanelWidth } =
     useUserPreferences.use['process-meta-data']();
-  const { collapsed: layoutMenuSiderCollapsed } = useUserPreferences.use['layout-menu']();
-
-  const siderOpen = !layoutMenuSiderCollapsed;
-  const siderWidth = COLLAPSED_SIDER_WIDTH;
-  const siderOffSet = siderOpen ? 0 : 200 - siderWidth;
-  let tableWidthOffSet = metaPanelWidth - siderOffSet;
 
   const [openExportModal, setOpenExportModal] = useState(false);
   const [exportModalTab, setExportModalTab] = useState<'bpmn' | 'share-public-link' | undefined>(

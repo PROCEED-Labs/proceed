@@ -408,7 +408,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     ['Favorites'],
   );
 
-  console.log(data?.[0]);
+  
 
   return (
     <ElementList

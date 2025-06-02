@@ -289,7 +289,7 @@ export const updateProcess = async (
     revalidatePath(`/processes/${definitionsId}`);
   }
 
-  await _updateProcess(definitionsId, { bpmn: newBpmn, userDefinedId });
+  await _updateProcess(definitionsId, { bpmn: newBpmn });
 };
 
 export const updateProcessMetaData = async (

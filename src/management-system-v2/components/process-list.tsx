@@ -278,6 +278,16 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         responsive: ['xs', 'sm'],
       },
       {
+        title: 'ID',
+        dataIndex: 'userDefinedId',
+        key: 'ID',
+        render: (id, record) => (
+          <ListEntryLink data={record} /* className={styles.HoverableTableCell} */>
+            {record.type === 'folder' ? '' : id}
+          </ListEntryLink>
+        ),
+      },
+      {
         title: 'Description',
         dataIndex: 'description',
         key: 'Description',
@@ -398,6 +408,8 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     ['Favorites'],
   );
 
+  console.log(data?.[0]);
+
   return (
     <ElementList
       data={data}
@@ -421,6 +433,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
         allColumnTitles: [
           'Description',
+          'ID',
           'Last Edited',
           'Created On',
           'Created By',

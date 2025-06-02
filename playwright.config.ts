@@ -57,10 +57,11 @@ export default defineConfig({
       },
     },
 
-    {
+    // Banished for being the new IE
+    /*{
       name: 'firefox',
       use: { ...devices['Desktop Firefox'], ignoreHTTPSErrors: true },
-    },
+    },*/
 
     {
       name: 'webkit',

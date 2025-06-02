@@ -408,8 +408,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     ['Favorites'],
   );
 
-  
-
   return (
     <ElementList
       data={data}

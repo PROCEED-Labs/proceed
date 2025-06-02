@@ -13,6 +13,7 @@ import {
   setDefinitionsVersionInformation,
   toBpmnObject,
   toBpmnXml,
+  updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import {
   createProcess,
@@ -259,6 +260,7 @@ export const updateProcess = async (
   bpmn?: string,
   description?: string,
   name?: string,
+  userDefinedId?: string,
   invalidate = false,
 ) => {
   const error = await checkValidity(definitionsId, 'update', spaceId);
@@ -273,6 +275,11 @@ export const updateProcess = async (
   if (name !== undefined) {
     newBpmn = (await setDefinitionsName(newBpmn!, name)) as string;
   }
+  if (userDefinedId !== undefined) {
+    newBpmn = (await updateBpmnCreatorAttributes(newBpmn!, {
+      userDefinedId: userDefinedId,
+    })) as string;
+  }
 
   // This invalidates the client-side router cache. Since we don't call
   // router.refresh() in the modeler for every change, we need to invalidate the
@@ -282,7 +289,7 @@ export const updateProcess = async (
     revalidatePath(`/processes/${definitionsId}`);
   }
 
-  await _updateProcess(definitionsId, { bpmn: newBpmn });
+  await _updateProcess(definitionsId, { bpmn: newBpmn, userDefinedId });
 };
 
 export const updateProcessMetaData = async (
@@ -308,6 +315,7 @@ export const updateProcesses = async (
     description?: string;
     bpmn?: string;
     id: string;
+    userDefinedId?: string;
   }[],
   spaceId: string,
 ) => {
@@ -319,6 +327,7 @@ export const updateProcesses = async (
         process.bpmn,
         process.description,
         process.name,
+        process.userDefinedId,
       );
     }),
   );

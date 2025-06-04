@@ -33,7 +33,10 @@ export async function sendEmail({
       },
     });
 
-  transport.sendMail({
+  if (!msConfig.PROCEED_PUBLIC_MAILSERVER_ACTIVE)
+    throw new Error('Email sending is not enabled, set IAM_SIGNIN_MAIL_ACTIVE to true');
+
+  return transport.sendMail({
     from: msConfig.SMTP_MAIL_USER,
     to,
     subject,

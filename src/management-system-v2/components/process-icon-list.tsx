@@ -5,7 +5,7 @@ import { InfoCircleOutlined, FolderOutlined } from '@ant-design/icons';
 import { LazyBPMNViewer } from './bpmn-viewer';
 
 import ScrollBar from './scrollbar';
-import { ProcessListProcess } from './processes';
+import { ProcessListProcess } from './processes/types';
 import { Card, Grid } from 'antd';
 import ElementIconView, { ItemIconViewProps } from './item-icon-view';
 import { useRouter } from 'next/navigation';

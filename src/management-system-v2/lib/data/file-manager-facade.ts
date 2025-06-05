@@ -7,14 +7,12 @@ import {
   ArtifactType,
   generateProcessFilePath,
 } from '../helpers/fileManagerHelpers';
-import { contentTypeNotAllowed } from './content-upload-error';
-import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
+import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
 import { getProcessUserTaskJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
 import { env } from '../env-vars';
 import { Prisma } from '@prisma/client';
-import { use } from 'react';
 import { checkValidity } from './processes';
 import { UserFacingError, userError, getErrorMessage } from '../user-error';
 
@@ -376,9 +374,9 @@ async function saveProfilePicture(
   mimeType: string,
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
-  const newFileName = getNewFileName(fileName);
-  // TODO: update filepath
-  const filePath = `artifacts/images/${newFileName}`;
+  const extension = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
+  const newFileName = 'profileImage' + extension;
+  const filePath = `users/${userId}/${newFileName}`;
 
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
 

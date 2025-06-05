@@ -16,6 +16,7 @@ import { env } from '../env-vars';
 import { Prisma } from '@prisma/client';
 import { use } from 'react';
 import { checkValidity } from './processes';
+import { UserFacingError, userError, getErrorMessage } from '../user-error';
 
 const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
 
@@ -126,18 +127,25 @@ export async function saveEntityFile(
   fileName: string,
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
-  if (!isContentTypeAllowed(mimeType)) {
-    throw new Error(`Content type '${mimeType}' is not allowed`);
-  }
+  try {
+    if (!isContentTypeAllowed(mimeType)) {
+      throw new Error(`Content type '${mimeType}' is not allowed`);
+    }
 
-  switch (entityType) {
-    case EntityType.PROCESS:
-      return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
-    case EntityType.ORGANIZATION:
-      return saveOrganizationLogo(entityId, fileName, mimeType, fileContent);
-    // Extend for other entity types if needed
-    default:
-      throw new Error(`Unsupported entity type: ${entityType}`);
+    switch (entityType) {
+      case EntityType.PROCESS:
+        return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
+      case EntityType.ORGANIZATION:
+        return saveOrganizationLogo(entityId, fileName, mimeType, fileContent);
+      case EntityType.PROFILE_PICTURE:
+        return saveProfilePicture(entityId, fileName, mimeType, fileContent);
+      // Extend for other entity types if needed
+      default:
+        throw new UserFacingError(`Unsupported entity type: ${entityType}`);
+    }
+  } catch (e) {
+    console.error(e);
+    return userError(getErrorMessage(e));
   }
 }
 
@@ -153,6 +161,8 @@ export async function retrieveEntityFile(
       return retrieveProcessArtifact(entityId, fileName);
     case EntityType.ORGANIZATION:
       return getOrganizationLogo(entityId);
+    case EntityType.PROFILE_PICTURE:
+      return getProfilePicture(entityId);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -171,6 +181,8 @@ export async function deleteEntityFile(
       return deleteProcessArtifact(fileName, false, entityId);
     case EntityType.ORGANIZATION:
       return deleteOrganizationLogo(entityId);
+    case EntityType.PROFILE_PICTURE:
+      return deleteProfilePicture(entityId);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -356,6 +368,76 @@ export async function deleteOrganizationLogo(organizationId: string): Promise<bo
   }
 
   return false;
+}
+
+async function saveProfilePicture(
+  userId: string,
+  fileName: string,
+  mimeType: string,
+  fileContent?: Buffer | Uint8Array | Blob,
+) {
+  const newFileName = getNewFileName(fileName);
+  // TODO: update filepath
+  const filePath = `artifacts/images/${newFileName}`;
+
+  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
+
+  // TODO: leaky abstraction
+  if (!status) {
+    await deleteFile(filePath);
+    throw new Error('Failed to save organization logo');
+  }
+
+  const previousProfileImage = await db.user.findFirst({
+    where: { id: userId },
+    select: { profileImage: true },
+  });
+
+  if (!previousProfileImage) throw new Error(`User with ID ${userId} not found`);
+
+  // http/s files are not stored by us, but by the oauth providers instead
+  if (previousProfileImage.profileImage && !previousProfileImage.profileImage.startsWith('http')) {
+    // Delete the previous profile image if it exists
+    await deleteFile(previousProfileImage.profileImage);
+  }
+
+  await db.user.update({
+    where: { id: userId },
+    data: { profileImage: filePath },
+  });
+
+  return { presignedUrl, fileName: newFileName };
+}
+
+async function getProfilePicture(userId: string) {
+  const result = await db.user.findUnique({
+    where: { id: userId },
+    select: { profileImage: true },
+  });
+
+  if (result?.profileImage) return retrieveFile(result.profileImage);
+
+  return null;
+}
+
+async function deleteProfilePicture(userId: string): Promise<boolean> {
+  const result = await db.user.findUnique({
+    where: { id: userId },
+    select: { profileImage: true },
+  });
+
+  if (!result?.profileImage) return false;
+
+  const isDeleted = await deleteFile(result.profileImage);
+  // TODO: handle if false
+  if (isDeleted) {
+    await db.user.update({
+      where: { id: userId },
+      data: { profileImage: null },
+    });
+  }
+
+  return isDeleted;
 }
 
 export async function updateFileDeletableStatus(

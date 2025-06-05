@@ -214,7 +214,12 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
     fileName: string,
     file: File | Blob,
   ): Promise<{ fileName?: string }> => {
-    const url = `/api/private/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}`;
+    const url = `/api/private/file-manager?${new URLSearchParams({
+      environmentId: spaceId,
+      entityId,
+      entityType,
+      fileName,
+    })}`;
 
     const response = await fetch(url, {
       method: 'PUT',
@@ -235,7 +240,13 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
     fileName: string,
     shareToken?: string | null,
   ): Promise<{ fileUrl?: string }> => {
-    const url = `/api/private/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
+    const url = `/api/private/file-manager?${new URLSearchParams({
+      environmentId: spaceId,
+      entityId,
+      entityType,
+      fileName,
+      ...(shareToken ? { shareToken } : {}),
+    })}`;
     return { fileUrl: url };
     // const response = await fetch(url, { method: 'GET' });
 

@@ -11,6 +11,7 @@ import {
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import { isUserError } from './user-error';
 
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
 
@@ -52,11 +53,11 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
           fileName || (file instanceof File ? file.name : ''),
         );
 
-        if ('error' in response) {
-          throw new Error((response.error as Error).message);
-        }
+        if ('error' in response) throw response.error;
 
         if (!response.presignedUrl) {
+          // This should be an impossible state, if the server fails to generate the presigned url
+          // then the response would be a user error
           throw new Error('Failed to get presignedUrl');
         }
 
@@ -87,7 +88,7 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
       }
     },
     onError: (error, variables) => {
-      message.error(error.message || 'Upload failed');
+      message.error(isUserError(error) ? error.message : 'Upload failed');
       if (variables.onError) {
         variables.onError(error);
       }

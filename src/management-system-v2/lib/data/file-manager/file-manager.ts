@@ -35,14 +35,18 @@ if (DEPLOYMENT_ENV === 'cloud') {
       : undefined,
   );
   bucket = storage.bucket(BUCKET_NAME);
-  await bucket.setCorsConfiguration([
-    {
-      maxAgeSeconds: 3600,
-      method: ['GET', 'PUT'],
-      origin: ['https://app.proceed-labs.org', 'https://staging.proceed-labs.org'],
-      responseHeader: ['content-type', 'x-goog-content-length-range'],
-    },
-  ]);
+  bucket
+    .setCorsConfiguration([
+      {
+        maxAgeSeconds: 3600,
+        method: ['GET', 'PUT'],
+        origin: ['https://app.proceed-labs.org', 'https://staging.proceed-labs.org'],
+        responseHeader: ['content-type', 'x-goog-content-length-range'],
+      },
+    ])
+    .catch((error: any) => {
+      console.error(`Failed to set CORS configuration for bucket ${BUCKET_NAME}:`, error);
+    });
 }
 
 const ensureBucketExists = () => {

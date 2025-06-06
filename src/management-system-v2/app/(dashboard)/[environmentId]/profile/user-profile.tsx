@@ -19,6 +19,7 @@ import { EnvVarsContext } from '@/components/env-vars-context';
 import ImageUpload from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
+import { fallbackImage } from '../processes/[processId]/image-selection-section';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const env = use(EnvVarsContext);
@@ -166,7 +167,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           >
             <Image
               alt="Profile picture"
-              src={avatarUrl}
+              src={avatarUrl || fallbackImage}
+              fallback={fallbackImage}
               style={{
                 maxHeight: '120px',
                 maxWidth: '120px',

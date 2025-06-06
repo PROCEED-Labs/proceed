@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { is as bpmnIs, Element } from 'bpmn-js/lib/util/ModelUtil';
+import { is as bpmnIs, isAny as bpmnIsAny, Element } from 'bpmn-js/lib/util/ModelUtil';
 import { Checkbox, Form, Input, Modal } from 'antd';
 import useModelerStateStore from './use-modeler-state-store';
 import { Editor, Monaco } from '@monaco-editor/react';
@@ -14,7 +14,7 @@ export function isConditionalFlow(element?: Element) {
     element &&
     bpmnIs(element, 'bpmn:SequenceFlow') &&
     element.source &&
-    bpmnIs(element.source, 'bpmn:ExclusiveGateway')
+    bpmnIsAny(element.source, ['bpmn:ExclusiveGateway', 'bpmn:InclusiveGateway'])
   );
 }
 

@@ -368,6 +368,7 @@ export async function deleteOrganizationLogo(organizationId: string): Promise<bo
   return false;
 }
 
+const MB = 1024 * 1024;
 async function saveProfilePicture(
   userId: string,
   fileName: string,
@@ -378,7 +379,7 @@ async function saveProfilePicture(
   const newFileName = 'profileImage' + extension;
   const filePath = `users/${userId}/${newFileName}`;
 
-  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
+  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent, undefined, MB);
 
   // TODO: leaky abstraction
   if (!status) {

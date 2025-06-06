@@ -12,6 +12,14 @@ export const UserTaskInputSchema = z.object({
   progress: z.number(),
   startTime: z.number(),
   owner: z.string().optional(),
+  actualOwner: z.string().array(),
+  potentialOwners: z
+    .object({
+      user: z.string().array().optional(),
+      roles: z.string().array().optional(),
+    })
+    .optional()
+    .default({}),
   endTime: z.number().nullish(),
   initialVariables: z.record(z.string(), z.any()).optional(),
   variableChanges: z.record(z.string(), z.any()).optional(),
@@ -31,4 +39,4 @@ export const UserTaskInputSchema = z.object({
 
 export type UserTaskInput = z.infer<typeof UserTaskInputSchema>;
 
-export type UserTask = UserTaskInput & { state: string };
+export type UserTask = UserTaskInput;

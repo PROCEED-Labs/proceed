@@ -109,6 +109,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
             xml,
             undefined,
             undefined,
+            undefined,
             invalidate,
           );
         } catch (err) {

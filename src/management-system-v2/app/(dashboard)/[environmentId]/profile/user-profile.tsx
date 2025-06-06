@@ -184,14 +184,20 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                       fileName: '',
                     }}
                     imageExists={!!avatarUrl}
-                    onImageUpdate={() => {
+                    onImageUpdate={(newFileName) => {
                       session.update(null);
-                      messageApi.success({ content: 'Profile picture updated successfully' });
-                      getProfileUrl(userData.id, '', undefined, {
-                        onSuccess: (url) => {
-                          if (url?.fileUrl) setAvatarURl(`${url.fileUrl}?${Date.now()}`);
-                        },
-                      });
+                      if (newFileName) {
+                        messageApi.success({ content: 'Profile picture updated' });
+                        getProfileUrl(userData.id, '', undefined, {
+                          onSuccess: (url) => {
+                            if (url?.fileUrl) setAvatarURl(`${url.fileUrl}?${Date.now()}`);
+                          },
+                        });
+                      } else {
+                        // Image was removed
+                        messageApi.success({ content: 'Profile picture was deleted' });
+                        setAvatarURl(undefined);
+                      }
                     }}
                     onUploadFail={() => messageApi.error('Error uploading image')}
                     endpoints={{

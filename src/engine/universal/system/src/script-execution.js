@@ -135,6 +135,13 @@ class ScriptExecutor extends System {
       };
       this.setProcess(processId, processInstanceId, scriptIdentifier, processEntry);
 
+      // inline global variables
+      for (const key in dependencies) {
+        if (typeof dependencies[key] !== 'object' && typeof dependencies[key] !== 'function') {
+          scriptString = `const ${key} = ${dependencies[key]};\n` + scriptString;
+        }
+      }
+
       const subprocessLaunchReqId = generateUniqueTaskID();
 
       this.commandRequest(subprocessLaunchReqId, [

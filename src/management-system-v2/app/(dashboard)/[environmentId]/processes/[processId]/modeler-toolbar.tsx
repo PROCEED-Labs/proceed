@@ -32,6 +32,7 @@ import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId
 import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { Process } from '@/lib/data/process-schema';
+import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -54,6 +55,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
+  const [showFlowNodeConditionModal, setShowFlowNodeConditionModal] = useState(false);
 
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareModalDefaultOpenTab, setShareModalDefaultOpenTab] =
@@ -263,7 +265,15 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                         onClick={() => setShowScriptTaskEditor(true)}
                       />
                     </Tooltip>
-                  )))}
+                  )) ||
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isConditionalFlow(selectedElement) && (
+                  <Tooltip title="Edit Condition">
+                    <Button
+                      icon={<FormOutlined />}
+                      onClick={() => setShowFlowNodeConditionModal(true)}
+                    />
+                  </Tooltip>
+                )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -344,6 +354,12 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
             open={showScriptTaskEditor}
             onClose={() => setShowScriptTaskEditor(false)}
             selectedElement={selectedElement}
+          />
+
+          <FlowConditionModal
+            open={showFlowNodeConditionModal}
+            onClose={() => setShowFlowNodeConditionModal(false)}
+            element={selectedElement}
           />
         </>
       )}

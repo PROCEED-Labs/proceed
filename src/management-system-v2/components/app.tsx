@@ -6,12 +6,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntDesignApp } from 'antd';
 import { SessionProvider } from 'next-auth/react';
-import { PublicEnv } from '@/lib/env-vars';
+import { PublicMSConfig } from '@/lib/ms-config/config-schema';
 import { EnvVarsProvider } from './env-vars-context';
 
 const queryClient = new QueryClient();
 
-const App = ({ children, env }: { children: ReactNode; env: PublicEnv }) => {
+const App = ({ children, env }: { children: ReactNode; env: PublicMSConfig }) => {
   return (
     <SessionProvider>
       <EnvVarsProvider env={env}>

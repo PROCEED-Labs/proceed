@@ -29,12 +29,37 @@ import { useEnvironment } from '@/components/auth-can';
 import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
-import { Shape } from 'bpmn-js/lib/model/Types';
+import { Element, Shape } from 'bpmn-js/lib/model/Types';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
+import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
+};
+
+export const updateMetaData = async (
+  modeler: BPMNCanvasRef,
+  element: ElementLike,
+  name: string,
+  value: any,
+  attributes?: { [key: string]: any },
+  oldAttributes?: { [key: string]: any },
+) => {
+  const modeling = modeler.getModeling();
+  const bpmn = await modeler.getXML();
+
+  // create deep copy of selected element and set proceed element in this object so that bpmn.js event system can recognise changes in object
+  const selectedElementCopy = (await deepCopyElementById(bpmn!, element.id)) as any;
+
+  if (name === 'property') {
+    setProceedElement(selectedElementCopy, name, value.value, value.attributes, oldAttributes);
+  } else {
+    setProceedElement(selectedElementCopy, name, value ? value : null, attributes);
+  }
+  modeling.updateProperties(element as any, {
+    extensionElements: selectedElementCopy.extensionElements,
+  });
 };
 
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
@@ -170,28 +195,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     });
   };
 
-  const updateMetaData = async (
-    name: string,
-    value: any,
-    attributes?: { [key: string]: any },
-    oldAttributes?: { [key: string]: any },
-  ) => {
-    const modeling = modeler!.getModeling();
-    const bpmn = await modeler!.getXML();
-
-    // create deep copy of selected element and set proceed element in this object so that bpmn.js event system can recognise changes in object
-    const selectedElementCopy = (await deepCopyElementById(bpmn!, selectedElement.id)) as any;
-
-    if (name === 'property') {
-      setProceedElement(selectedElementCopy, name, value.value, value.attributes, oldAttributes);
-    } else {
-      setProceedElement(selectedElementCopy, name, value ? value : null, attributes);
-    }
-    modeling.updateProperties(selectedElement as any, {
-      extensionElements: selectedElementCopy.extensionElements,
-    });
-  };
-
   /* TABS: */
   const [activeTab, setActiveTab] = useState('Property-Panel-General');
 
@@ -253,7 +256,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                   metaData.overviewImage && metaData.overviewImage.split('/images/').pop()
                 }
                 onImageUpdate={(imageFileName) => {
-                  updateMetaData('overviewImage', imageFileName);
+                  updateMetaData(modeler!, selectedElement, 'overviewImage', imageFileName);
                 }}
               ></ImageSelectionSection>
             </div>
@@ -271,12 +274,19 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                   : { currency: 'EUR' }
               }
               onInput={({ value, currency }) => {
-                updateMetaData('costsPlanned', value, { unit: currency });
+                updateMetaData(modeler!, selectedElement, 'costsPlanned', value, {
+                  unit: currency,
+                });
               }}
             ></PlannedCostInput>
             <PlannedDurationInput
               onChange={(changedTimePlannedDuration) => {
-                updateMetaData('timePlannedDuration', changedTimePlannedDuration);
+                updateMetaData(
+                  modeler!,
+                  selectedElement,
+                  'timePlannedDuration',
+                  changedTimePlannedDuration,
+                );
               }}
               timePlannedDuration={timePlannedDuration || ''}
             ></PlannedDurationInput>
@@ -286,6 +296,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             metaData={metaData}
             onChange={(name, value, oldName) => {
               updateMetaData(
+                modeler!,
+                selectedElement,
                 'property',
                 { value: value, attributes: { name } },
                 undefined,

@@ -278,7 +278,14 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
         onError?: (error: Error) => void;
       },
     ) => downloadMutation.mutate({ entityId, fileName, shareToken, ...options }),
-    remove: (entityId: string, fileName: string) => removeMutation.mutate({ entityId, fileName }),
+    remove: (
+      entityId: string,
+      fileName: string,
+      options?: {
+        onSuccess?: (data: { fileUrl?: string }) => void;
+        onError?: (error: Error) => void;
+      },
+    ) => removeMutation.mutateAsync({ entityId, fileName, ...options }),
     replace: (
       file: File | Blob,
       entityId: string,

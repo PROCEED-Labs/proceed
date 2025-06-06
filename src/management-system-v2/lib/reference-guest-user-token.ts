@@ -6,8 +6,8 @@
  * this is a small attack surface, but it is better to be safe.
  * * */
 import { z } from 'zod';
-import { env } from './env-vars';
 import jwt from 'jsonwebtoken';
+import { env } from './ms-config/env-vars';
 
 const referenceSchema = z.object({ guestId: z.string() });
 type Reference = z.infer<typeof referenceSchema>;

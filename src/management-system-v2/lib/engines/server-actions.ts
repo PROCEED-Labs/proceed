@@ -18,10 +18,9 @@ import { spaceEnginesToEngines } from './space-engines-helpers';
 import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import {
-  getSpaceEngines as getSpaceEnginesFromDb,
-  getSpaceEngineByAddress as getSpaceEngineByAddressFromDb,
-} from '@/lib/data/db/space-engines';
-
+  getDbEngines as getSpaceEnginesFromDb,
+  getDbEngineByAddress as getSpaceEngineByAddressFromDb,
+} from '@/lib/data/db/engines';
 import {
   startInstanceOnMachine,
   pauseInstanceOnMachine,

@@ -21,7 +21,9 @@ import {
   SettingOutlined,
   SolutionOutlined,
   HomeOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
+import { TbUser, TbUserEdit } from 'react-icons/tb';
 
 import Link from 'next/link';
 import { getEnvironmentById, organizationHasLogo } from '@/lib/data/db/iam/environments';
@@ -33,12 +35,14 @@ import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import GuestWarningButton from '@/components/guest-warning-button';
+import SpaceLink from '@/components/space-link';
 
 const DashboardLayout = async ({
   children,
   params,
 }: PropsWithChildren<{ params: { environmentId: string } }>) => {
-  const { userId, systemAdmin } = await getCurrentUser();
+  const { userId, systemAdmin, user } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
@@ -179,6 +183,53 @@ const DashboardLayout = async ({
       label: 'Organization',
       icon: <HomeOutlined />,
       children,
+    });
+  }
+
+  if (msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    layoutMenuItems.push({
+      key: 'iam-personal',
+      label: 'Personal',
+      icon: <TbUser />,
+      children: [
+        {
+          key: 'personal-profile',
+          label: user?.isGuest ? (
+            <GuestWarningButton>My Profile</GuestWarningButton>
+          ) : (
+            <SpaceLink href={'/profile'}>My Profile</SpaceLink>
+          ),
+          icon: <TbUserEdit />,
+        },
+        {
+          key: 'personal-spaces',
+          label: user?.isGuest ? (
+            <GuestWarningButton>My Spaces</GuestWarningButton>
+          ) : (
+            <SpaceLink href={'/spaces'}>My Spaces</SpaceLink>
+          ),
+          icon: <AppstoreOutlined />,
+        },
+      ],
+    });
+  }
+
+  if (!activeEnvironment.isOrganization) {
+    layoutMenuItems.push({
+      key: 'personal-space-home',
+      label: 'Home',
+      icon: <HomeOutlined />,
+      children: [
+        {
+          key: 'personal-space-settings',
+          label: user?.isGuest ? (
+            <GuestWarningButton>Settings</GuestWarningButton>
+          ) : (
+            <SpaceLink href={'/settings'}>Settings</SpaceLink>
+          ),
+          icon: <SettingOutlined />,
+        },
+      ],
     });
   }
 

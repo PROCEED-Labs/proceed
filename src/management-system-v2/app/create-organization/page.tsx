@@ -3,16 +3,21 @@ import CreateOrganizationPage from './client-page';
 import { getProviders } from '@/lib/auth';
 import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema';
 import { addEnvironment } from '@/lib/data/db/iam/environments';
-import { userError } from '@/lib/user-error';
-import { env } from '@/lib/env-vars';
+import { getErrorMessage, userError } from '@/lib/user-error';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { notFound } from 'next/navigation';
 
 async function createInactiveEnvironment(data: UserOrganizationEnvironmentInput) {
   'use server';
-  const user = await getCurrentUser();
-  if (user.session?.user && !user.session?.user.isGuest)
-    return userError('This function is only for guest users and users that are not signed in');
-  return addEnvironment({ ...data, isOrganization: true, isActive: false });
+  try {
+    const user = await getCurrentUser();
+    if (user.session?.user && !user.session?.user.isGuest)
+      return userError('This function is only for guest users and users that are not signed in');
+    return addEnvironment({ ...data, isOrganization: true, isActive: false });
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 }
 
 export type createInactiveEnvironment = typeof createInactiveEnvironment;
@@ -20,7 +25,7 @@ export type createInactiveEnvironment = typeof createInactiveEnvironment;
 const unallowedProviders = ['guest-signin', 'development-users'];
 
 const Page = async () => {
-  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
+  if (!(await getMSConfig()).PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
 
   const { session } = await getCurrentUser();
   const needsToAuthenticate = !session?.user || session?.user.isGuest;

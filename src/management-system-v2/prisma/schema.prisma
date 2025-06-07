@@ -149,7 +149,7 @@ model Space {
   contactEmail       String?
   spaceLogo          String?
   owner              User?        @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId            String
+  ownerId            String?
   members            Membership[]
   folders            Folder[]
   processes          Process[]
@@ -234,8 +234,8 @@ model RoleMember {
 
 model Engine {
   id            String   @id @default(uuid())
-  space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
-  environmentId String
+  space         Space?    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String? /// If the environmentId is null then it is a PROCEED engine
   address       String /// Either an http url for an engine or a mqtt url
   name          String?
   createdOn     DateTime @default(now())
@@ -287,4 +287,10 @@ model GuestSignin {
   lastSigninAt DateTime @default(now())
 
   @@map("guest_signin")
+}
+
+// Global config for the MS, this table should only have one entry
+model MSConfig { 
+  id      Int   @id @default(0) 
+  config  Json
 }

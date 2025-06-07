@@ -21,7 +21,7 @@ import Adapter from './auth-database-adapter';
 import { User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
-import { env } from '@/lib/env-vars';
+import { env } from '@/lib/ms-config/env-vars';
 import { getUserAndPasswordByUsername, updateGuestUserLastSigninTime } from './data/db/iam/users';
 import { comparePassword, hashPassword } from './password-hashes';
 import db from './data/db';
@@ -52,25 +52,6 @@ const nextAuthOptions: NextAuthConfig = {
       async authorize() {
         return addUser({ isGuest: true });
       },
-    }),
-    EmailProvider({
-      id: 'email',
-      name: 'Sign in with E-mail',
-      server: {},
-      sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail({
-          signInLink: params.url,
-          expires: params.expires,
-        });
-
-        sendEmail({
-          to: params.identifier,
-          subject: 'Sign in to PROCEED',
-          html: signinMail.html,
-          text: signinMail.text,
-        });
-      },
-      maxAge: 24 * 60 * 60, // one day
     }),
   ],
   callbacks: {
@@ -153,6 +134,30 @@ const nextAuthOptions: NextAuthConfig = {
     signIn: '/signin',
   },
 };
+
+if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+  nextAuthOptions.providers.push(
+    EmailProvider({
+      id: 'email',
+      name: 'Sign in with E-mail',
+      server: {},
+      sendVerificationRequest(params) {
+        const signinMail = renderSigninLinkEmail({
+          signInLink: params.url,
+          expires: params.expires,
+        });
+
+        sendEmail({
+          to: params.identifier,
+          subject: 'Sign in to PROCEED',
+          html: signinMail.html,
+          text: signinMail.text,
+        });
+      },
+      maxAge: 24 * 60 * 60, // one day
+    }),
+  );
+}
 
 if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(

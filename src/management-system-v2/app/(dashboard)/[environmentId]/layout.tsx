@@ -29,10 +29,10 @@ import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorizat
 import { Environment } from '@/lib/data/environment-schema';
 import { spaceURL } from '@/lib/utils';
 import { RemoveReadOnly, truthyFilter } from '@/lib/typescript-utils';
-import { env } from '@/lib/env-vars';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 const DashboardLayout = async ({
   children,
@@ -48,6 +48,7 @@ const DashboardLayout = async ({
     userOrgEnvs,
     async (envId) => (await getEnvironmentById(envId))!,
   );
+  const msConfig = await getMSConfig();
 
   userEnvironments.push(...orgEnvironments);
 
@@ -93,7 +94,7 @@ const DashboardLayout = async ({
     }
   }
 
-  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     const automationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-automation',
@@ -181,7 +182,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (systemAdmin && env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) {
     layoutMenuItems.push({
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,

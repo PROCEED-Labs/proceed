@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { env } from './env-vars';
 import jwt from 'jsonwebtoken';
+import { env } from './ms-config/env-vars';
 
 const baseInvitationSchema = {
   spaceId: z.string(),

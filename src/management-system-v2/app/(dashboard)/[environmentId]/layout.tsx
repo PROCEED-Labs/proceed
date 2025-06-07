@@ -150,11 +150,7 @@ const DashboardLayout = async ({
     }
   }
 
-  if (
-    ability.can('manage', 'User') ||
-    ability.can('manage', 'RoleMapping') ||
-    ability.can('manage', 'Role')
-  ) {
+  if (can('manage', 'User') || can('manage', 'RoleMapping') || can('manage', 'Role')) {
     const children: MenuProps['items'] = [];
 
     if (can('update', 'Environment') || can('delete', 'Environment'))
@@ -171,7 +167,7 @@ const DashboardLayout = async ({
         icon: <UserOutlined />,
       });
 
-    if (ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
+    if (can('manage', 'RoleMapping') || can('manage', 'Role'))
       children.push({
         key: 'roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,

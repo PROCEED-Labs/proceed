@@ -26,6 +26,7 @@ export const mSConfigEnvironmentOnlyKeys = [
   'GOOGLE_CLOUD_BUCKET_NAME',
   'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
   'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
+  'ENABLE_PASSWORD_SIGNIN',
 
   // Variables that aren't implemented yet
   // 'PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE',
@@ -104,6 +105,7 @@ export const msConfigSchema = {
         message:
           'PROCEED_PUBLIC_MAILSERVER_ACTIVE needs to be set to true, in ordre to use PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE',
       }),
+    ENABLE_PASSWORD_SIGNIN: z.string().transform(boolParser).optional(),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),

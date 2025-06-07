@@ -272,14 +272,13 @@ if (env.ENABLE_PASSWORD_SIGNIN) {
       authorize: async (credentials) => {
         const userAndPassword = await getUserAndPasswordByUsername(credentials.username as string);
 
-        if (
-          !userAndPassword ||
-          !(await comparePassword(
-            credentials.password as string,
-            userAndPassword.passwordAccount.password,
-          ))
-        )
-          return null;
+        if (!userAndPassword) return null;
+
+        const passwordIsCorrect = await comparePassword(
+          credentials.password as string,
+          userAndPassword.passwordAccount.password,
+        );
+        if (!passwordIsCorrect) return null;
 
         return userAndPassword as User;
       },

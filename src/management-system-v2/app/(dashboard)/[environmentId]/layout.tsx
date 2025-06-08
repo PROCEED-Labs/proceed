@@ -150,7 +150,13 @@ const DashboardLayout = async ({
     }
   }
 
-  if (can('manage', 'User') || can('manage', 'RoleMapping') || can('manage', 'Role')) {
+  if (
+    can('manage', 'User') ||
+    can('manage', 'RoleMapping') ||
+    can('manage', 'Role') ||
+    can('update', 'Environment') ||
+    can('delete', 'Environment')
+  ) {
     const children: MenuProps['items'] = [];
 
     if (can('update', 'Environment') || can('delete', 'Environment'))

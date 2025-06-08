@@ -199,7 +199,7 @@ const DashboardLayout = async ({
           label: user?.isGuest ? (
             <GuestWarningButton>My Profile</GuestWarningButton>
           ) : (
-            <SpaceLink href={'/profile'}>My Profile</SpaceLink>
+            <SpaceLink href="/profile">My Profile</SpaceLink>
           ),
           icon: <TbUserEdit />,
         },
@@ -208,7 +208,7 @@ const DashboardLayout = async ({
           label: user?.isGuest ? (
             <GuestWarningButton>My Spaces</GuestWarningButton>
           ) : (
-            <SpaceLink href={'/spaces'}>My Spaces</SpaceLink>
+            <SpaceLink href="/spaces">My Spaces</SpaceLink>
           ),
           icon: <AppstoreOutlined />,
         },
@@ -227,7 +227,7 @@ const DashboardLayout = async ({
           label: user?.isGuest ? (
             <GuestWarningButton>Settings</GuestWarningButton>
           ) : (
-            <SpaceLink href={'/settings'}>Settings</SpaceLink>
+            <SpaceLink href="/settings">Settings</SpaceLink>
           ),
           icon: <SettingOutlined />,
         },

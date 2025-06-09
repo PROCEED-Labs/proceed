@@ -124,7 +124,7 @@ export async function saveEntityFile(
   entityId: string,
   mimeType: string,
   fileName: string,
-  fileContent?: Buffer | Uint8Array | Blob,
+  fileContent?: Buffer | Uint8Array,
 ) {
   if (!isContentTypeAllowed(mimeType)) {
     throw new Error(`Content type '${mimeType}' is not allowed`);
@@ -190,7 +190,7 @@ export async function saveProcessArtifact(
   processId: string,
   fileName: string,
   mimeType: string,
-  fileContent?: Buffer | Uint8Array | Blob,
+  fileContent?: Buffer | Uint8Array,
   options: SaveProcessArtifactOptions = {},
 ) {
   const {
@@ -305,7 +305,7 @@ export async function saveOrganizationLogo(
   organizationId: string,
   fileName: string,
   mimeType: string,
-  fileContent?: Buffer | Uint8Array | Blob,
+  fileContent?: Buffer | Uint8Array,
 ) {
   const newFileName = getNewFileName(fileName);
   const filePath = `artifacts/images/${newFileName}`;

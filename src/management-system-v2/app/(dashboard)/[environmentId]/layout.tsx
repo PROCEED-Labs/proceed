@@ -66,7 +66,6 @@ const DashboardLayout = async ({
     const documentationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-documentation',
-      ability,
     );
 
     if (documentationSettings.active !== false) {
@@ -102,7 +101,6 @@ const DashboardLayout = async ({
     const automationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-automation',
-      ability,
     );
 
     if (automationSettings.active !== false) {

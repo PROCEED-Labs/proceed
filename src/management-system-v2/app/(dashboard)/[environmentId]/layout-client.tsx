@@ -147,7 +147,7 @@ const Layout: FC<
   }, [activeSpace, customLogo]);
 
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (customLogo) imageSource = logoUrl ?? customLogo;
+  if (logoUrl) imageSource = logoUrl;
 
   const menu = (
     <Menu

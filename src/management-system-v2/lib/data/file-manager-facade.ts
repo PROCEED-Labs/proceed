@@ -308,7 +308,7 @@ export async function saveOrganizationLogo(
   fileContent?: Buffer | Uint8Array,
 ) {
   const newFileName = getNewFileName(fileName);
-  const filePath = `artifacts/images/${newFileName}`;
+  const filePath = `spaces/${organizationId}/${newFileName}`;
 
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
 

@@ -73,8 +73,8 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
       } else {
         return await handleLocalUpload(
           entityId,
-          fileName || (file instanceof File ? file.name : ''),
           file,
+          fileName || (file instanceof File ? file.name : undefined),
         );
       }
     },
@@ -116,9 +116,9 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
           environmentId: spaceId,
           entityId: entityId,
           entityType: entityType,
-          fileName: fileName,
+          fileName,
           ...(shareToken ? { shareToken } : {}),
-        })})`;
+        })}`;
 
         return { fileUrl };
       }
@@ -138,9 +138,10 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
   });
 
   // Remove Mutation
-  const removeMutation = useMutation<boolean, Error, { entityId: string; fileName: string }>({
+  const removeMutation = useMutation<boolean, Error, { entityId: string; fileName?: string }>({
     mutationFn: async ({ entityId, fileName }) => {
       if (entityType === EntityType.PROCESS) {
+        if (!fileName) throw new Error('File name is required when deleting process entity type');
         await updateFileDeletableStatus(fileName, true, entityId);
       } else {
         await deleteEntityFile(entityType, entityId, fileName);
@@ -164,8 +165,8 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
     {
       file: File | Blob;
       entityId: string;
-      oldFileName: string;
-      newFileName: string;
+      oldFileName?: string;
+      newFileName?: string;
       onSuccess?: (data: { fileName?: string }) => void;
       onError?: (error: Error) => void;
     }
@@ -219,14 +220,14 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
   // Local upload helper
   const handleLocalUpload = async (
     entityId: string,
-    fileName: string,
     file: File | Blob,
+    fileName?: string,
   ): Promise<{ fileName?: string }> => {
     const url = `/api/private/file-manager?${new URLSearchParams({
       environmentId: spaceId,
       entityId,
       entityType,
-      fileName,
+      ...(fileName ? { fileName } : {}),
     })}`;
 
     const response = await fetch(url, {

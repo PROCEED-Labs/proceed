@@ -375,8 +375,7 @@ async function saveProfilePicture(
   mimeType: string,
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
-  const extension = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
-  const newFileName = 'profileImage' + extension;
+  const newFileName = getNewFileName('profilePicture_' + fileName);
   const filePath = `users/${userId}/${newFileName}`;
 
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent, undefined, MB);

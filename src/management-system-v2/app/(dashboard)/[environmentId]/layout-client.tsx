@@ -28,7 +28,6 @@ import SpaceLink from '@/components/space-link';
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { enableUseFileManager } from 'FeatureFlags';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { useSession } from '@/components/auth-can';
 
@@ -144,7 +143,7 @@ const Layout: FC<
   }
 
   useEffect(() => {
-    if (enableUseFileManager && customLogo) getLogo(activeSpace.spaceId, '');
+    if (customLogo) getLogo(activeSpace.spaceId, '');
   }, [activeSpace, customLogo]);
 
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';

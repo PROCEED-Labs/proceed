@@ -15,7 +15,6 @@ import { useEffect, useState, useTransition } from 'react';
 import { fallbackImage } from '../processes/[processId]/image-selection-section';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
-import { enableUseFileManager } from 'FeatureFlags';
 
 const SpaceSettings = ({
   organization,
@@ -55,12 +54,9 @@ const SpaceSettings = ({
   const { download: getLogoUrl } = useFileManager({
     entityType: EntityType.ORGANIZATION,
   });
-  const logoUrl = `/api/private/${organization.id}/logo`;
-  const [organizationLogo, setOrganizationLogo] = useState(
-    organization.hasLogo ? logoUrl : undefined,
-  );
+  const [organizationLogo, setOrganizationLogo] = useState<string | undefined>();
   useEffect(() => {
-    if (enableUseFileManager && organization.hasLogo) {
+    if (organization.hasLogo) {
       getLogoUrl(organization.id, '', undefined, {
         onSuccess(data) {
           setOrganizationLogo(data.fileUrl);
@@ -146,23 +142,20 @@ const SpaceSettings = ({
                     mask: (
                       <ImageUpload
                         imageExists={organization.hasLogo}
-                        onReload={() => {
-                          setOrganizationLogo(`${logoUrl}?${Date.now()}`);
-                          router.refresh();
-                        }}
                         onImageUpdate={(name) => {
                           const deleted = typeof name === 'undefined';
-                          setOrganizationLogo(deleted ? undefined : `${logoUrl}?${Date.now}`);
-                          if (deleted) message.success('Logo deleted');
-                          else message.success('Logo uploaded');
-                          router.refresh();
+                          if (deleted) {
+                            message.success('Logo deleted');
+                          } else {
+                            getLogoUrl(organization.id, '', undefined, {
+                              onSuccess(data) {
+                                setOrganizationLogo(data.fileUrl);
+                              },
+                            });
+                            message.success('Logo uploaded');
+                          }
                         }}
                         onUploadFail={() => message.error('Error uploading image')}
-                        endpoints={{
-                          postEndpoint: logoUrl,
-                          deleteEndpoint: logoUrl,
-                          putEndpoint: logoUrl,
-                        }}
                         config={{
                           entityType: EntityType.ORGANIZATION,
                           entityId: organization.id,

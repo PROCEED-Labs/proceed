@@ -8,7 +8,6 @@ import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import ImageUpload from '@/components/image-upload';
 import { useFileManager } from '@/lib/useFileManager';
-import { enableUseFileManager } from 'FeatureFlags';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
 type ImageSelectionSectionProperties = {
@@ -28,7 +27,6 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
     entityType: EntityType.PROCESS,
     errorToasts: false,
   });
-  const environment = useEnvironment();
   const { notification } = App.useApp();
 
   const [reloadParam, setReloadParam] = useState(0);
@@ -41,14 +39,10 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
     });
   };
 
-  const baseUrl = `/api/private/${environment.spaceId}/processes/${processId as string}/images`;
-
-  const imageURL =
-    imageFileName &&
-    (enableUseFileManager ? imageUrlfm : `${baseUrl}/${imageFileName}?${reloadParam}`);
+  const imageURL = imageFileName && `${imageUrlfm}?${reloadParam}`;
 
   useEffect(() => {
-    if (enableUseFileManager && imageFileName) {
+    if (imageFileName) {
       getImageURL(processId as string, imageFileName);
     }
   }, [imageFileName]);
@@ -72,11 +66,6 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
             onReload={() => setReloadParam(Date.now())}
             onImageUpdate={onImageUpdate}
             onUploadFail={showImageUploadFailMessage}
-            endpoints={{
-              postEndpoint: baseUrl,
-              deleteEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
-              putEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
-            }}
             config={{
               entityType: EntityType.PROCESS,
               entityId: processId as string,

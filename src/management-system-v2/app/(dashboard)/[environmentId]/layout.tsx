@@ -160,7 +160,7 @@ const DashboardLayout = async ({
     if (can('update', 'Environment') || can('delete', 'Environment'))
       children.push({
         key: 'organization-settings',
-        label: <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>Settings</Link>,
+        label: <Link href={spaceURL(activeEnvironment, `/settings`)}>Settings</Link>,
         icon: <SettingOutlined />,
       });
 

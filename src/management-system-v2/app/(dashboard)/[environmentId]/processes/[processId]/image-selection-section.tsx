@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import { App, Image } from 'antd';
 
 import { useParams } from 'next/navigation';
-import { useEnvironment } from '@/components/auth-can';
 import ImageUpload from '@/components/image-upload';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
@@ -43,7 +42,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
 
   useEffect(() => {
     if (imageFileName) {
-      getImageURL(processId as string, imageFileName);
+      getImageURL({ entityId: processId as string, fileName: imageFileName });
     }
   }, [imageFileName]);
 

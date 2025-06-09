@@ -143,7 +143,7 @@ const Layout: FC<
   }
 
   useEffect(() => {
-    if (customLogo) getLogo(activeSpace.spaceId, '');
+    if (customLogo) getLogo({ entityId: activeSpace.spaceId, fileName: '' });
   }, [activeSpace, customLogo]);
 
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';

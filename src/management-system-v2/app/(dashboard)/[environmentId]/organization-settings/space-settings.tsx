@@ -57,11 +57,10 @@ const SpaceSettings = ({
   const [organizationLogo, setOrganizationLogo] = useState<string | undefined>();
   useEffect(() => {
     if (organization.hasLogo) {
-      getLogoUrl(organization.id, '', undefined, {
-        onSuccess(data) {
-          setOrganizationLogo(data.fileUrl);
-        },
-      });
+      getLogoUrl({
+        entityId: organization.id,
+        fileName: '',
+      }).then((data) => setOrganizationLogo(data.fileUrl));
     }
   }, [organization]);
 
@@ -147,11 +146,10 @@ const SpaceSettings = ({
                           if (deleted) {
                             message.success('Logo deleted');
                           } else {
-                            getLogoUrl(organization.id, '', undefined, {
-                              onSuccess(data) {
-                                setOrganizationLogo(data.fileUrl);
-                              },
-                            });
+                            getLogoUrl({
+                              entityId: organization.id,
+                              fileName: '',
+                            }).then((data) => setOrganizationLogo(data.fileUrl));
                             message.success('Logo uploaded');
                           }
                         }}

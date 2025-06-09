@@ -84,12 +84,10 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       elementLabel = importedProcess.name!;
       ({ milestones, meta, description } = importedProcess);
     }
-    const newImageUrl = await new Promise<string>((resolve) => {
-      getImage(processData.id, image, shareToken, {
-        onSuccess(data) {
-          resolve(data.fileUrl!);
-        },
-      });
+    const { fileUrl: newImageUrl } = await getImage({
+      entityId: processData.id,
+      fileName: image,
+      shareToken,
     });
 
     let imageURL =

@@ -68,7 +68,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
 
   useEffect(() => {
     if (src) {
-      getImageUrl(params.processId as string, src);
+      getImageUrl({ entityId: params.processId as string, fileName: src });
     }
   }, [src]);
 

@@ -37,31 +37,20 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const handleImageUpload = async (image: Blob, uploadedFileName: string, imageExists: boolean) => {
     try {
-      const response = await new Promise<{ ok: boolean; fileName?: string }>((resolve, reject) => {
-        if (imageExists && config.fileName) {
-          //replace
-          replace(image, config.entityId, config.fileName, uploadedFileName, {
-            onSuccess: (data) => resolve({ ok: true, fileName: data?.fileName }),
-            onError: (error) => {
-              console.error('Upload failed:', error);
-              resolve({ ok: false });
-            },
-          });
-        } else {
-          // new upload
-          upload(image, config.entityId, uploadedFileName, {
-            onSuccess: (data) => resolve({ ok: true, fileName: data?.fileName }),
-            onError: (error) => {
-              console.error('Upload failed:', error);
-              resolve({ ok: false });
-            },
-          });
-        }
-      });
-
-      if (!response.ok) {
-        onUploadFail?.();
-        return;
+      let response;
+      if (imageExists && config.fileName) {
+        response = await replace({
+          file: image,
+          entityId: config.entityId,
+          oldFileName: config.fileName,
+          newFileName: uploadedFileName,
+        });
+      } else {
+        response = await upload({
+          file: image,
+          entityId: config.entityId,
+          fileName: uploadedFileName,
+        });
       }
 
       const newImageFileName = response.fileName || uploadedFileName;
@@ -104,7 +93,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         <Button
           onClick={async () => {
             try {
-              if (config.useDefaultRemoveFunction) await remove(config.entityId, config.fileName!);
+              if (config.useDefaultRemoveFunction)
+                await remove({ entityId: config.entityId, fileName: config.fileName! });
 
               onImageUpdate();
             } catch (error) {

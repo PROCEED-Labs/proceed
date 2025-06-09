@@ -16,11 +16,7 @@ import { fallbackImage } from '../processes/[processId]/image-selection-section'
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 
-const SpaceSettings = ({
-  organization,
-}: {
-  organization: OrganizationEnvironment & { hasLogo: boolean };
-}) => {
+const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const router = useRouter();
@@ -56,10 +52,10 @@ const SpaceSettings = ({
   });
   const [organizationLogo, setOrganizationLogo] = useState<string | undefined>();
   useEffect(() => {
-    if (organization.hasLogo) {
+    if (organization.spaceLogo) {
       getLogoUrl({
         entityId: organization.id,
-        fileName: '',
+        fileName: organization.spaceLogo,
       }).then((data) => setOrganizationLogo(data.fileUrl));
     }
   }, [organization]);
@@ -140,25 +136,27 @@ const SpaceSettings = ({
                     visible: false,
                     mask: (
                       <ImageUpload
-                        imageExists={organization.hasLogo}
+                        imageExists={!!organizationLogo}
                         onImageUpdate={(name) => {
                           const deleted = typeof name === 'undefined';
                           if (deleted) {
                             message.success('Logo deleted');
+                            setOrganizationLogo(undefined);
                           } else {
                             getLogoUrl({
                               entityId: organization.id,
-                              fileName: '',
+                              fileName: name,
                             }).then((data) => setOrganizationLogo(data.fileUrl));
                             message.success('Logo uploaded');
                           }
+                          // To update other components that might depend on the logo
+                          router.refresh();
                         }}
                         onUploadFail={() => message.error('Error uploading image')}
                         config={{
                           entityType: EntityType.ORGANIZATION,
                           entityId: organization.id,
                           useDefaultRemoveFunction: true,
-                          fileName: '',
                         }}
                         fileManagerErrorToasts={false}
                       />

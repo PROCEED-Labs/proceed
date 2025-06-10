@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import { App, Image } from 'antd';
 
@@ -28,8 +28,6 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   });
   const { notification } = App.useApp();
 
-  const [reloadParam, setReloadParam] = useState(0);
-
   const showImageUploadFailMessage = () => {
     notification.error({
       message: `Image upload failed`,
@@ -38,17 +36,21 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
     });
   };
 
-  const imageURL = imageFileName && `${imageUrlfm}?${reloadParam}`;
-
   useEffect(() => {
     if (imageFileName) {
       getImageURL({ entityId: processId as string, fileName: imageFileName });
     }
   }, [imageFileName]);
 
+  let imageUrl = fallbackImage;
+  // imageFileName determines if there is a picture, imageUrlfm persists after the image was deleted
+  if (imageUrlfm && imageFileName) {
+    imageUrl = imageUrlfm;
+  }
+
   return (
     <Image
-      src={imageURL || fallbackImage}
+      src={imageUrl || fallbackImage}
       alt="Image"
       fallback={fallbackImage}
       style={{
@@ -62,7 +64,6 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
         mask: (
           <ImageUpload
             imageExists={!!imageFileName}
-            onReload={() => setReloadParam(Date.now())}
             onImageUpdate={onImageUpdate}
             onUploadFail={showImageUploadFailMessage}
             config={{

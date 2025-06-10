@@ -17,7 +17,7 @@ test('open properties panel for process and fill property values', async ({
     `.*\\/api\\/private\\/[a-zA-Z0-9-_]+\\/processes\\/${definitionId}\\/images\\/[a-zA-Z0-9-_]+\\.jpg\\?\\d+$`,
   );
   const exampleImageURLFileManager = new RegExp(
-    `^/api/private/file-manager\\?environmentId=[a-f0-9-]+&entityId=${definitionId}&entityType=PROCESS&fileName=[a-zA-Z0-9-_]+\\.jpg&shareToken=[a-zA-Z0-9-_]*$`,
+    `^/api/private/file-manager\\?environmentId=[a-f0-9-]+&entityId=${definitionId}&entityType=PROCESS&filePath=[a-zA-Z0-9-_\/]+\.jpg$`,
   );
 
   await expect(
@@ -26,10 +26,10 @@ test('open properties panel for process and fill property values', async ({
   await propertiesPanelPage.addImage('example-image.jpg');
   await expect(propertiesPanelPage.imageSection.getByLabel('edit')).toBeVisible();
   await expect(propertiesPanelPage.imageSection.getByLabel('delete')).toBeVisible();
-  await expect(
-    propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
-  ).toHaveAttribute(
-    'src',
+  const imageSectionSrc = await propertiesPanelPage.imageSection
+    .getByRole('img', { name: 'Image' })
+    .getAttribute('src');
+  expect(decodeURIComponent(imageSectionSrc)).toMatch(
     new RegExp(`${exampleImageURL.source}|${exampleImageURLFileManager.source}`),
   );
   await propertiesPanelPage.imageSection.getByLabel('delete').click();
@@ -158,7 +158,7 @@ test('open properties panel for element and fill property values', async ({
     `.*\\/api\\/private\\/[a-zA-Z0-9-_]+\\/processes\\/${definitionId}\\/images\\/[a-zA-Z0-9-_]+\\.jpg\\?\\d+$`,
   );
   const exampleImageURLFileManager = new RegExp(
-    `^/api/private/file-manager\\?environmentId=[a-f0-9-]+&entityId=${definitionId}&entityType=PROCESS&fileName=[a-zA-Z0-9-_]+\\.jpg&shareToken=[a-zA-Z0-9-_]*$`,
+    `^/api/private/file-manager\\?environmentId=[a-f0-9-]+&entityId=${definitionId}&entityType=PROCESS&filePath=[a-zA-Z0-9-_\/]+\.jpg$`,
   );
   await expect(
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
@@ -166,10 +166,11 @@ test('open properties panel for element and fill property values', async ({
   await propertiesPanelPage.addImage('example-image.jpg');
   await expect(propertiesPanelPage.imageSection.getByLabel('edit')).toBeVisible();
   await expect(propertiesPanelPage.imageSection.getByLabel('delete')).toBeVisible();
-  await expect(
-    propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
-  ).toHaveAttribute(
-    'src',
+
+  const imageSectionSrc = await propertiesPanelPage.imageSection
+    .getByRole('img', { name: 'Image' })
+    .getAttribute('src');
+  expect(decodeURIComponent(imageSectionSrc)).toMatch(
     new RegExp(`${exampleImageURL.source}|${exampleImageURLFileManager.source}`),
   );
 

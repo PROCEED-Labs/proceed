@@ -41,20 +41,19 @@ const WorkspaceSelection: React.FC<
     null,
   );
 
-  const [workspaceLogos, setWorkspaceLogos] = useState<Record<string, string | null>>({});
+  const [workspaceLogos, setWorkspaceLogos] = useState<Record<string, string | undefined>>({});
 
   useEffect(() => {
     const fetchLogos = async () => {
-      const logos: Record<string, string | null> = {};
+      const logos: Record<string, string | undefined> = {};
       for (const workspace of workspaces) {
         if (workspace.isOrganization) {
-          getLogoUrl(workspace.id, '', undefined, {
-            onSuccess(data) {
-              logos[workspace.id] = data.fileUrl!;
-            },
+          getLogoUrl({
+            entityId: workspace.id,
+            filePath: '',
+          }).then((data) => {
+            if (data?.fileUrl) logos[workspace.id] = data.fileUrl + `?${Date.now()}`;
           });
-        } else {
-          logos[workspace.id] = null;
         }
       }
       setWorkspaceLogos(logos);

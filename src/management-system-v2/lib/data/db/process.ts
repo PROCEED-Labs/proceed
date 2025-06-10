@@ -21,12 +21,11 @@ import db from '@/lib/data/db';
 import {
   deleteProcessArtifact,
   getArtifactMetaData,
-  retrieveProcessArtifact,
   saveProcessArtifact,
 } from '../file-manager-facade';
 import { toCustomUTCString } from '@/lib/helpers/timeHelper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { copyFile } from '../file-manager/file-manager';
+import { copyFile, retrieveFile } from '../file-manager/file-manager';
 import { ArtifactType, generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
 
@@ -524,7 +523,7 @@ export async function addProcessVersion(
     { useDefaultArtifactsTable: false, generateNewFileName: false },
   );
 
-  if (!res.fileName) {
+  if (!res.filePath) {
     throw new Error('Error saving version bpmn');
   }
 
@@ -536,7 +535,7 @@ export async function addProcessVersion(
         description: versionInformation.description ?? '',
         versionBasedOn: versionInformation.versionBasedOn!,
         process: { connect: { id: processDefinitionsId } },
-        bpmnFilePath: res.fileName,
+        bpmnFilePath: res.filePath,
       },
     });
 
@@ -599,14 +598,7 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
     where: { id: versionId },
   });
 
-  return (
-    (await retrieveProcessArtifact(
-      processDefinitionsId,
-      versn?.bpmnFilePath!,
-      false,
-      false,
-    )) as Buffer
-  ).toString('utf8');
+  return ((await retrieveFile(versn?.bpmnFilePath!, false)) as Buffer).toString('utf8');
 }
 
 /** Removes information from the meta data that would not be correct after a restart */
@@ -673,12 +665,7 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, userT
   try {
     const res = await db.artifact.findUnique({ where: { fileName: `${userTaskName}.json` } });
     if (res) {
-      const jsonAsBuffer = (await retrieveProcessArtifact(
-        processDefinitionsId,
-        res.filePath,
-        true,
-        true,
-      )) as Buffer;
+      const jsonAsBuffer = (await retrieveFile(processDefinitionsId, true)) as Buffer;
       return jsonAsBuffer.toString('utf8');
     }
   } catch (err) {
@@ -791,9 +778,7 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
       throw new Error('Unable to get html for user task!');
     }
 
-    const html = (
-      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
-    ).toString('utf-8');
+    const html = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return html;
   } catch (err) {
     logger.debug(`Error getting html of user task. Reason:\n${err}`);
@@ -831,9 +816,7 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
       throw new Error('Unable to get script for script task!');
     }
 
-    const script = (
-      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
-    ).toString('utf-8');
+    const script = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return script;
   } catch (err) {
     logger.debug(`Error getting script of script task. Reason:\n${err}`);
@@ -852,7 +835,7 @@ export async function saveProcessUserTask(
   try {
     const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
     const content = new TextEncoder().encode(json);
-    const { fileName } = await saveProcessArtifact(
+    const { filePath: fileName } = await saveProcessArtifact(
       processDefinitionsId,
       `${userTaskId}.json`,
       'application/json',
@@ -1093,12 +1076,7 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
     if (!res) {
       throw new Error(`Unable to get image : ${imageFileName}`);
     }
-    const image = (await retrieveProcessArtifact(
-      processDefinitionsId,
-      res?.filePath,
-      true,
-      false,
-    )) as Buffer;
+    const image = (await retrieveFile(res?.filePath, false)) as Buffer;
     return image;
   } catch (err) {
     logger.debug(`Error getting image. Reason:\n${err}`);

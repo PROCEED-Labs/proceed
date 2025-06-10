@@ -15,13 +15,8 @@ import { useEffect, useState, useTransition } from 'react';
 import { fallbackImage } from '../processes/[processId]/image-selection-section';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
-import { enableUseFileManager } from 'FeatureFlags';
 
-const SpaceSettings = ({
-  organization,
-}: {
-  organization: OrganizationEnvironment & { hasLogo: boolean };
-}) => {
+const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const router = useRouter();
@@ -55,17 +50,13 @@ const SpaceSettings = ({
   const { download: getLogoUrl } = useFileManager({
     entityType: EntityType.ORGANIZATION,
   });
-  const logoUrl = `/api/private/${organization.id}/logo`;
-  const [organizationLogo, setOrganizationLogo] = useState(
-    organization.hasLogo ? logoUrl : undefined,
-  );
+  const [organizationLogo, setOrganizationLogo] = useState<string | undefined>();
   useEffect(() => {
-    if (enableUseFileManager && organization.hasLogo) {
-      getLogoUrl(organization.id, '', undefined, {
-        onSuccess(data) {
-          setOrganizationLogo(data.fileUrl);
-        },
-      });
+    if (organization.spaceLogo) {
+      getLogoUrl({
+        entityId: organization.id,
+        filePath: organization.spaceLogo,
+      }).then((data) => setOrganizationLogo(data.fileUrl));
     }
   }, [organization]);
 
@@ -145,30 +136,29 @@ const SpaceSettings = ({
                     visible: false,
                     mask: (
                       <ImageUpload
-                        imageExists={organization.hasLogo}
-                        onReload={() => {
-                          setOrganizationLogo(`${logoUrl}?${Date.now()}`);
-                          router.refresh();
-                        }}
+                        imageExists={!!organizationLogo}
                         onImageUpdate={(name) => {
                           const deleted = typeof name === 'undefined';
-                          setOrganizationLogo(deleted ? undefined : `${logoUrl}?${Date.now}`);
-                          if (deleted) message.success('Logo deleted');
-                          else message.success('Logo uploaded');
+                          if (deleted) {
+                            message.success('Logo deleted');
+                            setOrganizationLogo(undefined);
+                          } else {
+                            getLogoUrl({
+                              entityId: organization.id,
+                              filePath: name,
+                            }).then((data) => setOrganizationLogo(data.fileUrl));
+                            message.success('Logo uploaded');
+                          }
+                          // To update other components that might depend on the logo
                           router.refresh();
                         }}
                         onUploadFail={() => message.error('Error uploading image')}
-                        endpoints={{
-                          postEndpoint: logoUrl,
-                          deleteEndpoint: logoUrl,
-                          putEndpoint: logoUrl,
-                        }}
                         config={{
                           entityType: EntityType.ORGANIZATION,
                           entityId: organization.id,
                           useDefaultRemoveFunction: true,
-                          fileName: '',
                         }}
+                        fileManagerErrorToasts={false}
                       />
                     ),
                   }}

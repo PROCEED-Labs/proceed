@@ -249,11 +249,9 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               }}
             >
               <ImageSelectionSection
-                imageFileName={
-                  metaData.overviewImage && metaData.overviewImage.split('/images/').pop()
-                }
-                onImageUpdate={(imageFileName) => {
-                  updateMetaData('overviewImage', imageFileName);
+                imageFilePath={metaData.overviewImage}
+                onImageUpdate={(imageFilePath) => {
+                  updateMetaData('overviewImage', imageFilePath);
                 }}
               ></ImageSelectionSection>
             </div>

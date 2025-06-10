@@ -18,7 +18,6 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
   const organization = (await getEnvironmentById(
     activeEnvironment.spaceId,
   )) as OrganizationEnvironment;
-  const hasLogo = await organizationHasLogo(activeEnvironment.spaceId);
 
   return (
     <Content title="Organization Settings">
@@ -26,7 +25,7 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
         <AuthCan update Environment>
           <Card style={{ margin: 'auto', maxWidth: '45rem' }}>
             <Title level={3}>Organization Profile</Title>
-            <SpaceSettings organization={{ ...organization, hasLogo }} />
+            <SpaceSettings organization={organization} />
           </Card>
         </AuthCan>
 

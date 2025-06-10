@@ -523,7 +523,7 @@ export async function addProcessVersion(
     { useDefaultArtifactsTable: false, generateNewFileName: false },
   );
 
-  if (!res.fileName) {
+  if (!res.filePath) {
     throw new Error('Error saving version bpmn');
   }
 
@@ -535,7 +535,7 @@ export async function addProcessVersion(
         description: versionInformation.description ?? '',
         versionBasedOn: versionInformation.versionBasedOn!,
         process: { connect: { id: processDefinitionsId } },
-        bpmnFilePath: res.fileName,
+        bpmnFilePath: res.filePath,
       },
     });
 
@@ -835,7 +835,7 @@ export async function saveProcessUserTask(
   try {
     const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
     const content = new TextEncoder().encode(json);
-    const { fileName } = await saveProcessArtifact(
+    const { filePath: fileName } = await saveProcessArtifact(
       processDefinitionsId,
       `${userTaskId}.json`,
       'application/json',

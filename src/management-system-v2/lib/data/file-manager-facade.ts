@@ -212,7 +212,7 @@ export async function saveProcessArtifact(
       // if artifact already exists, update the reference and return
       if (artifact) {
         await db.artifactProcessReference.create({ data: { artifactId: artifact.id, processId } });
-        return { presignedUrl: null, fileName: newFileName };
+        return { presignedUrl: null, filePath };
       }
     }
     // Save the file (local or presigned URL)

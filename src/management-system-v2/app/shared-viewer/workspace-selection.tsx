@@ -50,7 +50,7 @@ const WorkspaceSelection: React.FC<
         if (workspace.isOrganization) {
           getLogoUrl({
             entityId: workspace.id,
-            fileName: '',
+            filePath: '',
           }).then((data) => {
             if (data?.fileUrl) logos[workspace.id] = data.fileUrl + `?${Date.now()}`;
           });

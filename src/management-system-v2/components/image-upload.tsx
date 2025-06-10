@@ -42,18 +42,18 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         response = await replace({
           file: image,
           entityId: config.entityId,
-          oldFileName: config.fileName,
-          newFileName: uploadedFileName,
+          oldFilePath: config.fileName,
+          newFilePath: uploadedFileName,
         });
       } else {
         response = await upload({
           file: image,
           entityId: config.entityId,
-          fileName: uploadedFileName,
+          filePath: uploadedFileName,
         });
       }
 
-      const newImageFileName = response.fileName || uploadedFileName;
+      const newImageFileName = response.filePath || uploadedFileName;
       onImageUpdate(newImageFileName);
       onReload?.();
     } catch (error) {
@@ -94,7 +94,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           onClick={async () => {
             try {
               if (config.useDefaultRemoveFunction)
-                await remove({ entityId: config.entityId, fileName: config.fileName! });
+                await remove({ entityId: config.entityId, filePath: config.fileName! });
 
               onImageUpdate();
             } catch (error) {

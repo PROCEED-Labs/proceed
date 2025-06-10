@@ -86,7 +86,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
     }
     const { fileUrl: newImageUrl } = await getImage({
       entityId: processData.id,
-      fileName: image,
+      filePath: image,
       shareToken,
     });
 

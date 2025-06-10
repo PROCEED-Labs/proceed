@@ -55,7 +55,7 @@ const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment
     if (organization.spaceLogo) {
       getLogoUrl({
         entityId: organization.id,
-        fileName: organization.spaceLogo,
+        filePath: organization.spaceLogo,
       }).then((data) => setOrganizationLogo(data.fileUrl));
     }
   }, [organization]);
@@ -145,7 +145,7 @@ const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment
                           } else {
                             getLogoUrl({
                               entityId: organization.id,
-                              fileName: name,
+                              filePath: name,
                             }).then((data) => setOrganizationLogo(data.fileUrl));
                             message.success('Logo uploaded');
                           }

@@ -21,7 +21,7 @@ interface FileManagerHookProps {
 
 interface FileOperationResult {
   ok: boolean;
-  fileName?: string;
+  filePath?: string;
   fileUrl?: string;
 }
 
@@ -34,23 +34,23 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
 
   // Upload Mutation
   const uploadMutation = useMutation<
-    { fileName?: string },
+    { filePath?: string },
     Error,
     {
       file: File | Blob;
       entityId: string;
-      fileName?: string;
-      onSuccess?: (data: { fileName?: string }) => void;
+      filePath?: string;
+      onSuccess?: (data: { filePath?: string }) => void;
       onError?: (error: Error) => void;
     }
   >({
-    mutationFn: async ({ file, entityId, fileName }) => {
+    mutationFn: async ({ file, entityId, filePath }) => {
       if (DEPLOYMENT_ENV === 'cloud') {
         const response = await saveEntityFile(
           entityType,
           entityId,
           file.type,
-          fileName || (file instanceof File ? file.name : ''),
+          filePath || (file instanceof File ? file.name : ''),
         );
 
         if ('error' in response) {
@@ -66,15 +66,15 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
         } catch (e) {
           //if upload fails, delete the artifact from the database
           console.error('Failed to upload file to cloud', e);
-          await cleanUpFailedUploadEntry(spaceId, entityId, entityType, fileName!);
+          await cleanUpFailedUploadEntry(spaceId, entityId, entityType, filePath!);
         }
 
-        return { fileName: response.fileName };
+        return { filePath: response.filePath };
       } else {
         return await handleLocalUpload(
           entityId,
           file,
-          fileName || (file instanceof File ? file.name : undefined),
+          filePath || (file instanceof File ? file.name : undefined),
         );
       }
     },
@@ -101,22 +101,22 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
     Error,
     {
       entityId: string;
-      fileName: string;
+      filePath: string;
       shareToken?: string | null;
       onSuccess?: (data: { fileUrl?: string }) => void;
       onError?: (error: Error) => void;
     }
   >({
-    mutationFn: async ({ entityId, fileName, shareToken }) => {
+    mutationFn: async ({ entityId, filePath, shareToken }) => {
       if (DEPLOYMENT_ENV === 'cloud') {
-        const presignedUrl = await retrieveEntityFile(entityType, entityId, fileName);
+        const presignedUrl = await retrieveEntityFile(entityType, entityId, filePath);
         return { fileUrl: presignedUrl as string };
       } else {
         const fileUrl = `/api/private/file-manager?${new URLSearchParams({
           environmentId: spaceId,
           entityId: entityId,
           entityType: entityType,
-          fileName,
+          filePath,
           ...(shareToken ? { shareToken } : {}),
         })}`;
 
@@ -138,13 +138,13 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
   });
 
   // Remove Mutation
-  const removeMutation = useMutation<boolean, Error, { entityId: string; fileName?: string }>({
-    mutationFn: async ({ entityId, fileName }) => {
+  const removeMutation = useMutation<boolean, Error, { entityId: string; filePath?: string }>({
+    mutationFn: async ({ entityId, filePath }) => {
       if (entityType === EntityType.PROCESS) {
-        if (!fileName) throw new Error('File name is required when deleting process entity type');
-        await updateFileDeletableStatus(fileName, true, entityId);
+        if (!filePath) throw new Error('File name is required when deleting process entity type');
+        await updateFileDeletableStatus(filePath, true, entityId);
       } else {
-        await deleteEntityFile(entityType, entityId, fileName);
+        await deleteEntityFile(entityType, entityId, filePath);
       }
       return true;
     },
@@ -165,26 +165,26 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
     {
       file: File | Blob;
       entityId: string;
-      oldFileName?: string;
-      newFileName?: string;
-      onSuccess?: (data: { fileName?: string }) => void;
+      oldFilePath?: string;
+      newFilePath?: string;
+      onSuccess?: (data: { filePath?: string }) => void;
       onError?: (error: Error) => void;
     }
   >({
-    mutationFn: async ({ file, entityId, oldFileName, newFileName }) => {
+    mutationFn: async ({ file, entityId, oldFilePath, newFilePath }) => {
       // First remove the old file
-      await removeMutation.mutateAsync({ entityId, fileName: oldFileName });
+      await removeMutation.mutateAsync({ entityId, filePath: oldFilePath });
 
       // Then upload the new file
       const uploadResult = await uploadMutation.mutateAsync({
         file,
         entityId,
-        fileName: newFileName,
+        filePath: newFilePath,
       });
 
       return {
         ok: true,
-        fileName: uploadResult.fileName,
+        filePath: uploadResult.filePath,
       };
     },
     onSuccess(data, variables) {
@@ -218,16 +218,12 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
   };
 
   // Local upload helper
-  const handleLocalUpload = async (
-    entityId: string,
-    file: File | Blob,
-    fileName?: string,
-  ): Promise<{ fileName?: string }> => {
+  const handleLocalUpload = async (entityId: string, file: File | Blob, filePath?: string) => {
     const url = `/api/private/file-manager?${new URLSearchParams({
       environmentId: spaceId,
       entityId,
       entityType,
-      ...(fileName ? { fileName } : {}),
+      ...(filePath ? { filePath } : {}),
     })}`;
 
     const response = await fetch(url, {
@@ -236,8 +232,7 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
     });
 
     if (response.status === 200) {
-      const savedFileName = await response.text();
-      return { fileName: savedFileName };
+      return { filePath: await response.text() };
     } else {
       throw new Error('Local upload failed');
     }

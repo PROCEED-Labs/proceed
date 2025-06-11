@@ -28,6 +28,7 @@ import {
   pauseInstance,
   resumeInstance,
   stopInstance,
+  getStartForm,
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -37,6 +38,7 @@ import { getLatestDeployment, getVersionInstances, getYoungestInstance } from '.
 import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
+import StartFormModal from './start-form-modal';
 
 export default function ProcessDeploymentView({
   processId,
@@ -54,6 +56,8 @@ export default function ProcessDeploymentView({
   const [resumingInstance, setResumingInstance] = useState(false);
   const [pausingInstance, setPausingInstance] = useState(false);
   const [stoppingInstance, setStoppingInstance] = useState(false);
+
+  const [startForm, setStartForm] = useState('');
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
@@ -175,12 +179,21 @@ export default function ProcessDeploymentView({
                   onClick={async () => {
                     setStartingInstance(true);
                     await wrapServerCall({
-                      fn: () =>
-                        startInstance(
-                          deploymentInfo.definitionId,
-                          getLatestDeployment(deploymentInfo).versionId,
+                      fn: async () => {
+                        const versionId = getLatestDeployment(deploymentInfo).versionId;
+                        const startForm = await getStartForm(
                           spaceId,
-                        ),
+                          deploymentInfo.definitionId,
+                          versionId,
+                        );
+
+                        if (typeof startForm !== 'string') return startForm;
+
+                        if (startForm) {
+                          setStartForm(startForm);
+                        } else
+                          return startInstance(deploymentInfo.definitionId, versionId, spaceId);
+                      },
                       onSuccess: async (instanceId) => {
                         await refetch();
                         setSelectedInstanceId(instanceId);
@@ -337,6 +350,28 @@ export default function ProcessDeploymentView({
             </Space>
           </Space>
         </Toolbar>
+
+        <StartFormModal
+          html={startForm}
+          onSubmit={(variables) => {
+            const versionId = getLatestDeployment(deploymentInfo).versionId;
+
+            const mappedVariables = Object.fromEntries(
+              Object.entries(variables).map(([key, value]) => [key, { value }]),
+            );
+            wrapServerCall({
+              fn: () =>
+                startInstance(deploymentInfo.definitionId, versionId, spaceId, mappedVariables),
+
+              onSuccess: async (instanceId) => {
+                await refetch();
+                setSelectedInstanceId(instanceId);
+                setStartForm('');
+              },
+            });
+          }}
+          onCancel={() => setStartForm('')}
+        />
 
         <div style={{ zIndex: '100', height: '100%' }}>
           <BPMNCanvas

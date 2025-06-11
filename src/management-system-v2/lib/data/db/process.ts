@@ -481,6 +481,7 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
 export async function addProcessVersion(
   processDefinitionsId: string,
   bpmn: string,
+  versionedProcessStartFormFilenames?: string[],
   versionedUserTaskFilenames?: string[],
   versionedScriptTaskFilenames?: string[],
 ) {
@@ -541,6 +542,18 @@ export async function addProcessVersion(
     });
 
     if (version) {
+      if (versionedProcessStartFormFilenames) {
+        await asyncMap(versionedProcessStartFormFilenames, async (fileName) => {
+          for (const extension of ['.json', '.html']) {
+            const res = await getArtifactMetaData(`${fileName}${extension}`, false);
+            if (res) {
+              await db.artifactVersionReference.create({
+                data: { artifactId: res.id, versionId: version.id },
+              });
+            }
+          }
+        });
+      }
       if (versionedUserTaskFilenames) {
         await asyncMap(versionedUserTaskFilenames, async (fileName) => {
           for (const extension of ['.json', '.html']) {
@@ -666,6 +679,26 @@ export async function getProcessScriptTasks(processDefinitionsId: string) {
   // TODO
 }
 
+export async function getProcessStartFormJSON(processDefinitionsId: string, fileName: string) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    const res = await db.artifact.findUnique({ where: { fileName: `${fileName}.json` } });
+    if (res) {
+      const jsonAsBuffer = (await retrieveProcessArtifact(
+        processDefinitionsId,
+        res.filePath,
+        true,
+        true,
+      )) as Buffer;
+      return jsonAsBuffer.toString('utf8');
+    }
+  } catch (err) {
+    logger.debug(`Error getting data of process start form. Reason\n${err}`);
+    throw new Error('Unable to get data for process start form!');
+  }
+}
+
 /** Returns the form data for a specific user task in a process */
 export async function getProcessUserTaskJSON(processDefinitionsId: string, userTaskName: string) {
   checkIfProcessExists(processDefinitionsId);
@@ -684,6 +717,21 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, userT
   } catch (err) {
     logger.debug(`Error getting data of user task. Reason:\n${err}`);
     throw new Error('Unable to get data for user task!');
+  }
+}
+
+export async function checkIfStartFormExists(processDefinitionsId: string, fileName: string) {
+  try {
+    const jsonArtifact = await db.artifact.findUnique({
+      where: { fileName: `${fileName}.json` },
+    });
+    const htmlArtifact = await db.artifact.findUnique({
+      where: { fileName: `${fileName}.html` },
+    });
+    return jsonArtifact || htmlArtifact ? { json: jsonArtifact, html: htmlArtifact } : null;
+  } catch (error) {
+    console.error('Error checking if start form exists:', error);
+    throw new Error('Failed to check if start form exists.');
   }
 }
 
@@ -758,6 +806,46 @@ export async function checkIfScriptTaskFileExists(
   } catch (error) {
     console.error('Error checking if script task file exists:', error);
     throw new Error('Failed to check if script task file exists.');
+  }
+}
+
+export async function getProcessStartFormHtml(processDefinitionsId: string, fileName: string) {
+  checkIfProcessExists(processDefinitionsId);
+  try {
+    const res = await db.artifact.findFirst({
+      where: {
+        fileName: `${fileName}.html`,
+        OR: [
+          {
+            processReferences: {
+              some: {
+                processId: processDefinitionsId,
+              },
+            },
+          },
+          {
+            versionReferences: {
+              some: { version: { processId: processDefinitionsId } },
+            },
+          },
+        ],
+      },
+      select: {
+        filePath: true,
+      },
+    });
+
+    if (!res) {
+      throw new Error('Unable to get html for start form!');
+    }
+
+    const html = (
+      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
+    ).toString('utf-8');
+    return html;
+  } catch (err) {
+    logger.debug(`Error getting html of start form. Reason:\n${err}`);
+    throw new Error('Unable to get html for start form!');
   }
 }
 
@@ -838,6 +926,49 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
   } catch (err) {
     logger.debug(`Error getting script of script task. Reason:\n${err}`);
     throw new Error('Unable to get script for script task!');
+  }
+}
+
+export async function saveProcessStartForm(
+  processDefinitionsId: string,
+  fileName: string,
+  json: string,
+  html: string,
+  versionCreatedOn?: string,
+) {
+  checkIfProcessExists(processDefinitionsId);
+  try {
+    const res = await checkIfStartFormExists(processDefinitionsId, fileName);
+    const content = new TextEncoder().encode(json);
+    const { fileName: saveFileName } = await saveProcessArtifact(
+      processDefinitionsId,
+      `${fileName}.json`,
+      'application/json',
+      content,
+      {
+        generateNewFileName: false,
+        versionCreatedOn,
+        replaceFileContentOnly: res?.json?.filePath ? true : false,
+        context: 'user-tasks',
+      },
+    );
+
+    await saveProcessArtifact(
+      processDefinitionsId,
+      `${fileName}.html`,
+      'text/html',
+      new TextEncoder().encode(html),
+      {
+        generateNewFileName: false,
+        versionCreatedOn: versionCreatedOn,
+        replaceFileContentOnly: res?.html?.filePath ? true : false,
+        context: 'user-tasks',
+      },
+    );
+    return saveFileName;
+  } catch (err) {
+    logger.debug(`Error storing start form data. Reason:\n${err}`);
+    throw new Error('Failed to store the start form data.');
   }
 }
 

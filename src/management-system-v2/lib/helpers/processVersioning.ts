@@ -9,6 +9,8 @@ import {
   getScriptTaskFileNameMapping,
   setUserTaskData,
   setScriptTaskData,
+  getStartFormFileNameMapping,
+  setStartFormFileName,
 } from '@proceed/bpmn-helper';
 import { asyncForEach } from './javascriptHelpers';
 
@@ -24,6 +26,9 @@ import {
   getProcessScriptTaskScript,
   saveProcessScriptTask,
   deleteProcessScriptTask,
+  saveProcessStartForm,
+  getProcessStartFormJSON,
+  getProcessStartFormHtml,
 } from '@/lib/data/db/process';
 const { diff } = require('bpmn-js-differ');
 
@@ -117,6 +122,45 @@ export async function getLocalVersionBpmn(process: Process, localVersion: string
     const bpmn = getProcessVersionBpmn(process.id, localVersion);
     return bpmn;
   }
+}
+
+export async function versionStartForm(
+  processInfo: Process,
+  newVersion: string,
+  bpmnObj: object,
+  dryRun = false,
+) {
+  const htmlMapping = await getStartFormFileNameMapping(bpmnObj);
+  const versionedStartFormFilenames: string[] = [];
+  const { versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
+
+  for (let processId in htmlMapping) {
+    const fileName = htmlMapping[processId];
+
+    if (fileName) {
+      let versionFileName = `${fileName}-${newVersion}`;
+
+      // make sure the process is using the correct data
+      await setStartFormFileName(bpmnObj, processId, versionFileName);
+
+      if (!dryRun) {
+        const startFormHtml = await getProcessStartFormHtml(processInfo.id, fileName);
+        const startFormData = await getProcessStartFormJSON(processInfo.id, fileName);
+        await saveProcessStartForm(
+          processInfo.id,
+          versionFileName,
+          startFormData!,
+          startFormHtml!,
+          versionCreatedOn,
+        );
+      }
+
+      // update ref for the artifacts referenced by the versioned start form
+      versionedStartFormFilenames.push(versionFileName);
+    }
+  }
+
+  return versionedStartFormFilenames;
 }
 
 export async function versionUserTasks(

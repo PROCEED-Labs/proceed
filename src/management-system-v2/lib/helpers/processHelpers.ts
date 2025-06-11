@@ -24,6 +24,8 @@ import {
   setScriptTaskData,
   updateBpmnCreatorAttributes,
   updateBpmnOriginalAttributes,
+  getStartFormFileNameMapping,
+  setStartFormFileName,
 } from '@proceed/bpmn-helper';
 import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
@@ -237,6 +239,25 @@ export const getFinalBpmn = async ({
 
   return await toBpmnXml(bpmnObj);
 };
+
+export async function updateStartFormFileName(
+  bpmn: string,
+  oldFilename: string,
+  newFilename: string,
+) {
+  let bpmnObj = await toBpmnObject(bpmn);
+  console.log(oldFilename, newFilename);
+
+  const fileNameMapping = await getStartFormFileNameMapping(bpmnObj);
+
+  await asyncForEach(Object.entries(fileNameMapping), async ([processId, fileName]) => {
+    if (fileName === oldFilename.split('.')[0]) {
+      await setStartFormFileName(bpmnObj, processId, newFilename.split('.')[0]);
+    }
+  });
+
+  return { bpmn: await toBpmnXml(bpmnObj), newFilename };
+}
 
 export async function updateUserTaskFileName(
   bpmn: string,

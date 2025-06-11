@@ -6,6 +6,7 @@ import {
   addDocumentation,
   generateDefinitionsId,
   generateScriptTaskFileName,
+  generateStartFormFileName,
   generateUserTaskFileName,
   getDefinitionsId,
   getDefinitionsVersionInformation,
@@ -18,6 +19,7 @@ import {
   createProcess,
   getFinalBpmn,
   updateScriptTaskFileName,
+  updateStartFormFileName,
   updateUserTaskFileName,
 } from '../helpers/processHelpers';
 import { UserErrorType, userError } from '../user-error';
@@ -27,6 +29,7 @@ import {
   selectAsLatestVersion,
   updateProcessVersionBasedOn,
   versionScriptTasks,
+  versionStartForm,
   versionUserTasks,
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
@@ -53,9 +56,12 @@ import {
   addProcessVersion,
   updateProcessMetaData as _updateProcessMetaData,
   getProcessBpmn as _getProcessBpmn,
+  saveProcessStartForm as _saveProcessStartForm,
   saveProcessUserTask as _saveProcessUserTask,
+  getProcessStartFormJSON as _getProcessStartFormJSON,
   getProcessUserTaskJSON as _getProcessUserTaskJSON,
   getProcessImage as _getProcessImage,
+  getProcessStartFormHtml as _getProcessStartFormHtml,
   getProcessUserTaskHtml as _getProcessUserTaskHtml,
   saveProcessScriptTask as _saveProcessScriptTask,
   deleteProcessScriptTask as _deleteProcessScriptTask,
@@ -338,6 +344,7 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
     const process = importedProcesses[idx];
     const artefacts = processData[idx].artefacts;
     const fileNameMapping = {
+      'start-form': new Map<string, string>(),
       'user-tasks': new Map<string, string>(),
       'script-tasks': new Map<string, string>(),
     };
@@ -352,10 +359,8 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
       }
     }
 
-    // Handle user tasks
-    if (artefacts?.userTasks) {
-      // Group user tasks by base name
-      const userTaskGroups = artefacts.userTasks.reduce((groups, file) => {
+    const groupFormData = (data: { name: string; content: string }[]) => {
+      return data.reduce((groups, file) => {
         const [baseName, ext] = file.name.split(/\.(?=[^.]+$)/);
         const group = groups.get(baseName) || { json: null, html: null };
 
@@ -365,7 +370,29 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
         groups.set(baseName, group);
         return groups;
       }, new Map<string, { json: string | null; html: string | null }>());
+    };
 
+    // handle start form
+    if (artefacts?.startForm && artefacts.startForm.length === 2) {
+      const [[filename, { json, html }]] = groupFormData(artefacts?.startForm);
+
+      if (!json || !html) {
+        console.error(`Incomplete start form pair for ${filename}`);
+      } else {
+        const newFileName = generateStartFormFileName();
+        fileNameMapping['start-form'].set(filename, newFileName);
+        try {
+          await _saveProcessStartForm(process.id, newFileName, json, html);
+        } catch (error) {
+          console.log(`Error processing start form ${newFileName}:`, error);
+        }
+      }
+    }
+
+    // Handle user tasks
+    if (artefacts?.userTasks) {
+      // Group user tasks by base name
+      const userTaskGroups = groupFormData(artefacts?.userTasks);
       // Process grouped user tasks
       for (const [baseName, { json, html }] of userTaskGroups) {
         if (!json || !html) {
@@ -394,6 +421,10 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
           }
           case 'script-tasks': {
             ({ bpmn: newBpmn } = await updateScriptTaskFileName(newBpmn, oldFilename, newFilename));
+            break;
+          }
+          case 'start-form': {
+            ({ bpmn: newBpmn } = await updateStartFormFileName(newBpmn, oldFilename, newFilename));
             break;
           }
         }
@@ -552,6 +583,7 @@ export const createVersion = async (
 
   const process = (await _getProcess(processId)) as Process;
 
+  const versionedProcessStartFormFilenames = await versionStartForm(process, versionId, bpmnObj);
   const versionedUserTaskFilenames = await versionUserTasks(process, versionId, bpmnObj);
   const versionedScriptTaskFilenames = await versionScriptTasks(process, versionId, bpmnObj);
 
@@ -569,6 +601,7 @@ export const createVersion = async (
   addProcessVersion(
     processId,
     versionedBpmn,
+    versionedProcessStartFormFilenames,
     versionedUserTaskFilenames,
     versionedScriptTaskFilenames,
   );
@@ -592,6 +625,25 @@ export const getFavouritesProcessIds = async () => {
   return favs ?? [];
 };
 
+export const getProcessStartFormData = async (
+  definitionId: string,
+  fileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  try {
+    return await _getProcessStartFormJSON(definitionId, fileName);
+  } catch (err) {
+    return userError(
+      'Unable to get the requested process start form data',
+      UserErrorType.NotFoundError,
+    );
+  }
+};
+
 export const getProcessUserTaskData = async (
   definitionId: string,
   taskFileName: string,
@@ -605,6 +657,22 @@ export const getProcessUserTaskData = async (
     return await _getProcessUserTaskJSON(definitionId, taskFileName);
   } catch (err) {
     return userError('Unable to get the requested User Task data.', UserErrorType.NotFoundError);
+  }
+};
+
+export const getProcessStartFormHTML = async (
+  definitionId: string,
+  fileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  try {
+    return await _getProcessStartFormHtml(definitionId, fileName);
+  } catch (err) {
+    return userError('Unable to get the requested start form html.', UserErrorType.NotFoundError);
   }
 };
 
@@ -622,6 +690,26 @@ export const getProcessUserTaskHTML = async (
   } catch (err) {
     return userError('Unable to get the requested User Task html.', UserErrorType.NotFoundError);
   }
+};
+
+export const saveProcessStartForm = async (
+  definitionId: string,
+  fileName: string,
+  json: string,
+  html: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'update', spaceId);
+
+  if (error) return error;
+
+  if (/-\d+$/.test(fileName))
+    return userError(
+      'Illegal attempt to overwrite a start form version!',
+      UserErrorType.ConstraintError,
+    );
+
+  _saveProcessStartForm(definitionId, fileName, json, html);
 };
 
 export const saveProcessUserTask = async (

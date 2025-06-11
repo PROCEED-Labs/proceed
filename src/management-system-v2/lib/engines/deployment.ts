@@ -47,6 +47,21 @@ async function deployProcessToMachines(
             engine,
           });
 
+          if (version.startForm) {
+            engineRequest({
+              method: 'put',
+              endpoint: '/process/:definitionId/versions/:version/start-form',
+              pathParams: {
+                definitionId: exportData.definitionId,
+                version: Object.keys(exportData.versions)[0],
+              },
+              body: {
+                html: version.startForm.html,
+              },
+              engine,
+            });
+          }
+
           const userTasks = exportData.userTasks.map((userTask) =>
             engineRequest({
               method: 'put',

@@ -32,6 +32,7 @@ export type ProcessData = {
   folderId?: string;
   bpmn: string;
   artefacts?: {
+    startForm?: Array<{ name: string; content: string }>;
     images?: Array<{ name: string; content: string }>;
     userTasks?: Array<{ name: string; content: string }>;
     scriptTasks?: Array<{ name: string; content: string }>;
@@ -142,6 +143,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
         folderId: currentFolderId,
         bpmn,
         artefacts: {
+          startForm: [],
           images: [],
           userTasks: [],
           scriptTasks: [],
@@ -157,8 +159,8 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
             !zip.files[name].dir,
         );
 
-        await Promise.all(
-          artefactFiles.map(async (fileName) => {
+        await Promise.all([
+          ...artefactFiles.map(async (fileName) => {
             try {
               const file = zip.files[fileName];
               const name = fileName.split('/').pop()!;
@@ -171,10 +173,19 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
                 processData.artefacts!.scriptTasks!.push({ name, content });
               } else if (['.json', '.html'].some((ext) => name.endsWith(ext))) {
                 const textContent = await file.async('text');
-                processData.artefacts!.userTasks!.push({
-                  name,
-                  content: textContent,
-                });
+                const subPath = fileName.split(artefactPath + '/')[1];
+                if (!subPath.includes('/')) {
+                  // html and json files that are not nested in another folder belong to the startForm
+                  processData.artefacts!.startForm!.push({
+                    name,
+                    content: textContent,
+                  });
+                } else {
+                  processData.artefacts!.userTasks!.push({
+                    name,
+                    content: textContent,
+                  });
+                }
               }
             } catch (e: any) {
               errors.push({
@@ -183,10 +194,11 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
               });
             }
           }),
-        );
+        ]);
       }
 
       const validationRes = await checkIfAllReferencedArtefactsAreProvided(bpmn, {
+        startForm: processData.artefacts?.startForm?.map((item) => item.name) || [],
         images: processData.artefacts?.images?.map((item) => item.name) || [],
         userTasks: processData.artefacts?.userTasks?.map((item) => item.name) || [],
         scriptTasks: processData.artefacts?.scriptTasks?.map((item) => item.name) || [],

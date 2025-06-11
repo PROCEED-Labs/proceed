@@ -5,6 +5,8 @@ import {
   getProcessUserTaskData,
   getProcessImage,
   getProcessScriptTaskData,
+  getProcessStartFormData,
+  getProcessStartFormHTML,
 } from '@/lib/data/processes';
 
 import {
@@ -20,6 +22,7 @@ import {
   getScriptTaskFileNameMapping,
   toBpmnXml,
   getAllElements,
+  getStartFormFileNameMapping,
 } from '@proceed/bpmn-helper';
 
 import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
@@ -67,6 +70,7 @@ export type ProcessExportData = {
       name?: string;
       bpmn: string;
       isImport: boolean;
+      startForm?: { filename: string; json: string; html: string };
       layers: { id?: string; name?: string }[];
       imports: { definitionId: string; processVersion: string }[];
       selectedElements?: string[];
@@ -162,6 +166,7 @@ type ExportMap = {
         name?: string;
         bpmn: string;
         isImport: boolean;
+        startForm?: { filename: string; json: string; html: string };
         layers: { id?: string; name?: string }[];
         imports: { definitionId: string; processVersion: string }[];
         selectedElements?: string[];
@@ -397,8 +402,9 @@ export async function prepareExport(
       const allRequiredUserTaskFiles: Set<string> = new Set();
       const allRequiredImageFiles: Set<string> = new Set();
 
-      // determine the script task and user task files that are needed per version and across all versions
-      for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
+      // determine the start form, script task and user task files that are needed per version and across all versions
+      for (const [version, info] of Object.entries(exportData[definitionId].versions)) {
+        const { bpmn } = info;
         const versionUserTasks = Object.keys(
           await getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn),
         );
@@ -410,6 +416,24 @@ export async function prepareExport(
           .filter(truthyFilter);
 
         for (const filename of versionScripts) allRequiredScriptTaskFiles.add(filename);
+
+        const startFormMapping = await getStartFormFileNameMapping(bpmn);
+        const filenames = Object.values(startFormMapping).filter(truthyFilter);
+        // we currently expect only a single process in a file
+        if (filenames.length) {
+          const [filename] = filenames;
+
+          const json = await getProcessStartFormData(definitionId, filename, spaceId);
+          const html = await getProcessStartFormHTML(definitionId, filename, spaceId);
+
+          if (typeof json !== 'string') {
+            throw json!.error;
+          } else if (typeof html !== 'string') {
+            throw html.error;
+          }
+
+          info.startForm = { filename, json, html };
+        }
       }
 
       for (const filename of allRequiredScriptTaskFiles) {

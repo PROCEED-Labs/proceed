@@ -29,6 +29,14 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
     if (!zipFolder) return { filename: `${getProcessFilePathName(filename)}.bpmn`, blob: bpmnBlob };
 
     zipFolder.file(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
+
+    if (versionData.startForm) {
+      const { json, html, filename } = versionData.startForm;
+      const jsonBlob = new Blob([json], { type: 'application/json' });
+      zipFolder.file(filename + '.json', jsonBlob);
+      const htmlBlob = new Blob([html], { type: 'application/html' });
+      zipFolder.file(filename + '.html', htmlBlob);
+    }
   }
 
   if (zipFolder) {
@@ -81,6 +89,7 @@ export async function getExportblob(
   // the following cases are only relevant if there is only one process to export (in any other case needsZip becomes true anyway)
   const hasMulitpleVersions = Object.keys(exportData[0].versions).length > 1;
   const hasArtefacts =
+    !!Object.values(exportData[0].versions)[0].startForm ||
     !!exportData[0].userTasks.length ||
     !!exportData[0].scriptTasks.length ||
     !!exportData[0].images.length;

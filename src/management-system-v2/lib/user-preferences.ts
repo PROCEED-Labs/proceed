@@ -31,6 +31,7 @@ const defaultPreferences = {
   'icon-view-in-role-list': false,
   'columns-in-table-view-process-list': [
     { name: 'Favorites', width: 40 },
+    { name: 'ID', width: 'auto' },
     { name: 'Name', width: 'auto' },
     { name: 'Description', width: 'auto' },
     { name: 'Last Edited', width: 'auto' },

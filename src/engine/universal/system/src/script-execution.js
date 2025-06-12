@@ -138,7 +138,7 @@ class ScriptExecutor extends System {
       // inline global variables
       for (const key in dependencies) {
         if (typeof dependencies[key] !== 'object' && typeof dependencies[key] !== 'function') {
-          scriptString = `const ${key} = ${dependencies[key]};\n` + scriptString;
+          scriptString = `const ${key} = ${JSON.stringify(dependencies[key])};\n` + scriptString;
         }
       }
 

@@ -187,7 +187,7 @@ export function isTimerEvent(element?: Element) {
   );
 }
 
-function getTimer(element?: Element) {
+function getTimer(element?: Element): string {
   if (!isTimerEvent(element)) return '';
 
   const eventDefinitions = element!.businessObject.eventDefinitions;

@@ -33,6 +33,7 @@ import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { Process } from '@/lib/data/process-schema';
 import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
+import { TimerEventButton, isTimerEvent } from './planned-duration-input';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -273,6 +274,9 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                       onClick={() => setShowFlowNodeConditionModal(true)}
                     />
                   </Tooltip>
+                )) ||
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isTimerEvent(selectedElement) && (
+                  <TimerEventButton element={selectedElement} />
                 )))}
           </ToolbarGroup>
 

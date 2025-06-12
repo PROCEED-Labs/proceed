@@ -22,6 +22,7 @@ export const getCurrentUser = cache(async () => {
       session: noIamUser.session,
       userId: noIamUser.userId,
       systemAdmin: noIamUser.systemAdmin,
+      user: noIamUser.user,
     };
   }
 
@@ -29,7 +30,7 @@ export const getCurrentUser = cache(async () => {
   const userId = session?.user.id || '';
   const [systemAdmin, user] = await Promise.all([
     getSystemAdminByUserId(userId),
-    userId !== '' && getUserById(userId),
+    userId !== '' ? getUserById(userId) : undefined,
   ]);
 
   // Sign out user if the id doesn't correspond to a user in the db
@@ -43,7 +44,7 @@ export const getCurrentUser = cache(async () => {
     redirect(`/api/private/signout?csrfToken=${csrfToken}`);
   }
 
-  return { session, userId, systemAdmin };
+  return { session, userId, systemAdmin, user };
 });
 
 // TODO: To enable PPR move the session redirect into this function, so it will

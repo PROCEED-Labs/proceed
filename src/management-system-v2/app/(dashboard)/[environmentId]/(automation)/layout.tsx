@@ -14,12 +14,11 @@ const AutomationsLayout: React.FC<AutomationLayoutProps> = async ({ params, chil
     return notFound();
   }
 
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   const automationSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-automation',
-    ability,
   );
 
   if (automationSettings.active === false) {

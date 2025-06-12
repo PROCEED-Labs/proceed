@@ -84,59 +84,6 @@ const Layout: FC<
 
   let layoutMenuItems = _layoutMenuItems;
 
-  if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
-    const personal: MenuProps['items'] = [
-      {
-        key: 'personal-profile',
-        label: userData?.isGuest ? (
-          <div onClick={() => setShowLoginRequest(true)}>My Profile</div>
-        ) : (
-          <SpaceLink href={'/profile'}>My Profile</SpaceLink>
-        ),
-        icon: <TbUserEdit />,
-      },
-      {
-        key: 'personal-spaces',
-        label: userData?.isGuest ? (
-          <div onClick={() => setShowLoginRequest(true)}>My Spaces</div>
-        ) : (
-          <SpaceLink href={'/spaces'}>My Spaces</SpaceLink>
-        ),
-        icon: <AppstoreOutlined />,
-      },
-    ];
-
-    layoutMenuItems = [
-      ...layoutMenuItems,
-      {
-        key: 'iam-personal',
-        label: 'Personal',
-        icon: <TbUser />,
-        children: personal,
-      },
-    ];
-  }
-
-  if (!activeSpace.isOrganization) {
-    const home = {
-      key: 'personal-space-home',
-      label: 'Home',
-      icon: <HomeOutlined />,
-      children: [
-        {
-          key: 'personal-space-settings',
-          label: userData?.isGuest ? (
-            <div onClick={() => setShowLoginRequest(true)}>Settings</div>
-          ) : (
-            <SpaceLink href={'/settings'}>Settings</SpaceLink>
-          ),
-          icon: <SettingOutlined />,
-        },
-      ],
-    };
-    layoutMenuItems = [...layoutMenuItems, home];
-  }
-
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(
       (item) => !(item && 'type' in item && item.type === 'divider'),

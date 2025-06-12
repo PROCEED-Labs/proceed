@@ -88,7 +88,7 @@ export async function addUser(
   if (!user.id) user.id = v4();
 
   try {
-    const userExists = await db.user.findUnique({ where: { id: user.id } });
+    const userExists = await tx.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
     await tx.user.create({
       data: {

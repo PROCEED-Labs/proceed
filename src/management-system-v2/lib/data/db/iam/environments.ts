@@ -79,7 +79,7 @@ export async function addEnvironment(
   const dbMutator = tx;
 
   const newEnvironment = environmentSchema.parse(environmentInput);
-  const id = newEnvironment.isOrganization ? v4() : newEnvironment.ownerId;
+  const id = newEnvironment.isOrganization ? newEnvironment.id ?? v4() : newEnvironment.ownerId;
 
   if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
 

@@ -35,19 +35,19 @@ if (DEPLOYMENT_ENV === 'cloud') {
       : undefined,
   );
   bucket = storage.bucket(BUCKET_NAME);
+  bucket
+    .setCorsConfiguration([
+      {
+        maxAgeSeconds: 3600,
+        method: ['GET', 'PUT'],
+        origin: ['https://app.proceed-labs.org', 'https://staging.proceed-labs.org'],
+        responseHeader: ['content-type', 'x-goog-content-length-range'],
+      },
+    ])
+    .catch((error: any) => {
+      console.error(`Failed to set CORS configuration for bucket ${BUCKET_NAME}:`, error);
+    });
 }
-
-// Helper functions
-const setCors = async (bucket: any) => {
-  await bucket.setCorsConfiguration([
-    {
-      maxAgeSeconds: 3600,
-      method: ['GET', 'PUT'],
-      origin: ['*'], // Adjust trusted origin for production
-      responseHeader: ['content-type', 'x-goog-content-length-range'],
-    },
-  ]);
-};
 
 const ensureBucketExists = () => {
   if (!bucket) throw new Error('Storage bucket not initialized');

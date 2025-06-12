@@ -47,6 +47,10 @@ export const mSConfigEnvironmentOnlyKeys = [
   'IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID',
   'IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET',
   'PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV',
+
+  // TODO: remove this from environment only list
+  'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
+  'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
 ] satisfies (keyof MergedSchemas)[];
 
 export const msConfigSchema = {

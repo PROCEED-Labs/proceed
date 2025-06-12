@@ -32,6 +32,7 @@ import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId
 import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { Process } from '@/lib/data/process-schema';
+import { TimerEventButton, isTimerEvent } from './planned-duration-input';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -273,7 +274,10 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                         onClick={() => setShowScriptTaskEditor(true)}
                       />
                     </Tooltip>
-                  )))}
+                  )) ||
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isTimerEvent(selectedElement) && (
+                  <TimerEventButton element={selectedElement} />
+                )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>

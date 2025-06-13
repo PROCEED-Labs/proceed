@@ -95,7 +95,7 @@ model Artifact {
   fileName     String              @unique
   deletable    Boolean?            @default(false)
   deletedOn    DateTime?
-  artifactType String // user-task, script, image, etc.
+  artifactType String // html-forms, script, image, etc.
   processReferences   ArtifactProcessReference[] // Relation to track references
   versionReferences   ArtifactVersionReference[]
   refCounter   Int                 @default(0)

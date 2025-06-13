@@ -15,13 +15,7 @@ import {
   toBpmnObject,
   toBpmnXml,
 } from '@proceed/bpmn-helper';
-import {
-  createProcess,
-  getFinalBpmn,
-  updateScriptTaskFileName,
-  updateStartFormFileName,
-  updateUserTaskFileName,
-} from '../helpers/processHelpers';
+import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
 import { UserErrorType, userError } from '../user-error';
 import {
   areVersionsEqual,
@@ -56,13 +50,10 @@ import {
   addProcessVersion,
   updateProcessMetaData as _updateProcessMetaData,
   getProcessBpmn as _getProcessBpmn,
-  saveProcessStartForm as _saveProcessStartForm,
-  saveProcessUserTask as _saveProcessUserTask,
-  getProcessStartFormJSON as _getProcessStartFormJSON,
-  getProcessUserTaskJSON as _getProcessUserTaskJSON,
+  saveProcessHtmlForm as _saveProcessHtmlForm,
+  getProcessHtmlFormJSON as _getProcessHtmlFormJSON,
   getProcessImage as _getProcessImage,
-  getProcessStartFormHtml as _getProcessStartFormHtml,
-  getProcessUserTaskHtml as _getProcessUserTaskHtml,
+  getHtmlForm as _getHtmlForm,
   saveProcessScriptTask as _saveProcessScriptTask,
   deleteProcessScriptTask as _deleteProcessScriptTask,
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
@@ -70,6 +61,7 @@ import {
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
 import { getRootFolder } from './db/folders';
+import { truthyFilter } from '../typescript-utils';
 
 // Import necessary functions from processModule
 
@@ -383,7 +375,7 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
         const newFileName = generateStartFormFileName();
         fileNameMapping['start-form'].set(filename, newFileName);
         try {
-          await _saveProcessStartForm(process.id, newFileName, json, html);
+          await _saveProcessHtmlForm(process.id, newFileName, json, html);
         } catch (error) {
           console.log(`Error processing start form ${newFileName}:`, error);
         }
@@ -404,7 +396,7 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
           fileNameMapping['user-tasks'].get(baseName) || generateUserTaskFileName();
         fileNameMapping['user-tasks'].set(baseName, newUserTaskFileName);
         try {
-          await _saveProcessUserTask(process.id, newUserTaskFileName, json, html);
+          await _saveProcessHtmlForm(process.id, newUserTaskFileName, json, html);
         } catch (error) {
           console.error(`Error processing user task ${newUserTaskFileName}:`, error);
         }
@@ -412,25 +404,10 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
     }
 
     // update mapped filenames in bpmn
-    let newBpmn = process.bpmn;
-    for (const [type, mapping] of Object.entries(fileNameMapping)) {
-      for (const [oldFilename, newFilename] of mapping) {
-        switch (type) {
-          case 'user-tasks': {
-            ({ bpmn: newBpmn } = await updateUserTaskFileName(newBpmn, oldFilename, newFilename));
-            break;
-          }
-          case 'script-tasks': {
-            ({ bpmn: newBpmn } = await updateScriptTaskFileName(newBpmn, oldFilename, newFilename));
-            break;
-          }
-          case 'start-form': {
-            ({ bpmn: newBpmn } = await updateStartFormFileName(newBpmn, oldFilename, newFilename));
-            break;
-          }
-        }
-      }
-    }
+    let fileNameChanges = [...fileNameMapping['user-tasks'].entries()];
+    fileNameChanges = fileNameChanges.concat([...fileNameMapping['start-form']]);
+    fileNameChanges = fileNameChanges.concat([...fileNameMapping['script-tasks']]);
+    const newBpmn = await updateFileNames(process.bpmn, fileNameChanges);
 
     await _updateProcess(process.id, { bpmn: newBpmn });
 
@@ -500,30 +477,17 @@ export const copyProcesses = async (
       await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
 
       const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
-      if (copiedFiles) {
-        // TODO: check if this works
-        // TODO: possibly optimize this by parsing and serializing the bpmn once instead of on every invocation of the updateXTaskFileName functions
-        for (const file of copiedFiles) {
-          switch (file?.artifactType) {
-            case 'user-tasks': {
-              ({ bpmn: newBpmn } = await updateUserTaskFileName(
-                newBpmn,
-                file.mapping.oldFilename,
-                file.mapping.newFilename,
-              ));
-            }
-            case 'script-tasks': {
-              ({ bpmn: newBpmn } = await updateScriptTaskFileName(
-                newBpmn,
-                file.mapping.oldFilename,
-                file.mapping.newFilename,
-              ));
-            }
-          }
-        }
-
-        await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
-      }
+      const changesFileNames = copiedFiles
+        .filter(truthyFilter)
+        .filter(
+          (file) => file.artifactType === 'html-forms' || file.artifactType === 'script-tasks',
+        )
+        .map(
+          ({ mapping: { oldFilename, newFilename } }) =>
+            [oldFilename, newFilename] as [string, string],
+        );
+      newBpmn = await updateFileNames(newBpmn, changesFileNames);
+      await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
     }
     copiedProcesses.push({ ...process, bpmn: newBpmn });
   }
@@ -626,7 +590,7 @@ export const getFavouritesProcessIds = async () => {
   return favs ?? [];
 };
 
-export const getProcessStartFormData = async (
+export const getProcessHtmlFormData = async (
   definitionId: string,
   fileName: string,
   spaceId: string,
@@ -636,32 +600,16 @@ export const getProcessStartFormData = async (
   if (error) return error;
 
   try {
-    return await _getProcessStartFormJSON(definitionId, fileName);
+    return await _getProcessHtmlFormJSON(definitionId, fileName);
   } catch (err) {
     return userError(
-      'Unable to get the requested process start form data',
+      `Unable to get the requested process html form data for ${fileName}`,
       UserErrorType.NotFoundError,
     );
   }
 };
 
-export const getProcessUserTaskData = async (
-  definitionId: string,
-  taskFileName: string,
-  spaceId: string,
-) => {
-  const error = await checkValidity(definitionId, 'view', spaceId);
-
-  if (error) return error;
-
-  try {
-    return await _getProcessUserTaskJSON(definitionId, taskFileName);
-  } catch (err) {
-    return userError('Unable to get the requested User Task data.', UserErrorType.NotFoundError);
-  }
-};
-
-export const getProcessStartFormHTML = async (
+export const getProcessHtmlFormHTML = async (
   definitionId: string,
   fileName: string,
   spaceId: string,
@@ -671,29 +619,16 @@ export const getProcessStartFormHTML = async (
   if (error) return error;
 
   try {
-    return await _getProcessStartFormHtml(definitionId, fileName);
+    return await _getHtmlForm(definitionId, fileName);
   } catch (err) {
-    return userError('Unable to get the requested start form html.', UserErrorType.NotFoundError);
+    return userError(
+      `Unable to get the requested html form html ${fileName}.`,
+      UserErrorType.NotFoundError,
+    );
   }
 };
 
-export const getProcessUserTaskHTML = async (
-  definitionId: string,
-  taskFileName: string,
-  spaceId: string,
-) => {
-  const error = await checkValidity(definitionId, 'view', spaceId);
-
-  if (error) return error;
-
-  try {
-    return await _getProcessUserTaskHtml(definitionId, taskFileName);
-  } catch (err) {
-    return userError('Unable to get the requested User Task html.', UserErrorType.NotFoundError);
-  }
-};
-
-export const saveProcessStartForm = async (
+export const saveProcessHtmlForm = async (
   definitionId: string,
   fileName: string,
   json: string,
@@ -706,30 +641,11 @@ export const saveProcessStartForm = async (
 
   if (/-\d+$/.test(fileName))
     return userError(
-      'Illegal attempt to overwrite a start form version!',
+      'Illegal attempt to overwrite a html form version!',
       UserErrorType.ConstraintError,
     );
 
-  _saveProcessStartForm(definitionId, fileName, json, html);
-};
-
-export const saveProcessUserTask = async (
-  definitionId: string,
-  taskFileName: string,
-  json: string,
-  html: string,
-  spaceId: string,
-) => {
-  const error = await checkValidity(definitionId, 'update', spaceId);
-
-  if (error) return error;
-
-  if (/-\d+$/.test(taskFileName))
-    return userError(
-      'Illegal attempt to overwrite a user task version!',
-      UserErrorType.ConstraintError,
-    );
-  await _saveProcessUserTask!(definitionId, taskFileName, json, html);
+  _saveProcessHtmlForm(definitionId, fileName, json, html);
 };
 
 export const getProcessScriptTaskData = async (

@@ -174,7 +174,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
               } else if (['.json', '.html'].some((ext) => name.endsWith(ext))) {
                 const textContent = await file.async('text');
                 const subPath = fileName.split(artefactPath + '/')[1];
-                if (!subPath.includes('/')) {
+                if (subPath.includes('Process_Start')) {
                   // html and json files that are not nested in another folder belong to the startForm
                   processData.artefacts!.startForm!.push({
                     name,

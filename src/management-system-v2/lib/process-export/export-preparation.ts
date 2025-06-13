@@ -1,12 +1,10 @@
 import {
   getProcess,
   getProcessBPMN,
-  getProcessUserTaskHTML,
-  getProcessUserTaskData,
   getProcessImage,
   getProcessScriptTaskData,
-  getProcessStartFormData,
-  getProcessStartFormHTML,
+  getProcessHtmlFormData,
+  getProcessHtmlFormHTML,
 } from '@/lib/data/processes';
 
 import {
@@ -423,8 +421,8 @@ export async function prepareExport(
         if (filenames.length) {
           const [filename] = filenames;
 
-          const json = await getProcessStartFormData(definitionId, filename, spaceId);
-          const html = await getProcessStartFormHTML(definitionId, filename, spaceId);
+          const json = await getProcessHtmlFormData(definitionId, filename, spaceId);
+          const html = await getProcessHtmlFormHTML(definitionId, filename, spaceId);
 
           if (typeof json !== 'string') {
             throw json!.error;
@@ -467,8 +465,8 @@ export async function prepareExport(
 
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
-        const json = await getProcessUserTaskData(definitionId, filename, spaceId);
-        const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
+        const json = await getProcessHtmlFormData(definitionId, filename, spaceId);
+        const html = await getProcessHtmlFormHTML(definitionId, filename, spaceId);
 
         if (typeof json !== 'string') {
           throw json!.error;

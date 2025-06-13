@@ -31,11 +31,12 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
     zipFolder.file(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
 
     if (versionData.startForm) {
+      const htmlFormFolder = zipFolder.folder('html-forms');
       const { json, html, filename } = versionData.startForm;
       const jsonBlob = new Blob([json], { type: 'application/json' });
-      zipFolder.file(filename + '.json', jsonBlob);
+      htmlFormFolder?.file(filename + '.json', jsonBlob);
       const htmlBlob = new Blob([html], { type: 'application/html' });
-      zipFolder.file(filename + '.html', htmlBlob);
+      htmlFormFolder?.file(filename + '.html', htmlBlob);
     }
   }
 
@@ -61,12 +62,12 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
 
     // export the user tasks of the process
     if (processData.userTasks.length) {
-      const userTaskFolder = zipFolder.folder('user-tasks');
+      const htmlFormFolder = zipFolder.folder('html-forms');
       for (const { filename, json, html } of processData.userTasks) {
         const jsonBlob = new Blob([json], { type: 'application/json' });
-        userTaskFolder?.file(filename + '.json', jsonBlob);
+        htmlFormFolder?.file(filename + '.json', jsonBlob);
         const htmlBlob = new Blob([html], { type: 'application/html' });
-        userTaskFolder?.file(filename + '.html', htmlBlob);
+        htmlFormFolder?.file(filename + '.html', htmlBlob);
       }
     }
     // export the images used either for flow elements or inside user tasks

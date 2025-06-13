@@ -18,12 +18,7 @@ import { iframeDocument, defaultForm, toHtml } from './utils';
 import CustomEventhandlers from './CustomCommandhandlers';
 import useBoundingClientRect from '@/lib/useBoundingClientRect';
 
-import {
-  saveProcessUserTask,
-  getProcessUserTaskData,
-  getProcessStartFormData,
-  saveProcessStartForm,
-} from '@/lib/data/processes';
+import { getProcessHtmlFormData, saveProcessHtmlForm } from '@/lib/data/processes';
 import useModelerStateStore from '../use-modeler-state-store';
 
 import {
@@ -54,9 +49,6 @@ type BuilderModalProps = BuilderProps & {
   hasUnsavedChanges: boolean;
   onInit: () => void;
 };
-
-type FormStoringFunction = typeof saveProcessStartForm;
-type FormFetchingFunction = typeof getProcessStartFormData;
 
 export function canHaveForm(element?: Element) {
   if (!element) return false;
@@ -133,13 +125,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
   useEffect(() => {
     if (filename && open) {
-      let fetchData: FormFetchingFunction | undefined = undefined;
-
-      if (bpmnIs(affectedElement, 'bpmn:UserTask')) fetchData = getProcessUserTaskData;
-      else if (bpmnIs(affectedElement, 'bpmn:Process')) fetchData = getProcessStartFormData;
-
-      if (fetchData)
-        fetchData(processId, filename, environment.spaceId).then((data) => {
+      if (selectedElement && canHaveForm(selectedElement))
+        getProcessHtmlFormData(processId, filename, environment.spaceId).then((data) => {
           let importData = defaultForm;
           if (typeof data === 'string') importData = data;
 
@@ -163,25 +150,22 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
         let fileNameAttribute = '';
         let additionalChanges = {};
-        let storingFunction: FormStoringFunction | undefined = undefined;
 
         if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
           fileNameAttribute = 'fileName';
           additionalChanges = { implementation: getUserTaskImplementationString() };
-          storingFunction = saveProcessUserTask;
         } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
           fileNameAttribute = 'uiForNontypedStartEventsFileName';
-          storingFunction = saveProcessStartForm;
         }
 
-        if (fileNameAttribute && storingFunction) {
+        if (fileNameAttribute) {
           if (filename !== affectedElement.businessObject[fileNameAttribute]) {
             modeler.getModeling().updateProperties(affectedElement as BpmnElement, {
               [fileNameAttribute]: filename,
               ...additionalChanges,
             });
           }
-          storingFunction(processId, filename!, json, html, environment.spaceId).then(
+          saveProcessHtmlForm(processId, filename!, json, html, environment.spaceId).then(
             (res) => res && console.error(res.error),
           );
         }

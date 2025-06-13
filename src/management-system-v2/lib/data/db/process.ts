@@ -11,6 +11,7 @@ import {
   getDefinitionsVersionInformation,
   generateUserTaskFileName,
   generateScriptTaskFileName,
+  generateBpmnId,
 } from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
@@ -679,48 +680,38 @@ export async function getProcessScriptTasks(processDefinitionsId: string) {
   // TODO
 }
 
-export async function getProcessStartFormJSON(processDefinitionsId: string, fileName: string) {
+export async function getProcessHtmlFormJSON(processDefinitionsId: string, fileName: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    const res = await db.artifact.findUnique({ where: { fileName: `${fileName}.json` } });
-    if (res) {
+    let res = await db.artifactProcessReference.findFirst({
+      where: { processId: processDefinitionsId, artifact: { fileName: `${fileName}.json` } },
+      select: { artifact: true },
+    });
+    if (!res)
+      res = await db.artifactVersionReference.findFirst({
+        where: {
+          version: { processId: processDefinitionsId },
+          artifact: { fileName: `${fileName}.json` },
+        },
+        select: { artifact: true },
+      });
+    if (res?.artifact) {
       const jsonAsBuffer = (await retrieveProcessArtifact(
         processDefinitionsId,
-        res.filePath,
+        res.artifact.filePath,
         true,
         true,
       )) as Buffer;
       return jsonAsBuffer.toString('utf8');
     }
   } catch (err) {
-    logger.debug(`Error getting data of process start form. Reason\n${err}`);
-    throw new Error('Unable to get data for process start form!');
+    logger.debug(`Error getting data of process html form ${fileName}. Reason\n${err}`);
+    throw new Error(`Unable to get data for process html form ${fileName}!`);
   }
 }
 
-/** Returns the form data for a specific user task in a process */
-export async function getProcessUserTaskJSON(processDefinitionsId: string, userTaskName: string) {
-  checkIfProcessExists(processDefinitionsId);
-
-  try {
-    const res = await db.artifact.findUnique({ where: { fileName: `${userTaskName}.json` } });
-    if (res) {
-      const jsonAsBuffer = (await retrieveProcessArtifact(
-        processDefinitionsId,
-        res.filePath,
-        true,
-        true,
-      )) as Buffer;
-      return jsonAsBuffer.toString('utf8');
-    }
-  } catch (err) {
-    logger.debug(`Error getting data of user task. Reason:\n${err}`);
-    throw new Error('Unable to get data for user task!');
-  }
-}
-
-export async function checkIfStartFormExists(processDefinitionsId: string, fileName: string) {
+export async function checkIfHtmlFormExists(processDefinitionsId: string, fileName: string) {
   try {
     const jsonArtifact = await db.artifact.findUnique({
       where: { fileName: `${fileName}.json` },
@@ -730,45 +721,8 @@ export async function checkIfStartFormExists(processDefinitionsId: string, fileN
     });
     return jsonArtifact || htmlArtifact ? { json: jsonArtifact, html: htmlArtifact } : null;
   } catch (error) {
-    console.error('Error checking if start form exists:', error);
-    throw new Error('Failed to check if start form exists.');
-  }
-}
-
-export async function checkIfUserTaskExists(processDefinitionsId: string, userTaskId: string) {
-  try {
-    // const artifact = await db.artifact.findFirst({
-    //   where: {
-    //     artifactType: 'user-tasks',
-    //     fileName: `${userTaskId}.json`,
-    //     references: {
-    //       some: {
-    //         processId: processDefinitionsId,
-    //       },
-    //     },
-    //   },
-    //   include: {
-    //     references: {
-    //       where: {
-    //         processId: processDefinitionsId,
-    //       },
-    //       select: {
-    //         id: true,
-    //         processId: true,
-    //       },
-    //     },
-    //   },
-    // });
-    const jsonArtifact = await db.artifact.findUnique({
-      where: { fileName: `${userTaskId}.json` },
-    });
-    const htmlArtifact = await db.artifact.findUnique({
-      where: { fileName: `${userTaskId}.html` },
-    });
-    return jsonArtifact || htmlArtifact ? { json: jsonArtifact, html: htmlArtifact } : null;
-  } catch (error) {
-    console.error('Error checking if user task exists:', error);
-    throw new Error('Failed to check if user task exists.');
+    console.error(`Error checking if html form ${fileName} exists:`, error);
+    throw new Error(`Failed to check if html form ${fileName} exists.`);
   }
 }
 
@@ -809,7 +763,7 @@ export async function checkIfScriptTaskFileExists(
   }
 }
 
-export async function getProcessStartFormHtml(processDefinitionsId: string, fileName: string) {
+export async function getHtmlForm(processDefinitionsId: string, fileName: string) {
   checkIfProcessExists(processDefinitionsId);
   try {
     const res = await db.artifact.findFirst({
@@ -836,7 +790,7 @@ export async function getProcessStartFormHtml(processDefinitionsId: string, file
     });
 
     if (!res) {
-      throw new Error('Unable to get html for start form!');
+      throw new Error(`Unable to get html for ${fileName} from the database!`);
     }
 
     const html = (
@@ -844,48 +798,8 @@ export async function getProcessStartFormHtml(processDefinitionsId: string, file
     ).toString('utf-8');
     return html;
   } catch (err) {
-    logger.debug(`Error getting html of start form. Reason:\n${err}`);
+    logger.debug(`Error getting html for ${fileName} from the database. Reason:\n${err}`);
     throw new Error('Unable to get html for start form!');
-  }
-}
-
-export async function getProcessUserTaskHtml(processDefinitionsId: string, taskFileName: string) {
-  checkIfProcessExists(processDefinitionsId);
-  try {
-    const res = await db.artifact.findFirst({
-      where: {
-        fileName: `${taskFileName}.html`,
-        OR: [
-          {
-            processReferences: {
-              some: {
-                processId: processDefinitionsId,
-              },
-            },
-          },
-          {
-            versionReferences: {
-              some: { version: { processId: processDefinitionsId } },
-            },
-          },
-        ],
-      },
-      select: {
-        filePath: true,
-      },
-    });
-
-    if (!res) {
-      throw new Error('Unable to get html for user task!');
-    }
-
-    const html = (
-      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
-    ).toString('utf-8');
-    return html;
-  } catch (err) {
-    logger.debug(`Error getting html of user task. Reason:\n${err}`);
-    throw new Error('Unable to get html for user task!');
   }
 }
 
@@ -929,7 +843,7 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
   }
 }
 
-export async function saveProcessStartForm(
+export async function saveProcessHtmlForm(
   processDefinitionsId: string,
   fileName: string,
   json: string,
@@ -938,7 +852,7 @@ export async function saveProcessStartForm(
 ) {
   checkIfProcessExists(processDefinitionsId);
   try {
-    const res = await checkIfStartFormExists(processDefinitionsId, fileName);
+    const res = await checkIfHtmlFormExists(processDefinitionsId, fileName);
     const content = new TextEncoder().encode(json);
     const { fileName: saveFileName } = await saveProcessArtifact(
       processDefinitionsId,
@@ -949,7 +863,7 @@ export async function saveProcessStartForm(
         generateNewFileName: false,
         versionCreatedOn,
         replaceFileContentOnly: res?.json?.filePath ? true : false,
-        context: 'user-tasks',
+        context: 'html-forms',
       },
     );
 
@@ -962,56 +876,13 @@ export async function saveProcessStartForm(
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
         replaceFileContentOnly: res?.html?.filePath ? true : false,
-        context: 'user-tasks',
+        context: 'html-forms',
       },
     );
     return saveFileName;
   } catch (err) {
-    logger.debug(`Error storing start form data. Reason:\n${err}`);
-    throw new Error('Failed to store the start form data.');
-  }
-}
-
-export async function saveProcessUserTask(
-  processDefinitionsId: string,
-  userTaskId: string,
-  json: string,
-  html: string,
-  versionCreatedOn?: string,
-) {
-  checkIfProcessExists(processDefinitionsId);
-  try {
-    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
-    const content = new TextEncoder().encode(json);
-    const { fileName } = await saveProcessArtifact(
-      processDefinitionsId,
-      `${userTaskId}.json`,
-      'application/json',
-      content,
-      {
-        generateNewFileName: false,
-        versionCreatedOn: versionCreatedOn,
-        replaceFileContentOnly: res?.json?.filePath ? true : false,
-        context: 'user-tasks',
-      },
-    );
-
-    await saveProcessArtifact(
-      processDefinitionsId,
-      `${userTaskId}.html`,
-      'text/html',
-      new TextEncoder().encode(html),
-      {
-        generateNewFileName: false,
-        versionCreatedOn: versionCreatedOn,
-        replaceFileContentOnly: res?.html?.filePath ? true : false,
-        context: 'user-tasks',
-      },
-    );
-    return fileName;
-  } catch (err) {
-    logger.debug(`Error storing user task data. Reason:\n${err}`);
-    throw new Error('Failed to store the user task data');
+    logger.debug(`Error storing html form data for ${fileName}. Reason:\n${err}`);
+    throw new Error('Failed to store the html form data.');
   }
 }
 
@@ -1045,13 +916,10 @@ export async function saveProcessScriptTask(
 }
 
 /** Removes a stored user task from disk */
-export async function deleteProcessUserTask(
-  processDefinitionsId: string,
-  userTaskFileName: string,
-) {
+export async function deleteHtmlForm(processDefinitionsId: string, fileName: string) {
   checkIfProcessExists(processDefinitionsId);
   try {
-    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskFileName);
+    const res = await checkIfHtmlFormExists(processDefinitionsId, fileName);
 
     let isDeleted = false;
 
@@ -1064,7 +932,7 @@ export async function deleteProcessUserTask(
 
     return isDeleted;
   } catch (err) {
-    logger.debug(`Error removing user task data. Reason:\n${err}`);
+    logger.debug(`Error removing html form data. Reason:\n${err}`);
   }
 }
 
@@ -1129,7 +997,7 @@ export async function versionProcessArtifactRefs(processId: string, versionId: s
   }
 }
 
-// copy usertasks & script tasks....
+// copy html-forms & script tasks....
 export async function copyProcessFiles(sourceProcessId: string, destinationProcessId: string) {
   const refs = await db.artifactProcessReference.findMany({
     where: {
@@ -1142,12 +1010,7 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
     },
   });
 
-  type typesWithFilename = Extract<ArtifactType, 'user-tasks' | 'script-tasks'>;
-
-  const filenameMapping: Record<typesWithFilename, Map<string, string>> = {
-    'user-tasks': new Map<string, string>(),
-    'script-tasks': new Map<string, string>(),
-  };
+  const filenameMapping: Map<string, string> = new Map<string, string>();
 
   const oldNewFilenameMapping = await asyncMap(refs, async (ref) => {
     const { artifactId, artifact } = ref;
@@ -1156,19 +1019,13 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
     const ext = fileNameParts.pop();
 
     const baseName = fileNameParts.join('.');
+    const typePrefix = baseName.split('_').slice(0, 2).join('_');
     const destinationFilePath = generateProcessFilePath(artifact.fileName, destinationProcessId);
 
-    const filenameGenerators: Record<typesWithFilename, () => string> = {
-      'user-tasks': generateUserTaskFileName,
-      'script-tasks': generateScriptTaskFileName,
-    };
-
     let newFileName;
-    if (artifact.artifactType === 'user-tasks' || artifact.artifactType === 'script-tasks') {
-      newFileName =
-        filenameMapping[artifact.artifactType].get(baseName) ||
-        filenameGenerators[artifact.artifactType]();
-      filenameMapping[artifact.artifactType].set(baseName, newFileName);
+    if (artifact.artifactType === 'html-forms' || artifact.artifactType === 'script-tasks') {
+      newFileName = filenameMapping.get(baseName) || generateBpmnId(typePrefix + '_');
+      filenameMapping.set(baseName, newFileName);
     }
 
     const { status, newFilename, newFilepath } = await copyFile(

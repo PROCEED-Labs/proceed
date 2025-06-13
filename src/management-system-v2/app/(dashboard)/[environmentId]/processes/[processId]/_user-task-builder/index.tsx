@@ -144,33 +144,31 @@ const EditorModal: React.FC<BuilderModalProps> = ({
   const handleSave = () => {
     const json = query.serialize();
     if (modeler && affectedElement) {
-      if (affectedElement) {
-        const html = toHtml(json);
+      const html = toHtml(json);
 
-        let fileNameAttribute = '';
-        let additionalChanges = {};
+      let fileNameAttribute = '';
+      let additionalChanges = {};
 
-        if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
-          fileNameAttribute = 'fileName';
-          additionalChanges = { implementation: getUserTaskImplementationString() };
-        } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
-          fileNameAttribute = 'uiForNontypedStartEventsFileName';
-        }
-
-        if (fileNameAttribute) {
-          if (filename !== affectedElement.businessObject[fileNameAttribute]) {
-            modeler.getModeling().updateProperties(affectedElement as BpmnElement, {
-              [fileNameAttribute]: filename,
-              ...additionalChanges,
-            });
-          }
-          saveProcessHtmlForm(processId, filename!, json, html, environment.spaceId).then(
-            (res) => res && console.error(res.error),
-          );
-        }
-
-        onSave();
+      if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
+        fileNameAttribute = 'fileName';
+        additionalChanges = { implementation: getUserTaskImplementationString() };
+      } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
+        fileNameAttribute = 'uiForNontypedStartEventsFileName';
       }
+
+      if (fileNameAttribute) {
+        if (filename !== affectedElement.businessObject[fileNameAttribute]) {
+          modeler.getModeling().updateProperties(affectedElement as BpmnElement, {
+            [fileNameAttribute]: filename,
+            ...additionalChanges,
+          });
+        }
+        saveProcessHtmlForm(processId, filename!, json, html, environment.spaceId).then(
+          (res) => res && console.error(res.error),
+        );
+      }
+
+      onSave();
     }
   };
 

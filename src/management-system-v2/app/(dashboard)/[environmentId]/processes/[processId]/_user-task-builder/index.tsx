@@ -125,15 +125,14 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
   useEffect(() => {
     if (filename && open) {
-      if (selectedElement && canHaveForm(selectedElement))
-        getProcessHtmlFormData(processId, filename, environment.spaceId).then((data) => {
-          let importData = defaultForm;
-          if (typeof data === 'string') importData = data;
+      getProcessHtmlFormData(processId, filename, environment.spaceId).then((data) => {
+        let importData = defaultForm;
+        if (typeof data === 'string') importData = data;
 
-          actions.deserialize(importData);
-          actions.history.clear();
-          onInit();
-        });
+        actions.deserialize(importData);
+        actions.history.clear();
+        onInit();
+      });
     }
   }, [processId, open, filename, environment]);
 

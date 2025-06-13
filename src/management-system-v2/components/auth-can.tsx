@@ -106,7 +106,7 @@ export const useSession: typeof nextAuthUseSession<false> = () => {
   const env = use(EnvVarsContext);
 
   const nextAuthSession = nextAuthUseSession();
-  if (env.PROCEED_PUBLIC_IAM_ACTIVATE) return nextAuthSession;
+  if (env.PROCEED_PUBLIC_IAM_ACTIVE) return nextAuthSession;
 
   return {
     data: session,

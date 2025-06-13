@@ -12,7 +12,7 @@ export type BuyableResource = (typeof BuyableResources)[number];
 let _enabledResources: ResourceType[] = env.MS_ENABLED_RESOURCES
   ? JSON.parse(env.MS_ENABLED_RESOURCES)
   : resources;
-if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
   _enabledResources = _enabledResources.filter(
     (resource) => !['User', 'Role', 'RoleMapping'].includes(resource),
   );

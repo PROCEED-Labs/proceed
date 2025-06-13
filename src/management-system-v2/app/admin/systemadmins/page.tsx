@@ -83,7 +83,7 @@ export type getNonAdminUsers = typeof getNonAdminUsers;
 
 export default async function ManageAdminsPage() {
   const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
+  if (!msConfig.PROCEED_PUBLIC_IAM_ACTIVE) return notFound();
 
   const user = await getCurrentUser();
   if (!user.session) redirect('/');

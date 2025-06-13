@@ -42,7 +42,7 @@ let adminViews = [
   },
 ];
 
-if (!env.PROCEED_PUBLIC_IAM_ACTIVATE)
+if (!env.PROCEED_PUBLIC_IAM_ACTIVE)
   adminViews = adminViews.filter(({ key }) => !['users', 'systemadmins'].includes(key));
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

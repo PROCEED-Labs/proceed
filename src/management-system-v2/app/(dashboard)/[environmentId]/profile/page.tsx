@@ -12,7 +12,7 @@ const ProfilePage = async () => {
 
   const userData = await getUserById(userId);
 
-  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVE) return notFound();
 
   return (
     <Content>

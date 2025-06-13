@@ -17,7 +17,7 @@ import { use } from 'react';
 import { checkValidity } from './processes';
 import { env } from '@/lib/ms-config/env-vars';
 
-const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
+const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [

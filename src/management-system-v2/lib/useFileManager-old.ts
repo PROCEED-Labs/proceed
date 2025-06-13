@@ -42,7 +42,7 @@ export function useFileManager(entityType: EntityType): UseFileManagerReturn {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const { spaceId } = useEnvironment();
   const env = use(EnvVarsContext);
-  const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
+  const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
 
   const performFileOperation = useCallback(
     async (

@@ -27,7 +27,7 @@ async function deleteUsers(userIds: string[]) {
 export type deleteUsers = typeof deleteUsers;
 
 export default async function UsersPage() {
-  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) return notFound();
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVE) return notFound();
 
   const user = await getCurrentUser();
   if (!user.session) redirect('/');

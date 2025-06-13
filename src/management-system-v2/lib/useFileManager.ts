@@ -29,7 +29,7 @@ export function useFileManager({ entityType }: FileManagerHookProps) {
   const { spaceId } = useEnvironment();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const env = use(EnvVarsContext);
-  const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
+  const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
 
   // Upload Mutation
   const uploadMutation = useMutation<

@@ -53,7 +53,7 @@ const nextAuthOptions: NextAuthConfig = {
   ],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
-      if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+      if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
         token.user = noIamUser.user;
         return token;
       }
@@ -159,8 +159,8 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
 if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
     GoogleProvider({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      clientId: env.IAM_LOGIN_OAUTH_GOOGLE_CLIENT_ID,
+      clientSecret: env.IAM_LOGIN_OAUTH_GOOGLE_CLIENT_SECRET,
       profile(profile) {
         return {
           id: profile.sub,
@@ -173,8 +173,8 @@ if (env.NODE_ENV === 'production') {
       },
     }),
     DiscordProvider({
-      clientId: env.DISCORD_CLIENT_ID,
-      clientSecret: env.DISCORD_CLIENT_SECRET,
+      clientId: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID,
+      clientSecret: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET,
       profile(profile) {
         const image = profile.avatar
           ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
@@ -184,8 +184,8 @@ if (env.NODE_ENV === 'production') {
       },
     }),
     TwitterProvider({
-      clientId: env.TWITTER_CLIENT_ID,
-      clientSecret: env.TWITTER_CLIENT_SECRET,
+      clientId: env.IAM_LOGIN_OAUTH_X_CLIENT_ID,
+      clientSecret: env.IAM_LOGIN_OAUTH_X_CLIENT_SECRET,
       profile({ data, email }) {
         const nameParts = data.name.split(' ');
         const fistName = nameParts[0];

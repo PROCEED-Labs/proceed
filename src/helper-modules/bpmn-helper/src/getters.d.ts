@@ -319,6 +319,16 @@ export function getProcessDocumentation(bpmn: string | object): Promise<string>;
  */
 export function getProcessDocumentationByObject(processObject: object): string;
 /**
+ * Get the file names for the start forms of all processes,
+ * (The attribute 'uiForNontypedStartEventsFileName' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [processId: string]: string}> } an object (a map) with all processIds as keys
+ */
+export function getStartFormFileNameMapping(bpmn: string | object): Promise<{
+  [processId: string]: string;
+}>;
+/**
  * Get all fileName for all userTasks,
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *

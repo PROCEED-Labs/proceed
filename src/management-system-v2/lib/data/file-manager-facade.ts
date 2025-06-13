@@ -10,7 +10,7 @@ import {
 import { contentTypeNotAllowed } from './content-upload-error';
 import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
-import { getProcessUserTaskJSON } from './db/process';
+import { getProcessHtmlFormJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
 import { Prisma } from '@prisma/client';
 import { use } from 'react';
@@ -434,7 +434,7 @@ export async function updateArtifactProcessReference(
 
 // Soft delete a user task and its associated artifacts
 export async function softDeleteProcessUserTask(processId: string, userTaskFilename: string) {
-  const res = await getProcessUserTaskJSON(processId, userTaskFilename);
+  const res = await getProcessHtmlFormJSON(processId, userTaskFilename);
   if (res) {
     const userTaskJson = JSON.parse(res);
     const referencedArtifactFilenames = findKey(userTaskJson, 'src');
@@ -484,7 +484,7 @@ export async function softDeleteProcessScriptTask(processId: string, scriptTaskF
 
 // Revert soft deletion of a user task and restore its artifacts
 export async function revertSoftDeleteProcessUserTask(processId: string, userTaskFilename: string) {
-  const res = await getProcessUserTaskJSON(processId, userTaskFilename);
+  const res = await getProcessHtmlFormJSON(processId, userTaskFilename);
   if (res) {
     const userTaskJson = JSON.parse(res);
     const referencedArtifactFilenames = findKey(userTaskJson, 'src');

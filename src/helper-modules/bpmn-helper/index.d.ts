@@ -16,6 +16,7 @@ declare const _exports: {
   generateBpmnId(prefix?: string): string;
   generateDefinitionsId(): string;
   generateProcessId(): string;
+  generateStartFormFileName(): string;
   generateUserTaskFileName(): string;
   generateScriptTaskFileName(): string;
   getUserTaskImplementationString(): string;
@@ -41,6 +42,11 @@ declare const _exports: {
     },
   ): Promise<string | object>;
   setProcessId(bpmn: string, id: string): Promise<string | object>;
+  setStartFormFileName(
+    bpmn: string | object,
+    processId: string,
+    newFileName: string,
+  ): Promise<string | object>;
   setTemplateId(bpmn: string, id: string): Promise<string | object>;
   setTargetNamespace(bpmn: string | object, id: string): Promise<string | object>;
   setStandardDefinitions(
@@ -172,6 +178,9 @@ declare const _exports: {
   }>;
   getProcessDocumentation(bpmn: string | object): Promise<string>;
   getProcessDocumentationByObject(processObject: object): string;
+  getStartFormFileNameMapping(bpmn: string | object): Promise<{
+    [processId: string]: string;
+  }>;
   getUserTaskFileNameMapping(bpmn: string | object): Promise<{
     [userTaskId: string]: {
       fileName?: string;

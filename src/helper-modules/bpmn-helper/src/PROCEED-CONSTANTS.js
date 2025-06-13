@@ -62,6 +62,10 @@ function generateBpmnId(prefix) {
   }
 }
 
+function generateStartFormFileName() {
+  return generateBpmnId('Process_Start_');
+}
+
 /**
  * Generates the 'fileName' attribute string of a PROCEED UserTask
  * @returns A new 'filename' value
@@ -138,6 +142,7 @@ module.exports = {
   generateBpmnId,
   generateDefinitionsId,
   generateProcessId,
+  generateStartFormFileName,
   generateUserTaskFileName,
   generateScriptTaskFileName,
   getUserTaskImplementationString,

@@ -11,6 +11,7 @@ const {
 const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('./processFragmentCheck');
 
 const { publishDeployedVersionInfo } = require('./publishDeploymentUtils');
+const { getStartFormFileNameMapping } = require('@proceed/bpmn-helper/src/getters');
 
 module.exports = {
   /**
@@ -370,6 +371,50 @@ module.exports = {
   },
 
   /**
+   * Saves the HTML of a start form for a version of a specific process stored in the file with the given definitionId
+   *
+   * @param {String} definitionId
+   * @param {String} versionId the version for which to store the task form html
+   * @param {String} html
+   */
+  async saveStartFormString(definitionId, versionId, html) {
+    let processInfo = await this.getProcessInfo(definitionId);
+
+    const versionInfo = processInfo.versions.find((v) => v.versionId === versionId);
+
+    const startFormMapping = await getStartFormFileNameMapping(versionInfo.bpmn);
+
+    let startForm;
+    if (Object.values(startFormMapping).length) [startForm] = Object.values(startFormMapping);
+
+    if (!startForm) {
+      throw new Error('The process version does not define a start form in its bpmn!');
+    }
+
+    // check if there are images in the html that are stored seperately
+    const imageDependencies = getHTMLImagesToKnow(html);
+
+    if (imageDependencies.length) {
+      // add the dependency to the version
+      if (versionInfo.needs.html.includes(startForm)) {
+        // add all the image dependencies that are not already referenced in the needs array of the version
+        imageDependencies.forEach((imageFileName) => {
+          if (!versionInfo.needs.images.includes(imageFileName)) {
+            versionInfo.needs.images.push(imageFileName);
+          }
+        });
+      }
+      await data.write(`processes.json/${definitionId}`, JSON.stringify(processInfo));
+    }
+
+    if (!html) {
+      throw new Error('HTML content must not be empty!');
+    }
+
+    await data.writeUserTaskHTML(definitionId, startForm, html);
+  },
+
+  /**
    * Saves the HTML for a specific user task in a specific process stored in the file with the given definitionId
    *
    * @param {String} definitionId
@@ -406,6 +451,30 @@ module.exports = {
     }
 
     await data.writeUserTaskHTML(definitionId, fileName, html);
+  },
+
+  /**
+   * Gets the html for the start form of the process stored under the given definitionId
+   *
+   * @param {String} definitionId
+   * @param {String} versionId the id of the version of the process to get the start form for
+   */
+  async getStartForm(definitionId, versionId) {
+    const versionInfo = await this.getProcessVersionInfo(definitionId, versionId);
+
+    const startFormMapping = await getStartFormFileNameMapping(versionInfo.bpmn);
+
+    let startForm;
+    if (Object.values(startFormMapping).length) [startForm] = Object.values(startFormMapping);
+
+    if (!startForm) return '';
+
+    const html = await data.readUserTaskHTML(definitionId, startForm);
+    if (!html) {
+      throw new Error('No HTML found for the start form of the given version!');
+    }
+
+    return html;
   },
 
   /**

@@ -33,6 +33,7 @@
     "/process/:definitionId/versions/:version": {},
     "/process/:definitionId/instance": {},
     "/process/:definitionId/instance/:instanceID": {},
+    "/process/:definitionId/versions/:version/start-form": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/user-tasks": {},
     "/process/:definitionId/script-tasks/:fileName": {},
@@ -76,6 +77,7 @@
     "/process/:definitionId/instance/:instanceID/instanceState": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId/currentFlowNodeState": {},
+    "/process/:definitionId/versions/:version/start-form": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/script-tasks/:fileName": {},
     "/resources/process/:definitionId/images/:fileName": {}

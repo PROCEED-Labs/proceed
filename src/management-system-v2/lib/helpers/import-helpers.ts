@@ -4,11 +4,13 @@ import {
   getElementsByTagName,
   getMetaDataFromElement,
   getScriptTaskFileNameMapping,
+  getStartFormFileNameMapping,
   toBpmnObject,
 } from '@proceed/bpmn-helper';
 import { truthyFilter } from '../typescript-utils';
 
 type ImportedArtefacts = {
+  startForm: string[];
   images: string[];
   userTasks: string[];
   scriptTasks: string[];
@@ -17,6 +19,7 @@ type ImportedArtefacts = {
 export type ArtefactValidationResult = {
   isValid: boolean;
   missingArtefacts?: {
+    startForm?: string[];
     userTasks: string[];
     scriptTasks: string[];
     images: string[];
@@ -31,10 +34,16 @@ export async function checkIfAllReferencedArtefactsAreProvided(
   try {
     // Collect all referenced artifact filenames from the BPMN
     const referencedArtefacts: ImportedArtefacts = {
+      startForm: [],
       images: [],
       userTasks: [],
       scriptTasks: [],
     };
+
+    referencedArtefacts.startForm = Object.values(await getStartFormFileNameMapping(bpmn)).filter(
+      truthyFilter,
+    );
+
     const versionUserTasks = Object.keys(await getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn));
 
     referencedArtefacts.userTasks = versionUserTasks;
@@ -60,6 +69,12 @@ export async function checkIfAllReferencedArtefactsAreProvided(
       if (metaData.overviewImage) {
         referencedArtefacts.images.push(metaData.overviewImage);
       }
+    });
+
+    const missingStartForms: string[] = referencedArtefacts.startForm.flatMap((form) => {
+      return [`${form}.json`, `${form}.html`].filter(
+        (file) => !importedArtefacts.startForm?.includes(file),
+      );
     });
 
     // Check if all referenced artifacts are provided in the imported artifacts
@@ -109,6 +124,7 @@ export async function checkIfAllReferencedArtefactsAreProvided(
     );
 
     const allArtefactsProvided =
+      missingStartForms.length === 0 &&
       missingUserTasks.length === 0 &&
       missingScriptTasks.length === 0 &&
       missingImages.length === 0;
@@ -119,6 +135,7 @@ export async function checkIfAllReferencedArtefactsAreProvided(
       return {
         isValid: false,
         missingArtefacts: {
+          startForm: missingStartForms,
           userTasks: missingUserTasks,
           scriptTasks: missingScriptTasks,
           images: missingImages,

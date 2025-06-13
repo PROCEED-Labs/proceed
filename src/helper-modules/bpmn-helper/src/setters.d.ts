@@ -54,6 +54,19 @@ export function setDefinitionsVersionInformation(
  */
 export function setProcessId(bpmn: string, id: string): Promise<string | object>;
 /**
+ * Sets the 'uiForNontypedStartEventsFileName' attribute of a process with new values.
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} processId - the processId to look for
+ * @param {string} newFileName - the new value of 'uiForNontypedStartEventsFileName' attribute
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
+ */
+export function setStartFormFileName(
+  bpmn: string | object,
+  processId: string,
+  newFileName: string,
+): Promise<string | object>;
+/**
  *  Sets templateId in definitions element
  *
  * @param {string} bpmn the xml we want to update

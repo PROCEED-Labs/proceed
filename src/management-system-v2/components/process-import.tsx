@@ -159,8 +159,8 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
             !zip.files[name].dir,
         );
 
-        await Promise.all([
-          ...artefactFiles.map(async (fileName) => {
+        await Promise.all(
+          artefactFiles.map(async (fileName) => {
             try {
               const file = zip.files[fileName];
               const name = fileName.split('/').pop()!;
@@ -194,7 +194,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
               });
             }
           }),
-        ]);
+        );
       }
 
       const validationRes = await checkIfAllReferencedArtefactsAreProvided(bpmn, {

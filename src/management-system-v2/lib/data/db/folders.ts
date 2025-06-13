@@ -1,11 +1,5 @@
-import Ability from '@/lib/ability/abilityHelper.js';
-import {
-  Folder,
-  FolderInput,
-  FolderSchema,
-  FolderUserInput,
-  FolderUserInputSchema,
-} from '../folder-schema';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import { Folder, FolderInput, FolderSchema, FolderUserInput } from '../folder-schema';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
@@ -26,7 +20,7 @@ export async function getRootFolder(environmentId: string, ability?: Ability) {
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', rootFolder))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   return rootFolder;
@@ -47,7 +41,7 @@ export async function getFolderById(folderId: string, ability?: Ability) {
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   return folder;
@@ -76,7 +70,7 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   const combinedResults = [
@@ -124,7 +118,7 @@ export async function createFolder(
 
   // Checks
   if (ability && !ability.can('create', toCaslResource('Folder', folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   const existingFolder = await db.folder.findUnique({
     where: {
@@ -197,7 +191,7 @@ export async function deleteFolder(folderId: string, ability?: Ability) {
   }
 
   if (ability && !ability.can('delete', toCaslResource('Folder', folderToDelete))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   await db.folder.delete({
@@ -221,7 +215,7 @@ export async function updateFolderMetaData(
   }
 
   if (ability && !ability.can('update', toCaslResource('Folder', folder))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   if (newMetaDataInput.environmentId && newMetaDataInput.environmentId !== folder.environmentId) {
@@ -302,7 +296,7 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
       ability.can('update', toCaslResource('Folder', folder.parentFolder!))
     )
   ) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   // Check if moving to its own subtree
@@ -355,7 +349,7 @@ export async function moveProcess(processId: string, newParentId: string, abilit
       ability.can('update', toCaslResource('Folder', oldParentFolder!))
     )
   ) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   // Update process

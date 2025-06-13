@@ -222,6 +222,7 @@ export const addProcesses = async (
       bpmn,
       creatorId: userId,
       environmentId: activeEnvironment.spaceId,
+      folderId: value.folderId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {

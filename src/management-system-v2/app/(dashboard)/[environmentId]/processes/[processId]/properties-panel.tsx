@@ -33,6 +33,7 @@ import { Element, Shape } from 'bpmn-js/lib/model/Types';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+import VariableDefinition from './variable-definition';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -303,8 +304,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 undefined,
                 oldName
                   ? {
-                      name: oldName,
-                    }
+                    name: oldName,
+                  }
                   : undefined,
               );
             }}
@@ -369,6 +370,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             {environment?.isOrganization && (
               <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
             )}
+            <VariableDefinition />
           </Space>
         </>
       ),

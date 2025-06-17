@@ -1,0 +1,107 @@
+FROM node:20-alpine AS base
+
+# 1. Step skipped because we are in a monorepo and use local packages that would be missing in a local install.
+# Also removed COPY --from=builder for all steps below.
+
+# Step 1. Rebuild the source code only when needed
+# FROM base AS builder
+
+# WORKDIR /app
+
+# # Install dependencies
+# COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+# RUN yarn --frozen-lockfile
+
+# COPY app ./app
+# COPY components ./components
+# COPY lib ./lib
+# COPY public ./public
+# COPY scripts ./scripts
+# COPY types ./types
+# COPY next.config.js .
+# COPY tsconfig.json .
+# COPY tsconfig.node.json .
+# COPY .eslintrc.json .
+
+# # Next.js collects completely anonymous telemetry data about general usage. Learn more here: https://nextjs.org/telemetry
+# # Uncomment the following line to disable telemetry at build time
+# ENV NEXT_TELEMETRY_DISABLED 1
+
+# # Build Next.js
+# RUN yarn build
+
+# Note: It is not necessary to add an intermediate step that does a full copy of `node_modules` here
+
+# Step 2. Production image, copy all the files and run next
+FROM base AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PROCEED_PUBLIC_ENABLE_EXECUTION=false
+ENV ENABLE_MACHINE_CONFIG=true
+ENV PROCEED_PUBLIC_DEPLOYMENT_ENV=local
+ENV PROCEED_PUBLIC_IAM_ACTIVATE=false
+ENV MS_ENABLED_RESOURCES='["MachineConfig"]'
+
+ENV SHARING_ENCRYPTION_SECRET="123456"
+ENV INVITATION_ENCRYPTION_SECRET="123456"
+ENV NEXTAUTH_SECRET="123456"
+
+ENV USE_AUTH0="FALSE"
+ENV SMTP_MAIL_USER=""
+ENV SMTP_MAIL_PORT=0
+ENV SMTP_MAIL_HOST=""
+ENV SMTP_MAIL_PASSWORD=""
+ENV AUTH0_CLIENT_ID=""
+ENV AUTH0_CLIENT_SECRET=""
+ENV AUTH0_ISSUER=""
+ENV AUTH0_SCOPE=""
+ENV GOOGLE_CLIENT_ID=""
+ENV GOOGLE_CLIENT_SECRET=""
+ENV DISCORD_CLIENT_ID=""
+ENV DISCORD_CLIENT_SECRET=""
+ENV TWITTER_CLIENT_ID=""
+ENV TWITTER_CLIENT_SECRET=""
+ENV GUEST_REFERENCE_SECRET="123456"
+
+
+
+
+ENV DATABASE_URL=postgresql://proceed:proceed@postgres:5432/proceed_db?schema=public
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY public ./public
+
+COPY prisma ./prisma
+
+# Set the correct permission for prerender cache
+RUN mkdir .next 
+RUN chown nextjs:nodejs .next
+
+RUN mkdir /app/volume
+RUN chown -R nextjs:nodejs /app/volume
+
+# Install prisma CLI
+RUN npm install -g prisma
+
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --chown=nextjs:nodejs .next/standalone/src/management-system-v2 ./
+COPY --chown=nextjs:nodejs .next/standalone/node_modules ./node_modules
+COPY --chown=nextjs:nodejs .next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 33081
+
+ENV PORT=33081
+# set hostname to localhost
+ENV HOSTNAME="0.0.0.0"
+
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+CMD sleep 1 && npx prisma migrate deploy && node server.js

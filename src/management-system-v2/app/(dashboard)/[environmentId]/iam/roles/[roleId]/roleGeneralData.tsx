@@ -28,11 +28,14 @@ const FolderInput = ({
   defaultFolder?: Folder;
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedFolder, setSelectedFolder] = useState<{ type: string; name: string } | undefined>(
+  const [selectedFolder, setSelectedFolder] = useState<
+    { type: string; name: string; id: string } | undefined
+  >(
     () =>
       defaultFolder && {
         type: 'folder',
         name: defaultFolder.parentId ? defaultFolder.name : '< root >',
+        id: defaultFolder.id,
       },
   );
 
@@ -58,15 +61,15 @@ const FolderInput = ({
           </Button>
           <FolderTree
             newChildrenHook={(nodes) => nodes.filter((node) => node.element.type === 'folder')}
-            treeProps={{
-              onSelect(_, info) {
-                const element = info.node.element;
-                if (element.type !== 'folder') return;
+            onSelect={(element) => {
+              if (element?.type !== 'folder') return;
 
-                onChange?.(element.id);
-                setSelectedFolder(element);
-                setModalOpen(false);
-              },
+              onChange?.(element.id);
+              setSelectedFolder(element);
+              setModalOpen(false);
+            }}
+            treeProps={{
+              selectedKeys: selectedFolder ? [selectedFolder.id] : [],
             }}
             showRootAsFolder
           />

@@ -175,6 +175,7 @@ model Folder {
   childrenFolder Folder[]  @relation("folderChildren")
   lastEditedOn   DateTime  @updatedAt
   createdOn      DateTime
+  roles          Role[]
 
   @@map("folder")
 }
@@ -205,6 +206,8 @@ model Role {
   default       Boolean?
   createdOn     DateTime
   lastEditedOn  DateTime  @updatedAt
+  parentId      String?
+  parentFolder  Folder? @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
   members RoleMember[]
 

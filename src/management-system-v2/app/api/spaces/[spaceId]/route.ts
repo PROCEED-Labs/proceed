@@ -5,4 +5,5 @@ export async function GET(
   { params: { spaceId } }: { params: { spaceId: string } },
 ) {
   // Show meta data about a space.
+  return new NextResponse();
 }

@@ -109,12 +109,20 @@ export async function PUT(request: NextRequest) {
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId');
   const filePath = searchParams.get('filePath');
+
   if (!entityId || !environmentId || !entityType || !filePath) {
     return new NextResponse(null, {
       status: 400,
       statusText: 'entityId, entityType, environmentId and filePath required as URL search params',
     });
   }
+
+  const body = request.body;
+  if (!body)
+    return new NextResponse(null, {
+      status: 400,
+      statusText: 'No file data provided in request body',
+    });
 
   const { ability } = await getCurrentEnvironment(environmentId);
   if (entityType === EntityType.PROCESS) {
@@ -133,7 +141,10 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  const reader = Readable.fromWeb(request.body as ReadableStream<Uint8Array>);
+  // NOTE: This may need changing
+  // @ts-expect-error ReadableStream in next.js' request isn't quite compatible with Readable.fromWeb (node:stream)
+  const reader = Readable.fromWeb(body);
+
   const chunks: Uint8Array[] = [];
   let totalLength = 0;
 
@@ -142,16 +153,18 @@ export async function PUT(request: NextRequest) {
       chunks.push(chunk);
       totalLength += chunk.length;
       if (totalLength > MAX_FILE_SIZE) {
-        reader.destroy(
-          new Error(`Allowed file size of ${MAX_FILE_SIZE / (1024 * 1024)} MB exceeded`),
-        );
-        return new NextResponse(null, {
-          status: 413,
-          statusText: `Allowed file size of ${MAX_FILE_SIZE / (1024 * 1024)} MB exceeded`,
-        });
+        // For some reason, after calling destroy the http response is not sent, causing the request to hang
+        reader.pause();
       }
     }
   }
+
+  // The return doesn't work inside of the iterator for loop
+  if (totalLength > MAX_FILE_SIZE)
+    return new NextResponse(null, {
+      status: 413,
+      statusText: `Allowed file size of ${MAX_FILE_SIZE / (1024 * 1024)} MB exceeded`,
+    });
 
   // Proceed with processing if the size limit is not exceeded
   const buffer = Buffer.concat(
@@ -164,14 +177,6 @@ export async function PUT(request: NextRequest) {
     return new NextResponse(null, {
       status: 415,
       statusText: 'Cannot store file with unknown file type',
-    });
-  }
-
-  // Additional check for image size
-  if (fileType.mime.startsWith('image/') && totalLength > MAX_IMAGE_SIZE) {
-    return new NextResponse(null, {
-      status: 413,
-      statusText: `Allowed image size of ${MAX_IMAGE_SIZE / (1024 * 1024)}MB exceeded`,
     });
   }
 

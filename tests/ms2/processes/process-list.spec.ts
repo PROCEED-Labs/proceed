@@ -395,7 +395,7 @@ test('test that selected columns are persisted on reload', async ({ processListP
   const { page } = processListPage;
 
   const VisibleColumns = ['Description ', 'Last Edited '];
-  const HiddenColumns = ['Created On ', 'Created By '];
+  const HiddenColumns = ['Created On', 'Created By'];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();

@@ -7,11 +7,13 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import * as noIamUser from '@/lib/no-iam-user';
 import {
   addUser,
   deleteUser,
   getUserById,
   getUserByUsername,
+  setUserPassword,
   updateUser,
 } from '@/lib/data/db/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles, Provider } from 'next-auth/providers';
@@ -19,9 +21,10 @@ import Adapter from './auth-database-adapter';
 import { User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
-import { env } from '@/lib/env-vars';
-import { updateGuestUserLastSigninTime } from './data/db/iam/users';
-import * as noIamUser from '@/lib/no-iam-user';
+import { env } from '@/lib/ms-config/env-vars';
+import { getUserAndPasswordByUsername, updateGuestUserLastSigninTime } from './data/db/iam/users';
+import { comparePassword, hashPassword } from './password-hashes';
+import db from './data/db';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -49,25 +52,6 @@ const nextAuthOptions: NextAuthConfig = {
       async authorize() {
         return addUser({ isGuest: true });
       },
-    }),
-    EmailProvider({
-      id: 'email',
-      name: 'Sign in with E-mail',
-      server: {},
-      sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail({
-          signInLink: params.url,
-          expires: params.expires,
-        });
-
-        sendEmail({
-          to: params.identifier,
-          subject: 'Sign in to PROCEED',
-          html: signinMail.html,
-          text: signinMail.text,
-        });
-      },
-      maxAge: 24 * 60 * 60, // one day
     }),
   ],
   callbacks: {
@@ -150,6 +134,30 @@ const nextAuthOptions: NextAuthConfig = {
     signIn: '/signin',
   },
 };
+
+if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+  nextAuthOptions.providers.push(
+    EmailProvider({
+      id: 'email',
+      name: 'Sign in with E-mail',
+      server: {},
+      sendVerificationRequest(params) {
+        const signinMail = renderSigninLinkEmail({
+          signInLink: params.url,
+          expires: params.expires,
+        });
+
+        sendEmail({
+          to: params.identifier,
+          subject: 'Sign in to PROCEED',
+          html: signinMail.html,
+          text: signinMail.text,
+        });
+      },
+      maxAge: 24 * 60 * 60, // one day
+    }),
+  );
+}
 
 if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
@@ -243,6 +251,73 @@ if (env.NODE_ENV === 'development') {
 
         let user = await getUserByUsername(userTemplate.username);
         if (!user) user = await addUser(userTemplate);
+
+        return user;
+      },
+    }),
+  );
+}
+
+if (env.ENABLE_PASSWORD_SIGNIN) {
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      name: 'Sign in',
+      type: 'credentials',
+      id: 'username-password-signin',
+      credentials: {
+        username: {
+          label: 'Username',
+          type: 'username',
+        },
+        password: {
+          label: 'Password',
+          type: 'password',
+        },
+      },
+      authorize: async (credentials) => {
+        const userAndPassword = await getUserAndPasswordByUsername(credentials.username as string);
+
+        if (!userAndPassword) return null;
+
+        const passwordIsCorrect = await comparePassword(
+          credentials.password as string,
+          userAndPassword.passwordAccount.password,
+        );
+        if (!passwordIsCorrect) return null;
+
+        return userAndPassword as User;
+      },
+    }),
+    CredentialsProvider({
+      name: 'Sign Up',
+      type: 'credentials',
+      id: 'username-password-signup',
+      credentials: {
+        username: {
+          type: 'string',
+          label: 'Username',
+        },
+        password: {
+          type: 'password',
+          label: 'Password',
+        },
+      },
+      authorize: async (credentials) => {
+        let user: User | null = null;
+
+        await db.$transaction(async (tx) => {
+          user = await addUser(
+            {
+              username: credentials.username as string,
+              isGuest: false,
+              emailVerifiedOn: null,
+            },
+            tx,
+          );
+
+          const hashedPassword = await hashPassword(credentials.password as string);
+          await setUserPassword(user.id, hashedPassword, tx);
+        });
 
         return user;
       },

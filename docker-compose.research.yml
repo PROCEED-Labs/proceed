@@ -1,0 +1,23 @@
+services:
+  proceed:
+    image: proceed/ms-server:edge
+    container_name: management_system
+    env_file: .env.research
+    ports:
+      - '33081:33081'
+    volumes:
+      - /opt/proceed-ms-server:/app/volume
+  postgres:
+    image: postgres:latest
+    container_name: postgres_database_proceed
+    environment:
+      POSTGRES_DB: proceed_db
+      POSTGRES_USER: proceed_user
+      POSTGRES_PASSWORD: ---
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -21,11 +21,11 @@ export const mSConfigEnvironmentOnlyKeys = [
   'MQTT_PASSWORD',
   'MQTT_BASETOPIC',
 
-  // TODO: remove from this list
+  // TODO: remove this from environment only list
   'STORAGE_CLOUD_BUCKET_NAME',
-
-  // Variables that aren't implemented yet
-  // 'PRISMA_???',
+  'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
+  'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
+  'PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE',
 
   'PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE',
   'PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE',
@@ -48,9 +48,8 @@ export const mSConfigEnvironmentOnlyKeys = [
   'IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET',
   'PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV',
 
-  // TODO: remove this from environment only list
-  'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
-  'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
+  // Variables that aren't implemented yet
+  // 'PRISMA_???',
 ] satisfies (keyof MergedSchemas)[];
 
 export const msConfigSchema = {
@@ -203,8 +202,8 @@ export const msConfigSchema = {
   },
   test: {},
 } satisfies {
-  [key in 'development' | 'production' | 'test' | 'all']?: Record<string, ZodType>;
-};
+    [key in 'development' | 'production' | 'test' | 'all']?: Record<string, ZodType>;
+  };
 
 // --------------------------------------------
 // You shouldn't need to modify anything below
@@ -231,8 +230,8 @@ export const msConfigConfigurableKeys = Object.keys(mergedMSConfigSchemaKeys).fi
 export type PrivateMSConfig = z.infer<typeof environmentSpecificMSConfigSchema>;
 export type PublicMSConfig = {
   [K in keyof PrivateMSConfig as K extends `PROCEED_PUBLIC_${string}`
-    ? K
-    : never]: PrivateMSConfig[K];
+  ? K
+  : never]: PrivateMSConfig[K];
 };
 
 export type EnvironmentOnlyMSConfig = Pick<

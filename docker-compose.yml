@@ -1,9 +1,7 @@
 services:
   management_system:
-    image: proceed/ms-server:${MS_TAG:-edge}
+    image: registry.gitlab.com/dbpms-proceed/mb-techdaten-server-deployment:latest
     container_name: management_system
-    env_file:
-      - .env
     ports:
       - '3000:33081'
     depends_on:

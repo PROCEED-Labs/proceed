@@ -17,7 +17,7 @@ import { env } from '@/lib/ms-config/env-vars';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 export const getCurrentUser = cache(async () => {
-  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
     return {
       session: noIamUser.session,
       userId: noIamUser.userId,
@@ -65,7 +65,7 @@ export const getCurrentEnvironment = cache(
 
     if (
       spaceIdParam === 'my' || // Use hardcoded environment /my/processes for personal spaces.
-      !msConfig.PROCEED_PUBLIC_IAM_ACTIVATE // when iam isn't active we hardcode the space to be the no-iam user's personal space
+      !msConfig.PROCEED_PUBLIC_IAM_ACTIVE // when iam isn't active we hardcode the space to be the no-iam user's personal space
     ) {
       // Note: will be undefined for not logged in users
       spaceIdParam = userId;
@@ -76,7 +76,7 @@ export const getCurrentEnvironment = cache(
 
     // TODO: account for bought resources
 
-    if (systemAdmin || !msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    if (systemAdmin || !msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
       let rules;
       if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
       else rules = adminRules.concat(packedGlobalUserRules);

@@ -124,7 +124,7 @@ export async function saveEntityFile(
   entityId: string,
   mimeType: string,
   fileName: string,
-  fileContent?: Buffer | Uint8Array | Blob,
+  fileContent?: Buffer | Uint8Array,
 ) {
   if (!isContentTypeAllowed(mimeType)) {
     throw new Error(`Content type '${mimeType}' is not allowed`);
@@ -145,12 +145,12 @@ export async function saveEntityFile(
 export async function retrieveEntityFile(
   entityType: EntityType,
   entityId: string,
-  fileName?: string,
+  filePath?: string,
 ) {
   switch (entityType) {
     case EntityType.PROCESS:
-      if (!fileName) throw new Error('File name is required for process artifacts');
-      return retrieveProcessArtifact(entityId, fileName);
+      if (!filePath) throw new Error('File name is required for process artifacts');
+      return retrieveFile(filePath, true);
     case EntityType.ORGANIZATION:
       return getOrganizationLogo(entityId);
     // Extend for other entity types if needed
@@ -190,7 +190,7 @@ export async function saveProcessArtifact(
   processId: string,
   fileName: string,
   mimeType: string,
-  fileContent?: Buffer | Uint8Array | Blob,
+  fileContent?: Buffer | Uint8Array,
   options: SaveProcessArtifactOptions = {},
 ) {
   const {
@@ -212,7 +212,7 @@ export async function saveProcessArtifact(
       // if artifact already exists, update the reference and return
       if (artifact) {
         await db.artifactProcessReference.create({ data: { artifactId: artifact.id, processId } });
-        return { presignedUrl: null, fileName: newFileName };
+        return { presignedUrl: null, filePath };
       }
     }
     // Save the file (local or presigned URL)
@@ -235,7 +235,7 @@ export async function saveProcessArtifact(
       });
     }
 
-    return { presignedUrl, fileName: newFileName };
+    return { presignedUrl, filePath };
   } catch (error) {
     console.error(
       `Failed to save process artifact (${artifactType}, ${fileName}) for process ${processId}:`,
@@ -243,17 +243,6 @@ export async function saveProcessArtifact(
     );
     return { presignedUrl: null, fileName: null };
   }
-}
-
-// Retrieve a process artifact
-export async function retrieveProcessArtifact(
-  processId: string,
-  fileName: string,
-  isFilePath = false,
-  usePresignedUrl = true,
-) {
-  const filePath = isFilePath ? fileName : generateProcessFilePath(fileName, processId);
-  return retrieveFile(filePath, usePresignedUrl);
 }
 
 // Delete a process artifact
@@ -305,10 +294,10 @@ export async function saveOrganizationLogo(
   organizationId: string,
   fileName: string,
   mimeType: string,
-  fileContent?: Buffer | Uint8Array | Blob,
+  fileContent?: Buffer | Uint8Array,
 ) {
   const newFileName = getNewFileName(fileName);
-  const filePath = `artifacts/images/${newFileName}`;
+  const filePath = `spaces/${organizationId}/${newFileName}`;
 
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
 
@@ -322,7 +311,7 @@ export async function saveOrganizationLogo(
     data: { spaceLogo: filePath },
   });
 
-  return { presignedUrl, fileName: newFileName };
+  return { presignedUrl, filePath };
 }
 
 export async function getOrganizationLogo(organizationId: string) {
@@ -361,7 +350,7 @@ export async function deleteOrganizationLogo(organizationId: string): Promise<bo
 export async function updateFileDeletableStatus(
   //spaceId: string,
   //userId: string,
-  fileName: string,
+  filePath: string,
   status: boolean,
   processId: string,
 ) {
@@ -376,35 +365,12 @@ export async function updateFileDeletableStatus(
   // const ability = await getAbilityForUser(userId, spaceId);
   //TODO ability check
 
-  return await updateArtifactProcessReference(fileName, processId, status);
-}
-
-async function getArtifactReference(artifactId: string, processId: string) {
-  const res = await db.artifactProcessReference.findUnique({
-    where: {
-      artifactId_processId: {
-        artifactId,
-        processId,
-      },
-    },
-  });
-  return res;
-}
-
-// Update artifact process references
-export async function updateArtifactProcessReference(
-  fileName: string,
-  processId: string,
-  status: boolean,
-) {
-  //if (DEPLOYMENT_ENV !== 'cloud') return;
-
   const artifact = await db.artifact.findUnique({
-    where: { fileName },
+    where: { filePath },
   });
 
   if (!artifact) {
-    throw new Error(`Artifact with fileName "${fileName}" not found.`);
+    throw new Error(`Artifact with fileName "${filePath}" not found.`);
   }
 
   if (!status) {
@@ -429,7 +395,18 @@ export async function updateArtifactProcessReference(
       },
     });
   }
-  // refCounter is handled by DB triggers
+}
+
+async function getArtifactReference(artifactId: string, processId: string) {
+  const res = await db.artifactProcessReference.findUnique({
+    where: {
+      artifactId_processId: {
+        artifactId,
+        processId,
+      },
+    },
+  });
+  return res;
 }
 
 // Soft delete a user task and its associated artifacts

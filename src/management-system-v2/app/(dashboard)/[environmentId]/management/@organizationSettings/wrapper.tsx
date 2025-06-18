@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useTransition } from 'react';
 
 import { useState } from 'react';
-import { SettingGroup } from '../type-util';
-import { SettingsGroup } from '../components';
+import { SettingGroup } from '../../settings/type-util';
+import { SettingsGroup } from '../../settings/components';
 import { useEnvironment } from '@/components/auth-can';
 import { Alert } from 'antd';
 import { App, Button, Form, Input, Image, theme, Space, Modal } from 'antd';

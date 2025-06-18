@@ -37,6 +37,7 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import GuestWarningButton from '@/components/guest-warning-button';
 import SpaceLink from '@/components/space-link';
+import { GoOrganization } from 'react-icons/go';
 
 const DashboardLayout = async ({
   children,
@@ -162,6 +163,16 @@ const DashboardLayout = async ({
         key: 'organization-settings',
         label: <Link href={spaceURL(activeEnvironment, `/settings`)}>Settings</Link>,
         icon: <SettingOutlined />,
+      });
+
+    if (
+      activeEnvironment.isOrganization &&
+      (can('update', 'Environment') || can('delete', 'Environment'))
+    )
+      children.push({
+        key: 'organization-management',
+        label: <Link href={spaceURL(activeEnvironment, `/management`)}>Management</Link>,
+        icon: <GoOrganization />,
       });
 
     if (can('manage', 'User'))

@@ -1,11 +1,12 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
-import SettingsInjector from '../settings-injector';
 import Wrapper from './wrapper';
-import type { SettingGroup, Setting } from '../type-util';
+import { Setting, SettingGroup } from '../../settings/type-util';
+import SettingsInjector from '../../settings/settings-injector';
 
 const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
+  console.log('GeneralSettingsPage', params);
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
   if (!activeEnvironment.isOrganization || !ability.can('manage', 'Environment')) return null;
 

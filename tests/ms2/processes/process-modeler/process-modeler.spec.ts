@@ -13,7 +13,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   /* While the xml editor is there, the xml is still loading, wait for it to load, before closing the modal */
   await expect(page.getByText('<?xml version="1.0" encoding')).toBeVisible();
   //todo: check xml for startevent
-  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Ok' }).click());
+  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Save' }).click());
 
   // Open/collapse/close properties panel
   const propertiesPanel = page.getByRole('region', { name: 'Properties' });
@@ -55,7 +55,8 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal
     .getByPlaceholder('Version Description')
-    .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
+    // .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`); // we decided to remove this limit for now
+    .fill(stringWith150Chars);
   await expect(page.getByPlaceholder('Version Description')).toHaveText(stringWith150Chars);
   await expect(versionCreationSubmitButton).toBeEnabled();
   await closeModal(modal, () => versionCreationSubmitButton.click());
@@ -98,12 +99,17 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
 
   // Fill process creation dialog and create new process, check for url change
   await processCreationDialog.getByLabel('Process Name').fill('New Process');
+  const stringWith1000Chars = stringWith150Chars
+    .repeat(Math.ceil(1000 / stringWith150Chars.length))
+    .slice(0, 1000);
   await processCreationDialog
     .getByLabel('Process Description')
-    .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
+    // .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`); // we decided to remove this limit for now
+    .fill(stringWith1000Chars);
   await expect(processCreationDialog.getByLabel('Process Description')).toHaveText(
-    stringWith150Chars,
+    stringWith1000Chars,
   );
+
   await closeModal(processCreationDialog, () =>
     processCreationDialog.getByRole('button', { name: 'Create' }).click(),
   );
@@ -235,9 +241,7 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if correct modal opened */
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
-    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
-      /export/i,
-    );
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/Share/i);
 
     /* Close Modal */
     // await page.locator('body').press('Escape');
@@ -287,8 +291,8 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   /*************************** Embed in Website ********************************/
 
   await modal.getByRole('button', { name: 'Embed in Website' }).click();
-  await expect(modal.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
-  await modal.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
+  await expect(modal.getByText('Enable iFrame Embedding', { exact: true })).toBeVisible();
+  await modal.getByRole('checkbox', { name: 'Enable iFrame Embedding' }).click();
   await expect(modal.locator('div[class="code"]')).toBeVisible();
   await modal.getByTitle('copy code', { exact: true }).click();
 
@@ -297,38 +301,6 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   const regex =
     /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+\&version=[a-zA-Z0-9._-]+)'/;
   expect(clipboardData).toMatch(regex);
-
-  /*************************** Copy Diagram As PNG ********************************/
-  //if (page.context().browser().browserType() !== firefox) {
-  await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click();
-  await page.waitForTimeout(100);
-  clipboardData = await ms2Page.readClipboard(false);
-  await expect(clipboardData).toMatch('image/png');
-  /*} else {
-    // download as fallback
-    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-      async () => await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
-      'string',
-    );
-
-    expect(pngFilename).toMatch(/.png$/);
-  }*/
-
-  /*************************** Copy Diagram As XML ********************************/
-
-  await modal.getByTitle('Copy Diagram as XML', { exact: true }).click();
-
-  clipboardData = await ms2Page.readClipboard(true);
-
-  const xmlRegex = /<([a-zA-Z0-9\-:_]+)[^>]*>[\s\S]*?<\/\1>/g;
-  await expect(clipboardData).toMatch(xmlRegex);
-
-  /*************************** Export as File ********************************/
-  const exportModal = await openModal(page, () =>
-    modal.getByTitle('Export as file', { exact: true }).click(),
-  );
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await closeModal(exportModal, () => exportModal.getByRole('button', { name: 'cancel' }).click());
 
   /*************************** Share Process with link ********************************/
   await modal.getByRole('button', { name: 'Share Public Link' }).click();

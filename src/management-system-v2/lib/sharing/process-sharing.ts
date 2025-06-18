@@ -4,11 +4,12 @@ import jwt from 'jsonwebtoken';
 import { updateProcessShareInfo } from '../data/processes';
 import { headers } from 'next/headers';
 import { Environment } from '../data/environment-schema';
-import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
-import { env } from '@/lib/env-vars';
+import { getEnvironmentById } from '@/lib/data/db/iam/environments';
+import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import Ability from '../ability/abilityHelper';
 import { UserErrorType, userError } from '../user-error';
+import { env } from '../ms-config/env-vars';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -79,7 +80,7 @@ export async function generateSharedViewerUrl(
 export async function getAllUserWorkspaces(userId: string, ability?: Ability) {
   // if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
 
-  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
   const orgEnvironments = (await asyncMap(userOrgEnvs, (environmentId) =>
     getEnvironmentById(environmentId),

@@ -12,10 +12,10 @@ import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/fil
 import db from '@/lib/data/db';
 import { getProcessUserTaskJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
-import { env } from '../env-vars';
 import { Prisma } from '@prisma/client';
 import { use } from 'react';
 import { checkValidity } from './processes';
+import { env } from '@/lib/ms-config/env-vars';
 
 const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
 
@@ -89,7 +89,7 @@ export const cleanUpFailedUploadEntry = async (
   if (EntityType.ORGANIZATION === entityType) {
     // Maybe add ability check here, if the user is admin of the organisation
     try {
-      await db.space.update({ where: { id: entityId }, data: { logo: null } });
+      await db.space.update({ where: { id: entityId }, data: { spaceLogo: null } });
       return true;
     } catch (error) {
       console.error('Failed to clean up failed upload entry:', error);
@@ -207,6 +207,14 @@ export async function saveProcessArtifact(
   const usePresignedUrl = ['images', 'others'].includes(artifactType);
 
   try {
+    if (!generateNewFileName && !replaceFileContentOnly) {
+      const artifact = await getArtifactMetaData(newFileName, false);
+      // if artifact already exists, update the reference and return
+      if (artifact) {
+        await db.artifactProcessReference.create({ data: { artifactId: artifact.id, processId } });
+        return { presignedUrl: null, fileName: newFileName };
+      }
+    }
     // Save the file (local or presigned URL)
     const { presignedUrl, status } = await saveFile(
       filePath,
@@ -229,7 +237,10 @@ export async function saveProcessArtifact(
 
     return { presignedUrl, fileName: newFileName };
   } catch (error) {
-    console.error('Failed to save process artifact:', error);
+    console.error(
+      `Failed to save process artifact (${artifactType}, ${fileName}) for process ${processId}:`,
+      error,
+    );
     return { presignedUrl: null, fileName: null };
   }
 }
@@ -252,7 +263,7 @@ export async function deleteProcessArtifact(
   processId?: string,
   tx?: Prisma.TransactionClient,
 ): Promise<boolean> {
-  const dbMutator = tx ? tx : db;
+  const dbMutator = tx || db;
 
   const artifact = await getArtifactMetaData(fileNameOrPath, isFilePath);
   if (!artifact) {
@@ -269,11 +280,11 @@ export async function deleteProcessArtifact(
     });
   }
   // Check if there are any remaining references
-  const remainingReferencesCount = await db.artifactProcessReference.count({
+  const remainingReferencesCount = await dbMutator.artifactProcessReference.count({
     where: { artifactId: artifact.id },
   });
 
-  const remainingVersionReferencesCount = await db.artifactVersionReference.count({
+  const remainingVersionReferencesCount = await dbMutator.artifactVersionReference.count({
     where: { artifactId: artifact.id },
   });
 
@@ -308,7 +319,7 @@ export async function saveOrganizationLogo(
 
   await db.space.update({
     where: { id: organizationId },
-    data: { logo: filePath },
+    data: { spaceLogo: filePath },
   });
 
   return { presignedUrl, fileName: newFileName };
@@ -317,11 +328,11 @@ export async function saveOrganizationLogo(
 export async function getOrganizationLogo(organizationId: string) {
   const result = await db.space.findUnique({
     where: { id: organizationId },
-    select: { logo: true },
+    select: { spaceLogo: true },
   });
 
-  if (result?.logo) {
-    return retrieveFile(result.logo);
+  if (result?.spaceLogo) {
+    return retrieveFile(result.spaceLogo);
   }
 
   return null;
@@ -330,15 +341,15 @@ export async function getOrganizationLogo(organizationId: string) {
 export async function deleteOrganizationLogo(organizationId: string): Promise<boolean> {
   const result = await db.space.findUnique({
     where: { id: organizationId },
-    select: { logo: true },
+    select: { spaceLogo: true },
   });
 
-  if (result?.logo) {
-    const isDeleted = await deleteFile(result.logo);
+  if (result?.spaceLogo) {
+    const isDeleted = await deleteFile(result.spaceLogo);
     if (isDeleted) {
       await db.space.update({
         where: { id: organizationId },
-        data: { logo: null },
+        data: { spaceLogo: null },
       });
     }
     return isDeleted;

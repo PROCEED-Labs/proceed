@@ -1,9 +1,11 @@
 'use server';
 
-import { userError } from '../user-error';
+import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
+  DeployedProcessInfo,
+  InstanceInfo,
   deployProcess as _deployProcess,
-  getDeployments,
+  getDeployments as fetchDeployments,
   removeDeploymentFromMachines,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
@@ -11,8 +13,37 @@ import { savedEnginesToEngines } from './saved-engines-helpers';
 import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
-import { startInstanceOnMachine } from './instances';
-import { asyncFilter } from '../helpers/javascriptHelpers';
+import {
+  startInstanceOnMachine,
+  pauseInstanceOnMachine,
+  resumeInstanceOnMachine,
+  stopInstanceOnMachine,
+} from './instances';
+import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
+
+import {
+  activateUserTask,
+  completeTasklistEntryOnMachine,
+  getTaskListFromMachine,
+  getUserTaskFileFromMachine,
+  setTasklistEntryVariableValuesOnMachine,
+  setTasklistEntryMilestoneValuesOnMachine,
+} from './tasklist';
+import { truthyFilter } from '../typescript-utils';
+import {
+  inlineUserTaskData,
+  getCorrectVariableState,
+  getCorrectMilestoneState,
+} from '@proceed/user-task-helper';
+import { UserTask } from '../user-task-schema';
+
+import {
+  addUserTasks,
+  getUserTaskById,
+  getUserTasks,
+  updateUserTask,
+  deleteUserTask,
+} from '../data/user-tasks';
 
 async function getCorrectTargetEngines(
   spaceId: string,
@@ -38,8 +69,6 @@ async function getCorrectTargetEngines(
   }
 
   if (validatorFunc) engines = await asyncFilter(engines, validatorFunc);
-
-  if (engines.length === 0) throw new Error('No fitting engine found.');
 
   return engines;
 }
@@ -70,9 +99,12 @@ export async function deployProcess(
       engines = await getCorrectTargetEngines(spaceId, _forceEngine === 'PROCEED');
     }
 
+    if (engines.length === 0) throw new UserFacingError('No fitting engine found.');
+
     await _deployProcess(definitionId, versionId, spaceId, method, engines);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -81,14 +113,15 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     if (!enableUseDB) throw new Error('removeDeployment only available with enableUseDB');
 
     const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
-      const deployments = await getDeployments([engine]);
+      const deployments = await fetchDeployments([engine]);
 
       return deployments.some((deployment) => deployment.definitionId === definitionId);
     });
 
     await removeDeploymentFromMachines(engines, definitionId);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -104,7 +137,7 @@ export async function startInstance(
     if (!enableUseDB) throw new Error('startInstance is only available with enableUseDB');
 
     const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
-      const deployments = await getDeployments([engine]);
+      const deployments = await fetchDeployments([engine]);
 
       // TODO: in case of static deployment we will need to only return the engines that are
       // assigned an entry point of the process
@@ -115,15 +148,416 @@ export async function startInstance(
       );
     });
 
-    if (engines.length === 0)
-      return userError('Could not find an engine that the selected process could be started on.');
-
     // TODO: if there are multiple possible engines maybe try to find the one that fits the best
     // (e.g. the one with the least load)
     return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
+}
+
+export async function getAvailableTaskListEntries(spaceId: string) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    const engines = await getCorrectTargetEngines(spaceId);
+
+    let stored = await getUserTasks();
+
+    if ('error' in stored) {
+      throw stored.error;
+    }
+
+    const removedTasks = [] as string[];
+
+    const fetched = (
+      await asyncMap(engines, async (engine) => {
+        try {
+          const taskList = await getTaskListFromMachine(engine);
+
+          // check if we have stored user tasks for this machine which have been removed from the
+          // machine
+          const removedFromMachine = Object.fromEntries(
+            (stored as UserTask[])
+              .filter((task) => task.machineId === engine.id)
+              .map((task) => [task.id, task]),
+          );
+          taskList.forEach(
+            (task) => delete removedFromMachine[`${task.id}|${task.instanceID}|${task.startTime}`],
+          );
+          removedTasks.push(...Object.keys(removedFromMachine));
+
+          return taskList.map((task) => ({ ...task, machineId: engine.id }));
+        } catch (e) {
+          return null;
+        }
+      })
+    )
+      .filter(truthyFilter)
+      .flat()
+      .map(
+        (task) =>
+          ({
+            ...task,
+            id: `${task.id}|${task.instanceID}|${task.startTime}`,
+            taskId: task.id,
+            fileName: task.attrs['proceed:fileName'],
+            milestones: undefined,
+          }) as UserTask,
+      );
+
+    const newTasks: UserTask[] = [];
+    const changedTasks: UserTask[] = [];
+
+    fetched.forEach((task) => {
+      const alreadyStored = (stored as UserTask[]).some((t) => t.id === task.id);
+      if (alreadyStored) {
+        // TODO: maybe check if the task actually changed
+        changedTasks.push(task);
+      } else {
+        newTasks.push(task);
+      }
+    });
+
+    if (newTasks.length) await addUserTasks(newTasks);
+    await asyncForEach(changedTasks, async (task) => {
+      delete task.milestones;
+      await updateUserTask(task.id, task);
+    });
+    await asyncForEach(removedTasks, async (id) => {
+      await deleteUserTask(id);
+      stored = (stored as UserTask[]).filter((task) => task.id !== id);
+    });
+
+    return [
+      ...fetched,
+      ...stored
+        .filter((task) => !fetched.some((t) => t.id === task.id))
+        .map(
+          (task) =>
+            ({
+              ...task,
+              startTime: +task.startTime,
+              endTime: task.endTime && +task.endTime,
+            }) as UserTask,
+        ),
+    ];
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, filename: string) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    const storedUserTask = await getUserTaskById(userTaskId);
+
+    if (!storedUserTask || 'error' in storedUserTask) {
+      throw new Error('Failed to get stored user task data.');
+    }
+
+    let {
+      initialVariables,
+      variableChanges,
+      milestones,
+      milestonesChanges,
+      html,
+      state: storedState,
+    } = storedUserTask;
+    const [taskId, instanceId, startTimeString] = userTaskId.split('|');
+
+    if (!html || !milestones || !initialVariables) {
+      const startTime = parseInt(startTimeString);
+
+      const definitionId = instanceId.split('-_')[0];
+
+      let engines = await getCorrectTargetEngines(spaceId);
+      let deployments = await asyncMap(engines, async (engine) => {
+        return [engine, await fetchDeployments([engine])] as [Engine, DeployedProcessInfo[]];
+      });
+      deployments = deployments.filter(([_, ds]) => {
+        if (!ds) return false;
+
+        return ds.some((d) => {
+          const instance = d.instances.find((i) => i.processInstanceId === instanceId);
+
+          if (!instance) return false;
+
+          const userTaskIsCurrentlyRunning = instance.tokens.some(
+            (token) =>
+              token.currentFlowElementId === taskId &&
+              token.currentFlowElementStartTime === startTime,
+          );
+
+          const userTaskWasCompleted = instance.log.some(
+            (entry) => entry.flowElementId === taskId && entry.startTime === startTime,
+          );
+
+          return userTaskIsCurrentlyRunning || userTaskWasCompleted;
+        });
+      });
+
+      if (!deployments.length)
+        throw new Error('Failed to find the engine the user task is running on!');
+
+      const deployment = deployments[0][1].find((d) => d.definitionId === definitionId)!;
+      const instance = deployment.instances.find((i) => i.processInstanceId === instanceId)!;
+      const version = deployment.versions.find((v) => v.versionId === instance.processVersion)!;
+      const userTasks = await getTaskListFromMachine(deployments[0][0]);
+      const userTask = userTasks.find(
+        (uT) => uT.instanceID === instanceId && uT.id === taskId && uT.startTime == startTime,
+      );
+
+      if (!userTask) throw new Error('Could not fetch user task data!');
+
+      initialVariables = getCorrectVariableState(userTask, instance);
+      milestones = await getCorrectMilestoneState(version.bpmn, userTask, instance);
+      variableChanges = initialVariables;
+
+      html = await getUserTaskFileFromMachine(deployments[0][0], definitionId, filename);
+
+      if (storedState === 'READY') {
+        await activateUserTask(deployments[0][0], instanceId, taskId, startTime);
+        storedState = 'ACTIVE';
+      }
+
+      updateUserTask(userTaskId, { html, initialVariables, milestones, state: storedState });
+    } else {
+      variableChanges = { ...initialVariables, ...(variableChanges || {}) };
+
+      if (milestonesChanges) {
+        milestones = milestones.map((milestone) => ({
+          ...milestone,
+          value: milestonesChanges[milestone.id] ?? milestone.value,
+        }));
+      }
+    }
+
+    return inlineUserTaskData(html, instanceId, taskId, variableChanges, milestones);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function setTasklistEntryVariableValues(
+  spaceId: string,
+  userTaskId: string,
+  variables: { [key: string]: any },
+) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    const storedUserTask = await getUserTaskById(userTaskId);
+
+    if (!storedUserTask || 'error' in storedUserTask) {
+      throw new Error('Failed to get stored user task data.');
+    }
+
+    const [taskId, instanceId] = userTaskId.split('|');
+
+    await updateUserTask(userTaskId, {
+      variableChanges: { ...storedUserTask.variableChanges, ...variables },
+    });
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+    });
+
+    if (engines.length) {
+      await setTasklistEntryVariableValuesOnMachine(engines[0], instanceId, taskId, variables);
+    }
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function setTasklistMilestoneValues(
+  spaceId: string,
+  userTaskId: string,
+  milestones: { [key: string]: any },
+) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    const storedUserTask = await getUserTaskById(userTaskId);
+
+    if (!storedUserTask || 'error' in storedUserTask) {
+      throw new Error('Failed to get stored user task data.');
+    }
+
+    const [taskId, instanceId] = userTaskId.split('|');
+
+    await updateUserTask(userTaskId, {
+      milestonesChanges: { ...storedUserTask.milestonesChanges, ...milestones },
+    });
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+    });
+
+    if (engines.length) {
+      await setTasklistEntryMilestoneValuesOnMachine(engines[0], instanceId, taskId, milestones);
+    }
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function completeTasklistEntry(
+  spaceId: string,
+  userTaskId: string,
+  variables: { [key: string]: any },
+) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    const [taskId, instanceId] = userTaskId.split('|');
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+    });
+
+    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+
+    const storedUserTask = await getUserTaskById(userTaskId);
+
+    if (!storedUserTask || 'error' in storedUserTask) {
+      throw new Error('Failed to get stored user task data.');
+    }
+
+    const { variableChanges, milestonesChanges } = storedUserTask;
+
+    // push the values from the database to the engine so the instance state is correctly updated
+    // when the user task is completed as the next step
+    await setTasklistEntryVariableValuesOnMachine(
+      engines[0],
+      instanceId,
+      taskId,
+      variableChanges || {},
+    );
+    await setTasklistEntryMilestoneValuesOnMachine(
+      engines[0],
+      instanceId,
+      taskId,
+      milestonesChanges || {},
+    );
+
+    await completeTasklistEntryOnMachine(engines[0], instanceId, taskId, variables);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
+async function changeInstanceState(
+  definitionId: string,
+  instanceId: string,
+  spaceId: string,
+  stateValidator: (state: InstanceInfo['instanceState']) => boolean,
+  stateChangeFunction: typeof resumeInstanceOnMachine,
+) {
+  try {
+    const engines = await getCorrectTargetEngines(spaceId, undefined, async (engine: Engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      return deployments.some((deployment) => {
+        if (deployment.definitionId !== definitionId) return false;
+
+        const instance = deployment.instances.find(
+          (instance) => instance.processInstanceId === instanceId,
+        );
+        if (!instance) return false;
+
+        return stateValidator(instance.instanceState);
+      });
+    });
+
+    await asyncForEach(engines, async (engine) => {
+      await stateChangeFunction(definitionId, instanceId, engine);
+    });
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function resumeInstance(definitionId: string, instanceId: string, spaceId: string) {
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('resumeInstance is only available with enableUseDB');
+
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) => tokenStates.some((tokenState) => tokenState === 'PAUSED'),
+    resumeInstanceOnMachine,
+  );
+}
+
+export async function pauseInstance(definitionId: string, instanceId: string, spaceId: string) {
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('pauseInstance is only available with enableUseDB');
+
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) =>
+      tokenStates.some((state) => activeStates.includes(state) && state !== 'PAUSED'),
+    pauseInstanceOnMachine,
+  );
+}
+
+export async function stopInstance(definitionId: string, instanceId: string, spaceId: string) {
+  // TODO: manage permissions for starting an instance
+  if (!enableUseDB) throw new Error('stopInstance is only available with enableUseDB');
+
+  return await changeInstanceState(
+    definitionId,
+    instanceId,
+    spaceId,
+    (tokenStates) => tokenStates.some((state) => activeStates.includes(state)),
+    stopInstanceOnMachine,
+  );
 }
 
 /** Returns space engines that are currently online */
@@ -136,6 +570,15 @@ export async function getAvailableSpaceEngines(spaceId: string) {
     const spaceEngines = await getDbEngines(spaceId, ability);
     return (await savedEnginesToEngines(spaceEngines)) as SpaceEngine[];
   } catch (e) {
-    return userError('Something went wrong');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
+}
+
+export async function getDeployment(spaceId: string, definitionId: string) {
+  const engines = await getCorrectTargetEngines(spaceId);
+
+  const deployments = await fetchDeployments(engines);
+
+  return deployments.find((d) => d.definitionId === definitionId) || null;
 }

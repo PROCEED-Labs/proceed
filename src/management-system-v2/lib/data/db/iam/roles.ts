@@ -1,13 +1,24 @@
 import { v4 } from 'uuid';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
+import { Role, RoleInput, RoleInputSchema, RoleWithMembers } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 
 /** Returns all roles in form of an array */
 export async function getRoles(environmentId?: string, ability?: Ability) {
+  const roles = await db.role.findMany({
+    where: environmentId ? { environmentId: environmentId } : undefined,
+  });
+
+  const filteredRoles = ability ? ability.filter('view', 'Role', roles) : roles;
+
+  return filteredRoles as Role[];
+}
+
+/** Returns all roles in form of an array including the members of each role included in its data */
+export async function getRolesWithMembers(environmentId?: string, ability?: Ability) {
   const roles = await db.role.findMany({
     where: environmentId ? { environmentId: environmentId } : undefined,
     include: {
@@ -27,9 +38,18 @@ export async function getRoles(environmentId?: string, ability?: Ability) {
     },
   });
 
-  const filteredRoles = ability ? ability.filter('view', 'Role', roles) : roles;
+  const mappedRoles = roles.map((role) => ({
+    ...role,
+    members: role.members.map((member) => member.user),
+  })) as RoleWithMembers[];
 
-  return filteredRoles as Role[];
+  const filteredRoles = ability
+    ? ability
+        .filter('view', 'Role', mappedRoles)
+        .map((role) => ({ ...role, members: ability.filter('view', 'User', role.members) }))
+    : mappedRoles;
+
+  return filteredRoles;
 }
 
 /**
@@ -59,13 +79,15 @@ export async function getRoleByName(environmentId: string, name: string, ability
  *
  * @throws {UnauthorizedError}
  */
-export async function getRoleById(roleId: string, ability?: Ability) {
-  const role = await db.role.findUnique({
+export async function getRoleById(
+  roleId: string,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+  const role = await dbMutator.role.findUnique({
     where: {
       id: roleId,
-    },
-    include: {
-      members: true,
     },
   });
 
@@ -74,6 +96,50 @@ export async function getRoleById(roleId: string, ability?: Ability) {
   if (role && !ability.can('view', toCaslResource('Role', role))) throw new UnauthorizedError();
 
   return role as Role;
+}
+
+/**
+ * Returns a role based on role id including information about the roles members
+ *
+ * @throws {UnauthorizedError}
+ */
+export async function getRoleWithMembersById(roleId: string, ability?: Ability) {
+  const role = await db.role.findUnique({
+    where: {
+      id: roleId,
+    },
+    include: {
+      members: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!role) return null;
+
+  const mappedRole = {
+    ...role,
+    members: role.members.map((member) => member.user),
+  } as RoleWithMembers;
+
+  if (!ability) return mappedRole;
+
+  if (mappedRole && !ability.can('view', toCaslResource('Role', mappedRole)))
+    throw new UnauthorizedError();
+
+  return ability
+    ? { ...mappedRole, members: ability.filter('view', 'User', mappedRole.members) }
+    : mappedRole;
 }
 
 /**

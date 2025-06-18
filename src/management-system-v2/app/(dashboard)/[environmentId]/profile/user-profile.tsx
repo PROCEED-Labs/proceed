@@ -1,7 +1,7 @@
 'use client';
 
-import { FC, ReactNode, useState } from 'react';
-import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input } from 'antd';
+import { DetailedHTMLProps, FC, HTMLAttributes, ReactNode, use, useState } from 'react';
+import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input, theme } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut } from 'next-auth/react';
@@ -15,16 +15,22 @@ import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors'
 import { z } from 'zod';
 import { requestEmailChange as serverRequestEmailChange } from '@/lib/change-email/server-actions';
 import Link from 'next/link';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
+  const env = use(EnvVarsContext);
+
+  const { message: messageApi, notification } = App.useApp();
+  const {
+    token: { colorTextDisabled, colorBgContainerDisabled },
+  } = theme.useToken();
+
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
 
   const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
   const [errors, parseEmail] = useParseZodErrors(z.object({ email: z.string().email() }));
   const [changeEmailForm] = Form.useForm();
-
-  const { message: messageApi, notification } = App.useApp();
 
   async function deleteUser() {
     try {
@@ -134,13 +140,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           )}
           <Typography.Title level={3}>Profile data</Typography.Title>
 
-          <UserAvatar
-            user={userData}
-            avatarProps={{
-              size: 90,
-              style: { marginBottom: '1rem' },
-            }}
-          />
+          <UserAvatar user={userData} size={90} style={{ marginBottom: '1rem' }} />
 
           <div
             style={{
@@ -172,6 +172,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 />
               </div>
             )}
+
             <Table
               dataSource={[
                 {
@@ -191,6 +192,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                   title: 'Email',
                   value: !userData.isGuest ? userData.email : 'Guest',
                   action: () => setChangeEmailModalOpen(true),
+                  disabled: !env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE,
                 },
               ]}
               columns={[
@@ -198,7 +200,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 { dataIndex: 'value' },
                 {
                   key: 'action',
-                  render: () => <RightOutlined />,
+                  render: (_, row) => <RightOutlined />,
                 },
               ]}
               onRow={(row) =>
@@ -211,6 +213,38 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               showHeader={false}
               pagination={false}
               className={styles.Table}
+              components={{
+                body: {
+                  row(props: any) {
+                    let buttonProps: DetailedHTMLProps<
+                      HTMLAttributes<HTMLTableRowElement>,
+                      HTMLTableRowElement
+                    >;
+
+                    if (
+                      props['data-row-key'] === 'email' &&
+                      !env.PROCEED_PUBLIC_MAILSERVER_ACTIVE
+                    ) {
+                      buttonProps = {
+                        style: {
+                          color: colorTextDisabled,
+                          backgroundColor: colorBgContainerDisabled,
+                          pointerEvents: 'none',
+                        },
+                      };
+                    } else {
+                      buttonProps = {
+                        style: {
+                          cursor: 'pointer',
+                        },
+                        role: 'button',
+                      };
+                    }
+
+                    return <tr {...props} {...buttonProps} />;
+                  },
+                },
+              }}
               style={{
                 marginBottom: 16,
                 ...(userData.isGuest && { filter: 'blur(7px)', pointerEvents: 'none' }),

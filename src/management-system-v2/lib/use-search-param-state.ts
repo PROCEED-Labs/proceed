@@ -9,13 +9,13 @@ type ReplaceStateEvent = Event & { arguments: Parameters<typeof history.replaceS
 export function useSearchParamState(
   paramName: string,
 ): [string | undefined, (newValue?: string) => void] {
-  // Get the initial value from the URL search parameter or use the provided initial value.
-  const initialQueryParam =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get(paramName) ?? ''
-      : '';
+  const [state, setState] = useState<string | undefined>();
 
-  const [state, setState] = useState<string | undefined>(initialQueryParam);
+  useEffect(() => {
+    // Get the initial value from the URL search parameter or use the provided initial value.
+    const paramVal = new URLSearchParams(window.location.search).get(paramName) || undefined;
+    setState(paramVal);
+  }, [paramName]);
 
   useEffect(() => {
     const replaceStateListener = (e: ReplaceStateEvent) => {

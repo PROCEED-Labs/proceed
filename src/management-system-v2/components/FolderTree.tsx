@@ -5,7 +5,8 @@ import { Spin, Tree, TreeProps } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
 import { ProcessListItemIcon } from './process-list';
-import { ProcessListProcess } from './processes';
+import { ProcessListProcess } from './processes/types';
+import ProceedLoadingIndicator from './loading-proceed';
 
 type FolderChildren = {
   id: string;
@@ -37,17 +38,29 @@ export const FolderTree = ({
   newChildrenHook,
   treeProps,
   showRootAsFolder,
+  onSelect: onExternalSelect,
+  selectedKeys: externalSelectedKeys,
+  subtreesToReload,
+  onExpand: onExternalExpand,
+  expandedKeys: externalExpandedKeys,
 }: {
   rootNodes?: FolderChildren[];
   /** The return value is used to update the tree */
   newChildrenHook?: (nodes: TreeNode[], parent?: TreeNode) => TreeNode[];
   treeProps?: TreeProps<TreeNode>;
   showRootAsFolder?: boolean;
+  onSelect?: (folder: FolderChildren | undefined) => void;
+  selectedKeys?: React.Key[];
+  subtreesToReload?: string[];
+  onExpand?: (expanded: React.Key[]) => void;
+  expandedKeys?: React.Key[];
 }) => {
   const spaceId = useEnvironment().spaceId;
 
   const nodeMap = useRef(new Map<React.Key, TreeNode>());
   const loadedKeys = useRef(new Map<React.Key, boolean>());
+  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
   const [tree, setTree] = useState<TreeNode[]>(() => {
     if (!rootNodes) return [];
@@ -77,8 +90,6 @@ export const FolderTree = ({
       if (!rootNode) return;
 
       nodeMap.current.set(rootNode.key, rootNode);
-
-      console.log({ rootNode });
     }
 
     const parentNode = nodeId ? nodeMap.current.get(nodeId) : rootNode;
@@ -91,8 +102,8 @@ export const FolderTree = ({
     for (const node of childrenNodes) nodeMap.current.set(node.key, node);
 
     if (parentNode) {
-      parentNode!.children = childrenNodes;
-      parentNode!.isLeaf = childrenNodes.length === 0;
+      parentNode.children = childrenNodes;
+      parentNode.isLeaf = childrenNodes.length === 0;
       loadedKeys.current.set(parentNode.key, true);
     }
 
@@ -105,6 +116,7 @@ export const FolderTree = ({
   };
 
   const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (rootNodes) return;
 
@@ -112,6 +124,15 @@ export const FolderTree = ({
       setLoading(true);
       try {
         await loadData();
+        // build the initial tree if there are supposed to be nodes expanded from the start
+        if (externalExpandedKeys?.length) {
+          for (const key of externalExpandedKeys.slice(1)) {
+            const node = nodeMap.current.get(key);
+            if (node) {
+              await loadData(node);
+            }
+          }
+        }
       } catch (e) {}
       setLoading(false);
     }
@@ -119,8 +140,38 @@ export const FolderTree = ({
     loadRoot();
   }, [rootNodes]);
 
+  useEffect(() => {
+    // reload the subtree if there have been changes made inside it
+    if (subtreesToReload) {
+      const toUpdate = [] as React.Key[];
+
+      for (const id of subtreesToReload) {
+        if (loadedKeys.current.get(id)) toUpdate.push(id);
+      }
+
+      for (const id of toUpdate) {
+        const node = nodeMap.current.get(id);
+
+        if (node?.children) {
+          node.children.forEach(
+            (child) => loadedKeys.current.get(child.key) && toUpdate.push(child.key),
+          );
+        }
+      }
+
+      async function update() {
+        for (const id of toUpdate) {
+          const node = nodeMap.current.get(id);
+          if (node) await loadData(node);
+        }
+      }
+
+      update();
+    }
+  }, [subtreesToReload]);
+
   return (
-    <Spin spinning={loading}>
+    <ProceedLoadingIndicator loading={loading}>
       <Tree
         showIcon={true}
         style={{
@@ -136,7 +187,21 @@ export const FolderTree = ({
         // loadData, we also trigger a rerender, such that the rendered Tree will always have the
         // correct loadedKeys
         loadedKeys={[...loadedKeys.current.keys()]}
+        selectedKeys={externalSelectedKeys || selectedKeys}
+        onSelect={(selectedKeys) => {
+          if (onExternalSelect) {
+            onExternalSelect(nodeMap.current.get(selectedKeys[0])?.element);
+          }
+          setSelectedKeys(selectedKeys);
+        }}
+        expandedKeys={externalExpandedKeys || expandedKeys}
+        onExpand={(expanded) => {
+          if (onExternalExpand) {
+            onExternalExpand(expanded);
+          }
+          setExpandedKeys(expanded);
+        }}
       />
-    </Spin>
+    </ProceedLoadingIndicator>
   );
 };

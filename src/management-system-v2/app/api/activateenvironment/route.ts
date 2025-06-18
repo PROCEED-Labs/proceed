@@ -1,6 +1,5 @@
-import { getServerSession } from 'next-auth/next';
-import nextAuthOptions from '../auth/[...nextauth]/auth-options';
-import { activateEnvrionment } from '@/lib/data/legacy/iam/environments';
+import { auth } from '@/lib/auth';
+import { activateEnvrionment } from '@/lib/data/db/iam/environments';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { redirect } from 'next/navigation';
 
@@ -8,7 +7,7 @@ import { redirect } from 'next/navigation';
 export const GET = async (req: Request) => {
   let activationId;
   try {
-    const session = await getServerSession(nextAuthOptions);
+    const session = await auth();
     if (!session) throw new UnauthorizedError();
 
     const { searchParams } = new URL(req.url);

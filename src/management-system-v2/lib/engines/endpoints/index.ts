@@ -1,5 +1,11 @@
+import { Prettify } from '@/lib/typescript-utils';
 import { Engine } from '../machines';
-import { EndpointParams, Methods, AvailableEndpoints, _endpointBuilder } from './endpoint-builder';
+import {
+  Methods,
+  AvailableEndpoints,
+  _endpointBuilder,
+  EndpointBuilderOptions,
+} from './endpoint-builder';
 import { httpRequest } from './http-endpoints';
 import { getClient, mqttRequest } from './mqtt-endpoints';
 
@@ -17,30 +23,37 @@ export async function engineRequest<
   method: Method;
   endpoint: Url;
   body?: any;
-} & (NoInfer<EndpointParams<Url>> extends never ? {} : { params: NoInfer<EndpointParams<Url>> })) {
-  const builtEndpoint =
-    'params' in params ? _endpointBuilder(endpoint, params.params as any) : endpoint;
-
-  if (engine.type === 'http')
-    return await httpRequest(engine.address, builtEndpoint, method.toUpperCase() as any, body);
-
-  const mqttClient = await getClient(engine.brokerAddress, !engine.spaceEngine);
-
-  const response = await mqttRequest(
-    engine.id,
-    builtEndpoint,
-    {
-      method: method.toUpperCase() as any,
-      body,
-    },
-    mqttClient,
-  );
-
-  // TODO: if multiple requests are sent, this will be called multiple times
-  if (engine.spaceEngine) {
-    // NOTE: not awaiting this could be a problem if hosted on vercel
-    mqttClient.endAsync();
+} & Prettify<EndpointBuilderOptions<Method, Url>>) {
+  let queryParams;
+  if ('queryParams' in params && engine.type === 'mqtt') {
+    queryParams = params.queryParams;
+    delete params.queryParams;
   }
 
-  return response;
+  const builtEndpoint = _endpointBuilder(endpoint, params);
+
+  if (engine.type === 'mqtt') {
+    let spaceEngineClient;
+    spaceEngineClient = await getClient(engine.brokerAddress);
+
+    const response = await mqttRequest(
+      engine.id,
+      builtEndpoint,
+      {
+        method: method.toUpperCase() as any,
+        query: queryParams as any,
+        body,
+      },
+      spaceEngineClient,
+    );
+
+    // NOTE: not awaiting this could be a problem if hosted on vercel
+    if (engine.spaceEngine) {
+      spaceEngineClient?.endAsync();
+    }
+
+    return response;
+  } else {
+    return await httpRequest(engine.address, builtEndpoint, method.toUpperCase() as any, body);
+  }
 }

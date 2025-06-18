@@ -1,21 +1,47 @@
 import { cache } from 'react';
-import { getServerSession } from 'next-auth/next';
+import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
-import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
-import { isMember } from '@/lib/data/legacy/iam/memberships';
-import { getSystemAdminByUserId } from '@/lib/data/DTOs';
+import { isMember } from '@/lib/data/db/iam/memberships';
+import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import Ability from '@/lib/ability/abilityHelper';
 import {
   adminRules,
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
+import { getUserById } from '@/lib/data/db/iam/users';
+import { cookies } from 'next/headers';
+import * as noIamUser from '@/lib/no-iam-user';
+import { env } from '@/lib/ms-config/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 export const getCurrentUser = cache(async () => {
-  const session = await getServerSession(nextAuthOptions);
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    return {
+      session: noIamUser.session,
+      userId: noIamUser.userId,
+      systemAdmin: noIamUser.systemAdmin,
+    };
+  }
+
+  const session = await auth();
   const userId = session?.user.id || '';
-  const systemAdmin = await getSystemAdminByUserId(userId);
+  const [systemAdmin, user] = await Promise.all([
+    getSystemAdminByUserId(userId),
+    userId !== '' && getUserById(userId),
+  ]);
+
+  // Sign out user if the id doesn't correspond to a user in the db
+  // We need to reset the cookie that stores the user id, this isn't possible
+  // inside a server components, so we need to redirect the user to an endpoint
+  // that logs him out, this endpoint needs to csrf protected, for this we use
+  // the user's csrf token (which was added by next-auth)
+  if (userId !== '' && !user) {
+    const cookieStore = cookies();
+    const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
+    redirect(`/api/private/signout?csrfToken=${csrfToken}`);
+  }
 
   return { session, userId, systemAdmin };
 });
@@ -35,18 +61,22 @@ export const getCurrentEnvironment = cache(
     },
   ) => {
     const { userId, systemAdmin } = await getCurrentUser();
+    const msConfig = await getMSConfig();
 
-    // Use hardcoded environment /my/processes for personal spaces.
-    if (spaceIdParam === 'my') {
+    if (
+      spaceIdParam === 'my' || // Use hardcoded environment /my/processes for personal spaces.
+      !msConfig.PROCEED_PUBLIC_IAM_ACTIVATE // when iam isn't active we hardcode the space to be the no-iam user's personal space
+    ) {
       // Note: will be undefined for not logged in users
       spaceIdParam = userId;
     }
-    const activeSpace = decodeURIComponent(spaceIdParam);
 
+    const activeSpace = decodeURIComponent(spaceIdParam);
     const isOrganization = activeSpace !== userId;
 
     // TODO: account for bought resources
-    if (systemAdmin) {
+
+    if (systemAdmin || !msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) {
       let rules;
       if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
       else rules = adminRules.concat(packedGlobalUserRules);

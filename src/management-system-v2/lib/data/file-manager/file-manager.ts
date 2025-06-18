@@ -5,7 +5,7 @@ import fse from 'fs-extra';
 import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
-import { env } from '@/lib/env-vars';
+import { env } from '@/lib/ms-config/env-vars';
 
 // Constants
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10 MB
@@ -28,21 +28,26 @@ let storage: Storage | null = null;
 let bucket: any = null;
 
 if (DEPLOYMENT_ENV === 'cloud') {
-  storage = new Storage({ keyFilename: process.env.GCP_KEY_PATH });
+  // Using ADC (Application Default Credentials) on Cloud Run.
+  storage = new Storage(
+    process.env.PROCEED_GCP_BUCKET_KEY_PATH
+      ? { keyFilename: process.env.PROCEED_GCP_BUCKET_KEY_PATH }
+      : undefined,
+  );
   bucket = storage.bucket(BUCKET_NAME);
+  bucket
+    .setCorsConfiguration([
+      {
+        maxAgeSeconds: 3600,
+        method: ['GET', 'PUT'],
+        origin: ['https://app.proceed-labs.org', 'https://staging.proceed-labs.org'],
+        responseHeader: ['content-type', 'x-goog-content-length-range'],
+      },
+    ])
+    .catch((error: any) => {
+      console.error(`Failed to set CORS configuration for bucket ${BUCKET_NAME}:`, error);
+    });
 }
-
-// Helper functions
-const setCors = async (bucket: any) => {
-  await bucket.setCorsConfiguration([
-    {
-      maxAgeSeconds: 3600,
-      method: ['GET', 'PUT'],
-      origin: ['*'], // Adjust trusted origin for production
-      responseHeader: ['content-type', 'x-goog-content-length-range'],
-    },
-  ]);
-};
 
 const ensureBucketExists = () => {
   if (!bucket) throw new Error('Storage bucket not initialized');

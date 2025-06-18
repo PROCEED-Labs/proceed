@@ -1,4 +1,4 @@
-import { useContext, useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { Select, Input as AntInput } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
@@ -8,7 +8,7 @@ import { UserComponent, useNode } from '@craftjs/core';
 import { ContextMenu, Overlay, Setting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useBuilderStateStore from '../use-builder-state-store';
-import BuilderContext from '../BuilderContext';
+import { useCanEdit } from '../../modeler';
 
 type InputProps = {
   label?: string;
@@ -16,6 +16,54 @@ type InputProps = {
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
+};
+
+export const ExportInput: UserComponent<InputProps> = ({
+  label = '',
+  type = 'text',
+  defaultValue = '',
+  labelPosition = 'top',
+  variable,
+}) => {
+  const inputId = useId();
+
+  const value = defaultValue || (variable && `{${variable}}`);
+
+  return (
+    <ContextMenu menu={[]}>
+      <div
+        className="user-task-form-input"
+        style={{
+          display: 'flex',
+          flexDirection: labelPosition === 'top' ? 'column' : 'row',
+          alignItems: labelPosition === 'left' ? 'baseline' : undefined,
+        }}
+      >
+        {labelPosition !== 'none' && (
+          <div style={{ marginRight: labelPosition === 'left' ? '8px' : 0, position: 'relative' }}>
+            <EditableText
+              style={{ whiteSpace: 'nowrap' }}
+              value={label}
+              active={false}
+              onStopEditing={() => {}}
+              tagName="label"
+              htmlFor={inputId}
+              onClick={() => {}}
+              onChange={() => {}}
+            />
+          </div>
+        )}
+
+        <input
+          id={inputId}
+          className={variable ? `variable-${variable}` : undefined}
+          type={type}
+          defaultValue={value}
+          name={variable}
+        />
+      </div>
+    </ContextMenu>
+  );
 };
 
 const Input: UserComponent<InputProps> = ({
@@ -29,7 +77,7 @@ const Input: UserComponent<InputProps> = ({
     connectors: { connect },
     actions: { setProp },
   } = useNode();
-  const { editingEnabled } = useContext(BuilderContext);
+  const editingEnabled = useCanEdit();
 
   const inputId = useId();
 
@@ -93,6 +141,7 @@ const Input: UserComponent<InputProps> = ({
 
         <input
           id={inputId}
+          className={variable ? `variable-${variable}` : undefined}
           disabled={!editingEnabled}
           type={type}
           value={defaultValue}

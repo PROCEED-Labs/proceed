@@ -1,10 +1,10 @@
 'use client';
 
 import Content from '@/components/content';
-import { App, Button, Form, Grid, Input, InputRef, Steps, StepsProps, Typography } from 'antd';
+import { App, Button, Form, Grid, Input, Steps, StepsProps, Typography } from 'antd';
 import Image from 'next/image';
 import { SigninOptions } from '@/components/signin-options';
-import { ExtractedProvider } from '../api/auth/[...nextauth]/auth-options';
+import { type ExtractedProvider } from '@/lib/auth';
 import TextArea from 'antd/es/input/TextArea';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { UserOrganizationEnvironmentInputSchema } from '@/lib/data/environment-schema';
@@ -35,6 +35,7 @@ const CreateOrganizationPage = ({
   const [form] = Form.useForm();
   const [formErrors, parseInput] = useParseZodErrors(UserOrganizationEnvironmentInputSchema);
   const [isDataValid, setIsDataValid] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   function checkEnvironmentData(dataInput?: any) {
     dataInput = dataInput || form.getFieldsValue();
 
@@ -62,17 +63,19 @@ const CreateOrganizationPage = ({
 
   async function createOrganization() {
     const data = checkEnvironmentData();
+    if (!data) return;
+
+    setSubmitting(true);
 
     try {
       if (!needsToAuthenticate) {
-        if (!data) return;
         const response = await addOrganizationEnvironment(data);
         if ('error' in response) throw new Error();
 
         router.push(`/${response.id}/processes`);
       } else {
         // NOTE: the only way to get here is if the data is valid
-        const response = await createInactiveEnvironment(data!);
+        const response = await createInactiveEnvironment(data);
         if ('error' in response) throw new Error();
 
         return `/api/activateenvironment?activationId=${response.id}`;
@@ -82,6 +85,13 @@ const CreateOrganizationPage = ({
         content: 'An error occurred while creating the organization',
         type: 'error',
       });
+
+      if (needsToAuthenticate) {
+        // To stop the callbackUrl function so that the user isn't redirected to the signin page
+        throw e;
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -166,14 +176,21 @@ const CreateOrganizationPage = ({
                 <TextArea />
               </Form.Item>
               <Form.Item
-                label="Contact number"
+                label="Contact E-Mail"
+                name="contactEmail"
+                {...antDesignInputProps(formErrors, 'contactEmail')}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item
+                label="Contact Phone Number"
                 name="contactPhoneNumber"
                 {...antDesignInputProps(formErrors, 'contactPhoneNumber')}
               >
                 <PhoneInput />
               </Form.Item>
               <Form.Item>
-                <Button type="primary" htmlType="submit">
+                <Button type="primary" htmlType="submit" loading={submitting}>
                   {needsToAuthenticate ? 'Create organization' : 'Next step'}
                 </Button>
               </Form.Item>

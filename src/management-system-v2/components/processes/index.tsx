@@ -1,33 +1,62 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useRef, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge } from 'antd';
+import { GrDocumentUser } from 'react-icons/gr';
+import { PiNotePencil } from 'react-icons/pi';
+import { IoOpenOutline } from 'react-icons/io5';
+import { LuNotebookPen } from 'react-icons/lu';
+import { BsFileEarmarkCheck } from 'react-icons/bs';
+import { PiDownloadSimple } from 'react-icons/pi';
+import { AiOutlinePartition } from 'react-icons/ai';
+import { RiFolderTransferLine } from 'react-icons/ri';
+import { IoMdCopy } from 'react-icons/io';
+import { PiFolderOpen } from 'react-icons/pi';
 import {
-  CopyOutlined,
-  EditOutlined,
-  ExportOutlined,
+  Space,
+  Button,
+  Tooltip,
+  Grid,
+  App,
+  Drawer,
+  Dropdown,
+  Card,
+  Badge,
+  Divider,
+  MenuProps,
+  Typography,
+} from 'antd';
+
+import { ComponentProps, useRef, useState, useTransition } from 'react';
+import {
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
   FolderOutlined,
   FileOutlined,
+  FolderFilled,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import IconView from '@/components/process-icon-list';
 import ProcessList from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
-import ProcessExportModal from '@/components/process-export';
 import Bar from '@/components/bar';
 import { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
+
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
-import { useRouter } from 'next/navigation';
-import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/processes';
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  checkIfProcessExistsByName,
+  copyProcesses,
+  createVersion,
+  deleteProcesses,
+  updateProcesses,
+} from '@/lib/data/processes';
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
-import { ProcessMetadata } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
@@ -39,16 +68,27 @@ import {
 } from '@/lib/data/folders';
 
 import AddUserControls from '@/components/add-user-controls';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 import FolderModal from '@/components/folder-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
-import Ability from '@/lib/ability/abilityHelper';
 import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 import ProceedLoadingIndicator from '../loading-proceed';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { handleOpenDocumentation } from '@/app/(dashboard)/[environmentId]/processes/processes-helper';
+import { spaceURL } from '@/lib/utils';
+import VersionCreationButton, { VersionModal } from '../version-creation-button';
+
+import { ShareModal } from '../share-modal/share-modal';
+import MoveToFolderModal from '../folder-move-modal';
+import { FolderTree } from '../FolderTree';
+import { ContextActions, RowActions } from './types';
+//import { canDoActionOnResource } from './helpers';
+import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-potentialOwner-store';
+import { useSession } from 'next-auth/react';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import Ability from '@/lib/ability/abilityHelper';
 
 export function canDoActionOnResource(
   items: ProcessListProcess[],
@@ -78,10 +118,16 @@ const Processes = ({
   processes,
   favourites,
   folder,
+  readOnly = false,
+  rootFolder,
+  pathToFolder = [],
 }: {
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
+  readOnly?: boolean;
+  rootFolder?: Folder;
+  pathToFolder?: string[];
 }) => {
   if (folder.parentId)
     processes = [
@@ -103,6 +149,10 @@ const Processes = ({
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
   const router = useRouter();
+  const environment = useEnvironment();
+
+  useInitialisePotentialOwnerStore();
+  const user = useSession().data?.user;
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -111,9 +161,12 @@ const Processes = ({
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
   const canDeleteSelected =
-    !!selectedRowElements.length && canDoActionOnResource(selectedRowElements, 'delete', ability);
-  const canCreateProcess = ability.can('create', 'Process');
-  const canEditSelected = canDoActionOnResource(selectedRowElements, 'update', ability);
+    !!selectedRowElements.length &&
+    canDoActionOnResource(selectedRowElements, 'delete', ability) &&
+    !readOnly;
+  const canCreateProcess = ability.can('create', 'Process') && !readOnly;
+  const canEditSelected =
+    canDoActionOnResource(selectedRowElements, 'update', ability) && !readOnly;
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
@@ -121,9 +174,19 @@ const Processes = ({
     useUserPreferences.use['process-meta-data']();
 
   const [openExportModal, setOpenExportModal] = useState(false);
+  const [exportModalTab, setExportModalTab] = useState<'bpmn' | 'share-public-link' | undefined>(
+    undefined,
+  );
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [openFolderMoveModal, setOpenFolderMoveModal] = useState(false);
+  const [moveTargetFolderId, setMoveTargetFolderId] = useState<string>();
+  const [elementsToMove, setElementsToMove] = useState<ProcessListProcess[]>([]);
+  const [foldersChangedInMove, setFoldersChangedInMove] = useState<string[]>([]);
+
+  const [copyTargetFolderId, setCopyTargetFolderId] = useState<string>(folder.id);
+  const [copyExpandedTreeNodeIds, setCopyExpandedTreeNodeIds] = useState<React.Key[]>(pathToFolder);
 
   const [showMobileMetaData, setShowMobileMetaData] = useState(false);
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
@@ -134,6 +197,8 @@ const Processes = ({
       new URLSearchParams(document.location.search).has('createprocess'),
   );
   const [openCreateFolderModal, setOpenCreateFolderModal] = useState(false);
+  const [openVersionModal, setOpenVersionModal] = useState(false);
+  const [rowClickedProcess, setRowClickedProcess] = useState<string | undefined>();
 
   const [copySelection, setCopySelection] = useState<ProcessListProcess[]>([]);
 
@@ -143,6 +208,9 @@ const Processes = ({
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
   // Folders on top
   filteredData.sort((a, b) => {
@@ -213,20 +281,39 @@ const Processes = ({
   }
 
   const defaultDropdownItems = [];
+  // Create Process,
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
       label: 'Create Process',
-      icon: <FileOutlined />,
+      icon: <AiOutlinePartition />,
       onClick: () => setOpenCreateProcessModal(true),
     });
-
+  // Create Folder,
   if (ability.can('create', 'Folder'))
     defaultDropdownItems.push({
       key: 'create-folder',
       label: 'Create Folder',
       onClick: () => setOpenCreateFolderModal(true),
       icon: <FolderOutlined />,
+    });
+  // Import Process
+  if (ability.can('create', 'Process'))
+    defaultDropdownItems.push({
+      key: 'import-process',
+      label: (
+        <>
+          {/* This is a small workaround, because you cant trigger AntDesigns Upload other than a child button */}
+          <ProcessImportButton
+            type="default"
+            className={styles['Process-Import-Context-Menu']}
+            aria-label="import-right-click-context"
+          >
+            Import Process
+          </ProcessImportButton>
+        </>
+      ),
+      icon: <PiFolderOpen />,
     });
 
   const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
@@ -288,6 +375,12 @@ const Processes = ({
     setCopySelection(items);
   }
 
+  function closeCopyModal() {
+    setOpenCopyModal(false);
+    setCopyTargetFolderId(folder.id);
+    setCopyExpandedTreeNodeIds(pathToFolder);
+  }
+
   function editItem(item: ProcessListProcess) {
     if (item.type === 'folder') {
       const folder = processes.find((process) => process.id === item.id) as Folder;
@@ -301,18 +394,109 @@ const Processes = ({
   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
     startMovingItemTransition(async () => {
       await wrapServerCall({
-        fn: () => moveIntoFolder(items, folderId),
+        fn: async () => {
+          const processesToCheck = items
+            .filter((item) => item.type === 'process')
+            .map((process) => ({
+              name: processes.find((el) => el.id === process.id)!.name,
+              folderId: folderId,
+            }));
+
+          const existsResults = await checkIfProcessExistsByName({
+            batch: true,
+            processes: processesToCheck,
+            spaceId: space.spaceId,
+            userId: user?.id!,
+          });
+          existsResults.forEach((exists, idx) => {
+            if (exists) {
+              throw new Error(
+                `Errror: Process with name ${processesToCheck[idx].name} already exists in the destination folder`,
+              );
+            }
+          });
+
+          return moveIntoFolder(items, folderId);
+        },
         onSuccess: router.refresh,
+        onError: (error) => app.message.error(error.message),
         app,
       });
     });
   };
 
-  const processActions: ProcessActions = {
-    deleteItems,
-    copyItem,
-    editItem,
-    moveItems,
+  const viewDocumentation = (item: ProcessListProcess) => {
+    handleOpenDocumentation(item.id);
+  };
+
+  const openEditor = (item: ProcessListProcess) => {
+    const url = spaceURL(space, `/processes/${item.id}`);
+    router.push(url);
+  };
+
+  const changeMetaData = (item: ProcessListProcess) => {
+    editItem(item);
+  };
+
+  const releaseProcess = (item: ProcessListProcess) => {
+    setRowClickedProcess(item.id);
+    setOpenVersionModal(true);
+  };
+
+  const createVersionFromList = async (values: {
+    versionName: string;
+    versionDescription: string;
+    processId?: string;
+  }) => {
+    await createVersion(
+      values.versionName,
+      values.versionDescription,
+      values.processId ?? selectedRowKeys[0],
+      environment.spaceId,
+    );
+  };
+
+  const share = (item: ProcessListProcess) => {
+    setSelectedRowElements([item]);
+    setExportModalTab('share-public-link');
+    setOpenExportModal(true);
+  };
+
+  const openMoveModal = (items: ProcessListProcess[]) => {
+    setElementsToMove(items);
+    setMoveTargetFolderId(rootFolder?.id);
+    setOpenFolderMoveModal(true);
+  };
+
+  const closeFolderMoveModal = () => {
+    setMoveTargetFolderId(undefined);
+    setOpenFolderMoveModal(false);
+  };
+
+  const rowActions: RowActions = {
+    viewDocumentation,
+    openEditor,
+    changeMetaData,
+    releaseProcess,
+    share,
+  };
+
+  const contextActions: ContextActions = {
+    viewDocumentation,
+    changeMetaData,
+    releaseProcess,
+    share,
+    exportProcess: (items) => {
+      setSelectedRowElements(items);
+      setExportModalTab('bpmn');
+      setOpenExportModal(true);
+    },
+    moveItems: openMoveModal,
+    copyItems: copyItem,
+    deleteItems: (items) => {
+      setSelectedRowElements(items);
+      setOpenDeleteModal(true);
+    },
   };
 
   // Here all the loading states should be ORed together
@@ -321,7 +505,7 @@ const Processes = ({
   return (
     <>
       <ContextMenuArea
-        processActions={processActions}
+        processActions={contextActions}
         folder={folder}
         suffix={defaultDropdownItems}
       >
@@ -335,7 +519,7 @@ const Processes = ({
               leftNode={
                 <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    {!breakpoint.xs && (
+                    {!breakpoint.xs && !readOnly && (
                       <Space>
                         <Dropdown.Button
                           menu={{
@@ -346,72 +530,153 @@ const Processes = ({
                           }}
                           type="primary"
                           onClick={() => setOpenCreateProcessModal(true)}
+                          trigger={['click']}
                         >
-                          Create Process
+                          <AiOutlinePartition /> Create Process
                         </Dropdown.Button>
-                        <ProcessImportButton type="default">
-                          {breakpoint.xl ? 'Import Process' : 'Import'}
+                        <ProcessImportButton
+                          type="default"
+                          icon={<PiFolderOpen />}
+                          aria-label="import-button"
+                        >
+                          Import
                         </ProcessImportButton>
                       </Space>
                     )}
 
-                    <SelectionActions count={selectedRowKeys.length}>
-                      {/* Copy */}
-                      {canCreateProcess && (
-                        <Tooltip placement="top" title={'Copy'}>
-                          <Button
-                            // className={classNames(styles.ActionButton)}
-                            type="text"
-                            icon={<CopyOutlined className={styles.Icon} />}
-                            onClick={() => {
-                              setCopySelection(selectedRowElements);
-                              setOpenCopyModal(true);
-                            }}
-                          />
-                        </Tooltip>
-                      )}
+                    {/* DIVIDER BLOCK */}
+                    <SelectionActions count={selectedRowKeys.length} readOnly={readOnly}>
+                      <Space split={<Divider type="vertical" />}>
+                        {selectedRowKeys.length === 1 &&
+                          selectedRowElements[0].type == 'process' && (
+                            <div>
+                              <Tooltip placement="top" title={'View Process Documentation'}>
+                                <Button
+                                  aria-label="view-documentation"
+                                  type="text"
+                                  icon={<GrDocumentUser className={styles.Icon} />}
+                                  onClick={() => {
+                                    handleOpenDocumentation(selectedRowKeys[0]);
+                                  }}
+                                />
+                              </Tooltip>
+                              <Tooltip placement="top" title={'Open Editor'}>
+                                <Button
+                                  type="text"
+                                  icon={<PiNotePencil className={styles.Icon} />}
+                                  onClick={() => {
+                                    const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
+                                    router.push(url);
+                                  }}
+                                />
+                              </Tooltip>
+                              <Tooltip placement="top" title={'Open Editor in new Tab'}>
+                                <Button
+                                  type="text"
+                                  icon={<IoOpenOutline className={styles.Icon} />}
+                                  onClick={() => {
+                                    const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
+                                    window.open(url, '_blank');
+                                  }}
+                                />
+                              </Tooltip>
+                              {canEditSelected && (
+                                <Tooltip placement="top" title={'Change Meta Data'}>
+                                  <Button
+                                    type="text"
+                                    icon={<LuNotebookPen className={styles.Icon} />}
+                                    onClick={() => {
+                                      editItem(selectedRowElements[0]);
+                                    }}
+                                  />
+                                </Tooltip>
+                              )}
+                              {canCreateProcess && (
+                                <Tooltip placement="top" title={'Release Process'}>
+                                  <VersionCreationButton
+                                    type="text"
+                                    icon={<BsFileEarmarkCheck />}
+                                    createVersion={createVersionFromList}
+                                  ></VersionCreationButton>
+                                </Tooltip>
+                              )}
+                            </div>
+                          )}
 
-                      {/* Export */}
-                      <Tooltip placement="top" title={'Export'}>
-                        <Button
-                          type="text"
-                          onClick={() => {
-                            setOpenExportModal(true);
-                          }}
-                          icon={<ExportOutlined className={styles.Icon} />}
-                        ></Button>
-                      </Tooltip>
-                      {/* Edit (only if one selected) */}
-
-                      {selectedRowKeys.length === 1 && canEditSelected && (
-                        <Tooltip placement="top" title={'Edit'}>
-                          <Button
-                            // className={classNames(styles.ActionButton)}
-                            type="text"
-                            icon={<EditOutlined className={styles.Icon} />}
-                            onClick={() => {
-                              editItem(selectedRowElements[0]);
-                            }}
-                          />
-                        </Tooltip>
-                      )}
-                      {/* Delete */}
-                      {canDeleteSelected && (
-                        // <Tooltip placement="top" title={'Delete'}>
-                        <ConfirmationButton
-                          tooltip="Delete"
-                          title="Delete Processes"
-                          externalOpen={openDeleteModal}
-                          onExternalClose={() => setOpenDeleteModal(false)}
-                          description="Are you sure you want to delete the selected processes?"
-                          onConfirm={() => deleteItems(selectedRowElements)}
-                          buttonProps={{
-                            icon: <DeleteOutlined className={styles.Icon} />,
-                            type: 'text',
-                          }}
-                        />
-                        // </Tooltip>
-                      )}
+                        {!readOnly && (
+                          <div>
+                            {canEditSelected && (
+                              <Tooltip placement="top" title={'Move to Folder'}>
+                                <Button
+                                  type="text"
+                                  icon={<RiFolderTransferLine className={styles.Icon} />}
+                                  onClick={() => {
+                                    openMoveModal(selectedRowElements);
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                            {canCreateProcess && (
+                              <Tooltip placement="top" title={'Copy'}>
+                                <Button
+                                  type="text"
+                                  icon={<IoMdCopy className={styles.Icon} />}
+                                  onClick={() => {
+                                    setCopySelection(selectedRowElements);
+                                    setOpenCopyModal(true);
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                            {canDeleteSelected && (
+                              <ConfirmationButton
+                                tooltip="Delete"
+                                title="Delete Processes"
+                                externalOpen={openDeleteModal}
+                                onExternalClose={() => setOpenDeleteModal(false)}
+                                description="Are you sure you want to delete the selected processes?"
+                                onConfirm={() => deleteItems(selectedRowElements)}
+                                buttonProps={{
+                                  icon: <DeleteOutlined className={styles.Icon} />,
+                                  type: 'text',
+                                }}
+                              />
+                            )}
+                          </div>
+                        )}
+                        {/*
+                            Vertical Bar | ,
+                          */}
+                        <div>
+                          {selectedRowKeys.length === 1 &&
+                            selectedRowElements[0].type == 'process' && (
+                              <>
+                                <Tooltip placement="top" title={'Share'}>
+                                  <Button
+                                    aria-label="Share"
+                                    type="text"
+                                    onClick={() => {
+                                      setExportModalTab('share-public-link');
+                                      setOpenExportModal(true);
+                                    }}
+                                    icon={<ShareAltOutlined className={styles.Icon} />}
+                                  ></Button>
+                                </Tooltip>
+                              </>
+                            )}
+                          <Tooltip placement="top" title={'Download'}>
+                            <Button
+                              aria-label="Download"
+                              type="text"
+                              onClick={() => {
+                                setExportModalTab('bpmn');
+                                setOpenExportModal(true);
+                              }}
+                              icon={<PiDownloadSimple className={styles.Icon} />}
+                            ></Button>
+                          </Tooltip>
+                        </div>
+                      </Space>
                     </SelectionActions>
                   </span>
 
@@ -489,14 +754,7 @@ const Processes = ({
                 moveItems(items, over.id);
               }}
             >
-              {/* <Spin spinning={loading}> */}
-              <ProceedLoadingIndicator
-                width={'100%'}
-                scale="60%"
-                // position={{ x: '25%', y: '20%' }}
-                loading={loading}
-                small={true}
-              >
+              <ProceedLoadingIndicator width={'100%'} scale="60%" loading={loading} small={true}>
                 {iconView ? (
                   <IconView
                     data={filteredData}
@@ -511,9 +769,9 @@ const Processes = ({
                     style={{
                       maxWidth: breakpoint.xl
                         ? metaPanelisOpened
-                          ? `calc(87vw - ${metaPanelWidth}px)`
-                          : '85.5vw'
-                        : '100%',
+                          ? `calc(100vw - ${metaPanelWidth}px - 200px - 20px - 10px - 10px)`
+                          : 'calc(100vw - 30px - 200px - 20px - 10px - 10px)'
+                        : 'calc(100vw - 75px - 10px - 10px)',
                     }}
                   >
                     <ProcessList
@@ -529,12 +787,11 @@ const Processes = ({
                         setOpenExportModal(true);
                       }}
                       setShowMobileMetaData={setShowMobileMetaData}
-                      processActions={processActions}
+                      processActions={rowActions}
                     />
                   </div>
                 )}
               </ProceedLoadingIndicator>
-              {/* </Spin> */}
             </DraggableContext>
           </div>
 
@@ -557,17 +814,25 @@ const Processes = ({
         </div>
       </ContextMenuArea>
 
-      <ProcessExportModal
-        processes={selectedRowKeys.map((definitionId) => ({
-          definitionId: definitionId as string,
-        }))}
+      <ShareModal
         open={openExportModal}
-        onClose={() => setOpenExportModal(false)}
+        setOpen={setOpenExportModal}
+        processes={(
+          selectedRowElements.filter((e) => e.type !== 'folder') as Exclude<
+            ProcessListProcess,
+            { type: 'folder' }
+          >[]
+        ).map((e) => ({
+          ...e,
+          name: e.name.value,
+        }))}
+        defaultOpenTab={exportModalTab}
       />
       <ProcessModal
         open={openCopyModal}
+        mode="copy"
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
-        onCancel={() => setOpenCopyModal(false)}
+        onCancel={closeCopyModal}
         initialData={copySelection
           .filter((item) => item.type !== 'folder')
           .map((process) => ({
@@ -575,19 +840,42 @@ const Processes = ({
             description: process.description.value ?? '',
             originalId: process.id,
             folderId: folder.id,
+            userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
-          const res = await copyProcesses(values, space.spaceId);
+          const toCopy = values.map((value) => ({
+            ...value,
+            folderId: copyTargetFolderId || folder.id,
+          }));
+          const res = await copyProcesses(toCopy, space.spaceId, copyTargetFolderId || folder.id);
           // Errors are handled in the modal.
           if ('error' in res) {
             return res;
           }
-          setOpenCopyModal(false);
+          closeCopyModal();
           router.refresh();
         }}
-      />
+      >
+        <div style={{ margin: copySelection.length > 1 ? '5px' : undefined }}>
+          <Typography.Title level={5}>Copy To:</Typography.Title>
+          <FolderTree
+            showRootAsFolder
+            selectedKeys={copyTargetFolderId ? [copyTargetFolderId] : []}
+            onSelect={(selectedElement) => {
+              if (!selectedElement) {
+                setCopyTargetFolderId(folder.id);
+              } else if (selectedElement.type === 'folder') {
+                setCopyTargetFolderId(selectedElement.id);
+              }
+            }}
+            expandedKeys={copyExpandedTreeNodeIds}
+            onExpand={setCopyExpandedTreeNodeIds}
+          />
+        </div>
+      </ProcessModal>
       <ProcessModal
         open={openEditModal}
+        mode="edit"
         title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData
@@ -596,6 +884,7 @@ const Processes = ({
             id: process.id,
             name: process.name.value ?? '',
             description: process.description.value ?? '',
+            userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
           const res = await updateProcesses(values, space.spaceId);
@@ -624,10 +913,48 @@ const Processes = ({
           onOk: deleteCreateProcessSearchParams,
         }}
       />
+      <VersionModal
+        close={(values) => {
+          setOpenVersionModal(false);
+
+          if (values) {
+            createVersionFromList({ ...values, processId: rowClickedProcess });
+          }
+        }}
+        show={openVersionModal}
+      />
       <FolderCreationModal
         open={openCreateFolderModal}
-        close={() => setOpenCreateFolderModal(false)}
+        close={() => {
+          setOpenCreateFolderModal(false);
+          if (openFolderMoveModal && moveTargetFolderId) {
+            setFoldersChangedInMove([moveTargetFolderId]);
+          }
+        }}
+        parentFolderId={moveTargetFolderId}
       />
+      <MoveToFolderModal
+        changedFolders={foldersChangedInMove}
+        selectedElements={elementsToMove}
+        onCreateFolder={() => {
+          setOpenCreateFolderModal(true);
+        }}
+        open={openFolderMoveModal}
+        onCancel={closeFolderMoveModal}
+        onMove={() => {
+          const items = elementsToMove.map((element) => ({
+            type: element.type,
+            id: element.id,
+          }));
+
+          if (moveTargetFolderId) moveItems(items, moveTargetFolderId);
+          closeFolderMoveModal();
+        }}
+        onSelectFolder={(folderID: string) => {
+          setMoveTargetFolderId(folderID);
+        }}
+      />
+
       <AddUserControls name={'process-list'} />
     </>
   );

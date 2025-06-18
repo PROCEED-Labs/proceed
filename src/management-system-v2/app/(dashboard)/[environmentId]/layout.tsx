@@ -2,7 +2,7 @@ import { PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
-import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
+import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { MenuProps } from 'antd';
 
 import {
@@ -19,21 +19,20 @@ import {
   PlaySquareOutlined,
   LaptopOutlined,
   SettingOutlined,
-  ToolOutlined,
   SolutionOutlined,
   HomeOutlined,
 } from '@ant-design/icons';
 
 import Link from 'next/link';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/db/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
-import { LuTable2 } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
-import { RemoveReadOnly } from '@/lib/typescript-utils';
-import { env } from '@/lib/env-vars';
+import { RemoveReadOnly, truthyFilter } from '@/lib/typescript-utils';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
+import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 const DashboardLayout = async ({
   children,
@@ -43,9 +42,13 @@ const DashboardLayout = async ({
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
-  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironments = await asyncMap(userOrgEnvs, (envId) => getEnvironmentById(envId));
+  const orgEnvironments = await asyncMap(
+    userOrgEnvs,
+    async (envId) => (await getEnvironmentById(envId))!,
+  );
+  const msConfig = await getMSConfig();
 
   userEnvironments.push(...orgEnvironments);
 
@@ -56,87 +59,91 @@ const DashboardLayout = async ({
   let layoutMenuItems: MenuProps['items'] = [];
 
   if (can('view', 'Process')) {
-    let children: MenuProps['items'] = [];
-    children.push({
-      key: 'processes-editor',
-      label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
-      icon: <EditOutlined />,
-    });
+    const documentationSettings = await getSpaceSettingsValues(
+      activeEnvironment.spaceId,
+      'process-documentation',
+      ability,
+    );
 
-    children = [
-      {
-        key: 'processes-list',
-        label: <Link href={spaceURL(activeEnvironment, `/processes`)}>List</Link>,
-        icon: <CopyOutlined />,
-      },
-      ...children,
-      {
-        key: 'processes-templates',
-        label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Templates</Link>,
-        icon: <SnippetsOutlined />,
-      },
-    ];
+    if (documentationSettings.active !== false) {
+      let children: MenuProps['items'] = [
+        documentationSettings.list?.active !== false && {
+          key: 'processes-list',
+          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>List</Link>,
+          icon: <CopyOutlined />,
+        },
+        documentationSettings.editor?.active !== false && {
+          key: 'processes-editor',
+          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
+          icon: <EditOutlined />,
+        },
+        documentationSettings.templates?.active !== false && {
+          key: 'processes-templates',
+          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Templates</Link>,
+          icon: <SnippetsOutlined />,
+        },
+      ].filter(truthyFilter);
 
-    layoutMenuItems.push({
-      key: 'processes-group',
-      label: 'Processes',
-      icon: <PartitionOutlined />,
-      children,
-    });
+      if (children.length)
+        layoutMenuItems.push({
+          key: 'processes-group',
+          label: 'Processes',
+          icon: <PartitionOutlined />,
+          children,
+        });
+    }
   }
 
-  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
-    let children: MenuProps['items'] = [];
+  if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+    const automationSettings = await getSpaceSettingsValues(
+      activeEnvironment.spaceId,
+      'process-automation',
+      ability,
+    );
 
-    children.push({
-      key: 'executions',
-      label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Executions</Link>,
-      icon: <NodeExpandOutlined />,
-    });
+    if (automationSettings.active !== false) {
+      let children: MenuProps['items'] = [
+        automationSettings.dashboard?.active !== false && {
+          key: 'dashboard',
+          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
+          icon: <BarChartOutlined />,
+        },
+        automationSettings.projects?.active !== false && {
+          key: 'projects',
+          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Projects</Link>,
+          icon: <HistoryOutlined />,
+        },
+        automationSettings.executions?.active !== false && {
+          key: 'executions',
+          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Executions</Link>,
+          icon: <NodeExpandOutlined />,
+        },
+        automationSettings.machines?.active !== false && {
+          key: 'machines',
+          label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Machines</Link>,
+          icon: <LaptopOutlined />,
+        },
+      ].filter(truthyFilter);
 
-    children.push({
-      key: 'machines',
-      label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Machines</Link>,
-      icon: <LaptopOutlined />,
-    });
+      if (children.length)
+        layoutMenuItems.push({
+          key: 'automations-group',
+          label: 'Automations',
+          icon: <PlaySquareOutlined />,
+          children,
+        });
 
-    layoutMenuItems = [
-      {
-        key: 'tasklist',
-        label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Your Tasks</Link>,
-        icon: <CheckSquareOutlined />,
-      },
-      ...layoutMenuItems,
-    ];
-
-    children = [
-      {
-        key: 'dashboard',
-        label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
-        icon: <BarChartOutlined />,
-      },
-      {
-        key: 'projects',
-        label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Projects</Link>,
-        icon: <HistoryOutlined />,
-      },
-      ...children,
-    ];
-
-    layoutMenuItems.push({
-      key: 'automations-group',
-      label: 'Automations',
-      icon: <PlaySquareOutlined />,
-      children,
-    });
-  }
-
-  if (env.ENABLE_MACHINE_CONFIG && can('view', 'MachineConfig')) {
-    layoutMenuItems.push({
-      key: 'machine-config',
-      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,
-      icon: <ToolOutlined />,
-    });
+      if (automationSettings.tasklist?.active !== false) {
+        layoutMenuItems = [
+          {
+            key: 'tasklist',
+            label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
+            icon: <CheckSquareOutlined />,
+          },
+          ...layoutMenuItems,
+        ];
+      }
+    }
   }
 
   if (
@@ -175,7 +182,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (systemAdmin) {
+  if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) {
     layoutMenuItems.push({
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,

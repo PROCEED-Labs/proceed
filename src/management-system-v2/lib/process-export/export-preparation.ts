@@ -18,6 +18,8 @@ import {
   getDefinitionsVersionInformation,
   getDefinitionsAndProcessIdForEveryCallActivity,
   getScriptTaskFileNameMapping,
+  toBpmnXml,
+  getAllElements,
 } from '@proceed/bpmn-helper';
 
 import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
@@ -40,7 +42,7 @@ export type ProcessExportOptions = {
   imports: boolean; // if processes referenced by this process should be exported as well
   scaling: number; // the scaling factor that should be used for png export
   exportSelectionOnly: boolean; // if only selected elements (and their children) should be in the final export
-  useWebshareApi: boolean; // if true, the process is shared using web share api
+  exportMethod?: 'download' | 'clipboard' | 'webshare';
 };
 
 /**
@@ -125,14 +127,8 @@ function getImagesReferencedByJSON(json: string) {
       })
       .map((node) => node.props.src as string);
 
-    // get the referenced images that are stored locally
-    const seperatelyStored = images
-      .filter((src) => src.startsWith('/api/'))
-      .map((src) => src.split('/').pop())
-      .filter((imageName): imageName is string => !!imageName);
-
     // remove duplicates
-    return [...new Set(seperatelyStored)];
+    return [...new Set(images)];
   } catch (err) {
     throw new Error('Unable to parse the image information from the given json');
   }
@@ -423,12 +419,14 @@ export async function prepareExport(
           'js',
           spaceId,
         );
+
         let ts: string | { error: UserError } | undefined = await getProcessScriptTaskData(
           definitionId,
           filename,
           'ts',
           spaceId,
         );
+
         let xml: string | { error: UserError } | undefined = await getProcessScriptTaskData(
           definitionId,
           filename,
@@ -459,7 +457,15 @@ export async function prepareExport(
 
       // determine the images that are needed per version and across all versions
       for (const { bpmn } of Object.values(exportData[definitionId].versions)) {
+        const rootProcessElement = getElementsByTagName(
+          await toBpmnObject(bpmn),
+          'bpmn:Process',
+        )[0];
+
         const flowElements = await getAllBpmnFlowElements(bpmn);
+
+        // add process overview image associated with the root <Process> element as well
+        flowElements.push(rootProcessElement);
 
         flowElements.forEach((flowElement) => {
           const metaData = getMetaDataFromElement(flowElement);
@@ -487,6 +493,29 @@ export async function prepareExport(
           filename,
           data: image,
         });
+      }
+    } else {
+      //If artefacts option is not selected, remove all the references in xml
+      /*
+      1. overviewImage
+      2. usertask's filename
+      3. scripttask's filename
+      */
+      for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
+        const bpmnObj = await toBpmnObject(bpmn);
+
+        const elements = getAllElements(bpmnObj);
+        elements.forEach((el) => {
+          if (el['$type'] === 'bpmn:ScriptTask' || el['$type'] === 'bpmn:UserTask') {
+            delete el.fileName;
+          }
+          if (el['$type'] === 'proceed:Meta') {
+            el.overviewImage ? delete el.overviewImage : null;
+          }
+        });
+
+        const bpmnObjWithNoArtefactRefsXml = await toBpmnXml(bpmnObj);
+        exportData[definitionId].versions[version].bpmn = bpmnObjWithNoArtefactRefsXml;
       }
     }
   }

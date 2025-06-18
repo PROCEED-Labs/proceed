@@ -5,7 +5,7 @@ import SavedEnginesList from '@/components/saved-engines-list';
 import { getCurrentUser } from '@/components/auth';
 import { Suspense } from 'react';
 import { enableUseDB } from 'FeatureFlags';
-import { env } from '@/lib/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getDbEngines } from '@/lib/data/db/engines';
 
 async function SavedEngines() {
@@ -14,7 +14,9 @@ async function SavedEngines() {
 }
 
 async function EnginesPage() {
-  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
+  const msConfig = await getMSConfig();
+
+  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
     return notFound();
   }
 

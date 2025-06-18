@@ -15,6 +15,7 @@ import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints';
 import { asyncForEach } from '../helpers/javascriptHelpers';
+import { UserFacingError } from '../user-error';
 
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
 
@@ -23,7 +24,7 @@ export async function removeDeploymentFromMachines(machines: Engine[], definitio
     await engineRequest({
       method: 'delete',
       endpoint: '/process/:definitionId',
-      params: { definitionId },
+      pathParams: { definitionId },
       engine: machine,
     });
   });
@@ -50,7 +51,7 @@ async function deployProcessToMachines(
             engineRequest({
               method: 'put',
               endpoint: '/process/:definitionId/user-tasks/:fileName',
-              params: { definitionId: exportData.definitionId, fileName: userTask.filename },
+              pathParams: { definitionId: exportData.definitionId, fileName: userTask.filename },
               engine,
               body: { html: userTask.html },
             }),
@@ -65,7 +66,7 @@ async function deployProcessToMachines(
             engineRequest({
               method: 'put',
               endpoint: '/process/:definitionId/script-tasks/:fileName',
-              params: { definitionId: exportData.definitionId, fileName: scriptTask.filename },
+              pathParams: { definitionId: exportData.definitionId, fileName: scriptTask.filename },
               engine,
               body: { script: scriptTask.js },
             });
@@ -75,7 +76,7 @@ async function deployProcessToMachines(
             engineRequest({
               method: 'put',
               endpoint: '/resources/process/:definitionId/images/:fileName',
-              params: { definitionId: exportData.definitionId, fileName: image.filename },
+              pathParams: { definitionId: exportData.definitionId, fileName: image.filename },
               engine,
               // TODO: make sure that images are being sent correctly
               // the pain point is probably going to be MQTT
@@ -132,7 +133,7 @@ async function dynamicDeployment(
 
   // there is no deployable machine known to the MS
   if (!preferredMachine) {
-    throw new Error('There is no machine the process can be deployed to.');
+    throw new UserFacingError('There is no machine the process can be deployed to.');
   }
 
   await deployProcessToMachines([preferredMachine], processesExportData);
@@ -145,7 +146,7 @@ async function staticDeployment(
   machines: Engine[],
 ) {
   const process = processesExportData.find(({ definitionId: id }) => id === definitionId);
-  if (!process) throw new Error('Process not found in processesExportData');
+  if (!process) throw new UserFacingError('Process not found in processesExportData');
   const bpmn = process.versions[version].bpmn;
 
   const nodeToMachineMapping = Object.values(await getElementMachineMapping(bpmn));
@@ -190,7 +191,7 @@ export async function deployProcess(
   method: 'static' | 'dynamic',
   machines: Engine[],
 ) {
-  if (machines.length === 0) throw new Error('No machines available for deployment');
+  if (machines.length === 0) throw new UserFacingError('No machines available for deployment');
 
   const processesExportData = await prepareExport(
     {
@@ -200,7 +201,6 @@ export async function deployProcess(
       artefacts: true,
       scaling: 1,
       exportSelectionOnly: false,
-      useWebshareApi: false,
     },
     [
       {
@@ -249,10 +249,10 @@ export type InstanceInfo = {
     currentFlowNodeState: string;
     currentFlowElementStartTime: number;
     previousFlowElementId: string;
-    intermediateVariablesState: null;
+    intermediateVariablesState?: { [key: string]: any };
     localExecutionTime: number;
     currentFlowNodeProgress?: { value: number; manual: boolean };
-    milestones: any[];
+    milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
   }[];

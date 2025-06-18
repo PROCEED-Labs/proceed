@@ -1,13 +1,23 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
-import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
-import { AppstoreOutlined } from '@ant-design/icons';
+import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
+import {
+  Alert,
+  Layout as AntLayout,
+  Button,
+  Drawer,
+  Grid,
+  Menu,
+  MenuProps,
+  Modal,
+  Tooltip,
+} from 'antd';
+import { AppstoreOutlined, SettingOutlined, HomeOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { create } from 'zustand';
 import { Environment } from '@/lib/data/environment-schema';
 import UserAvatar from '@/components/user-avatar';
@@ -15,10 +25,12 @@ import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
-import { FaUserEdit } from 'react-icons/fa';
+import { TbUser, TbUserEdit } from 'react-icons/tb';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { enableUseFileManager } from 'FeatureFlags';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import { useSession } from '@/components/auth-can';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -45,6 +57,7 @@ const Layout: FC<
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;
     customLogo?: string;
+    disableUserDataModal?: boolean;
   }>
 > = ({
   loggedIn,
@@ -54,6 +67,7 @@ const Layout: FC<
   children,
   hideSider,
   customLogo,
+  disableUserDataModal = false,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -62,41 +76,73 @@ const Layout: FC<
   });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
+  const envVars = use(EnvVarsContext);
 
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
+  const [showLoginRequest, setShowLoginRequest] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
   let layoutMenuItems = _layoutMenuItems;
+
+  if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    const personal: MenuProps['items'] = [
+      {
+        key: 'personal-profile',
+        label: userData?.isGuest ? (
+          <div onClick={() => setShowLoginRequest(true)}>My Profile</div>
+        ) : (
+          <SpaceLink href={'/profile'}>My Profile</SpaceLink>
+        ),
+        icon: <TbUserEdit />,
+      },
+      {
+        key: 'personal-spaces',
+        label: userData?.isGuest ? (
+          <div onClick={() => setShowLoginRequest(true)}>My Spaces</div>
+        ) : (
+          <SpaceLink href={'/spaces'}>My Spaces</SpaceLink>
+        ),
+        icon: <AppstoreOutlined />,
+      },
+    ];
+
+    layoutMenuItems = [
+      ...layoutMenuItems,
+      {
+        key: 'iam-personal',
+        label: 'Personal',
+        icon: <TbUser />,
+        children: personal,
+      },
+    ];
+  }
+
+  if (!activeSpace.isOrganization) {
+    const home = {
+      key: 'personal-space-home',
+      label: 'Home',
+      icon: <HomeOutlined />,
+      children: [
+        {
+          key: 'personal-space-settings',
+          label: userData?.isGuest ? (
+            <div onClick={() => setShowLoginRequest(true)}>Settings</div>
+          ) : (
+            <SpaceLink href={'/settings'}>Settings</SpaceLink>
+          ),
+          icon: <SettingOutlined />,
+        },
+      ],
+    };
+    layoutMenuItems = [...layoutMenuItems, home];
+  }
+
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(
       (item) => !(item && 'type' in item && item.type === 'divider'),
     );
-
-    if (userData && !userData.isGuest) {
-      layoutMenuItems = [
-        {
-          label: 'Profile',
-          key: 'profile-settings',
-          children: [
-            {
-              key: 'profile',
-              title: 'Profile Settings',
-              label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-              icon: <FaUserEdit />,
-            },
-            {
-              key: 'spaces',
-              title: 'My Spaces',
-              label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
-              icon: <AppstoreOutlined />,
-            },
-          ],
-        },
-        ...layoutMenuItems,
-      ];
-    }
   }
 
   useEffect(() => {
@@ -118,7 +164,7 @@ const Layout: FC<
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
       <SpaceContext.Provider value={activeSpace}>
-        {userData && !userData.isGuest ? (
+        {!disableUserDataModal && userData && !userData.isGuest ? (
           <AuthenticatedUserDataModal
             modalOpen={!userData.username || !userData.lastName || !userData.firstName}
             userData={userData}
@@ -234,6 +280,26 @@ const Layout: FC<
         >
           {menu}
         </Drawer>
+
+        <Modal
+          title={null}
+          footer={null}
+          closable={false}
+          open={showLoginRequest}
+          onCancel={() => setShowLoginRequest(false)}
+          styles={{ mask: { backdropFilter: 'blur(10px)' }, content: { padding: 0 } }}
+        >
+          <Alert
+            type="warning"
+            style={{ zIndex: '1000' }}
+            message={
+              <>
+                To store and change settings,{' '}
+                <SpaceLink href={'/signin'}>please log in as user.</SpaceLink>
+              </>
+            }
+          />
+        </Modal>
       </SpaceContext.Provider>
     </UserSpacesContext.Provider>
   );

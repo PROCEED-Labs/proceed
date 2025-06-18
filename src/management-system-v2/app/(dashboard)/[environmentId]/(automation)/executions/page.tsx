@@ -5,7 +5,6 @@ import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/f
 import { getUsersFavourites } from '@/lib/data/users';
 import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engines-helpers';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
-import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { Skeleton } from 'antd';
 import { Suspense } from 'react';
@@ -51,7 +50,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
       (async () => {
         const spaceEngines = await getDbEngines(activeEnvironment.spaceId, ability);
         if (isUserErrorResponse(spaceEngines)) return [];
-        return await getDeployedProcessesFromSpaceEngines(spaceEngines);
+        return await getDeployedProcessesFromSavedEngines(spaceEngines);
       })(),
     ]);
 

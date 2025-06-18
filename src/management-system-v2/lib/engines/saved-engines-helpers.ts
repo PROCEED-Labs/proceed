@@ -49,7 +49,7 @@ async function getMqttEngines(engine: SavedEngine): Promise<MqttEngine[]> {
 async function getHttpEngine(engine: SavedEngine): Promise<[HttpEngine]> {
   const { id } = await httpRequest(
     engine.address,
-    endpointBuilder('get', '/machine/:properties', { properties: 'id' }),
+    endpointBuilder('get', '/machine/:properties', { pathParams: { properties: 'id' } }),
     'GET',
   );
 
@@ -144,7 +144,7 @@ export async function getDeployedProcessesFromSavedEngines(spaceEngines: SavedEn
         ]),
       );
     } else if (engine.address.startsWith('mqtt')) {
-      promises.push(getMqttBrokerEnginesProcesses(engine.address, !engine.environmentId));
+      promises.push(getMqttBrokerEnginesProcesses(engine.address, engine.environmentId === null));
     }
   }
 

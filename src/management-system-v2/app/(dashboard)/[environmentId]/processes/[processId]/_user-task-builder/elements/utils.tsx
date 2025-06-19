@@ -85,7 +85,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
         onClose?.();
       };
 
-      const handleContextMenu = (e: MouseEvent) => {
+      const handleContextMenu = () => {
         setMenuPosition(undefined);
         onClose?.();
       };

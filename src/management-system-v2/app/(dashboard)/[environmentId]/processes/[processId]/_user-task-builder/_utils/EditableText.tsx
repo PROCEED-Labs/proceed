@@ -77,7 +77,7 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
               ref: editableRef,
               // we need to capture to prevent a new line being added when pressing enter without shift
               onKeyDownCapture: async (e: KeyboardEvent) => {
-                if (!e.shiftKey && e.key === 'Enter') {
+                if (e.shiftKey && e.key === 'Enter') {
                   if (editorRef.current) {
                     onChange(await editorRef.current.getCurrentValue());
                   }

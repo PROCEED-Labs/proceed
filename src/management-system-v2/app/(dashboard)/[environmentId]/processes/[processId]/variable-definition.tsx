@@ -157,6 +157,7 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
     <Space direction="vertical" style={{ width: '100%' }}>
       {variables.length > 0 && (
         <Table
+          scroll={{ x: true }}
           pagination={{ pageSize: 5, position: ['bottomCenter'] }}
           rowKey="name"
           columns={[
@@ -366,7 +367,28 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
               />
             </Form.Item>
             {editVariable?.dataType !== 'boolean' && (
-              <Form.Item name="enum" label="Allowed Values" initialValue={editVariable.enum}>
+              <Form.Item
+                name="enum"
+                label="Allowed Values"
+                initialValue={editVariable.enum}
+                rules={[
+                  {
+                    validator(_, value: string) {
+                      if (value && editVariable.dataType === 'number') {
+                        for (const num of value.split(';')) {
+                          if (isNaN(+num.trim())) {
+                            return Promise.reject(
+                              new Error('All values defined here have to be numbers.'),
+                            );
+                          }
+                        }
+                      }
+
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              >
                 <Input
                   value={editVariable.enum}
                   onChange={(e) => setEditVariable({ ...editVariable, enum: e.target.value })}

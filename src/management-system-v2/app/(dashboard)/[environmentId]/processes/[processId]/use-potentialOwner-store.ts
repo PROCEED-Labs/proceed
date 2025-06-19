@@ -56,7 +56,7 @@ export const useInitialisePotentialOwnerStore = () => {
       store.setRoles(roles);
     };
 
-    environment.isOrganization && initialiseStore();
+    initialiseStore();
   }, [environment.spaceId, environment.isOrganization]);
 };
 

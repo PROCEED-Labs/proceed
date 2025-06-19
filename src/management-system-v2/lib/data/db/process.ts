@@ -665,7 +665,7 @@ export async function getProcessUserTaskJSON(processDefinitionsId: string, userT
   try {
     const res = await db.artifact.findUnique({ where: { fileName: `${userTaskName}.json` } });
     if (res) {
-      const jsonAsBuffer = (await retrieveFile(processDefinitionsId, true)) as Buffer;
+      const jsonAsBuffer = (await retrieveFile(res.filePath, true)) as Buffer;
       return jsonAsBuffer.toString('utf8');
     }
   } catch (err) {

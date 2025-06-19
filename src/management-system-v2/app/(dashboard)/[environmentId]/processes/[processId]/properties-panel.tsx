@@ -364,9 +364,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             role="group"
             aria-labelledby="general-title"
           >
-            {environment?.isOrganization && (
-              <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
-            )}
+            <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
           </Space>
         </>
       ),

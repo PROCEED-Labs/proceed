@@ -763,6 +763,55 @@ async function getMilestonesFromElementById(bpmn, elementId) {
 }
 
 /**
+ * An object containing information about a variable that might exist during the instance of a process
+ *
+ * @typedef Variable
+ * 
+ * @type {object}
+ * @property {string} name - variable name
+ * @property {string} [description] - a description of the variable
+ * @property {string} dataType - the type of the value of the variable
+ * @property {string} [defaultValue] - the value that the variable should have when none is manually set at startup
+ * @property {boolean} [requiredAtInstanceStartup] - if the variable has to be initialized when an instance is started
+ * @property {string} [enum] - enumeration of the values that the variable is allowed to have (a string with values separated by ';')
+ * @property {boolean} [const] - if the variable can be reassigned after having been set once
+ */
+
+/**
+ * Parses the variables from a bpmn-moddle element (variables are only expected to be defined on process elements)
+ *
+ * @param {object} element
+ * @returns {Variable[]} array with all variables
+ */
+function getVariablesFromElement(element) {
+  let variables = [];
+  if (element.extensionElements && Array.isArray(element.extensionElements.values)) {
+    const variablesElement = element.extensionElements.values.find(
+      (child) => child.$type == 'proceed:Variables'
+    );
+    if (variablesElement && variablesElement.variable) {
+      variables = variablesElement.variable;
+    }
+  }
+
+  return variables;
+}
+
+/**
+ * Get the variables for given element id (variables are only expected to be defined on process elements)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} elementId the id of the element
+ * @returns {Variable[]} array with all variables
+ */
+async function getVariablesFromElementById(bpmn, elementId) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const element = getElementById(bpmnObj, elementId);
+
+  return getVariablesFromElement(element);
+}
+
+/**
  * Get the performers for given element id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -1186,6 +1235,8 @@ module.exports = {
   getProcessConstraints,
   getProcessDocumentation,
   getProcessDocumentationByObject,
+  getVariablesFromElement,
+  getVariablesFromElementById,
 
   // userTasks
   getUserTaskFileNameMapping,

@@ -169,6 +169,57 @@
       ]
     },
     {
+      "name": "Variables",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "variable",
+          "isMany": true,
+          "type": "Variable"
+        }
+      ]
+    },
+    {
+      "name": "Variable",
+      "properties": [
+        {
+          "name": "name",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "dataType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "description",
+          "isAttr":true,
+          "type": "String"
+        },
+        {
+          "name": "requiredAtInstanceStartup",
+          "isAttr":true,
+          "type": "Boolean"
+        },
+        {
+          "name": "defaultValue",
+          "isAttr": true,
+          "type": "String" 
+        },
+        {
+          "name": "enum",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "const",
+          "isAttr": true,
+          "type": "Boolean"
+        }
+      ]
+    },
+    {
       "name": "Meta",
       "superClass": ["Element"],
       "properties": [

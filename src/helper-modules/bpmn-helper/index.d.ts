@@ -172,6 +172,8 @@ declare const _exports: {
   }>;
   getProcessDocumentation(bpmn: string | object): Promise<string>;
   getProcessDocumentationByObject(processObject: object): string;
+  getVariablesFromElement(element: object): getters.Variable[];
+  getVariablesFromElementById(bpmn: string | object, elementId: string): getters.Variable[];
   getUserTaskFileNameMapping(bpmn: string | object): Promise<{
     [userTaskId: string]: {
       fileName?: string;

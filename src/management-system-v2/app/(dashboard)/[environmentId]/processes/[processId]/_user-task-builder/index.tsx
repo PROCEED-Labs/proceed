@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
-import { Modal, Grid, Row as AntRow, Col } from 'antd';
+import { Modal, Grid, Row as AntRow, Col, App } from 'antd';
 
 import { Editor, Frame, useEditor, EditorStore } from '@craftjs/core';
 
@@ -31,6 +31,7 @@ import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/f
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import { useCanEdit } from '../modeler';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type BuilderProps = {
   processId: string;
@@ -57,6 +58,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
   const editingEnabled = useCanEdit();
 
   const environment = useEnvironment();
+
+  const app = App.useApp();
 
   const [iframeMounted, setIframeMounted] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -107,7 +110,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
     else setIframeLayout('computer');
   }, [iframeMaxWidth]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const json = query.serialize();
     if (modeler && selectedElementId) {
       const selectedElement = modeler.getElement(selectedElementId);
@@ -118,11 +121,23 @@ const EditorModal: React.FC<BuilderModalProps> = ({
             implementation: getUserTaskImplementationString(),
           });
         }
-        const html = toHtml(json);
-        saveProcessUserTask(processId, filename!, json, html, environment.spaceId).then(
-          (res) => res && console.error(res.error),
-        );
-        onSave();
+
+        await wrapServerCall({
+          fn: async () => {
+            const html = toHtml(json);
+            const res = await saveProcessUserTask(
+              processId,
+              filename!,
+              json,
+              html,
+              environment.spaceId,
+            );
+            onSave();
+            return res;
+          },
+          onSuccess: 'Form saved',
+          app,
+        });
       }
     }
   };
@@ -298,7 +313,10 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
           onInit={() => {
             setHasUnsavedChanges(false);
           }}
-          onSave={() => setHasUnsavedChanges(false)}
+          onSave={() => {
+            setHasUnsavedChanges(false);
+            handleClose();
+          }}
         />
       </Editor>
 

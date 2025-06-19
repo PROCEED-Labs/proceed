@@ -22,6 +22,7 @@ export const fetchPotentialOwner = async (environmentId: string) => {
     return acc;
   }, {} as UserType);
 
+  // make sure to get users that might not be assigned to any role
   const { users: dbUsers } = await getUsers();
   for (const u of dbUsers) {
     if (!u.isGuest && !user[u.id]) {

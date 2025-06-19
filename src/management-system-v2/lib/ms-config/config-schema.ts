@@ -85,11 +85,8 @@ export const msConfigSchema = {
       .default('local')
       .refine((value) => {
         if (value === 'local') return true;
-        return (
-          process.env.STORAGE_CLOUD_BUCKET_NAME &&
-          process.env.STORAGE_CLOUD_BUCKET_CREDENTIALS_FILE_PATH
-        );
-      }, 'To use PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV, you need to set STORAGE_CLOUD_BUCKET_NAME and STORAGE_CLOUD_BUCKET_CREDENTIALS_FILE_PATH'),
+        return !!process.env.STORAGE_CLOUD_BUCKET_NAME;
+      }, 'To use PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV, you need to set STORAGE_CLOUD_BUCKET_NAME'),
     STORAGE_CLOUD_BUCKET_NAME: z.string().default(''),
     STORAGE_CLOUD_BUCKET_CREDENTIALS_FILE_PATH: z.string().default(''),
 

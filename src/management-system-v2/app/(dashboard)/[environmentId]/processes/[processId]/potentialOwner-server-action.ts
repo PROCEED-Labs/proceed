@@ -6,6 +6,7 @@ import { RoleType, UserType } from './use-potentialOwner-store';
 import { getUsers } from '@/lib/data/db/iam/users';
 
 export const fetchPotentialOwner = async (environmentId: string) => {
+  if (!environmentId) return { user: {}, roles: {} };
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   const rawRoles = await getRolesWithMembers(activeEnvironment.spaceId, ability);

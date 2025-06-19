@@ -132,10 +132,12 @@ const EditorModal: React.FC<BuilderModalProps> = ({
               html,
               environment.spaceId,
             );
-            onSave();
             return res;
           },
-          onSuccess: 'Form saved',
+          onSuccess: () => {
+            app.message.success('Form saved');
+            onSave();
+          },
           app,
         });
       }
@@ -315,7 +317,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
           }}
           onSave={() => {
             setHasUnsavedChanges(false);
-            handleClose();
+            onClose();
           }}
         />
       </Editor>

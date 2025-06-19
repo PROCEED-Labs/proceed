@@ -109,8 +109,15 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
   >({
     mutationFn: async ({ entityId, filePath, shareToken }) => {
       if (DEPLOYMENT_ENV === 'cloud') {
-        const presignedUrl = await retrieveEntityFile(entityType, entityId, filePath);
-        return { fileUrl: presignedUrl as string };
+        try {
+          const presignedUrl = await retrieveEntityFile(entityType, entityId, filePath);
+          return { fileUrl: presignedUrl as string };
+        } catch (error) {
+          console.error(
+            `Failed to retrieve file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+          return { fileUrl: undefined };
+        }
       } else {
         const fileUrl = `/api/private/file-manager?${new URLSearchParams({
           environmentId: spaceId,

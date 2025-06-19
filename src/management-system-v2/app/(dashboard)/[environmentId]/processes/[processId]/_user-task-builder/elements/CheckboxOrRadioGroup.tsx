@@ -91,6 +91,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               key: 'setting',
             },
           ]}
+          onDoubleClick={() => setTextEditing(true)}
         >
           <EditableText
             value={label}

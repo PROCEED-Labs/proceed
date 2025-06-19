@@ -1,4 +1,12 @@
-import React, { ReactElement, ReactNode, useEffect, useId, useMemo, useState } from 'react';
+import React, {
+  MouseEvent,
+  ReactElement,
+  ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import { Button, Menu, MenuProps } from 'antd';
@@ -135,9 +143,16 @@ type OverlayProps = React.PropsWithChildren<{
   show: boolean;
   onHide: () => void;
   controls: ({ icon: ReactNode; key: string } | undefined | false)[];
+  onDoubleClick?: (e: MouseEvent<HTMLDivElement>) => void;
 }>;
 
-export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, children }) => {
+export const Overlay: React.FC<OverlayProps> = ({
+  show,
+  onHide,
+  controls,
+  children,
+  onDoubleClick,
+}) => {
   const { active } = useDndContext();
 
   useEffect(() => {
@@ -154,7 +169,11 @@ export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, childr
   return (
     <>
       {show && !active && (
-        <div className="overlay-mask" onMouseMove={(e) => e.stopPropagation()}>
+        <div
+          className="overlay-mask"
+          onMouseMove={(e) => e.stopPropagation()}
+          onDoubleClick={onDoubleClick}
+        >
           {controls.filter(truthyFilter).map(({ icon, key }) => (
             <div className="overlay-control-icon" key={key}>
               {icon}

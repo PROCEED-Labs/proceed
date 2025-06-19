@@ -181,6 +181,7 @@ export const msConfigSchema = {
       ),
   },
   development: {
+    NEXTAUTH_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z
       .string()

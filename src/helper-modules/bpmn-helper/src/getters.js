@@ -194,6 +194,23 @@ async function getElementMachineMapping(bpmn) {
 }
 
 /**
+ * Get the file names for the start forms of all processes,
+ * (The attribute 'uiForNontypedStartEventsFileName' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [processId: string]: string}> } an object (a map) with all processIds as keys
+ */
+async function getStartFormFileNameMapping(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
+  const mapping = {};
+  processes.forEach((p) => {
+    mapping[p.id] = p.uiForNontypedStartEventsFileName;
+  });
+  return mapping;
+}
+
+/**
  * Get all fileName for all userTasks,
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *
@@ -1237,6 +1254,7 @@ module.exports = {
   getProcessDocumentationByObject,
   getVariablesFromElement,
   getVariablesFromElementById,
+  getStartFormFileNameMapping,
 
   // userTasks
   getUserTaskFileNameMapping,

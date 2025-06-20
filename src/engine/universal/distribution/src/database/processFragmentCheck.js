@@ -64,12 +64,12 @@ async function getRequiredProcessFragments(bpmnObj) {
     );
 
     requiredFragmentInfo.scripts = getScriptsToKnow(locallyExecuted);
-    requiredFragmentInfo.html = getUserTasksToKnow(locallyExecuted);
+    requiredFragmentInfo.html = getHtmlToKnow(locallyExecuted);
     requiredFragmentInfo.imports = getImportsToKnow(bpmnObj, locallyExecuted);
     requiredFragmentInfo.images = getFlowElementImagesToKnow(locallyExecuted);
   } else {
     requiredFragmentInfo.scripts = getScriptsToKnow(flowNodes);
-    requiredFragmentInfo.html = getUserTasksToKnow(flowNodes);
+    requiredFragmentInfo.html = getHtmlToKnow(flowNodes);
     requiredFragmentInfo.imports = getImportsToKnow(bpmnObj, flowNodes);
     requiredFragmentInfo.images = getFlowElementImagesToKnow(flowNodes);
   }
@@ -102,14 +102,14 @@ function getScriptsToKnow(flowNodesToKnow) {
 }
 
 /**
- * Returns the required html data for all UserTasks inside the given list
+ * Returns the required html data for all elements inside the given list
  *
  * Will throw if a user task contains no information about its execution
  *
  * @param {Array} flowNodesToKnow the list of flowNodes that might be executed on this machine
  * @returns {string[]} an array containing information about all html files needed for the process
  */
-function getUserTasksToKnow(flowNodesToKnow) {
+function getHtmlToKnow(flowNodesToKnow) {
   return flowNodesToKnow.reduce((curr, flowNode) => {
     // user tasks that use 5thIndustry don't need html
     if (flowNode.$type === 'bpmn:UserTask' && flowNode.implementation !== '5thIndustry') {
@@ -124,6 +124,26 @@ function getUserTasksToKnow(flowNodesToKnow) {
       // prevent duplicate references to the same filename
       if (!curr.includes(fileName)) {
         curr.push(fileName);
+      }
+    } else if (
+      flowNode.$type === 'bpmn:StartEvent' &&
+      (!flowNode.eventDefinitions || !flowNode.eventDefinitions.length)
+    ) {
+      // check if there is a start form when encountering non-typed start events
+      // find the process element
+      let element = flowNode;
+      while (element) {
+        if (element.$type === 'bpmn:Process') break;
+        element = element.$parent;
+      }
+
+      // check for the start form definition and add it if it exists and was not referenced before
+      if (
+        element &&
+        element.uiForNontypedStartEventsFileName &&
+        !curr.includes(element.uiForNontypedStartEventsFileName)
+      ) {
+        curr.push(element.uiForNontypedStartEventsFileName);
       }
     }
 

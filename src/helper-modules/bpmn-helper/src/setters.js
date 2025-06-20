@@ -298,6 +298,20 @@ async function setDeploymentMethod(bpmn, method) {
 }
 
 /**
+ * Sets the 'uiForNontypedStartEventsFileName' attribute of a process with new values.
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} processId - the processId to look for
+ * @param {string} newFileName - the new value of 'uiForNontypedStartEventsFileName' attribute
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
+ */
+async function setStartFormFileName(bpmn, processId, newFileName) {
+  return await manipulateElementById(bpmn, processId, (p) => {
+    p.uiForNontypedStartEventsFileName = newFileName;
+  });
+}
+
+/**
  * Sets the 'fileName' and 'implementation' attributes of a UserTask with new values.
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -670,6 +684,7 @@ module.exports = {
   setDefinitionsName,
   setDefinitionsVersionInformation,
   setProcessId,
+  setStartFormFileName,
   setTemplateId,
   setTargetNamespace,
   setStandardDefinitions,

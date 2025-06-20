@@ -591,6 +591,17 @@ export const schema = {
       ],
     },
     {
+      name: 'uiForNontypedStartEventsFileName',
+      extends: ['bpmn:Process'],
+      properties: [
+        {
+          name: 'uiForNontypedStartEventsFileName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
       name: 'LinkProcessNode',
       extends: ['bpmn:FlowNode'],
       properties: [

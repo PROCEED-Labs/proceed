@@ -27,11 +27,13 @@ import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import UserTaskBuilder from './_user-task-builder';
+import UserTaskBuilder, { canHaveForm } from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { Process } from '@/lib/data/process-schema';
+import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
+import { TimerEventButton, isTimerEvent } from './planned-duration-input';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -54,6 +56,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
+  const [showFlowNodeConditionModal, setShowFlowNodeConditionModal] = useState(false);
 
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareModalDefaultOpenTab, setShareModalDefaultOpenTab] =
@@ -174,6 +177,16 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
 
   const showMobileView = useMobileModeler();
 
+  let formEditorTitle = '';
+
+  if (canHaveForm(selectedElement)) {
+    if (bpmnIs(selectedElement, 'bpmn:UserTask')) {
+      formEditorTitle = 'Edit User Task Form';
+    } else if (bpmnIs(selectedElement, 'bpmn:StartEvent')) {
+      formEditorTitle = 'Edit Process Start Form';
+    }
+  }
+
   return (
     <>
       <Toolbar className={styles.Toolbar}>
@@ -243,8 +256,8 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
           <ToolbarGroup>
             {selectedElementId &&
               selectedElement &&
-              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
-                <Tooltip title="Edit User Task Form">
+              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && canHaveForm(selectedElement) && (
+                <Tooltip title={formEditorTitle}>
                   <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
                 </Tooltip>
               )) ||
@@ -263,7 +276,18 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                         onClick={() => setShowScriptTaskEditor(true)}
                       />
                     </Tooltip>
-                  )))}
+                  )) ||
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isConditionalFlow(selectedElement) && (
+                  <Tooltip title="Edit Condition">
+                    <Button
+                      icon={<FormOutlined />}
+                      onClick={() => setShowFlowNodeConditionModal(true)}
+                    />
+                  </Tooltip>
+                )) ||
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isTimerEvent(selectedElement) && (
+                  <TimerEventButton element={selectedElement} />
+                )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -344,6 +368,12 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
             open={showScriptTaskEditor}
             onClose={() => setShowScriptTaskEditor(false)}
             selectedElement={selectedElement}
+          />
+
+          <FlowConditionModal
+            open={showFlowNodeConditionModal}
+            onClose={() => setShowFlowNodeConditionModal(false)}
+            element={selectedElement}
           />
         </>
       )}

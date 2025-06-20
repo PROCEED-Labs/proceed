@@ -65,14 +65,13 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   const [textEditing, setTextEditing] = useState(false);
 
   const editingEnabled = useCanEdit();
-
   return (
     <>
       <input
         id={id}
         disabled={!editingEnabled}
         type={type}
-        value={value}
+        value={value || undefined}
         name={variable}
         checked={checked}
         onClick={onChange}
@@ -92,6 +91,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               key: 'setting',
             },
           ]}
+          onDoubleClick={() => setTextEditing(true)}
         >
           <EditableText
             value={label}

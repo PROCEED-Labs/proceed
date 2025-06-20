@@ -3,13 +3,12 @@ import { getCurrentEnvironment } from '@/components/auth';
 import DeploymentsView from './deployments-view';
 import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/folders';
 import { getUsersFavourites } from '@/lib/data/users';
-import { DeployedProcessInfo, getDeployments } from '@/lib/engines/deployment';
-import { getProceedEngines } from '@/lib/engines/machines';
-import { getSpaceEngines } from '@/lib/data/space-engines';
-import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
+import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engines-helpers';
+import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { Skeleton } from 'antd';
 import { Suspense } from 'react';
+import { getDbEngines } from '@/lib/data/db/engines';
 
 function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
   deployments: T[],
@@ -45,13 +44,13 @@ async function Executions({ environmentId }: { environmentId: string }) {
         return [folder, folderContents];
       })(),
       (async () => {
-        const engines = await getProceedEngines();
-        return await getDeployments(engines);
+        const engines = await getDbEngines(null, ability, 'dont-check');
+        return await getDeployedProcessesFromSavedEngines(engines);
       })(),
       (async () => {
-        const spaceEngines = await getSpaceEngines(activeEnvironment.spaceId);
+        const spaceEngines = await getDbEngines(activeEnvironment.spaceId, ability);
         if (isUserErrorResponse(spaceEngines)) return [];
-        return await getDeployedProcessesFromSpaceEngines(spaceEngines);
+        return await getDeployedProcessesFromSavedEngines(spaceEngines);
       })(),
     ]);
 

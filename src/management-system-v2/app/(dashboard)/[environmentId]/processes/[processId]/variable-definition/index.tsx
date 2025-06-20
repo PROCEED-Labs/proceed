@@ -16,7 +16,7 @@ import {
   setProceedElement,
 } from '@proceed/bpmn-helper';
 
-import useModelerStateStore from './use-modeler-state-store';
+import useModelerStateStore from '../use-modeler-state-store';
 import { ElementLike } from 'diagram-js/lib/model/Types';
 
 type VariableDefinitionProps = {};
@@ -49,12 +49,14 @@ const DefaultValueInput: React.FC<DefaultValueInputProps> = ({ variable, onChang
           onChange={(e) => onChange(e.target.value || undefined)}
         />
       );
+    case 'integer':
     case 'number':
       return (
         <InputNumber
           style={{ width: '100%' }}
-          value={variable.defaultValue ? parseInt(variable.defaultValue) : undefined}
-          onChange={(value) => onChange(value ? `${value}` : undefined)}
+          value={variable.defaultValue ? parseFloat(variable.defaultValue) : undefined}
+          stringMode
+          onChange={(value) => onChange(value ? value : undefined)}
         />
       );
     case 'boolean':
@@ -133,7 +135,7 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
       });
 
       handleClose();
-    } catch (err) {}
+    } catch (err) { }
   };
   const removeVariable = async (variableName: string) => {
     // remove from this components data
@@ -332,6 +334,7 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
                 options={[
                   { value: 'string', label: 'Text' },
                   { value: 'number', label: 'Number' },
+                  { value: 'integer', label: 'Integer' },
                   { value: 'boolean', label: 'On/Off' },
                 ]}
                 onChange={(value?: ProcessVariable['dataType']) =>
@@ -346,7 +349,25 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
               rules={[
                 {
                   validator(_, value) {
-                    if (editVariable.enum && !editVariable.enum.split(';').includes(value)) {
+                    console.log(value, editVariable.dataType);
+                    if (
+                      value &&
+                      (editVariable.dataType === 'number' || editVariable.dataType === 'integer')
+                    ) {
+                      if (!value.trim() || isNaN(+value.trim())) {
+                        return Promise.reject(new Error('The default value has to be a number.'));
+                      }
+                      if (editVariable.dataType === 'integer' && value.includes('.')) {
+                        return Promise.reject(
+                          new Error('The default value has to be an integer (whole number).'),
+                        );
+                      }
+                    }
+                    if (
+                      value &&
+                      editVariable.enum &&
+                      !editVariable.enum.split(';').includes(value)
+                    ) {
                       return Promise.reject(
                         new Error(
                           'If allowed values are defined the default value has to be one of them.',
@@ -361,9 +382,10 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
             >
               <DefaultValueInput
                 variable={editVariable}
-                onChange={(newValue) =>
-                  setEditVariable({ ...editVariable, defaultValue: newValue })
-                }
+                onChange={(newValue) => {
+                  console.log(newValue);
+                  setEditVariable({ ...editVariable, defaultValue: newValue });
+                }}
               />
             </Form.Item>
             {editVariable?.dataType !== 'boolean' && (
@@ -374,11 +396,21 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
                 rules={[
                   {
                     validator(_, value: string) {
-                      if (value && editVariable.dataType === 'number') {
+                      if (
+                        value &&
+                        (editVariable.dataType === 'number' || editVariable.dataType === 'integer')
+                      ) {
                         for (const num of value.split(';')) {
-                          if (isNaN(+num.trim())) {
+                          if (!num.trim() || isNaN(+num.trim())) {
                             return Promise.reject(
                               new Error('All values defined here have to be numbers.'),
+                            );
+                          }
+                          if (editVariable.dataType === 'integer' && num.includes('.')) {
+                            return Promise.reject(
+                              new Error(
+                                'All values defined here have to be integers (whole numbers).',
+                              ),
                             );
                           }
                         }

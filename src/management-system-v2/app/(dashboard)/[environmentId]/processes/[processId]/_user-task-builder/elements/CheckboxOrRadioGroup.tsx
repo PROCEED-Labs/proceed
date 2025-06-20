@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 
-import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
+import { Button, Divider, Input, MenuProps, Select, SelectProps, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { TbRowInsertTop, TbRowInsertBottom, TbRowRemove } from 'react-icons/tb';
 
@@ -15,12 +15,15 @@ import {
   Overlay,
   SidebarButtonFactory,
   MenuItemFactoryFactory,
+  getVariableTooltip,
 } from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 
 import { SettingOutlined, EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 import { useCanEdit } from '../../modeler';
+import useProcessVariables from '../../use-process-variables';
+import ProcessVariableForm from '../../variable-definition/process-variable-form';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
@@ -218,43 +221,43 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   const contextMenu: MenuProps['items'] =
     editTarget !== undefined
       ? [
-          {
-            key: 'add',
-            label: 'Add',
-            children: [
-              toMenuItem('add-above', () => handleAddButton(editTarget), setHoveredAction),
-              toMenuItem('add-below', () => handleAddButton(editTarget + 1), setHoveredAction),
-            ],
-          },
-          toMenuItem('remove', () => handleRemoveButton(editTarget), setHoveredAction),
-          {
-            key: 'value',
-            label: (
-              <div
-                style={{
-                  display: 'flex',
-                  width: '100%',
-                  height: '100%',
-                  alignItems: 'center',
+        {
+          key: 'add',
+          label: 'Add',
+          children: [
+            toMenuItem('add-above', () => handleAddButton(editTarget), setHoveredAction),
+            toMenuItem('add-below', () => handleAddButton(editTarget + 1), setHoveredAction),
+          ],
+        },
+        toMenuItem('remove', () => handleRemoveButton(editTarget), setHoveredAction),
+        {
+          key: 'value',
+          label: (
+            <div
+              style={{
+                display: 'flex',
+                width: '100%',
+                height: '100%',
+                alignItems: 'center',
+              }}
+            >
+              <Input
+                addonBefore="Value"
+                addonAfter={valueTooltip}
+                style={{ width: '250px' }}
+                value={currentValue}
+                onChange={(e) => setCurrentValue(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
+                  e.stopPropagation();
                 }}
-              >
-                <Input
-                  addonBefore="Value"
-                  addonAfter={valueTooltip}
-                  style={{ width: '250px' }}
-                  value={currentValue}
-                  onChange={(e) => setCurrentValue(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
-                    e.stopPropagation();
-                  }}
-                  onBlur={() => handleValueChange(editTarget, currentValue)}
-                />
-              </div>
-            ),
-          },
-        ]
+                onBlur={() => handleValueChange(editTarget, currentValue)}
+              />
+            </div>
+          ),
+        },
+      ]
       : [];
 
   const dataWithPreviews = useMemo(() => {
@@ -393,22 +396,55 @@ export const CheckBoxOrRadioGroupSettings = () => {
   } = useNode((node) => ({
     variable: node.data.props.variable,
   }));
-  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
+
+  const [showVariableForm, setShowVariableForm] = useState(false);
+
+  const { variables, addVariable } = useProcessVariables();
 
   return (
     <>
       <Setting
         label="Variable"
         control={
-          <Input
+          <Select
             value={variable}
-            onChange={(e) => {
+            style={{ display: 'block' }}
+            title={getVariableTooltip(variables, variable)}
+            options={variables.map((v) => ({
+              label: v.name,
+              title: getVariableTooltip(variables, v.name),
+              value: v.name,
+            }))}
+            onChange={(val) => {
               setProp((props: CheckBoxOrRadioGroupProps) => {
-                props.variable = e.target.value;
+                props.variable = val;
               });
             }}
+            dropdownRender={(menu) => (
+              <>
+                {menu}
+                <Space style={{ display: 'block', padding: '0 8px 4px' }}>
+                  <Button block onClick={() => setShowVariableForm(true)}>
+                    Add Variable
+                  </Button>
+                </Space>
+              </>
+            )}
           />
         }
+      />
+
+      <ProcessVariableForm
+        open={showVariableForm}
+        variables={variables}
+        onSubmit={(newVar) => {
+          addVariable(newVar);
+          setShowVariableForm(false);
+          setProp((props: CheckBoxOrRadioGroupProps) => {
+            props.variable = newVar.name;
+          });
+        }}
+        onCancel={() => setShowVariableForm(false)}
       />
     </>
   );
@@ -422,7 +458,6 @@ CheckBoxOrRadioGroup.craft = {
     settings: CheckBoxOrRadioGroupSettings,
   },
   props: {
-    variable: 'test',
     data: [{ label: 'New Element', value: '', checked: false }],
   },
 };

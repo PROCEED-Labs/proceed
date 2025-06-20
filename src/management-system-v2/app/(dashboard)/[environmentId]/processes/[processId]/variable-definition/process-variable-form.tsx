@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Checkbox, Form, Input, InputNumber, Modal, Select } from 'antd';
 
-import { ProcessVariable } from './use-process-variables';
+import { ProcessVariable } from '../use-process-variables';
 
 type ProcessVariableFormProps = {
   open?: boolean;

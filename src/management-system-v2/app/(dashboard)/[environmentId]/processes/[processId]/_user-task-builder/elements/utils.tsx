@@ -15,6 +15,8 @@ import { useDndContext } from '@dnd-kit/core';
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
+import { ProcessVariable } from '../../use-process-variables';
+import { typeLabelMap } from '../../variable-definition/process-variable-form';
 
 export const Setting: React.FC<{
   label: string;
@@ -244,4 +246,16 @@ type Tail<T extends any[]> = T extends [infer A, ...infer R] ? R : never;
 export function MenuItemFactoryFactory<T extends string>(options: Record<T, Option>) {
   return (...args: Tail<Parameters<typeof MenuItemFactory<T>>>) =>
     MenuItemFactory<T>(options, ...args);
+}
+
+export function getVariableTooltip(variables: ProcessVariable[], name?: string) {
+  if (!name) return;
+  const variable = variables.find((v) => v.name === name);
+  if (!variable) return;
+
+  let tooltip = `Type: ${typeLabelMap[variable.dataType as keyof typeof typeLabelMap]}`;
+
+  if (variable.description) tooltip += `\nDescription: ${variable.description}`;
+
+  return tooltip;
 }

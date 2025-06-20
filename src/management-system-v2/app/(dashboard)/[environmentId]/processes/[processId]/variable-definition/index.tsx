@@ -9,7 +9,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 
-import useProcessVariables, { ProcessVariable } from './use-process-variables';
+import useProcessVariables, { ProcessVariable } from '../use-process-variables';
 import ProcessVariableForm, { typeLabelMap } from './process-variable-form';
 
 type VariableDefinitionProps = {};

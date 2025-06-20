@@ -9,7 +9,7 @@ import {
 import { ElementLike } from 'diagram-js/lib/model/Types';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
-import useModelerStateStore from '../use-modeler-state-store';
+import useModelerStateStore from './use-modeler-state-store';
 
 export type ProcessVariable = ReturnType<typeof getVariablesFromElement>[number];
 

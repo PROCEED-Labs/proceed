@@ -33,6 +33,7 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
           show={editingEnabled && hovered && !textEditing}
           onHide={() => setHovered(false)}
           controls={[{ key: 'edit', icon: <EditOutlined onClick={() => setTextEditing(true)} /> }]}
+          onDoubleClick={() => setTextEditing(true)}
         >
           <EditableText
             value={text}

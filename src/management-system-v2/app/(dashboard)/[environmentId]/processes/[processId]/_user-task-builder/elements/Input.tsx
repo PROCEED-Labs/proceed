@@ -124,6 +124,7 @@ const Input: UserComponent<InputProps> = ({
                   icon: <EditOutlined onClick={() => setTextEditing(true)} />,
                 },
               ]}
+              onDoubleClick={() => setTextEditing(true)}
             >
               <EditableText
                 style={{ whiteSpace: 'nowrap' }}

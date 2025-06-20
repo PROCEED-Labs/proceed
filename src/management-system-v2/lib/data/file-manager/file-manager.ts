@@ -1,17 +1,17 @@
 'use server';
 
-import { Storage } from '@google-cloud/storage';
+import { Storage, type Bucket } from '@google-cloud/storage';
 import fse from 'fs-extra';
 import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
-import { env } from '@/lib/env-vars';
+import { env } from '@/lib/ms-config/env-vars';
 import { UserFacingError } from '@/lib/user-error';
 
 // Constants
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10 MB
-const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
-const BUCKET_NAME = env.GOOGLE_CLOUD_BUCKET_NAME || '';
+const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV as 'cloud' | 'local';
+const BUCKET_NAME = env.STORAGE_CLOUD_BUCKET_NAME || '';
 const cache = new LRUCache<string, Buffer>({
   maxSize: 100,
   ttl: 60 * 60 * 1000, // 1 hour TTL
@@ -26,7 +26,7 @@ const getLocalStorageBasePath = (): string => {
 
 const LOCAL_STORAGE_BASE = getLocalStorageBasePath();
 let storage: Storage | null = null;
-let bucket: any = null;
+let bucket: null | Bucket = null;
 
 if (DEPLOYMENT_ENV === 'cloud') {
   // Using ADC (Application Default Credentials) on Cloud Run.
@@ -36,22 +36,23 @@ if (DEPLOYMENT_ENV === 'cloud') {
       : undefined,
   );
   bucket = storage.bucket(BUCKET_NAME);
+  bucket
+    .setCorsConfiguration([
+      {
+        maxAgeSeconds: 3600,
+        method: ['GET', 'PUT'],
+        origin: ['https://app.proceed-labs.org', 'https://staging.proceed-labs.org'],
+        responseHeader: ['content-type', 'x-goog-content-length-range'],
+      },
+    ])
+    .catch((error: any) => {
+      console.error(`Failed to set CORS configuration for bucket ${BUCKET_NAME}:`, error);
+    });
 }
-
-// Helper functions
-const setCors = async (bucket: any) => {
-  await bucket.setCorsConfiguration([
-    {
-      maxAgeSeconds: 3600,
-      method: ['GET', 'PUT'],
-      origin: ['*'], // Adjust trusted origin for production
-      responseHeader: ['content-type', 'x-goog-content-length-range'],
-    },
-  ]);
-};
 
 const ensureBucketExists = () => {
   if (!bucket) throw new Error('Storage bucket not initialized');
+  return bucket;
 };
 
 const saveLocalFile = async (filePath: string, fileContent: Buffer, maxFileSize: number) => {
@@ -70,7 +71,7 @@ const saveLocalFile = async (filePath: string, fileContent: Buffer, maxFileSize:
 export const saveFile = async (
   filePath: string,
   mimeType: string,
-  fileContent?: Buffer | Uint8Array | Blob | string,
+  fileContent?: Buffer | Uint8Array | string,
   usePresignedUrl: boolean = true,
   maxFileSize: number = MAX_CONTENT_LENGTH,
 ): Promise<{ presignedUrl: string | null; status: boolean }> => {
@@ -79,7 +80,7 @@ export const saveFile = async (
 
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
-      ensureBucketExists();
+      const bucket = ensureBucketExists();
       const file = bucket.file(filePath);
 
       if (usePresignedUrl) {
@@ -96,6 +97,7 @@ export const saveFile = async (
         if (!fileContent) throw new Error('File content is required to upload');
         const contentToUpload =
           typeof fileContent === 'string' ? Buffer.from(fileContent, 'base64') : fileContent;
+
         await file.save(contentToUpload, {
           metadata: { contentType: mimeType },
           resumable: false,
@@ -122,7 +124,7 @@ export const retrieveFile = async (
 ): Promise<string | Buffer> => {
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
-      ensureBucketExists();
+      const bucket = ensureBucketExists();
 
       const file = bucket.file(filePath);
       if (usePresignedUrl) {
@@ -156,7 +158,7 @@ export const retrieveFile = async (
 export const deleteFile = async (filePath: string): Promise<boolean> => {
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
-      ensureBucketExists();
+      const bucket = ensureBucketExists();
 
       const file = bucket.file(filePath);
       await file.delete();
@@ -191,7 +193,7 @@ export const copyFile = async (
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
       // Handle GCP bucket file copying
-      ensureBucketExists();
+      const bucket = ensureBucketExists();
 
       const sourceFile = bucket.file(sourceFilePath);
       const destinationFile = bucket.file(finalDestinationPath);

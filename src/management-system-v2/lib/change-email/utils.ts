@@ -2,7 +2,7 @@ import 'server-only';
 
 import { z } from 'zod';
 import { VerificationToken } from '@/lib/data/db/iam/verification-tokens';
-import { env } from '../env-vars';
+import { env } from '../ms-config/env-vars';
 
 async function createHash(message: string) {
   const msgUint8 = new TextEncoder().encode(message);

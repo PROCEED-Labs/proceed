@@ -34,7 +34,6 @@ import {
 import { Process, ProcessMetadata } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
-import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import {
   checkIfProcessAlreadyExistsForAUserInASpaceByName,
   checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching,
@@ -216,6 +215,7 @@ export const addProcesses = async (
       bpmn,
       creatorId: userId,
       environmentId: activeEnvironment.spaceId,
+      folderId: value.folderId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -464,35 +464,34 @@ export const copyProcesses = async (
       return userError('A process with this id does already exist');
     }
 
-    if (enableUseDB && enableUseFileManager) {
-      await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
+    await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
 
-      const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
-      if (copiedFiles) {
-        // TODO: check if this works
-        // TODO: possibly optimize this by parsing and serializing the bpmn once instead of on every invocation of the updateXTaskFileName functions
-        for (const file of copiedFiles) {
-          switch (file?.artifactType) {
-            case 'user-tasks': {
-              ({ bpmn: newBpmn } = await updateUserTaskFileName(
-                newBpmn,
-                file.mapping.oldFilename,
-                file.mapping.newFilename,
-              ));
-            }
-            case 'script-tasks': {
-              ({ bpmn: newBpmn } = await updateScriptTaskFileName(
-                newBpmn,
-                file.mapping.oldFilename,
-                file.mapping.newFilename,
-              ));
-            }
+    const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
+    if (copiedFiles) {
+      // TODO: check if this works
+      // TODO: possibly optimize this by parsing and serializing the bpmn once instead of on every invocation of the updateXTaskFileName functions
+      for (const file of copiedFiles) {
+        switch (file?.artifactType) {
+          case 'user-tasks': {
+            ({ bpmn: newBpmn } = await updateUserTaskFileName(
+              newBpmn,
+              file.mapping.oldFilename,
+              file.mapping.newFilename,
+            ));
+          }
+          case 'script-tasks': {
+            ({ bpmn: newBpmn } = await updateScriptTaskFileName(
+              newBpmn,
+              file.mapping.oldFilename,
+              file.mapping.newFilename,
+            ));
           }
         }
-
-        await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
       }
+
+      await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
     }
+
     copiedProcesses.push({ ...process, bpmn: newBpmn });
   }
 

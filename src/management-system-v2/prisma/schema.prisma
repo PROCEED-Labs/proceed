@@ -41,10 +41,11 @@ model User {
   memberIn        Membership[]
   folders         Folder[]
   oauthAccounts   OauthAccount[]
+  passwordAccount PasswordAccount?
   roleMembers     RoleMember[]
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
-  verificationTokens VerificationToken[]   @relation("verificationToken")
   guestSignin     GuestSignin?
+  verificationTokens VerificationToken[]   @relation("verificationToken")
 
   @@map("user")
 }
@@ -59,6 +60,15 @@ model OauthAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("oauth_account")
+}
+
+model PasswordAccount {
+  userId   String @id
+  password String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_account")
 }
 
 model Process {
@@ -175,6 +185,7 @@ model Folder {
   childrenFolder Folder[]  @relation("folderChildren")
   lastEditedOn   DateTime  @updatedAt
   createdOn      DateTime
+  roles          Role[]
 
   @@map("folder")
 }
@@ -205,6 +216,8 @@ model Role {
   default       Boolean?
   createdOn     DateTime
   lastEditedOn  DateTime  @updatedAt
+  parentId      String?
+  parentFolder  Folder? @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
   members RoleMember[]
 
@@ -224,8 +237,8 @@ model RoleMember {
 
 model Engine {
   id            String   @id @default(uuid())
-  space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
-  environmentId String
+  space         Space?    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String? /// If the environmentId is null then it is a PROCEED engine
   address       String /// Either an http url for an engine or a mqtt url
   name          String?
   createdOn     DateTime @default(now())
@@ -277,4 +290,10 @@ model GuestSignin {
   lastSigninAt DateTime @default(now())
 
   @@map("guest_signin")
+}
+
+// Global config for the MS, this table should only have one entry
+model MSConfig { 
+  id      Int   @id @default(0) 
+  config  Json
 }

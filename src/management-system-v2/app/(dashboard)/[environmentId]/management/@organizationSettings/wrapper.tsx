@@ -35,13 +35,19 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     entityType: EntityType.ORGANIZATION,
   });
   const { colorWarning } = theme.useToken().token;
-  const [organizationLogo, setOrganizationLogo] = useState<undefined | string>();
+  const [organizationLogoUrl, setOrganizationLogoUrl] = useState<undefined | string>();
+
   useEffect(() => {
-    getLogoUrl(spaceId, '', undefined, {
-      onSuccess(data) {
-        setOrganizationLogo(data.fileUrl);
-      },
-    });
+    async function getLogo() {
+      try {
+        // TODO: get logo
+        const response = await getLogoUrl({ entityId: spaceId, filePath: '' });
+        if (response.fileUrl) {
+          setOrganizationLogoUrl(response.fileUrl);
+        }
+      } catch (e) {}
+    }
+    getLogo();
   }, []);
 
   const updateTimeout = useRef<ReturnType<typeof setTimeout> | undefined>();
@@ -106,7 +112,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
           inputElement = (
             <Space id={id}>
               <Image
-                src={organizationLogo || fallbackImage}
+                src={organizationLogoUrl || fallbackImage}
                 fallback={fallbackImage}
                 style={{
                   width: '100%',
@@ -118,10 +124,10 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                   visible: false,
                   mask: (
                     <ImageUpload
-                      imageExists={!!organizationLogo}
+                      imageExists={!!organizationLogoUrl}
                       onImageUpdate={(name) => {
                         const deleted = typeof name === 'undefined';
-                        setOrganizationLogo((prev) =>
+                        setOrganizationLogoUrl((prev) =>
                           deleted ? undefined : `${prev}?${Date.now}`,
                         );
                         if (deleted) message.success('Logo deleted');
@@ -130,11 +136,6 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                         router.refresh(); // To refresh other places in the page
                       }}
                       onUploadFail={() => message.error('Error uploading image')}
-                      endpoints={{
-                        postEndpoint: '',
-                        deleteEndpoint: 'dummy',
-                        putEndpoint: '',
-                      }}
                       config={{
                         entityType: EntityType.ORGANIZATION,
                         entityId: spaceId,

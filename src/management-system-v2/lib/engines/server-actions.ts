@@ -28,6 +28,7 @@ import {
   getUserTaskFileFromMachine,
   setTasklistEntryVariableValuesOnMachine,
   setTasklistEntryMilestoneValuesOnMachine,
+  getStartFormFromMachine,
 } from './tasklist';
 import { truthyFilter } from '../typescript-utils';
 import {
@@ -244,6 +245,34 @@ export async function getAvailableTaskListEntries(spaceId: string) {
             }) as UserTask,
         ),
     ];
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function getStartForm(spaceId: string, definitionId: string, versionId: string) {
+  // TODO: manage permissions
+  try {
+    if (!enableUseDB) throw new Error('startInstance is only available with enableUseDB');
+
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      // TODO: in case of static deployment we will need to only return the engines that are
+      // assigned an entry point of the process that is not a typed start event
+      // (otherwise the engine might not have the start form)
+      return deployments.some(
+        (deployment) =>
+          deployment.definitionId === definitionId &&
+          deployment.versions.some((version) => version.versionId === versionId),
+      );
+    });
+
+    const html = await getStartFormFromMachine(definitionId, versionId, engines[0]);
+    if (html) {
+      return inlineUserTaskData(html, '', '', {}, []);
+    } else return '';
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

@@ -3,8 +3,8 @@ import { MqttEngine } from '../machines';
 
 const mqttTimeout = 1000;
 
-const _baseTopicPrefix = '';
-function getEnginePrefix(engineId: string, prefix = _baseTopicPrefix) {
+const defaultBaseTopicPrefix = '';
+function getEnginePrefix(engineId: string, prefix = defaultBaseTopicPrefix) {
   const proceedMqttPrefix = `proceed-pms/engine/${engineId}`;
   return prefix ? `${prefix}/${proceedMqttPrefix}` : proceedMqttPrefix;
 }
@@ -13,7 +13,7 @@ export async function collectEnginesStatus({
   client,
   brokerAddress,
   engineMap,
-  baseTopicPrefix = _baseTopicPrefix,
+  baseTopicPrefix = defaultBaseTopicPrefix,
 }: {
   client: mqtt.MqttClient;
   brokerAddress: string;

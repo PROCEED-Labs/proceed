@@ -20,15 +20,20 @@ const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, ...props },
   const [avatarUrl, setAvatarURl] = useState<string | undefined>();
 
   useEffect(() => {
-    if (user?.profileImage && !user.profileImage.startsWith('https')) {
-      // Technically user.profileImage is not needed, but it generates a new URl and causes the
-      // image to update
-      getProfileUrl(user.id, user.profileImage, undefined, {
-        onSuccess: (url) => {
-          if (url?.fileUrl) setAvatarURl(url.fileUrl);
-        },
-      });
+    async function getUrl() {
+      if (!user?.profileImage || user.profileImage.startsWith('https')) return;
+
+      try {
+        // Technically user.profileImage is not needed, but it generates a new URl and causes the
+        // image to update
+        const response = await getProfileUrl({ entityId: user.id, filePath: user.profileImage });
+        if (response.fileUrl) {
+          setAvatarURl(response.fileUrl);
+        }
+      } catch (e) {}
     }
+    getUrl();
+
     // getProfileUrl is a new function on each render
   }, [user]); // eslint-disable-line
 
@@ -64,7 +69,7 @@ const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, ...props },
               transform: 'translate(-50%, -50%)',
             }}
           >
-            {!user.profileImage
+            {!(avatarUrl || user?.profileImage?.startsWith('https'))
               ? (user.firstName || '').slice(0, 1) + (user.lastName || '').slice(0, 1)
               : null}
           </Typography.Text>

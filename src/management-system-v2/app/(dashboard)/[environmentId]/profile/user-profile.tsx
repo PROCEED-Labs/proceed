@@ -33,13 +33,18 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const session = useSession();
 
   useEffect(() => {
-    if (!userData.isGuest && userData.profileImage) {
-      getProfileUrl(userData.id, '', undefined, {
-        onSuccess: (url) => {
-          if (url?.fileUrl) setAvatarURl(`${url.fileUrl}?${Date.now()}`);
-        },
-      });
+    async function getAvatar() {
+      if (!userData.isGuest && userData.profileImage) {
+        const response = await getProfileUrl({
+          entityId: userData.id,
+          filePath: userData.profileImage,
+        });
+        if (response.fileUrl) {
+          setAvatarURl(response.fileUrl);
+        }
+      }
     }
+    getAvatar();
   }, [userData]);
 
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
@@ -184,15 +189,11 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                       fileName: '',
                     }}
                     imageExists={!!avatarUrl}
-                    onImageUpdate={(newFileName) => {
+                    onImageUpdate={async (newFilePath) => {
                       session.update(null);
-                      if (newFileName) {
+                      if (newFilePath) {
                         messageApi.success({ content: 'Profile picture updated' });
-                        getProfileUrl(userData.id, '', undefined, {
-                          onSuccess: (url) => {
-                            if (url?.fileUrl) setAvatarURl(`${url.fileUrl}?${Date.now()}`);
-                          },
-                        });
+                        getProfileUrl({ entityId: userData.id, filePath: newFilePath });
                       } else {
                         // Image was removed
                         messageApi.success({ content: 'Profile picture was deleted' });
@@ -200,11 +201,6 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                       }
                     }}
                     onUploadFail={() => messageApi.error('Error uploading image')}
-                    endpoints={{
-                      postEndpoint: '',
-                      deleteEndpoint: 'fake',
-                      putEndpoint: '',
-                    }}
                   />
                 ),
               }}

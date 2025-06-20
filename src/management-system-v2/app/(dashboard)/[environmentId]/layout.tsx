@@ -26,11 +26,7 @@ import {
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 
 import Link from 'next/link';
-import {
-  getEnvironmentById,
-  getOrganizationLogo,
-  organizationHasLogo,
-} from '@/lib/data/db/iam/environments';
+import { getEnvironmentById, getSpaceLogo, spaceHasLogo } from '@/lib/data/db/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { spaceURL } from '@/lib/utils';
@@ -256,9 +252,7 @@ const DashboardLayout = async ({
     });
   }
 
-  let logo;
-  if (activeEnvironment.isOrganization)
-    logo = (await getOrganizationLogo(activeEnvironment.spaceId))?.spaceLogo ?? undefined;
+  const logo = (await getSpaceLogo(activeEnvironment.spaceId))?.spaceLogo ?? undefined;
 
   return (
     <>

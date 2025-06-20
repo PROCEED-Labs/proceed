@@ -1,19 +1,14 @@
 'use client';
 
-import React, { useEffect, useRef, useTransition } from 'react';
+import React, { useRef, useTransition } from 'react';
 
 import { useState } from 'react';
 import { SettingGroup } from '../../settings/type-util';
 import { SettingsGroup } from '../../settings/components';
 import { useEnvironment } from '@/components/auth-can';
 import { Alert } from 'antd';
-import { App, Button, Form, Input, Image, theme, Space, Modal } from 'antd';
+import { App, Form, Input, Space } from 'antd';
 import PhoneInput from '@/components/phone-input';
-import { useFileManager } from '@/lib/useFileManager';
-import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { fallbackImage } from '../../processes/[processId]/image-selection-section';
-import ImageUpload from '@/components/image-upload';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DeleteOrganizationButton from './delete-organization-button';
 import { updateOrganization as serverUpdateOrganization } from '@/lib/data/environments';
@@ -31,25 +26,6 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const { message } = App.useApp();
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
-  const { download: getLogoUrl } = useFileManager({
-    entityType: EntityType.ORGANIZATION,
-  });
-  const { colorWarning } = theme.useToken().token;
-  const [organizationLogoUrl, setOrganizationLogoUrl] = useState<undefined | string>();
-
-  useEffect(() => {
-    async function getLogo() {
-      try {
-        // TODO: get logo
-        const response = await getLogoUrl({ entityId: spaceId, filePath: '' });
-        if (response.fileUrl) {
-          setOrganizationLogoUrl(response.fileUrl);
-        }
-      } catch (e) {}
-    }
-    getLogo();
-  }, []);
-
   const updateTimeout = useRef<ReturnType<typeof setTimeout> | undefined>();
   const changes = useRef<Record<string, string>>({});
 
@@ -105,67 +81,6 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
               {...antDesignInputProps(errors, 'contactPhoneNumber')}
               onChange={(e) => onUpdate(e.target.value)}
             />
-          );
-        }
-
-        if (setting.key === 'organizationLogo') {
-          inputElement = (
-            <Space id={id}>
-              <Image
-                src={organizationLogoUrl || fallbackImage}
-                fallback={fallbackImage}
-                style={{
-                  width: '100%',
-                  maxHeight: '7.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid #d9d9d9',
-                }}
-                preview={{
-                  visible: false,
-                  mask: (
-                    <ImageUpload
-                      imageExists={!!organizationLogoUrl}
-                      onImageUpdate={(name) => {
-                        const deleted = typeof name === 'undefined';
-                        setOrganizationLogoUrl((prev) =>
-                          deleted ? undefined : `${prev}?${Date.now}`,
-                        );
-                        if (deleted) message.success('Logo deleted');
-                        else message.success('Logo uploaded');
-
-                        router.refresh(); // To refresh other places in the page
-                      }}
-                      onUploadFail={() => message.error('Error uploading image')}
-                      config={{
-                        entityType: EntityType.ORGANIZATION,
-                        entityId: spaceId,
-                        useDefaultRemoveFunction: true,
-                        fileName: '',
-                      }}
-                    />
-                  ),
-                }}
-                role="group"
-                aria-label="image-section"
-              />
-
-              <Button
-                onClick={() =>
-                  Modal.confirm({
-                    content:
-                      'Logo changes may take some time to appear everywhere. This is normal and should resolve itself shortly.',
-                    footer: (_, { OkBtn }) => <OkBtn />,
-                    maskClosable: true,
-                  })
-                }
-                style={{
-                  color: colorWarning,
-                }}
-                type="text"
-              >
-                <ExclamationCircleOutlined />
-              </Button>
-            </Space>
           );
         }
 

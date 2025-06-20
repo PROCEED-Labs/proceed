@@ -6,7 +6,6 @@ import { Setting, SettingGroup } from '../../settings/type-util';
 import SettingsInjector from '../../settings/settings-injector';
 
 const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
-  console.log('GeneralSettingsPage', params);
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
   if (!activeEnvironment.isOrganization || !ability.can('manage', 'Environment')) return null;
 
@@ -18,7 +17,7 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
   if (ability.can('manage', 'Environment')) {
     children.push({
       key: 'organizationDetails',
-      name: 'Organization Details',
+      name: 'Information',
       children: [
         {
           key: 'name',
@@ -44,12 +43,6 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
           name: 'Contact E-Mail',
           value: organization.contactEmail || '',
           type: 'string',
-        },
-        {
-          key: 'organizationLogo',
-          name: 'Organization Logo',
-          value: null,
-          type: 'custom',
         },
       ],
     });

@@ -8,19 +8,11 @@ import {
   getDeployments as fetchDeployments,
   removeDeploymentFromMachines,
 } from './deployment';
-import {
-  Engine,
-  SpaceEngine,
-  getProceedEngines as _getEngines,
-  getProceedEngines,
-} from './machines';
-import { spaceEnginesToEngines } from './space-engines-helpers';
+import { Engine, SpaceEngine } from './machines';
+import { savedEnginesToEngines } from './saved-engines-helpers';
 import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
-import {
-  getDbEngines as getSpaceEnginesFromDb,
-  getDbEngineByAddress as getSpaceEngineByAddressFromDb,
-} from '@/lib/data/db/engines';
+import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import {
   startInstanceOnMachine,
   pauseInstanceOnMachine,
@@ -64,20 +56,17 @@ async function getCorrectTargetEngines(
   let engines: Engine[] = [];
   if (onlyProceedEngines) {
     // force that only proceed engines are supposed to be used
-    engines = await getProceedEngines();
+    const proceedSavedEngines = await getDbEngines(null, undefined, 'dont-check');
+    engines = await savedEnginesToEngines(proceedSavedEngines);
   } else {
     // use all available engines
     const [proceedEngines, spaceEngines] = await Promise.allSettled([
-      getProceedEngines(),
-      getSpaceEnginesFromDb(spaceId, ability),
+      getDbEngines(null, undefined, 'dont-check').then(savedEnginesToEngines),
+      getDbEngines(spaceId, ability).then(savedEnginesToEngines),
     ]);
 
     if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
-
-    if (spaceEngines.status === 'fulfilled') {
-      let availableSpaceEngines = await spaceEnginesToEngines(spaceEngines.value);
-      engines = engines.concat(availableSpaceEngines);
-    }
+    if (spaceEngines.status === 'fulfilled') engines = engines.concat(spaceEngines.value);
   }
 
   if (validatorFunc) engines = await asyncFilter(engines, validatorFunc);
@@ -103,9 +92,9 @@ export async function deployProcess(
       const { ability } = await getCurrentEnvironment(spaceId);
       const address =
         _forceEngine.type === 'http' ? _forceEngine.address : _forceEngine.brokerAddress;
-      const spaceEngine = await getSpaceEngineByAddressFromDb(address, spaceId, ability);
+      const spaceEngine = await getDbEngineByAddress(address, spaceId, ability);
       if (!spaceEngine) throw new Error('No matching space engine found');
-      engines = await spaceEnginesToEngines([spaceEngine]);
+      engines = await savedEnginesToEngines([spaceEngine]);
       if (engines.length === 0) throw new Error("Engine couldn't be reached");
     } else {
       engines = await getCorrectTargetEngines(spaceId, _forceEngine === 'PROCEED');
@@ -607,8 +596,8 @@ export async function getAvailableSpaceEngines(spaceId: string) {
       throw new Error('getAvailableEnginesForSpace only available with enableUseDB');
 
     const { ability } = await getCurrentEnvironment(spaceId);
-    const spaceEngines = await getSpaceEnginesFromDb(spaceId, ability);
-    return await spaceEnginesToEngines(spaceEngines);
+    const spaceEngines = await getDbEngines(spaceId, ability);
+    return (await savedEnginesToEngines(spaceEngines)) as SpaceEngine[];
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

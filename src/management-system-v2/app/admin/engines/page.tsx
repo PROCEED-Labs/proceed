@@ -1,27 +1,23 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEngines } from '@/lib/engines/endpoints/mqtt-endpoints';
 import { Result, Skeleton } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import EnginesTable from './engines-table';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-
-export type TableEngine = Awaited<ReturnType<typeof getEngines>>[number] & { name: string };
+import { getDbEngines } from '@/lib/data/db/engines';
+import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 
 async function Engines() {
-  const user = await getCurrentUser();
-  if (!user.session) redirect('/');
-  const adminData = getSystemAdminByUserId(user.userId);
-  if (!adminData) redirect('/');
+  const { session, systemAdmin } = await getCurrentUser();
+  if (!session || !systemAdmin) redirect('/');
 
   try {
-    const engines = (await getEngines()).map((e) => ({ ...e, name: e.id }));
+    const savedEngines = await getDbEngines(null, undefined, systemAdmin);
+    const engines = await savedEnginesToEngines(savedEngines);
 
     return <EnginesTable engines={engines} />;
   } catch (e) {
-    console.error(e);
     return <Result status="500" title="Error" subTitle="Couldn't fetch engines" />;
   }
 }

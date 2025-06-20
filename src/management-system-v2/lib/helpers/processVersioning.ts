@@ -9,6 +9,8 @@ import {
   getScriptTaskFileNameMapping,
   setUserTaskData,
   setScriptTaskData,
+  getStartFormFileNameMapping,
+  setStartFormFileName,
 } from '@proceed/bpmn-helper';
 import { asyncForEach } from './javascriptHelpers';
 
@@ -17,14 +19,15 @@ import {
   getProcessVersionBpmn,
   updateProcess,
   getProcessBpmn,
-  deleteProcessUserTask,
-  getProcessUserTaskHtml,
-  saveProcessUserTask,
-  getProcessUserTaskJSON,
+  deleteHtmlForm,
   getProcessScriptTaskScript,
   saveProcessScriptTask,
   deleteProcessScriptTask,
+  saveProcessHtmlForm,
+  getProcessHtmlFormJSON,
+  getHtmlForm,
 } from '@/lib/data/db/process';
+import { getProcessHtmlFormHTML } from '../data/processes';
 const { diff } = require('bpmn-js-differ');
 
 // TODO: This used to be a helper file in the old management system. It used
@@ -77,6 +80,17 @@ export async function convertToEditableBpmn(bpmn: string) {
     versionBasedOn: versionId,
   })) as object;
 
+  const changedStartFormTaskFileNames = {} as { [key: string]: string };
+  const startFormFileNameMapping = await getStartFormFileNameMapping(bpmnObj);
+
+  await asyncForEach(Object.entries(startFormFileNameMapping), async ([processId, fileName]) => {
+    if (fileName) {
+      const [unversionedName] = fileName.split('-');
+      changedStartFormTaskFileNames[fileName] = unversionedName;
+      await setStartFormFileName(bpmnObj, processId, unversionedName);
+    }
+  });
+
   const changedUserTaskFileNames = {} as { [key: string]: string };
   const userTaskFileNameMapping = await getUserTaskFileNameMapping(bpmnObj);
 
@@ -105,7 +119,12 @@ export async function convertToEditableBpmn(bpmn: string) {
     },
   );
 
-  return { bpmn: await toBpmnXml(bpmnObj), changedUserTaskFileNames, changedScriptTaskFileNames };
+  return {
+    bpmn: await toBpmnXml(bpmnObj),
+    changedStartFormTaskFileNames,
+    changedUserTaskFileNames,
+    changedScriptTaskFileNames,
+  };
 }
 
 export async function getLocalVersionBpmn(process: Process, localVersion: string) {
@@ -117,6 +136,45 @@ export async function getLocalVersionBpmn(process: Process, localVersion: string
     const bpmn = getProcessVersionBpmn(process.id, localVersion);
     return bpmn;
   }
+}
+
+export async function versionStartForm(
+  processInfo: Process,
+  newVersion: string,
+  bpmnObj: object,
+  dryRun = false,
+) {
+  const htmlMapping = await getStartFormFileNameMapping(bpmnObj);
+  const versionedStartFormFilenames: string[] = [];
+  const { versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
+
+  for (let processId in htmlMapping) {
+    const fileName = htmlMapping[processId];
+
+    if (fileName) {
+      let versionFileName = `${fileName}-${newVersion}`;
+
+      // make sure the process is using the correct data
+      await setStartFormFileName(bpmnObj, processId, versionFileName);
+
+      if (!dryRun) {
+        const startFormHtml = await getHtmlForm(processInfo.id, fileName);
+        const startFormData = await getProcessHtmlFormJSON(processInfo.id, fileName);
+        await saveProcessHtmlForm(
+          processInfo.id,
+          versionFileName,
+          startFormData!,
+          startFormHtml!,
+          versionCreatedOn,
+        );
+      }
+
+      // update ref for the artifacts referenced by the versioned start form
+      versionedStartFormFilenames.push(versionFileName);
+    }
+  }
+
+  return versionedStartFormFilenames;
 }
 
 export async function versionUserTasks(
@@ -145,9 +203,9 @@ export async function versionUserTasks(
       );
 
       if (!dryRun) {
-        const userTaskHtml = await getProcessUserTaskHtml(processInfo.id, fileName);
-        const userTaskData = await getProcessUserTaskJSON(processInfo.id, fileName);
-        await saveProcessUserTask(
+        const userTaskHtml = await getHtmlForm(processInfo.id, fileName);
+        const userTaskData = await getProcessHtmlFormJSON(processInfo.id, fileName);
+        await saveProcessHtmlForm(
           processInfo.id,
           versionFileName,
           userTaskData!,
@@ -273,16 +331,44 @@ const getUsedUserTaskFileNames = async (bpmn: string) => {
   return [...fileNames];
 };
 
+const getUsedStartFormFileNames = async (bpmn: string) => {
+  const startFormFileNameMapping = await getStartFormFileNameMapping(bpmn);
+
+  const fileNames = new Set<string>();
+
+  Object.values(startFormFileNameMapping).forEach((fileName) => {
+    if (fileName) {
+      fileNames.add(fileName);
+    }
+  });
+
+  return [...fileNames];
+};
+
 export async function selectAsLatestVersion(processId: string, versionId: string) {
   const versionBpmn = (await getProcessVersionBpmn(processId, versionId)) as string;
 
   const {
     bpmn: convertedBpmn,
+    changedStartFormTaskFileNames,
     changedScriptTaskFileNames,
     changedUserTaskFileNames,
   } = await convertToEditableBpmn(versionBpmn);
 
   const editableBpmn = (await getProcessBpmn(processId)) as string;
+
+  const startFormFileNameInEditableVersion = await getUsedStartFormFileNames(editableBpmn);
+
+  await asyncForEach(startFormFileNameInEditableVersion, async (processFileName) => {
+    await deleteHtmlForm(processId, processFileName);
+  });
+
+  await asyncForEach(Object.entries(changedStartFormTaskFileNames), async ([oldName, newName]) => {
+    const json = await getProcessHtmlFormJSON(processId, oldName);
+    const html = await getHtmlForm(processId, oldName);
+
+    if (json && html) await saveProcessHtmlForm(processId, newName, json, html);
+  });
 
   const scriptFileNamesinEditableVersion = await getUsedScriptTaskFileNames(editableBpmn);
 
@@ -307,15 +393,15 @@ export async function selectAsLatestVersion(processId: string, versionId: string
 
   // Delete UserTasks stored for latest version
   await asyncForEach(userTaskFileNamesinEditableVersion, async (taskFileName) => {
-    await deleteProcessUserTask(processId, taskFileName);
+    await deleteHtmlForm(processId, taskFileName);
   });
 
   // Store UserTasks from this version as UserTasks from latest version
   await asyncForEach(Object.entries(changedUserTaskFileNames), async ([oldName, newName]) => {
-    const json = await getProcessUserTaskJSON(processId, oldName);
-    const html = await getProcessUserTaskHtml(processId, oldName);
+    const json = await getProcessHtmlFormJSON(processId, oldName);
+    const html = await getHtmlForm(processId, oldName);
 
-    if (json && html) await saveProcessUserTask(processId, newName, json, html);
+    if (json && html) await saveProcessHtmlForm(processId, newName, json, html);
   });
 
   // Store bpmn from this version as latest version

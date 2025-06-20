@@ -79,6 +79,7 @@ const TableCell: React.FC<
           key: 'setting',
         },
       ]}
+      onDoubleClick={() => setTextEditing(true)}
     >
       <EditableText
         active={textEditing}

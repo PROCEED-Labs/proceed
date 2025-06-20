@@ -144,7 +144,10 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         // just use first error
         return responses.find(isUserErrorResponse);
       },
-      onSuccess: 'Script saved',
+      onSuccess: () => {
+        app.message.success('Script saved');
+        onClose();
+      },
       app,
     });
 

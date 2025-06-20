@@ -39,11 +39,11 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     async function getLogo() {
       if (!spaceLogoFilePath) return;
       try {
-        const response = await getLogoUrl({ entityId: spaceId, filePath: spaceLogoFilePath }); 
+        const response = await getLogoUrl({ entityId: spaceId, filePath: spaceLogoFilePath });
         if (response.fileUrl) {
           setSpaceLogoUrl(response.fileUrl);
         }
-      } catch (e) { }
+      } catch (e) {}
     }
     getLogo();
   }, [spaceId, spaceLogoFilePath, getLogoUrl]);

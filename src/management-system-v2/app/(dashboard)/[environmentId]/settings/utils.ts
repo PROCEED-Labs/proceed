@@ -1,4 +1,4 @@
-import { updateSpaceSettings } from '@/lib/data/db/space-settings';
+import { updateSpaceSettings } from '@/lib/data/space-settings';
 
 let timer: ReturnType<typeof setTimeout>;
 let changes: Record<string, any> = {};

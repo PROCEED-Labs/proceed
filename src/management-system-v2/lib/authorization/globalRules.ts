@@ -53,7 +53,7 @@ export const packedGlobalOrganizationRules = Object.freeze(
 );
 
 export const globalPersonalSpaceRules = Object.freeze(
-  getRulesForTargetResources(['Process', 'Folder', 'Execution', 'Machine']),
+  getRulesForTargetResources(['Process', 'Folder', 'Execution', 'Machine', 'Environment']),
 );
 
 export const packedGlobalUserRules = Object.freeze(

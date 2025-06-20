@@ -26,6 +26,7 @@ export const OrganizationEnvironmentSchema = z.union([
 export const PersonalEnvironmentSchema = z.object({
   ownerId: z.string().readonly(),
   isOrganization: z.literal(false).readonly(),
+  spaceLogo: z.string().url().optional(),
 });
 
 export const environmentSchema = z.union([

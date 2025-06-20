@@ -134,7 +134,7 @@ export async function saveEntityFile(
     case EntityType.PROCESS:
       return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
     case EntityType.ORGANIZATION:
-      return saveOrganizationLogo(entityId, fileName, mimeType, fileContent);
+      return saveSpaceLogo(entityId, fileName, mimeType, fileContent);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -152,7 +152,7 @@ export async function retrieveEntityFile(
       if (!filePath) throw new Error('File name is required for process artifacts');
       return retrieveFile(filePath, true);
     case EntityType.ORGANIZATION:
-      return getOrganizationLogo(entityId);
+      return getSpaceLogo(entityId);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -170,7 +170,7 @@ export async function deleteEntityFile(
       if (!fileName) throw new Error('File name is required for process artifacts');
       return deleteProcessArtifact(fileName, false, entityId);
     case EntityType.ORGANIZATION:
-      return deleteOrganizationLogo(entityId);
+      return deleteSpaceLogo(entityId);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -290,7 +290,7 @@ export async function deleteProcessArtifact(
 }
 
 // Functionality for handling organization logo files
-export async function saveOrganizationLogo(
+export async function saveSpaceLogo(
   organizationId: string,
   fileName: string,
   mimeType: string,
@@ -314,7 +314,7 @@ export async function saveOrganizationLogo(
   return { presignedUrl, filePath };
 }
 
-export async function getOrganizationLogo(organizationId: string) {
+export async function getSpaceLogo(organizationId: string) {
   const result = await db.space.findUnique({
     where: { id: organizationId },
     select: { spaceLogo: true },
@@ -327,7 +327,7 @@ export async function getOrganizationLogo(organizationId: string) {
   return null;
 }
 
-export async function deleteOrganizationLogo(organizationId: string): Promise<boolean> {
+export async function deleteSpaceLogo(organizationId: string): Promise<boolean> {
   const result = await db.space.findUnique({
     where: { id: organizationId },
     select: { spaceLogo: true },

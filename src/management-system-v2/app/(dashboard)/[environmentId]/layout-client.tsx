@@ -28,7 +28,6 @@ import SpaceLink from '@/components/space-link';
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { enableUseFileManager } from 'FeatureFlags';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { useSession } from '@/components/auth-can';
 
@@ -86,7 +85,7 @@ const Layout: FC<
 
   let layoutMenuItems = _layoutMenuItems;
 
-  if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
     const personal: MenuProps['items'] = [
       {
         key: 'personal-profile',
@@ -146,11 +145,11 @@ const Layout: FC<
   }
 
   useEffect(() => {
-    if (enableUseFileManager && customLogo) getLogo(activeSpace.spaceId, '');
+    if (customLogo) getLogo({ entityId: activeSpace.spaceId, filePath: customLogo });
   }, [activeSpace, customLogo]);
 
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (customLogo) imageSource = logoUrl ?? customLogo;
+  if (logoUrl) imageSource = logoUrl;
 
   const menu = (
     <Menu

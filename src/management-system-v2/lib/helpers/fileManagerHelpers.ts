@@ -81,7 +81,7 @@ export const generateProcessFilePath = (
   if (!artifactType) artifactType = getFileCategory(fileName, mimeType);
 
   if (artifactType === 'images' || artifactType === 'others') {
-    return `artifacts/${artifactType}/${fileName}`;
+    return `processes-artifacts/${artifactType}/${fileName}`;
   }
 
   if (artifactType === 'bpmns') {

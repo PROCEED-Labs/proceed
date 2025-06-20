@@ -22,12 +22,11 @@ import db from '@/lib/data/db';
 import {
   deleteProcessArtifact,
   getArtifactMetaData,
-  retrieveProcessArtifact,
   saveProcessArtifact,
 } from '../file-manager-facade';
 import { toCustomUTCString } from '@/lib/helpers/timeHelper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { copyFile } from '../file-manager/file-manager';
+import { copyFile, retrieveFile } from '../file-manager/file-manager';
 import { ArtifactType, generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
 
@@ -526,7 +525,7 @@ export async function addProcessVersion(
     { useDefaultArtifactsTable: false, generateNewFileName: false },
   );
 
-  if (!res.fileName) {
+  if (!res.filePath) {
     throw new Error('Error saving version bpmn');
   }
 
@@ -538,7 +537,7 @@ export async function addProcessVersion(
         description: versionInformation.description ?? '',
         versionBasedOn: versionInformation.versionBasedOn!,
         process: { connect: { id: processDefinitionsId } },
-        bpmnFilePath: res.fileName,
+        bpmnFilePath: res.filePath,
       },
     });
 
@@ -613,14 +612,7 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
     where: { id: versionId },
   });
 
-  return (
-    (await retrieveProcessArtifact(
-      processDefinitionsId,
-      versn?.bpmnFilePath!,
-      false,
-      false,
-    )) as Buffer
-  ).toString('utf8');
+  return ((await retrieveFile(versn?.bpmnFilePath!, false)) as Buffer).toString('utf8');
 }
 
 /** Removes information from the meta data that would not be correct after a restart */
@@ -697,12 +689,7 @@ export async function getProcessHtmlFormJSON(processDefinitionsId: string, fileN
         select: { artifact: true },
       });
     if (res?.artifact) {
-      const jsonAsBuffer = (await retrieveProcessArtifact(
-        processDefinitionsId,
-        res.artifact.filePath,
-        true,
-        true,
-      )) as Buffer;
+      const jsonAsBuffer = (await retrieveFile(res.artifact.filePath, true)) as Buffer;
       return jsonAsBuffer.toString('utf8');
     }
   } catch (err) {
@@ -793,9 +780,7 @@ export async function getHtmlForm(processDefinitionsId: string, fileName: string
       throw new Error(`Unable to get html for ${fileName} from the database!`);
     }
 
-    const html = (
-      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
-    ).toString('utf-8');
+    const html = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return html;
   } catch (err) {
     logger.debug(`Error getting html for ${fileName} from the database. Reason:\n${err}`);
@@ -833,9 +818,7 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
       throw new Error('Unable to get script for script task!');
     }
 
-    const script = (
-      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
-    ).toString('utf-8');
+    const script = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return script;
   } catch (err) {
     logger.debug(`Error getting script of script task. Reason:\n${err}`);
@@ -854,7 +837,7 @@ export async function saveProcessHtmlForm(
   try {
     const res = await checkIfHtmlFormExists(processDefinitionsId, fileName);
     const content = new TextEncoder().encode(json);
-    const { fileName: saveFileName } = await saveProcessArtifact(
+    const { filePath } = await saveProcessArtifact(
       processDefinitionsId,
       `${fileName}.json`,
       'application/json',
@@ -879,7 +862,7 @@ export async function saveProcessHtmlForm(
         context: 'html-forms',
       },
     );
-    return saveFileName;
+    return filePath;
   } catch (err) {
     logger.debug(`Error storing html form data for ${fileName}. Reason:\n${err}`);
     throw new Error('Failed to store the html form data.');
@@ -1081,12 +1064,7 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
     if (!res) {
       throw new Error(`Unable to get image : ${imageFileName}`);
     }
-    const image = (await retrieveProcessArtifact(
-      processDefinitionsId,
-      res?.filePath,
-      true,
-      false,
-    )) as Buffer;
+    const image = (await retrieveFile(res?.filePath, false)) as Buffer;
     return image;
   } catch (err) {
     logger.debug(`Error getting image. Reason:\n${err}`);

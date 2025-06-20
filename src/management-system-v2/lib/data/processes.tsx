@@ -31,7 +31,6 @@ import {
 import { Process, ProcessMetadata } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
-import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import {
   checkIfProcessAlreadyExistsForAUserInASpaceByName,
   checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching,
@@ -473,22 +472,19 @@ export const copyProcesses = async (
       return userError('A process with this id does already exist');
     }
 
-    if (enableUseDB && enableUseFileManager) {
-      await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
+    await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
 
-      const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
-      const changesFileNames = copiedFiles
-        .filter(truthyFilter)
-        .filter(
-          (file) => file.artifactType === 'html-forms' || file.artifactType === 'script-tasks',
-        )
-        .map(
-          ({ mapping: { oldFilename, newFilename } }) =>
-            [oldFilename, newFilename] as [string, string],
-        );
-      newBpmn = await updateFileNames(newBpmn, changesFileNames);
-      await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
-    }
+    const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
+    const changesFileNames = copiedFiles
+      .filter(truthyFilter)
+      .filter((file) => file.artifactType === 'html-forms' || file.artifactType === 'script-tasks')
+      .map(
+        ({ mapping: { oldFilename, newFilename } }) =>
+          [oldFilename, newFilename] as [string, string],
+      );
+    newBpmn = await updateFileNames(newBpmn, changesFileNames);
+    await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
+
     copiedProcesses.push({ ...process, bpmn: newBpmn });
   }
 

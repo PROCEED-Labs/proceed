@@ -20,63 +20,129 @@ export const mSConfigEnvironmentOnlyKeys = [
   'MQTT_USERNAME',
   'MQTT_PASSWORD',
   'MQTT_BASETOPIC',
-  'NODE_ENV',
 
   // TODO: remove this from environment only list
-  'GOOGLE_CLOUD_BUCKET_NAME',
+  'STORAGE_CLOUD_BUCKET_NAME',
   'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
   'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
-  'ENABLE_PASSWORD_SIGNIN',
+  'PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE',
+
+  'PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE',
+  'PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE',
+  'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE',
+  'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_X_ACTIVE',
+  'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE',
+
+  'PROCEED_PUBLIC_IAM_ACTIVE',
+
+  'IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET',
+  'IAM_GUEST_CONVERSION_REFERENCE_SECRET',
+
+  'IAM_LOGIN_OAUTH_GOOGLE_CLIENT_ID',
+  'IAM_LOGIN_OAUTH_GOOGLE_CLIENT_SECRET',
+
+  'IAM_LOGIN_OAUTH_X_CLIENT_ID',
+  'IAM_LOGIN_OAUTH_X_CLIENT_SECRET',
+
+  'IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID',
+  'IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET',
+  'PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV',
 
   // Variables that aren't implemented yet
-  // 'PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE',
-  // 'PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE',
-  // 'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE',
-  // 'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_X_ACTIVE',
-  // 'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE',
   // 'PRISMA_???',
-
-  // Variables that still need to be renamed
-  // 'PROCEED_PUBLIC_IAM_ACTIVE',
-  'PROCEED_PUBLIC_IAM_ACTIVATE',
-
-  // 'IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET',
-  'INVITATION_ENCRYPTION_SECRET',
-
-  // 'IAM_GUEST_CONVERSION_REFERENCE_SECRET',
-  'GUEST_REFERENCE_SECRET',
-
-  // 'IAM_LOGIN_OAUTH_GOOGLE_CLIENT_ID',
-  'GOOGLE_CLIENT_ID',
-
-  // 'IAM_LOGIN_OAUTH_GOOGLE_CLIENT_SECRET',
-  'GOOGLE_CLIENT_SECRET',
-
-  // 'IAM_LOGIN_OAUTH_X_CLIENT_ID',
-  'TWITTER_CLIENT_ID',
-
-  // 'IAM_LOGIN_OAUTH_X_CLIENT_SECRET',
-  'TWITTER_CLIENT_SECRET',
-
-  // 'IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID',
-  'DISCORD_CLIENT_ID',
-
-  // 'IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET',
-  'DISCORD_CLIENT_SECRET',
-
-  // 'PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV',
-  'PROCEED_PUBLIC_DEPLOYMENT_ENV',
 ] satisfies (keyof MergedSchemas)[];
 
 export const msConfigSchema = {
   all: {
+    PROCEED_PUBLIC_GENERAL_MS_LOGO: z.string().default(''),
+    PROCEED_PUBLIC_GENERAL_DEFAULT_CURRENCY: z.string().default('EUR'),
+    PROCEED_PUBLIC_GENERAL_DEFAULT_TIME_FORMAT: z.string().default('24'),
+    PROCEED_PUBLIC_GENERAL_DEFAULT_DATE_FORMAT: z.string().default(''),
+
+    PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE: z.string().default('TRUE').transform(boolParser),
+    PROCEED_PUBLIC_GANTT_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine((val) => !val || process.env.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE, {
+        message:
+          'PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_GANTT_ACTIVE',
+      }),
+    PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE: z.string().default('FALSE').transform(boolParser),
+
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
-    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
-    PROCEED_PUBLIC_DEPLOYMENT_ENV: z.enum(['cloud', 'local']).optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
-    SHARING_ENCRYPTION_SECRET: z.string(),
-    INVITATION_ENCRYPTION_SECRET: z.string(),
+    NEXTAUTH_URL_INTERNAL: z.string().default(''),
+    NEXTAUTH_SECRET: z.string().default(''),
+    IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z.string().default(''),
+    SHARING_ENCRYPTION_SECRET: z.string().default(''),
+    IAM_GUEST_CONVERSION_REFERENCE_SECRET: z.string().default(''),
+
+    PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV: z
+      .enum(['cloud', 'local'])
+      .default('local')
+      .refine((value) => {
+        if (value === 'local') return true;
+        return !!process.env.STORAGE_CLOUD_BUCKET_NAME;
+      }, 'To use PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV, you need to set STORAGE_CLOUD_BUCKET_NAME'),
+    STORAGE_CLOUD_BUCKET_NAME: z.string().default(''),
+    STORAGE_CLOUD_BUCKET_CREDENTIALS_FILE_PATH: z.string().default(''),
+
+    MAILSERVER_URL: z.string().default(''),
+    MAILSERVER_PORT: z.coerce.number().default(465),
+    MAILSERVER_MS_DEFAULT_MAIL_ADDRESS: z.string().default(''),
+    MAILSERVER_MS_DEFAULT_MAIL_PASSWORD: z.string().default(''),
+
+    PROCEED_PUBLIC_IAM_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE: z.string().default('TRUE').transform(boolParser),
+    PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE: z.string().default('TRUE').transform(boolParser),
+    PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser),
+
+    PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine(
+        (value) => !value || boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE),
+        'To use PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE you need to set PROCEED_PUBLIC_IAM_ACTIVE to true',
+      ),
+    IAM_LOGIN_OAUTH_GOOGLE_CLIENT_ID: z.string().default(''),
+    IAM_LOGIN_OAUTH_GOOGLE_CLIENT_SECRET: z.string().default(''),
+
+    PROCEED_PUBLIC_IAM_LOGIN_OAUTH_X_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine(
+        (value) => !value || boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE),
+        'To use PROCEED_PUBLIC_IAM_LOGIN_OAUTH_X_ACTIVE you need to set PROCEED_PUBLIC_IAM_ACTIVE to true',
+      ),
+    IAM_LOGIN_OAUTH_X_CLIENT_ID: z.string().default(''),
+    IAM_LOGIN_OAUTH_X_CLIENT_SECRET: z.string().default(''),
+
+    PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine(
+        (value) => !value || boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE),
+        'To use PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE you need to set PROCEED_PUBLIC_IAM_ACTIVE to true',
+      ),
+    IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID: z.string().default(''),
+    IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET: z.string().default(''),
+
+    SCHEDULER_INTERVAL: z.string().default('0 3 * * *'),
+    SCHEDULER_TOKEN: z.string().optional(),
+    SCHEDULER_JOB_DELETE_INACTIVE_GUESTS: z.coerce.number().default(0),
+    SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
+
+    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
     MS_ENABLED_RESOURCES: z
       .string()
       .transform((str, ctx) => {
@@ -95,54 +161,42 @@ export const msConfigSchema = {
     MQTT_USERNAME: z.string().optional(),
     MQTT_PASSWORD: z.string().optional(),
     MQTT_BASETOPIC: z.string().optional(),
-
-    PROCEED_PUBLIC_IAM_ACTIVATE: z.string().transform(boolParser).optional(),
-    PROCEED_PUBLIC_MAILSERVER_ACTIVE: z.string().transform(boolParser).optional(),
-    PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE: z
-      .string()
-      .optional()
-      .refine((val) => !val || process.env.PROCEED_PUBLIC_MAILSERVER_ACTIVE, {
-        message:
-          'PROCEED_PUBLIC_MAILSERVER_ACTIVE needs to be set to true, in ordre to use PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE',
-      }),
-    ENABLE_PASSWORD_SIGNIN: z.string().transform(boolParser).optional(),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
-
-    SMTP_MAIL_USER: z.string().default(''),
-    SMTP_MAIL_PORT: z.coerce.number().default(587),
-    SMTP_MAIL_HOST: z.string().default(''),
-    SMTP_MAIL_PASSWORD: z.string().default(''),
-
-    GOOGLE_CLIENT_ID: z.string(),
-    GOOGLE_CLIENT_SECRET: z.string(),
-
-    DISCORD_CLIENT_ID: z.string(),
-    DISCORD_CLIENT_SECRET: z.string(),
-
-    TWITTER_CLIENT_ID: z.string(),
-    TWITTER_CLIENT_SECRET: z.string(),
-
-    SHARING_ENCRYPTION_SECRET: z.string(),
-
-    GUEST_REFERENCE_SECRET: z.string(),
-
-    //Note: needed for cloud deployment with gcp bucket
-    GOOGLE_CLOUD_BUCKET_NAME: z.string().optional(),
-    PROCEED_GCP_BUCKET_KEY_PATH: z.string().optional(),
-
     DATABASE_URL: z.string(),
+    // NOTE: not quite sure if this should be required
+    SCHEDULER_TOKEN: z.string().optional(),
+
+    PROCEED_PUBLIC_MAILSERVER_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine(
+        (value) =>
+          !value ||
+          (process.env.MAILSERVER_MS_DEFAULT_MAIL_ADDRESS &&
+            process.env.MAILSERVER_MS_DEFAULT_MAIL_PASSWORD),
+        'To use PROCEED_PUBLIC_MAILSERVER_ACTIVE you also need to at least set MAILSERVER_MS_DEFAULT_MAIL_ADDRESS and MAILSERVER_MS_DEFAULT_MAIL_PASSWORD',
+      ),
   },
   development: {
+    NEXTAUTH_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
-    INVITATION_ENCRYPTION_SECRET: z
+    IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z
       .string()
       .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
-    GUEST_REFERENCE_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
+    IAM_GUEST_CONVERSION_REFERENCE_SECRET: z
+      .string()
+      .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
+    SCHEDULER_TOKEN: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     DATABASE_URL: z.string({
       required_error: 'DATABASE_URL not in environment variables, try running `yarn dev-ms-db`',
     }),
+
+    // In development it's not necessary to setup a mailserver, because we just print out emails to
+    // the console
+    PROCEED_PUBLIC_MAILSERVER_ACTIVE: z.string().default('FALSE').transform(boolParser),
   },
   test: {},
 } satisfies {

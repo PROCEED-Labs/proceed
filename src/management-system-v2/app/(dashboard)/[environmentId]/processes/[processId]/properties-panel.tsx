@@ -252,9 +252,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               }}
             >
               <ImageSelectionSection
-                imageFileName={
-                  metaData.overviewImage && metaData.overviewImage.split('/images/').pop()
-                }
+                imageFilePath={metaData.overviewImage}
                 onImageUpdate={(imageFileName) => {
                   updateMetaData(modeler!, selectedElement, 'overviewImage', imageFileName);
                 }}
@@ -366,9 +364,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             role="group"
             aria-labelledby="general-title"
           >
-            {environment?.isOrganization && (
-              <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
-            )}
+            <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
           </Space>
         </>
       ),

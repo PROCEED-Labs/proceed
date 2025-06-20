@@ -17,6 +17,9 @@ export async function sendEmail({
 }) {
   const msConfig = await getMSConfig();
 
+  if (!msConfig.PROCEED_PUBLIC_MAILSERVER_ACTIVE)
+    throw new Error('Email sending is not enabled, set IAM_SIGNIN_MAIL_ACTIVE to true');
+
   if (msConfig.NODE_ENV === 'development') {
     console.log(`Email sent to ${to} with subject: ${subject} and text: ${text}`);
     return;
@@ -24,20 +27,17 @@ export async function sendEmail({
 
   if (msConfig.NODE_ENV === 'production' && !transport)
     transport = nodemailer.createTransport({
-      host: msConfig.SMTP_MAIL_HOST,
+      host: msConfig.MAILSERVER_URL,
       secure: true,
-      port: msConfig.SMTP_MAIL_PORT,
+      port: msConfig.MAILSERVER_PORT,
       auth: {
-        user: msConfig.SMTP_MAIL_USER,
-        pass: msConfig.SMTP_MAIL_PASSWORD,
+        user: msConfig.MAILSERVER_MS_DEFAULT_MAIL_ADDRESS,
+        pass: msConfig.MAILSERVER_MS_DEFAULT_MAIL_PASSWORD,
       },
     });
 
-  if (!msConfig.PROCEED_PUBLIC_MAILSERVER_ACTIVE)
-    throw new Error('Email sending is not enabled, set IAM_SIGNIN_MAIL_ACTIVE to true');
-
-  return transport.sendMail({
-    from: msConfig.SMTP_MAIL_USER,
+  transport.sendMail({
+    from: msConfig.MAILSERVER_MS_DEFAULT_MAIL_ADDRESS,
     to,
     subject,
     html,

@@ -24,7 +24,11 @@ import {
 } from '@ant-design/icons';
 
 import Link from 'next/link';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/db/iam/environments';
+import {
+  getEnvironmentById,
+  getOrganizationLogo,
+  organizationHasLogo,
+} from '@/lib/data/db/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { spaceURL } from '@/lib/utils';
@@ -182,7 +186,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
     layoutMenuItems.push({
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,
@@ -191,8 +195,8 @@ const DashboardLayout = async ({
   }
 
   let logo;
-  if (activeEnvironment.isOrganization && (await organizationHasLogo(activeEnvironment.spaceId)))
-    logo = `/api/private/${activeEnvironment.spaceId}/logo`;
+  if (activeEnvironment.isOrganization)
+    logo = (await getOrganizationLogo(activeEnvironment.spaceId))?.spaceLogo ?? undefined;
 
   return (
     <>

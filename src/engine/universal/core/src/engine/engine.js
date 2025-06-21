@@ -130,9 +130,13 @@ class Engine {
         'port',
       ]);
 
-      const { ip } = distribution.communication
+      const thisEngine = distribution.communication
         .getAvailableMachines()
         .find((machine) => machine.id === id);
+
+      let ip;
+
+      if (thisEngine) ({ ip } = thisEngine);
 
       this.machineInformation = { id, name: name || hostname, ip, port };
 

@@ -1,10 +1,10 @@
 'use client';
 
-import { DetailedHTMLProps, FC, HTMLAttributes, ReactNode, use, useState } from 'react';
-import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input, theme } from 'antd';
+import { DetailedHTMLProps, FC, HTMLAttributes, ReactNode, use, useEffect, useState } from 'react';
+import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input, theme, Image } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';
@@ -16,6 +16,10 @@ import { z } from 'zod';
 import { requestEmailChange as serverRequestEmailChange } from '@/lib/change-email/server-actions';
 import Link from 'next/link';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import ImageUpload from '@/components/image-upload';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
+import { fallbackImage } from '../processes/[processId]/image-selection-section';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const env = use(EnvVarsContext);
@@ -24,6 +28,24 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const {
     token: { colorTextDisabled, colorBgContainerDisabled },
   } = theme.useToken();
+  const { download: getProfileUrl } = useFileManager({ entityType: EntityType.PROFILE_PICTURE });
+  const [avatarUrl, setAvatarURl] = useState<string | undefined>();
+  const session = useSession();
+
+  useEffect(() => {
+    async function getAvatar() {
+      if (!userData.isGuest && userData.profileImage) {
+        const response = await getProfileUrl({
+          entityId: userData.id,
+          filePath: userData.profileImage,
+        });
+        if (response.fileUrl) {
+          setAvatarURl(response.fileUrl);
+        }
+      }
+    }
+    getAvatar();
+  }, [userData]);
 
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
@@ -140,7 +162,52 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           )}
           <Typography.Title level={3}>Profile data</Typography.Title>
 
-          <UserAvatar user={userData} size={90} style={{ marginBottom: '1rem' }} />
+          <div
+            style={{
+              height: '120px',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Image
+              alt="Profile picture"
+              src={avatarUrl || fallbackImage}
+              fallback={fallbackImage}
+              style={{
+                maxHeight: '120px',
+                maxWidth: '120px',
+              }}
+              preview={{
+                visible: false,
+                mask: (
+                  <ImageUpload
+                    config={{
+                      entityType: EntityType.PROFILE_PICTURE,
+                      entityId: userData.id,
+                      useDefaultRemoveFunction: true,
+                      fileName: '',
+                    }}
+                    imageExists={!!avatarUrl}
+                    onImageUpdate={async (newFilePath) => {
+                      session.update(null);
+                      if (newFilePath) {
+                        messageApi.success({ content: 'Profile picture updated' });
+                        getProfileUrl({ entityId: userData.id, filePath: newFilePath });
+                      } else {
+                        // Image was removed
+                        messageApi.success({ content: 'Profile picture was deleted' });
+                        setAvatarURl(undefined);
+                      }
+                    }}
+                    onUploadFail={() => messageApi.error('Error uploading image')}
+                  />
+                ),
+              }}
+            >
+              <UserAvatar user={userData} size={90} style={{ marginBottom: '1rem' }} />
+            </Image>
+          </div>
 
           <div
             style={{

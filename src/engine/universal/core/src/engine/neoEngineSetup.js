@@ -56,7 +56,7 @@ module.exports = {
             method: 'GET',
           });
         } catch (e) {
-          console.erroor(e);
+          console.error(e);
         }
       },
       post: (

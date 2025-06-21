@@ -114,7 +114,7 @@ const DashboardLayout = async ({
         },
         automationSettings.machines?.active !== false && {
           key: 'machines',
-          label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Machines</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Process Engines</Link>,
           icon: <LaptopOutlined />,
         },
       ].filter(truthyFilter);

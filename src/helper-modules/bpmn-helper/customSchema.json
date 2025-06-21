@@ -194,18 +194,18 @@
         },
         {
           "name": "description",
-          "isAttr":true,
+          "isAttr": true,
           "type": "String"
         },
         {
           "name": "requiredAtInstanceStartup",
-          "isAttr":true,
+          "isAttr": true,
           "type": "Boolean"
         },
         {
           "name": "defaultValue",
           "isAttr": true,
-          "type": "String" 
+          "type": "String"
         },
         {
           "name": "enum",

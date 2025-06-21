@@ -136,7 +136,7 @@ class Engine {
 
       let ip;
 
-      if (thisEngine) ({ip} = thisEngine);
+      if (thisEngine) ({ ip } = thisEngine);
 
       this.machineInformation = { id, name: name || hostname, ip, port };
 

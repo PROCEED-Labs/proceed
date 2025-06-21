@@ -40,8 +40,8 @@ const proceedExtensionElements = {
   mqttServer: { parent: 'Meta', identifier: 'url' },
 
   Variables: { isRoot: true },
-  variable: {parent: 'Variables'},
-  Variable: { parent: 'variable', identifier: 'name' }
+  variable: { parent: 'Variables' },
+  Variable: { parent: 'variable', identifier: 'name' },
 };
 
 /**

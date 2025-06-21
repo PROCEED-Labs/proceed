@@ -288,7 +288,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       )}
 
       {/* Initial editor selection */}
-      {!isLoading && !selectedEditor && (
+      {!isError && !isLoading && !selectedEditor && (
         <div
           style={{
             display: 'flex',

@@ -84,7 +84,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
       await form.validateFields();
 
       onSubmit(editVariable as ProcessVariable);
-    } catch (err) { }
+    } catch (err) {}
   };
 
   if (!editVariable) return <></>;

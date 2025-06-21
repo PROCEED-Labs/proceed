@@ -221,43 +221,43 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   const contextMenu: MenuProps['items'] =
     editTarget !== undefined
       ? [
-        {
-          key: 'add',
-          label: 'Add',
-          children: [
-            toMenuItem('add-above', () => handleAddButton(editTarget), setHoveredAction),
-            toMenuItem('add-below', () => handleAddButton(editTarget + 1), setHoveredAction),
-          ],
-        },
-        toMenuItem('remove', () => handleRemoveButton(editTarget), setHoveredAction),
-        {
-          key: 'value',
-          label: (
-            <div
-              style={{
-                display: 'flex',
-                width: '100%',
-                height: '100%',
-                alignItems: 'center',
-              }}
-            >
-              <Input
-                addonBefore="Value"
-                addonAfter={valueTooltip}
-                style={{ width: '250px' }}
-                value={currentValue}
-                onChange={(e) => setCurrentValue(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
-                  e.stopPropagation();
+          {
+            key: 'add',
+            label: 'Add',
+            children: [
+              toMenuItem('add-above', () => handleAddButton(editTarget), setHoveredAction),
+              toMenuItem('add-below', () => handleAddButton(editTarget + 1), setHoveredAction),
+            ],
+          },
+          toMenuItem('remove', () => handleRemoveButton(editTarget), setHoveredAction),
+          {
+            key: 'value',
+            label: (
+              <div
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  height: '100%',
+                  alignItems: 'center',
                 }}
-                onBlur={() => handleValueChange(editTarget, currentValue)}
-              />
-            </div>
-          ),
-        },
-      ]
+              >
+                <Input
+                  addonBefore="Value"
+                  addonAfter={valueTooltip}
+                  style={{ width: '250px' }}
+                  value={currentValue}
+                  onChange={(e) => setCurrentValue(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
+                    e.stopPropagation();
+                  }}
+                  onBlur={() => handleValueChange(editTarget, currentValue)}
+                />
+              </div>
+            ),
+          },
+        ]
       : [];
 
   const dataWithPreviews = useMemo(() => {

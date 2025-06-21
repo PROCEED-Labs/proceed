@@ -57,6 +57,13 @@ const DefaultValueInput: React.FC<DefaultValueInputProps> = ({ variable, onChang
   }
 };
 
+function isNumber(num: string) {
+  return num.trim() && !isNaN(+num.trim());
+}
+function isInteger(num: string) {
+  return isNumber(num) && !num.includes('.');
+}
+
 const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
   open,
   variables,
@@ -95,6 +102,15 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
   ) => {
     return (e: React.ChangeEvent<HTMLInputElement> | CheckboxChangeEvent) =>
       setEditVariable({ ...editVariable, [attr]: e.target[eventAttr] });
+  };
+
+  const validateValue = (val: string) => {
+    if (editVariable.dataType === 'number' && !isNumber(val)) {
+      return Promise.reject('Values of a number variable can only be numbers.');
+    }
+    if (editVariable.dataType === 'integer' && !isInteger(val)) {
+      return Promise.reject('Values of an integer variable can only be integers (whole numbers).');
+    }
   };
 
   return (
@@ -172,25 +188,16 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
           rules={[
             {
               validator(_, value) {
-                if (
-                  value &&
-                  (editVariable.dataType === 'number' || editVariable.dataType === 'integer')
-                ) {
-                  if (!value.trim() || isNaN(+value.trim())) {
-                    return Promise.reject(new Error('The default value has to be a number.'));
-                  }
-                  if (editVariable.dataType === 'integer' && value.includes('.')) {
+                if (value) {
+                  const error = validateValue(value);
+                  if (error) return error;
+                  if (editVariable.enum && !editVariable.enum.split(';').includes(value)) {
                     return Promise.reject(
-                      new Error('The default value has to be an integer (whole number).'),
+                      new Error(
+                        'If allowed values are defined the default value has to be one of them.',
+                      ),
                     );
                   }
-                }
-                if (value && editVariable.enum && !editVariable.enum.split(';').includes(value)) {
-                  return Promise.reject(
-                    new Error(
-                      'If allowed values are defined the default value has to be one of them.',
-                    ),
-                  );
                 }
 
                 return Promise.resolve();
@@ -213,21 +220,10 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
             rules={[
               {
                 validator(_, value: string) {
-                  if (
-                    value &&
-                    (editVariable.dataType === 'number' || editVariable.dataType === 'integer')
-                  ) {
+                  if (value) {
                     for (const num of value.split(';')) {
-                      if (!num.trim() || isNaN(+num.trim())) {
-                        return Promise.reject(
-                          new Error('All values defined here have to be numbers.'),
-                        );
-                      }
-                      if (editVariable.dataType === 'integer' && num.includes('.')) {
-                        return Promise.reject(
-                          new Error('All values defined here have to be integers (whole numbers).'),
-                        );
-                      }
+                      const error = validateValue(num);
+                      if (error) return error;
                     }
                   }
 

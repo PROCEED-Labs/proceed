@@ -219,10 +219,12 @@ const DeploymentsModal = ({
       throw new Error('Failed to fetch folder');
     }
 
-    const folderContents = await getFolderContents(environment.spaceId, folder.id);
+    let folderContents = await getFolderContents(environment.spaceId, folder.id);
     if ('error' in folderContents) {
       throw new Error('Failed to fetch folder children');
     }
+
+    folderContents = folderContents.filter((c) => c.type === 'folder' || c.versions.length);
 
     if (folder.parentId) {
       setProcesses([

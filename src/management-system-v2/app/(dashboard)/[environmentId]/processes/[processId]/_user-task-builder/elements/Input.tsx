@@ -1,17 +1,14 @@
 import { useEffect, useId, useState } from 'react';
 
-import { Select, SelectProps, Input as AntInput, Space, Button } from 'antd';
+import { Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
-import { ContextMenu, Overlay, Setting, getVariableTooltip } from './utils';
+import { ContextMenu, Overlay, Setting, VariableSetting, getVariableTooltip } from './utils';
 import EditableText from '../_utils/EditableText';
 import useBuilderStateStore from '../use-builder-state-store';
 import { useCanEdit } from '../../modeler';
-import useProcessVariables, { ProcessVariable } from '../../use-process-variables';
-import ProcessVariableForm, { typeLabelMap } from '../../variable-definition/process-variable-form';
-import { on } from 'events';
 
 type InputProps = {
   label?: string;
@@ -177,10 +174,6 @@ export const InputSettings = () => {
     variable: node.data.props.variable,
   }));
 
-  const [showVariableForm, setShowVariableForm] = useState(false);
-
-  const { variables, addVariable } = useProcessVariables();
-
   return (
     <>
       <Setting
@@ -222,48 +215,13 @@ export const InputSettings = () => {
         }
       />
 
-      <Setting
-        label="Variable"
-        control={
-          <Select
-            value={variable}
-            style={{ display: 'block' }}
-            title={getVariableTooltip(variables, variable)}
-            options={variables.map((v) => ({
-              label: v.name,
-              title: getVariableTooltip(variables, v.name),
-              value: v.name,
-            }))}
-            onChange={(val) => {
-              setProp((props: InputProps) => {
-                props.variable = val;
-              });
-            }}
-            dropdownRender={(menu) => (
-              <>
-                {menu}
-                <Space style={{ display: 'block', padding: '0 8px 4px' }}>
-                  <Button block onClick={() => setShowVariableForm(true)}>
-                    Add Variable
-                  </Button>
-                </Space>
-              </>
-            )}
-          />
-        }
-      />
-
-      <ProcessVariableForm
-        open={showVariableForm}
-        variables={variables}
-        onSubmit={(newVar) => {
-          addVariable(newVar);
-          setShowVariableForm(false);
+      <VariableSetting
+        variable={variable}
+        onChange={(newVariable) =>
           setProp((props: InputProps) => {
-            props.variable = newVar.name;
-          });
-        }}
-        onCancel={() => setShowVariableForm(false)}
+            props.variable = newVariable;
+          })
+        }
       />
     </>
   );

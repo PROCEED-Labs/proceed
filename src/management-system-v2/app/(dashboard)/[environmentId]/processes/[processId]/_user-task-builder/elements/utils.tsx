@@ -9,14 +9,14 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Menu, MenuProps } from 'antd';
+import { Button, Menu, MenuProps, Select, Space } from 'antd';
 import { useDndContext } from '@dnd-kit/core';
 
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
-import { ProcessVariable } from '../../use-process-variables';
-import { typeLabelMap } from '../../variable-definition/process-variable-form';
+import useProcessVariables, { ProcessVariable } from '../../use-process-variables';
+import ProcessVariableForm, { typeLabelMap } from '../../variable-definition/process-variable-form';
 
 export const Setting: React.FC<{
   label: string;
@@ -259,3 +259,57 @@ export function getVariableTooltip(variables: ProcessVariable[], name?: string) 
 
   return tooltip;
 }
+
+type VariableSettingProps = {
+  variable?: string;
+  onChange: (newVariable?: string) => void;
+};
+
+export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onChange }) => {
+  const [showVariableForm, setShowVariableForm] = useState(false);
+
+  const { variables, addVariable } = useProcessVariables();
+
+  return (
+    <Setting
+      label="Variable"
+      control={
+        <>
+          <Select
+            value={variable}
+            style={{ display: 'block' }}
+            title={getVariableTooltip(variables, variable)}
+            options={variables.map((v) => ({
+              label: v.name,
+              title: getVariableTooltip(variables, v.name),
+              value: v.name,
+            }))}
+            onChange={(val) => {
+              onChange(val);
+            }}
+            dropdownRender={(menu) => (
+              <>
+                {menu}
+                <Space style={{ display: 'block', padding: '0 8px 4px' }}>
+                  <Button block onClick={() => setShowVariableForm(true)}>
+                    Add Variable
+                  </Button>
+                </Space>
+              </>
+            )}
+          />
+          <ProcessVariableForm
+            open={showVariableForm}
+            variables={variables}
+            onSubmit={(newVar) => {
+              addVariable(newVar);
+              setShowVariableForm(false);
+              onChange(newVar.name);
+            }}
+            onCancel={() => setShowVariableForm(false)}
+          />
+        </>
+      }
+    />
+  );
+};

@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 
-import { Button, Divider, Input, MenuProps, Select, SelectProps, Space, Tooltip } from 'antd';
+import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { TbRowInsertTop, TbRowInsertBottom, TbRowRemove } from 'react-icons/tb';
 
@@ -15,22 +15,20 @@ import {
   Overlay,
   SidebarButtonFactory,
   MenuItemFactoryFactory,
-  getVariableTooltip,
+  VariableSetting,
 } from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 
 import { SettingOutlined, EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 import { useCanEdit } from '../../modeler';
-import useProcessVariables from '../../use-process-variables';
-import ProcessVariableForm from '../../variable-definition/process-variable-form';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
 const radioValueHint =
   'This will be the value that is assigned to the variable associated with this group when the radio button is selected at the time the form is submitted.';
 
-type CheckBoxOrRadioGroupProps = {
+export type CheckBoxOrRadioGroupProps = {
   type: 'checkbox' | 'radio';
   variable?: string;
   data: { label: string; value: string; checked: boolean }[];
@@ -397,56 +395,15 @@ export const CheckBoxOrRadioGroupSettings = () => {
     variable: node.data.props.variable,
   }));
 
-  const [showVariableForm, setShowVariableForm] = useState(false);
-
-  const { variables, addVariable } = useProcessVariables();
-
   return (
-    <>
-      <Setting
-        label="Variable"
-        control={
-          <Select
-            value={variable}
-            style={{ display: 'block' }}
-            title={getVariableTooltip(variables, variable)}
-            options={variables.map((v) => ({
-              label: v.name,
-              title: getVariableTooltip(variables, v.name),
-              value: v.name,
-            }))}
-            onChange={(val) => {
-              setProp((props: CheckBoxOrRadioGroupProps) => {
-                props.variable = val;
-              });
-            }}
-            dropdownRender={(menu) => (
-              <>
-                {menu}
-                <Space style={{ display: 'block', padding: '0 8px 4px' }}>
-                  <Button block onClick={() => setShowVariableForm(true)}>
-                    Add Variable
-                  </Button>
-                </Space>
-              </>
-            )}
-          />
-        }
-      />
-
-      <ProcessVariableForm
-        open={showVariableForm}
-        variables={variables}
-        onSubmit={(newVar) => {
-          addVariable(newVar);
-          setShowVariableForm(false);
-          setProp((props: CheckBoxOrRadioGroupProps) => {
-            props.variable = newVar.name;
-          });
-        }}
-        onCancel={() => setShowVariableForm(false)}
-      />
-    </>
+    <VariableSetting
+      variable={variable}
+      onChange={(newVariable) =>
+        setProp((props: CheckBoxOrRadioGroupProps) => {
+          props.variable = newVariable;
+        })
+      }
+    />
   );
 };
 

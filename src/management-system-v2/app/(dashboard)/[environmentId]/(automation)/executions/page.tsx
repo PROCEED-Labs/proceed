@@ -34,7 +34,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
   // TODO: check ability
 
   // TODO: once the legacy storage is dropped, it would be better to do one db transaction
-  const [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] =
+  let [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] =
     await Promise.all([
       getUsersFavourites(),
       (async () => {
@@ -53,6 +53,8 @@ async function Executions({ environmentId }: { environmentId: string }) {
         return await getDeployedProcessesFromSavedEngines(spaceEngines);
       })(),
     ]);
+
+  folderContents = folderContents.filter((p) => p.type === 'folder' || p.versions.length);
 
   const deployedWithRemappedIds: (Omit<DeployedProcessInfo, 'definitionId'> & { id: string })[] =
     deployedInProceed.concat(deployedInSpaceEngines).map((_process) => {

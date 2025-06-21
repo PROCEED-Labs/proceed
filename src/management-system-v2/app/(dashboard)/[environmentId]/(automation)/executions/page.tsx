@@ -54,6 +54,8 @@ async function Executions({ environmentId }: { environmentId: string }) {
       })(),
     ]);
 
+  const deployableProcesses = folderContents.filter((p) => 'versions' in p && p.versions.length);
+
   const deployedWithRemappedIds: (Omit<DeployedProcessInfo, 'definitionId'> & { id: string })[] =
     deployedInProceed.concat(deployedInSpaceEngines).map((_process) => {
       const process = _process as any;
@@ -65,7 +67,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
 
   return (
     <DeploymentsView
-      processes={folderContents}
+      processes={deployableProcesses}
       folder={folder}
       favourites={favs as string[]}
       deployedProcesses={deployedProcesses}

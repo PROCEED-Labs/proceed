@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 import {
   deepCopyElementById,
   getVariablesFromElement,
@@ -10,8 +11,6 @@ import { ElementLike } from 'diagram-js/lib/model/Types';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import useModelerStateStore from './use-modeler-state-store';
-
-export type ProcessVariable = ReturnType<typeof getVariablesFromElement>[number];
 
 export default function useProcessVariables() {
   const [variables, setVariables] = useState<ProcessVariable[]>([]);

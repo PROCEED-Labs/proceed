@@ -15,7 +15,8 @@ import { useDndContext } from '@dnd-kit/core';
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
-import useProcessVariables, { ProcessVariable } from '../../use-process-variables';
+import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
+import useProcessVariables from '../../use-process-variables';
 import ProcessVariableForm, { typeLabelMap } from '../../variable-definition/process-variable-form';
 
 export const Setting: React.FC<{

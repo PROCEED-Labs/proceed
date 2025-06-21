@@ -802,7 +802,7 @@ async function getMilestonesFromElementById(bpmn, elementId) {
  */
 function getVariablesFromElement(element) {
   let variables = [];
-  if (element.extensionElements && Array.isArray(element.extensionElements.values)) {
+  if (element && element.extensionElements && Array.isArray(element.extensionElements.values)) {
     const variablesElement = element.extensionElements.values.find(
       (child) => child.$type == 'proceed:Variables',
     );

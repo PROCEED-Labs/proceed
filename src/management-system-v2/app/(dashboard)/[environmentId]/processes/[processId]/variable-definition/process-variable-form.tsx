@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Checkbox, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { Checkbox, CheckboxChangeEvent, Form, Input, InputNumber, Modal, Select } from 'antd';
 
 import { ProcessVariable } from '../use-process-variables';
 
@@ -89,6 +89,14 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
 
   if (!editVariable) return <></>;
 
+  const getChangeHandler = (
+    attr: keyof ProcessVariable,
+    eventAttr: 'value' | 'checked' = 'value',
+  ) => {
+    return (e: React.ChangeEvent<HTMLInputElement> | CheckboxChangeEvent) =>
+      setEditVariable({ ...editVariable, [attr]: e.target[eventAttr] });
+  };
+
   return (
     <Modal
       title={originalVariable ? `Edit Variable ${originalVariable.name}` : 'Add a new Variable'}
@@ -122,16 +130,10 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
             }),
           ]}
         >
-          <Input
-            value={editVariable.name}
-            onChange={(e) => setEditVariable({ ...editVariable, name: e.target.value })}
-          />
+          <Input onChange={getChangeHandler('name')} />
         </Form.Item>
         <Form.Item name="description" label="Description" initialValue={editVariable.description}>
-          <Input
-            value={editVariable.description}
-            onChange={(e) => setEditVariable({ ...editVariable, description: e.target.value })}
-          />
+          <Input onChange={getChangeHandler('description')} />
         </Form.Item>
         <Form.Item
           name="requiredAtInstanceStartup"
@@ -140,16 +142,11 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
         >
           <Checkbox
             checked={editVariable.requiredAtInstanceStartup}
-            onChange={(e) =>
-              setEditVariable({ ...editVariable, requiredAtInstanceStartup: e.target.checked })
-            }
+            onChange={getChangeHandler('requiredAtInstanceStartup', 'checked')}
           />
         </Form.Item>
         <Form.Item name="const" initialValue={editVariable.const} label="Unchangeable Value">
-          <Checkbox
-            checked={editVariable.const}
-            onChange={(e) => setEditVariable({ ...editVariable, const: e.target.checked })}
-          />
+          <Checkbox checked={editVariable.const} onChange={getChangeHandler('const', 'checked')} />
         </Form.Item>
         <Form.Item
           name="type"
@@ -157,7 +154,6 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
           label="Type"
         >
           <Select
-            value={editVariable.dataType}
             options={[
               { value: 'string', label: 'Text' },
               { value: 'number', label: 'Number' },
@@ -240,10 +236,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
               },
             ]}
           >
-            <Input
-              value={editVariable.enum}
-              onChange={(e) => setEditVariable({ ...editVariable, enum: e.target.value })}
-            />
+            <Input onChange={getChangeHandler('enum')} />
           </Form.Item>
         )}
       </Form>

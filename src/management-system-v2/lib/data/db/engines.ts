@@ -32,7 +32,7 @@ export async function getDbEngineById(
 
   const engine = await db.engine.findUnique({
     where: {
-      // environmentId: environmentId,
+      environmentId: environmentId,
       id: engineId,
     },
   });

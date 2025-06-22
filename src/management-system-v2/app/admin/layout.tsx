@@ -5,8 +5,9 @@ import { MdOutlineComputer } from 'react-icons/md';
 import { AiOutlineDatabase } from 'react-icons/ai';
 import { FaUsers } from 'react-icons/fa';
 import { RiAdminFill } from 'react-icons/ri';
-import { env } from '@/lib/env-vars';
 import { type ReactNode } from 'react';
+import { FaGear } from 'react-icons/fa6';
+import { env } from '@/lib/ms-config/env-vars';
 
 let adminViews = [
   {
@@ -29,14 +30,25 @@ let adminViews = [
     label: <Link href="/admin/systemadmins">Manage admins</Link>,
     icon: <RiAdminFill />,
   },
+
+  {
+    key: 'saved-engines',
+    label: <Link href="/admin/saved-engines">Saved Engines</Link>,
+    icon: <AiOutlineDatabase />,
+  },
   {
     key: 'engines',
     label: <Link href="/admin/engines">Engines</Link>,
     icon: <MdOutlineComputer />,
   },
+  {
+    key: 'ms-config',
+    label: <Link href="/admin/ms-config">MS Config</Link>,
+    icon: <FaGear />,
+  },
 ];
 
-if (!env.PROCEED_PUBLIC_IAM_ACTIVATE)
+if (!env.PROCEED_PUBLIC_IAM_ACTIVE)
   adminViews = adminViews.filter(({ key }) => !['users', 'systemadmins'].includes(key));
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

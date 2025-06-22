@@ -3,7 +3,7 @@ import { Result, Space } from 'antd';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
-import { env } from '@/lib/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getAvailableTaskListEntries } from '@/lib/engines/server-actions';
 import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
 import { truthyFilter } from '@/lib/typescript-utils';
@@ -11,7 +11,8 @@ import { getUserById } from '@/lib/data/db/iam/users';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 

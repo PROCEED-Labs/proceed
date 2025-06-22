@@ -11,13 +11,12 @@ import React, {
 } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ModelerToolbar from './modeler-toolbar';
-import XmlEditor from './xml-editor';
 import useModelerStateStore from './use-modeler-state-store';
 import { debounce, spaceURL } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
-import { App, message } from 'antd';
+import { App } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
@@ -296,32 +295,6 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
     }
   }, [subprocessId]);
 
-  const handleOpenXmlEditor = async () => {
-    // Undefined can maybe happen when click happens during router transition?
-    if (modeler.current) {
-      const xml = await modeler.current.getXML();
-      setXmlEditorBpmn(xml);
-    }
-  };
-
-  useAddControlCallback('modeler', 'cut', handleOpenXmlEditor);
-
-  const handleCloseXmlEditor = () => {
-    setXmlEditorBpmn(undefined);
-  };
-
-  const handleXmlEditorSave = async (bpmn: string) => {
-    if (modeler.current) {
-      await modeler.current.loadBPMN(bpmn);
-      // If the bpmn contains unexpected content (text content for an element
-      // where the model does not define text) the modeler will remove it
-      // automatically => make sure the stored bpmn is the same as the one in
-      // the modeler.
-      const cleanedBpmn = await modeler.current.getXML();
-      await updateProcess(process.id, environment.spaceId, cleanedBpmn);
-    }
-  };
-
   // Create a new object to force rerendering when the bpmn doesn't change.
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),
@@ -337,23 +310,13 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
             {loaded && (
               <ModelerToolbar
                 process={process}
-                onOpenXmlEditor={handleOpenXmlEditor}
                 canRedo={canRedo}
                 canUndo={canUndo}
+                versionName={versionName}
               />
             )}
             {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
             <ModelerZoombar></ModelerZoombar>
-            {!!xmlEditorBpmn && (
-              <XmlEditor
-                bpmn={xmlEditorBpmn}
-                canSave={!selectedVersionId}
-                onClose={handleCloseXmlEditor}
-                onSaveXml={handleXmlEditorSave}
-                process={process}
-                versionName={versionName}
-              />
-            )}
           </>
         )}
         <BPMNCanvas

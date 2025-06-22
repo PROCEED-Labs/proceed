@@ -17,7 +17,6 @@ import TableOfContents, { ElementInfo } from './table-of-content';
 import { useEnvironment } from '@/components/auth-can';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
-import { enableUseFileManager } from 'FeatureFlags';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 
 export type VersionInfo = {
@@ -85,16 +84,11 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       elementLabel = importedProcess.name!;
       ({ milestones, meta, description } = importedProcess);
     }
-    const newImageUrl = enableUseFileManager
-      ? image &&
-        (await new Promise<string>((resolve) => {
-          getImage(processData.id, image, shareToken, {
-            onSuccess(data) {
-              resolve(data.fileUrl!);
-            },
-          });
-        }))
-      : null;
+    const { fileUrl: newImageUrl } = await getImage({
+      entityId: processData.id,
+      filePath: image,
+      shareToken,
+    });
 
     let imageURL =
       image &&

@@ -2,6 +2,7 @@ import 'server-only';
 
 import { Engine } from './machines';
 import { engineRequest } from './endpoints';
+import { version } from 'os';
 
 export type TaskListEntry = {
   id: string;
@@ -62,6 +63,24 @@ export async function getUserTaskFileFromMachine(
     pathParams: {
       definitionId,
       fileName,
+    },
+  });
+
+  return html as string;
+}
+
+export async function getStartFormFromMachine(
+  definitionId: string,
+  versionId: string,
+  engine: Engine,
+) {
+  const html = await engineRequest({
+    method: 'get',
+    endpoint: '/process/:definitionId/versions/:version/start-form',
+    engine,
+    pathParams: {
+      definitionId,
+      version: versionId,
     },
   });
 

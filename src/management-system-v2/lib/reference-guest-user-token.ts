@@ -6,8 +6,8 @@
  * this is a small attack surface, but it is better to be safe.
  * * */
 import { z } from 'zod';
-import { env } from './env-vars';
 import jwt from 'jsonwebtoken';
+import { env } from './ms-config/env-vars';
 
 const referenceSchema = z.object({ guestId: z.string() });
 type Reference = z.infer<typeof referenceSchema>;
@@ -16,12 +16,12 @@ export function generateGuestReferenceToken(invitation: Reference, expiration: D
   // in seconds
   const expiresIn = (expiration.getTime() - Date.now()) / 1000;
 
-  return jwt.sign(invitation, env.GUEST_REFERENCE_SECRET, { expiresIn });
+  return jwt.sign(invitation, env.IAM_GUEST_CONVERSION_REFERENCE_SECRET, { expiresIn });
 }
 
 export function getGuestReference(token: string) {
   try {
-    const payload = jwt.verify(token, env.GUEST_REFERENCE_SECRET);
+    const payload = jwt.verify(token, env.IAM_GUEST_CONVERSION_REFERENCE_SECRET);
     return referenceSchema.parse(payload);
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError && error.name === 'TokenExpiredError') {

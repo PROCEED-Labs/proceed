@@ -34,9 +34,7 @@ export async function engineRequest<
 
   if (engine.type === 'mqtt') {
     let spaceEngineClient;
-    if (engine.spaceEngine) {
-      spaceEngineClient = await getClient(engine.brokerAddress);
-    }
+    spaceEngineClient = await getClient(engine.brokerAddress);
 
     const response = await mqttRequest(
       engine.id,
@@ -50,7 +48,9 @@ export async function engineRequest<
     );
 
     // NOTE: not awaiting this could be a problem if hosted on vercel
-    spaceEngineClient?.endAsync();
+    if (engine.spaceEngine) {
+      spaceEngineClient?.endAsync();
+    }
 
     return response;
   } else {

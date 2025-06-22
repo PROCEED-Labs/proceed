@@ -15,7 +15,7 @@ import {
   render,
 } from '@react-email/components';
 import * as React from 'react';
-import { env } from '@/lib/env-vars';
+import { env } from '../ms-config/env-vars';
 
 const baseUrl = env.NEXTAUTH_URL;
 
@@ -30,7 +30,8 @@ type MailProps = {
 
 function SigninUrlMail(mailProps: MailProps) {
   const expiresIn = mailProps.expires.getTime() - Date.now();
-  const linkDuration: number = Math.floor(expiresIn / 1000 / 60 / 60);
+  const linkDuration: number = Math.ceil(expiresIn / 1000 / 60 / 60);
+
   return (
     <Html>
       <Head />
@@ -57,13 +58,23 @@ function SigninUrlMail(mailProps: MailProps) {
             <Section
               style={{
                 backgroundColor: '#252f3d',
-                display: 'flex',
-                padding: '20px 0',
-                alignItems: 'center',
-                justifyContent: 'center',
+                padding: '20px 5px',
+                textAlign: 'center',
+                verticalAlign: 'middle',
               }}
             >
-              <Img src={`${baseUrl}/proceed.svg`} width="75" height="45" alt="PROCEED's Logo" />
+              <Img
+                src={`${baseUrl}/proceed.svg`}
+                height="45"
+                alt="PROCEED"
+                style={{
+                  display: 'block',
+                  margin: '0 auto',
+                  color: '#a6adb5',
+                  fontWeight: 'bold',
+                  fontSize: '24px',
+                }}
+              />
             </Section>
             <Section style={{ padding: '25px 35px' }}>
               <Heading

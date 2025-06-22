@@ -14,7 +14,7 @@ import Icon, {
 } from '@ant-design/icons';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiDownloadSimple } from 'react-icons/pi';
-import { SvgXML } from '@/components/svg';
+import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -26,9 +26,11 @@ import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
+import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder, { canHaveForm } from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { Process } from '@/lib/data/process-schema';
@@ -40,6 +42,7 @@ const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   process: Process;
+  onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
   versionName?: string;
@@ -62,6 +65,8 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareModalDefaultOpenTab, setShareModalDefaultOpenTab] =
     useState<ComponentProps<typeof ShareModal>['defaultOpenTab']>(undefined);
+
+  const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -268,7 +273,6 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     createVersion={createProcessVersion}
                   ></VersionCreationButton>
                 </Tooltip>
-
                 <Tooltip title="Undo">
                   <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
                 </Tooltip>
@@ -338,6 +342,14 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     icon={<Icon aria-label="xml-sign" component={SvgXML} />}
                     onClick={handleOpenXmlEditor}
                   />
+                </Tooltip>
+              )}
+              {env.PROCEED_PUBLIC_TIMELINE_VIEW === true && (
+                <Tooltip title="Switch to timeline mode">
+                  <Button
+                    icon={<Icon aria-label="xml-sign" component={SvgGantt} />}
+                    onClick={enableTimelineView}
+                  ></Button>
                 </Tooltip>
               )}
               <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />

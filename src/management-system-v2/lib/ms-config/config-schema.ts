@@ -143,6 +143,7 @@ export const msConfigSchema = {
     SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
 
     PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
+    PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
     MS_ENABLED_RESOURCES: z
       .string()
       .transform((str, ctx) => {

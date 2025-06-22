@@ -28,7 +28,7 @@ const EnginesPage = async ({ params }: { params: { environmentId: string } }) =>
 
   const machinesSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
-    'process-automation.machines',
+    'process-automation.process-engines',
     ability,
   );
 

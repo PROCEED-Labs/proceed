@@ -37,19 +37,19 @@ export const settings: SettingGroup = {
         },
       ],
     },
-    {
-      key: 'projects',
-      name: 'Projects',
-      children: [
-        {
-          key: 'active',
-          name: 'Enabled',
-          type: 'boolean',
-          description: 'Controls whether this view is activated in this space.',
-          value: true,
-        },
-      ],
-    },
+    // {
+    //   key: 'projects',
+    //   name: 'Projects',
+    //   children: [
+    //     {
+    //       key: 'active',
+    //       name: 'Enabled',
+    //       type: 'boolean',
+    //       description: 'Controls whether this view is activated in this space.',
+    //       value: true,
+    //     },
+    //   ],
+    // },
     {
       key: 'executions',
       name: 'Executions',
@@ -64,8 +64,8 @@ export const settings: SettingGroup = {
       ],
     },
     {
-      key: 'machines',
-      name: 'Machines',
+      key: 'process-engines',
+      name: 'Process Engines',
       children: [
         {
           key: 'active',

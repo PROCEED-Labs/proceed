@@ -683,7 +683,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           <div className={styles.taskListHeader} style={{ width: gantt.state.taskListWidth }}>
             <div className={styles.taskListHeaderColumns}>
               <div className={styles.taskNameColumn}>Task Name</div>
-              <div className={styles.extraInfoColumn}>Info</div>
+              <div className={styles.extraInfoColumn}>Type</div>
             </div>
             {/* Resize Handle */}
             <div className={styles.resizeHandle} onMouseDown={gantt.handleResizeStart} />

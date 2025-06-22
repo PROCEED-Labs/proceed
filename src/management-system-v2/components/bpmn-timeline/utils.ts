@@ -106,71 +106,72 @@ export function getTaskTypeString(task: BPMNTask): string {
   const typeMatch = task.$type.match(/bpmn:(.+)/);
   const taskType = typeMatch ? typeMatch[1] : 'Task';
   
-  let result = `<${taskType}>`;
+  // Make task types more readable
+  const readableTypes: Record<string, string> = {
+    'Task': 'Task',
+    'UserTask': 'User Task',
+    'ServiceTask': 'Service Task',
+    'ScriptTask': 'Script Task',
+    'BusinessRuleTask': 'Business Rule Task',
+    'SendTask': 'Send Task',
+    'ReceiveTask': 'Receive Task',
+    'ManualTask': 'Manual Task',
+    'CallActivity': 'Call Activity',
+    'SubProcess': 'Subprocess'
+  };
   
-  // Add loop characteristics if present
-  if (task.loopCharacteristics) {
-    if (task.loopCharacteristics.$type === 'bpmn:StandardLoopCharacteristics') {
-      result += ' [Loop]';
-    } else if (task.loopCharacteristics.$type === 'bpmn:MultiInstanceLoopCharacteristics') {
-      if (task.loopCharacteristics.isSequential) {
-        result += ' [Sequential-Multi-Instance]';
-      } else {
-        result += ' [Parallel-Multi-Instance]';
-      }
-    }
-  }
-  
-  return result;
+  return readableTypes[taskType] || taskType;
 }
 
 /**
  * Get event type string for extraInfo display
  */
 export function getEventTypeString(event: BPMNEvent): string {
-  // Get event definition type
-  let eventDefinition = '<None>';
+  // Get readable event definition type
+  const readableEventDefinitions: Record<string, string> = {
+    'Message': 'Message',
+    'Timer': 'Timer',
+    'Error': 'Error',
+    'Escalation': 'Escalation',
+    'Cancel': 'Cancel',
+    'Compensation': 'Compensation',
+    'Conditional': 'Conditional',
+    'Link': 'Link',
+    'Signal': 'Signal',
+    'Terminate': 'Terminate'
+  };
+  
+  let eventDefinition = '';
   if (event.eventDefinitions && event.eventDefinitions.length > 0) {
     const defType = event.eventDefinitions[0].$type;
     const defMatch = defType.match(/bpmn:(.+)EventDefinition/);
     if (defMatch) {
-      eventDefinition = `<${defMatch[1]}>`;
+      eventDefinition = readableEventDefinitions[defMatch[1]] || defMatch[1];
     }
   }
   
-  // Get event kind
+  // Get readable event kind
   let eventKind = '';
   if (event.$type === 'bpmn:StartEvent') {
-    eventKind = '[Start]';
+    eventKind = 'Start';
   } else if (event.$type === 'bpmn:EndEvent') {
-    eventKind = '[End]';
+    eventKind = 'End';
   } else if (event.$type === 'bpmn:IntermediateThrowEvent') {
-    eventKind = '[Intermediate-Throw]';
+    eventKind = 'Intermediate';
   } else if (event.$type === 'bpmn:IntermediateCatchEvent') {
-    eventKind = '[Intermediate-Catch]';
+    eventKind = 'Intermediate';
   }
   
-  // Check if event has duration and add info
-  const eventDuration = extractDuration(event);
-  let durationInfo = '';
-  if (eventDuration > 0) {
-    // Convert duration to human readable format
-    const hours = Math.floor(eventDuration / (1000 * 60 * 60));
-    const minutes = Math.floor((eventDuration % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((eventDuration % (1000 * 60)) / 1000);
-    
-    if (hours > 0) {
-      durationInfo = ` [${hours}h${minutes > 0 ? ` ${minutes}m` : ''}]`;
-    } else if (minutes > 0) {
-      durationInfo = ` [${minutes}m${seconds > 0 ? ` ${seconds}s` : ''}]`;
-    } else if (seconds > 0) {
-      durationInfo = ` [${seconds}s]`;
-    } else {
-      durationInfo = ' [<1s]';
-    }
+  // Build the result (only type and position, no duration)
+  if (eventDefinition && eventKind) {
+    return `${eventDefinition} (${eventKind})`;
+  } else if (eventDefinition) {
+    return eventDefinition;
+  } else if (eventKind) {
+    return eventKind;
   }
   
-  return `${eventDefinition}${eventKind}${durationInfo}`;
+  return '';
 }
 
 // ============================================================================

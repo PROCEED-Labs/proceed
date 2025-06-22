@@ -32,7 +32,6 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [nowTimestamp, setNowTimestamp] = useState<number>(0);
-  const [totalElements, setTotalElements] = useState<number>(0);
 
   useEffect(() => {
     const bpmnjsModeler = new Modeler();
@@ -54,7 +53,6 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         const totalElementCount = flowElements.filter(
           (element) => element.$type !== 'bpmn:SequenceFlow',
         ).length;
-        setTotalElements(totalElementCount);
 
         setGanttData({
           elements: transformationResult.elements,
@@ -85,9 +83,6 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     };
   }, [process.bpmn, disableTimelineView]);
 
-  // Calculate processing statistics
-  const processedElements = ganttData.elements.length;
-
   const headerTitle = (
     <div
       style={{
@@ -102,32 +97,15 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           BPMN Timeline View
         </div>
         <div style={{ fontSize: '14px', color: '#666', fontWeight: 400 }}>
-          {!isLoading && (
-            <>
-              {processedElements}/{totalElements} elements processed successfully
-              {errors.length > 0 && (
-                <span style={{ marginLeft: '16px', color: '#f57c00' }}>
-                  {errors.length} error{errors.length !== 1 ? 's' : ''} occurred
-                </span>
-              )}
-              {defaultDurations.length > 0 && (
-                <span style={{ marginLeft: '16px', color: '#1976d2' }}>
-                  default duration applied for {defaultDurations.length} task
-                  {defaultDurations.length !== 1 ? 's' : ''}
-                </span>
-              )}
-            </>
-          )}
           {isLoading && 'Loading...'}
         </div>
       </div>
       <Button
-        type="text"
-        icon={<CloseOutlined />}
         onClick={disableTimelineView}
-        style={{ color: '#666' }}
-        title="Close Timeline View"
-      />
+        title="Return to BPMN editor view"
+      >
+        Back to BPMN
+      </Button>
     </div>
   );
 

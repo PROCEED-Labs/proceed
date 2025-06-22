@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Checkbox, CheckboxChangeEvent, Form, Input, InputNumber, Modal, Select } from 'antd';
+import {
+  Checkbox,
+  CheckboxChangeEvent,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Select,
+  Tooltip,
+} from 'antd';
+
+import { FaRegQuestionCircle } from 'react-icons/fa';
 
 import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 
@@ -215,7 +226,17 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
         {editVariable?.dataType !== 'boolean' && (
           <Form.Item
             name="enum"
-            label="Allowed Values"
+            label={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                Allowed Values{' '}
+                <Tooltip
+                  placement="right"
+                  title="To define multiple values enter them one after another with a ';' between them (e.g. 123;456;789)"
+                >
+                  <FaRegQuestionCircle style={{ verticalAlign: 'center' }} />
+                </Tooltip>
+              </div>
+            }
             initialValue={editVariable.enum}
             rules={[
               {

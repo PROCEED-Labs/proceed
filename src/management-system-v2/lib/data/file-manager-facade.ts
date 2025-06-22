@@ -7,17 +7,13 @@ import {
   ArtifactType,
   generateProcessFilePath,
 } from '../helpers/fileManagerHelpers';
-import { contentTypeNotAllowed } from './content-upload-error';
-import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
+import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
 import { getProcessHtmlFormJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
 import { Prisma } from '@prisma/client';
-import { use } from 'react';
 import { checkValidity } from './processes';
-import { env } from '@/lib/ms-config/env-vars';
-
-const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
+import { UserFacingError, userError, getErrorMessage } from '../user-error';
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
@@ -126,18 +122,25 @@ export async function saveEntityFile(
   fileName: string,
   fileContent?: Buffer | Uint8Array,
 ) {
-  if (!isContentTypeAllowed(mimeType)) {
-    throw new Error(`Content type '${mimeType}' is not allowed`);
-  }
+  try {
+    if (!isContentTypeAllowed(mimeType)) {
+      throw new Error(`Content type '${mimeType}' is not allowed`);
+    }
 
-  switch (entityType) {
-    case EntityType.PROCESS:
-      return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
-    case EntityType.ORGANIZATION:
-      return saveOrganizationLogo(entityId, fileName, mimeType, fileContent);
-    // Extend for other entity types if needed
-    default:
-      throw new Error(`Unsupported entity type: ${entityType}`);
+    switch (entityType) {
+      case EntityType.PROCESS:
+        return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
+      case EntityType.ORGANIZATION:
+        return saveOrganizationLogo(entityId, fileName, mimeType, fileContent);
+      case EntityType.PROFILE_PICTURE:
+        return saveProfilePicture(entityId, fileName, mimeType, fileContent);
+      // Extend for other entity types if needed
+      default:
+        throw new UserFacingError(`Unsupported entity type: ${entityType}`);
+    }
+  } catch (e) {
+    console.error(e);
+    return userError(getErrorMessage(e));
   }
 }
 
@@ -153,6 +156,8 @@ export async function retrieveEntityFile(
       return retrieveFile(filePath, true);
     case EntityType.ORGANIZATION:
       return getOrganizationLogo(entityId);
+    case EntityType.PROFILE_PICTURE:
+      return getProfilePicture(entityId);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -171,6 +176,8 @@ export async function deleteEntityFile(
       return deleteProcessArtifact(fileName, false, entityId);
     case EntityType.ORGANIZATION:
       return deleteOrganizationLogo(entityId);
+    case EntityType.PROFILE_PICTURE:
+      return deleteProfilePicture(entityId);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -241,7 +248,7 @@ export async function saveProcessArtifact(
       `Failed to save process artifact (${artifactType}, ${fileName}) for process ${processId}:`,
       error,
     );
-    return { presignedUrl: null, fileName: null };
+    return { presignedUrl: null, filePath: null };
   }
 }
 
@@ -345,6 +352,76 @@ export async function deleteOrganizationLogo(organizationId: string): Promise<bo
   }
 
   return false;
+}
+
+const MB = 1024 * 1024;
+async function saveProfilePicture(
+  userId: string,
+  fileName: string,
+  mimeType: string,
+  fileContent?: Buffer | Uint8Array,
+) {
+  const newFileName = getNewFileName('profilePicture_' + fileName);
+  const filePath = `users/${userId}/${newFileName}`;
+
+  const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent, undefined, MB);
+
+  // TODO: leaky abstraction
+  if (!status) {
+    await deleteFile(filePath);
+    throw new Error('Failed to save organization logo');
+  }
+
+  const previousProfileImage = await db.user.findFirst({
+    where: { id: userId },
+    select: { profileImage: true },
+  });
+
+  if (!previousProfileImage) throw new Error(`User with ID ${userId} not found`);
+
+  // http/s files are not stored by us, but by the oauth providers instead
+  if (previousProfileImage.profileImage && !previousProfileImage.profileImage.startsWith('http')) {
+    // Delete the previous profile image if it exists
+    await deleteFile(previousProfileImage.profileImage);
+  }
+
+  await db.user.update({
+    where: { id: userId },
+    data: { profileImage: filePath },
+  });
+
+  return { presignedUrl, filePath };
+}
+
+async function getProfilePicture(userId: string) {
+  const result = await db.user.findUnique({
+    where: { id: userId },
+    select: { profileImage: true },
+  });
+
+  if (result?.profileImage) return retrieveFile(result.profileImage);
+
+  return null;
+}
+
+async function deleteProfilePicture(userId: string): Promise<boolean> {
+  const result = await db.user.findUnique({
+    where: { id: userId },
+    select: { profileImage: true },
+  });
+
+  if (!result?.profileImage) return false;
+
+  const isDeleted = await deleteFile(result.profileImage);
+  // TODO: handle if false
+  if (isDeleted) {
+    await db.user.update({
+      where: { id: userId },
+      data: { profileImage: null },
+    });
+  }
+
+  return isDeleted;
 }
 
 export async function updateFileDeletableStatus(

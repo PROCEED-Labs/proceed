@@ -2,7 +2,6 @@ import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
 import { Button, Result, Skeleton, Space, Tabs } from 'antd';
 import { notFound, redirect } from 'next/navigation';
-import { env } from 'process';
 import { Suspense } from 'react';
 import EngineOverview from './engine-overview';
 import Link from 'next/link';
@@ -12,6 +11,7 @@ import { type Engine } from '@/lib/engines/machines';
 import { getDbEngineById } from '@/lib/data/db/engines';
 import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 import { engineRequest } from '@/lib/engines/endpoints/index';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 export type TableEngine = Engine & { id: string };
 
@@ -86,7 +86,8 @@ async function Engine({ dbEngineId }: { dbEngineId: string }) {
 }
 
 export default async function EnginesPage({ params }: { params: { dbEngineId: string } }) {
-  if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) return notFound();
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
   const user = await getCurrentUser();
   if (!user.systemAdmin) redirect('/');

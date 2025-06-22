@@ -167,6 +167,15 @@
   }
 }
 
+.selectedItem {
+  background-color: rgba(24, 144, 255, 0.1) !important;
+  border-left: 3px solid #1890ff;
+  
+  &:hover {
+    background-color: rgba(24, 144, 255, 0.15) !important;
+  }
+}
+
 .taskItemColumns {
   display: flex;
   width: 100%;

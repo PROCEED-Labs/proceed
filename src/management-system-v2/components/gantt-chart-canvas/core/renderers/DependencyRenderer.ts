@@ -31,7 +31,8 @@ export class DependencyRenderer {
     elements: GanttElementType[],
     timeMatrix: TimeMatrix,
     visibleRowStart: number,
-    visibleRowEnd: number
+    visibleRowEnd: number,
+    highlightedDependencies?: GanttDependency[]
   ): void {
     // Create element lookup map for quick access and index map for positions
     const elementMap = new Map<string, GanttElementType>();
@@ -42,8 +43,25 @@ export class DependencyRenderer {
       indexMap.set(el.id, index);
     });
     
-    // Render each dependency
+    // Create a set of highlighted dependency IDs for quick lookup
+    const highlightedIds = new Set(
+      highlightedDependencies?.map(dep => `${dep.sourceId}-${dep.targetId}`) || []
+    );
+    
+    // Separate dependencies into normal and highlighted arrays for proper z-ordering
+    const normalDeps: typeof dependencies = [];
+    const highlightedDeps: typeof dependencies = [];
+    
     dependencies.forEach(dep => {
+      if (highlightedIds.has(`${dep.sourceId}-${dep.targetId}`)) {
+        highlightedDeps.push(dep);
+      } else {
+        normalDeps.push(dep);
+      }
+    });
+    
+    // Render normal dependencies first (behind highlighted ones)
+    const renderDependency = (dep: typeof dependencies[0], isHighlighted: boolean) => {
       const fromElement = elementMap.get(dep.sourceId);
       const toElement = elementMap.get(dep.targetId);
       
@@ -76,9 +94,15 @@ export class DependencyRenderer {
       fromPoint.y = fromIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
       toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
       
-      // Draw the dependency arrow (dependencies don't have type in current interface)
-      this.drawDependencyArrow(context, fromPoint, toPoint, 'finish-to-start');
-    });
+      // Draw the dependency arrow
+      this.drawDependencyArrow(context, fromPoint, toPoint, 'finish-to-start', isHighlighted);
+    };
+    
+    // Render normal dependencies first
+    normalDeps.forEach(dep => renderDependency(dep, false));
+    
+    // Render highlighted dependencies last (on top)
+    highlightedDeps.forEach(dep => renderDependency(dep, true));
   }
   
   /**
@@ -160,7 +184,8 @@ export class DependencyRenderer {
     context: CanvasRenderingContext2D,
     from: { x: number; y: number },
     to: { x: number; y: number },
-    type: string
+    type: string,
+    isHighlighted: boolean = false
   ): void {
     // Calculate adjusted endpoint to stop before arrow head
     const arrowOffset = DEPENDENCY_ARROW_SIZE * 0.8; // Stop line slightly before arrow tip
@@ -169,9 +194,14 @@ export class DependencyRenderer {
     // Save current context state
     context.save();
     
-    // Set line style for dependencies
-    context.strokeStyle = DEPENDENCY_LINE_COLOR;
-    context.lineWidth = 1.5 * this.pixelRatio; // Thinner lines for better appearance on high DPI
+    // Set line style for dependencies based on highlight status
+    if (isHighlighted) {
+      context.strokeStyle = '#000000'; // Black color for highlighted dependencies
+      context.lineWidth = 2.5 * this.pixelRatio; // Thicker lines for highlighted dependencies
+    } else {
+      context.strokeStyle = DEPENDENCY_LINE_COLOR;
+      context.lineWidth = 1.5 * this.pixelRatio; // Thinner lines for normal dependencies
+    }
     context.setLineDash([]);
     
     // Set line join to round for smoother corners
@@ -266,7 +296,7 @@ export class DependencyRenderer {
     context.stroke();
     
     // Draw arrow head
-    this.drawArrowHead(context, to, type);
+    this.drawArrowHead(context, to, type, isHighlighted);
     
     // Restore context state
     context.restore();
@@ -278,9 +308,10 @@ export class DependencyRenderer {
   private drawArrowHead(
     context: CanvasRenderingContext2D,
     point: { x: number; y: number },
-    type: string
+    type: string,
+    isHighlighted: boolean = false
   ): void {
-    context.fillStyle = DEPENDENCY_LINE_COLOR;
+    context.fillStyle = isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR;
     context.beginPath();
     
     // Arrow pointing left (into the element)

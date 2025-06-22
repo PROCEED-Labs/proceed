@@ -344,7 +344,8 @@ export class CanvasRenderer {
     visibleRowEnd: number,
     customDateMarkerTime?: number,
     dependencies?: GanttDependency[],
-    scrollTop?: number
+    scrollTop?: number,
+    highlightedDependencies?: GanttDependency[]
   ): void {
     const context = this.contexts.get(CanvasLayerType.ChartContent);
     if (!context) return;
@@ -421,7 +422,8 @@ export class CanvasRenderer {
         elements,
         modifiedMatrix, // Use modified matrix
         visibleRowStart,
-        visibleRowEnd
+        visibleRowEnd,
+        highlightedDependencies
       );
     }
 

@@ -52,6 +52,21 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     
     // Track scroll position to trigger re-renders for virtualization
     const [scrollTop, setScrollTop] = useState(0);
+    
+    // Track selected element for highlighting dependencies
+    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+
+    // Function to get outgoing dependencies for highlighting
+    const getOutgoingDependencies = useCallback((elementId: string) => {
+      return dependencies.filter(dep => 
+        dep.sourceId === elementId
+      );
+    }, [dependencies]);
+
+    // Handle element selection
+    const handleElementClick = useCallback((elementId: string) => {
+      setSelectedElementId(prev => prev === elementId ? null : elementId);
+    }, []);
 
     // Calculate total height for virtualization
     // This is the full scrollable height based on the number of elements
@@ -154,6 +169,9 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           elementManagerRef.current.setElements(elements);
         }
 
+        // Get highlighted dependencies for the selected element
+        const highlightedDependencies = selectedElementId ? getOutgoingDependencies(selectedElementId) : [];
+        
         // Always pass ALL elements to the renderer
         // The renderer will handle visibility filtering internally
         rendererRef.current.renderChartContent(
@@ -163,7 +181,8 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           visibleRowEnd,
           currentDateMarkerTime, // Pass the optional custom date marker time
           dependencies, // Pass dependency arrows
-          scrollTop // Pass exact scroll position
+          scrollTop, // Pass exact scroll position
+          highlightedDependencies // Pass highlighted dependencies
         );
 
 
@@ -183,6 +202,8 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       gantt.taskListRef,
       currentDateMarkerTime,
       dependencies,
+      selectedElementId,
+      getOutgoingDependencies,
     ]);
 
     // Simple scroll handling with throttling
@@ -753,16 +774,23 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   const element = elements[i];
                   if (!element) continue;
 
+                  const isSelected = selectedElementId === element.id;
+                  
                   visibleElements.push(
                     <div
                       key={element.id}
-                      className={`${styles.taskItem} ${element.type === 'group' ? styles.groupItem : ''}`}
+                      className={`${styles.taskItem} ${element.type === 'group' ? styles.groupItem : ''} ${isSelected ? styles.selectedItem : ''}`}
                       style={{
                         height: `${ROW_HEIGHT}px`,
                         top: `${i * ROW_HEIGHT}px`,
-                        backgroundColor:
-                          element.type === 'group' ? 'rgba(114, 46, 209, 0.1)' : undefined,
+                        backgroundColor: isSelected 
+                          ? 'rgba(24, 144, 255, 0.1)'
+                          : element.type === 'group' 
+                            ? 'rgba(114, 46, 209, 0.1)' 
+                            : undefined,
+                        cursor: 'pointer',
                       }}
+                      onClick={() => handleElementClick(element.id)}
                     >
                       <div className={styles.taskItemColumns}>
                         <div className={styles.taskNameColumn}>

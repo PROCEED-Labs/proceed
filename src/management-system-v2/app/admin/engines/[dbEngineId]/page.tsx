@@ -17,12 +17,9 @@ export type TableEngine = Engine & { id: string };
 
 async function Engine({ dbEngineId }: { dbEngineId: string }) {
   const dbEngine = await getDbEngineById(dbEngineId, null, undefined, 'dont-check');
-  console.log('dbEngine', dbEngineId, dbEngine);
-
   if (!dbEngine) throw new Error('Failed to fetch engine');
 
   const engines = await savedEnginesToEngines([dbEngine]);
-  console.log('discoverred engines', engines);
   // TODO: show all engines
 
   const engine = engines[0];

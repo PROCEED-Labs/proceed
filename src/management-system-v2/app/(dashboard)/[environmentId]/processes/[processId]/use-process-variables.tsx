@@ -26,77 +26,58 @@ export default function useProcessVariables() {
       if (processEl) {
         setProcessElement(processEl);
         setVariables(getVariablesFromElement(processEl.businessObject));
+
+        // watch for updates in the bpmn and mirror them in this components state
+        const onUpdate = (event: any) => {
+          if (!event.context) return;
+          const { context } = event;
+
+          if (context.element.id === processEl.id) {
+            const variables = getVariablesFromElement(context.element.businessObject);
+            setVariables(variables);
+          }
+        };
+
+        const eventBus = modeler.getEventBus();
+        eventBus.on('commandStack.element.updateProperties.postExecuted', onUpdate);
+
+        return () => {
+          setProcessElement(undefined);
+          setVariables([]);
+          eventBus.off('commandStack.element.updateProperties.postExecuted', onUpdate);
+        };
       }
     }
-    return () => {
-      setProcessElement(undefined);
-      setVariables([]);
-    };
   }, [modeler]);
 
-  const addOrEditVariable = async (
-    variable: ProcessVariable,
-    originalVariable?: ProcessVariable,
-  ) => {
+  const updateVariable = async (variable?: ProcessVariable, originalVariableName?: string) => {
     if (!processElement) return;
-
-    // update the data in the component
-    let originalIndex = -1;
-    if (originalVariable) {
-      originalIndex = variables.findIndex((v) => v.name === originalVariable.name);
-    }
-    if (originalIndex < 0) {
-      // add the new variable to the end of the list
-      setVariables([...variables, variable]);
-    } else {
-      // replace the old data
-      setVariables([
-        ...variables.slice(0, originalIndex),
-        variable,
-        ...variables.slice(originalIndex + 1),
-      ]);
-    }
 
     // update the data in the bpmn
     const modeling = modeler!.getModeling();
     const bpmn = await modeler!.getXML();
     const selectedElementCopy = (await deepCopyElementById(bpmn!, processElement.id)) as any;
-    if (originalVariable && originalVariable.name !== variable.name) {
-      // remove the old variable entry if the name of an existing variable has been changed
-      // setProceedElement can only identify changes when the name is the same
+
+    if (originalVariableName && originalVariableName !== variable?.name) {
       setProceedElement(selectedElementCopy, 'Variable', null, {
-        name: originalVariable.name,
+        name: originalVariableName,
       });
     }
-    setProceedElement(selectedElementCopy, 'Variable', undefined, variable);
+
+    if (variable) {
+      setProceedElement(selectedElementCopy, 'Variable', undefined, variable);
+    }
+
     modeling.updateProperties(processElement as any, {
       extensionElements: selectedElementCopy.extensionElements,
     });
   };
 
-  const removeVariable = async (variableName: string) => {
-    if (processElement) {
-      // remove from this components data
-      setVariables(variables.filter((v) => v.name !== variableName));
-
-      // remove from the bpmn
-      const modeling = modeler!.getModeling();
-      const bpmn = await modeler!.getXML();
-      const selectedElementCopy = (await deepCopyElementById(bpmn!, processElement.id)) as any;
-      setProceedElement(selectedElementCopy, 'Variable', null, {
-        name: variableName,
-      });
-      modeling.updateProperties(processElement as any, {
-        extensionElements: selectedElementCopy.extensionElements,
-      });
-    }
-  };
-
   return {
     variables,
-    removeVariable,
-    addVariable: (variable: ProcessVariable) => addOrEditVariable(variable),
+    removeVariable: (variableName: string) => updateVariable(undefined, variableName),
+    addVariable: (variable: ProcessVariable) => updateVariable(variable),
     updateVariable: (variable: ProcessVariable, originalVariable: ProcessVariable) =>
-      addOrEditVariable(variable, originalVariable),
+      updateVariable(variable, originalVariable.name),
   };
 }

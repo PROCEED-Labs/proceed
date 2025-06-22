@@ -200,7 +200,17 @@ const SavedEnginesList = ({
                   >
                     <EditOutlined />
                   </Button>
-                  <Button type="text" onClick={() => deleteEngine(record.id)}>
+                  <Button
+                    type="text"
+                    onClick={() =>
+                      app.modal.confirm({
+                        title: 'Delete Engine',
+                        content: 'This action cannot be undone.',
+                        okText: 'Delete',
+                        onOk: () => deleteEngine(record.id),
+                      })
+                    }
+                  >
                     <DeleteOutlined />
                   </Button>
                 </div>

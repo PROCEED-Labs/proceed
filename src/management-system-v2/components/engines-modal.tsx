@@ -8,9 +8,9 @@ const EnginesModal = ({
   modalProps,
 }: {
   open: boolean;
-  close: (data?: { address: string; name: string }) => void;
+  close: (data?: { address: string; name: string | null }) => void;
   title: string;
-  initialData?: { address: string; name: string };
+  initialData?: { address: string; name: string | null };
   modalProps?: ModalProps;
 }) => {
   const [form] = Form.useForm<{ address: string; name: string }>();

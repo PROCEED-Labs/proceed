@@ -1,8 +1,8 @@
-jest.mock('async-mqtt');
+jest.mock('mqtt');
 
 const NativeMQTT = require('../index.js');
 
-const mqtt = require('async-mqtt');
+const mqtt = require('mqtt');
 
 describe('Native-MQTT', () => {
   let nativeMQTT;

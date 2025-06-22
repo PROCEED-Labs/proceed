@@ -222,7 +222,7 @@ class NativeMQTT extends NativeModule {
     await connection.subscribe(topic, {
       qos: 2, // default to qos 2 (ensures exactly one receival)
       ...subscriptionOptions, // allow user defined options (e.g. qos 0/1)
-      subscriptionId: undefined, // the subscriptionId is only for our internal logic and should not be passed to async-mqtt
+      subscriptionId: undefined, // the subscriptionId is only for our internal logic and should not be passed to mqtt
     });
 
     // remember the subscription so we are able to unsubscribe in the future

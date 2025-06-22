@@ -1,10 +1,20 @@
-import React, { ReactElement, ReactNode, useEffect, useId, useMemo, useState } from 'react';
+import React, {
+  MouseEvent,
+  ReactElement,
+  ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import { Button, Menu, MenuProps } from 'antd';
 import { useDndContext } from '@dnd-kit/core';
 
 import useBuilderStateStore from '../use-builder-state-store';
+import { truthyFilter } from '@/lib/typescript-utils';
+import { useCanEdit } from '../../modeler';
 
 export const Setting: React.FC<{
   label: string;
@@ -13,7 +23,9 @@ export const Setting: React.FC<{
 }> = ({ label, control, style = {} }) => {
   const id = useId();
 
-  const clonedControl = React.cloneElement(control, { id });
+  const editingEnabled = useCanEdit();
+
+  const clonedControl = React.cloneElement(control, { id, disabled: !editingEnabled });
 
   return (
     <div style={{ margin: '5px', ...style }}>
@@ -35,6 +47,8 @@ type ContextMenuProps = React.PropsWithChildren<{
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClose }) => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>();
+
+  const editingEnabled = useCanEdit();
 
   const id = useId();
   const blockDragging = useBuilderStateStore((state) => state.blockDragging);
@@ -71,7 +85,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
         onClose?.();
       };
 
-      const handleContextMenu = (e: MouseEvent) => {
+      const handleContextMenu = () => {
         setMenuPosition(undefined);
         onClose?.();
       };
@@ -96,7 +110,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
 
   return (
     <>
-      {position &&
+      {editingEnabled &&
+        position &&
         createPortal(
           <Menu
             style={{
@@ -127,10 +142,17 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
 type OverlayProps = React.PropsWithChildren<{
   show: boolean;
   onHide: () => void;
-  controls: { icon: ReactNode; key: string }[];
+  controls: ({ icon: ReactNode; key: string } | undefined | false)[];
+  onDoubleClick?: (e: MouseEvent<HTMLDivElement>) => void;
 }>;
 
-export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, children }) => {
+export const Overlay: React.FC<OverlayProps> = ({
+  show,
+  onHide,
+  controls,
+  children,
+  onDoubleClick,
+}) => {
   const { active } = useDndContext();
 
   useEffect(() => {
@@ -147,8 +169,12 @@ export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, childr
   return (
     <>
       {show && !active && (
-        <div className="overlay-mask" onMouseMove={(e) => e.stopPropagation()}>
-          {controls.map(({ icon, key }) => (
+        <div
+          className="overlay-mask"
+          onMouseMove={(e) => e.stopPropagation()}
+          onDoubleClick={onDoubleClick}
+        >
+          {controls.filter(truthyFilter).map(({ icon, key }) => (
             <div className="overlay-control-icon" key={key}>
               {icon}
             </div>
@@ -177,9 +203,11 @@ function SidebarButton<T extends string>({
   onClick,
   onHovered,
 }: SidebarButtonProps<T>) {
+  const editingEnabled = useCanEdit();
+
   return (
     <Button
-      disabled={disabled}
+      disabled={!editingEnabled || disabled}
       onClick={(e) => {
         e.stopPropagation();
         onClick();

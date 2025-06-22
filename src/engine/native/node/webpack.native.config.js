@@ -18,6 +18,11 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/,
       },
+      {
+        test: /\.node$/,
+        loader: 'node-loader',
+        options: {},
+      },
     ],
   },
   plugins: [
@@ -35,11 +40,12 @@ module.exports = {
   ],
   externals: {
     './injector.js': 'Function',
+    'node:child_process': 'commonjs2 child_process',
   },
   node: {
     __dirname: false,
   },
   resolve: {
-    extensions: ['.js', '.ts', '.json', '.wasm', '.mjs'],
+    extensions: ['.js', '.ts', '.json', '.wasm', '.mjs', '.node'],
   },
 };

@@ -11,14 +11,12 @@ import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors'
 import { App, Button, Form, Table, Input, Image, theme, Space, Modal } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { fallbackImage } from '../processes/[processId]/image-selection-section';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
 
-const SpaceSettings = ({
-  organization,
-}: {
-  organization: OrganizationEnvironment & { hasLogo: boolean };
-}) => {
+const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const router = useRouter();
@@ -49,10 +47,18 @@ const SpaceSettings = ({
     });
   }
 
-  const logoUrl = `/api/private/${organization.id}/logo`;
-  const [organizationLogo, setOrganizationLogo] = useState(
-    organization.hasLogo ? logoUrl : undefined,
-  );
+  const { download: getLogoUrl } = useFileManager({
+    entityType: EntityType.ORGANIZATION,
+  });
+  const [organizationLogo, setOrganizationLogo] = useState<string | undefined>();
+  useEffect(() => {
+    if (organization.spaceLogo) {
+      getLogoUrl({
+        entityId: organization.id,
+        filePath: organization.spaceLogo,
+      }).then((data) => setOrganizationLogo(data.fileUrl));
+    }
+  }, [organization]);
 
   return (
     <Form form={form} initialValues={organization} onFinish={updateOrganization}>
@@ -87,12 +93,25 @@ const SpaceSettings = ({
           },
           {
             key: 'contactPhoneNumber',
-            title: 'Phone Number',
+            title: 'Contact Phone Number',
             value: (
               <Form.Item
                 name="contactPhoneNumber"
                 style={{ margin: '0', width: '100%' }}
                 {...antDesignInputProps(errors, 'contactPhoneNumber')}
+              >
+                <PhoneInput />
+              </Form.Item>
+            ),
+          },
+          {
+            key: 'contactEmail',
+            title: 'Contact E-Mail',
+            value: (
+              <Form.Item
+                name="contactEmail"
+                style={{ margin: '0', width: '100%' }}
+                {...antDesignInputProps(errors, 'contactEmail')}
               >
                 <PhoneInput />
               </Form.Item>
@@ -118,24 +137,28 @@ const SpaceSettings = ({
                     mask: (
                       <ImageUpload
                         imageExists={!!organizationLogo}
-                        onReload={() => {
-                          setOrganizationLogo(`${logoUrl}?${Date.now()}`);
-                          message.success('Logo updated');
-                          router.refresh();
-                        }}
                         onImageUpdate={(name) => {
                           const deleted = typeof name === 'undefined';
-                          setOrganizationLogo(deleted ? undefined : `${logoUrl}?${Date.now}`);
-                          if (deleted) message.success('Logo deleted');
-                          else message.success('Logo uploaded');
+                          if (deleted) {
+                            message.success('Logo deleted');
+                            setOrganizationLogo(undefined);
+                          } else {
+                            getLogoUrl({
+                              entityId: organization.id,
+                              filePath: name,
+                            }).then((data) => setOrganizationLogo(data.fileUrl));
+                            message.success('Logo uploaded');
+                          }
+                          // To update other components that might depend on the logo
                           router.refresh();
                         }}
                         onUploadFail={() => message.error('Error uploading image')}
-                        endpoints={{
-                          postEndpoint: logoUrl,
-                          deleteEndpoint: logoUrl,
-                          putEndpoint: logoUrl,
+                        config={{
+                          entityType: EntityType.ORGANIZATION,
+                          entityId: organization.id,
+                          useDefaultRemoveFunction: true,
                         }}
+                        fileManagerErrorToasts={false}
                       />
                     ),
                   }}

@@ -1,4 +1,6 @@
-import { AuthenticatedUser, User } from './data/user-schema';
+import { AuthenticatedUser } from './data/user-schema';
+import z from 'zod';
+import parsePhoneNumberFromString, { CountryCode } from 'libphonenumber-js';
 
 export function generateDateString(date?: Date | string, includeTime: boolean = false): string {
   if (!date) {
@@ -15,6 +17,45 @@ export function generateDateString(date?: Date | string, includeTime: boolean = 
 
   return new Date(date).toLocaleDateString('en-UK', options);
 }
+
+export function generateTableDateString(date?: Date | string): string {
+  if (!date) {
+    return '';
+  }
+
+  const inputDate = new Date(date);
+  const now = new Date();
+
+  // Normalize both dates to midnight to compare calendar days (more intuitve)
+  const inputDateMidnight = new Date(
+    inputDate.getFullYear(),
+    inputDate.getMonth(),
+    inputDate.getDate(),
+  );
+  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const diff = nowMidnight.getTime() - inputDateMidnight.getTime();
+  const diffInDays = Math.floor(diff / (24 * 60 * 60 * 1000));
+
+  if (diffInDays === 0) {
+    // The same day
+    return `Today, ${inputDate.toLocaleTimeString('en-UK', { hour: 'numeric', minute: 'numeric' })}`;
+  } else if (diffInDays === 1) {
+    // Yesterday
+    return `Yesterday, ${inputDate.toLocaleTimeString('en-UK', { hour: 'numeric', minute: 'numeric' })}`;
+  } else if (diffInDays < 7) {
+    // Less than 7 days
+    return `${diffInDays} days ago`;
+  } else {
+    // 7 days or more
+    return inputDate.toLocaleDateString('en-UK', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    });
+  }
+}
+
 type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
 type JSONObject = { [key: string]: JSONValue };
 type JSONArray = JSONValue[];
@@ -455,4 +496,24 @@ export function userRepresentation(
   if (!!member.firstName !== !!member.lastName) return member.firstName || member.lastName;
 
   return member.username || 'unknown';
+}
+
+export function zodPhoneNumber(defaultCountry: CountryCode = 'DE') {
+  return z.string().transform((arg, ctx) => {
+    const phone = parsePhoneNumberFromString(arg, {
+      defaultCountry,
+      extract: false,
+    });
+
+    if (phone && phone.isValid()) {
+      return phone.number.toString();
+    }
+
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Invalid phone number',
+    });
+
+    return z.NEVER;
+  });
 }

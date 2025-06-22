@@ -21,7 +21,8 @@ import {
 } from 'antd';
 import { DefaultOptionType } from 'antd/es/select';
 import { useRouter } from 'next/navigation';
-import { FC, useEffect, useState, useTransition } from 'react';
+import { FC, use, useEffect, useState, useTransition } from 'react';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 const AddUsersModal: FC<{
   modalOpen: boolean;
@@ -158,22 +159,26 @@ const AddUsersModal: FC<{
 };
 
 const HeaderActions: FC = () => {
+  const env = use(EnvVarsContext);
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
   return (
     <>
       <AddUsersModal modalOpen={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
-      <AuthCan create User>
-        {/* TODO: fix icon for float button in button group */}
-        <Button
-          type="primary"
-          onClick={() => setCreateUserModalOpen(true)}
-          style={{ marginRight: '10px' }}
-        >
-          {breakpoint.xl ? 'New User' : 'New'}
-        </Button>
-      </AuthCan>
+      {/* TODO: for now we can only invite through email, we have to add username invites in the future */}
+      {env.PROCEED_PUBLIC_MAILSERVER_ACTIVE && (
+        <AuthCan create User>
+          {/* TODO: fix icon for float button in button group */}
+          <Button
+            type="primary"
+            onClick={() => setCreateUserModalOpen(true)}
+            style={{ marginRight: '10px' }}
+          >
+            {breakpoint.xl ? 'New User' : 'New'}
+          </Button>
+        </AuthCan>
+      )}
     </>
   );
 };

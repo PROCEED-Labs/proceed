@@ -6,7 +6,7 @@ import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proc
 import { v4 } from 'uuid';
 import { expect } from './processes.fixtures';
 import { closeModal, openModal, waitForHydration } from '../testUtils';
-import { asyncMap } from 'proceed-management-system/src/shared-frontend-backend/helpers/javascriptHelpers';
+import { asyncMap } from '../../../src/management-system-v2/lib/helpers/javascriptHelpers';
 
 export class ProcessListPage {
   readonly page: Page;
@@ -30,19 +30,26 @@ export class ProcessListPage {
    * @param definitionId will be used to identify the process in the MS (two imports with the same id will clash)
    * @returns meta data about the imported process (id and name)
    */
-  async importProcess(filename: string, definitionId = `_${v4()}`) {
+  async importProcess(
+    filename: string,
+    definitionId = `_${v4()}`,
+    transformBpmn?: (bpmn: string) => Promise<string>,
+  ) {
     const { page } = this;
 
     const importFilePath = path.join(__dirname, 'fixtures', filename);
     let bpmn = fs.readFileSync(importFilePath, 'utf-8');
     bpmn = (await setDefinitionsId(bpmn, definitionId)) as string;
     bpmn = (await setTargetNamespace(bpmn, definitionId)) as string;
+
+    if (transformBpmn) bpmn = await transformBpmn(bpmn);
+
     const { name } = await getDefinitionsInfos(bpmn);
 
     // import the test process
     const modal = await openModal(this.page, async () => {
       const fileChooserPromise = page.waitForEvent('filechooser');
-      await page.getByRole('button', { name: 'Import Process' }).click();
+      await page.getByRole('button', { name: 'import-button' }).click();
       const filechooser = await fileChooserPromise;
 
       await filechooser.setFiles({
@@ -109,12 +116,10 @@ export class ProcessListPage {
   async removeProcess(definitionId: string) {
     const { page } = this;
 
-    const modal = await openModal(page, () =>
-      page
-        .locator(`tr[data-row-key="${definitionId}"]`)
-        .getByRole('button', { name: 'delete' })
-        .click(),
-    );
+    const modal = await openModal(page, async () => {
+      await page.locator(`tr[data-row-key=${definitionId}]`).getByRole('checkbox').check();
+      await page.getByRole('button', { name: 'delete' }).click();
+    });
 
     await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
@@ -200,7 +205,7 @@ export class ProcessListPage {
         await page.getByLabel('Select all').check();
 
         const modal = await openModal(this.page, () =>
-          page.getByRole('button', { name: 'delete' }).first().click(),
+          page.getByRole('button', { name: 'delete' }).click(),
         );
         await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
         /* Remove entries from the process list */
@@ -216,7 +221,9 @@ export class ProcessListPage {
 
         /* Rendereing potential placeholder element can take longer */
         /* -> ensure new rows are rendered */
-        await page.locator('tr[data-row-key="' + visibleIds[0] + '"]').waitFor({ state: 'hidden' });
+
+        // await page.locator('tr[data-row-key=' + visibleIds[0] + ']').waitFor({ state: 'hidden' });
+        await expect(page.locator(`tr[data-row-key="${visibleIds[0]}"]`)).not.toBeVisible();
       }
     }
   }

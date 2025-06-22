@@ -1,206 +1,231 @@
-import { TableColumnsType, TableProps, Tooltip } from 'antd';
-import { MouseEvent, ReactNode, use, useCallback, useEffect, useRef, useState } from 'react';
+import { TableColumnsType, TableProps, Tooltip, Typography } from 'antd';
+import React, {
+  FC,
+  PropsWithChildren,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useUserPreferences } from './user-preferences';
-import ReactDOMServer from 'react-dom/server';
+import { Resizable } from 'react-resizable';
+import styles from './useColumnWidth.module.scss';
+import classNames from 'classnames';
 
-export const useColumnWidth = (
-  columns: NonNullable<TableProps['columns']>,
+export const useResizeableColumnWidth = <T extends any>(
+  columns: NonNullable<TableProps<T>['columns']>,
   preferenceKey: string,
   notResizeabel: string[] = [],
+  minWidth: number = 150,
 ) => {
   const columnsInPreferences = useUserPreferences.use[preferenceKey]();
   const addPreferences = useUserPreferences.use.addPreferences();
   const hydrated = useUserPreferences.use._hydrated();
 
-  const [columnWidths, setColumnWidths] = useState(
-    columns.reduce((acc, column) => {
-      return {
-        ...acc,
-        [column.key as string]:
-          columnsInPreferences.find((col: any) => col.name === column.title)?.width || 'auto',
-      };
-    }, {}),
+  /* Initialise every column, that has no width with min-width */
+  const [resizeableColumns, setResizeableColumns] = useState(
+    columns.map((col) => ({ ...col, width: col.width || minWidth })),
   );
+  const initialisedWithHydratedValues =
+    useRef(
+      false,
+    ); /* Basically a switch to check whether the state was updated once with the saved values, once hydrated */
+  const convertedWidthsToNumbers = useRef(false); /* Similar switch */
 
-  /* Once hydrated get the actual values saved in localstorage */
+  const computeNewColumns = useCallback(() => {
+    return columns.map((column: any) => {
+      const columnInPreferences = columnsInPreferences.find(
+        (col: any) => col.name === column.title,
+      );
+      if (!columnInPreferences) return column;
+
+      return {
+        ...column,
+        width: columnInPreferences.width,
+      };
+    });
+  }, [columns, columnsInPreferences]);
+
+  /* Once hydrated, get the correct values from the localstorage and update state */
   useEffect(() => {
     if (!hydrated) return;
 
-    setColumnWidths(
-      columns.reduce((acc, column) => {
+    /* This should only run one time, after localstorage-store is hydrated */
+    if (initialisedWithHydratedValues.current) return;
+
+    const newColumns = computeNewColumns();
+    initialisedWithHydratedValues.current = true;
+    // console.debug('Updated columns with hydrated values');
+    setResizeableColumns(newColumns);
+  }, [hydrated, computeNewColumns]);
+
+  /* If the user selects different columns (i.e. columnsInPreferences change) update the state with new columns */
+  useEffect(() => {
+    if (!hydrated) return;
+
+    /* This should only run if the length of the arrays is different */
+    if (columnsInPreferences.length === resizeableColumns.length) return;
+
+    const newColumns = computeNewColumns();
+    /* Since the localstorage could hold NaN */
+    convertedWidthsToNumbers.current = false;
+    // console.debug('Updated columns because of preference change');
+    setResizeableColumns(newColumns);
+  }, [columnsInPreferences, computeNewColumns, hydrated, resizeableColumns]);
+
+  /* Since 'react-resizable' can only handle numbers as width for resize */
+  /* They need to be replaced with their actual pixel values */
+  useEffect(() => {
+    if (!hydrated) return;
+
+    /* This should only happen, once the actual hydrated values have been read from localstorage and the browser had time to calculate its values  */
+
+    /* Case: The state has not been updated yet with hydrated localsorage-values */
+    if (!initialisedWithHydratedValues.current) return;
+
+    /* This should also just be done if the current width values are not numbers */
+    if (convertedWidthsToNumbers.current) return;
+
+    /* Small timeout for browser to calculate values */
+    const timer = setTimeout(() => {
+      /* Replace 'auto' width with actual px values */
+      const resizeableElements = document.querySelectorAll('.react-resizable');
+      const widthsOfResizeableElements = Array.from(resizeableElements).map(
+        (element: any) => element.getBoundingClientRect().width,
+      );
+      /* Get the widths */
+      const widths = columns.map((column: any, index: number) => {
+        /* Check if not resizeable */
+        if (notResizeabel.includes(column.key)) return column.width || minWidth;
+
+        /* Ensure all columns have min width */
+        return Math.max(widthsOfResizeableElements.shift() || minWidth, minWidth);
+      });
+
+      /* Replace width */
+      const newColumns = resizeableColumns.map((column: any, index: number) => {
         return {
-          ...acc,
-          [column.key as string]:
-            columnsInPreferences.find((col: any) => col.name === column.title)?.width || 'auto',
+          ...column,
+          width: widths[index],
         };
-      }, {}),
-    );
-  }, [hydrated]);
+      });
 
-  const resizingColumn = useRef('');
-  const columnRef = useRef<HTMLElement>();
-  const startX = useRef(0);
-  const indicatorRef = useRef<HTMLElement | null>(null);
+      convertedWidthsToNumbers.current = true;
+      // console.debug('Converted widths to numbers');
+      setResizeableColumns(newColumns);
+    }, 500);
 
-  const handleMouseDown = useCallback((event: MouseEvent, key: string) => {
-    // event.stopPropagation();
-    event.preventDefault();
-    resizingColumn.current = key;
-    // @ts-ignore
-    columnRef.current = event.target.closest('.ColumnWidthParent') as HTMLElement;
-    startX.current = event.clientX;
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [
+    columns,
+    resizeableColumns,
+    notResizeabel,
+    minWidth,
+    hydrated,
+    initialisedWithHydratedValues.current,
+    convertedWidthsToNumbers.current,
+  ]);
 
-    /* Create and append the indicator div */
-    if (document) {
-      const tableRef = columnRef.current?.closest('table');
+  const handleResize = useCallback(
+    (index: number) =>
+      (e: any, { size }: any) => {
+        let thWidth = size.width;
+        /* Antdesign can handle a size of 'auto' */
+        /* However, react-resizeable can't */
+        if (Number.isNaN(thWidth) || thWidth === null) {
+          /* In this case we need to read the actual width from the DOM */
+          const th = e.target.closest('th');
+          if (!th) return; // This should never be the case
+          thWidth = th.getBoundingClientRect().width;
+        }
+        const newWidth = Math.max(thWidth, minWidth);
 
-      indicatorRef.current = document.createElement('div');
-      indicatorRef.current.style.position = 'absolute';
-      indicatorRef.current.style.height = `${tableRef!.offsetHeight}px`;
-      indicatorRef.current.style.width = '1px';
-      indicatorRef.current.style.backgroundColor = 'grey';
-      indicatorRef.current.style.left = `${event.clientX}px`;
-      document.body.appendChild(indicatorRef.current);
-      indicatorRef.current.style.top = `${tableRef!.getBoundingClientRect().top}px`;
-      indicatorRef.current.style.zIndex = '1000';
-    }
-  }, []);
-
-  const handleMouseMove = useCallback((event: MouseEvent) => {
-    if (indicatorRef.current) {
-      indicatorRef.current.style.left = `${event.clientX}px`;
-    }
-  }, []);
-
-  const handleMouseUp = useCallback(
-    (event: MouseEvent) => {
-      if (resizingColumn.current) {
-        /* Calculate new Width */
-        const currentWidth = columnRef.current?.offsetWidth || 0;
-        const newWidth = currentWidth + event.clientX - startX.current;
-
-        /* Update UI */
-        setColumnWidths((old) => ({ ...old, [resizingColumn.current]: newWidth }));
-
-        console.log('resizingColumn.current', resizingColumn.current, newWidth);
+        /* Change state */
+        /* Note: changing the preferences should suffice (if it triggers a state change as well), however, changing the state here seems to be smoother */
+        /* Therefore only column selection changes in the localstorage are changing the state (after hydration) */
+        setResizeableColumns((old) => {
+          const newWidths = [...old];
+          // @ts-ignore
+          newWidths[index] = { ...newWidths[index], width: newWidth };
+          return newWidths;
+        });
 
         /* Update Preferences */
         const newColumnsInPreferences = columnsInPreferences.map((column: any) => {
-          if (column.name === resizingColumn.current) {
+          if (column.name === columns[index].title) {
             return { name: column.name, width: newWidth };
           }
           return column;
         });
         addPreferences({ [preferenceKey]: newColumnsInPreferences });
-
-        /* Remove the indicator div */
-        if (indicatorRef.current) {
-          document.body.removeChild(indicatorRef.current);
-          indicatorRef.current = null;
-        }
-
-        /* Reset */
-        resizingColumn.current = '';
-        startX.current = 0;
-      }
-    },
-    [columnWidths],
+      },
+    [minWidth, columnsInPreferences, addPreferences, preferenceKey, columns],
   );
 
-  useEffect(() => {
-    if (!document) return;
+  const columsWithResize = useMemo(() => {
+    return resizeableColumns.map((column: any, index: number) => {
+      if (notResizeabel.includes(column.key)) return column;
 
-    // @ts-ignore
-    document.addEventListener('mouseup', handleMouseUp);
-    // @ts-ignore
-    document.addEventListener('mousemove', handleMouseMove);
+      return {
+        ...column,
+        /* Ensure updates are passed through */
+        ...columns[index],
+        onHeaderCell: (column: any) => ({
+          width: column.width,
+          onResize: handleResize(index),
+        }),
+      };
+    }) as TableColumnsType<any>;
+  }, [resizeableColumns, notResizeabel, columns, handleResize]);
 
-    return () => {
-      // @ts-ignore
-      document.removeEventListener('mouseup', handleMouseUp);
-      // @ts-ignore
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [handleMouseUp, handleMouseDown]);
-
-  return columns.map((column: any) => {
-    if (notResizeabel.includes(column.key)) return column;
-    return {
-      ...column,
-      title: (
-        <div style={{ position: 'relative' }} className="ColumnWidthParent">
-          {column.title as ReactNode}
-          <div
-            style={{
-              position: 'absolute',
-              width: '5px',
-              //   backgroundColor: 'black',
-              right: -8,
-              top: 0,
-              cursor: 'ew-resize',
-            }}
-            onMouseDown={(e) => handleMouseDown(e, column.key as string)}
-          >
-            &ensp;
-          </div>
-        </div>
-      ),
-      // @ts-ignore
-      width: columnWidths[column.key] as Number,
-      /* Ensure, that cutoff is possible */
-      ellipsis: {
-        showTitle: true,
-      },
-      // render: (text: any, record: any, index: number) => (
-      //   <>
-      //     {column.render && (
-      //       <Tooltip title={column.render(text, record, index)}>
-      //         <div
-      //           style={{
-      //             width: '100%',
-      //             overflow: 'hidden',
-      //             whiteSpace: 'nowrap',
-      //             textOverflow: 'ellipsis',
-      //           }}
-      //         >
-      //           {column.render(text, record, index) as ReactNode}
-      //         </div>
-      //       </Tooltip>
-      //     )}
-      //   </>
-      // ),
-      render: (text: any, record: any, index: number) => {
-        const renderedContent = column.render ? column.render(text, record, index) : null;
-        return (
-          <>
-            {renderedContent && (
-              <div
-                style={{
-                  // width: '100%',
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {hasTextContent(renderedContent) ? (
-                  <Tooltip title={renderedContent}>
-                    <div style={{ width: '100%' }}>{renderedContent}</div>
-                  </Tooltip>
-                ) : (
-                  renderedContent
-                )}
-              </div>
-            )}
-          </>
-        );
-      },
-    };
+  columsWithResize.push({
+    width: 'fit-content',
+    dataIndex: 'id',
+    key: 'auto-sizer',
+    title: <div className="PROCEED-RESIZE-COLUMN" style={{ width: '100%', height: '2px' }} />,
+    render: (id, record) => '',
+    responsive: ['xl'],
   });
+
+  return columsWithResize;
 };
 
-function hasTextContent(jsx: ReactNode): boolean {
-  // @ts-ignore
-  const renderedString = ReactDOMServer.renderToStaticMarkup(jsx);
-  const textContent = renderedString.replace(/<[^>]*>/g, '');
-  return /\S/.test(textContent);
-}
+type ResizeableTitleProps = PropsWithChildren & {
+  onResize: (e: any, { size }: any) => void;
+  width: number | string;
+};
+
+export const ResizeableTitle: FC<ResizeableTitleProps> = ({ onResize, width, ...restProps }) => {
+  if (!width) {
+    return <th {...restProps} />;
+  }
+
+  return (
+    <Resizable
+      // ant-table-cell ant-table-cell-ellipsis ant-table-column-has-sorters
+      className={classNames(styles['react-resizable'])}
+      width={
+        width as number
+      } /* Can also be a string (e.g. 'auto'), but that case is managed in the useResizeableColumnWidth hook */
+      height={0}
+      handle={
+        <span
+          className={styles['react-resizable-handle']}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+
+          // style={{ backgroundColor: 'red' }} /* Uncomment to see Handles */
+        />
+      }
+      onResize={onResize}
+      // draggableOpts={{ onMouseDown: console.log }}
+    >
+      <th {...restProps} />
+    </Resizable>
+  );
+};

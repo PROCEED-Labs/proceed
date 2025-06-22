@@ -1,10 +1,8 @@
-import React, { FC, useCallback, useMemo, useRef } from 'react';
-import Image from 'next/image';
+import React, { FC, useCallback, useRef, PropsWithChildren } from 'react';
 import style from './loading-proceed.module.scss';
 import { useLazyRendering } from './scrollbar';
 import cn from 'classnames';
 import { v4 as uid } from 'uuid';
-import { ignore } from 'antd/es/theme/useToken';
 
 // '/proceed-icon.png'
 
@@ -14,23 +12,29 @@ type LoadingProps = {
   small?: boolean;
   scale?: string;
   position?: SVGPosition;
+  loading?: boolean;
 };
 
 type SVGPosition = {
-  x?: number;
-  y?: number;
+  x?: number | string;
+  y?: number | string;
 };
 
-const ProceedLoading: FC<LoadingProps> = ({
+const ProceedLoadingIndicator: FC<PropsWithChildren<LoadingProps>> = ({
   width = '250px',
   height /* = '155px' */,
   scale = '100%',
   small = false,
   position = { x: 0, y: 0 },
+  loading = true,
+  children,
 }) => {
   const { x, y } = position;
   const ratioedHeight =
-    height || `${Number.parseInt(`${width}`) * 0.62}px`; /* Ratio of Proceed-Icon */
+    height ||
+    (typeof width == 'number' || (typeof width == 'string' && width.endsWith('px'))
+      ? `${Number.parseInt(`${width}`) * 0.62}px`
+      : `${Number.parseInt(`${width}`) * 0.62}%`); /* Ratio of Proceed-Icon */
 
   /* To ensure there are only visible elements are animated (margin: +- 100% ) */
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,6 +66,9 @@ const ProceedLoading: FC<LoadingProps> = ({
                 mask: `url(#${maskID}) center/100% no-repeat`,
                 WebkitMask: `url(#${maskID}) center/100% no-repeat`,
                 // maskSize: 'contain', /* This seems not to work with grouped svgs */
+                position: 'relative',
+                top: y,
+                left: x,
               }}
             >
               <div className={cn(style.loadingIndicatorSVG, { [style.visible]: visible })}></div>
@@ -120,7 +127,7 @@ const ProceedLoading: FC<LoadingProps> = ({
     [scale, position],
   );
 
-  return (
+  return loading ? (
     <div
       ref={containerRef}
       style={{
@@ -156,7 +163,9 @@ const ProceedLoading: FC<LoadingProps> = ({
         )}
       </div>
     </div>
+  ) : (
+    children
   );
 };
 
-export default ProceedLoading;
+export default ProceedLoadingIndicator;

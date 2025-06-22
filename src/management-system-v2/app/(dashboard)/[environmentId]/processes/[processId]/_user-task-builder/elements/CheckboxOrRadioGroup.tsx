@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 
-import { Divider, Input, MenuProps, Select, Space, Tooltip } from 'antd';
+import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { TbRowInsertTop, TbRowInsertBottom, TbRowRemove } from 'react-icons/tb';
 
@@ -20,6 +20,7 @@ import { WithRequired } from '@/lib/typescript-utils';
 
 import { SettingOutlined, EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
+import { useCanEdit } from '../../modeler';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
@@ -63,12 +64,14 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
+  const editingEnabled = useCanEdit();
   return (
     <>
       <input
         id={id}
+        disabled={!editingEnabled}
         type={type}
-        value={value}
+        value={value || undefined}
         name={variable}
         checked={checked}
         onClick={onChange}
@@ -79,7 +82,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
           show={hovered && !textEditing}
           onHide={() => setHovered(false)}
           controls={[
-            {
+            editingEnabled && {
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,
               key: 'edit',
             },
@@ -88,6 +91,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               key: 'setting',
             },
           ]}
+          onDoubleClick={() => setTextEditing(true)}
         >
           <EditableText
             value={label}
@@ -123,9 +127,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   variable = 'test',
   data,
 }) => {
-  const { query, editingEnabled } = useEditor((state) => ({
-    editingEnabled: state.options.enabled,
-  }));
+  const { query } = useEditor();
 
   const [editTarget, setEditTarget] = useState<number>();
   const [hoveredAction, setHoveredAction] = useState<EditAction>();
@@ -150,6 +152,8 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
       setCurrentValue('');
     }
   }, [isSelected]);
+
+  const editingEnabled = useCanEdit();
 
   const handleLabelEdit = (index: number, text: string) => {
     if (!editingEnabled) return;
@@ -396,20 +400,13 @@ export const CheckBoxOrRadioGroupSettings = () => {
       <Setting
         label="Variable"
         control={
-          <Select
-            style={{ display: 'block' }}
-            options={[
-              { value: 'var1', label: 'Var1' },
-              { value: 'var2', label: 'Var2' },
-              { value: 'var3', label: 'Var3' },
-            ]}
+          <Input
             value={variable}
-            disabled={!editingEnabled}
-            onChange={(val) =>
+            onChange={(e) => {
               setProp((props: CheckBoxOrRadioGroupProps) => {
-                props.variable = val;
-              })
-            }
+                props.variable = e.target.value;
+              });
+            }}
           />
         }
       />

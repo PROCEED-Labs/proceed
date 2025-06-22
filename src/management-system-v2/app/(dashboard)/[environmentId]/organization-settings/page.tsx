@@ -5,7 +5,7 @@ import Content from '@/components/content';
 import Title from 'antd/es/typography/Title';
 import { redirect } from 'next/navigation';
 import SpaceSettings from './space-settings';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/db/iam/environments';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import DeleteOrganizationButton from './delete-organization-button';
 import { AuthCan } from '@/components/auth-can';
@@ -18,7 +18,6 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
   const organization = (await getEnvironmentById(
     activeEnvironment.spaceId,
   )) as OrganizationEnvironment;
-  const hasLogo = await organizationHasLogo(activeEnvironment.spaceId);
 
   return (
     <Content title="Organization Settings">
@@ -26,7 +25,7 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
         <AuthCan update Environment>
           <Card style={{ margin: 'auto', maxWidth: '45rem' }}>
             <Title level={3}>Organization Profile</Title>
-            <SpaceSettings organization={{ ...organization, hasLogo }} />
+            <SpaceSettings organization={organization} />
           </Card>
         </AuthCan>
 

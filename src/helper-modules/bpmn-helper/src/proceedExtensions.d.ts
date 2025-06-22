@@ -32,10 +32,20 @@ export function setMetaData(
   elId: string,
   metaValues: object,
 ): Promise<string | object>;
+/**
+ * Sets values and attributes for custom proceed element
+ *
+ * @param {object} element the element to be updated
+ * @param {string} proceedElementType the type of proceed element
+ * @param {any} value the value to be inserted into element
+ * @param {object} [attributes] the attributes to be set in element
+ * @param {object} [oldAttributes] optional old attributes of element
+ * @returns {object} attributes of old element
+ */
 export function setProceedElement(
-  element: any,
-  proceedElementType: any,
+  element: object,
+  proceedElementType: string,
   value: any,
-  attributes?: {},
-  oldAttributes?: {},
-): {};
+  attributes?: object,
+  oldAttributes?: object,
+): object;

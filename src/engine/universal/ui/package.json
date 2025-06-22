@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@proceed/distribution": "^1.0.0",
-    "@proceed/system": "^1.0.0",
-    "whiskers": "^0.4.0"
+    "@proceed/system": "^1.0.0"
   }
 }

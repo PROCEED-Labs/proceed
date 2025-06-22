@@ -1305,7 +1305,7 @@ describe('Test deploying a process', () => {
           // deploy and start process on machine 4
           await deployProcess('parallelScriptTaskDynamicProcess', engineNames[0]);
 
-          let instanceId = await startInstance(definitionId, 123, engineNames[0]);
+          let instanceId = await startInstance(definitionId, '123', engineNames[0]);
 
           // after starting the process, wait 5 seconds before requesting the state of the instance
           await new Promise((resolve) => setTimeout(() => resolve(), 5000));
@@ -2047,6 +2047,7 @@ describe('Test deploying a process', () => {
               expect(engineResponse.body[0]).toEqual({
                 id: 'Activity_1xguu75',
                 instanceID: instanceId,
+                milestones: {},
                 attrs: expect.any(Object),
                 priority: 1,
                 performers: [],
@@ -2125,6 +2126,7 @@ describe('Test deploying a process', () => {
                 {
                   id: 'Activity_1pgsbor',
                   instanceID: instanceId,
+                  milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
                   performers: [],
@@ -2136,12 +2138,13 @@ describe('Test deploying a process', () => {
                 {
                   id: 'Activity_1xguu75',
                   instanceID: instanceId,
+                  milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
                   performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
-                  endTime: null,
+                  endTime: expect.any(Number),
                   state: 'SKIPPED',
                 },
               ]);
@@ -2192,12 +2195,13 @@ describe('Test deploying a process', () => {
                 {
                   id: 'Activity_1xguu75',
                   instanceID: instanceId,
+                  milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
                   performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
-                  endTime: null,
+                  endTime: expect.any(Number),
                   state: 'SKIPPED',
                 },
               ]);
@@ -2276,6 +2280,7 @@ describe('Test deploying a process', () => {
                 instanceID: instanceId,
                 attrs: expect.any(Object),
                 priority: 1,
+                milestones: {},
                 performers: [],
                 progress: 0,
                 startTime: expect.any(Number),
@@ -2528,8 +2533,8 @@ describe('Test deploying a process', () => {
                 {
                   type: 'MIGRATION',
                   time: expect.any(Number),
-                  sourceVersion: 111,
-                  targetVersion: 123,
+                  sourceVersion: '111',
+                  targetVersion: '123',
                 },
               ]);
             });
@@ -2699,8 +2704,8 @@ describe('Test deploying a process', () => {
                 {
                   type: 'MIGRATION',
                   time: expect.any(Number),
-                  sourceVersion: 111,
-                  targetVersion: 456,
+                  sourceVersion: '111',
+                  targetVersion: '456',
                 },
                 {
                   type: 'TOKEN-MOVE',
@@ -2872,8 +2877,8 @@ describe('Test deploying a process', () => {
                 {
                   type: 'MIGRATION',
                   time: expect.any(Number),
-                  sourceVersion: 111,
-                  targetVersion: 456,
+                  sourceVersion: '111',
+                  targetVersion: '456',
                 },
                 {
                   type: 'TOKEN-MOVE',

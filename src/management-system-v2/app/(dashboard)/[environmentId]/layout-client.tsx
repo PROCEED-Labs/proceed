@@ -1,13 +1,23 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useState } from 'react';
-import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
-import { AppstoreOutlined } from '@ant-design/icons';
+import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
+import {
+  Alert,
+  Layout as AntLayout,
+  Button,
+  Drawer,
+  Grid,
+  Menu,
+  MenuProps,
+  Modal,
+  Tooltip,
+} from 'antd';
+import { AppstoreOutlined, SettingOutlined, HomeOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { create } from 'zustand';
 import { Environment } from '@/lib/data/environment-schema';
 import UserAvatar from '@/components/user-avatar';
@@ -15,7 +25,11 @@ import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
-import { FaUserEdit } from 'react-icons/fa';
+import { TbUser, TbUserEdit } from 'react-icons/tb';
+import { useFileManager } from '@/lib/useFileManager';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import { useSession } from '@/components/auth-can';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -42,6 +56,7 @@ const Layout: FC<
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;
     customLogo?: string;
+    disableUserDataModal?: boolean;
   }>
 > = ({
   loggedIn,
@@ -51,56 +66,93 @@ const Layout: FC<
   children,
   hideSider,
   customLogo,
+  disableUserDataModal = false,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
-
+  const { download: getLogo, fileUrl: logoUrl } = useFileManager({
+    entityType: EntityType.ORGANIZATION,
+  });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
+  const envVars = use(EnvVarsContext);
 
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
+  const [showLoginRequest, setShowLoginRequest] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
   let layoutMenuItems = _layoutMenuItems;
+
+  if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
+    const personal: MenuProps['items'] = [
+      {
+        key: 'personal-profile',
+        label: userData?.isGuest ? (
+          <div onClick={() => setShowLoginRequest(true)}>My Profile</div>
+        ) : (
+          <SpaceLink href={'/profile'}>My Profile</SpaceLink>
+        ),
+        icon: <TbUserEdit />,
+      },
+      {
+        key: 'personal-spaces',
+        label: userData?.isGuest ? (
+          <div onClick={() => setShowLoginRequest(true)}>My Spaces</div>
+        ) : (
+          <SpaceLink href={'/spaces'}>My Spaces</SpaceLink>
+        ),
+        icon: <AppstoreOutlined />,
+      },
+    ];
+
+    layoutMenuItems = [
+      ...layoutMenuItems,
+      {
+        key: 'iam-personal',
+        label: 'Personal',
+        icon: <TbUser />,
+        children: personal,
+      },
+    ];
+  }
+
+  if (!activeSpace.isOrganization) {
+    const home = {
+      key: 'personal-space-home',
+      label: 'Home',
+      icon: <HomeOutlined />,
+      children: [
+        {
+          key: 'personal-space-settings',
+          label: userData?.isGuest ? (
+            <div onClick={() => setShowLoginRequest(true)}>Settings</div>
+          ) : (
+            <SpaceLink href={'/settings'}>Settings</SpaceLink>
+          ),
+          icon: <SettingOutlined />,
+        },
+      ],
+    };
+    layoutMenuItems = [...layoutMenuItems, home];
+  }
+
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(
       (item) => !(item && 'type' in item && item.type === 'divider'),
     );
-
-    if (userData && !userData.isGuest) {
-      layoutMenuItems = [
-        {
-          label: 'Profile',
-          key: 'profile-settings',
-          type: 'group',
-          children: [
-            {
-              key: 'profile',
-              title: 'Profile Settings',
-              label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-              icon: <FaUserEdit />,
-            },
-            {
-              key: 'environments',
-              title: 'My Spaces',
-              label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
-              icon: <AppstoreOutlined />,
-            },
-          ],
-        },
-        ...layoutMenuItems,
-      ];
-    }
   }
 
+  useEffect(() => {
+    if (customLogo) getLogo({ entityId: activeSpace.spaceId, filePath: customLogo });
+  }, [activeSpace, customLogo]);
+
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (customLogo) imageSource = customLogo;
+  if (logoUrl) imageSource = logoUrl;
 
   const menu = (
     <Menu
-      theme="light"
       style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
       mode="inline"
       items={layoutMenuItems}
@@ -111,7 +163,7 @@ const Layout: FC<
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
       <SpaceContext.Provider value={activeSpace}>
-        {userData && !userData.isGuest ? (
+        {!disableUserDataModal && userData && !userData.isGuest ? (
           <AuthenticatedUserDataModal
             modalOpen={!userData.username || !userData.lastName || !userData.firstName}
             userData={userData}
@@ -149,40 +201,64 @@ const Layout: FC<
                   backgroundColor: '#fff',
                   borderRight: '1px solid #eee',
                   display: modelerIsFullScreen ? 'none' : 'block',
+                  overflow: 'auto',
                 }}
                 className={cn(styles.Sider)}
                 collapsible
                 collapsed={collapsed}
                 onCollapse={(collapsed) => setCollapsed(collapsed)}
-                collapsedWidth={breakpoint.xs ? '0' : '100'}
+                collapsedWidth={breakpoint.xs ? '0' : '75'}
                 breakpoint="xl"
-                trigger={null}
+                theme="light"
               >
-                <Link className={styles.LogoContainer} href={spaceURL(activeSpace, `/processes`)}>
-                  <Image
-                    src={imageSource}
-                    alt="PROCEED Logo"
-                    className={cn(styles.Logo, {
-                      [styles.collapsed]: collapsed,
-                    })}
-                    width={160}
-                    height={63}
-                    priority
-                  />
-                </Link>
-
-                {loggedIn ? menu : null}
+                <div
+                  style={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '8px',
+                        height: '64px',
+                      }}
+                    >
+                      <Link
+                        className={styles.LogoContainer}
+                        href={spaceURL(activeSpace, `/processes`)}
+                      >
+                        <Image
+                          src={imageSource}
+                          alt="PROCEED Logo"
+                          className={cn(styles.Logo, {
+                            [styles.collapsed]: collapsed,
+                          })}
+                          width={160}
+                          height={63}
+                          priority
+                        />
+                      </Link>
+                    </div>
+                    {loggedIn ? menu : null}
+                  </div>
+                  <AntLayout.Footer
+                    style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+                    className={cn(styles.Footer)}
+                  >
+                    PROCEED Labs GmbH
+                  </AntLayout.Footer>
+                </div>
               </AntLayout.Sider>
             )}
 
             <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
           </AntLayout>
-          <AntLayout.Footer
-            style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
-            className={cn(styles.Footer)}
-          >
-            © 2024 PROCEED Labs GmbH
-          </AntLayout.Footer>
         </AntLayout>
 
         <Drawer
@@ -203,6 +279,26 @@ const Layout: FC<
         >
           {menu}
         </Drawer>
+
+        <Modal
+          title={null}
+          footer={null}
+          closable={false}
+          open={showLoginRequest}
+          onCancel={() => setShowLoginRequest(false)}
+          styles={{ mask: { backdropFilter: 'blur(10px)' }, content: { padding: 0 } }}
+        >
+          <Alert
+            type="warning"
+            style={{ zIndex: '1000' }}
+            message={
+              <>
+                To store and change settings,{' '}
+                <SpaceLink href={'/signin'}>please log in as user.</SpaceLink>
+              </>
+            }
+          />
+        </Modal>
       </SpaceContext.Provider>
     </UserSpacesContext.Provider>
   );

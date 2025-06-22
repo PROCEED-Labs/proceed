@@ -5,8 +5,8 @@ import { Button, Form, Input, Modal, App, ModalProps } from 'antd';
 import { updateUser } from '@/lib/data/users';
 import { User, AuthenticatedUserData, AuthenticatedUserDataSchema } from '@/lib/data/user-schema';
 import useParseZodErrors from '@/lib/useParseZodErrors';
-import { useSession } from 'next-auth/react';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { useSession } from '@/components/auth-can';
 
 type modalInputField = {
   userDataField: keyof AuthenticatedUserData;
@@ -52,7 +52,7 @@ const AuthenticatedUserDataModal: FC<{
         fn: () => updateUser(values as AuthenticatedUserData),
         onSuccess: () => {
           app.message.success({ content: 'Profile updated' });
-          session.update();
+          session.update(null);
           close();
         },
         app,

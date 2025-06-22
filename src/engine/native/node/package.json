@@ -21,8 +21,5 @@
     "url": "https://github.com/PROCEED-Labs/proceed.git",
     "directory": "src/management-system/"
   },
-  "main": "index.js",
-  "dependencies": {
-    "vm2": "3.9.2"
-  }
+  "main": "index.js"
 }

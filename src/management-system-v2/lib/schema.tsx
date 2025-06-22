@@ -250,66 +250,132 @@ export const schema = {
       ],
     },
     {
-      name: 'version',
+      name: 'processVersionId',
       extends: ['bpmn:Definitions', 'bpmn:Import'],
       properties: [
         {
-          name: 'version',
-          isAttr: true,
-          type: 'Number',
-        },
-      ],
-    },
-    {
-      name: 'versionName',
-      extends: ['bpmn:Definitions'],
-      properties: [
-        {
-          name: 'versionName',
+          name: 'processVersionId',
           isAttr: true,
           type: 'String',
         },
       ],
     },
     {
-      name: 'versionDescription',
+      name: 'processVersionName',
       extends: ['bpmn:Definitions'],
       properties: [
         {
-          name: 'versionDescription',
+          name: 'processVersionName',
           isAttr: true,
           type: 'String',
         },
       ],
     },
     {
-      name: 'versionBasedOn',
+      name: 'processVersionDescription',
       extends: ['bpmn:Definitions'],
       properties: [
         {
-          name: 'versionBasedOn',
+          name: 'processVersionDescription',
           isAttr: true,
           type: 'String',
         },
       ],
     },
     {
-      name: 'creatorEnvironmentId',
+      name: 'processVersionBasedOn',
       extends: ['bpmn:Definitions'],
       properties: [
         {
-          name: 'creatorEnvironmentId',
+          name: 'processVersionBasedOn',
           isAttr: true,
           type: 'String',
         },
       ],
     },
     {
-      name: 'creatorEnvironmentName',
+      name: 'processVersionCreatedOn',
       extends: ['bpmn:Definitions'],
       properties: [
         {
-          name: 'creatorEnvironmentName',
+          name: 'processVersionCreatedOn',
+          isAttr: true,
+          type: 'Date',
+        },
+      ],
+    },
+    {
+      name: 'creatorSpaceId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creatorSpaceId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'creatorSpaceName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creatorSpaceName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'creatorId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creatorId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'creatorName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creatorName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'creatorUsername',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creatorUsername',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'creationDate',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'creationDate',
+          isAttr: true,
+          type: 'Date',
+        },
+      ],
+    },
+    {
+      name: 'userDefinedId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'userDefinedId',
           isAttr: true,
           type: 'String',
         },
@@ -332,6 +398,116 @@ export const schema = {
       properties: [
         {
           name: 'originalId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalUserDefinedId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalUserDefinedId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreationDate',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreationDate',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalProcessVersionId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalProcessVersionId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalProcessVersionName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalProcessVersionName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorSpaceId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorSpaceId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorSpaceName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorSpaceName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorId',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorId',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorName',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
+      name: 'originalCreatorUsername',
+      extends: ['bpmn:Definitions'],
+      properties: [
+        {
+          name: 'originalCreatorUsername',
           isAttr: true,
           type: 'String',
         },
@@ -415,6 +591,17 @@ export const schema = {
       ],
     },
     {
+      name: 'uiForNontypedStartEventsFileName',
+      extends: ['bpmn:Process'],
+      properties: [
+        {
+          name: 'uiForNontypedStartEventsFileName',
+          isAttr: true,
+          type: 'String',
+        },
+      ],
+    },
+    {
       name: 'LinkProcessNode',
       extends: ['bpmn:FlowNode'],
       properties: [
@@ -456,6 +643,50 @@ export const schema = {
         },
       ],
     },
+    {
+      name: 'GenericResource',
+      superClass: ['bpmn:Artifact'],
+      properties: [
+        {
+          name: 'name',
+          isAttr: true,
+          type: 'String',
+        },
+        {
+          name: 'resourceType',
+          isAttr: true,
+          type: 'ResourceType',
+        },
+      ],
+    },
+    {
+      name: 'PerformableNode',
+      extends: ['bpmn:Activity', 'bpmn:Event', 'bpmn:Gateway'],
+      properties: [
+        {
+          name: 'Performers',
+          type: 'PerformerAssociation',
+          isMany: true,
+        },
+      ],
+    },
+
+    {
+      name: 'ResponsibleParty',
+      superClass: ['bpmn:ResourceRole'],
+    },
+    {
+      name: 'ResposibilityElements',
+      extends: ['bpmn:Gateway', 'bpmn:Event'],
+      properties: [
+        {
+          name: 'resources',
+          type: 'ResourceRole',
+          isMany: true,
+        },
+      ],
+    },
+
     {
       name: 'placeholder',
       extends: ['bpmn:Task'],
@@ -1196,7 +1427,28 @@ export const schema = {
   xml: {
     tagAlias: 'lowerCase',
   },
-  emumerations: [],
+  emumerations: [
+    {
+      name: 'ResourceType',
+      literalValues: [
+        {
+          name: 'User',
+        },
+        {
+          name: 'Screen',
+        },
+        {
+          name: 'Laptop',
+        },
+        {
+          name: 'Robot',
+        },
+        {
+          name: 'Server',
+        },
+      ],
+    },
+  ],
   associations: [],
 };
 

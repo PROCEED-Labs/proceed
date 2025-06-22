@@ -12,6 +12,11 @@ const bpmnWithImage = fs.readFileSync(
   'utf8',
 );
 
+const fileRefScriptTask = fs.readFileSync(
+  path.resolve(__dirname, './data/processBPMN/fileRefScriptTask.xml'),
+  'utf8',
+);
+
 jest.setTimeout(15000);
 
 describe('Test process endpoints', () => {
@@ -35,13 +40,38 @@ describe('Test process endpoints', () => {
               definitionName: 'basicStatic',
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
-              needs: { html: ['userTaskFileName'], imports: [], images: [] },
-              version: 123,
+              needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
+              versionId: '123',
             },
           ],
           instances: [],
         },
       ]);
+    });
+    it('registers a script file as a dependency if it is referenced in the bpmn send in a POST request', async () => {
+      const putResponse = await request.post('/process/').send({ bpmn: fileRefScriptTask });
+      expect(putResponse.status).toBe(200);
+      const response = await request.get('/process/fileRefScriptTaskDefinitionId');
+      expect(response.status).toBe(200);
+      expect(response.body).toStrictEqual({
+        definitionId: 'fileRefScriptTaskDefinitionId',
+        versions: [
+          {
+            bpmn: fileRefScriptTask,
+            definitionName: 'scriptFileRef',
+            deploymentMethod: 'dynamic',
+            deploymentDate: expect.any(Number),
+            needs: {
+              html: [],
+              imports: [],
+              images: [],
+              scripts: ['scriptTaskFileName'],
+            },
+            versionId: '123',
+          },
+        ],
+        instances: [],
+      });
     });
     it('registers an image as a dependency if it is referenced in the bpmn send in a POST request', async () => {
       const putResponse = await request.post('/process/').send({ bpmn: bpmnWithImage });
@@ -60,8 +90,9 @@ describe('Test process endpoints', () => {
               html: ['User_Task_1qjpbcl-1671026484009'],
               imports: [],
               images: ['Activity_08fwikp_image123e6803-63a8-4cf1-9596-2999fdd016a7.png'],
+              scripts: [],
             },
-            version: 1671026484009,
+            versionId: '1671026484009',
             versionName: 'Version 1',
             versionDescription: 'Initial Version',
             basedOnVersion: '1671024712832',
@@ -82,8 +113,8 @@ describe('Test process endpoints', () => {
               definitionName: 'basicStatic',
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
-              needs: { html: ['userTaskFileName'], imports: [], images: [] },
-              version: 123,
+              needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
+              versionId: '123',
             },
           ],
           instances: [],
@@ -94,7 +125,7 @@ describe('Test process endpoints', () => {
         it('returns an array containing all the known versions of a process on a GET request', async () => {
           const getResponse = await request.get('/process/definitionId/versions');
           expect(getResponse.status).toBe(200);
-          expect(getResponse.body).toStrictEqual([123]);
+          expect(getResponse.body).toStrictEqual(['123']);
         });
 
         describe('/process/{definitionId}/versions/{version}', () => {
@@ -106,8 +137,8 @@ describe('Test process endpoints', () => {
               definitionName: 'basicStatic',
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
-              needs: { html: ['userTaskFileName'], imports: [], images: [] },
-              version: 123,
+              needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
+              versionId: '123',
             });
           });
         });
@@ -161,8 +192,9 @@ describe('Test process endpoints', () => {
                     'Activity_08fwikp_image123e6803-63a8-4cf1-9596-2999fdd016a7.png',
                     'User_Task_1qjpbcl_image72fe83de-2c44-4d1f-ae71-6b323bee7f1c.png',
                   ],
+                  scripts: [],
                 },
-                version: 1671026484009,
+                versionId: '1671026484009',
                 versionName: 'Version 1',
                 versionDescription: 'Initial Version',
                 basedOnVersion: '1671024712832',
@@ -170,6 +202,27 @@ describe('Test process endpoints', () => {
             ],
             instances: [],
           });
+        });
+      });
+
+      describe('/process/{definitionId}/script-tasks/{scriptTaskFileName}', () => {
+        it('saves the script task script on PUT request', async () => {
+          // check that the script task is currently missing
+          const response = await request.get(
+            '/process/definitionId/script-tasks/scriptTaskFileName',
+          );
+          expect(response.status).toBe(404);
+
+          const script = 'console.log("Hello Test");';
+          const putResponse = await request
+            .put('/process/definitionId/script-tasks/scriptTaskFileName')
+            .send({ script });
+          expect(putResponse.status).toBe(200);
+          const getResponse = await request.get(
+            '/process/definitionId/script-tasks/scriptTaskFileName',
+          );
+          expect(getResponse.status).toBe(200);
+          expect(getResponse.text).toMatch(script);
         });
       });
 

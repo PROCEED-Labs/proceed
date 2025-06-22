@@ -19,7 +19,7 @@ PROCEED can also intelligently automate tasks, streamline approvals, and help to
 > The documentation is available at: https://docs.proceed-labs.org  
 > (The latest developments and some special features of PROCEED for specific application areas are not available in the publicly hosted version.)
 
-The following explains how you can start the code of the open-source project PROCEED locally. Contributions, further developments or bug reports are very welcome. The best way to do this is to contact us directly or create a new issue. The development is coordinated by [PROCEED Labs GmbH.](https://www.proceed-labs.org/).
+The following explains how you can start the code of the open-source project PROCEED locally. Contributions, further developments or bug reports are very welcome. The best way to do this is to contact us directly or create a new issue. The development is coordinated by [PROCEED Labs GmbH.](https://www.proceed-labs.org/)
 
 # Running the Source Code of PROCEED:
 
@@ -41,7 +41,7 @@ After that, you must install the platform compiler `node-gyp` globally using Yar
 After cloning/retrieving the code, you need to install the software dependencies. Run the following command in the root directory of the repo:
 
 ```
-yarn install --ignore-engines
+yarn install
 ```
 
 This will install all modules and their dependencies inside `node_modules/`
@@ -54,11 +54,19 @@ You can start the development code by running the following commands
 
 **Management System (with hot reloading):**
 
+First, the following command starts a docker container with a Postgres DB and setups the default tables:
+
+```
+yarn dev-ms-db
+```
+
+Second, the next commands starts the Management System with hot reloading and connecting to the previously started database.
+
 ```
 yarn dev-ms
 ```
 
-You can then open the frontend at the following URL: http://localhost:3000/
+Open the frontend at the following URL: http://localhost:3000/
 
 **Engine:**
 
@@ -74,6 +82,16 @@ When you have started the development code of the Management System, the first i
 - `johndoe`
 
 Both users actually have the same privileges by default, but the first one logging in can see the _System Dashboard_ and becomes the _System Admin_.
+
+**Local Development with DB**
+
+If you want to change the schema of the database for a new feature, you need to create a new database on a branch. For this, the most important command is:
+
+```
+yarn dev-ms-db-new-structure --name "new column name added"
+```
+
+For further explanations, see our [development wiki page](https://github.com/PROCEED-Labs/proceed/wiki/Contribution-Guidelines-for-Development#changing-the-database-schema-for-development).
 
 # Contributions
 

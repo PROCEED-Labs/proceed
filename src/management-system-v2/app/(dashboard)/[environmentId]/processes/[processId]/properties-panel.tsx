@@ -1,18 +1,19 @@
 'use client';
 
-import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
-import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
-import React, { FocusEvent, useEffect, useRef, useState } from 'react';
+import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
-import { Input, ColorPicker, Space, Grid, Divider, Modal } from 'antd';
+import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs, message } from 'antd';
+import type { TabsProps } from 'antd';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import { CloseOutlined } from '@ant-design/icons';
 import {
   getMetaDataFromElement,
-  setDefinitionsName,
   setProceedElement,
+  deepCopyElementById,
+  setDefinitionsName,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -23,24 +24,62 @@ import PlannedDurationInput from './planned-duration-input';
 import DescriptionSection from './description-section';
 
 import PlannedCostInput from './planned-cost-input';
-import { updateProcess } from '@/lib/data/processes';
+import { checkIfProcessExistsByName, updateProcessMetaData } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
-import { useRouter } from 'next/navigation';
+import { PotentialOwner, ResponsibleParty } from './potential-owner';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
+import { Element, Shape } from 'bpmn-js/lib/model/Types';
+import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
+import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
 };
 
+export const updateMetaData = async (
+  modeler: BPMNCanvasRef,
+  element: ElementLike,
+  name: string,
+  value: any,
+  attributes?: { [key: string]: any },
+  oldAttributes?: { [key: string]: any },
+) => {
+  const modeling = modeler.getModeling();
+  const bpmn = await modeler.getXML();
+
+  // create deep copy of selected element and set proceed element in this object so that bpmn.js event system can recognise changes in object
+  const selectedElementCopy = (await deepCopyElementById(bpmn!, element.id)) as any;
+
+  if (name === 'property') {
+    setProceedElement(selectedElementCopy, name, value.value, value.attributes, oldAttributes);
+  } else {
+    setProceedElement(selectedElementCopy, name, value ? value : null, attributes);
+  }
+  modeling.updateProperties(element as any, {
+    extensionElements: selectedElementCopy.extensionElements,
+  });
+};
+
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
 }) => {
-  const router = useRouter();
+  const env = use(EnvVarsContext);
+  const environment = useEnvironment();
+
   const { spaceId } = useEnvironment();
+  const { data: session } = useSession();
+  const path = usePathname();
+  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
+
   const metaData = getMetaDataFromElement(selectedElement.businessObject);
-  const backgroundColor = getFillColor(selectedElement, '#FFFFFFFF');
-  const strokeColor = getStrokeColor(selectedElement, '#000000FF');
+  const backgroundColor = getBackgroundColor(selectedElement as Shape);
+  const textColor = getTextColor(selectedElement as Shape);
+  const borderColor = getBorderColor(selectedElement as Shape);
 
   const [name, setName] = useState('');
+  const [userDefinedId, setUserDefinedId] = useState(metaData.userDefinedId);
 
   const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
   const timePlannedDuration: string | undefined = metaData.timePlannedDuration;
@@ -77,6 +116,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       if (selectedElement.type === 'bpmn:Process') {
         const definitions = selectedElement.businessObject.$parent;
         setName(definitions.name);
+        setUserDefinedId(definitions.userDefinedId);
       } else {
         setName(selectedElement.businessObject.name);
       }
@@ -88,20 +128,46 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 
     if (selectedElement.type === 'bpmn:Process') {
       const definitions = selectedElement.businessObject.$parent;
-      const bpmn = await modeler!.getXML();
-      const newBpmn = (await setDefinitionsName(bpmn!, event.target.value)) as string;
+      // prevent empty process name
+      if (!event.target.value || event.target.value === definitions.name) {
+        setName(definitions.name);
+        return;
+      }
+      // check if the process name already exists in the folder scope
+      if (
+        await checkIfProcessExistsByName({
+          batch: false,
+          processName: event.target.value,
+          spaceId: spaceId,
+          userId: session?.user.id!,
+          folderId: currentFolderId,
+        })
+      ) {
+        message.error(
+          `A process with the name ${event.target.value} already exists in current folder`,
+        );
+        setName(definitions.name);
+        return;
+      }
 
-      await updateProcess(
-        definitions.id,
-        spaceId,
-        newBpmn as string,
-        undefined,
-        event.target.value,
-        true,
-      );
+      await updateProcessMetaData(definitions.id, spaceId, { name: event.target.value }, true);
+
       definitions.name = event.target.value;
     } else {
       modeling.updateProperties(selectedElement as any, { name: event.target.value });
+    }
+  };
+
+  const handleUserDefinedIdChange = async (event: FocusEvent<HTMLInputElement>) => {
+    if (selectedElement.type === 'bpmn:Process') {
+      const definitions = selectedElement.businessObject.$parent;
+      await updateProcessMetaData(
+        definitions.id,
+        spaceId,
+        { userDefinedId: event.target.value },
+        true,
+      );
+      definitions.userDefinedId = event.target.value;
     }
   };
 
@@ -111,149 +177,217 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       fill: backgroundColor,
     });
   };
-  const updateStrokeColor = (frameColor: string) => {
+  const updateTextColor = (textColor: string) => {
     const modeling = modeler!.getModeling();
-    modeling.setColor(selectedElement as any, {
-      stroke: frameColor,
-    });
-  };
-
-  const updateMetaData = (
-    name: string,
-    value: any,
-    attributes?: { [key: string]: any },
-    oldAttributes?: { [key: string]: any },
-  ) => {
-    const modeling = modeler!.getModeling();
-
-    if (name === 'property') {
-      setProceedElement(
-        selectedElement.businessObject,
-        name,
-        value.value,
-        value.attributes,
-        oldAttributes,
-      );
-    } else {
-      setProceedElement(selectedElement.businessObject, name, value ? value : null, attributes);
+    // update the text color in the external label if one exists, otherwise update the text inside
+    // the element if possible
+    let element = selectedElement.label || selectedElement;
+    if (element) {
+      modeling.updateModdleProperties(element as any, element.di.label, {
+        color: textColor,
+      });
     }
+  };
+  const updateBorderColor = (borderColor: string) => {
+    const modeling = modeler!.getModeling();
     modeling.updateProperties(selectedElement as any, {
-      extensionElements: selectedElement.businessObject.extensionElements,
+      di: { 'border-color': borderColor },
     });
   };
 
-  return (
-    <Space
-      direction="vertical"
-      size="large"
-      style={{ width: '100%', fontSize: '0.75rem' }}
-      className={styles.PropertiesPanel}
-    >
-      <Space
-        direction="vertical"
-        style={{ width: '100%' }}
-        role="group"
-        aria-labelledby="general-title"
-      >
-        <Divider>
+  /* TABS: */
+  const [activeTab, setActiveTab] = useState('Property-Panel-General');
+
+  const changeToTab = (key: string) => {
+    setActiveTab(key);
+  };
+
+  const tabs: TabsProps['items'] = [
+    {
+      key: 'Property-Panel-General',
+      label: 'General Properties',
+      children: (
+        <>
+          <Space
+            direction="vertical"
+            style={{ width: '100%' }}
+            role="group"
+            aria-labelledby="general-title"
+            aria-label="General Properties"
+          >
+            {/* <Divider>
           <span id="general-title" style={{ fontSize: '0.85rem' }}>
             General
           </span>
-        </Divider>
-        <Input
-          name="Name"
-          placeholder="Element Name"
-          style={{ fontSize: '0.85rem' }}
-          addonBefore="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={handleNameChange}
-        />
+        </Divider> */}
+            <Input
+              name="Name"
+              placeholder="Element Name"
+              style={{ fontSize: '0.85rem' }}
+              addonBefore="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={handleNameChange}
+            />
 
-        <div
-          style={{
-            width: '75%',
-            display: 'flex',
-            justifyContent: 'center',
-            margin: 'auto',
-            marginTop: '1rem',
-          }}
-        >
-          <ImageSelectionSection
-            imageFileName={metaData.overviewImage && metaData.overviewImage.split('/images/').pop()}
-            onImageUpdate={(imageFileName) => {
-              updateMetaData('overviewImage', imageFileName);
+            {selectedElement.type === 'bpmn:Process' && (
+              <Input
+                name="ID"
+                placeholder="User Defined ID"
+                style={{ fontSize: '0.85rem' }}
+                addonBefore="ID"
+                value={userDefinedId}
+                onChange={(e) => setUserDefinedId(e.target.value)}
+                onBlur={handleUserDefinedIdChange}
+              />
+            )}
+
+            <div
+              style={{
+                width: '75%',
+                display: 'flex',
+                justifyContent: 'center',
+                margin: 'auto',
+                marginTop: '1rem',
+              }}
+            >
+              <ImageSelectionSection
+                imageFilePath={metaData.overviewImage}
+                onImageUpdate={(imageFileName) => {
+                  updateMetaData(modeler!, selectedElement, 'overviewImage', imageFileName);
+                }}
+              ></ImageSelectionSection>
+            </div>
+          </Space>
+          <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
+          {/* Responsibility */}
+          <ResponsibleParty selectedElement={selectedElement} modeler={modeler} />
+          <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
+            <PlannedCostInput
+              costsPlanned={
+                costsPlanned
+                  ? { value: costsPlanned.value, currency: costsPlanned.unit }
+                  : { currency: 'EUR' }
+              }
+              onInput={({ value, currency }) => {
+                updateMetaData(modeler!, selectedElement, 'costsPlanned', value, {
+                  unit: currency,
+                });
+              }}
+            ></PlannedCostInput>
+            <PlannedDurationInput
+              onChange={(changedTimePlannedDuration) => {
+                updateMetaData(
+                  modeler!,
+                  selectedElement,
+                  'timePlannedDuration',
+                  changedTimePlannedDuration,
+                );
+              }}
+              timePlannedDuration={timePlannedDuration || ''}
+            ></PlannedDurationInput>
+          </Space>
+
+          <CustomPropertySection
+            metaData={metaData}
+            onChange={(name, value, oldName) => {
+              updateMetaData(
+                modeler!,
+                selectedElement,
+                'property',
+                { value: value, attributes: { name } },
+                undefined,
+                oldName
+                  ? {
+                      name: oldName,
+                    }
+                  : undefined,
+              );
             }}
-          ></ImageSelectionSection>
-        </div>
-      </Space>
+          ></CustomPropertySection>
 
-      <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
+          {selectedElement.type !== 'bpmn:Process' &&
+            selectedElement.type !== 'bpmn:Collaboration' && (
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
+                <Space>
+                  <ColorPicker
+                    size="small"
+                    disabledAlpha
+                    presets={colorPickerPresets}
+                    value={backgroundColor}
+                    onChange={(_, hex) => updateBackgroundColor(hex)}
+                  />
+                  <span>Background Color</span>
+                </Space>
+                <Space>
+                  <ColorPicker
+                    size="small"
+                    disabledAlpha
+                    presets={colorPickerPresets}
+                    value={borderColor}
+                    onChange={(_, hex) => updateBorderColor(hex)}
+                  />
+                  <span>Border Color</span>
+                </Space>
 
-      <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
+                {selectedElement?.di?.label && (
+                  <Space>
+                    <ColorPicker
+                      size="small"
+                      disabledAlpha
+                      presets={colorPickerPresets}
+                      value={textColor}
+                      onChange={(_, hex) => updateTextColor(hex)}
+                    />
+                    <span>Text Color</span>
+                  </Space>
+                )}
+              </Space>
+            )}
+        </>
+      ),
+    },
+  ];
 
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
-        <PlannedCostInput
-          costsPlanned={
-            costsPlanned
-              ? { value: costsPlanned.value, currency: costsPlanned.unit }
-              : { currency: 'EUR' }
-          }
-          onInput={({ value, currency }) => {
-            updateMetaData('costsPlanned', value, { unit: currency });
-          }}
-        ></PlannedCostInput>
-        <PlannedDurationInput
-          onChange={(changedTimePlannedDuration) => {
-            updateMetaData('timePlannedDuration', changedTimePlannedDuration);
-          }}
-          timePlannedDuration={timePlannedDuration || ''}
-        ></PlannedDurationInput>
-      </Space>
-
-      <CustomPropertySection
-        metaData={metaData}
-        onChange={(name, value, oldName) => {
-          updateMetaData(
-            'property',
-            { value: value, attributes: { name } },
-            undefined,
-            oldName
-              ? {
-                  name: oldName,
-                }
-              : undefined,
-          );
-        }}
-      ></CustomPropertySection>
-
-      {selectedElement.type !== 'bpmn:Process' && (
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
-          <Space>
-            <ColorPicker
-              size="small"
-              disabledAlpha
-              presets={colorPickerPresets}
-              value={backgroundColor}
-              onChange={(_, hex) => updateBackgroundColor(hex)}
-            />
-            <span>Background Colour</span>
+  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+    tabs.push({
+      key: 'Property-Panel-Execution',
+      label: 'Automation Properties',
+      children: (
+        <>
+          <Space
+            direction="vertical"
+            style={{ width: '100%' }}
+            role="group"
+            aria-labelledby="general-title"
+          >
+            <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
           </Space>
-          <Space>
-            <ColorPicker
-              size="small"
-              disabledAlpha
-              presets={colorPickerPresets}
-              value={strokeColor}
-              onChange={(_, hex) => updateStrokeColor(hex)}
-            />
-            <span>Stroke Colour</span>
-          </Space>
-        </Space>
-      )}
-    </Space>
+        </>
+      ),
+    });
+  }
+  /* ---- */
+
+  return (
+    <>
+      <Space
+        direction="vertical"
+        size="large"
+        style={{ width: '100%', fontSize: '0.75rem', marginTop: '-40px' }}
+        className={styles.PropertiesPanel}
+      >
+        <Tabs
+          defaultActiveKey={activeTab}
+          items={tabs}
+          onChange={changeToTab}
+          activeKey={activeTab}
+        />
+      </Space>
+    </>
   );
 };
 

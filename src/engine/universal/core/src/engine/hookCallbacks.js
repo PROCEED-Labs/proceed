@@ -250,11 +250,11 @@ module.exports = {
         });
         // we are starting a new local instance to continue an instance started on another machine
       }
+
       engine.instanceIDs.push(newInstance.id);
 
       const state = newInstance.getState();
-      const processId = state.processId.substring(0, state.processId.lastIndexOf('-'));
-      const processVersion = state.processId.substring(processId.length + 1);
+      const processVersion = state.processId.substring(engine.definitionId.length + 1);
 
       engine._instanceIdProcessMapping[newInstance.id] =
         engine._versionProcessMapping[processVersion];
@@ -282,7 +282,7 @@ module.exports = {
 
       newInstance.onFlowNodeExecuted((execution) => {
         const token = engine.getToken(newInstance.id, execution.tokenId);
-        // move information about milestones to log and delete from token
+        // move information from the token to the log and update the token
         if (token) {
           if (token.currentFlowNodeProgress && token.currentFlowNodeProgress.manual) {
             newInstance.updateLog(execution.flowElementId, execution.tokenId, {
@@ -381,7 +381,11 @@ module.exports = {
             );
 
             if (index > -1) {
-              const newUserTask = { ...engine.userTasks[index], state: execution.executionState };
+              const newUserTask = {
+                ...engine.userTasks[index],
+                endTime: execution.endTime,
+                state: execution.executionState,
+              };
               engine.userTasks.splice(index, 1, newUserTask);
             }
           }

@@ -1,16 +1,11 @@
-import Ability from '@/lib/ability/abilityHelper.js';
-import {
-  Folder,
-  FolderInput,
-  FolderSchema,
-  FolderUserInput,
-  FolderUserInputSchema,
-} from '../folder-schema';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import { Folder, FolderInput, FolderSchema, FolderUserInput } from '../folder-schema';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { getProcess } from './process';
+import { Prisma } from '@prisma/client';
 
 export async function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolder = await db.folder.findFirst({
@@ -25,7 +20,7 @@ export async function getRootFolder(environmentId: string, ability?: Ability) {
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', rootFolder))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   return rootFolder;
@@ -46,7 +41,7 @@ export async function getFolderById(folderId: string, ability?: Ability) {
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   return folder;
@@ -75,7 +70,7 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   const combinedResults = [
@@ -107,13 +102,23 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
   return folderContent;
 }
 
-export async function createFolder(folderInput: FolderInput, ability?: Ability) {
+export async function createFolder(
+  folderInput: FolderInput,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+): Promise<Folder> {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await createFolder(folderInput, ability, trx);
+    });
+  }
+
   const folder = FolderSchema.parse(folderInput);
   if (!folder.id) folder.id = v4();
 
   // Checks
   if (ability && !ability.can('create', toCaslResource('Folder', folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   const existingFolder = await db.folder.findUnique({
     where: {
@@ -138,7 +143,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
     if (parentFolder.environmentId !== folder.environmentId) {
       throw new Error('Parent folder is in a different environment');
     }
-    await db.folder.update({
+    await tx.folder.update({
       where: {
         id: folder.parentId,
       },
@@ -159,7 +164,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
     }
   }
 
-  const createdFolder = await db.folder.create({
+  const createdFolder = await tx.folder.create({
     data: {
       id: folder.id,
       name: folder.name,
@@ -167,7 +172,6 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
       parentId: folder.parentId,
       createdBy: folder.createdBy!,
       environmentId: folder.environmentId,
-      lastEditedOn: new Date(),
       createdOn: new Date(),
     },
   });
@@ -187,7 +191,7 @@ export async function deleteFolder(folderId: string, ability?: Ability) {
   }
 
   if (ability && !ability.can('delete', toCaslResource('Folder', folderToDelete))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   await db.folder.delete({
@@ -211,7 +215,7 @@ export async function updateFolderMetaData(
   }
 
   if (ability && !ability.can('update', toCaslResource('Folder', folder))) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   if (newMetaDataInput.environmentId && newMetaDataInput.environmentId !== folder.environmentId) {
@@ -292,7 +296,7 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
       ability.can('update', toCaslResource('Folder', folder.parentFolder!))
     )
   ) {
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
   }
 
   // Check if moving to its own subtree
@@ -307,6 +311,52 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
       parentFolder: {
         connect: { id: newParentId },
       },
+      lastEditedOn: new Date(),
+    },
+  });
+}
+
+export async function moveProcess(processId: string, newParentId: string, ability?: Ability) {
+  const process = await db.process.findUnique({
+    where: { id: processId },
+  });
+
+  if (!process) throw new Error('Folder not found');
+
+  if (process.folderId === newParentId) return;
+
+  const [oldParentFolder, newParentFolder] = await Promise.all([
+    db.folder.findUnique({
+      where: { id: process.folderId },
+    }),
+
+    db.folder.findUnique({
+      where: { id: newParentId },
+    }),
+  ]);
+
+  if (!newParentFolder) throw new Error('New parent folder not found');
+
+  if (newParentFolder.environmentId !== process.environmentId)
+    throw new Error('Cannot move folder to a different environment');
+
+  // Check permissions
+  if (
+    ability &&
+    !(
+      ability.can('update', toCaslResource('Process', process)) &&
+      ability.can('update', toCaslResource('Folder', newParentFolder)) &&
+      ability.can('update', toCaslResource('Folder', oldParentFolder!))
+    )
+  ) {
+    throw new UnauthorizedError();
+  }
+
+  // Update process
+  await db.process.update({
+    where: { id: processId },
+    data: {
+      folderId: newParentId,
       lastEditedOn: new Date(),
     },
   });

@@ -1,18 +1,16 @@
 'use client';
 
-import { Tag } from 'antd';
 import { useState } from 'react';
-import { type TableEngine } from './page';
 import ElementList from '@/components/item-list-view';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
+import { Engine } from '@/lib/engines/machines';
 import Link from 'next/link';
 
-export default function EnginesTable({ engines }: { engines: TableEngine[] }) {
+export default function EnginesTable({ engines }: { engines: Engine[] }) {
   const { filteredData, searchQuery, setSearchQuery } = useFuzySearch({
     data: engines,
-    keys: ['engineId'],
-    highlightedKeys: ['engineId'],
+    keys: ['id', 'type'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
@@ -39,19 +37,14 @@ export default function EnginesTable({ engines }: { engines: TableEngine[] }) {
           {
             title: 'Engine ID',
             dataIndex: 'name',
-            render: (_, engine) => (
-              <Link href={`/admin/engines/${engine.id}`}>{engine.engineId.highlighted}</Link>
+            render: (_, engine: any) => (
+              <Link href={`/admin/engines/${engine.id}`}>{engine.id.highlighted}</Link>
             ),
           },
           {
-            title: 'Status',
-            dataIndex: 'owner',
-            sorter: (a, b) => +a.running - +b.running,
-            render: (_, engine) => (
-              <Tag color={engine.running ? 'success' : 'error'}>
-                {engine.running ? 'Online' : 'Offline'}
-              </Tag>
-            ),
+            title: 'Type',
+            dataIndex: 'type',
+            render: (_, engine) => engine.type,
           },
         ]}
       />

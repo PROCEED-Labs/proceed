@@ -5,7 +5,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { z } from 'zod';
 import { getUserById } from './users';
 import { getEnvironmentById } from './environments';
-import db from '@/lib/data';
+import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 
 const RoleMappingInputSchema = z.object({
@@ -52,7 +52,10 @@ export async function getRoleMappingByUserId(
   environmentId: string,
   ability?: Ability,
   roleId?: string,
+  tx?: Prisma.TransactionClient,
 ) {
+  const dbMutator = tx || db;
+
   const whereClause: Prisma.RoleWhereInput = {
     environmentId: environmentId,
     members: {
@@ -66,7 +69,7 @@ export async function getRoleMappingByUserId(
     whereClause.id = roleId;
   }
 
-  const roles = await db.role.findMany({
+  const roles = await dbMutator.role.findMany({
     where: whereClause,
     include: {
       members: {
@@ -97,7 +100,13 @@ export async function getRoleMappingByUserId(
 
 // TODO: also check if user exists?
 /** Adds a user role mapping */
-export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?: Ability) {
+export async function addRoleMappings(
+  roleMappingsInput: RoleMappingInput[],
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx ? tx : db;
+
   const roleMappings = roleMappingsInput.map((roleMappingInput) =>
     RoleMappingInputSchema.parse(roleMappingInput),
   );
@@ -109,19 +118,26 @@ export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], abi
   for (const roleMapping of allowedRoleMappings) {
     const { roleId, userId, environmentId } = roleMapping;
 
-    const environment = await getEnvironmentById(environmentId);
-    if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
-    if (!environment.isOrganization)
-      throw new Error('Cannot add role mapping to personal environment');
+    /*
+       Check for role and environment, only if not in transaction
+       Reason: if the transaction was stared by another function,
+       for eg: add User, the values like environment, user from previous tx queries are not available until the tx is committed.
+    */
+    if (!tx) {
+      const environment = await getEnvironmentById(environmentId, undefined, tx);
+      if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
+      if (!environment.isOrganization)
+        throw new Error('Cannot add role mapping to personal environment');
 
-    const role = await getRoleById(roleId);
-    if (!role) throw new Error('Role not found');
+      const role = await getRoleById(roleId, undefined, tx);
+      if (!role) throw new Error('Role not found');
+    }
 
-    const user = await getUserById(userId);
+    const user = await getUserById(userId, undefined, tx);
     if (!user) throw new Error('User not found');
     if (user.isGuest) throw new Error('Guests cannot have role mappings');
 
-    const existingRoleMapping = await db.roleMember.findFirst({
+    const existingRoleMapping = await dbMutator.roleMember.findFirst({
       where: { roleId, userId },
     });
     if (existingRoleMapping) throw new Error('Role mapping already exists');
@@ -134,12 +150,10 @@ export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], abi
       environmentId,
       roleId,
       userId,
-      expiration: roleMapping.expiration,
       createdOn,
-      roleName: role.name,
     };
 
-    await db.roleMember.create({
+    await dbMutator.roleMember.create({
       data: {
         id: newRoleMapping.id,
         roleId: newRoleMapping.roleId,

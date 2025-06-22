@@ -10,6 +10,9 @@
     "jsdoc"
   ],
   "compilerOptions": {
+    // For "execa" import in db-helper.mts
+    "target": "es2017",
+    "module": "NodeNext",
     "baseUrl": "./src", // this must be specified if "paths" is specified.
     "paths": {
       // defined aliases in webpack for import

@@ -1,4 +1,10 @@
 import { Page, Locator } from '@playwright/test';
+import {
+  getElementsByTagName,
+  toBpmnObject,
+  toBpmnXml,
+  updateBpmnOriginalAttributes,
+} from '@proceed/bpmn-helper';
 
 /**
  * this will mock the browsers clipboard API, since it might not be available in the test environment
@@ -71,7 +77,13 @@ export async function openModal(page: Page, triggerFunction: () => Promise<void>
     .nth(alreadyOpenCount)
     .waitFor({ state: 'visible' });
 
-  return page.locator(`div[aria-modal="true"]:visible`).nth(alreadyOpenCount);
+  const modal = await page.locator(`div[aria-modal="true"]:visible`).nth(alreadyOpenCount);
+
+  /* Focus modal if browser is firefox */
+  const browserName = await modal.evaluate(() => navigator.userAgent);
+  if (browserName.includes('Firefox') /* || browserName.includes('WebKit') */) modal.focus();
+
+  return modal;
 }
 
 /**
@@ -81,6 +93,10 @@ export async function openModal(page: Page, triggerFunction: () => Promise<void>
  * @param triggerFunction the function that triggers the modal to close
  */
 export async function closeModal(modal: Locator, triggerFunction: () => Promise<void>) {
+  /* Focus modal if browser is firefox */
+  const browserName = await modal.evaluate(() => navigator.userAgent);
+  if (browserName.includes('Firefox') /* || browserName.includes('WebKit') */) modal.focus();
+
   await triggerFunction();
   await modal.waitFor({ state: 'hidden' });
 }
@@ -90,17 +106,63 @@ export async function closeModal(modal: Locator, triggerFunction: () => Promise<
  *
  * @param page the page to be hydrated
  */
-export async function waitForHydration(page: Page) {
+export async function waitForHydration(page: Page, isGuestUser = true) {
   // this button should be in the header on every page
-  const accountButton = await page.getByRole('link', { name: 'user' });
-  // the menu that open when hovering over the accountButton only works after the page has been fully hydrated
-  await accountButton.hover();
-  await page
+  // const accountButton = page.getByRole('link', { name: 'user' });
+  const accountButton = await page.locator('#PROCEED-profile-menu-button');
+  // the menu that open when clicking the accountButton only works after the page has been fully hydrated
+  await accountButton.click();
+
+  let profileLocator = page
     .locator('.ant-dropdown:not(.ant-dropdown-hidden)')
-    .and(page.locator('.ant-dropdown:not(.ant-slide-up)'))
-    .getByRole('link', { name: 'Profile Settings' })
-    .waitFor({ state: 'visible' });
+    .and(page.locator('.ant-dropdown:not(.ant-slide-up)'));
+
+  if (isGuestUser) {
+    profileLocator = await profileLocator.getByRole('menuitem', { name: 'Delete Data' });
+  } else {
+    profileLocator = await profileLocator.getByRole('link', { name: 'Profile Settings' });
+  }
+
+  await profileLocator.waitFor({ state: 'visible' });
+
   // move the mouse away from the button to close the menu and go into a "clean" state for further testing
-  await page.mouse.move(0, 0);
+  // await page.mouse.move(0, 0);
+  await page.mouse.click(0, 0);
   await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'hidden' });
 }
+
+export function removeCreatorDefinitionAttributes(xml: string): string {
+  return xml.replace(
+    /\sproceed:(creatorUsername|creatorSpaceName|creationDate|creatorName|creatorId|creatorSpaceId)=\"[^\"]*\"/g,
+    '',
+  );
+}
+
+export const setBpmnOriginalAttributes = async (bpmn: string) => {
+  let definitions: any;
+  try {
+    const xmlObj = await toBpmnObject(bpmn);
+    [definitions] = getElementsByTagName(xmlObj, 'bpmn:Definitions');
+  } catch (err) {
+    throw new Error(`Invalid BPMN: ${err}`);
+  }
+
+  await updateBpmnOriginalAttributes(definitions, {
+    originalId: definitions.id,
+    originalName: definitions.name,
+    originalCreatorName: definitions.creatorName,
+    originalCreatorId: definitions.creatorId,
+    originalCreatorUsername: definitions.creatorUsername,
+    originalCreatorSpaceId: definitions.creatorSpaceId,
+    originalCreatorSpaceName: definitions.creatorSpaceName,
+    originalCreationDate: definitions.creationDate,
+    originalExporterVersion: definitions.exporterVersion,
+    originalProcessVersionId: definitions.processVersionId,
+    originalProcessVersionName: definitions.processVersionName,
+    originalTargetNamespace: definitions.targetNamespace,
+    originalUserDefinedId: definitions.userDefinedId,
+    originalExporter: definitions.exporter,
+  });
+
+  return await toBpmnXml(definitions);
+};

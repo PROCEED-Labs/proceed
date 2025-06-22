@@ -7,13 +7,14 @@ import {
   AuthenticatedUser,
   AuthenticatedUserSchema,
 } from '../../user-schema';
-import { addEnvironment, deleteEnvironment } from './environments';
+import { addEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
-import { getUserOrganizationEnvironments, removeMember } from './memberships';
+import { getUserOrganizationEnvironments } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
-import db from '@/lib/data';
-import { Prisma } from '@prisma/client';
+import db from '@/lib/data/db';
+import { Prisma, PasswordAccount } from '@prisma/client';
+import { UserFacingError } from '@/lib/user-error';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -37,8 +38,14 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
   };
 }
 
-export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = await db.user.findUnique({ where: { id: id } });
+export async function getUserById(
+  id: string,
+  opts?: { throwIfNotFound?: boolean },
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const user = await dbMutator.user.findUnique({ where: { id: id } });
 
   if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
 
@@ -61,37 +68,60 @@ export async function getUserByUsername(username: string, opts?: { throwIfNotFou
   return user as User;
 }
 
-export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
+export async function addUser(
+  inputUser: OptionalKeys<User, 'id'>,
+  tx?: Prisma.TransactionClient,
+): Promise<User> {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => addUser(inputUser, trx));
+  }
+
   const user = UserSchema.parse(inputUser);
 
-  if (
-    !user.isGuest &&
-    ((user.username && (await getUserByUsername(user.username))) ||
-      (await getUserByEmail(user.email!)))
-  )
-    throw new Error('User with this email or username already exists');
+  if (!user.isGuest) {
+    const checks = [];
+    if (user.username) checks.push(getUserByUsername(user.username));
+    if (user.email) checks.push(getUserByEmail(user.email));
+
+    const res = await Promise.all(checks);
+
+    if (res.some((user) => !!user))
+      throw new Error('User with this email or username already exists');
+  }
 
   if (!user.id) user.id = v4();
 
   try {
-    const userExists = await db.user.findUnique({ where: { id: user.id } });
+    const userExists = await tx.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
-    await db.user.create({
+    await tx.user.create({
       data: {
         ...user,
         isGuest: user.isGuest,
       },
     });
-    await addEnvironment({ ownerId: user.id, isOrganization: false });
+
+    await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+
+    if ((await getSystemAdmins()).length === 0 && !user.isGuest)
+      await addSystemAdmin(
+        {
+          role: 'admin',
+          userId: user.id!,
+        },
+        tx,
+      );
+
+    if (user.isGuest) {
+      await tx.guestSignin.create({
+        data: {
+          userId: user.id!,
+        },
+      });
+    }
   } catch (error) {
     console.error('Error adding new user: ', error);
   }
-
-  if ((await getSystemAdmins()).length === 0)
-    addSystemAdmin({
-      role: 'admin',
-      userId: user.id,
-    });
 
   return user as User;
 }
@@ -106,7 +136,15 @@ export class UserHasToDeleteOrganizationsError extends Error {
   }
 }
 
-export async function deleteUser(userId: string) {
+export async function deleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<User> {
+  // if no tx, start own transaction
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await deleteUser(userId, trx);
+    });
+  }
+
+  const dbMutator = tx;
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User doesn't exist");
 
@@ -124,19 +162,36 @@ export async function deleteUser(userId: string) {
     if (!adminRole)
       throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
 
-    if (adminRole.members.length === 1) orgsWithNoNextAdmin.push(environmentId);
-
-    if (orgsWithNoNextAdmin.length > 0)
-      throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
+    if (adminRole.members.length === 1) {
+      orgsWithNoNextAdmin.push(environmentId);
+    } else {
+      /* make the next available admin the owner of the organization, because once the user is deleted,
+      the space that the user owns will be deleted: ON DELETE CASCADE */
+      await dbMutator.space.update({
+        where: { id: environmentId },
+        data: { ownerId: adminRole.members.find((member) => member.userId !== userId)?.userId },
+      });
+    }
   }
 
-  await db.space.deleteMany({ where: { ownerId: userId } });
-  await db.user.delete({ where: { id: userId } });
+  if (orgsWithNoNextAdmin.length > 0)
+    throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
 
-  return user;
+  if (user.isGuest) {
+    await dbMutator.guestSignin.delete({ where: { userId: userId } });
+  }
+
+  await dbMutator.user.delete({ where: { id: userId } });
+
+  return user as User;
 }
 
-export async function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
+export async function updateUser(
+  userId: string,
+  inputUser: Partial<AuthenticatedUser>,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
   const user = await getUserById(userId, { throwIfNotFound: true });
   const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user?.isGuest;
   let updatedUser: Prisma.UserUpdateInput;
@@ -152,13 +207,23 @@ export async function updateUser(userId: string, inputUser: Partial<Authenticate
       const existingUser = await db.user.findUnique({ where: { email: newUserData.email } });
 
       if (existingUser && existingUser.id !== userId)
-        throw new Error('User with this email or username already exists');
+        throw new UserFacingError('User with this email or username already exists');
+    }
+
+    if (newUserData.username) {
+      const existingUser = await db.user.findUnique({ where: { username: newUserData.username } });
+
+      if (existingUser && existingUser.id !== userId)
+        throw new UserFacingError('The username is already taken');
     }
 
     updatedUser = { ...user, ...newUserData };
   }
 
-  const updatedUserFromDB = await db.user.update({ where: { id: userId }, data: updatedUser });
+  const updatedUserFromDB = await dbMutator.user.update({
+    where: { id: userId },
+    data: updatedUser,
+  });
 
   return updatedUserFromDB;
 }
@@ -193,4 +258,106 @@ export async function getOauthAccountByProviderId(provider: string, providerAcco
       providerAccountId: providerAccountId,
     },
   });
+}
+
+export async function updateGuestUserLastSigninTime(
+  userId: string,
+  date: Date,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+  const user = await getUserById(userId, { throwIfNotFound: true });
+  if (!user.isGuest) throw new Error('User is not a guest user');
+
+  return await dbMutator.guestSignin.update({
+    where: { userId: userId },
+    data: { lastSigninAt: date },
+  });
+}
+
+export async function deleteInactiveGuestUsers(
+  inactiveTimeInMS: number,
+  tx?: Prisma.TransactionClient,
+): Promise<{ count: number }> {
+  // if no tx, start own transaction
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await deleteInactiveGuestUsers(inactiveTimeInMS, trx);
+    });
+  }
+
+  const cutoff = new Date(Date.now() - inactiveTimeInMS);
+  const staleSignins = await tx.guestSignin.findMany({
+    where: {
+      lastSigninAt: { lt: cutoff },
+    },
+    select: { userId: true },
+  });
+  if (staleSignins.length === 0) return { count: 0 };
+
+  const userIds = staleSignins.map((s) => s.userId);
+
+  await tx.guestSignin.deleteMany({
+    where: {
+      lastSigninAt: { lt: cutoff },
+    },
+  });
+
+  return await tx.user.deleteMany({
+    where: {
+      id: { in: userIds },
+      isGuest: true,
+    },
+  });
+}
+
+/** Note: make sure to save a salted hash of the password */
+export async function setUserPassword(
+  userId: string,
+  password: string,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const user = await dbMutator.user.findUnique({
+    where: { id: userId },
+    include: { passwordAccount: true },
+  });
+  if (!user) throw new Error('User not found');
+
+  if (user.passwordAccount) {
+    await dbMutator.passwordAccount.update({
+      where: { userId },
+      data: { password: password },
+    });
+  } else {
+    await dbMutator.passwordAccount.create({
+      data: { userId, password: password },
+    });
+  }
+}
+
+export async function getUserPassword(userId: string, tx?: Prisma.TransactionClient) {
+  const dbMutator = tx || db;
+
+  return await dbMutator.passwordAccount.findUnique({
+    where: { userId },
+  });
+}
+
+/** returns null if the user exists but has no password */
+export async function getUserAndPasswordByUsername(
+  username: string,
+  tx?: Prisma.TransactionClient,
+) {
+  const dbMutator = tx || db;
+
+  const userAndPassword = await dbMutator.user.findUnique({
+    where: { username },
+    include: { passwordAccount: true },
+  });
+
+  if (!userAndPassword) return null;
+  if (!userAndPassword.passwordAccount) return null;
+  return userAndPassword as typeof userAndPassword & { passwordAccount: PasswordAccount };
 }

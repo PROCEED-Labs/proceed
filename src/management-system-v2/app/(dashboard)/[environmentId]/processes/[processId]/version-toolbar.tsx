@@ -63,8 +63,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
           tooltip="Set as latest Version and enable editing"
           onConfirm={() =>
             wrapServerCall({
-              fn: () =>
-                setVersionAsLatest(processId, Number(selectedVersionId), environment.spaceId),
+              fn: () => setVersionAsLatest(processId, selectedVersionId, environment.spaceId),
               onSuccess: () => router.push(spaceURL(environment, `/processes/${processId}`)),
               app,
             })

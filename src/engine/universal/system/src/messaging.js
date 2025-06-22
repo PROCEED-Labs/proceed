@@ -430,6 +430,7 @@ class Messaging extends System {
           const params = {};
           const pathSegments = path.split('/').filter((segment) => !!segment);
           const topicSegments = topic
+            .split(this._baseTopic + '/')[1]
             .split('/')
             .slice(3)
             .filter((segment) => !!segment);
@@ -499,7 +500,7 @@ class Messaging extends System {
       );
     } catch (err) {
       if (!this._firstServeHasFailed) {
-        logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
+        this._logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
       }
     }
   }

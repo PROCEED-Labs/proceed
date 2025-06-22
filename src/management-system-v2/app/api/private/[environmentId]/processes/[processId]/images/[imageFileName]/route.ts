@@ -4,14 +4,15 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import {
   deleteProcessImage,
   getProcessImage,
-  getProcessMetaObjects,
   saveProcessImage,
-} from '@/lib/data/legacy/_process';
+  getProcess,
+} from '@/lib/data/db/process';
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { invalidRequest, readImage } from '../../../../image-helpers';
+import { v4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
@@ -19,8 +20,7 @@ export async function GET(
     params: { environmentId, processId, imageFileName },
   }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
-  const processMetaObjects = getProcessMetaObjects();
-  const processMeta = processMetaObjects[processId];
+  const processMeta = await getProcess(processId, false);
 
   if (!processMeta) {
     return new NextResponse(null, {
@@ -84,8 +84,7 @@ export async function PUT(
 ) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const process = await getProcess(processId, false);
 
   if (!process) {
     return new NextResponse(null, {
@@ -107,9 +106,11 @@ export async function PUT(
   const readImageResult = await readImage(request);
   if (readImageResult.error) return readImageResult.error;
 
-  await saveProcessImage(processId, imageFileName, readImageResult.buffer);
+  const newImageFileName = `_image${v4()}.${readImageResult.fileType.ext}`;
 
-  return new NextResponse(null, { status: 200, statusText: 'OK' });
+  await saveProcessImage(processId, newImageFileName, readImageResult.buffer);
+
+  return new NextResponse(newImageFileName, { status: 201, statusText: 'Created' });
 }
 
 export async function DELETE(
@@ -120,8 +121,7 @@ export async function DELETE(
 ) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  const processMetaObjects = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const process = await getProcess(processId, false);
 
   if (!process) {
     return new NextResponse(null, {

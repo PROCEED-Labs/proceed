@@ -45,6 +45,22 @@ async function toBpmnXml(obj) {
 }
 
 /**
+ * Creates a deep copy of an element
+ *
+ * @param {string|object} bpmn traversable object representation or bpmn XML
+ * @param {string} id the id of the element to be copied
+ * @returns {Promise<object|undefined>} - returns the copied object or undefined when no matching object was found
+ */
+async function deepCopyElementById(bpmn, elemId) {
+  const bpmnObj =
+    typeof bpmn === 'string'
+      ? await toBpmnObject(bpmn)
+      : await toBpmnXml(bpmn).then((bpmnXml) => toBpmnObject(bpmnXml));
+
+  return getElementById(bpmnObj, elemId);
+}
+
+/**
  * Finds all kinds of childnodes in a given node
  *
  * @param {object} travObj object of which we want to know the childnodes
@@ -61,6 +77,7 @@ function getChildren(travObj) {
     'participants',
     'laneSets',
     'lanes',
+    'artifacts',
   ];
 
   const allChildren = childNodeTypes
@@ -195,6 +212,7 @@ module.exports = {
   ensureCorrectProceedNamespace,
   toBpmnObject,
   toBpmnXml,
+  deepCopyElementById,
   getChildren,
   getElementsByTagName,
   getAllElements,

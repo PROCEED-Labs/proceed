@@ -1,7 +1,5 @@
 'use client';
 
-import { endpointBuilder } from '@/lib/engines/endpoint';
-import { mqttRequest } from '@/lib/engines/server-actions';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import {
   App,
@@ -80,11 +78,9 @@ function FormWrapper({
   async function updateConfiguration(values: any) {
     startUpdatingConfig(() =>
       wrapServerCall({
-        fn: () =>
-          mqttRequest(engine.id, endpointBuilder('put', '/configuration/'), {
-            method: 'PUT',
-            body: values,
-          }),
+        fn: async () => {
+          // TODO
+        },
         onSuccess: () => {
           app.message.success('Configuration updated');
           router.refresh();

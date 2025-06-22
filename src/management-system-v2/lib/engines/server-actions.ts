@@ -1,25 +1,5 @@
 'use server';
 
-<<<<<<< HEAD
-import { getCurrentUser } from '@/components/auth';
-import { getSystemAdminByUserId } from '../data/DTOs';
-import { UserErrorType, userError } from '../user-error';
-import { mqttRequest as _mqttRequest } from './mqtt-endpoints';
-
-export async function mqttRequest(...args: Parameters<typeof _mqttRequest>) {
-  const user = await getCurrentUser();
-  if (!user.session) return userError('Not signed in', UserErrorType.NotLoggedInError);
-  const adminData = getSystemAdminByUserId(user.userId);
-  if (!adminData) return userError('Not allowed', UserErrorType.PermissionError);
-
-  try {
-    return await _mqttRequest(...args);
-  } catch (e) {
-    console.error(e);
-    userError('Request failed');
-  }
-}
-=======
 import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
   DeployedProcessInfo,
@@ -28,7 +8,7 @@ import {
   getDeployments as fetchDeployments,
   removeDeploymentFromMachines,
 } from './deployment';
-import { Engine, SpaceEngine } from './machines';
+import { Engine, SpaceEngine, getCorrectTargetEngines } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
 import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
@@ -65,34 +45,6 @@ import {
   updateUserTask,
   deleteUserTask,
 } from '../data/user-tasks';
-
-async function getCorrectTargetEngines(
-  spaceId: string,
-  onlyProceedEngines = false,
-  validatorFunc?: (engine: Engine) => Promise<boolean>,
-) {
-  const { ability } = await getCurrentEnvironment(spaceId);
-
-  let engines: Engine[] = [];
-  if (onlyProceedEngines) {
-    // force that only proceed engines are supposed to be used
-    const proceedSavedEngines = await getDbEngines(null, undefined, 'dont-check');
-    engines = await savedEnginesToEngines(proceedSavedEngines);
-  } else {
-    // use all available engines
-    const [proceedEngines, spaceEngines] = await Promise.allSettled([
-      getDbEngines(null, undefined, 'dont-check').then(savedEnginesToEngines),
-      getDbEngines(spaceId, ability).then(savedEnginesToEngines),
-    ]);
-
-    if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
-    if (spaceEngines.status === 'fulfilled') engines = engines.concat(spaceEngines.value);
-  }
-
-  if (validatorFunc) engines = await asyncFilter(engines, validatorFunc);
-
-  return engines;
-}
 
 export async function deployProcess(
   definitionId: string,
@@ -631,4 +583,3 @@ export async function getDeployment(spaceId: string, definitionId: string) {
 
   return deployments.find((d) => d.definitionId === definitionId) || null;
 }
->>>>>>> origin/main

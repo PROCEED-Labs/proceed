@@ -74,6 +74,7 @@ function Display({ data }: { data: { title: string; content: ReactNode }[] }) {
       {data.map(({ title, content }) => (
         <div
           style={{ display: 'flex', justifyContent: 'left', gap: '.0rem', flexDirection: 'column' }}
+          key={title}
         >
           <Typography.Text type="secondary" style={{ padding: 0 }}>
             {title}
@@ -251,7 +252,7 @@ export default function EngineOverview({ engine }: { engine: Engine }) {
             } as const;
 
             return (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }} key={idx}>
                 <Typography.Title level={4} style={{ margin: 0, display: 'block' }}>
                   Network {idx + 1}:
                 </Typography.Title>

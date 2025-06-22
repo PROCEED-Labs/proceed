@@ -14,9 +14,8 @@ async function Engines() {
 
   try {
     const savedEngines = await getDbEngines(null, undefined, systemAdmin);
-    const engines = await savedEnginesToEngines(savedEngines);
 
-    return <EnginesTable engines={engines} />;
+    return <EnginesTable engines={savedEngines} />;
   } catch (e) {
     return <Result status="500" title="Error" subTitle="Couldn't fetch engines" />;
   }

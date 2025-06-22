@@ -1,20 +1,34 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEngines, mqttRequest } from '@/lib/engines/mqtt-endpoints';
 import { Button, Result, Skeleton, Space, Tabs } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import { env } from 'process';
 import { Suspense } from 'react';
-import { getSystemAdminByUserId } from '@/lib/data/DTOs';
-import { endpointBuilder } from '@/lib/engines/endpoint';
 import EngineOverview from './engine-overview';
 import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
 import ConfigurationTable from './configuration-table';
+import { type Engine } from '@/lib/engines/machines';
+import { getDbEngineById } from '@/lib/data/db/engines';
+import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
+import { engineRequest } from '@/lib/engines/endpoints/index';
 
-export type TableEngine = Awaited<ReturnType<typeof getEngines>>[number] & { id: string };
+export type TableEngine = Engine & { id: string };
 
-async function Engine({ engineId }: { engineId: string }) {
+async function Engine({ dbEngineId }: { dbEngineId: string }) {
+  const dbEngine = await getDbEngineById(dbEngineId, null, undefined, 'dont-check');
+  console.log('dbEngine', dbEngineId, dbEngine);
+
+  if (!dbEngine) throw new Error('Failed to fetch engine');
+
+  const engines = await savedEnginesToEngines([dbEngine]);
+  console.log('discoverred engines', engines);
+  // TODO: show all engines
+
+  const engine = engines[0];
+
+  if (!engine) throw new Error('Failed to fetch engine');
+
   const backButton = (
     <Link href="/admin/engines">
       <Button icon={<LeftOutlined />} type="text">
@@ -25,25 +39,26 @@ async function Engine({ engineId }: { engineId: string }) {
 
   try {
     const calls = await Promise.allSettled([
-      mqttRequest(engineId, endpointBuilder('get', '/configuration/'), {
-        method: 'GET',
+      engineRequest({
+        engine,
+        method: 'get',
+        endpoint: '/configuration/',
       }),
-      mqttRequest(engineId, endpointBuilder('get', '/machine/'), {
-        method: 'GET',
+      engineRequest({
+        engine,
+        method: 'get',
+        endpoint: '/machine/',
       }),
     ]);
 
     const configuration = calls[0].status === 'fulfilled' ? calls[0].value : null;
-    const engine = calls[1].status === 'fulfilled' ? calls[1].value : null;
-
-    // We still render dashboard if we can't fetch the configuration
-    if (!engine) throw new Error('Failed to fetch engine');
+    const machineData = calls[1].status === 'fulfilled' ? calls[1].value : null;
 
     return (
       <Content
         title={
           <Space style={{ alignItems: 'center' }}>
-            {backButton} {engine.name}
+            {backButton} {machineData.name}
           </Space>
         }
       >
@@ -53,12 +68,12 @@ async function Engine({ engineId }: { engineId: string }) {
             {
               key: 'overview',
               label: 'Overview',
-              children: <EngineOverview engine={engine} />,
+              children: <EngineOverview engine={machineData} />,
             },
             {
               key: 'configuration',
               label: 'Configuration',
-              children: <ConfigurationTable configuration={configuration} engine={engine} />,
+              children: <ConfigurationTable configuration={configuration} engine={machineData} />,
             },
           ]}
         />
@@ -73,15 +88,13 @@ async function Engine({ engineId }: { engineId: string }) {
   }
 }
 
-export default async function EnginesPage({ params }: { params: { engineId: string } }) {
+export default async function EnginesPage({ params }: { params: { dbEngineId: string } }) {
   if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) return notFound();
 
   const user = await getCurrentUser();
-  if (!user.session) redirect('/');
-  const adminData = getSystemAdminByUserId(user.userId);
-  if (!adminData) redirect('/');
+  if (!user.systemAdmin) redirect('/');
 
-  const engineId = decodeURIComponent(params.engineId);
+  const dbEngineId = decodeURIComponent(params.dbEngineId);
 
   return (
     <Suspense
@@ -91,7 +104,7 @@ export default async function EnginesPage({ params }: { params: { engineId: stri
         </Content>
       }
     >
-      <Engine engineId={engineId} />
+      <Engine dbEngineId={dbEngineId} />
     </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Checkbox, CheckboxChangeEvent, Form, Input, InputNumber, Modal, Select } from 'antd';
 
-import { ProcessVariable } from '../use-process-variables';
+import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 
 type ProcessVariableFormProps = {
   open?: boolean;

@@ -23,7 +23,7 @@ import { formatGanttElementForLog, formatDependencyForLog } from './utils';
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const bpmnjsModelerRef = useRef<Modeler | null>(null);
   const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
-  const hasMountedRef = useRef(false);
+  const isUnmountingRef = useRef(false);
 
   const [ganttData, setGanttData] = useState<{
     elements: GanttElementType[];
@@ -54,6 +54,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   }, [spaceId]);
 
   useEffect(() => {
+    // Reset unmounting flag when component mounts/re-mounts
+    isUnmountingRef.current = false;
+    
     const bpmnjsModeler = new Modeler();
     bpmnjsModelerRef.current = bpmnjsModeler;
 
@@ -95,13 +98,23 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
       });
 
     return () => {
-      if (!hasMountedRef.current) {
-        hasMountedRef.current = true;
-      } else {
-        disableTimelineView();
-      }
+      // Mark that we're in the cleanup phase
+      isUnmountingRef.current = true;
     };
   }, [process.bpmn, disableTimelineView]);
+
+  // Handle component unmount separately from BPMN changes
+  useEffect(() => {
+    return () => {
+      // Use a timeout to ensure this runs after React's cleanup
+      // Only disable timeline view if we're truly unmounting (not just re-rendering)
+      setTimeout(() => {
+        if (isUnmountingRef.current) {
+          disableTimelineView();
+        }
+      }, 0);
+    };
+  }, [disableTimelineView]);
 
   const headerTitle = (
     <div

@@ -95,11 +95,11 @@ export function isSequenceFlowElement(element: { $type: string }): boolean {
 }
 
 // ============================================================================
-// ExtraInfo Generation
+// Element Type Generation
 // ============================================================================
 
 /**
- * Get task type string for extraInfo display
+ * Get task type string for elementType display
  */
 export function getTaskTypeString(task: BPMNTask): string {
   // Extract the specific task type from $type
@@ -124,7 +124,7 @@ export function getTaskTypeString(task: BPMNTask): string {
 }
 
 /**
- * Get event type string for extraInfo display
+ * Get event type string for elementType display
  */
 export function getEventTypeString(event: BPMNEvent): string {
   // Get readable event definition type
@@ -287,7 +287,7 @@ export function assignFlowColors(
  * Group and sort elements by connected components and start time
  * Start events appear first, end events appear last within each component
  */
-export function groupAndSortElements<T extends { id: string; start: number; extraInfo?: string }>(
+export function groupAndSortElements<T extends { id: string; start: number; elementType?: string }>(
   elements: T[],
   elementToComponent: Map<string, number>
 ): T[] {
@@ -304,15 +304,15 @@ export function groupAndSortElements<T extends { id: string; start: number; extr
   
   // Helper function to get element priority for sorting
   const getElementPriority = (element: T): number => {
-    if (!element.extraInfo) return 1; // Normal priority for tasks and unknown elements
+    if (!element.elementType) return 1; // Normal priority for tasks and unknown elements
     
     // Check if it's a start event
-    if (element.extraInfo.includes('Start')) {
+    if (element.elementType.includes('Start')) {
       return 0; // Highest priority - appears first
     }
     
     // Check if it's an end event
-    if (element.extraInfo.includes('End')) {
+    if (element.elementType.includes('End')) {
       return 2; // Lowest priority - appears last
     }
     
@@ -389,7 +389,7 @@ export function formatGanttElementForLog(el: any) {
     type: el.type,
     start: new Date(el.start || 0).toISOString(),
     end: el.type === 'task' ? new Date(el.end).toISOString() : 'N/A',
-    extraInfo: el.extraInfo
+    elementType: el.elementType
   };
 }
 

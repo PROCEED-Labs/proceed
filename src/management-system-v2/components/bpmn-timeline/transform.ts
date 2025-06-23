@@ -52,7 +52,7 @@ function transformTask(
     type: 'task',
     start: startTime,
     end: startTime + duration,
-    extraInfo: getTaskTypeString(task),
+    elementType: getTaskTypeString(task),
     color
   };
 }
@@ -76,7 +76,7 @@ function transformEvent(
       type: 'milestone',
       start: startTime,
       end: startTime + duration,
-      extraInfo: getEventTypeString(event),
+      elementType: getEventTypeString(event),
       color
     };
   } else {
@@ -86,7 +86,7 @@ function transformEvent(
       name: event.name,
       type: 'milestone',
       start: startTime,
-      extraInfo: getEventTypeString(event),
+      elementType: getEventTypeString(event),
       color
     };
   }
@@ -100,12 +100,28 @@ function transformSequenceFlow(flow: BPMNSequenceFlow): GanttDependency {
   const sourceId = typeof flow.sourceRef === 'string' ? flow.sourceRef : (flow.sourceRef as any)?.id || flow.sourceRef;
   const targetId = typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id || flow.targetRef;
   
+  // Determine flow type based on BPMN properties
+  let flowType: 'conditional' | 'default' | 'normal' = 'normal';
+  
+  // Check if flow has a condition expression (conditional flow)
+  if (flow.conditionExpression) {
+    flowType = 'conditional';
+  }
+  
+  // Check if flow is marked as default (from gateway default sequence flow)
+  // In BPMN, default flows are typically marked on the gateway's default property
+  // but we can also check for specific naming patterns or attributes
+  if (flow.name && (flow.name.toLowerCase().includes('default') || flow.name.toLowerCase().includes('else'))) {
+    flowType = 'default';
+  }
+  
   return {
     id: flow.id,
     sourceId: sourceId,
     targetId: targetId,
     type: DependencyType.FINISH_TO_START, // BPMN sequence flows are finish-to-start dependencies
-    name: flow.name
+    name: flow.name,
+    flowType: flowType
   };
 }
 

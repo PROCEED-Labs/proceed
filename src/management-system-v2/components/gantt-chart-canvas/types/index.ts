@@ -20,7 +20,7 @@ export interface GanttElement {
   id: string;
   name?: string; // Optional - will display id if not provided
   color?: string;
-  extraInfo?: string; // Optional additional information to display in second column
+  elementType?: string; // Optional element type description to display in second column
   type: 'task' | 'milestone' | 'group'; // Extensible for future element types
 }
 
@@ -67,6 +67,7 @@ export interface GanttDependency {
   targetId: string; // ID of the target element
   type: DependencyType; // Type of dependency relationship
   name?: string; // Optional name for the dependency
+  flowType?: 'conditional' | 'default' | 'normal'; // Type of flow for BPMN sequence flows
 }
 
 /**

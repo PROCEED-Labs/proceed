@@ -72,6 +72,38 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
     return null;
   };
 
+  // Get comprehensive element type description
+  const getFullElementType = (element: GanttElementType): string => {
+    const baseType = element.type;
+    const elementType = element.elementType;
+
+    // Create full type description based on element type and elementType
+    if (baseType === 'task') {
+      if (elementType) {
+        return elementType;
+      }
+      return 'Task';
+    } else if (baseType === 'milestone') {
+      if (elementType) {
+        // Check if it's an event type
+        if (
+          elementType.includes('Start') ||
+          elementType.includes('End') ||
+          elementType.includes('Intermediate')
+        ) {
+          return `${elementType} Event`;
+        }
+        return `${elementType}`;
+      }
+      return 'Milestone';
+    } else if (baseType === 'group') {
+      return 'Group/Summary Task';
+    }
+
+    // Fallback
+    return elementType || baseType || 'Unknown';
+  };
+
   return (
     <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
       {/* Element Information */}
@@ -80,7 +112,10 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
           <strong>Name:</strong> {element.name || <em style={{ color: '#999' }}>not set</em>}
         </div>
         <div>
-          <strong>Type:</strong> {element.extraInfo || element.type}
+          <strong>Type:</strong> {getFullElementType(element)}
+        </div>
+        <div>
+          <strong>ID:</strong> {element.id}
         </div>
         {element.type !== 'group' && (
           <>
@@ -122,73 +157,89 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
       {/* Dependencies */}
       {(incomingDeps.length > 0 || outgoingDeps.length > 0) && (
         <div style={{ marginBottom: '16px' }}>
-          <h4 style={{ margin: '0 0 8px 0', color: '#1890ff' }}>
-            Related dependencies ({incomingDeps.length + outgoingDeps.length})
-          </h4>
+          {/* Incoming Dependencies Section */}
+          {incomingDeps.length > 0 && (
+            <div style={{ marginBottom: '12px' }}>
+              <h4 style={{ margin: '0 0 6px 0', color: '#666', fontSize: '14px', fontWeight: 600 }}>
+                Incoming dependencies ({incomingDeps.length})
+              </h4>
+              {incomingDeps.map((dep) => {
+                const sourceElement = elementMap.get(dep.sourceId);
+                const displayName = sourceElement?.name ? (
+                  sourceElement.name
+                ) : (
+                  <em style={{ color: '#999' }}>&lt;{dep.sourceId}&gt;</em>
+                );
+                return (
+                  <div
+                    key={dep.id}
+                    style={{
+                      padding: '4px 0 4px 12px',
+                      borderBottom: '1px solid #f5f5f5',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                    }}
+                    onClick={() => onElementClick(dep.sourceId)}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9f9f9')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <div>{displayName}</div>
+                    <div style={{ color: '#666', fontSize: '12px' }}>
+                      <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
+                      {dep.flowType && dep.flowType !== 'normal' && (
+                        <span style={{ marginLeft: '4px', color: '#1890ff' }}>
+                          [{dep.flowType}]
+                        </span>
+                      )}
+                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-          {/* Incoming Dependencies */}
-          {incomingDeps.map((dep) => {
-            const sourceElement = elementMap.get(dep.sourceId);
-            const displayName = sourceElement?.name ? (
-              sourceElement.name
-            ) : (
-              <em style={{ color: '#999' }}>&lt;{dep.sourceId}&gt;</em>
-            );
-            return (
-              <div
-                key={dep.id}
-                style={{
-                  padding: '4px 0',
-                  borderBottom: '1px solid #f0f0f0',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
-                }}
-                onClick={() => onElementClick(dep.sourceId)}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9f9f9')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <div>
-                  <strong>From:</strong> {displayName}
-                </div>
-                <div style={{ color: '#666', fontSize: '12px' }}>
-                  <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
-                  <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Outgoing Dependencies */}
-          {outgoingDeps.map((dep) => {
-            const targetElement = elementMap.get(dep.targetId);
-            const displayName = targetElement?.name ? (
-              targetElement.name
-            ) : (
-              <em style={{ color: '#999' }}>&lt;{dep.targetId}&gt;</em>
-            );
-            return (
-              <div
-                key={dep.id}
-                style={{
-                  padding: '4px 0',
-                  borderBottom: '1px solid #f0f0f0',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
-                }}
-                onClick={() => onElementClick(dep.targetId)}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9f9f9')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <div>
-                  <strong>To:</strong> {displayName}
-                </div>
-                <div style={{ color: '#666', fontSize: '12px' }}>
-                  <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
-                  <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
-                </div>
-              </div>
-            );
-          })}
+          {/* Outgoing Dependencies Section */}
+          {outgoingDeps.length > 0 && (
+            <div>
+              <h4 style={{ margin: '0 0 6px 0', color: '#666', fontSize: '14px', fontWeight: 600 }}>
+                Outgoing dependencies ({outgoingDeps.length})
+              </h4>
+              {outgoingDeps.map((dep) => {
+                const targetElement = elementMap.get(dep.targetId);
+                const displayName = targetElement?.name ? (
+                  targetElement.name
+                ) : (
+                  <em style={{ color: '#999' }}>&lt;{dep.targetId}&gt;</em>
+                );
+                return (
+                  <div
+                    key={dep.id}
+                    style={{
+                      padding: '4px 0 4px 12px',
+                      borderBottom: '1px solid #f5f5f5',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                    }}
+                    onClick={() => onElementClick(dep.targetId)}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9f9f9')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <div>{displayName}</div>
+                    <div style={{ color: '#666', fontSize: '12px' }}>
+                      <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
+                      {dep.flowType && dep.flowType !== 'normal' && (
+                        <span style={{ marginLeft: '4px', color: '#1890ff' }}>
+                          [{dep.flowType}]
+                        </span>
+                      )}
+                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -990,7 +1041,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                               </span>
                             )}
                         </div>
-                        <div className={styles.extraInfoColumn}>{element.extraInfo || ''}</div>
+                        <div className={styles.extraInfoColumn}>{element.elementType || ''}</div>
                       </div>
                     </div>,
                   );

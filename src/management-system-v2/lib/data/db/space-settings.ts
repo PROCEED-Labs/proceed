@@ -1,22 +1,19 @@
-'use server';
-
 import { Setting, SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
 import { Record } from '@prisma/client/runtime/library';
 
+// This function is only supposed to be used in the backende
 export async function getSpaceSettingsValues(
-  environmentId: string,
+  spaceId: string,
   searchKey: string,
   ability?: Ability,
 ) {
-  const settings = await db.spaceSettings.findUnique({
-    where: { environmentId },
-  });
+  if (ability && !ability.can('view', 'Setting')) throw new UnauthorizedError();
 
-  // TODO: Handle access rights
-  // const filtered =  ability ? ability.filter('view', 'Setting', settings) : settings;
+  const settings = await db.spaceSettings.findUnique({
+    where: { environmentId: spaceId },
+  });
 
   const res = {} as Record<string, any>;
 
@@ -41,16 +38,15 @@ export async function getSpaceSettingsValues(
 }
 
 export async function populateSpaceSettingsGroup(
-  environmentId: string,
+  spaceId: string,
   settingsGroup: SettingGroup,
   ability?: Ability,
 ) {
-  const settings = await db.spaceSettings.findUnique({
-    where: { environmentId },
-  });
+  if (ability && ability.can('update', 'Setting')) throw new UnauthorizedError();
 
-  // TODO: Handle access rights
-  // const filtered =  ability ? ability.filter('view', 'Setting', settings) : settings;
+  const settings = await db.spaceSettings.findUnique({
+    where: { environmentId: spaceId },
+  });
 
   if (!settings) return;
 
@@ -71,20 +67,19 @@ export async function populateSpaceSettingsGroup(
 }
 
 export async function updateSpaceSettings(
-  environmentId: string,
+  spaceId: string,
   data: Record<string, any>,
   ability?: Ability,
 ) {
-  // TODO: Handle access rights
-  // const filtered =  ability ? ability.filter('update', 'Setting', settings) : settings;
+  if (ability && !ability.can('update', 'Setting')) throw new UnauthorizedError();
 
   const existingSettings = await db.spaceSettings.findUnique({
-    where: { environmentId },
+    where: { environmentId: spaceId },
   });
 
   if (!existingSettings) {
     await db.spaceSettings.create({
-      data: { environmentId, settings: data },
+      data: { environmentId: spaceId, settings: data },
     });
 
     return;
@@ -92,7 +87,7 @@ export async function updateSpaceSettings(
 
   await db.spaceSettings.update({
     where: {
-      environmentId,
+      environmentId: spaceId,
     },
     data: {
       settings: { ...(existingSettings.settings as Record<string, any>), ...data },

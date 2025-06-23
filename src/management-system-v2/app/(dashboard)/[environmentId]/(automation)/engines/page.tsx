@@ -1,34 +1,35 @@
 import Content from '@/components/content';
-import { Skeleton } from 'antd';
+import { Skeleton, Spin } from 'antd';
 import { notFound } from 'next/navigation';
-import SavedEnginesList from '@/components/saved-engines-list';
+import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
 import { getDbEngines } from '@/lib/data/db/engines';
 import { getCurrentEnvironment } from '@/components/auth';
-import Ability from '@/lib/ability/abilityHelper';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { enableUseDB } from 'FeatureFlags';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
+import { Engine as DBEngine } from '@prisma/client';
 
-const SavedEngines = async ({ spaceId, ability }: { spaceId: string; ability: Ability }) => {
-  const engines = await getDbEngines(spaceId, ability);
+const getEngineStatus = async (engine: DBEngine) => {
+  const engines = await savedEnginesToEngines([engine]);
 
-  return <SavedEnginesList savedEngines={engines} />;
+  if (engines.length === 0) {
+    return { online: false } as const;
+  } else {
+    return { online: true, engines } as const;
+  }
 };
 
 const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
-  if (!enableUseDB) {
-    return notFound();
-  }
-
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
 
   const machinesSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
-    'process-automation.machines',
+    'process-automation.process-engines',
     ability,
   );
 
@@ -36,13 +37,30 @@ const EnginesPage = async ({ params }: { params: { environmentId: string } }) =>
     return notFound();
   }
 
+  const engines = await getDbEngines(activeEnvironment.spaceId, ability);
+
+  const enginesWithStatus = engines.map((engine) => {
+    return {
+      ...engine,
+      status: (
+        <Suspense fallback={<Spin spinning />}>
+          <EngineStatus engineId={engine.id} status={getEngineStatus(engine)} />
+        </Suspense>
+      ),
+    };
+  });
+
+  return <SavedEnginesList savedEngines={enginesWithStatus} />;
+};
+
+const Page = ({ params }: any) => {
   return (
     <Content title="Engines">
       <Suspense fallback={<Skeleton />}>
-        <SavedEngines spaceId={activeEnvironment.spaceId} ability={ability} />
+        <EnginesPage params={params} />
       </Suspense>
     </Content>
   );
 };
 
-export default EnginesPage;
+export default Page;

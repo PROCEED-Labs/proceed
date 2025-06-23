@@ -570,4 +570,12 @@ export class CanvasRenderer {
       }
     }
   }
+
+  /**
+   * Get the current time unit being used for rendering
+   * @returns The current time unit or undefined if not set
+   */
+  getCurrentTimeUnit(): string | undefined {
+    return this.currentTimeUnit?.name;
+  }
 }

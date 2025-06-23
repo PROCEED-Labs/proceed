@@ -3,6 +3,17 @@
  */
 
 /**
+ * Dependency relationship types
+ */
+export enum DependencyType {
+  FINISH_TO_START = 'finish-to-start',
+  // Future types can be added here:
+  // START_TO_START = 'start-to-start',
+  // FINISH_TO_FINISH = 'finish-to-finish',
+  // START_TO_FINISH = 'start-to-finish',
+}
+
+/**
  * Base interface for all chart elements
  */
 export interface GanttElement {
@@ -54,6 +65,8 @@ export interface GanttDependency {
   id: string;
   sourceId: string; // ID of the source element
   targetId: string; // ID of the target element
+  type: DependencyType; // Type of dependency relationship
+  name?: string; // Optional name for the dependency
 }
 
 /**

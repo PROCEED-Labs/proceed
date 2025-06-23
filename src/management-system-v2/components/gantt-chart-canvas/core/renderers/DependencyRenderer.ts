@@ -6,7 +6,7 @@
  */
 
 import { TimeMatrix } from '../TimeMatrix';
-import { GanttElementType, GanttDependency } from '../../types';
+import { GanttElementType, GanttDependency, DependencyType } from '../../types';
 import { 
   ROW_HEIGHT,
   DEPENDENCY_ARROW_SIZE,
@@ -94,8 +94,8 @@ export class DependencyRenderer {
       fromPoint.y = fromIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
       toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
       
-      // Draw the dependency arrow
-      this.drawDependencyArrow(context, fromPoint, toPoint, 'finish-to-start', isHighlighted);
+      // Draw the dependency arrow using the dependency's type
+      this.drawDependencyArrow(context, fromPoint, toPoint, dep.type, isHighlighted);
     };
     
     // Render normal dependencies first
@@ -184,7 +184,7 @@ export class DependencyRenderer {
     context: CanvasRenderingContext2D,
     from: { x: number; y: number },
     to: { x: number; y: number },
-    type: string,
+    type: DependencyType,
     isHighlighted: boolean = false
   ): void {
     // Calculate adjusted endpoint to stop before arrow head
@@ -213,7 +213,7 @@ export class DependencyRenderer {
     
     // Draw based on dependency type
     switch (type) {
-      case 'finish-to-start':
+      case DependencyType.FINISH_TO_START:
       default:
         // Standard finish-to-start arrow with improved routing
         if (lineEndPoint.x > from.x + 20) {
@@ -309,7 +309,7 @@ export class DependencyRenderer {
   private drawArrowHead(
     context: CanvasRenderingContext2D,
     point: { x: number; y: number },
-    type: string,
+    type: DependencyType,
     isHighlighted: boolean = false
   ): void {
     context.fillStyle = isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR;

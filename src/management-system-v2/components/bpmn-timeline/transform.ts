@@ -3,6 +3,7 @@
  */
 
 import type { GanttElementType, GanttDependency } from '@/components/gantt-chart-canvas/types';
+import { DependencyType } from '@/components/gantt-chart-canvas/types';
 import type {
   BPMNDefinitions,
   BPMNFlowElement,
@@ -102,7 +103,9 @@ function transformSequenceFlow(flow: BPMNSequenceFlow): GanttDependency {
   return {
     id: flow.id,
     sourceId: sourceId,
-    targetId: targetId
+    targetId: targetId,
+    type: DependencyType.FINISH_TO_START, // BPMN sequence flows are finish-to-start dependencies
+    name: flow.name
   };
 }
 

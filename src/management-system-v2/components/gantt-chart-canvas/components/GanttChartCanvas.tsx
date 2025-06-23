@@ -37,20 +37,25 @@ interface ElementInfoContentProps {
 /**
  * Component to display detailed information about an element
  */
-const ElementInfoContent: React.FC<ElementInfoContentProps> = ({ element, dependencies, elements, onElementClick }) => {
+const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
+  element,
+  dependencies,
+  elements,
+  onElementClick,
+}) => {
   // Create element lookup map
-  const elementMap = new Map(elements.map(el => [el.id, el]));
-  
+  const elementMap = new Map(elements.map((el) => [el.id, el]));
+
   // Get incoming and outgoing dependencies
-  const incomingDeps = dependencies.filter(dep => dep.targetId === element.id);
-  const outgoingDeps = dependencies.filter(dep => dep.sourceId === element.id);
-  
+  const incomingDeps = dependencies.filter((dep) => dep.targetId === element.id);
+  const outgoingDeps = dependencies.filter((dep) => dep.sourceId === element.id);
+
   // Format duration for display
   const formatDuration = (start: number, end: number) => {
     const duration = end - start;
     const hours = Math.floor(duration / (1000 * 60 * 60));
     const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
     } else if (minutes > 0) {
@@ -59,39 +64,53 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({ element, depend
       return '<1m';
     }
   };
-  
+
   // Get loop characteristics from BPMN timeline (if available)
   const getLoopCharacteristics = () => {
     // This would need to be passed from the BPMN data if available
     // For now, we'll check if the element has any special characteristics
     return null;
   };
-  
+
   return (
     <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
       {/* Element Information */}
       <div style={{ marginBottom: '16px' }}>
-        <div><strong>Name:</strong> {element.name || <em style={{ color: '#999' }}>not set</em>}</div>
-        <div><strong>Type:</strong> {element.extraInfo || element.type}</div>
+        <div>
+          <strong>Name:</strong> {element.name || <em style={{ color: '#999' }}>not set</em>}
+        </div>
+        <div>
+          <strong>Type:</strong> {element.extraInfo || element.type}
+        </div>
         {element.type !== 'group' && (
           <>
-            <div><strong>Start:</strong> {new Date(element.start).toLocaleString()}</div>
-            <div><strong>End:</strong> {new Date(element.end || element.start).toLocaleString()}</div>
+            <div>
+              <strong>Start:</strong> {new Date(element.start).toLocaleString()}
+            </div>
+            <div>
+              <strong>End:</strong> {new Date(element.end || element.start).toLocaleString()}
+            </div>
             {element.end && element.start !== element.end && (
-              <div><strong>Duration:</strong> {formatDuration(element.start, element.end)}</div>
+              <div>
+                <strong>Duration:</strong> {formatDuration(element.start, element.end)}
+              </div>
             )}
           </>
         )}
         {element.type === 'group' && element.childIds && (
           <>
-            <div><strong>Child Elements:</strong> {element.childIds.length}</div>
+            <div>
+              <strong>Child Elements:</strong> {element.childIds.length}
+            </div>
             {element.end && element.start !== element.end && (
-              <div><strong>Duration:</strong> {formatDuration(element.start, element.end)}</div>
+              <div>
+                <strong>Duration:</strong> {formatDuration(element.start, element.end)}
+              </div>
             )}
           </>
         )}
       </div>
-      
+
       {/* Loop Characteristics */}
       {getLoopCharacteristics() && (
         <div style={{ marginBottom: '16px' }}>
@@ -99,73 +118,83 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({ element, depend
           <div>{getLoopCharacteristics()}</div>
         </div>
       )}
-      
+
       {/* Dependencies */}
       {(incomingDeps.length > 0 || outgoingDeps.length > 0) && (
         <div style={{ marginBottom: '16px' }}>
-          <h4 style={{ margin: '0 0 8px 0', color: '#1890ff' }}>Dependencies ({incomingDeps.length + outgoingDeps.length})</h4>
-          
+          <h4 style={{ margin: '0 0 8px 0', color: '#1890ff' }}>
+            Related dependencies ({incomingDeps.length + outgoingDeps.length})
+          </h4>
+
           {/* Incoming Dependencies */}
-          {incomingDeps.map(dep => {
+          {incomingDeps.map((dep) => {
             const sourceElement = elementMap.get(dep.sourceId);
-            const displayName = sourceElement?.name ? 
-              sourceElement.name : 
-              <em style={{ color: '#999' }}>&lt;{dep.sourceId}&gt;</em>;
+            const displayName = sourceElement?.name ? (
+              sourceElement.name
+            ) : (
+              <em style={{ color: '#999' }}>&lt;{dep.sourceId}&gt;</em>
+            );
             return (
-              <div 
-                key={dep.id} 
-                style={{ 
-                  padding: '4px 0', 
+              <div
+                key={dep.id}
+                style={{
+                  padding: '4px 0',
                   borderBottom: '1px solid #f0f0f0',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s'
+                  transition: 'background-color 0.2s',
                 }}
                 onClick={() => onElementClick(dep.sourceId)}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9f9f9')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <div><strong>From:</strong> {displayName}</div>
+                <div>
+                  <strong>From:</strong> {displayName}
+                </div>
                 <div style={{ color: '#666', fontSize: '12px' }}>
                   <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
+                  <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
                 </div>
               </div>
             );
           })}
-          
+
           {/* Outgoing Dependencies */}
-          {outgoingDeps.map(dep => {
+          {outgoingDeps.map((dep) => {
             const targetElement = elementMap.get(dep.targetId);
-            const displayName = targetElement?.name ? 
-              targetElement.name : 
-              <em style={{ color: '#999' }}>&lt;{dep.targetId}&gt;</em>;
+            const displayName = targetElement?.name ? (
+              targetElement.name
+            ) : (
+              <em style={{ color: '#999' }}>&lt;{dep.targetId}&gt;</em>
+            );
             return (
-              <div 
-                key={dep.id} 
-                style={{ 
-                  padding: '4px 0', 
+              <div
+                key={dep.id}
+                style={{
+                  padding: '4px 0',
                   borderBottom: '1px solid #f0f0f0',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s'
+                  transition: 'background-color 0.2s',
                 }}
                 onClick={() => onElementClick(dep.targetId)}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9f9f9')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <div><strong>To:</strong> {displayName}</div>
+                <div>
+                  <strong>To:</strong> {displayName}
+                </div>
                 <div style={{ color: '#666', fontSize: '12px' }}>
                   <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
+                  <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
                 </div>
               </div>
             );
           })}
         </div>
       )}
-      
+
       {/* No Dependencies Message */}
       {incomingDeps.length === 0 && outgoingDeps.length === 0 && (
-        <div style={{ color: '#666', fontStyle: 'italic' }}>
-          This element has no dependencies.
-        </div>
+        <div style={{ color: '#666', fontStyle: 'italic' }}>This element has no dependencies.</div>
       )}
     </div>
   );
@@ -195,32 +224,34 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
 
     // Track current time unit
     const [currentTimeUnit, setCurrentTimeUnit] = useState<string>('Day');
-    
+
     // Track scroll position to trigger re-renders for virtualization
     const [scrollTop, setScrollTop] = useState(0);
-    
+
     // Track selected element for highlighting dependencies
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-    
+
     // Track info modal state
     const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [infoModalElement, setInfoModalElement] = useState<GanttElementType | null>(null);
 
     // Function to get outgoing dependencies for highlighting
-    const getOutgoingDependencies = useCallback((elementId: string) => {
-      return dependencies.filter(dep => 
-        dep.sourceId === elementId
-      );
-    }, [dependencies]);
+    const getOutgoingDependencies = useCallback(
+      (elementId: string) => {
+        return dependencies.filter((dep) => dep.sourceId === elementId);
+      },
+      [dependencies],
+    );
 
     // Handle element selection
     const handleElementClick = useCallback((elementId: string) => {
-      setSelectedElementId(prev => prev === elementId ? null : elementId);
+      setSelectedElementId((prev) => (prev === elementId ? null : elementId));
     }, []);
 
     // Handle info button click
     const handleInfoClick = useCallback((element: GanttElementType, event: React.MouseEvent) => {
-      event.stopPropagation(); // Prevent element selection when clicking info button
+      event.stopPropagation(); // Prevent bubbling to avoid double selection
+      setSelectedElementId(element.id); // Select the row
       setInfoModalElement(element);
       setInfoModalVisible(true);
     }, []);
@@ -241,22 +272,19 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     // Cache the time matrix to avoid recreating it on every render
     const timeMatrixRef = useRef<TimeMatrix>();
 
-
     // Main rendering function - optimized for performance
     const renderChart = useCallback(() => {
       if (!rendererRef.current || !gantt.chartCanvasRef.current) return;
 
-
-
       // Always ensure we know the current scroll position, even if no scroll event has fired yet
       // Get current scroll position from the actual scroll container
       const scrollPosition = gantt.taskListRef.current?.scrollTop || lastScrollTopRef.current || 0;
-      
+
       // Update the ref with the current scroll position
       if (gantt.taskListRef.current?.scrollTop !== undefined) {
         lastScrollTopRef.current = gantt.taskListRef.current.scrollTop;
       }
-      
+
       // Ensure chart container never scrolls
       if (chartContentRef.current && chartContentRef.current.scrollTop !== 0) {
         chartContentRef.current.scrollTop = 0;
@@ -318,7 +346,6 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         // Calculate visible rows
         const visibleRowStart = Math.floor(scrollTop / ROW_HEIGHT);
         const visibleRowEnd = Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT);
-        
 
         // Render timeline with accurate dimensions
         const timelineContainer = gantt.timelineCanvasRef.current?.parentElement;
@@ -333,8 +360,10 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         }
 
         // Get highlighted dependencies for the selected element
-        const highlightedDependencies = selectedElementId ? getOutgoingDependencies(selectedElementId) : [];
-        
+        const highlightedDependencies = selectedElementId
+          ? getOutgoingDependencies(selectedElementId)
+          : [];
+
         // Always pass ALL elements to the renderer
         // The renderer will handle visibility filtering internally
         rendererRef.current.renderChartContent(
@@ -346,17 +375,15 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           dependencies, // Pass dependency arrows
           scrollTop, // Pass exact scroll position
           highlightedDependencies, // Pass highlighted dependencies
-          selectedElementId // Pass selected element ID for row highlighting
+          selectedElementId, // Pass selected element ID for row highlighting
         );
 
-
         // Update current time unit from renderer
-        if (rendererRef.current.currentTimeUnit) {
-          const timeUnit = rendererRef.current.currentTimeUnit;
+        const timeUnit = rendererRef.current.getCurrentTimeUnit();
+        if (timeUnit) {
           setCurrentTimeUnit(timeUnit.charAt(0).toUpperCase() + timeUnit.slice(1));
         }
       }
-
     }, [
       elements,
       gantt.state.zoom,
@@ -375,36 +402,33 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       (e: React.UIEvent<HTMLDivElement>) => {
         const newScrollTop = e.currentTarget.scrollTop;
         lastScrollTopRef.current = newScrollTop;
-        
+
         // Update scroll state to trigger re-render for task list virtualization
         setScrollTop(newScrollTop);
-        
+
         // Don't sync scroll to chart container - we handle it via canvas translation
         // Only update if this is the task list scrolling
         if (e.currentTarget === gantt.taskListRef.current) {
           // Just trigger a re-render with the new scroll position
           renderChart();
         }
-        
+
         // Throttle rendering
         if (animationFrameIdRef.current) {
           cancelAnimationFrame(animationFrameIdRef.current);
         }
-        
+
         animationFrameIdRef.current = requestAnimationFrame(() => {
           renderChart();
           animationFrameIdRef.current = null;
         });
       },
-      [renderChart, gantt.taskListRef]
+      [renderChart, gantt.taskListRef],
     );
 
     // Initialize the renderer when canvas refs are available
     useEffect(() => {
-      if (
-        !gantt.timelineCanvasRef.current ||
-        !gantt.chartCanvasRef.current
-      ) {
+      if (!gantt.timelineCanvasRef.current || !gantt.chartCanvasRef.current) {
         return;
       }
 
@@ -470,7 +494,6 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         gantt.chartCanvasRef.current.height / window.devicePixelRatio,
       );
 
-
       // Create element manager
       elementManagerRef.current = new ElementManager();
       elementManagerRef.current.setElements(elements);
@@ -505,10 +528,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         }
 
         // Update canvas sizes
-        if (
-          gantt.timelineCanvasRef.current &&
-          gantt.chartCanvasRef.current
-        ) {
+        if (gantt.timelineCanvasRef.current && gantt.chartCanvasRef.current) {
           const timelineContainer = gantt.timelineCanvasRef.current.parentElement;
           const chartContainer = gantt.chartCanvasRef.current.parentElement;
 
@@ -551,7 +571,6 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
               chartCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
             }
 
-
             // Resize renderer contexts
             if (rendererRef.current) {
               rendererRef.current.resizeLayer(
@@ -585,13 +604,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           cancelAnimationFrame(animationFrameIdRef.current);
         }
       };
-    }, [
-      gantt.timelineCanvasRef,
-      gantt.chartCanvasRef,
-      gantt.containerRef,
-      elements,
-      renderChart,
-    ]);
+    }, [gantt.timelineCanvasRef, gantt.chartCanvasRef, gantt.containerRef, elements, renderChart]);
 
     // Track previous configuration values to avoid unnecessary updates
     const prevConfigRef = useRef({
@@ -721,10 +734,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     // Update canvas sizes whenever the container size or content height changes
     // This ensures the canvas adjusts to both viewport size and content
     useEffect(() => {
-      if (
-        gantt.chartCanvasRef.current &&
-        chartContentRef.current
-      ) {
+      if (gantt.chartCanvasRef.current && chartContentRef.current) {
         const chartWidth = chartContentRef.current.clientWidth;
         const viewportHeight = chartContentRef.current.clientHeight;
         const isLargeDataset = elements.length > 1000;
@@ -783,14 +793,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           requestAnimationFrame(() => renderChart());
         }
       }
-    }, [
-      totalContentHeight,
-      renderChart,
-      gantt.chartCanvasRef,
-      elements.length,
-      chartContentRef,
-    ]);
-
+    }, [totalContentHeight, renderChart, gantt.chartCanvasRef, elements.length, chartContentRef]);
 
     // Get panOffset for transforms
     const panOffset = gantt.state.panOffset || 0;
@@ -819,16 +822,18 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
             >
               −
             </button>
-            
+
             {/* Zoom In Button (plus) */}
             <button
               className={styles.controlButton}
-              onClick={() => gantt.handleZoomChange(Math.round(Math.min(100, gantt.state.zoom + 5)))}
+              onClick={() =>
+                gantt.handleZoomChange(Math.round(Math.min(100, gantt.state.zoom + 5)))
+              }
               title="Zoom In"
             >
               +
             </button>
-            
+
             {/* Zoom Slider */}
             <div className={styles.zoomSliderContainer}>
               <input
@@ -841,7 +846,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
               />
               <span className={styles.zoomValue}>{Math.round(gantt.state.zoom)}%</span>
             </div>
-            
+
             {/* Auto-fit Button */}
             <button
               className={styles.controlButton}
@@ -850,12 +855,10 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
             >
               Fit
             </button>
-            
+
             {/* Time Unit Display */}
             <div className={styles.timeUnitDisplay}>
-              Time Unit: <span className={styles.timeUnitValue}>
-                {currentTimeUnit}
-              </span>
+              Time Unit: <span className={styles.timeUnitValue}>{currentTimeUnit}</span>
             </div>
 
             {/* Debug info panel above the canvas has been removed */}
@@ -887,10 +890,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                 left: '-200%', // Center the 5x canvas (2x on each side)
               }}
             >
-              <canvas 
-                ref={gantt.timelineCanvasRef} 
-                className={styles.timelineCanvas}
-              />
+              <canvas ref={gantt.timelineCanvasRef} className={styles.timelineCanvas} />
             </div>
           </div>
         </div>
@@ -940,7 +940,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   if (!element) continue;
 
                   const isSelected = selectedElementId === element.id;
-                  
+
                   visibleElements.push(
                     <div
                       key={element.id}
@@ -948,10 +948,10 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                       style={{
                         height: `${ROW_HEIGHT}px`,
                         top: `${i * ROW_HEIGHT}px`,
-                        backgroundColor: isSelected 
+                        backgroundColor: isSelected
                           ? 'rgba(24, 144, 255, 0.1)'
-                          : element.type === 'group' 
-                            ? 'rgba(114, 46, 209, 0.1)' 
+                          : element.type === 'group'
+                            ? 'rgba(114, 46, 209, 0.1)'
                             : undefined,
                         cursor: 'pointer',
                       }}
@@ -964,19 +964,21 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                             size="small"
                             icon={<InfoCircleOutlined />}
                             onClick={(e) => handleInfoClick(element, e)}
-                            style={{ 
+                            style={{
                               color: '#666',
                               padding: '0',
                               minWidth: '24px',
-                              height: '24px'
+                              height: '24px',
                             }}
                           />
                         </div>
                         <div className={styles.taskNameColumn}>
-                          <span style={{ 
-                            fontWeight: element.type === 'group' ? 'bold' : 'normal',
-                            fontStyle: element.name ? 'normal' : 'italic'
-                          }}>
+                          <span
+                            style={{
+                              fontWeight: element.type === 'group' ? 'bold' : 'normal',
+                              fontStyle: element.name ? 'normal' : 'italic',
+                            }}
+                          >
                             {element.name || `<${element.id}>`}
                           </span>
                           {element.type === 'group' &&
@@ -988,9 +990,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                               </span>
                             )}
                         </div>
-                        <div className={styles.extraInfoColumn}>
-                          {element.extraInfo || ''}
-                        </div>
+                        <div className={styles.extraInfoColumn}>{element.extraInfo || ''}</div>
                       </div>
                     </div>,
                   );
@@ -1047,16 +1047,15 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   <canvas
                     ref={gantt.chartCanvasRef}
                     className={styles.chartCanvas}
-                  onMouseDown={gantt.handleMouseDown}
-                  style={{
-                    height: '100%',
-                    minHeight: '100%',
-                    width: '100%',
-                    pointerEvents: 'auto',
-                  }}
-                />
+                    onMouseDown={gantt.handleMouseDown}
+                    style={{
+                      height: '100%',
+                      minHeight: '100%',
+                      width: '100%',
+                      pointerEvents: 'auto',
+                    }}
+                  />
                 </div>
-
               </div>
 
               {/* Virtual scroll content */}
@@ -1067,7 +1066,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
             </div>
           </div>
         </div>
-        
+
         {/* Element Info Modal */}
         <Modal
           title={infoModalElement?.name || infoModalElement?.id || 'Unknown'}
@@ -1077,12 +1076,12 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           width={600}
         >
           {infoModalElement && (
-            <ElementInfoContent 
-              element={infoModalElement} 
+            <ElementInfoContent
+              element={infoModalElement}
               dependencies={dependencies}
               elements={elements}
               onElementClick={(elementId) => {
-                const element = elements.find(el => el.id === elementId);
+                const element = elements.find((el) => el.id === elementId);
                 if (element) {
                   setInfoModalElement(element);
                   setSelectedElementId(elementId);

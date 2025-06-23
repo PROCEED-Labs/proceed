@@ -50,5 +50,18 @@ export const settings: SettingGroup = {
         },
       ],
     },
+    {
+      key: 'timeline-view',
+      name: 'Timeline View',
+      children: [
+        {
+          key: 'test',
+          name: 'Test Setting',
+          type: 'boolean',
+          description: 'A test boolean setting for the timeline view',
+          value: false,
+        },
+      ],
+    },
   ],
 };

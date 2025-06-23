@@ -7,6 +7,8 @@ import { CloseOutlined, WarningOutlined } from '@ant-design/icons';
 import { GanttChartCanvas } from '@/components/gantt-chart-canvas';
 import type { GanttElementType, GanttDependency } from '@/components/gantt-chart-canvas/types';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
+import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { useEnvironment } from '@/components/auth-can';
 
 // Import our separated modules
 import type {
@@ -32,6 +34,24 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [nowTimestamp, setNowTimestamp] = useState<number>(0);
+  const [testSettingValue, setTestSettingValue] = useState<boolean | null>(null);
+  
+  const { spaceId } = useEnvironment();
+
+  // Fetch timeline view settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await getSpaceSettingsValues(spaceId, 'process-documentation');
+        setTestSettingValue(settings?.['timeline-view']?.test ?? false);
+      } catch (error) {
+        console.error('Failed to fetch timeline view settings:', error);
+        setTestSettingValue(false);
+      }
+    };
+    
+    fetchSettings();
+  }, [spaceId]);
 
   useEffect(() => {
     const bpmnjsModeler = new Modeler();
@@ -98,6 +118,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         </div>
         <div style={{ fontSize: '14px', color: '#666', fontWeight: 400 }}>
           {isLoading && 'Loading...'}
+          {testSettingValue !== null && (
+            <div>Test Setting: {testSettingValue ? 'Enabled' : 'Disabled'}</div>
+          )}
         </div>
       </div>
       <Button

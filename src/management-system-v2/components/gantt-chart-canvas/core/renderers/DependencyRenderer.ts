@@ -195,12 +195,13 @@ export class DependencyRenderer {
     context.save();
     
     // Set line style for dependencies based on highlight status
+    // Use fixed line widths that look good on all screen densities
     if (isHighlighted) {
       context.strokeStyle = '#000000'; // Black color for highlighted dependencies
-      context.lineWidth = 2.5 * this.pixelRatio; // Thicker lines for highlighted dependencies
+      context.lineWidth = 2.5; // Thicker lines for highlighted dependencies
     } else {
       context.strokeStyle = DEPENDENCY_LINE_COLOR;
-      context.lineWidth = 1.5 * this.pixelRatio; // Thinner lines for normal dependencies
+      context.lineWidth = 1.5; // Thinner lines for normal dependencies
     }
     context.setLineDash([]);
     

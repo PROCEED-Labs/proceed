@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Button, Modal } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import { useGanttChart } from '../hooks/useGanttChart';
 import { GanttChartOptions, GanttDependency, GanttElementType } from '../types';
 import {
@@ -24,6 +26,150 @@ interface GanttChartCanvasProps {
   currentDateMarkerTime?: number; // Optional timestamp for the red marker line
   dependencies?: GanttDependency[]; // Optional list of dependency arrows between elements
 }
+
+interface ElementInfoContentProps {
+  element: GanttElementType;
+  dependencies: GanttDependency[];
+  elements: GanttElementType[];
+  onElementClick: (elementId: string) => void;
+}
+
+/**
+ * Component to display detailed information about an element
+ */
+const ElementInfoContent: React.FC<ElementInfoContentProps> = ({ element, dependencies, elements, onElementClick }) => {
+  // Create element lookup map
+  const elementMap = new Map(elements.map(el => [el.id, el]));
+  
+  // Get incoming and outgoing dependencies
+  const incomingDeps = dependencies.filter(dep => dep.targetId === element.id);
+  const outgoingDeps = dependencies.filter(dep => dep.sourceId === element.id);
+  
+  // Format duration for display
+  const formatDuration = (start: number, end: number) => {
+    const duration = end - start;
+    const hours = Math.floor(duration / (1000 * 60 * 60));
+    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
+    } else if (minutes > 0) {
+      return `${minutes}m`;
+    } else {
+      return '<1m';
+    }
+  };
+  
+  // Get loop characteristics from BPMN timeline (if available)
+  const getLoopCharacteristics = () => {
+    // This would need to be passed from the BPMN data if available
+    // For now, we'll check if the element has any special characteristics
+    return null;
+  };
+  
+  return (
+    <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
+      {/* Element Information */}
+      <div style={{ marginBottom: '16px' }}>
+        <div><strong>Name:</strong> {element.name || <em style={{ color: '#999' }}>not set</em>}</div>
+        <div><strong>Type:</strong> {element.extraInfo || element.type}</div>
+        {element.type !== 'group' && (
+          <>
+            <div><strong>Start:</strong> {new Date(element.start).toLocaleString()}</div>
+            <div><strong>End:</strong> {new Date(element.end || element.start).toLocaleString()}</div>
+            {element.end && element.start !== element.end && (
+              <div><strong>Duration:</strong> {formatDuration(element.start, element.end)}</div>
+            )}
+          </>
+        )}
+        {element.type === 'group' && element.childIds && (
+          <>
+            <div><strong>Child Elements:</strong> {element.childIds.length}</div>
+            {element.end && element.start !== element.end && (
+              <div><strong>Duration:</strong> {formatDuration(element.start, element.end)}</div>
+            )}
+          </>
+        )}
+      </div>
+      
+      {/* Loop Characteristics */}
+      {getLoopCharacteristics() && (
+        <div style={{ marginBottom: '16px' }}>
+          <h4 style={{ margin: '0 0 8px 0', color: '#1890ff' }}>Loop Characteristics</h4>
+          <div>{getLoopCharacteristics()}</div>
+        </div>
+      )}
+      
+      {/* Dependencies */}
+      {(incomingDeps.length > 0 || outgoingDeps.length > 0) && (
+        <div style={{ marginBottom: '16px' }}>
+          <h4 style={{ margin: '0 0 8px 0', color: '#1890ff' }}>Dependencies ({incomingDeps.length + outgoingDeps.length})</h4>
+          
+          {/* Incoming Dependencies */}
+          {incomingDeps.map(dep => {
+            const sourceElement = elementMap.get(dep.sourceId);
+            const displayName = sourceElement?.name ? 
+              sourceElement.name : 
+              <em style={{ color: '#999' }}>&lt;{dep.sourceId}&gt;</em>;
+            return (
+              <div 
+                key={dep.id} 
+                style={{ 
+                  padding: '4px 0', 
+                  borderBottom: '1px solid #f0f0f0',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onClick={() => onElementClick(dep.sourceId)}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <div><strong>From:</strong> {displayName}</div>
+                <div style={{ color: '#666', fontSize: '12px' }}>
+                  <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
+                </div>
+              </div>
+            );
+          })}
+          
+          {/* Outgoing Dependencies */}
+          {outgoingDeps.map(dep => {
+            const targetElement = elementMap.get(dep.targetId);
+            const displayName = targetElement?.name ? 
+              targetElement.name : 
+              <em style={{ color: '#999' }}>&lt;{dep.targetId}&gt;</em>;
+            return (
+              <div 
+                key={dep.id} 
+                style={{ 
+                  padding: '4px 0', 
+                  borderBottom: '1px solid #f0f0f0',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onClick={() => onElementClick(dep.targetId)}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <div><strong>To:</strong> {displayName}</div>
+                <div style={{ color: '#666', fontSize: '12px' }}>
+                  <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      
+      {/* No Dependencies Message */}
+      {incomingDeps.length === 0 && outgoingDeps.length === 0 && (
+        <div style={{ color: '#666', fontStyle: 'italic' }}>
+          This element has no dependencies.
+        </div>
+      )}
+    </div>
+  );
+};
 
 /**
  * Canvas-based Gantt chart component with high-precision zoom and pan
@@ -55,6 +201,10 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     
     // Track selected element for highlighting dependencies
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    
+    // Track info modal state
+    const [infoModalVisible, setInfoModalVisible] = useState(false);
+    const [infoModalElement, setInfoModalElement] = useState<GanttElementType | null>(null);
 
     // Function to get outgoing dependencies for highlighting
     const getOutgoingDependencies = useCallback((elementId: string) => {
@@ -66,6 +216,19 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     // Handle element selection
     const handleElementClick = useCallback((elementId: string) => {
       setSelectedElementId(prev => prev === elementId ? null : elementId);
+    }, []);
+
+    // Handle info button click
+    const handleInfoClick = useCallback((element: GanttElementType, event: React.MouseEvent) => {
+      event.stopPropagation(); // Prevent element selection when clicking info button
+      setInfoModalElement(element);
+      setInfoModalVisible(true);
+    }, []);
+
+    // Handle modal close
+    const handleModalClose = useCallback(() => {
+      setInfoModalVisible(false);
+      setInfoModalElement(null);
     }, []);
 
     // Calculate total height for virtualization
@@ -182,7 +345,8 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           currentDateMarkerTime, // Pass the optional custom date marker time
           dependencies, // Pass dependency arrows
           scrollTop, // Pass exact scroll position
-          highlightedDependencies // Pass highlighted dependencies
+          highlightedDependencies, // Pass highlighted dependencies
+          selectedElementId // Pass selected element ID for row highlighting
         );
 
 
@@ -703,6 +867,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           {/* Task List Header */}
           <div className={styles.taskListHeader} style={{ width: gantt.state.taskListWidth }}>
             <div className={styles.taskListHeaderColumns}>
+              <div className={styles.infoButtonColumn}></div>
               <div className={styles.taskNameColumn}>Task Name</div>
               <div className={styles.extraInfoColumn}>Type</div>
             </div>
@@ -793,6 +958,20 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                       onClick={() => handleElementClick(element.id)}
                     >
                       <div className={styles.taskItemColumns}>
+                        <div className={styles.infoButtonColumn}>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<InfoCircleOutlined />}
+                            onClick={(e) => handleInfoClick(element, e)}
+                            style={{ 
+                              color: '#666',
+                              padding: '0',
+                              minWidth: '24px',
+                              height: '24px'
+                            }}
+                          />
+                        </div>
                         <div className={styles.taskNameColumn}>
                           <span style={{ 
                             fontWeight: element.type === 'group' ? 'bold' : 'normal',
@@ -888,6 +1067,30 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
             </div>
           </div>
         </div>
+        
+        {/* Element Info Modal */}
+        <Modal
+          title={infoModalElement?.name || infoModalElement?.id || 'Unknown'}
+          open={infoModalVisible}
+          onCancel={handleModalClose}
+          footer={null}
+          width={600}
+        >
+          {infoModalElement && (
+            <ElementInfoContent 
+              element={infoModalElement} 
+              dependencies={dependencies}
+              elements={elements}
+              onElementClick={(elementId) => {
+                const element = elements.find(el => el.id === elementId);
+                if (element) {
+                  setInfoModalElement(element);
+                  setSelectedElementId(elementId);
+                }
+              }}
+            />
+          )}
+        </Modal>
       </div>
     );
   },

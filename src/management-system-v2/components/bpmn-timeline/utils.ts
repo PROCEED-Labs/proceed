@@ -285,8 +285,9 @@ export function assignFlowColors(
 
 /**
  * Group and sort elements by connected components and start time
+ * Start events appear first, end events appear last within each component
  */
-export function groupAndSortElements<T extends { id: string; start: number }>(
+export function groupAndSortElements<T extends { id: string; start: number; extraInfo?: string }>(
   elements: T[],
   elementToComponent: Map<string, number>
 ): T[] {
@@ -301,9 +302,37 @@ export function groupAndSortElements<T extends { id: string; start: number }>(
     componentGroups.get(componentId)!.push(element);
   });
   
-  // Sort elements within each group by start time
+  // Helper function to get element priority for sorting
+  const getElementPriority = (element: T): number => {
+    if (!element.extraInfo) return 1; // Normal priority for tasks and unknown elements
+    
+    // Check if it's a start event
+    if (element.extraInfo.includes('Start')) {
+      return 0; // Highest priority - appears first
+    }
+    
+    // Check if it's an end event
+    if (element.extraInfo.includes('End')) {
+      return 2; // Lowest priority - appears last
+    }
+    
+    return 1; // Normal priority for other elements (tasks, intermediate events)
+  };
+  
+  // Sort elements within each group by priority first, then by start time
   componentGroups.forEach(group => {
-    group.sort((a, b) => a.start - b.start);
+    group.sort((a, b) => {
+      const priorityA = getElementPriority(a);
+      const priorityB = getElementPriority(b);
+      
+      // If priorities are different, sort by priority
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // If priorities are the same, sort by start time
+      return a.start - b.start;
+    });
   });
   
   // Sort groups by earliest start time in each group

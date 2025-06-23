@@ -345,7 +345,8 @@ export class CanvasRenderer {
     customDateMarkerTime?: number,
     dependencies?: GanttDependency[],
     scrollTop?: number,
-    highlightedDependencies?: GanttDependency[]
+    highlightedDependencies?: GanttDependency[],
+    selectedElementId?: string | null
   ): void {
     const context = this.contexts.get(CanvasLayerType.ChartContent);
     if (!context) return;
@@ -413,6 +414,18 @@ export class CanvasRenderer {
       customDateMarkerTime || this.currentDate.getTime(),
       scrollOffset
     );
+
+    // Render selected element row highlighting (very subtle)
+    if (selectedElementId) {
+      const selectedElementIndex = elements.findIndex(el => el.id === selectedElementId);
+      if (selectedElementIndex !== -1) {
+        context.save();
+        context.fillStyle = 'rgba(24, 144, 255, 0.06)'; // Subtle blue highlight
+        const rowY = selectedElementIndex * ROW_HEIGHT;
+        context.fillRect(0, rowY, width, ROW_HEIGHT);
+        context.restore();
+      }
+    }
 
     // Render dependency arrows first (behind elements)
     if (dependencies && dependencies.length > 0) {

@@ -1,35 +1,55 @@
 import Content from '@/components/content';
-import { Skeleton } from 'antd';
+import { Skeleton, Spin } from 'antd';
 import { notFound, redirect } from 'next/navigation';
-import SavedEnginesList from '@/components/saved-engines-list';
+import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
+import { getDbEngines } from '@/lib/data/db/engines';
 import { getCurrentUser } from '@/components/auth';
 import { Suspense } from 'react';
-import { enableUseDB } from 'FeatureFlags';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { getDbEngines } from '@/lib/data/db/engines';
+import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
+import { Engine as DBEngine } from '@prisma/client';
 
-async function SavedEngines() {
-  const { systemAdmin } = await getCurrentUser();
-  return <SavedEnginesList savedEngines={await getDbEngines(null, undefined, systemAdmin)} />;
-}
+const getEngineStatus = async (engine: DBEngine) => {
+  const engines = await savedEnginesToEngines([engine]);
 
-async function EnginesPage() {
-  const msConfig = await getMSConfig();
-
-  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION || !enableUseDB) {
-    return notFound();
+  if (engines.length === 0) {
+    return { online: false } as const;
+  } else {
+    return { online: true, engines } as const;
   }
+};
+
+const EnginesPage = async () => {
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
   const { systemAdmin } = await getCurrentUser();
   if (!systemAdmin) return redirect('/');
 
+  const engines = await getDbEngines(null, undefined, systemAdmin);
+
+  const enginesWithStatus = engines.map((engine) => {
+    return {
+      ...engine,
+      status: (
+        <Suspense fallback={<Spin spinning />}>
+          <EngineStatus engineId={engine.id} status={getEngineStatus(engine)} />
+        </Suspense>
+      ),
+    };
+  });
+
+  return <SavedEnginesList savedEngines={enginesWithStatus} />;
+};
+
+const Page = () => {
   return (
     <Content title="Engines">
       <Suspense fallback={<Skeleton />}>
-        <SavedEngines />
+        <EnginesPage />
       </Suspense>
     </Content>
   );
-}
+};
 
-export default EnginesPage;
+export default Page;

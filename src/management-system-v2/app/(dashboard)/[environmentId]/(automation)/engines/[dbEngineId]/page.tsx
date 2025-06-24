@@ -1,14 +1,11 @@
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { Button, Result, Skeleton, Space } from 'antd';
-import { notFound, redirect } from 'next/navigation';
+import { Button, Skeleton } from 'antd';
+import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
 import { type Engine } from '@/lib/engines/machines';
 import { getDbEngineById } from '@/lib/data/db/engines';
-import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
-import { engineRequest } from '@/lib/engines/endpoints/index';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
 import SpaceLink from '@/components/space-link';

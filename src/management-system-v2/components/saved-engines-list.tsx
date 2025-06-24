@@ -22,6 +22,7 @@ import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Engine as DBEngine } from '@prisma/client';
 import { Engine } from '@/lib/engines/machines';
 import { useUserPreferences } from '@/lib/user-preferences';
+import Link from 'next/link';
 
 type DBEngineStatus = { online: false } | { online: true; engines: Engine[] };
 type InputEngine = DBEngine & { status: ReactNode };
@@ -35,11 +36,12 @@ const EngineStatusContext = createContext<EnginesStatusContextType | undefined>(
 
 const SavedEnginesList = ({
   savedEngines,
-
   tableProps,
+  engineDashboardLinkPrefix,
 }: {
   savedEngines: InputEngine[];
   tableProps?: TableProps<InputEngine>;
+  engineDashboardLinkPrefix: string;
 }) => {
   const router = useRouter();
   const _spaceId = useEnvironment().spaceId;
@@ -95,7 +97,8 @@ const SavedEnginesList = ({
       ellipsis: true,
       sorter: (a, b) => (a.name ? a.name.localeCompare(b.name || '') : -1),
       render: (_, record) => (
-        <div
+        <Link
+          href={`${engineDashboardLinkPrefix}/${record.id}`}
           className={
             breakpoint.xs
               ? styles.MobileTitleTruncation
@@ -105,7 +108,7 @@ const SavedEnginesList = ({
           }
         >
           {record.name}
-        </div>
+        </Link>
       ),
       responsive: ['xs', 'sm'],
     },
@@ -141,7 +144,7 @@ const SavedEnginesList = ({
   );
 
   return (
-    <div>
+    <>
       <div style={{ marginBottom: '0.5rem' }}>
         <Button
           type="primary"
@@ -166,7 +169,11 @@ const SavedEnginesList = ({
                 const status = enginesStatus[record.id]!;
                 if (!status.online) return;
 
-                return status.engines.map((engine) => engine.id);
+                return status.engines.map((engine) => (
+                  <Link href={`${engineDashboardLinkPrefix}/${record.id}?engineId=${engine.id}`}>
+                    {engine.id}
+                  </Link>
+                ));
               },
             },
             ...tableProps,
@@ -231,7 +238,7 @@ const SavedEnginesList = ({
         initialData={editData && { address: editData.address, name: editData.name }}
         modalProps={{ okButtonProps: { loading } }}
       />
-    </div>
+    </>
   );
 };
 

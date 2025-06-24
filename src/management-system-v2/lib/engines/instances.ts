@@ -2,6 +2,28 @@
 
 import { Engine } from './machines';
 import { engineRequest } from './endpoints/index';
+import { InstanceInfo } from './deployment';
+
+export async function getInstanceFromMachine(
+  definitionId: string,
+  instanceId: string,
+  machine: Engine,
+  entries?: string,
+) {
+  try {
+    const response = await engineRequest({
+      method: 'get',
+      endpoint: '/process/:definitionId/instance/:instanceID',
+      engine: machine,
+      pathParams: { definitionId, instanceID: instanceId },
+      queryParams: {
+        entries,
+      },
+    });
+
+    return response as InstanceInfo;
+  } catch (err) {}
+}
 
 export async function startInstanceOnMachine(
   definitionId: string,

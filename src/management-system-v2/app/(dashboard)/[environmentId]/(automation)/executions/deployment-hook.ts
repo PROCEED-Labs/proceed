@@ -3,9 +3,10 @@ import {
   DeployedProcessInfo,
   InstanceInfo,
   VersionInfo,
-  getDeployments,
+  getDeploymentFromMachine,
 } from '@/lib/engines/deployment';
 import {
+  getInstanceFromMachine,
   pauseInstanceOnMachine,
   resumeInstanceOnMachine,
   startInstanceOnMachine,
@@ -93,8 +94,8 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
   const { data: engines } = useEngines({
     key: [definitionId],
     fn: async (engine) => {
-      const deployments = await getDeployments([engine]);
-      return deployments.some((d) => d.definitionId === definitionId);
+      const deployment = await getDeploymentFromMachine(definitionId, engine, 'definitionId');
+      return !!deployment;
     },
   });
 
@@ -114,18 +115,16 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
     if (!engines) return;
     try {
       const targetEngines = await asyncFilter(engines, async (engine: Engine) => {
-        const deployments = await getDeployments([engine]);
+        const instance = await getInstanceFromMachine(
+          definitionId,
+          instanceId,
+          engine,
+          'instanceState',
+        );
 
-        return deployments.some((deployment) => {
-          if (deployment.definitionId !== definitionId) return false;
+        if (!instance) return false;
 
-          const instance = deployment.instances.find(
-            (instance) => instance.processInstanceId === instanceId,
-          );
-          if (!instance) return false;
-
-          return stateValidator(instance.instanceState);
-        });
+        return stateValidator(instance.instanceState);
       });
 
       await asyncForEach(targetEngines, async (engine) => {
@@ -181,10 +180,9 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
     if (engines?.length) {
       // TODO: this only handles situations where we have only a single engine
       // in the future we have to implement logic that merges data from multiple engines
-      const deployments = await getDeployments([engines[0]]);
-      return deployments.find((d) => d.definitionId === definitionId) || null;
+      const deployment = await getDeploymentFromMachine(definitionId, engines[0]);
+      return deployment || null;
     }
-
     return null;
   }, [engines, definitionId]);
 
@@ -196,8 +194,8 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
     // return the same data if nothing has changed from the last fetch to prevent unnecessary
     // rerenders
     structuralSharing: (oldQuery, newQuery) => {
-      if (!newQuery) return oldQuery;
-      if (!oldQuery) return newQuery;
+      if (newQuery === undefined) return oldQuery;
+      if (!oldQuery && !newQuery) return newQuery;
 
       const oldData = oldQuery as DeployedProcessInfo;
       const newData = newQuery as DeployedProcessInfo;

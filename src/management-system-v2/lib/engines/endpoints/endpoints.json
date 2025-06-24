@@ -28,11 +28,19 @@
     "/logging/api/log": {},
     "/": {},
     "/process/": {},
-    "/process/:definitionId": {},
+    "/process/:definitionId": {
+      "queryParams": {
+        "entries": true
+      }
+    },
     "/process/:definitionId/versions": {},
     "/process/:definitionId/versions/:version": {},
     "/process/:definitionId/instance": {},
-    "/process/:definitionId/instance/:instanceID": {},
+    "/process/:definitionId/instance/:instanceID": {
+      "queryParams": {
+        "entries": true
+      }
+    },
     "/process/:definitionId/versions/:version/start-form": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/user-tasks": {},

@@ -125,6 +125,10 @@ export interface ElementTiming {
   startTime: number;
   endTime: number;
   duration: number;
+  // Optional properties for path-based traversal
+  pathId?: string;
+  instanceId?: string;
+  isLoopInstance?: boolean;
 }
 
 export interface TransformationResult {

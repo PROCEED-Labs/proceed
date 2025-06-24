@@ -25,6 +25,7 @@ interface GanttChartCanvasProps {
   options?: GanttChartOptions;
   currentDateMarkerTime?: number; // Optional timestamp for the red marker line
   dependencies?: GanttDependency[]; // Optional list of dependency arrows between elements
+  showInstanceColumn?: boolean; // Whether to show the instance number column
 }
 
 interface ElementInfoContentProps {
@@ -263,6 +264,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       options = {},
       currentDateMarkerTime,
       dependencies = [],
+      showInstanceColumn = false,
     },
     ref,
   ) => {
@@ -865,6 +867,15 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         {/* Controls Section */}
         {options.showControls !== false && (
           <div className={styles.ganttControls}>
+            {/* Auto-fit Button */}
+            <button
+              className={styles.controlButton}
+              onClick={() => gantt.handleAutoFit()}
+              title="Fit to View"
+            >
+              Fit to View
+            </button>
+
             {/* Zoom Out Button (minus) */}
             <button
               className={styles.controlButton}
@@ -872,17 +883,6 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
               title="Zoom Out"
             >
               −
-            </button>
-
-            {/* Zoom In Button (plus) */}
-            <button
-              className={styles.controlButton}
-              onClick={() =>
-                gantt.handleZoomChange(Math.round(Math.min(100, gantt.state.zoom + 5)))
-              }
-              title="Zoom In"
-            >
-              +
             </button>
 
             {/* Zoom Slider */}
@@ -895,24 +895,25 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                 value={gantt.state.zoom}
                 onChange={(e) => gantt.handleZoomChange(Number(e.target.value))}
               />
-              <span className={styles.zoomValue}>{Math.round(gantt.state.zoom)}%</span>
             </div>
 
-            {/* Auto-fit Button */}
+            {/* Zoom In Button (plus) */}
             <button
               className={styles.controlButton}
-              onClick={() => gantt.handleAutoFit()}
-              title="Fit to View"
+              onClick={() =>
+                gantt.handleZoomChange(Math.round(Math.min(100, gantt.state.zoom + 5)))
+              }
+              title="Zoom In"
             >
-              Fit
+              +
             </button>
+
+            <span className={styles.zoomValue}>{Math.round(gantt.state.zoom)}%</span>
 
             {/* Time Unit Display */}
             <div className={styles.timeUnitDisplay}>
               Time Unit: <span className={styles.timeUnitValue}>{currentTimeUnit}</span>
             </div>
-
-            {/* Debug info panel above the canvas has been removed */}
           </div>
         )}
 
@@ -923,6 +924,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
             <div className={styles.taskListHeaderColumns}>
               <div className={styles.infoButtonColumn}></div>
               <div className={styles.taskNameColumn}>Task Name</div>
+              {showInstanceColumn && <div className={styles.instanceColumn}>#</div>}
               <div className={styles.extraInfoColumn}>Type</div>
             </div>
             {/* Resize Handle */}
@@ -1041,6 +1043,11 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                               </span>
                             )}
                         </div>
+                        {showInstanceColumn && (
+                          <div className={styles.instanceColumn}>
+                            {element.instanceNumber || ''}
+                          </div>
+                        )}
                         <div className={styles.extraInfoColumn}>{element.elementType || ''}</div>
                       </div>
                     </div>,

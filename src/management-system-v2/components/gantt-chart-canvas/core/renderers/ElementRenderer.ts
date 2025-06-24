@@ -1,6 +1,6 @@
 /**
  * ElementRenderer.ts
- * 
+ *
  * Handles rendering of Gantt chart elements (tasks, milestones, groups).
  * Implements optimized rendering strategies for different element types.
  */
@@ -8,7 +8,7 @@
 import { TimeMatrix } from '../TimeMatrix';
 import { GanttElementType } from '../../types';
 import { drawRoundedRect, drawText } from '../renderUtils';
-import { 
+import {
   ROW_HEIGHT,
   TASK_PADDING,
   MILESTONE_SIZE,
@@ -16,17 +16,17 @@ import {
   MILESTONE_DEFAULT_COLOR,
   GROUP_DEFAULT_COLOR,
   HOVER_OPACITY,
-  ELEMENT_MIN_WIDTH
+  ELEMENT_MIN_WIDTH,
 } from '../constants';
 import { darken, hexToRgba } from '../../utils/colorUtils';
 
 export class ElementRenderer {
   private pixelRatio: number = 1;
-  
+
   constructor(pixelRatio: number = 1) {
     this.pixelRatio = pixelRatio;
   }
-  
+
   /**
    * Render a task bar element
    */
@@ -36,7 +36,7 @@ export class ElementRenderer {
     rowIndex: number,
     timeMatrix: TimeMatrix,
     visibleRowStart: number = 0,
-    isHovered: boolean = false
+    isHovered: boolean = false,
   ): void {
     // Check for invalid timestamps
     const validStart = task.start && task.start > 0;
@@ -45,11 +45,11 @@ export class ElementRenderer {
 
     // For elements with invalid timestamps, use fixed positions
     let startX: number, endX: number, width: number;
-    
+
     if (hasTimestampIssue) {
       // For invalid timestamps, position at a fixed point
       const viewportWidth = context.canvas.width / this.pixelRatio;
-      startX = viewportWidth * 0.15; 
+      startX = viewportWidth * 0.15;
       width = viewportWidth * 0.2;
       endX = startX + width;
     } else {
@@ -62,8 +62,7 @@ export class ElementRenderer {
 
     // Use absolute row position
     const y = rowIndex * ROW_HEIGHT + TASK_PADDING;
-    const height = ROW_HEIGHT - (TASK_PADDING * 2);
-    
+    const height = ROW_HEIGHT - TASK_PADDING * 2;
 
     // Skip if completely outside visible area
     if (endX < 0 || startX > context.canvas.width / this.pixelRatio) {
@@ -72,20 +71,20 @@ export class ElementRenderer {
 
     // Draw main task bar
     const color = task.color || TASK_DEFAULT_COLOR;
-    
+
     // Save context state for clipping
     context.save();
-    
+
     // Set up clipping region to prevent drawing outside the task's actual bounds
     context.beginPath();
     context.rect(
       Math.max(0, startX), // Clip left edge to canvas
       y,
       Math.min(width, context.canvas.width / this.pixelRatio - startX), // Clip right edge to canvas
-      height
+      height,
     );
     context.clip();
-    
+
     // Draw the task bar at its actual position (not clipped position)
     drawRoundedRect(
       context,
@@ -96,29 +95,34 @@ export class ElementRenderer {
       0, // No rounding for tasks
       {
         fillStyle: isHovered ? darken(color, 10) : color,
-        globalAlpha: isHovered ? HOVER_OPACITY : 1
-      }
+        globalAlpha: isHovered ? HOVER_OPACITY : 1,
+      },
     );
-    
+
     // Restore context to remove clipping
     context.restore();
 
-
     // Draw task label if there's enough space - use original element width, not clipped
     if (width > 20 && task.name) {
+      // Create label with instance number if applicable
+      let label = task.name;
+      if (task.instanceNumber && task.instanceNumber > 1) {
+        label += ` #${task.instanceNumber}`;
+      }
+
       this.drawLabel(
         context,
-        task.name,
+        label,
         startX + 4, // Use original startX, not clippedStartX
         y + height / 2,
         width - 8, // Use original width, not clippedWidth
-        '#ffffff'
+        '#ffffff',
       );
     }
-    
+
     context.globalAlpha = 1;
   }
-  
+
   /**
    * Render a milestone element
    */
@@ -128,47 +132,47 @@ export class ElementRenderer {
     rowIndex: number,
     timeMatrix: TimeMatrix,
     visibleRowStart: number = 0,
-    isHovered: boolean = false
+    isHovered: boolean = false,
   ): void {
     const startX = timeMatrix.transformPoint(milestone.start);
     const endX = milestone.end ? timeMatrix.transformPoint(milestone.end) : startX;
     const hasRange = milestone.end && milestone.end !== milestone.start;
-    
+
     // Calculate milestone position - centered if there's a range, otherwise at start
     const milestoneX = hasRange ? (startX + endX) / 2 : startX;
-    
+
     // Skip if completely outside visible area
     const canvasWidth = context.canvas.width / this.pixelRatio;
     if (endX < -MILESTONE_SIZE || startX > canvasWidth + MILESTONE_SIZE) {
       return;
     }
-    
+
     // Use absolute row position
-    const y = rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2);
+    const y = rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
     const color = milestone.color || MILESTONE_DEFAULT_COLOR;
-    
+
     // If there's a range, only draw it if the visual width is sufficient
     if (hasRange) {
       const rangeWidth = endX - startX;
       const minimumRangeWidth = MILESTONE_SIZE * 1.5; // Milestone size + 50%
-      
+
       // Only render the range visual if it's wide enough
       if (rangeWidth > minimumRangeWidth) {
         context.save();
-        
+
         // Create clipping region for the range area
         const rangeHeight = ROW_HEIGHT - 8;
         const rangeY = y - rangeHeight / 2;
-        
+
         context.beginPath();
         context.rect(startX, rangeY, rangeWidth, rangeHeight);
         context.clip();
-        
+
         // Draw slanted lines pattern
         context.strokeStyle = hexToRgba(color, 0.15);
         context.lineWidth = 1;
         const lineSpacing = 6;
-        
+
         // Draw diagonal lines at 45 degree angle
         for (let i = startX - rangeHeight; i < endX + rangeHeight; i += lineSpacing) {
           context.beginPath();
@@ -176,16 +180,16 @@ export class ElementRenderer {
           context.lineTo(i + rangeHeight, rangeY + rangeHeight);
           context.stroke();
         }
-        
+
         context.restore();
-        
+
         // Draw brackets at the ends
         context.strokeStyle = color;
         context.lineWidth = 2;
         context.globalAlpha = isHovered ? HOVER_OPACITY : 1;
-        
+
         const bracketSize = 6;
-        
+
         // Left bracket
         context.beginPath();
         context.moveTo(startX + bracketSize, rangeY);
@@ -193,7 +197,7 @@ export class ElementRenderer {
         context.lineTo(startX, rangeY + rangeHeight);
         context.lineTo(startX + bracketSize, rangeY + rangeHeight);
         context.stroke();
-        
+
         // Right bracket
         context.beginPath();
         context.moveTo(endX - bracketSize, rangeY);
@@ -203,11 +207,11 @@ export class ElementRenderer {
         context.stroke();
       }
     }
-    
+
     // Draw diamond shape at the milestone position
     context.fillStyle = isHovered ? darken(color, 10) : color;
     context.globalAlpha = isHovered ? HOVER_OPACITY : 1;
-    
+
     context.beginPath();
     context.moveTo(milestoneX, y - MILESTONE_SIZE / 2);
     context.lineTo(milestoneX + MILESTONE_SIZE / 2, y);
@@ -215,22 +219,21 @@ export class ElementRenderer {
     context.lineTo(milestoneX - MILESTONE_SIZE / 2, y);
     context.closePath();
     context.fill();
-    
+
     // Draw milestone label
     if (milestone.name) {
-      this.drawLabel(
-        context,
-        milestone.name,
-        milestoneX + MILESTONE_SIZE / 2 + 4,
-        y,
-        200,
-        '#333333'
-      );
+      // Create label with instance number if applicable
+      let label = milestone.name;
+      if (milestone.instanceNumber && milestone.instanceNumber > 1) {
+        label += ` #${milestone.instanceNumber}`;
+      }
+
+      this.drawLabel(context, label, milestoneX + MILESTONE_SIZE / 2 + 4, y, 200, '#333333');
     }
-    
+
     context.globalAlpha = 1;
   }
-  
+
   /**
    * Render a group element
    */
@@ -240,33 +243,33 @@ export class ElementRenderer {
     rowIndex: number,
     timeMatrix: TimeMatrix,
     visibleRowStart: number = 0,
-    isHovered: boolean = false
+    isHovered: boolean = false,
   ): void {
     const startX = timeMatrix.transformPoint(group.start);
     const endX = timeMatrix.transformPoint(group.end);
     const width = Math.max(endX - startX, ELEMENT_MIN_WIDTH);
-    
+
     // Skip if completely outside visible area
     if (endX < 0 || startX > context.canvas.width / this.pixelRatio) {
       return;
     }
-    
+
     // Use absolute row position
     const y = rowIndex * ROW_HEIGHT + 2;
     const height = ROW_HEIGHT - 4;
-    
+
     const color = group.color || GROUP_DEFAULT_COLOR;
     context.strokeStyle = isHovered ? darken(color, 10) : color;
     context.lineWidth = 2 * this.pixelRatio;
     context.globalAlpha = isHovered ? HOVER_OPACITY : 1;
-    
+
     // Draw group bracket at actual positions
     context.beginPath();
-    
+
     // Left bracket
     const leftBracketX = startX;
     const rightBracketX = startX + width;
-    
+
     // Only draw visible parts of brackets
     if (leftBracketX >= -5 && leftBracketX <= context.canvas.width / this.pixelRatio) {
       context.moveTo(leftBracketX + 5, y);
@@ -274,7 +277,7 @@ export class ElementRenderer {
       context.lineTo(leftBracketX, y + height);
       context.lineTo(leftBracketX + 5, y + height);
     }
-    
+
     // Right bracket
     if (rightBracketX >= 0 && rightBracketX <= context.canvas.width / this.pixelRatio + 5) {
       context.moveTo(rightBracketX - 5, y);
@@ -282,27 +285,33 @@ export class ElementRenderer {
       context.lineTo(rightBracketX, y + height);
       context.lineTo(rightBracketX - 5, y + height);
     }
-    
+
     context.stroke();
-    
+
     // Draw group label - use original width, not clipped
     if (width > 30 && group.name) {
+      // Create label with instance number if applicable
+      let label = group.name;
+      if (group.instanceNumber && group.instanceNumber > 1) {
+        label += ` #${group.instanceNumber}`;
+      }
+
       this.drawLabel(
         context,
-        group.name,
+        label,
         startX + width / 2, // Use original startX and width, not clipped
         y + 2,
         width - 10, // Use original width, not clippedWidth
         color,
         'center',
         'top',
-        true // bold
+        true, // bold
       );
     }
-    
+
     context.globalAlpha = 1;
   }
-  
+
   /**
    * Render all visible elements
    */
@@ -312,12 +321,11 @@ export class ElementRenderer {
     timeMatrix: TimeMatrix,
     visibleRowStart: number,
     visibleRowEnd: number,
-    hoveredElementId?: string
+    hoveredElementId?: string,
   ): { visibleElements: GanttElementType[] } {
     // Track which elements are actually visible
     const visibleElements: GanttElementType[] = [];
-    
-    
+
     // Render all elements that fall within the visible row range
     // Always use the element's position in the original array as its row index
     elements.forEach((element, rowIndex) => {
@@ -325,11 +333,10 @@ export class ElementRenderer {
       if (rowIndex < visibleRowStart || rowIndex > visibleRowEnd) {
         return;
       }
-      
+
       // Add to visible elements list
       visibleElements.push(element);
-      
-      
+
       // Render based on element type
       switch (element.type) {
         case 'group':
@@ -339,10 +346,10 @@ export class ElementRenderer {
             rowIndex,
             timeMatrix,
             visibleRowStart,
-            element.id === hoveredElementId
+            element.id === hoveredElementId,
           );
           break;
-          
+
         case 'task':
           this.renderTask(
             context,
@@ -350,10 +357,10 @@ export class ElementRenderer {
             rowIndex,
             timeMatrix,
             visibleRowStart,
-            element.id === hoveredElementId
+            element.id === hoveredElementId,
           );
           break;
-          
+
         case 'milestone':
           this.renderMilestone(
             context,
@@ -361,15 +368,15 @@ export class ElementRenderer {
             rowIndex,
             timeMatrix,
             visibleRowStart,
-            element.id === hoveredElementId
+            element.id === hoveredElementId,
           );
           break;
       }
     });
-    
+
     return { visibleElements };
   }
-  
+
   /**
    * Draw text with ellipsis if it's too long
    */
@@ -382,33 +389,34 @@ export class ElementRenderer {
     color: string,
     textAlign: CanvasTextAlign = 'left',
     textBaseline: CanvasTextBaseline = 'middle',
-    bold: boolean = false
+    bold: boolean = false,
   ): void {
     // Dynamic font sizing based on device pixel ratio
     // The issue: Mac scaled displays report pixelRatio=2 but render larger than expected
     let fontSize = 12;
-    
+
     // Much more aggressive reduction for high-DPI displays
     if (this.pixelRatio >= 2) {
-      fontSize = 6.5;  // Very small for Retina displays
+      fontSize = 6.5; // Very small for Retina displays
     } else if (this.pixelRatio > 1.5) {
       fontSize = 9;
     } else if (this.pixelRatio > 1) {
       fontSize = 10.5;
     }
-    
-    const fontFamily = "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
-    
+
+    const fontFamily =
+      "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+
     context.save();
     context.scale(this.pixelRatio, this.pixelRatio);
-    
+
     drawText(context, text, x / this.pixelRatio, y / this.pixelRatio, maxWidth / this.pixelRatio, {
       font: `${bold ? 'bold ' : ''}${fontSize}px ${fontFamily}`,
       fillStyle: color,
       textAlign,
-      textBaseline
+      textBaseline,
     });
-    
+
     context.restore();
   }
 }

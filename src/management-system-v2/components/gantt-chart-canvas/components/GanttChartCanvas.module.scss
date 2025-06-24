@@ -170,11 +170,11 @@
 .selectedItem {
   background-color: rgba(24, 144, 255, 0.1) !important;
   border-left: 3px solid #1890ff;
-  
+
   &:hover {
     background-color: rgba(24, 144, 255, 0.15) !important;
   }
-  
+
   .infoButtonColumn {
     margin-left: -3px; // Compensate for the 3px left border
   }
@@ -215,6 +215,20 @@
   justify-content: center;
 }
 
+.instanceColumn {
+  width: 30px;
+  max-width: 30px;
+  min-width: 30px;
+  padding: 0 4px;
+  border-left: 1px solid #f0f0f0;
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .extraInfoColumn {
   flex: 1;
   padding: 0 8px;
@@ -229,7 +243,6 @@
 .controlButton {
   padding: 4px 8px;
   height: 30px;
-  width: 30px;
   background-color: #fff;
   border: 1px solid #d9d9d9;
   border-radius: 2px;
@@ -291,27 +304,14 @@
 .zoomValue {
   font-size: 12px;
   color: #666;
-  min-width: 35px;
+  margin-right: 3px;
 }
 
 .timeUnitDisplay {
-  margin-left: auto;
-  padding: 4px 12px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
   font-size: 12px;
-  color: #555;
 }
 
 .timeUnitValue {
   font-weight: 600;
   color: #1890ff;
-}
-
-.debugInfo {
-  margin-left: auto;
-  font-size: 12px;
-  color: #666;
-  display: flex;
-  gap: 8px;
 }

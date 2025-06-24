@@ -34,19 +34,36 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [nowTimestamp, setNowTimestamp] = useState<number>(0);
-  const [testSettingValue, setTestSettingValue] = useState<boolean | null>(null);
+  const [ganttSettings, setGanttSettings] = useState<{
+    enabled: boolean;
+    positioningLogic: 'earliest-occurrence' | 'every-occurrence';
+    loopDepth: number;
+  }>({
+    enabled: true,
+    positioningLogic: 'earliest-occurrence',
+    loopDepth: 1
+  });
   
   const { spaceId } = useEnvironment();
 
-  // Fetch timeline view settings
+  // Fetch gantt view settings
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const settings = await getSpaceSettingsValues(spaceId, 'process-documentation');
-        setTestSettingValue(settings?.['timeline-view']?.test ?? false);
+        const ganttViewSettings = settings?.['gantt-view'];
+        setGanttSettings({
+          enabled: ganttViewSettings?.enabled ?? true,
+          positioningLogic: ganttViewSettings?.['positioning-logic'] ?? 'earliest-occurrence',
+          loopDepth: ganttViewSettings?.['loop-depth'] ?? 1
+        });
       } catch (error) {
-        console.error('Failed to fetch timeline view settings:', error);
-        setTestSettingValue(false);
+        console.error('Failed to fetch gantt view settings:', error);
+        setGanttSettings({
+          enabled: true,
+          positioningLogic: 'earliest-occurrence',
+          loopDepth: 1
+        });
       }
     };
     
@@ -69,7 +86,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         const transformationTimestamp = Date.now();
         setNowTimestamp(transformationTimestamp);
 
-        const transformationResult = transformBPMNToGantt(definitions, transformationTimestamp);
+        const transformationResult = transformBPMNToGantt(definitions, transformationTimestamp, ganttSettings.positioningLogic, ganttSettings.loopDepth);
 
         // Calculate total elements in the process (excluding sequence flows)
         const flowElements = definitions.rootElements?.[0]?.flowElements || [];
@@ -101,7 +118,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
       // Mark that we're in the cleanup phase
       isUnmountingRef.current = true;
     };
-  }, [process.bpmn, disableTimelineView]);
+  }, [process.bpmn, disableTimelineView, ganttSettings.positioningLogic, ganttSettings.loopDepth]);
 
   // Handle component unmount separately from BPMN changes
   useEffect(() => {
@@ -131,8 +148,10 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         </div>
         <div style={{ fontSize: '14px', color: '#666', fontWeight: 400 }}>
           {isLoading && 'Loading...'}
-          {testSettingValue !== null && (
-            <div>Test Setting: {testSettingValue ? 'Enabled' : 'Disabled'}</div>
+          {!isLoading && (
+            <div>
+              Mode: {ganttSettings.positioningLogic === 'every-occurrence' ? 'Every Occurrence' : 'Earliest Occurrence'}
+            </div>
           )}
         </div>
       </div>
@@ -292,6 +311,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
               elements={ganttData.elements}
               dependencies={ganttData.dependencies}
               currentDateMarkerTime={nowTimestamp}
+              showInstanceColumn={ganttSettings.positioningLogic === 'every-occurrence'}
               options={{
                 showControls: true,
                 autoFitToData: true,

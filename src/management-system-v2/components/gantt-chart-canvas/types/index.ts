@@ -21,6 +21,8 @@ export interface GanttElement {
   name?: string; // Optional - will display id if not provided
   color?: string;
   elementType?: string; // Optional element type description to display in second column
+  instanceNumber?: number; // For duplicate elements in path-based traversal
+  totalInstances?: number; // Total number of instances for this element
   type: 'task' | 'milestone' | 'group'; // Extensible for future element types
 }
 

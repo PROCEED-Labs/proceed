@@ -33,6 +33,7 @@ import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { Process } from '@/lib/data/process-schema';
 import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
 import { TimerEventButton, isTimerEvent } from './planned-duration-input';
@@ -67,6 +68,24 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
     useState<ComponentProps<typeof ShareModal>['defaultOpenTab']>(undefined);
 
   const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
+  
+  const [ganttEnabled, setGanttEnabled] = useState(true);
+  
+  // Fetch gantt view settings
+  useEffect(() => {
+    const fetchGanttSettings = async () => {
+      try {
+        const settings = await getSpaceSettingsValues(environment.spaceId, 'process-documentation');
+        const ganttViewSettings = settings?.['gantt-view'];
+        setGanttEnabled(ganttViewSettings?.enabled ?? true);
+      } catch (error) {
+        console.error('Failed to fetch gantt view settings:', error);
+        setGanttEnabled(true);
+      }
+    };
+    
+    fetchGanttSettings();
+  }, [environment.spaceId]);
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -344,10 +363,10 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                   />
                 </Tooltip>
               )}
-              {env.PROCEED_PUBLIC_TIMELINE_VIEW === true && (
-                <Tooltip title="Switch to timeline mode">
+              {env.PROCEED_PUBLIC_TIMELINE_VIEW === true && ganttEnabled && (
+                <Tooltip title="Switch to Gantt view">
                   <Button
-                    icon={<Icon aria-label="xml-sign" component={SvgGantt} />}
+                    icon={<Icon aria-label="gantt-view" component={SvgGantt} />}
                     onClick={enableTimelineView}
                   ></Button>
                 </Tooltip>

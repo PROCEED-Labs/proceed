@@ -72,9 +72,9 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
               render: (_, record) => (
                 <Space size="small">
                   {record.defaultValue === 'true'
-                    ? 'On'
+                    ? 'On/True'
                     : record.defaultValue === 'false'
-                      ? 'Off'
+                      ? 'Off/False'
                       : record.defaultValue}
                 </Space>
               ),

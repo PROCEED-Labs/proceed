@@ -18,21 +18,21 @@ class NativeMQTT extends NativeModule {
     this.connectCallbacks = {};
   }
 
-  async executeCommand(command, args, send) {
+  executeCommand(command, args, send) {
     if (command === 'messaging_publish') {
-      return await this.publish(...args);
+      return this.publish(...args);
     }
     if (command === 'messaging_connect') {
-      await this.connect(...args, true);
+      return this.connect(...args, true).then(() => {});
     }
     if (command === 'messaging_disconnect') {
-      await this.disconnect(...args, true);
+      return this.disconnect(...args, true);
     }
     if (command === 'messaging_subscribe') {
-      await this.subscribe(...args, send);
+      return this.subscribe(...args, send);
     }
     if (command === 'messaging_unsubscribe') {
-      await this.unsubscribe(...args);
+      return this.unsubscribe(...args);
     }
     if (command === 'messaging_on_connect') {
       this.addConnectHandler(...args, send);
@@ -158,7 +158,6 @@ class NativeMQTT extends NativeModule {
 
     // store the client so we don't try to reconnect for future publish or subscribe calls
     this.connections[connectionId] = client;
-
     return client;
   }
 

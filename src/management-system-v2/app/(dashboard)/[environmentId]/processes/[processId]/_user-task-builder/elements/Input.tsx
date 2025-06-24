@@ -1,11 +1,11 @@
 import { useEffect, useId, useState } from 'react';
 
-import { Select, Input as AntInput } from 'antd';
+import { Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
-import { ContextMenu, Overlay, Setting } from './utils';
+import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useBuilderStateStore from '../use-builder-state-store';
 import { useCanEdit } from '../../modeler';
@@ -214,17 +214,13 @@ export const InputSettings = () => {
           />
         }
       />
-      <Setting
-        label="Variable"
-        control={
-          <AntInput
-            value={variable}
-            onChange={(e) => {
-              setProp((props: InputProps) => {
-                props.variable = e.target.value;
-              });
-            }}
-          />
+
+      <VariableSetting
+        variable={variable}
+        onChange={(newVariable) =>
+          setProp((props: InputProps) => {
+            props.variable = newVariable;
+          })
         }
       />
     </>

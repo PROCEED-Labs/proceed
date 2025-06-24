@@ -1,8 +1,7 @@
 import 'server-only';
 
 import { Engine } from './machines';
-import { engineRequest } from './endpoints';
-import { version } from 'os';
+import { engineRequest } from './endpoints/index';
 
 export type TaskListEntry = {
   id: string;

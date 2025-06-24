@@ -1,5 +1,5 @@
 const NativeModule = require('@proceed/native-module');
-const mqtt = require('async-mqtt');
+const mqtt = require('mqtt');
 
 class NativeMQTT extends NativeModule {
   constructor() {
@@ -10,9 +10,12 @@ class NativeMQTT extends NativeModule {
       'messaging_disconnect',
       'messaging_subscribe',
       'messaging_unsubscribe',
+      'messaging_on_connect',
     ];
 
     this.connections = {};
+
+    this.connectCallbacks = {};
   }
 
   async executeCommand(command, args, send) {
@@ -31,7 +34,14 @@ class NativeMQTT extends NativeModule {
     if (command === 'messaging_unsubscribe') {
       await this.unsubscribe(...args);
     }
+    if (command === 'messaging_on_connect') {
+      this.addConnectHandler(...args, send);
+    }
     return undefined;
+  }
+
+  _getConnectionId(url, connectionOptions) {
+    return `${url}-${connectionOptions.clientId}`;
   }
 
   /**
@@ -90,10 +100,11 @@ class NativeMQTT extends NativeModule {
     connectionOptions = JSON.parse(connectionOptions || '{}');
     url = this._extendUrlAndConnectionOptions(url, connectionOptions);
 
+    const connectionId = this._getConnectionId(url, connectionOptions);
     // check if there is already a connection for the given url
     // extendUrlAndConnectionOptions(...) will put the user auth into the url so we can differentiate between connections with different auth data to the same mqtt broker
-    if (this.connections[`${url}-${connectionOptions.clientId}`]) {
-      return this.connections[`${url}-${connectionOptions.clientId}`];
+    if (this.connections[connectionId]) {
+      return this.connections[connectionId];
     }
 
     // if the connectionOptions contains a will message that is a stringified JSON (the mqtt library expect the payload to be a string) the JSON.parse at the start of the function will have transformed it to an object
@@ -128,8 +139,25 @@ class NativeMQTT extends NativeModule {
       });
     });
 
+    let connected = client.connected;
+    if (connected) {
+      this.onConnect(connectionId);
+    }
+    client.on('connect', () => {
+      if (!connected) {
+        connected = true;
+        this.onConnect(connectionId);
+      }
+    });
+
+    client.on('close', () => {
+      if (connected) {
+        connected = false;
+      }
+    });
+
     // store the client so we don't try to reconnect for future publish or subscribe calls
-    this.connections[`${url}-${connectionOptions.clientId}`] = client;
+    this.connections[connectionId] = client;
 
     return client;
   }
@@ -146,15 +174,16 @@ class NativeMQTT extends NativeModule {
     url = this._extendUrlAndConnectionOptions(url, connectionOptions);
 
     // get the connection that was stored for this address and login info combination
-    const client = this.connections[`${url}-${connectionOptions.clientId}`];
+    const client = this.connections[this._getConnectionId(url, connectionOptions)];
 
     if (client) {
       const hasSubscriptions = Object.keys(client.subscriptionCallbacks).length;
 
       if (forceClose || (!client.keepOpen && !hasSubscriptions)) {
         // close the connection and remove it
+        const connectionId = this._getConnectionId(url, connectionOptions);
         await client.end();
-        delete this.connections[`${url}-${connectionOptions.clientId}`];
+        delete this.connections[connectionId];
       }
     }
   }
@@ -193,7 +222,7 @@ class NativeMQTT extends NativeModule {
     await connection.subscribe(topic, {
       qos: 2, // default to qos 2 (ensures exactly one receival)
       ...subscriptionOptions, // allow user defined options (e.g. qos 0/1)
-      subscriptionId: undefined, // the subscriptionId is only for our internal logic and should not be passed to async-mqtt
+      subscriptionId: undefined, // the subscriptionId is only for our internal logic and should not be passed to mqtt
     });
 
     // remember the subscription so we are able to unsubscribe in the future
@@ -213,8 +242,8 @@ class NativeMQTT extends NativeModule {
     let connectionOptions = JSON.parse(originalConnectionOptions || '{}');
     let url = this._extendUrlAndConnectionOptions(originalUrl, connectionOptions);
 
-    if (this.connections[`${url}-${connectionOptions.clientId}`]) {
-      const connection = this.connections[`${url}-${connectionOptions.clientId}`];
+    if (this.connections[this._getConnectionId(url, connectionOptions)]) {
+      const connection = this.connections[this._getConnectionId(url, connectionOptions)];
       if (
         !connection.subscriptionCallbacks[topic] ||
         !connection.subscriptionCallbacks[topic][subscriptionId]
@@ -233,6 +262,24 @@ class NativeMQTT extends NativeModule {
 
       // try to clean up the connection (will do nothing if the connection is kept open by another subscription or for another reason [e.g a will message])
       await this.disconnect(originalUrl, originalConnectionOptions);
+    }
+  }
+
+  addConnectHandler(url, connectionOptions, cb) {
+    connectionOptions = JSON.parse(connectionOptions || '{}');
+    url = this._extendUrlAndConnectionOptions(url, connectionOptions);
+
+    const connectionId = this._getConnectionId(url, connectionOptions);
+    if (this.connectCallbacks[connectionId]) {
+      this.connectCallbacks[connectionId].push(cb);
+    } else {
+      this.connectCallbacks[connectionId] = [cb];
+    }
+  }
+
+  onConnect(connectionId) {
+    if (this.connectCallbacks[connectionId]) {
+      this.connectCallbacks[connectionId].forEach((cb) => cb());
     }
   }
 }

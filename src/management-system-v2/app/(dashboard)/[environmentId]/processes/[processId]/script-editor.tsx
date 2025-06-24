@@ -40,6 +40,8 @@ import { useCanEdit } from './modeler';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import useProcessVariables from './use-process-variables';
+import ProcessVariableForm from './variable-definition/process-variable-form';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 
 type ScriptEditorProps = {
@@ -66,6 +68,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const app = App.useApp();
 
   const blocklyRef = useRef<BlocklyEditorRefType>(null);
+
+  const { variables, addVariable } = useProcessVariables();
+  const [showVariableForm, setShowVariableForm] = useState(false);
 
   const filename = useMemo(() => {
     if (modeler && selectedElement && selectedElement.type === 'bpmn:ScriptTask') {
@@ -124,7 +129,17 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       lib: ['es2017'],
     });
 
-    monacoRef.current.languages.typescript.javascriptDefaults.addExtraLib(languageExtension);
+    monacoRef.current.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: false,
+      noSyntaxValidation: false,
+      diagnosticCodesToIgnore: [
+        1108, //return not inside function,
+        1375, //'await' expressions are only allowed at the top level of a file when that file is a module
+        1378, //Top-level 'await' expressions are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher
+      ],
+    });
+
+    monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(languageExtension);
     monacoRef.current.editor.createModel(languageExtension, 'typescript');
   };
 
@@ -397,10 +412,10 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                       <List
                         size="small"
                         header={<Search size="middle" placeholder="Search for variables"></Search>}
-                        dataSource={['VariableA', 'VariableB', 'VariableC']}
+                        dataSource={variables}
                         renderItem={(item) => (
                           <List.Item style={{ padding: '0.75rem 0' }}>
-                            <span>{item}</span>
+                            <span>{item.name}</span>
                             <Space.Compact size="small">
                               <Button
                                 icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
@@ -410,7 +425,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                                     monacoEditorRef.current.executeEdits('', [
                                       {
                                         range: editorPositionRange,
-                                        text: `variable.set('${item}', '');\n`,
+                                        text: `variable.set('${item.name}', );\n`,
                                       },
                                     ]);
                                   }
@@ -427,7 +442,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                                     monacoEditorRef.current.executeEdits('', [
                                       {
                                         range: editorPositionRange,
-                                        text: `variable.get('${item}');\n`,
+                                        text: `variable.get('${item.name}')\n`,
                                       },
                                     ]);
                                   }
@@ -439,11 +454,22 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                             </Space.Compact>
                           </List.Item>
                         )}
-                      ></List>
+                      />
+                      <Button onClick={() => setShowVariableForm(true)}>Add Variable</Button>
                     </div>
                   )}
                 </Col>
               )}
+
+              <ProcessVariableForm
+                open={showVariableForm}
+                variables={variables}
+                onSubmit={(newVar) => {
+                  addVariable(newVar);
+                  setShowVariableForm(false);
+                }}
+                onCancel={() => setShowVariableForm(false)}
+              />
 
               <Col span={20}>
                 {selectedEditor === 'JS' ? (

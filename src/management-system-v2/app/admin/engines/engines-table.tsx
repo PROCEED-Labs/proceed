@@ -4,12 +4,19 @@ import { useState } from 'react';
 import ElementList from '@/components/item-list-view';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
-import { Engine } from '@/lib/engines/machines';
+import Link from 'next/link';
+import { Engine as DBEngine } from '@prisma/client';
 
-export default function EnginesTable({ engines }: { engines: Engine[] }) {
+export default function EnginesTable({ engines: _engines }: { engines: DBEngine[] }) {
+  const engines = _engines.map((engine) => ({
+    ...engine,
+    name: engine.id,
+  }));
+
   const { filteredData, searchQuery, setSearchQuery } = useFuzySearch({
     data: engines,
-    keys: ['id', 'type'],
+    keys: ['name'],
+    highlightedKeys: ['name'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
@@ -26,7 +33,7 @@ export default function EnginesTable({ engines }: { engines: Engine[] }) {
         }}
       />
 
-      <ElementList
+      <ElementList<(typeof filteredData)[0]>
         data={filteredData}
         elementSelection={{
           selectedElements: selectedEngines,
@@ -35,13 +42,17 @@ export default function EnginesTable({ engines }: { engines: Engine[] }) {
         columns={[
           {
             title: 'Engine ID',
-            dataIndex: 'id',
-            render: (_, engine) => engine.id,
+            dataIndex: 'name',
+            render: (_, engine) => (
+              <Link href={`/admin/engines/${engine.id}`} style={{ color: 'black' }}>
+                {engine.name.highlighted}
+              </Link>
+            ),
           },
           {
             title: 'Type',
             dataIndex: 'type',
-            render: (_, engine) => engine.type,
+            render: (_, engine) => (engine.address.startsWith('mqtt') ? 'MQTT' : 'HTTP'),
           },
         ]}
       />

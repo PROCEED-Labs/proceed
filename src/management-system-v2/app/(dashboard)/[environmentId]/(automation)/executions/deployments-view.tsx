@@ -17,6 +17,7 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import { SpaceEngine } from '@/lib/engines/machines';
 import { userError } from '@/lib/user-error';
 import { removeDeployment as serverRemoveDeployment } from '@/lib/engines/server-actions';
+import { useQueryClient } from '@tanstack/react-query';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -40,6 +41,7 @@ const DeploymentsView = ({
   const app = App.useApp();
   const space = useEnvironment();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: deployedProcesses ?? [],
@@ -69,13 +71,17 @@ const DeploymentsView = ({
 
           if (!latestVersion) throw userError('Process has no versions').error;
 
-          return await serverDeployProcess(
+          const res = await serverDeployProcess(
             process.id,
             latestVersion.id,
             space.spaceId,
             'dynamic',
             forceEngine,
           );
+          queryClient.removeQueries({
+            queryKey: ['processDeployments', space.spaceId, process.id],
+          });
+          return res;
         },
         onSuccess: () => {
           app.message.success('Process deployed successfully');

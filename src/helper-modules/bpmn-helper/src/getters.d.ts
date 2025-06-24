@@ -45,6 +45,39 @@ export type DefinitionsInfos = {
   creationDate?: string;
 };
 /**
+ * An object containing information about a variable that might exist during the instance of a process
+ */
+export type Variable = {
+  /**
+   * - variable name
+   */
+  name: string;
+  /**
+   * - a description of the variable
+   */
+  description?: string;
+  /**
+   * - the type of the value of the variable
+   */
+  dataType: string;
+  /**
+   * - the value that the variable should have when none is manually set at startup
+   */
+  defaultValue?: string;
+  /**
+   * - if the variable has to be initialized when an instance is started
+   */
+  requiredAtInstanceStartup?: boolean;
+  /**
+   * - enumeration of the values that the variable is allowed to have (a string with values separated by ';')
+   */
+  enum?: string;
+  /**
+   * - if the variable can be reassigned after having been set once
+   */
+  const?: boolean;
+};
+/**
  * An object containing properties from defined companies
  */
 export type CompanyInfos = {
@@ -318,6 +351,35 @@ export function getProcessDocumentation(bpmn: string | object): Promise<string>;
  * @returns {string} the documentation content
  */
 export function getProcessDocumentationByObject(processObject: object): string;
+/**
+ * An object containing information about a variable that might exist during the instance of a process
+ *
+ * @typedef Variable
+ *
+ * @type {object}
+ * @property {string} name - variable name
+ * @property {string} [description] - a description of the variable
+ * @property {string} dataType - the type of the value of the variable
+ * @property {string} [defaultValue] - the value that the variable should have when none is manually set at startup
+ * @property {boolean} [requiredAtInstanceStartup] - if the variable has to be initialized when an instance is started
+ * @property {string} [enum] - enumeration of the values that the variable is allowed to have (a string with values separated by ';')
+ * @property {boolean} [const] - if the variable can be reassigned after having been set once
+ */
+/**
+ * Parses the variables from a bpmn-moddle element (variables are only expected to be defined on process elements)
+ *
+ * @param {object} element
+ * @returns {Variable[]} array with all variables
+ */
+export function getVariablesFromElement(element: object): Variable[];
+/**
+ * Get the variables for given element id (variables are only expected to be defined on process elements)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} elementId the id of the element
+ * @returns {Variable[]} array with all variables
+ */
+export function getVariablesFromElementById(bpmn: string | object, elementId: string): Variable[];
 /**
  * Get the file names for the start forms of all processes,
  * (The attribute 'uiForNontypedStartEventsFileName' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)

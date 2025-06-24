@@ -1,37 +1,57 @@
-import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { Result, Skeleton } from 'antd';
+import { Skeleton, Spin } from 'antd';
 import { notFound, redirect } from 'next/navigation';
-import { Suspense } from 'react';
-import EnginesTable from './engines-table';
-import { getMSConfig } from '@/lib/ms-config/ms-config';
+import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
 import { getDbEngines } from '@/lib/data/db/engines';
+import { getCurrentUser } from '@/components/auth';
+import { Suspense } from 'react';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
+import { Engine as DBEngine } from '@prisma/client';
 
-async function Engines() {
-  const { session, systemAdmin } = await getCurrentUser();
-  if (!session || !systemAdmin) redirect('/');
+const getEngineStatus = async (engine: DBEngine) => {
+  const engines = await savedEnginesToEngines([engine]);
 
-  try {
-    const savedEngines = await getDbEngines(null, undefined, systemAdmin);
-
-    return <EnginesTable engines={savedEngines} />;
-  } catch (e) {
-    return <Result status="500" title="Error" subTitle="Couldn't fetch engines" />;
+  if (engines.length === 0) {
+    return { online: false } as const;
+  } else {
+    return { online: true, engines } as const;
   }
-}
+};
 
-export default async function EnginesPage() {
+const EnginesPage = async () => {
   const msConfig = await getMSConfig();
-
   if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
+  const { systemAdmin } = await getCurrentUser();
+  if (!systemAdmin) return redirect('/');
+
+  const engines = await getDbEngines(null, undefined, systemAdmin);
+
+  const enginesWithStatus = engines.map((engine) => {
+    return {
+      ...engine,
+      status: (
+        <Suspense fallback={<Spin spinning />}>
+          <EngineStatus engineId={engine.id} status={getEngineStatus(engine)} />
+        </Suspense>
+      ),
+    };
+  });
+
+  return (
+    <SavedEnginesList savedEngines={enginesWithStatus} engineDashboardLinkPrefix="/admin/engines" />
+  );
+};
+
+const Page = () => {
   return (
     <Content title="Engines">
-      <Suspense fallback={<Skeleton active />}>
-        <Engines />
+      <Suspense fallback={<Skeleton />}>
+        <EnginesPage />
       </Suspense>
     </Content>
   );
-}
+};
 
-export const dynamic = 'force-dynamic';
+export default Page;

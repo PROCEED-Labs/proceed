@@ -44,18 +44,29 @@ export function extractDuration(element: BPMNBaseElement): number {
   }
 
   for (const extension of element.extensionElements.values) {
+    // Check for direct timePlannedDuration property on extension
+    if (extension.timePlannedDuration && extension.timePlannedDuration.value) {
+      const durationValue = extension.timePlannedDuration.value;
+      return parseISO8601Duration(durationValue);
+    }
+
+    // Check in $children for nested structure
     if (extension.$children) {
       for (const child of extension.$children) {
-        // Check for proceed:timePlannedDuration in both possible formats
-        if (child.$type === 'proceed:timePlannedDuration' && (child.body || child.$body)) {
-          const durationValue = child.body || child.$body;
-          return parseISO8601Duration(durationValue);
+        // Check for proceed:timePlannedDuration in multiple formats
+        if (child.$type === 'proceed:timePlannedDuration') {
+          const durationValue = child.value || child.body || child.$body;
+          if (durationValue) {
+            return parseISO8601Duration(durationValue);
+          }
         }
         
         // Legacy check with name property
-        if (child.name === 'proceed:timePlannedDuration' && (child.body || child.$body)) {
-          const durationValue = child.body || child.$body;
-          return parseISO8601Duration(durationValue);
+        if (child.name === 'proceed:timePlannedDuration') {
+          const durationValue = child.value || child.body || child.$body;
+          if (durationValue) {
+            return parseISO8601Duration(durationValue);
+          }
         }
       }
     }

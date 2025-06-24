@@ -9,16 +9,16 @@ import { IoArrowBack } from 'react-icons/io5';
 import styles from './tasklist.module.scss';
 import ScrollBar from '@/components/scrollbar';
 
-import UserTaskView from './user-task-view';
+import UserTaskView, { ExtendedTaskListEntry } from './user-task-view';
 import { ItemType } from 'antd/es/menu/interface';
 import {
   FilterOrSortButton,
   PerformerSelection,
   SliderRangeWithText,
+  OwnerSelection,
   StatusSelection,
   stateOrder,
 } from './components';
-import { UserTask } from '@/lib/user-task-schema';
 
 const sortValues = ['startTime', 'deadline', 'progress', 'priority', 'state'] as const;
 type SortValue = (typeof sortValues)[number];
@@ -30,11 +30,17 @@ const sortValueMap = {
   state: 'state',
 } as const;
 
-const Tasklist = ({ userTasks }: { userTasks: UserTask[] }) => {
+type TasklistProps = {
+  userTasks: ExtendedTaskListEntry[];
+  userId: string;
+};
+
+const Tasklist: React.FC<TasklistProps> = ({ userTasks, userId }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
   const [stateSelectionFilter, setStateSelectionFilter] = useState(['READY', 'ACTIVE', 'PAUSED']);
+  const [ownerSelectionFilter, setOwnerSelectionFilter] = useState<string[]>([]);
   const [priorityRangeFilter, setPriorityRangeFilter] = useState<[number, number]>([1, 10]);
   const [progressRangeFilter, setProgressRangeFilter] = useState<[number, number]>([0, 100]);
   const [usersFilter, setUsersFilter] = useState<string[]>([]);
@@ -51,6 +57,9 @@ const Tasklist = ({ userTasks }: { userTasks: UserTask[] }) => {
       return (
         uT.id === selectedUserTaskID ||
         (stateSelectionFilter.includes(uT.state) &&
+          (ownerSelectionFilter.includes('unassigned') ||
+            uT.potentialOwners?.user?.length ||
+            uT.potentialOwners?.roles?.length) &&
           uT.priority >= priorityRangeFilter[0] &&
           uT.priority <= priorityRangeFilter[1] &&
           uT.progress >= progressRangeFilter[0] &&
@@ -60,7 +69,7 @@ const Tasklist = ({ userTasks }: { userTasks: UserTask[] }) => {
 
     const getSortFunction = (name: SortValue) => {
       const key = sortValueMap[name];
-      return (a: UserTask, b: UserTask) => {
+      return (a: ExtendedTaskListEntry, b: ExtendedTaskListEntry) => {
         // tiebreak equal value by comparing the startTime
         if (a[key] === b[key]) {
           return selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
@@ -81,7 +90,14 @@ const Tasklist = ({ userTasks }: { userTasks: UserTask[] }) => {
     showingUserTasks.sort(getSortFunction(selectedSortItem.value));
 
     return showingUserTasks;
-  }, [stateSelectionFilter, priorityRangeFilter, progressRangeFilter, selectedSortItem, userTasks]);
+  }, [
+    stateSelectionFilter,
+    ownerSelectionFilter,
+    priorityRangeFilter,
+    progressRangeFilter,
+    selectedSortItem,
+    userTasks,
+  ]);
 
   const itemsPerPage = 10;
   const userTasksToDisplay = useMemo(() => {
@@ -134,6 +150,12 @@ const Tasklist = ({ userTasks }: { userTasks: UserTask[] }) => {
         onRangeChange={(selectedRangeValues) => {
           setProgressRangeFilter(selectedRangeValues);
         }}
+      />
+    ),
+    Owners: (
+      <OwnerSelection
+        selectedValues={ownerSelectionFilter}
+        onSelectionChange={(selectedValues) => setOwnerSelectionFilter(selectedValues)}
       />
     ),
     Users: (
@@ -247,7 +269,9 @@ const Tasklist = ({ userTasks }: { userTasks: UserTask[] }) => {
           </div>
         )}
       </div>
-      {(selectedUserTaskID ?? breakpoint.xl) && <UserTaskView task={selectedUserTask} />}
+      {(selectedUserTaskID ?? breakpoint.xl) && (
+        <UserTaskView userId={userId} task={selectedUserTask} />
+      )}
     </div>
   );
 };

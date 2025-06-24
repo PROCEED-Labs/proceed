@@ -333,7 +333,12 @@ const Wrapper = ({
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      {timelineViewActive ? timelineComponent : modelerComponent}
+      <div style={{ display: timelineViewActive ? 'none' : 'block', height: '100%' }}>
+        {modelerComponent}
+      </div>
+      <div style={{ display: timelineViewActive ? 'block' : 'none', height: '100%' }}>
+        {timelineViewActive && timelineComponent}
+      </div>
       {minimized ? (
         <Overlay processId={processId as string} onClose={() => setClosed(true)} />
       ) : null}

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import Modeler from 'bpmn-js/lib/Modeler';
 import { Button, Collapse, Card } from 'antd';
 import { CloseOutlined, WarningOutlined } from '@ant-design/icons';
 import { GanttChartCanvas } from '@/components/gantt-chart-canvas';
@@ -9,6 +8,7 @@ import type { GanttElementType, GanttDependency } from '@/components/gantt-chart
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { useEnvironment } from '@/components/auth-can';
+import { moddle } from '@proceed/bpmn-helper';
 
 // Import our separated modules
 import type {
@@ -21,7 +21,6 @@ import { transformBPMNToGantt } from './transform';
 import { formatGanttElementForLog, formatDependencyForLog } from './utils';
 
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
-  const bpmnjsModelerRef = useRef<Modeler | null>(null);
   const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
   const isUnmountingRef = useRef(false);
 
@@ -38,11 +37,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     enabled: boolean;
     positioningLogic: 'earliest-occurrence' | 'every-occurrence';
     loopDepth: number;
-  }>({
-    enabled: true,
-    positioningLogic: 'earliest-occurrence',
-    loopDepth: 1
-  });
+  } | null>(null); // Start with null to indicate settings not loaded
   
   const { spaceId } = useEnvironment();
 
@@ -74,25 +69,36 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     // Reset unmounting flag when component mounts/re-mounts
     isUnmountingRef.current = false;
     
-    const bpmnjsModeler = new Modeler();
-    bpmnjsModelerRef.current = bpmnjsModeler;
+    // Don't parse until settings are loaded
+    if (!ganttSettings) {
+      return;
+    }
+    
+    const parseAndTransform = async () => {
+      try {
+        // Parse BPMN XML using moddle
+        const { rootElement: definitions, warnings } = await moddle.fromXML(process.bpmn);
 
-    bpmnjsModeler
-      .importXML(process.bpmn)
-      .then(() => {
-        const definitions = bpmnjsModeler.getDefinitions() as BPMNDefinitions;
+        // Check if component is still mounted
+        if (isUnmountingRef.current) {
+          return;
+        }
 
         // Use a single timestamp for both transformation and red line marker
         const transformationTimestamp = Date.now();
         setNowTimestamp(transformationTimestamp);
 
-        const transformationResult = transformBPMNToGantt(definitions, transformationTimestamp, ganttSettings.positioningLogic, ganttSettings.loopDepth);
+        const transformationResult = transformBPMNToGantt(
+          definitions as BPMNDefinitions, 
+          transformationTimestamp, 
+          ganttSettings.positioningLogic, 
+          ganttSettings.loopDepth
+        );
 
-        // Calculate total elements in the process (excluding sequence flows)
-        const flowElements = definitions.rootElements?.[0]?.flowElements || [];
-        const totalElementCount = flowElements.filter(
-          (element) => element.$type !== 'bpmn:SequenceFlow',
-        ).length;
+        // Check again if component is still mounted before setting state
+        if (isUnmountingRef.current) {
+          return;
+        }
 
         setGanttData({
           elements: transformationResult.elements,
@@ -101,24 +107,31 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         setErrors(transformationResult.errors);
         setDefaultDurations(transformationResult.defaultDurations);
         setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error('Failed to import BPMN:', error);
+      } catch (error) {
+        // Check if component is still mounted
+        if (isUnmountingRef.current) {
+          return;
+        }
+        
+        console.error('Failed to parse BPMN:', error);
         setErrors([
           {
             elementId: 'import',
             elementType: 'BPMN',
-            reason: 'Failed to import BPMN XML',
+            reason: 'Failed to parse BPMN XML',
           },
         ]);
         setIsLoading(false);
-      });
+      }
+    };
+
+    parseAndTransform();
 
     return () => {
       // Mark that we're in the cleanup phase
       isUnmountingRef.current = true;
     };
-  }, [process.bpmn, disableTimelineView, ganttSettings.positioningLogic, ganttSettings.loopDepth]);
+  }, [process.bpmn, ganttSettings]);
 
   // Handle component unmount separately from BPMN changes
   useEffect(() => {
@@ -147,8 +160,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           BPMN Timeline View
         </div>
         <div style={{ fontSize: '14px', color: '#666', fontWeight: 400 }}>
-          {isLoading && 'Loading...'}
-          {!isLoading && (
+          {(isLoading || !ganttSettings) && 'Loading...'}
+          {!isLoading && ganttSettings && (
             <div>
               Mode: {ganttSettings.positioningLogic === 'every-occurrence' ? 'Every Occurrence' : 'Earliest Occurrence'}
             </div>
@@ -310,7 +323,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         )}
 
         {/* Gantt Chart */}
-        {!isLoading && ganttData.elements.length > 0 && (
+        {!isLoading && ganttSettings && ganttData.elements.length > 0 && (
           <div style={{ flex: 1, overflow: 'hidden', minHeight: '400px' }}>
             <GanttChartCanvas
               elements={ganttData.elements}
@@ -326,8 +339,15 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           </div>
         )}
 
+        {/* Loading state while settings are being fetched */}
+        {!ganttSettings && (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#666', flex: 1 }}>
+            Loading settings...
+          </div>
+        )}
+
         {/* No data message */}
-        {!isLoading && ganttData.elements.length === 0 && errors.length === 0 && (
+        {!isLoading && ganttSettings && ganttData.elements.length === 0 && errors.length === 0 && (
           <div style={{ padding: '40px', textAlign: 'center', color: '#666', flex: 1 }}>
             No supported elements found in the BPMN process.
           </div>

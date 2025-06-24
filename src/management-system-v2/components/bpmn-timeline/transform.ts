@@ -344,6 +344,7 @@ export function transformBPMNToGantt(
   traversalMode: 'earliest-occurrence' | 'every-occurrence' = 'earliest-occurrence',
   loopDepth: number = 1
 ): TransformationResult {
+  console.log('=== transformBPMNToGantt called ===');
   const ganttElements: GanttElementType[] = [];
   const ganttDependencies: GanttDependency[] = [];
   const errors: TransformationError[] = [];
@@ -394,11 +395,25 @@ export function transformBPMNToGantt(
     
     // Assign colors based on connected components
     const elementColors = assignFlowColors(supportedElements);
-    elementToComponent = findConnectedComponents(supportedElements);
+    const originalElementToComponent = findConnectedComponents(supportedElements);
+    
+    // Debug: Check if original mapping is working
+    console.log('\n=== SUPPORTED ELEMENTS ===');
+    console.log('Count:', supportedElements.length);
+    console.log('Types:');
+    supportedElements.forEach(el => console.log(`  ${el.id} : ${el.$type}`));
+    
+    console.log('\n=== ORIGINAL COMPONENT MAPPING ===');
+    console.log('Size:', originalElementToComponent.size);
+    console.log('Mappings:');
+    Array.from(originalElementToComponent.entries()).forEach(([id, comp]) => {
+      console.log(`  ${id} -> component ${comp}`);
+    });
     
     // Create maps to track path relationships
     const elementToInstances = new Map<string, string[]>();
     const instanceToPath = new Map<string, string>(); // Track which path each instance belongs to
+    const instanceToComponent = new Map<string, number>(); // Map instance IDs to component numbers
     
     // Transform elements with multiple instances
     pathTimings.forEach((timingInstances, elementId) => {
@@ -432,6 +447,12 @@ export function transformBPMNToGantt(
           if (pathInfo.pathId) {
             instanceToPath.set(ganttElement.id, pathInfo.pathId);
           }
+          
+          // Map instance ID to component number (same as original element)
+          const componentNumber = originalElementToComponent.get(elementId);
+          if (componentNumber !== undefined) {
+            instanceToComponent.set(ganttElement.id, componentNumber);
+          }
         } else if (isSupportedEventElement(element)) {
           const ganttElement = transformEvent(
             element as BPMNEvent,
@@ -450,6 +471,12 @@ export function transformBPMNToGantt(
           const pathInfo = timing as any;
           if (pathInfo.pathId) {
             instanceToPath.set(ganttElement.id, pathInfo.pathId);
+          }
+          
+          // Map instance ID to component number (same as original element)
+          const componentNumber = originalElementToComponent.get(elementId);
+          if (componentNumber !== undefined) {
+            instanceToComponent.set(ganttElement.id, componentNumber);
           }
         }
       });
@@ -547,6 +574,17 @@ export function transformBPMNToGantt(
         });
       }
     });
+    
+    // Use the instance-based component mapping for every-occurrence mode
+    console.log('\n=== INSTANCE COMPONENT MAPPING ===');
+    console.log('Size before assignment:', instanceToComponent.size);
+    console.log('Instance mappings:');
+    Array.from(instanceToComponent.entries()).forEach(([instanceId, comp]) => {
+      console.log(`  ${instanceId} -> component ${comp}`);
+    });
+    
+    elementToComponent = instanceToComponent;
+    console.log('\nElement to component mapping size after assignment:', elementToComponent.size);
   } else {
     // Use earliest occurrence traversal (existing logic)
     const timings = calculateElementTimings(supportedElements, startTime, defaultDurations);
@@ -594,9 +632,23 @@ export function transformBPMNToGantt(
     });
   }
   
+  // Safeguard: ensure elementToComponent is always defined
+  if (!elementToComponent) {
+    elementToComponent = new Map<string, number>();
+  }
+  
   // Group and sort elements by connected components and start time
   const sortedElements = groupAndSortElements(ganttElements, elementToComponent);
   
+  // Debug logging
+  console.log('\n=== FINAL RESULTS ===');
+  console.log('Gantt elements:', ganttElements.length);
+  console.log('Gantt dependencies:', ganttDependencies.length);
+  console.log('Element to component mapping size:', elementToComponent.size);
+  console.log('Final element mappings:');
+  Array.from(elementToComponent.entries()).forEach(([id, comp]) => {
+    console.log(`  ${id} -> component ${comp}`);
+  });
   
   return { elements: sortedElements, dependencies: ganttDependencies, errors, defaultDurations };
 }

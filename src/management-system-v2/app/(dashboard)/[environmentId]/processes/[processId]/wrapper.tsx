@@ -333,10 +333,20 @@ const Wrapper = ({
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      <div style={{ display: timelineViewActive ? 'none' : 'block', height: '100%' }}>
+      <div style={{ 
+        visibility: timelineViewActive ? 'hidden' : 'visible',
+        position: timelineViewActive ? 'absolute' : 'relative',
+        height: '100%',
+        width: '100%'
+      }}>
         {modelerComponent}
       </div>
-      <div style={{ display: timelineViewActive ? 'block' : 'none', height: '100%' }}>
+      <div style={{ 
+        visibility: timelineViewActive ? 'visible' : 'hidden',
+        position: timelineViewActive ? 'relative' : 'absolute',
+        height: '100%',
+        width: '100%'
+      }}>
         {timelineViewActive && timelineComponent}
       </div>
       {minimized ? (

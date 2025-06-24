@@ -156,7 +156,12 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         </div>
       </div>
       <Button
-        onClick={disableTimelineView}
+        onClick={() => {
+          disableTimelineView();
+          // Use history to remove the hash while preserving the current URL
+          const currentUrl = window.location.pathname + window.location.search;
+          window.history.replaceState(null, '', currentUrl);
+        }}
         title="Return to BPMN editor view"
       >
         Back to BPMN

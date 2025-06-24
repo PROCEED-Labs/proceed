@@ -367,7 +367,12 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 <Tooltip title="Switch to Gantt view">
                   <Button
                     icon={<Icon aria-label="gantt-view" component={SvgGantt} />}
-                    onClick={enableTimelineView}
+                    onClick={() => {
+                      enableTimelineView();
+                      // Use router to preserve the current URL and just add the hash
+                      const currentUrl = window.location.pathname + window.location.search;
+                      window.history.replaceState(null, '', currentUrl + '#gantt-view');
+                    }}
                   ></Button>
                 </Tooltip>
               )}

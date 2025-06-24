@@ -73,6 +73,8 @@ const Wrapper = ({
   const rootElement = useModelerStateStore((state) => state.rootElement);
   const [editingName, setEditingName] = useState<null | string>(null);
   const timelineViewActive = useTimelineViewStore((state) => state.timelineViewActive);
+  const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
+  const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
 
   const {
     token: { fontSizeHeading1 },
@@ -112,6 +114,28 @@ const Wrapper = ({
       setClosed(false);
     }
   }, [minimized]);
+
+  // Check for #gantt-view hash and automatically activate/deactivate timeline view
+  useEffect(() => {
+    const checkHashAndToggleTimeline = () => {
+      const hash = window.location.hash;
+      if (hash === '#gantt-view' && !timelineViewActive) {
+        enableTimelineView();
+      } else if (hash !== '#gantt-view' && timelineViewActive) {
+        disableTimelineView();
+      }
+    };
+
+    // Check on mount
+    checkHashAndToggleTimeline();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', checkHashAndToggleTimeline);
+
+    return () => {
+      window.removeEventListener('hashchange', checkHashAndToggleTimeline);
+    };
+  }, [enableTimelineView, disableTimelineView, timelineViewActive]);
 
   const showMobileView = useMobileModeler();
 

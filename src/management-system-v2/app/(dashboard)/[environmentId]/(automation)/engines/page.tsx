@@ -10,6 +10,7 @@ import { enableUseDB } from 'FeatureFlags';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 import { Engine as DBEngine } from '@prisma/client';
+import { spaceURL } from '@/lib/utils';
 
 const getEngineStatus = async (engine: DBEngine) => {
   const engines = await savedEnginesToEngines([engine]);
@@ -50,7 +51,12 @@ const EnginesPage = async ({ params }: { params: { environmentId: string } }) =>
     };
   });
 
-  return <SavedEnginesList savedEngines={enginesWithStatus} />;
+  return (
+    <SavedEnginesList
+      savedEngines={enginesWithStatus}
+      engineDashboardLinkPrefix={spaceURL(activeEnvironment, '/engines')}
+    />
+  );
 };
 
 const Page = ({ params }: any) => {

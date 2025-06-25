@@ -57,3 +57,6 @@ dataEval.json
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json
+
+./src/competence-matcher/src/db/dbs/
+./src/competence-matcher/src/models/

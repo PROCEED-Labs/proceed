@@ -2,9 +2,10 @@
   "name": "competence-matcher",
   "version": "0.0.1",
   "description": "Matching microservice that allows to allows to define and match on data criteria",
-  "main": "server.ts",
+  "main": "dist/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -19,5 +20,19 @@
   "bugs": {
     "url": "https://github.com/PROCEED-Labs/proceed/issues"
   },
-  "homepage": "https://github.com/PROCEED-Labs/proceed#readme"
+  "homepage": "https://github.com/PROCEED-Labs/proceed#readme",
+  "dependencies": {
+    "@huggingface/transformers": "^3.5.2",
+    "express": "^5.1.0",
+    "sqlite-vec": "^0.1.7-alpha.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.30",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=23.5.0"
+  }
 }

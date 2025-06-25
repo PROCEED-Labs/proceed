@@ -1,7 +1,7 @@
 'use client';
 
 import { App, Button } from 'antd';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import DeploymentsModal from './deployments-modal';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
@@ -102,7 +102,17 @@ const DeploymentsView = ({
     );
   }
 
-  const loading = checkingProcessVersion || removingDeployment;
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  useEffect(() => {
+    setInitialLoading(false);
+  }, []);
+
+  const loading = initialLoading || checkingProcessVersion || removingDeployment;
+
+  const tableProps: { loading: boolean; pagination?: false } = { loading };
+
+  if (initialLoading) tableProps.pagination = false;
 
   return (
     <div>
@@ -112,6 +122,7 @@ const DeploymentsView = ({
           onClick={() => {
             setModalIsOpen(true);
           }}
+          loading={initialLoading}
         >
           Deploy Process
         </Button>
@@ -127,7 +138,7 @@ const DeploymentsView = ({
 
       <DeploymentsList
         processes={filteredData}
-        tableProps={{ loading }}
+        tableProps={tableProps}
         removeDeployment={removeDeployment}
       />
 

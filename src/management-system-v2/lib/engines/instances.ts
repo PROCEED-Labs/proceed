@@ -1,4 +1,4 @@
-import 'server-only';
+'use server';
 
 import { Engine } from './machines';
 import { engineRequest } from './endpoints/index';

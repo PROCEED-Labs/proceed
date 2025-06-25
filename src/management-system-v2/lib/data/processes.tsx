@@ -14,6 +14,7 @@ import {
   setDefinitionsVersionInformation,
   toBpmnObject,
   toBpmnXml,
+  updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
 import { UserErrorType, userError } from '../user-error';
@@ -257,6 +258,7 @@ export const updateProcess = async (
   bpmn?: string,
   description?: string,
   name?: string,
+  userDefinedId?: string,
   invalidate = false,
 ) => {
   const error = await checkValidity(definitionsId, 'update', spaceId);
@@ -270,6 +272,11 @@ export const updateProcess = async (
   }
   if (name !== undefined) {
     newBpmn = (await setDefinitionsName(newBpmn!, name)) as string;
+  }
+  if (userDefinedId !== undefined) {
+    newBpmn = (await updateBpmnCreatorAttributes(newBpmn!, {
+      userDefinedId: userDefinedId,
+    })) as string;
   }
 
   // This invalidates the client-side router cache. Since we don't call
@@ -306,6 +313,7 @@ export const updateProcesses = async (
     description?: string;
     bpmn?: string;
     id: string;
+    userDefinedId?: string;
   }[],
   spaceId: string,
 ) => {
@@ -317,6 +325,7 @@ export const updateProcesses = async (
         process.bpmn,
         process.description,
         process.name,
+        process.userDefinedId,
       );
     }),
   );

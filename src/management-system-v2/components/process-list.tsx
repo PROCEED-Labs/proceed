@@ -259,6 +259,20 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         ),
       },
       {
+        title: 'ID',
+        dataIndex: 'userDefinedId',
+        key: 'ID',
+        sorter: folderAwareSort(
+          // @ts-ignore
+          (a, b) => (a.userDefinedId ?? '').localeCompare(b.userDefinedId ?? ''),
+        ),
+        render: (id, record) => (
+          <ListEntryLink data={record} /* className={styles.HoverableTableCell} */>
+            {record.type === 'folder' ? '' : id}
+          </ListEntryLink>
+        ),
+      },
+      {
         title: 'Name',
         dataIndex: 'name',
         key: 'Name',
@@ -420,6 +434,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         },
         selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
         allColumnTitles: [
+          'ID',
           'Description',
           'Last Edited',
           'Created On',

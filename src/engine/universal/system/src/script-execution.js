@@ -78,17 +78,33 @@ class ScriptExecutor extends System {
 
         try {
           if (
-            result &&
-            result.errorClass in req.process.dependencies &&
+            typeof result === 'object' &&
             'errorClass' in result &&
-            typeof result.errorClass === 'string' &&
-            typeof result.errorArgs === 'object' &&
-            'length' in result.errorArgs &&
-            (req.process.dependencies[result.errorClass].prototype instanceof Error ||
-              req.process.dependencies[result.errorClass] === Error)
-          )
-            result = new req.process.dependencies[result.errorClass](result.errorArgs);
-        } catch (_) {}
+            typeof result.errorClass === 'string'
+          ) {
+            if (result.errorClass === '_javascript_error') {
+              const error = global[result.name];
+
+              if ('prototype' in error && error.prototype instanceof Error) {
+                const resultError = new error(error.message);
+                resultError.message = result.message;
+                if ('stack' in result) delete result.stack;
+
+                result = resultError;
+              }
+            } else if (
+              result.errorClass in req.process.dependencies &&
+              typeof result.errorArgs === 'object' &&
+              Array.isArray(result.errorArgs) &&
+              (req.process.dependencies[result.errorClass].prototype instanceof Error ||
+                req.process.dependencies[result.errorClass] === Error)
+            ) {
+              result = new req.process.dependencies[result.errorClass](result.errorArgs);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
 
         req.process.result = result;
 

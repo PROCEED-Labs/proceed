@@ -8,6 +8,7 @@ import {
   Modal,
   Select,
   Tooltip,
+  Typography,
 } from 'antd';
 
 import { FaRegQuestionCircle } from 'react-icons/fa';
@@ -26,9 +27,8 @@ type ProcessVariableFormProps = {
 export const typeLabelMap = {
   string: 'Text',
   number: 'Number',
-  integer: 'Integer',
-  boolean: 'On/Off',
-  object: 'Complex Structure',
+  boolean: 'On/Off - True/False',
+  object: 'Combined Structure',
   array: 'List',
 };
 
@@ -48,7 +48,6 @@ const DefaultValueInput: React.FC<DefaultValueInputProps> = ({ variable, onChang
           onChange={(e) => onChange(e.target.value || undefined)}
         />
       );
-    case 'integer':
     case 'number':
       return (
         <InputNumber
@@ -60,9 +59,18 @@ const DefaultValueInput: React.FC<DefaultValueInputProps> = ({ variable, onChang
       );
     case 'boolean':
       return (
-        <Checkbox
-          checked={variable.defaultValue === 'true' ? true : false}
-          onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
+        <Select
+          value={variable.defaultValue || null}
+          labelRender={(entry) => (entry.value ? entry.label : '')}
+          options={[
+            {
+              value: null,
+              label: <Typography.Text type="secondary">[No Default]</Typography.Text>,
+            },
+            { value: 'true', label: 'On/True' },
+            { value: 'false', label: 'Off/False' },
+          ]}
+          onChange={(val) => onChange(val)}
         />
       );
   }
@@ -70,9 +78,6 @@ const DefaultValueInput: React.FC<DefaultValueInputProps> = ({ variable, onChang
 
 function isNumber(num: string) {
   return num.trim() && !isNaN(+num.trim());
-}
-function isInteger(num: string) {
-  return isNumber(num) && !num.includes('.');
 }
 
 const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
@@ -119,9 +124,17 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
     if (editVariable.dataType === 'number' && !isNumber(val)) {
       return Promise.reject('Values of a number variable can only be numbers.');
     }
-    if (editVariable.dataType === 'integer' && !isInteger(val)) {
-      return Promise.reject('Values of an integer variable can only be integers (whole numbers).');
-    }
+  };
+
+  const canHaveDefault = () => {
+    if (!editVariable?.dataType) return false;
+    const types = ['number', 'string', 'boolean'];
+    return types.includes(editVariable.dataType);
+  };
+  const canHaveAllowedValues = () => {
+    if (!editVariable?.dataType) return false;
+    const types = ['number', 'string'];
+    return types.includes(editVariable.dataType);
   };
 
   return (
@@ -133,6 +146,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
       okText={originalVariable ? 'Update' : 'Add'}
       onOk={handleSubmit}
       destroyOnClose
+      maskClosable={false}
     >
       <Form layout="vertical" form={form} clearOnDestroy>
         <Form.Item
@@ -159,6 +173,25 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
         >
           <Input onChange={getChangeHandler('name')} />
         </Form.Item>
+        <Form.Item
+          name="type"
+          initialValue={editVariable.dataType}
+          label="Type"
+          rules={[{ required: true, message: 'Every variabel needs to have a type' }]}
+        >
+          <Select
+            options={Object.entries(typeLabelMap).map(([value, label]) => ({ value, label }))}
+            onChange={(value) => {
+              setEditVariable({
+                ...editVariable,
+                dataType: value,
+                defaultValue: undefined,
+                enum: undefined,
+              });
+              form.setFieldValue('enum', undefined);
+            }}
+          />
+        </Form.Item>
         <Form.Item name="description" label="Description" initialValue={editVariable.description}>
           <Input onChange={getChangeHandler('description')} />
         </Form.Item>
@@ -175,55 +208,40 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
         <Form.Item name="const" initialValue={editVariable.const} label="Unchangeable Value">
           <Checkbox checked={editVariable.const} onChange={getChangeHandler('const', 'checked')} />
         </Form.Item>
-        <Form.Item
-          name="type"
-          initialValue={typeLabelMap[editVariable.dataType as keyof typeof typeLabelMap]}
-          label="Type"
-        >
-          <Select
-            options={[
-              { value: 'string', label: 'Text' },
-              { value: 'number', label: 'Number' },
-              { value: 'integer', label: 'Integer' },
-              { value: 'boolean', label: 'On/Off' },
-            ]}
-            onChange={(value?: ProcessVariable['dataType']) =>
-              setEditVariable({ ...editVariable, dataType: value, defaultValue: undefined })
-            }
-          />
-        </Form.Item>
-        <Form.Item
-          name="default"
-          label="Default Value"
-          initialValue={editVariable.defaultValue}
-          rules={[
-            {
-              validator(_, value) {
-                if (value) {
-                  const error = validateValue(value);
-                  if (error) return error;
-                  if (editVariable.enum && !editVariable.enum.split(';').includes(value)) {
-                    return Promise.reject(
-                      new Error(
-                        'If allowed values are defined the default value has to be one of them.',
-                      ),
-                    );
+        {canHaveDefault() && (
+          <Form.Item
+            name="default"
+            label="Default Value"
+            initialValue={editVariable.defaultValue}
+            rules={[
+              {
+                validator(_, value) {
+                  if (value) {
+                    const error = validateValue(value);
+                    if (error) return error;
+                    if (editVariable.enum && !editVariable.enum.split(';').includes(value)) {
+                      return Promise.reject(
+                        new Error(
+                          'If allowed values are defined the default value has to be one of them.',
+                        ),
+                      );
+                    }
                   }
-                }
 
-                return Promise.resolve();
+                  return Promise.resolve();
+                },
               },
-            },
-          ]}
-        >
-          <DefaultValueInput
-            variable={editVariable}
-            onChange={(newValue) => {
-              setEditVariable({ ...editVariable, defaultValue: newValue });
-            }}
-          />
-        </Form.Item>
-        {editVariable?.dataType !== 'boolean' && (
+            ]}
+          >
+            <DefaultValueInput
+              variable={editVariable}
+              onChange={(newValue) => {
+                setEditVariable({ ...editVariable, defaultValue: newValue });
+              }}
+            />
+          </Form.Item>
+        )}
+        {canHaveAllowedValues() && (
           <Form.Item
             name="enum"
             label={
@@ -253,7 +271,13 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
               },
             ]}
           >
-            <Input onChange={getChangeHandler('enum')} />
+            <Input
+              onChange={(e) => {
+                getChangeHandler('enum')(e);
+                if (canHaveDefault()) form.validateFields();
+              }}
+              placeholder="value1;value2;..."
+            />
           </Form.Item>
         )}
       </Form>

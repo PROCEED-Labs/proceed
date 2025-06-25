@@ -23,13 +23,6 @@ import { MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import {
-  startInstance,
-  pauseInstance,
-  resumeInstance,
-  stopInstance,
-  getStartForm,
-} from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useDeployment from '../deployment-hook';
@@ -64,7 +57,15 @@ export default function ProcessDeploymentView({
 
   const { spaceId } = useEnvironment();
 
-  const { data: deploymentInfo, refetch } = useDeployment(processId, initialDeploymentInfo);
+  const {
+    data: deploymentInfo,
+    refetch,
+    startInstance,
+    resumeInstance,
+    pauseInstance,
+    stopInstance,
+    getStartForm,
+  } = useDeployment(processId, initialDeploymentInfo);
 
   const {
     selectedVersion,
@@ -181,18 +182,14 @@ export default function ProcessDeploymentView({
                     await wrapServerCall({
                       fn: async () => {
                         const versionId = getLatestDeployment(deploymentInfo).versionId;
-                        const startForm = await getStartForm(
-                          spaceId,
-                          deploymentInfo.definitionId,
-                          versionId,
-                        );
+
+                        const startForm = await getStartForm(versionId);
 
                         if (typeof startForm !== 'string') return startForm;
 
                         if (startForm) {
                           setStartForm(startForm);
-                        } else
-                          return startInstance(deploymentInfo.definitionId, versionId, spaceId);
+                        } else return startInstance(versionId);
                       },
                       onSuccess: async (instanceId) => {
                         await refetch();
@@ -278,8 +275,7 @@ export default function ProcessDeploymentView({
                     onClick={async () => {
                       setResumingInstance(true);
                       await wrapServerCall({
-                        fn: () =>
-                          resumeInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        fn: () => resumeInstance(selectedInstance.processInstanceId),
                         onSuccess: async () => await refetch(),
                       });
                       setResumingInstance(false);
@@ -296,8 +292,7 @@ export default function ProcessDeploymentView({
                     onClick={async () => {
                       setPausingInstance(true);
                       await wrapServerCall({
-                        fn: async () =>
-                          pauseInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        fn: async () => pauseInstance(selectedInstance.processInstanceId),
                         onSuccess: async () => await refetch(),
                       });
                       setPausingInstance(false);
@@ -314,8 +309,7 @@ export default function ProcessDeploymentView({
                     onClick={async () => {
                       setStoppingInstance(true);
                       await wrapServerCall({
-                        fn: async () =>
-                          stopInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        fn: async () => stopInstance(selectedInstance.processInstanceId),
                         onSuccess: async () => await refetch(),
                       });
                       setStoppingInstance(false);
@@ -360,8 +354,7 @@ export default function ProcessDeploymentView({
               Object.entries(variables).map(([key, value]) => [key, { value }]),
             );
             wrapServerCall({
-              fn: () =>
-                startInstance(deploymentInfo.definitionId, versionId, spaceId, mappedVariables),
+              fn: () => startInstance(versionId, mappedVariables),
 
               onSuccess: async (instanceId) => {
                 await refetch();

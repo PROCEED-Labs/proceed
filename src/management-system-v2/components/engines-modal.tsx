@@ -1,5 +1,7 @@
 import { Form, Input, Modal, ModalProps, Select } from 'antd';
 
+type Protocol = 'http:' | 'https:' | 'mqtt:' | 'mqtts:';
+
 function parseInitialData(data?: { address: string; name: string | null }) {
   if (data?.address) {
     try {
@@ -16,7 +18,7 @@ function parseInitialData(data?: { address: string; name: string | null }) {
   }
   return {
     name: data?.name,
-    protocol: 'http',
+    protocol: 'http:' as Protocol,
     port: '',
     hostname: '',
   };
@@ -97,12 +99,15 @@ const EnginesModal = ({
             addonBefore={
               <Form.Item name="protocol" noStyle>
                 <Select
-                  defaultValue="http"
-                  options={[
-                    { value: 'mqtt:', label: 'mqtt://' },
-                    { value: 'http:', label: 'http://' },
-                    { value: 'https:', label: 'https://' },
-                  ]}
+                  defaultValue={'http:' satisfies Protocol}
+                  options={
+                    [
+                      { value: 'http:', label: 'HTTP' },
+                      { value: 'https:', label: 'HTTPS' },
+                      { value: 'mqtt:', label: 'MQTT' },
+                      { value: 'mqtts:', label: 'MQTTS' },
+                    ] satisfies { value: Protocol; label: string }[]
+                  }
                 />
               </Form.Item>
             }

@@ -113,7 +113,7 @@ const EnginesModal = ({
             }
           />
         </Form.Item>
-        <Form.Item name="port" label="Port" rules={[{ required: false }]} required>
+        <Form.Item name="port" label="Port" rules={[{ required: true }]} required>
           <Input />
         </Form.Item>
 

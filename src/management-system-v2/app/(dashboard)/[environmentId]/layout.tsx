@@ -104,7 +104,7 @@ const DashboardLayout = async ({
       let children: MenuProps['items'] = [
         automationSettings.dashboard?.active !== false && {
           key: 'dashboard',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/executions-dashboard`)}>Dashboard</Link>,
           icon: <BarChartOutlined />,
         },
         automationSettings.executions?.active !== false && {

@@ -1,9 +1,17 @@
 import { useEnvironment } from '@/components/auth-can';
-import { Engine } from './machines';
+import {
+  Engine,
+  HttpEngine,
+  MqttEngine,
+  SpaceEngine,
+  isHttpEngine,
+  isMqttEngine,
+} from './machines';
 import { useCallback } from 'react';
 import { getCorrectTargetEngines } from './server-actions';
 import { useQuery } from '@tanstack/react-query';
 import { asyncFilter } from '../helpers/javascriptHelpers';
+import { truthyFilter } from '../typescript-utils';
 
 function useEngines(
   filter: { key: any[]; fn: (engine: Engine) => Promise<boolean> } = {
@@ -15,8 +23,27 @@ function useEngines(
 
   const queryFn = useCallback(async () => {
     if (space.spaceId) {
-      const res = await getCorrectTargetEngines(space.spaceId);
-      return asyncFilter(res, filter.fn);
+      let res = await getCorrectTargetEngines(space.spaceId);
+      const knownEngines: Record<string, { http?: HttpEngine; mqtt?: MqttEngine }> = {};
+
+      res = await asyncFilter(res, filter.fn);
+
+      // prevent engines that are reachable in multiple ways (mqtt and http) to be returned twice
+      for (const engine of res) {
+        if (!knownEngines[engine.id]) {
+          knownEngines[engine.id] = {
+            http: isHttpEngine(engine) ? engine : undefined,
+            mqtt: isMqttEngine(engine) ? engine : undefined,
+          };
+        } else {
+          if (isHttpEngine(engine)) knownEngines[engine.id].http = engine;
+          else if (isMqttEngine(engine)) knownEngines[engine.id].mqtt = engine;
+        }
+      }
+
+      return Object.values(knownEngines).map(
+        (entry) => Object.values(entry).filter(truthyFilter)[0],
+      );
     }
   }, [space.spaceId, filter]);
 

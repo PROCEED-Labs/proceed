@@ -40,6 +40,7 @@ const nextConfig = {
       'processes',
       'spaces',
       'executions',
+      'executions-dashboard',
       'engines',
       'tasklist',
       'general-settings',

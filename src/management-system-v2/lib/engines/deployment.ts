@@ -302,13 +302,16 @@ export type DeployedProcessInfo = {
   instances: InstanceInfo[];
 };
 
-export async function getDeployments(engines: Engine[]) {
+export async function getDeployments(engines: Engine[], entries?: string) {
   const deploymentsresponse = await Promise.allSettled(
     engines.map(async (engine) =>
       engineRequest({
         method: 'get',
         endpoint: '/process/',
         engine,
+        queryParams: {
+          entries,
+        },
       }),
     ),
   );

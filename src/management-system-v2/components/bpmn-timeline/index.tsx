@@ -20,6 +20,7 @@ import type {
 } from './types';
 import { transformBPMNToGantt } from './transform';
 import { formatGanttElementForLog, formatDependencyForLog } from './utils';
+import { GanttSettingsModal } from './GanttSettingsModal';
 
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
@@ -40,8 +41,12 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     enabled: boolean;
     positioningLogic: 'earliest-occurrence' | 'every-occurrence';
     loopDepth: number;
+    chronologicalSorting: boolean;
   } | null>(null); // Start with null to indicate settings not loaded
-  
+
+  // Add a refresh counter to force re-fetching of settings
+  const [settingsRefreshCounter, setSettingsRefreshCounter] = useState(0);
+
   const { spaceId } = useEnvironment();
 
   // Fetch gantt view settings
@@ -50,37 +55,40 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
       try {
         const settings = await getSpaceSettingsValues(spaceId, 'process-documentation');
         const ganttViewSettings = settings?.['gantt-view'];
-        setGanttSettings({
+        const newSettings = {
           enabled: ganttViewSettings?.enabled ?? true,
           positioningLogic: ganttViewSettings?.['positioning-logic'] ?? 'earliest-occurrence',
-          loopDepth: ganttViewSettings?.['loop-depth'] ?? 1
-        });
+          loopDepth: ganttViewSettings?.['loop-depth'] ?? 1,
+          chronologicalSorting: ganttViewSettings?.['chronological-sorting'] ?? false,
+        };
+        setGanttSettings(newSettings);
       } catch (error) {
         console.error('Failed to fetch gantt view settings:', error);
         setGanttSettings({
           enabled: true,
           positioningLogic: 'earliest-occurrence',
-          loopDepth: 1
+          loopDepth: 1,
+          chronologicalSorting: false,
         });
       }
     };
-    
+
     fetchSettings();
-  }, [spaceId]);
+  }, [spaceId, settingsRefreshCounter]);
 
   useEffect(() => {
     // Reset unmounting flag when component mounts/re-mounts
     isUnmountingRef.current = false;
-    
+
     // Don't parse until settings are loaded
     if (!ganttSettings) {
       return;
     }
-    
+
     const parseAndTransform = async () => {
       try {
         let bpmnXml = process.bpmn;
-        
+
         // If modeler is available, get the current XML from it (includes unsaved changes)
         if (modeler) {
           try {
@@ -107,10 +115,11 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         setNowTimestamp(transformationTimestamp);
 
         const transformationResult = transformBPMNToGantt(
-          definitions as BPMNDefinitions, 
-          transformationTimestamp, 
-          ganttSettings.positioningLogic, 
-          ganttSettings.loopDepth
+          definitions as BPMNDefinitions,
+          transformationTimestamp,
+          ganttSettings.positioningLogic,
+          ganttSettings.loopDepth,
+          ganttSettings.chronologicalSorting,
         );
 
         // Check again if component is still mounted before setting state
@@ -130,7 +139,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         if (isUnmountingRef.current) {
           return;
         }
-        
+
         console.error('Failed to parse BPMN:', error);
         setErrors([
           {
@@ -181,22 +190,33 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           {(isLoading || !ganttSettings) && 'Loading...'}
           {!isLoading && ganttSettings && (
             <div>
-              Mode: {ganttSettings.positioningLogic === 'every-occurrence' ? 'Every Occurrence' : 'Earliest Occurrence'}
+              Mode:{' '}
+              {ganttSettings.positioningLogic === 'every-occurrence'
+                ? 'Every Occurrence'
+                : 'Earliest Occurrence'}
             </div>
           )}
         </div>
       </div>
-      <Button
-        onClick={() => {
-          disableTimelineView();
-          // Use history to remove the hash while preserving the current URL
-          const currentUrl = window.location.pathname + window.location.search;
-          window.history.replaceState(null, '', currentUrl);
-        }}
-        title="Return to BPMN editor view"
-      >
-        Back to BPMN
-      </Button>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <GanttSettingsModal
+          onSettingsChange={() => {
+            // Force settings refresh and timeline re-transformation
+            setSettingsRefreshCounter((prev) => prev + 1);
+          }}
+        />
+        <Button
+          onClick={() => {
+            disableTimelineView();
+            // Use history to remove the hash while preserving the current URL
+            const currentUrl = window.location.pathname + window.location.search;
+            window.history.replaceState(null, '', currentUrl);
+          }}
+          title="Return to BPMN editor view"
+        >
+          Back to BPMN
+        </Button>
+      </div>
     </div>
   );
 

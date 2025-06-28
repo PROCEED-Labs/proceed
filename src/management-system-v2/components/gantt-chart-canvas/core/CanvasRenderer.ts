@@ -336,6 +336,8 @@ export class CanvasRenderer {
    * @param customDateMarkerTime Optional timestamp for the red marker line (overrides current date)
    * @param dependencies Optional array of dependency arrows between elements
    * @param scrollTop The current scroll position
+   * @param highlightedDependencies Optional array of highlighted dependency arrows
+   * @param selectedElementId Optional ID of selected element for row highlighting
    */
   renderChartContent(
     timeMatrix: TimeMatrix,

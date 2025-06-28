@@ -46,17 +46,19 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
     loadSettings();
   }, [isOpen, spaceId]);
 
-  const handleSettingUpdate = async (key: string, value: any) => {
+  const handleGroupUpdate = (updatedGroup: SettingGroup) => {
+    // Update local state immediately for responsive UI
+    setSettingsGroup(updatedGroup);
+  };
+
+  const handleNestedSettingUpdate = async (key: string, value: any) => {
     if (!spaceId) return;
 
     try {
-      // Update the local state immediately for responsive UI
-      setSettingsGroup(prevGroup => 
-        updateSettingInGroup(prevGroup, key, value)
-      );
-
       // Debounced update to database
-      await debouncedSettingsUpdate(spaceId, `process-documentation.gantt-view.${key}`, value);
+      // The key already includes the full path from SettingsGroup, just add the process-documentation prefix
+      const dbKey = `process-documentation.${key}`;
+      await debouncedSettingsUpdate(spaceId, dbKey, value);
       
       // Notify parent component of settings change
       onSettingsChange?.();
@@ -116,8 +118,8 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
         ) : (
           <SettingsGroup
             group={settingsGroup}
-            onUpdate={handleSettingUpdate}
-            spaceId={spaceId}
+            onUpdate={handleGroupUpdate}
+            onNestedSettingUpdate={handleNestedSettingUpdate}
           />
         )}
       </Modal>

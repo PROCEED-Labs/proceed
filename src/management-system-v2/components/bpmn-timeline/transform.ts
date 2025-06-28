@@ -342,7 +342,8 @@ export function transformBPMNToGantt(
   definitions: BPMNDefinitions,
   startTime: number = Date.now(),
   traversalMode: 'earliest-occurrence' | 'every-occurrence' = 'earliest-occurrence',
-  loopDepth: number = 1
+  loopDepth: number = 1,
+  chronologicalSorting: boolean = false
 ): TransformationResult {
   const ganttElements: GanttElementType[] = [];
   const ganttDependencies: GanttDependency[] = [];
@@ -616,7 +617,7 @@ export function transformBPMNToGantt(
   }
   
   // Group and sort elements by connected components and start time
-  const sortedElements = groupAndSortElements(ganttElements, elementToComponent);
+  const sortedElements = groupAndSortElements(ganttElements, elementToComponent, chronologicalSorting);
   
   return { elements: sortedElements, dependencies: ganttDependencies, errors, defaultDurations };
 }

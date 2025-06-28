@@ -17,9 +17,37 @@ import {
 
 export class DependencyRenderer {
   private pixelRatio: number = 1;
+  private readonly VERTICAL_GRID_SPACING = 20; // Snap vertical lines to 20px grid
+  private readonly MIN_HORIZONTAL_LENGTH = 20; // Minimum horizontal line length
+  private readonly MIN_SOURCE_DISTANCE = 20; // Minimum distance from source element
+  private readonly MIN_TARGET_DISTANCE = 10; // Minimum distance before target element
   
   constructor(pixelRatio: number = 1) {
     this.pixelRatio = pixelRatio;
+  }
+  
+  /**
+   * Snap X coordinate to vertical grid
+   */
+  private snapToVerticalGrid(x: number): number {
+    return Math.round(x / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+  }
+  
+  /**
+   * Calculate horizontal offset ensuring minimum length
+   */
+  private calculateHorizontalOffset(from: { x: number }, to: { x: number }): number {
+    const snappedFromX = this.snapToVerticalGrid(from.x + this.VERTICAL_GRID_SPACING);
+    const snappedToX = this.snapToVerticalGrid(to.x - this.VERTICAL_GRID_SPACING);
+    
+    // If the horizontal section would be too short, extend it
+    if (Math.abs(snappedToX - snappedFromX) < this.MIN_HORIZONTAL_LENGTH) {
+      // Extend the earlier section to ensure minimum horizontal length
+      const extendedFromX = snappedToX - this.MIN_HORIZONTAL_LENGTH;
+      return extendedFromX - from.x;
+    }
+    
+    return snappedFromX - from.x;
   }
   
   /**
@@ -35,12 +63,10 @@ export class DependencyRenderer {
     highlightedDependencies?: GanttDependency[]
   ): void {
     // Create element lookup map for quick access and index map for positions
-    const elementMap = new Map<string, GanttElementType>();
-    const indexMap = new Map<string, number>();
-    
+    // For elements, we need to handle potential duplicates properly
+    const elementsByIndex = new Map<number, GanttElementType>();
     elements.forEach((el, index) => {
-      elementMap.set(el.id, el);
-      indexMap.set(el.id, index);
+      elementsByIndex.set(index, el);
     });
     
     // Create a set of highlighted dependency IDs for quick lookup
@@ -62,16 +88,26 @@ export class DependencyRenderer {
     
     // Render normal dependencies first (behind highlighted ones)
     const renderDependency = (dep: typeof dependencies[0], isHighlighted: boolean) => {
-      const fromElement = elementMap.get(dep.sourceId);
-      const toElement = elementMap.get(dep.targetId);
+      // Find the actual elements by their IDs in the elements array
+      let fromElement: GanttElementType | undefined;
+      let toElement: GanttElementType | undefined;
+      let fromIndex = -1;
+      let toIndex = -1;
       
-      if (!fromElement || !toElement) return;
+      // Search through all elements to find the matching source and target
+      // In every-occurrence mode, dependencies should use unique instance IDs
+      elements.forEach((el, index) => {
+        if (el.id === dep.sourceId && fromIndex === -1) {
+          fromElement = el;
+          fromIndex = index;
+        }
+        if (el.id === dep.targetId && toIndex === -1) {
+          toElement = el;
+          toIndex = index;
+        }
+      });
       
-      // Get row indices from the index map
-      const fromIndex = indexMap.get(dep.sourceId) ?? -1;
-      const toIndex = indexMap.get(dep.targetId) ?? -1;
-      
-      if (fromIndex === -1 || toIndex === -1) return;
+      if (!fromElement || !toElement || fromIndex === -1 || toIndex === -1) return;
       
       // Check if either element is visible
       const fromVisible = fromIndex >= visibleRowStart && fromIndex <= visibleRowEnd;
@@ -95,7 +131,7 @@ export class DependencyRenderer {
       toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
       
       // Draw the dependency arrow using the dependency's type
-      this.drawDependencyArrow(context, fromPoint, toPoint, dep.type, isHighlighted);
+      this.drawDependencyArrow(context, fromPoint, toPoint, dep.type, isHighlighted, elements, elementsByIndex, timeMatrix);
     };
     
     // Render normal dependencies first
@@ -178,6 +214,75 @@ export class DependencyRenderer {
   }
   
   /**
+   * Check if a horizontal line would intersect with any elements between source and target
+   */
+  private wouldIntersectElements(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    elements?: GanttElementType[],
+    elementsByIndex?: Map<number, GanttElementType>,
+    timeMatrix?: TimeMatrix
+  ): boolean {
+    if (!elements || !elementsByIndex || !timeMatrix) {
+      return false;
+    }
+
+    const minX = Math.min(from.x, to.x);
+    const maxX = Math.max(from.x, to.x);
+
+    // Calculate which rows the dependency line passes through
+    const fromRow = Math.round(from.y / ROW_HEIGHT);
+    const toRow = Math.round(to.y / ROW_HEIGHT);
+    const minRow = Math.min(fromRow, toRow);
+    const maxRow = Math.max(fromRow, toRow);
+    
+    // Early exit for very large row ranges to avoid performance issues
+    if (maxRow - minRow > 20) {
+      return false; // Skip collision detection for very long dependencies
+    }
+
+    // Check all elements to see if any fall on the affected rows and within the X range
+    for (const [elementIndex, element] of elementsByIndex) {
+      if (elementIndex < minRow || elementIndex > maxRow) {
+        continue; // Not on any affected row
+      }
+
+      // Get element position and boundaries
+      let elementMinX: number;
+      let elementMaxX: number;
+      
+      if (element.type === 'milestone') {
+        // For milestones, calculate position the same way as the renderer
+        const startX = timeMatrix.transformPoint(element.start);
+        const endX = element.end ? timeMatrix.transformPoint(element.end) : startX;
+        const hasRange = element.end && element.end !== element.start;
+        
+        // Calculate milestone center position (same logic as ElementRenderer)
+        const milestoneX = hasRange ? (startX + endX) / 2 : startX;
+        
+        // The diamond extends ±MILESTONE_SIZE/2 from the center
+        elementMinX = milestoneX - MILESTONE_SIZE / 2;
+        elementMaxX = milestoneX + MILESTONE_SIZE / 2;
+      } else {
+        // For tasks and groups
+        const elementStart = timeMatrix.transformPoint(element.start);
+        const elementEnd = timeMatrix.transformPoint(element.end || element.start);
+        const adjustedEnd = Math.max(elementEnd, elementStart + ELEMENT_MIN_WIDTH);
+        elementMinX = Math.min(elementStart, adjustedEnd);
+        elementMaxX = Math.max(elementStart, adjustedEnd);
+      }
+
+      // Add some padding to avoid elements
+      const padding = 5;
+      if (elementMaxX + padding > minX && elementMinX - padding < maxX) {
+        return true; // Would intersect with this element
+      }
+    }
+    
+    return false;
+  }
+  
+  /**
    * Draw a dependency arrow between two points
    */
   private drawDependencyArrow(
@@ -185,7 +290,10 @@ export class DependencyRenderer {
     from: { x: number; y: number },
     to: { x: number; y: number },
     type: DependencyType,
-    isHighlighted: boolean = false
+    isHighlighted: boolean = false,
+    elements?: GanttElementType[],
+    elementsByIndex?: Map<number, GanttElementType>,
+    timeMatrix?: TimeMatrix
   ): void {
     // Calculate adjusted endpoint to stop before arrow head
     const arrowOffset = DEPENDENCY_ARROW_SIZE * 0.8; // Stop line slightly before arrow tip
@@ -215,91 +323,130 @@ export class DependencyRenderer {
     switch (type) {
       case DependencyType.FINISH_TO_START:
       default:
-        // Standard finish-to-start arrow with improved routing
-        if (lineEndPoint.x > from.x + 20) {
-          // Direct path with proper corners
-          const cornerOffset = 15;
+        // Check if we need to route around elements
+        const hasInsufficientSpace = lineEndPoint.x <= from.x + 20;
+        const hasCollision = this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix);
+        const needsRouting = hasInsufficientSpace || hasCollision;
+        
+        if (!needsRouting) {
+          // Direct path with proper corners using grid snapping
           context.moveTo(from.x, from.y);
-          context.lineTo(from.x + cornerOffset, from.y);
+          
+          // Always ensure minimal distance from source before going vertical
+          let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE);
+          
+          // Ensure minimum distance from source is always respected
+          if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
+            const minRequiredX = from.x + this.MIN_SOURCE_DISTANCE;
+            adjustedFromX = Math.ceil(minRequiredX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+          }
+          
+          context.lineTo(adjustedFromX, from.y);
           
           if (Math.abs(lineEndPoint.y - from.y) > 5) {
-            // Different rows - create a nice S-curve
-            const midY = from.y + (lineEndPoint.y - from.y) / 2;
-            context.lineTo(from.x + cornerOffset, midY);
-            context.lineTo(lineEndPoint.x - cornerOffset, midY);
-            context.lineTo(lineEndPoint.x - cornerOffset, lineEndPoint.y);
-          } else {
-            // Same row - direct connection without horizontal line
-            // Skip intermediate points and go directly to the end
+            // Different rows - go vertical immediately, then to target
+            context.lineTo(adjustedFromX, lineEndPoint.y);
           }
           
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
         } else {
-          // Need to route around - create a clean rectangular path
-          // Always route above the target element for better visibility
+          // Need to route around - use grid-snapped routing
           const verticalOffset = 15;
-          const horizontalOffset = 15;
+          const baseHorizontalOffset = 15;
           
           context.moveTo(from.x, from.y);
-          context.lineTo(from.x + horizontalOffset, from.y);
           
-          // Route above the target element
-          const routeY = lineEndPoint.y - verticalOffset;
+          // Always ensure minimal distance from source before going vertical
+          let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE);
           
-          if (lineEndPoint.y > from.y) {
-            // Target is below source - go down first, then across
-            context.lineTo(from.x + horizontalOffset, routeY);
-            context.lineTo(lineEndPoint.x - horizontalOffset, routeY);
-            context.lineTo(lineEndPoint.x - horizontalOffset, lineEndPoint.y);
-          } else if (lineEndPoint.y < from.y) {
-            // Target is above source - go up to routing level
-            context.lineTo(from.x + horizontalOffset, routeY);
-            context.lineTo(lineEndPoint.x - horizontalOffset, routeY);
-            context.lineTo(lineEndPoint.x - horizontalOffset, lineEndPoint.y);
-          } else {
-            // Same row - avoid horizontal routing, just connect directly
-            // Use a simple curve to avoid overlapping the elements
-            const controlOffset = 20;
-            context.quadraticCurveTo(
-              from.x + (lineEndPoint.x - from.x) / 2, 
-              from.y - controlOffset,
-              lineEndPoint.x - horizontalOffset, 
-              lineEndPoint.y
-            );
+          // Ensure minimum distance from source is always respected
+          if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
+            const minRequiredX = from.x + this.MIN_SOURCE_DISTANCE;
+            adjustedFromX = Math.ceil(minRequiredX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
           }
           
+          // For routing, we need a point near the target
+          let adjustedToX = this.snapToVerticalGrid(lineEndPoint.x - this.MIN_TARGET_DISTANCE);
+          if (lineEndPoint.x - adjustedToX < this.MIN_TARGET_DISTANCE) {
+            const maxAllowedX = lineEndPoint.x - this.MIN_TARGET_DISTANCE;
+            adjustedToX = Math.floor(maxAllowedX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+          }
+          
+          context.lineTo(adjustedFromX, from.y);
+          
+          // Route between elements, but avoid going through intermediate rows
+          let routeY: number;
+          const fromRow = Math.round(from.y / ROW_HEIGHT);
+          const toRow = Math.round(lineEndPoint.y / ROW_HEIGHT);
+          const rowDifference = Math.abs(toRow - fromRow);
+          
+          if (rowDifference <= 1) {
+            // Adjacent rows or same row - use midpoint
+            routeY = (from.y + lineEndPoint.y) / 2;
+          } else {
+            // Multiple rows between - route between rows closer to source
+            if (from.y < lineEndPoint.y) {
+              // Going down - route between source row and next row
+              routeY = from.y + ROW_HEIGHT / 2;
+            } else {
+              // Going up - route between source row and previous row  
+              routeY = from.y - ROW_HEIGHT / 2;
+            }
+          }
+          
+          // Draw the path - go vertical as early as possible
+          context.lineTo(adjustedFromX, from.y);
+          context.lineTo(adjustedFromX, routeY);
+          context.lineTo(adjustedToX, routeY);
+          context.lineTo(adjustedToX, lineEndPoint.y);
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
         }
         break;
         
       case 'start-to-start':
         // Both elements start at the same time
-        const ssMinX = Math.min(from.x, lineEndPoint.x) - 15;
+        let ssBaseX = Math.min(from.x, lineEndPoint.x) - this.MIN_SOURCE_DISTANCE;
+        let ssMinX = this.snapToVerticalGrid(ssBaseX);
+        
+        // Ensure minimum distance from both elements
+        const ssTargetX = Math.min(from.x, lineEndPoint.x) - this.MIN_SOURCE_DISTANCE;
+        if (Math.min(from.x, lineEndPoint.x) - ssMinX < this.MIN_SOURCE_DISTANCE) {
+          ssMinX = Math.floor(ssTargetX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+        }
         context.moveTo(from.x, from.y);
         
-        if (Math.abs(lineEndPoint.y - from.y) > 5) {
-          // Different rows - use vertical routing
+        if (Math.abs(lineEndPoint.y - from.y) > 5 || 
+            this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix)) {
+          // Different rows or would intersect elements - go vertical immediately
           context.lineTo(ssMinX, from.y);
           context.lineTo(ssMinX, lineEndPoint.y);
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
         } else {
-          // Same row - direct connection
+          // Same row and no intersections - direct connection
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
         }
         break;
         
       case 'finish-to-finish':
         // Both elements finish at the same time
-        const ffMaxX = Math.max(from.x, lineEndPoint.x) + 15;
+        let ffBaseX = Math.max(from.x, lineEndPoint.x) + this.MIN_SOURCE_DISTANCE;
+        let ffMaxX = this.snapToVerticalGrid(ffBaseX);
+        
+        // Ensure minimum distance from both elements
+        const ffTargetX = Math.max(from.x, lineEndPoint.x) + this.MIN_SOURCE_DISTANCE;
+        if (ffMaxX - Math.max(from.x, lineEndPoint.x) < this.MIN_SOURCE_DISTANCE) {
+          ffMaxX = Math.ceil(ffTargetX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+        }
         context.moveTo(from.x, from.y);
         
-        if (Math.abs(lineEndPoint.y - from.y) > 5) {
-          // Different rows - use vertical routing
+        if (Math.abs(lineEndPoint.y - from.y) > 5 || 
+            this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix)) {
+          // Different rows or would intersect elements - go vertical immediately
           context.lineTo(ffMaxX, from.y);
           context.lineTo(ffMaxX, lineEndPoint.y);
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
         } else {
-          // Same row - direct connection
+          // Same row and no intersections - direct connection
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
         }
         break;
@@ -308,13 +455,21 @@ export class DependencyRenderer {
         // Start of one to finish of another (rare)
         context.moveTo(from.x, from.y);
         
-        if (Math.abs(lineEndPoint.y - from.y) > 5) {
-          // Different rows - use vertical routing
-          context.lineTo(from.x - 10, from.y);
-          context.lineTo(from.x - 10, lineEndPoint.y);
+        if (Math.abs(lineEndPoint.y - from.y) > 5 || 
+            this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix)) {
+          // Different rows or would intersect elements - go vertical immediately
+          let sfX = this.snapToVerticalGrid(from.x - this.MIN_SOURCE_DISTANCE);
+          
+          // Ensure minimum distance from source element
+          if (from.x - sfX < this.MIN_SOURCE_DISTANCE) {
+            const sfTargetX = from.x - this.MIN_SOURCE_DISTANCE;
+            sfX = Math.floor(sfTargetX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+          }
+          context.lineTo(sfX, from.y);
+          context.lineTo(sfX, lineEndPoint.y);
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
         } else {
-          // Same row - direct connection
+          // Same row and no intersections - direct connection
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
         }
         break;

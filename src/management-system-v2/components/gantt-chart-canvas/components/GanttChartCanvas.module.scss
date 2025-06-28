@@ -101,7 +101,6 @@
   height: 50px; /* Optimized height for two-line labels */
   position: relative;
   overflow: hidden;
-  border-bottom: 1px solid #e0e0e0;
   background-color: #fafafa;
   width: 100%;
 }
@@ -161,6 +160,7 @@
   right: 0;
   overflow: hidden;
   transition: background-color 0.1s ease;
+  box-sizing: border-box;
 
   &:hover {
     background-color: #f9f9f9;

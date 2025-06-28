@@ -300,50 +300,30 @@ export function assignFlowColors(
  */
 export function groupAndSortElements<T extends { id: string; start: number; elementType?: string }>(
   elements: T[],
-  elementToComponent: Map<string, number>
+  elementToComponent: Map<string, number>,
+  chronologicalSorting: boolean = false
 ): T[] {
   // Group elements by component
   const componentGroups = new Map<number, T[]>();
   
-  elements.forEach(element => {
+  elements.forEach((element, originalIndex) => {
     const componentId = elementToComponent.get(element.id) ?? -1;
     if (!componentGroups.has(componentId)) {
       componentGroups.set(componentId, []);
     }
-    componentGroups.get(componentId)!.push(element);
+    // Add original index to preserve traversal order
+    componentGroups.get(componentId)!.push({ ...element, originalIndex } as T & { originalIndex: number });
   });
   
-  // Helper function to get element priority for sorting
-  const getElementPriority = (element: T): number => {
-    if (!element.elementType) return 1; // Normal priority for tasks and unknown elements
-    
-    // Check if it's a start event
-    if (element.elementType.includes('Start')) {
-      return 0; // Highest priority - appears first
-    }
-    
-    // Check if it's an end event
-    if (element.elementType.includes('End')) {
-      return 2; // Lowest priority - appears last
-    }
-    
-    return 1; // Normal priority for other elements (tasks, intermediate events)
-  };
-  
-  // Sort elements within each group by priority first, then by start time
+  // Sort elements within each group
   componentGroups.forEach(group => {
-    group.sort((a, b) => {
-      const priorityA = getElementPriority(a);
-      const priorityB = getElementPriority(b);
-      
-      // If priorities are different, sort by priority
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
-      
-      // If priorities are the same, sort by start time
-      return a.start - b.start;
-    });
+    if (chronologicalSorting) {
+      // Pure chronological sorting - sort only by start time
+      group.sort((a, b) => a.start - b.start);
+    } else {
+      // Preserve original traversal order - sort by original index
+      group.sort((a, b) => (a as any).originalIndex - (b as any).originalIndex);
+    }
   });
   
   // Sort groups by earliest start time in each group
@@ -355,8 +335,8 @@ export function groupAndSortElements<T extends { id: string; start: number; elem
     })
     .map(([, group]) => group);
   
-  // Flatten the sorted groups
-  return sortedGroups.flat();
+  // Flatten the sorted groups and remove the temporary originalIndex property
+  return sortedGroups.flat().map(({ originalIndex, ...element }: any) => element as T);
 }
 
 // ============================================================================

@@ -33,7 +33,6 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       type: 'number' as const,
       value: 1,
       description: 'Maximum number of loop iterations to process in every-occurrence mode.',
-      min: 1,
     },
     {
       key: 'chronological-sorting',

@@ -78,9 +78,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
 export default function ExecutionsPage({ params }: { params: { environmentId: string } }) {
   return (
     <Content title="Executions">
-      <Suspense fallback={<Skeleton active />}>
-        <Executions environmentId={params.environmentId} />
-      </Suspense>
+      <Executions environmentId={params.environmentId} />
     </Content>
   );
 }

@@ -81,11 +81,6 @@ const DashboardLayout = async ({
           label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
           icon: <EditOutlined />,
         },
-        documentationSettings.templates?.active !== false && {
-          key: 'processes-templates',
-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Templates</Link>,
-          icon: <SnippetsOutlined />,
-        },
       ].filter(truthyFilter);
 
       if (children.length)
@@ -109,13 +104,8 @@ const DashboardLayout = async ({
       let children: MenuProps['items'] = [
         automationSettings.dashboard?.active !== false && {
           key: 'dashboard',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/executions-dashboard`)}>Dashboard</Link>,
           icon: <BarChartOutlined />,
-        },
-        automationSettings.projects?.active !== false && {
-          key: 'projects',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Projects</Link>,
-          icon: <HistoryOutlined />,
         },
         automationSettings.executions?.active !== false && {
           key: 'executions',
@@ -124,7 +114,7 @@ const DashboardLayout = async ({
         },
         automationSettings.machines?.active !== false && {
           key: 'machines',
-          label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Machines</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Process Engines</Link>,
           icon: <LaptopOutlined />,
         },
       ].filter(truthyFilter);

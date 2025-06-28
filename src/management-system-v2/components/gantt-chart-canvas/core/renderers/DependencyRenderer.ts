@@ -229,8 +229,8 @@ export class DependencyRenderer {
             context.lineTo(lineEndPoint.x - cornerOffset, midY);
             context.lineTo(lineEndPoint.x - cornerOffset, lineEndPoint.y);
           } else {
-            // Same row - straight horizontal
-            context.lineTo(lineEndPoint.x - cornerOffset, from.y);
+            // Same row - direct connection without horizontal line
+            // Skip intermediate points and go directly to the end
           }
           
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
@@ -257,10 +257,15 @@ export class DependencyRenderer {
             context.lineTo(lineEndPoint.x - horizontalOffset, routeY);
             context.lineTo(lineEndPoint.x - horizontalOffset, lineEndPoint.y);
           } else {
-            // Same row - route slightly above
-            context.lineTo(from.x + horizontalOffset, from.y - verticalOffset);
-            context.lineTo(lineEndPoint.x - horizontalOffset, lineEndPoint.y - verticalOffset);
-            context.lineTo(lineEndPoint.x - horizontalOffset, lineEndPoint.y);
+            // Same row - avoid horizontal routing, just connect directly
+            // Use a simple curve to avoid overlapping the elements
+            const controlOffset = 20;
+            context.quadraticCurveTo(
+              from.x + (lineEndPoint.x - from.x) / 2, 
+              from.y - controlOffset,
+              lineEndPoint.x - horizontalOffset, 
+              lineEndPoint.y
+            );
           }
           
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
@@ -271,26 +276,47 @@ export class DependencyRenderer {
         // Both elements start at the same time
         const ssMinX = Math.min(from.x, lineEndPoint.x) - 15;
         context.moveTo(from.x, from.y);
-        context.lineTo(ssMinX, from.y);
-        context.lineTo(ssMinX, lineEndPoint.y);
-        context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        
+        if (Math.abs(lineEndPoint.y - from.y) > 5) {
+          // Different rows - use vertical routing
+          context.lineTo(ssMinX, from.y);
+          context.lineTo(ssMinX, lineEndPoint.y);
+          context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        } else {
+          // Same row - direct connection
+          context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        }
         break;
         
       case 'finish-to-finish':
         // Both elements finish at the same time
         const ffMaxX = Math.max(from.x, lineEndPoint.x) + 15;
         context.moveTo(from.x, from.y);
-        context.lineTo(ffMaxX, from.y);
-        context.lineTo(ffMaxX, lineEndPoint.y);
-        context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        
+        if (Math.abs(lineEndPoint.y - from.y) > 5) {
+          // Different rows - use vertical routing
+          context.lineTo(ffMaxX, from.y);
+          context.lineTo(ffMaxX, lineEndPoint.y);
+          context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        } else {
+          // Same row - direct connection
+          context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        }
         break;
         
       case 'start-to-finish':
         // Start of one to finish of another (rare)
         context.moveTo(from.x, from.y);
-        context.lineTo(from.x - 10, from.y);
-        context.lineTo(from.x - 10, lineEndPoint.y);
-        context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        
+        if (Math.abs(lineEndPoint.y - from.y) > 5) {
+          // Different rows - use vertical routing
+          context.lineTo(from.x - 10, from.y);
+          context.lineTo(from.x - 10, lineEndPoint.y);
+          context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        } else {
+          // Same row - direct connection
+          context.lineTo(lineEndPoint.x, lineEndPoint.y);
+        }
         break;
     }
     

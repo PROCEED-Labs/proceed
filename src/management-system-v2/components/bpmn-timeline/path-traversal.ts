@@ -131,6 +131,7 @@ function traverseAllPaths(
   const allPathElements: PathElement[] = [];
   const activePaths: ExecutionPath[] = [];
   let pathCounter = 0;
+  let instanceCounter = 0; // Global counter for unique instance IDs
 
   // Initialize paths from start nodes
   graph.startNodes.forEach((startNode) => {
@@ -143,7 +144,7 @@ function traverseAllPaths(
     };
 
     // Add the start node to this path
-    const result = traverseSinglePath(path, graph, defaultDurations, maxLoopIterations, startNode);
+    const result = traverseSinglePath(path, graph, defaultDurations, maxLoopIterations, startNode, () => ++instanceCounter);
     allPathElements.push(...result.elements);
 
     // Add any branched paths
@@ -158,7 +159,7 @@ function traverseAllPaths(
 
     // Find the next element to continue from for this branched path
     const nextElement = findNextElementForPath(path, graph);
-    const result = traverseSinglePath(path, graph, defaultDurations, maxLoopIterations, nextElement || undefined);
+    const result = traverseSinglePath(path, graph, defaultDurations, maxLoopIterations, nextElement || undefined, () => ++instanceCounter);
 
     allPathElements.push(...result.elements);
 
@@ -180,6 +181,7 @@ function traverseSinglePath(
   defaultDurations: DefaultDurationInfo[],
   maxLoopIterations: number,
   startElement?: BPMNFlowElement,
+  getNextInstanceId?: () => number,
 ): { elements: PathElement[]; branchedPaths: ExecutionPath[] } {
   const newElements: PathElement[] = [];
   const branchedPaths: ExecutionPath[] = [];
@@ -212,11 +214,15 @@ function traverseSinglePath(
       }
     }
 
-    // Create path element
+    // Create path element with unique instance ID
+    const instanceId = getNextInstanceId ? 
+      `${currentElement.id}_instance_${getNextInstanceId()}` : 
+      `${currentElement.id}_${path.id}_${loopCount}`;
+      
     const pathElement: PathElement = {
       elementId: currentElement.id,
       pathId: path.id,
-      instanceId: `${currentElement.id}_${path.id}_${loopCount}`,
+      instanceId,
       startTime: path.currentTime,
       endTime: path.currentTime + duration,
       duration,

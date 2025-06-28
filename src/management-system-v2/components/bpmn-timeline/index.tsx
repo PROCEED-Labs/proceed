@@ -9,6 +9,7 @@ import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { useEnvironment } from '@/components/auth-can';
 import { moddle } from '@proceed/bpmn-helper';
+import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
 
 // Import our separated modules
 import type {
@@ -23,6 +24,8 @@ import { formatGanttElementForLog, formatDependencyForLog } from './utils';
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
   const isUnmountingRef = useRef(false);
+  const modeler = useModelerStateStore((state) => state.modeler);
+  const changeCounter = useModelerStateStore((state) => state.changeCounter);
 
   const [ganttData, setGanttData] = useState<{
     elements: GanttElementType[];
@@ -76,8 +79,23 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     
     const parseAndTransform = async () => {
       try {
+        let bpmnXml = process.bpmn;
+        
+        // If modeler is available, get the current XML from it (includes unsaved changes)
+        if (modeler) {
+          try {
+            const currentXml = await modeler.getXML();
+            if (currentXml) {
+              bpmnXml = currentXml;
+            }
+          } catch (error) {
+            // If getting current XML fails, fall back to process.bpmn
+            console.warn('Failed to get current XML from modeler, using process.bpmn:', error);
+          }
+        }
+
         // Parse BPMN XML using moddle
-        const { rootElement: definitions, warnings } = await moddle.fromXML(process.bpmn);
+        const { rootElement: definitions, warnings } = await moddle.fromXML(bpmnXml);
 
         // Check if component is still mounted
         if (isUnmountingRef.current) {
@@ -131,7 +149,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
       // Mark that we're in the cleanup phase
       isUnmountingRef.current = true;
     };
-  }, [process.bpmn, ganttSettings]);
+  }, [process.bpmn, ganttSettings, modeler, changeCounter]);
 
   // Handle component unmount separately from BPMN changes
   useEffect(() => {

@@ -88,6 +88,7 @@ export interface GanttChartOptions {
   showControls?: boolean;
   readOnly?: boolean;
   showLoopIcons?: boolean;   // Show warning icons for loop elements (default: true)
+  curvedDependencies?: boolean; // Use curved lines for dependency arrows (default: false)
   grid?: {
     major?: {
       color?: string; // Color now directly set here for simplicity in API

@@ -340,6 +340,7 @@ export class CanvasRenderer {
    * @param scrollTop The current scroll position
    * @param highlightedDependencies Optional array of highlighted dependency arrows
    * @param selectedElementId Optional ID of selected element for row highlighting
+   * @param curvedDependencies Whether to use curved lines for dependency arrows
    */
   renderChartContent(
     timeMatrix: TimeMatrix,
@@ -350,7 +351,8 @@ export class CanvasRenderer {
     dependencies?: GanttDependency[],
     scrollTop?: number,
     highlightedDependencies?: GanttDependency[],
-    selectedElementId?: string | null
+    selectedElementId?: string | null,
+    curvedDependencies?: boolean
   ): void {
     const context = this.contexts.get(CanvasLayerType.ChartContent);
     if (!context) return;
@@ -440,7 +442,8 @@ export class CanvasRenderer {
         modifiedMatrix, // Use modified matrix
         visibleRowStart,
         visibleRowEnd,
-        highlightedDependencies
+        highlightedDependencies,
+        curvedDependencies || false // Pass curved dependencies setting
       );
     }
 

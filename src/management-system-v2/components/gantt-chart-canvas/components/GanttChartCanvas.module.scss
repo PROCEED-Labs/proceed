@@ -237,6 +237,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%; /* Take full height of parent row */
   
   /* Make loop icons larger in task items */
   .taskItemColumns & {

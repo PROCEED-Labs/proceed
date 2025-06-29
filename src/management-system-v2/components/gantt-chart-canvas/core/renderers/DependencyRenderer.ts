@@ -63,7 +63,8 @@ export class DependencyRenderer {
     timeMatrix: TimeMatrix,
     visibleRowStart: number,
     visibleRowEnd: number,
-    highlightedDependencies?: GanttDependency[]
+    highlightedDependencies?: GanttDependency[],
+    curvedDependencies: boolean = false
   ): void {
     // Create element lookup map for quick access and index map for positions
     // For elements, we need to handle potential duplicates properly
@@ -134,7 +135,7 @@ export class DependencyRenderer {
       toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
       
       // Draw the dependency arrow using the dependency's type
-      this.drawDependencyArrow(context, fromPoint, toPoint, dep.type, isHighlighted, elements, elementsByIndex, timeMatrix);
+      this.drawDependencyArrow(context, fromPoint, toPoint, dep.type, isHighlighted, elements, elementsByIndex, timeMatrix, curvedDependencies);
     };
     
     // Render normal dependencies first
@@ -296,7 +297,8 @@ export class DependencyRenderer {
     isHighlighted: boolean = false,
     elements?: GanttElementType[],
     elementsByIndex?: Map<number, GanttElementType>,
-    timeMatrix?: TimeMatrix
+    timeMatrix?: TimeMatrix,
+    curvedDependencies: boolean = false
   ): void {
     // Calculate adjusted endpoint to stop before arrow head
     const arrowOffset = DEPENDENCY_ARROW_SIZE * 0.8; // Stop line slightly before arrow tip
@@ -316,9 +318,14 @@ export class DependencyRenderer {
     }
     context.setLineDash([]);
     
-    // Set line join to round for smoother corners
-    context.lineJoin = 'round';
-    context.lineCap = 'round';
+    // Set line join and cap based on curved dependencies setting
+    if (curvedDependencies) {
+      context.lineJoin = 'round';
+      context.lineCap = 'round';
+    } else {
+      context.lineJoin = 'miter';
+      context.lineCap = 'butt';
+    }
     
     context.beginPath();
     
@@ -365,14 +372,42 @@ export class DependencyRenderer {
             }
           }
           
-          context.lineTo(adjustedFromX, from.y);
+          // Always use the same routing logic, just add curves if enabled
+          const radius = 5;
           
-          if (Math.abs(lineEndPoint.y - from.y) > 5) {
-            // Different rows - go vertical immediately, then to target
-            context.lineTo(adjustedFromX, lineEndPoint.y);
+          if (curvedDependencies && Math.abs(lineEndPoint.y - from.y) > 5) {
+            // Curved version: shorten lines by radius and add curves
+            
+            // Calculate directions
+            const goingRight = adjustedFromX > from.x;
+            const goingDown = lineEndPoint.y > from.y;
+            const finalGoingRight = lineEndPoint.x > adjustedFromX;
+            
+            // First horizontal line (shortened)
+            context.lineTo(adjustedFromX - (goingRight ? radius : -radius), from.y);
+            
+            // First curve (horizontal to vertical)
+            context.quadraticCurveTo(adjustedFromX, from.y, adjustedFromX, from.y + (goingDown ? radius : -radius));
+            
+            // Vertical line (shortened on both ends)
+            context.lineTo(adjustedFromX, lineEndPoint.y - (goingDown ? radius : -radius));
+            
+            // Second curve (vertical to horizontal)
+            context.quadraticCurveTo(adjustedFromX, lineEndPoint.y, adjustedFromX + (finalGoingRight ? radius : -radius), lineEndPoint.y);
+            
+            // Final horizontal line
+            context.lineTo(lineEndPoint.x, lineEndPoint.y);
+          } else {
+            // Straight lines (original behavior)
+            context.lineTo(adjustedFromX, from.y);
+            
+            if (Math.abs(lineEndPoint.y - from.y) > 5) {
+              // Different rows - go vertical immediately, then to target
+              context.lineTo(adjustedFromX, lineEndPoint.y);
+            }
+            
+            context.lineTo(lineEndPoint.x, lineEndPoint.y);
           }
-          
-          context.lineTo(lineEndPoint.x, lineEndPoint.y);
         } else {
           // Need to route around - use grid-snapped routing
           const verticalOffset = 15;
@@ -436,11 +471,79 @@ export class DependencyRenderer {
           }
           
           // Draw the path - go vertical as early as possible
-          context.lineTo(adjustedFromX, from.y);
-          context.lineTo(adjustedFromX, routeY);
-          context.lineTo(adjustedToX, routeY);
-          context.lineTo(adjustedToX, lineEndPoint.y);
-          context.lineTo(lineEndPoint.x, lineEndPoint.y);
+          if (curvedDependencies) {
+            // Simplified curved routing - draw each segment individually for proper curves
+            const radius = 5;
+            
+            // Calculate directions
+            const goingRight = adjustedFromX > from.x;
+            const goingDown = routeY > from.y;
+            const finalGoingRight = adjustedToX > adjustedFromX;
+            
+            // Draw path as individual segments to avoid overshoot
+            // 1. First horizontal line
+            context.beginPath();
+            context.moveTo(from.x, from.y);
+            context.lineTo(adjustedFromX - (goingRight ? radius : -radius), from.y);
+            context.stroke();
+            
+            // 2. First curve (horizontal to vertical)
+            context.beginPath();
+            context.moveTo(adjustedFromX - (goingRight ? radius : -radius), from.y);
+            context.quadraticCurveTo(adjustedFromX, from.y, adjustedFromX, from.y + (goingDown ? radius : -radius));
+            context.stroke();
+            
+            // 3. First vertical line
+            context.beginPath();
+            context.moveTo(adjustedFromX, from.y + (goingDown ? radius : -radius));
+            context.lineTo(adjustedFromX, routeY - (goingDown ? radius : -radius));
+            context.stroke();
+            
+            // 4. Second curve (vertical to horizontal)
+            context.beginPath();
+            context.moveTo(adjustedFromX, routeY - (goingDown ? radius : -radius));
+            context.quadraticCurveTo(adjustedFromX, routeY, adjustedFromX + (finalGoingRight ? radius : -radius), routeY);
+            context.stroke();
+            
+            // 5. Middle horizontal line
+            context.beginPath();
+            context.moveTo(adjustedFromX + (finalGoingRight ? radius : -radius), routeY);
+            context.lineTo(adjustedToX - (finalGoingRight ? radius : -radius), routeY);
+            context.stroke();
+            
+            // 6. Third curve (horizontal to vertical)
+            context.beginPath();
+            context.moveTo(adjustedToX - (finalGoingRight ? radius : -radius), routeY);
+            context.quadraticCurveTo(adjustedToX, routeY, adjustedToX, routeY + (lineEndPoint.y > routeY ? radius : -radius));
+            context.stroke();
+            
+            // 7. Second vertical line
+            context.beginPath();
+            context.moveTo(adjustedToX, routeY + (lineEndPoint.y > routeY ? radius : -radius));
+            context.lineTo(adjustedToX, lineEndPoint.y - (lineEndPoint.y > routeY ? radius : -radius));
+            context.stroke();
+            
+            // 8. Final curve (vertical to horizontal)
+            context.beginPath();
+            context.moveTo(adjustedToX, lineEndPoint.y - (lineEndPoint.y > routeY ? radius : -radius));
+            context.quadraticCurveTo(adjustedToX, lineEndPoint.y, adjustedToX + (lineEndPoint.x > adjustedToX ? radius : -radius), lineEndPoint.y);
+            context.stroke();
+            
+            // 9. Final horizontal line
+            context.beginPath();
+            context.moveTo(adjustedToX + (lineEndPoint.x > adjustedToX ? radius : -radius), lineEndPoint.y);
+            context.lineTo(lineEndPoint.x, lineEndPoint.y);
+            context.stroke();
+            
+            // Skip the main stroke since we drew everything as individual segments
+            var skipMainStroke = true;
+          } else {
+            context.lineTo(adjustedFromX, from.y);
+            context.lineTo(adjustedFromX, routeY);
+            context.lineTo(adjustedToX, routeY);
+            context.lineTo(adjustedToX, lineEndPoint.y);
+            context.lineTo(lineEndPoint.x, lineEndPoint.y);
+          }
         }
         break;
         
@@ -459,56 +562,34 @@ export class DependencyRenderer {
         if (Math.abs(lineEndPoint.y - from.y) > 5 || 
             this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix)) {
           // Different rows or would intersect elements - go vertical immediately
-          context.lineTo(ssMinX, from.y);
-          context.lineTo(ssMinX, lineEndPoint.y);
-          context.lineTo(lineEndPoint.x, lineEndPoint.y);
-        } else {
-          // Same row and no intersections - direct connection
-          context.lineTo(lineEndPoint.x, lineEndPoint.y);
-        }
-        break;
-        
-      case 'finish-to-finish':
-        // Both elements finish at the same time
-        let ffBaseX = Math.max(from.x, lineEndPoint.x) + this.MIN_SOURCE_DISTANCE;
-        let ffMaxX = this.snapToVerticalGrid(ffBaseX, from.x);
-        
-        // Ensure minimum distance from both elements
-        const ffTargetX = Math.max(from.x, lineEndPoint.x) + this.MIN_SOURCE_DISTANCE;
-        if (ffMaxX - Math.max(from.x, lineEndPoint.x) < this.MIN_SOURCE_DISTANCE) {
-          ffMaxX = Math.ceil(ffTargetX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
-        }
-        context.moveTo(from.x, from.y);
-        
-        if (Math.abs(lineEndPoint.y - from.y) > 5 || 
-            this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix)) {
-          // Different rows or would intersect elements - go vertical immediately
-          context.lineTo(ffMaxX, from.y);
-          context.lineTo(ffMaxX, lineEndPoint.y);
-          context.lineTo(lineEndPoint.x, lineEndPoint.y);
-        } else {
-          // Same row and no intersections - direct connection
-          context.lineTo(lineEndPoint.x, lineEndPoint.y);
-        }
-        break;
-        
-      case 'start-to-finish':
-        // Start of one to finish of another (rare)
-        context.moveTo(from.x, from.y);
-        
-        if (Math.abs(lineEndPoint.y - from.y) > 5 || 
-            this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix)) {
-          // Different rows or would intersect elements - go vertical immediately
-          let sfX = this.snapToVerticalGrid(from.x - this.MIN_SOURCE_DISTANCE, from.x);
-          
-          // Ensure minimum distance from source element
-          if (from.x - sfX < this.MIN_SOURCE_DISTANCE) {
-            const sfTargetX = from.x - this.MIN_SOURCE_DISTANCE;
-            sfX = Math.floor(sfTargetX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+          if (curvedDependencies) {
+            const radius = 5;
+            const vSpace = Math.abs(lineEndPoint.y - from.y);
+            const actualRadius = Math.min(radius, vSpace / 2);
+            
+            // Horizontal to corner
+            const dirH = ssMinX > from.x ? 1 : -1;
+            context.lineTo(ssMinX - (actualRadius * dirH), from.y);
+            
+            // First corner (horizontal to vertical)
+            const dir1 = lineEndPoint.y > from.y ? 1 : -1;
+            context.quadraticCurveTo(ssMinX, from.y, ssMinX, from.y + (actualRadius * dir1));
+            
+            // Vertical line (straight)
+            const dir1_ss = lineEndPoint.y > from.y ? 1 : -1;
+            context.lineTo(ssMinX, lineEndPoint.y - (actualRadius * dir1_ss));
+            
+            // Second corner (vertical to horizontal)
+            const dir2 = lineEndPoint.x > ssMinX ? 1 : -1;
+            context.quadraticCurveTo(ssMinX, lineEndPoint.y, ssMinX + (actualRadius * dir2), lineEndPoint.y);
+            
+            // Final horizontal line
+            context.lineTo(lineEndPoint.x, lineEndPoint.y);
+          } else {
+            context.lineTo(ssMinX, from.y);
+            context.lineTo(ssMinX, lineEndPoint.y);
+            context.lineTo(lineEndPoint.x, lineEndPoint.y);
           }
-          context.lineTo(sfX, from.y);
-          context.lineTo(sfX, lineEndPoint.y);
-          context.lineTo(lineEndPoint.x, lineEndPoint.y);
         } else {
           // Same row and no intersections - direct connection
           context.lineTo(lineEndPoint.x, lineEndPoint.y);
@@ -516,7 +597,10 @@ export class DependencyRenderer {
         break;
     }
     
-    context.stroke();
+    // Only stroke if we haven't already drawn colored segments
+    if (typeof skipMainStroke === 'undefined' || !skipMainStroke) {
+      context.stroke();
+    }
     
     // Draw arrow head
     this.drawArrowHead(context, to, type, isHighlighted);
@@ -525,6 +609,7 @@ export class DependencyRenderer {
     context.restore();
   }
   
+
   /**
    * Draw arrow head at the end point
    */

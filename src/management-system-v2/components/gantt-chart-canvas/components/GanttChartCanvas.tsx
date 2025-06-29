@@ -26,6 +26,7 @@ interface GanttChartCanvasProps {
   currentDateMarkerTime?: number; // Optional timestamp for the red marker line
   dependencies?: GanttDependency[]; // Optional list of dependency arrows between elements
   showInstanceColumn?: boolean; // Whether to show the instance number column
+  showLoopColumn?: boolean; // Whether to show the loop status column
 }
 
 interface ElementInfoContentProps {
@@ -289,6 +290,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       currentDateMarkerTime,
       dependencies = [],
       showInstanceColumn = false,
+      showLoopColumn = false,
     },
     ref,
   ) => {
@@ -453,6 +455,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           scrollTop, // Pass exact scroll position
           highlightedDependencies, // Pass highlighted dependencies
           selectedElementId, // Pass selected element ID for row highlighting
+          options?.curvedDependencies, // Pass curved dependencies setting
         );
 
         // Update current time unit from renderer (moved to separate effect to avoid infinite loop)
@@ -961,7 +964,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
               <div className={styles.infoButtonColumn}></div>
               <div className={styles.taskNameColumn}>Task Name</div>
               {showInstanceColumn && <div className={styles.instanceColumn}>#</div>}
-              {showInstanceColumn && (
+              {showLoopColumn && (
                 <div
                   className={styles.loopStatusColumn}
                   title="Loop Status: ↻ = Loop Element, ✕ = Loop Cut Off"
@@ -1092,7 +1095,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                             {element.instanceNumber || ''}
                           </div>
                         )}
-                        {showInstanceColumn && (
+                        {showLoopColumn && (
                           <div
                             className={styles.loopStatusColumn}
                             title={

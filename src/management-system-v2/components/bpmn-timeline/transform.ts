@@ -341,7 +341,7 @@ export function calculateElementTimings(
 export function transformBPMNToGantt(
   definitions: BPMNDefinitions,
   startTime: number = Date.now(),
-  traversalMode: 'earliest-occurrence' | 'every-occurrence' = 'earliest-occurrence',
+  traversalMode: 'earliest-occurrence' | 'every-occurrence' | 'latest-occurrence' = 'earliest-occurrence',
   loopDepth: number = 1,
   chronologicalSorting: boolean = false
 ): TransformationResult {
@@ -491,6 +491,136 @@ export function transformBPMNToGantt(
     });
     
     // Use the instance-based component mapping for every-occurrence mode
+    elementToComponent = instanceToComponent;
+  } else if (traversalMode === 'latest-occurrence') {
+    // Use path-based traversal but keep only the latest occurrence of each element
+    const { timingsMap: pathTimings, dependencies: pathDependencies } = calculatePathBasedTimings(supportedElements, startTime, defaultDurations, loopDepth);
+    
+    // Assign colors based on connected components
+    const elementColors = assignFlowColors(supportedElements);
+    
+    // Create a map to find the latest instance of each element
+    const elementToLatestTiming = new Map<string, any>();
+    
+    // Find the latest occurrence of each element
+    pathTimings.forEach((timingInstances, elementId) => {
+      if (timingInstances.length > 0) {
+        // Sort by start time and take the latest one
+        const latestTiming = timingInstances.reduce((latest, current) => 
+          current.startTime > latest.startTime ? current : latest
+        );
+        elementToLatestTiming.set(elementId, latestTiming);
+      }
+    });
+    
+    // Create dependency map for latest instances
+    const latestInstanceIdMap = new Map<string, string>(); // original element ID -> latest instance ID
+    elementToLatestTiming.forEach((timing, elementId) => {
+      latestInstanceIdMap.set(elementId, timing.instanceId);
+    });
+    
+    // Also ensure ALL elements from pathTimings are represented in the map
+    // This handles the case where an element has only one instance
+    pathTimings.forEach((timingInstances, elementId) => {
+      if (!latestInstanceIdMap.has(elementId) && timingInstances.length > 0) {
+        // If not already mapped, use the first (and only) instance
+        latestInstanceIdMap.set(elementId, timingInstances[0].instanceId);
+      }
+    });
+    
+    // Transform dependencies to use latest instances
+    const latestDependencies = pathDependencies.map(dep => {
+      // Extract original element IDs from instance IDs
+      const sourceOriginalId = dep.sourceInstanceId.split('_instance_')[0];
+      const targetOriginalId = dep.targetInstanceId.split('_instance_')[0];
+      
+      // Get the latest instances for both source and target
+      const latestSourceInstanceId = latestInstanceIdMap.get(sourceOriginalId);
+      const latestTargetInstanceId = latestInstanceIdMap.get(targetOriginalId);
+      
+      // Create dependency using latest instances
+      return {
+        sourceInstanceId: latestSourceInstanceId,
+        targetInstanceId: latestTargetInstanceId,
+        flowId: dep.flowId
+      };
+    }).filter((dep, index, arr) => {
+      // Remove duplicates that might occur when multiple early dependencies get redirected to the same latest instances
+      const key = `${dep.sourceInstanceId}->${dep.targetInstanceId}-${dep.flowId}`;
+      const firstIndex = arr.findIndex(d => `${d.sourceInstanceId}->${d.targetInstanceId}-${d.flowId}` === key);
+      return firstIndex === index;
+    });
+    
+    // Transform elements using only the latest occurrences
+    const instanceToComponent = new Map<string, number>();
+    let executionOrder = 0;
+    
+    // Process all elements that have path timings (including single instances)
+    pathTimings.forEach((timingInstances, elementId) => {
+      // Get the latest timing for this element
+      const timing = elementToLatestTiming.get(elementId) || timingInstances[0];
+      const element = supportedElements.find(el => el.id === elementId);
+      if (!element || element.$type === 'bpmn:SequenceFlow') return;
+      
+      const elementColor = elementColors.get(elementId);
+      
+      if (isTaskElement(element)) {
+        const ganttElement = transformTask(
+          element as BPMNTask,
+          timing.startTime,
+          timing.duration,
+          elementColor
+        );
+        ganttElement.id = elementId; // Use original element ID, not instance ID
+        ganttElement.name = ganttElement.name || element.id;
+        ganttElement.instanceNumber = undefined; // Don't show instance numbers in latest mode
+        ganttElement.totalInstances = undefined;
+        ganttElement.isPathCutoff = timing.isPathCutoff;
+        ganttElement.isLoop = timing.isLoop;
+        ganttElement.isLoopCut = timing.isLoopCut;
+        ganttElements.push(ganttElement);
+        
+        instanceToComponent.set(ganttElement.id, executionOrder++);
+        
+      } else if (isSupportedEventElement(element)) {
+        const ganttElement = transformEvent(
+          element as BPMNEvent,
+          timing.startTime,
+          timing.duration,
+          elementColor
+        );
+        ganttElement.id = elementId; // Use original element ID, not instance ID
+        ganttElement.name = ganttElement.name || element.id;
+        ganttElement.instanceNumber = undefined; // Don't show instance numbers in latest mode
+        ganttElement.totalInstances = undefined;
+        ganttElement.isPathCutoff = timing.isPathCutoff;
+        ganttElement.isLoop = timing.isLoop;
+        ganttElement.isLoopCut = timing.isLoopCut;
+        ganttElements.push(ganttElement);
+        
+        instanceToComponent.set(ganttElement.id, executionOrder++);
+      }
+    });
+    
+    // Create dependencies from the filtered latest dependencies
+    latestDependencies.forEach((dep, index) => {
+      const flow = supportedElements.find(el => el.id === dep.flowId) as BPMNSequenceFlow;
+      if (flow) {
+        // Map instance IDs back to original element IDs
+        const sourceOriginalId = dep.sourceInstanceId.split('_instance_')[0];
+        const targetOriginalId = dep.targetInstanceId.split('_instance_')[0];
+        
+        ganttDependencies.push({
+          id: `${dep.flowId}_latest`,
+          sourceId: sourceOriginalId,
+          targetId: targetOriginalId,
+          type: 'finish-to-start' as const,
+          name: flow.name,
+          flowType: getFlowType(flow)
+        });
+      }
+    });
+    
     elementToComponent = instanceToComponent;
   } else {
     // Use earliest occurrence traversal (existing logic)

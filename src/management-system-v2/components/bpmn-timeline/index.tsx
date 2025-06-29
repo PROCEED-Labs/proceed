@@ -39,10 +39,11 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [nowTimestamp, setNowTimestamp] = useState<number>(0);
   const [ganttSettings, setGanttSettings] = useState<{
     enabled: boolean;
-    positioningLogic: 'earliest-occurrence' | 'every-occurrence';
+    positioningLogic: 'earliest-occurrence' | 'every-occurrence' | 'latest-occurrence';
     loopDepth: number;
     chronologicalSorting: boolean;
     showLoopIcons: boolean;
+    curvedDependencies: boolean;
   } | null>(null); // Start with null to indicate settings not loaded
 
   // Add a refresh counter to force re-fetching of settings
@@ -62,6 +63,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           loopDepth: ganttViewSettings?.['loop-depth'] ?? 1,
           chronologicalSorting: ganttViewSettings?.['chronological-sorting'] ?? false,
           showLoopIcons: ganttViewSettings?.['show-loop-icons'] ?? true,
+          curvedDependencies: ganttViewSettings?.['curved-dependencies'] ?? false,
         };
         setGanttSettings(newSettings);
       } catch (error) {
@@ -72,6 +74,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           loopDepth: 1,
           chronologicalSorting: false,
           showLoopIcons: true,
+          curvedDependencies: false,
         });
       }
     };
@@ -196,7 +199,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
               Mode:{' '}
               {ganttSettings.positioningLogic === 'every-occurrence'
                 ? 'Every Occurrence'
-                : 'Earliest Occurrence'}
+                : ganttSettings.positioningLogic === 'latest-occurrence'
+                  ? 'Latest Occurrence'
+                  : 'Earliest Occurrence'}
             </div>
           )}
         </div>
@@ -371,11 +376,13 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
               dependencies={ganttData.dependencies}
               currentDateMarkerTime={nowTimestamp}
               showInstanceColumn={ganttSettings.positioningLogic === 'every-occurrence'}
+              showLoopColumn={ganttSettings.positioningLogic === 'every-occurrence' || ganttSettings.positioningLogic === 'latest-occurrence'}
               options={{
                 showControls: true,
                 autoFitToData: true,
                 autoFitPadding: 0.1,
                 showLoopIcons: ganttSettings.showLoopIcons,
+                curvedDependencies: ganttSettings.curvedDependencies,
               }}
             />
           </div>

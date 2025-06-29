@@ -170,7 +170,6 @@ function traverseAllPaths(
     // Continue traversal as long as we create the instance - we only stop when we refuse to create
     const shouldContinueTraversal = shouldCreateNewInstance;
     
-    console.log(`  Element ${element.id} visit count on this path: ${visitCount}, maxLoopIterations: ${maxLoopIterations}, actualMaxIterations: ${actualMaxIterations}`);
     
     if (shouldCreateNewInstance) {
       // Increment global counter for this element to get sequential numbering
@@ -267,14 +266,11 @@ function traverseAllPaths(
       
       if (visitCount > actualMaxIterations) {
         // We've exceeded the loop depth, don't create instance and stop this path
-        console.log(`  Loop depth exceeded for ${elementId} (visit ${visitCount}), stopping path traversal`);
-        
         // Mark the source element as loop cut-off since this path terminates here
         if (sourceInstanceId) {
           const sourceElement = pathElements.find(pe => pe.instanceId === sourceInstanceId);
           if (sourceElement) {
             sourceElement.isLoopCut = true;
-            console.log(`  Marked ${sourceElement.instanceId} as loop cut-off`);
           }
         }
         
@@ -288,7 +284,6 @@ function traverseAllPaths(
         duration,
       }, visitedElements, pathSpecificVisits);
 
-      console.log(`  Created/found instance: ${pathElement.instanceId}, shouldContinue: ${shouldContinue}`);
 
       // Create dependency if this element was reached from another instance
       if (sourceInstanceId && flowId) {
@@ -297,7 +292,6 @@ function traverseAllPaths(
           targetInstanceId: pathElement.instanceId,
           flowId
         });
-        console.log(`  Created dependency: ${sourceInstanceId} -> ${pathElement.instanceId} (flow: ${flowId})`);
       }
 
       // Update path-specific visit count and visited elements
@@ -337,8 +331,6 @@ function traverseAllPaths(
     if (iterationCount >= MAX_ITERATIONS) {
       console.error(`Path traversal exceeded maximum iterations (${MAX_ITERATIONS}), stopping to prevent infinite loop`);
     }
-    
-    console.log(`Path traversal completed after ${iterationCount} iterations`);
   }
 
   explorePaths();

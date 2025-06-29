@@ -25,6 +25,7 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       options: [
         { value: 'earliest-occurrence', label: 'Earliest Occurrence' },
         { value: 'every-occurrence', label: 'Every Occurrence' },
+        { value: 'latest-occurrence', label: 'Latest Occurrence' },
       ],
     },
     {
@@ -49,6 +50,13 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       value: true,
       description:
         'Show warning icons for elements that are part of loops or where flow traversal was cut off. Only for "Every Occurrence" mode.',
+    },
+    {
+      key: 'curved-dependencies',
+      name: 'Curved Dependencies',
+      type: 'boolean' as const,
+      value: false,
+      description: 'Use curved lines for dependency arrows instead of straight edges for a more organic appearance.',
     },
   ],
 };

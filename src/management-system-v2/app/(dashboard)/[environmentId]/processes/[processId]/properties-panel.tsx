@@ -35,6 +35,12 @@ import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import VariableDefinition from './variable-definition';
 
+// Elements that should not display the planned duration field
+const ELEMENTS_WITHOUT_PLANNED_DURATION = [
+  'bpmn:StartEvent',
+  'bpmn:TextAnnotation',
+];
+
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
 };
@@ -278,17 +284,19 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 });
               }}
             ></PlannedCostInput>
-            <PlannedDurationInput
-              onChange={(changedTimePlannedDuration) => {
-                updateMetaData(
-                  modeler!,
-                  selectedElement,
-                  'timePlannedDuration',
-                  changedTimePlannedDuration,
-                );
-              }}
-              timePlannedDuration={timePlannedDuration || ''}
-            ></PlannedDurationInput>
+            {!ELEMENTS_WITHOUT_PLANNED_DURATION.includes(selectedElement.type) && (
+              <PlannedDurationInput
+                onChange={(changedTimePlannedDuration) => {
+                  updateMetaData(
+                    modeler!,
+                    selectedElement,
+                    'timePlannedDuration',
+                    changedTimePlannedDuration,
+                  );
+                }}
+                timePlannedDuration={timePlannedDuration || ''}
+              ></PlannedDurationInput>
+            )}
           </Space>
 
           <CustomPropertySection

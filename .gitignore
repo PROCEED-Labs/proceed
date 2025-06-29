@@ -57,3 +57,6 @@ dataEval.json
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json
+
+# Ignore custom claude project files
+CLAUDE.md

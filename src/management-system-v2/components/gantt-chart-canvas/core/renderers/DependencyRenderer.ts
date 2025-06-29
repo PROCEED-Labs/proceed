@@ -27,18 +27,21 @@ export class DependencyRenderer {
   }
   
   /**
-   * Snap X coordinate to vertical grid
+   * Snap X coordinate to vertical grid based on source element position
    */
-  private snapToVerticalGrid(x: number): number {
-    return Math.round(x / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+  private snapToVerticalGrid(x: number, sourceX: number): number {
+    // Create a grid that starts from the source element position
+    const offset = sourceX % this.VERTICAL_GRID_SPACING;
+    const gridX = x - offset;
+    return Math.round(gridX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING + offset;
   }
   
   /**
    * Calculate horizontal offset ensuring minimum length
    */
   private calculateHorizontalOffset(from: { x: number }, to: { x: number }): number {
-    const snappedFromX = this.snapToVerticalGrid(from.x + this.VERTICAL_GRID_SPACING);
-    const snappedToX = this.snapToVerticalGrid(to.x - this.VERTICAL_GRID_SPACING);
+    const snappedFromX = this.snapToVerticalGrid(from.x + this.VERTICAL_GRID_SPACING, from.x);
+    const snappedToX = this.snapToVerticalGrid(to.x - this.VERTICAL_GRID_SPACING, from.x);
     
     // If the horizontal section would be too short, extend it
     if (Math.abs(snappedToX - snappedFromX) < this.MIN_HORIZONTAL_LENGTH) {
@@ -333,12 +336,33 @@ export class DependencyRenderer {
           context.moveTo(from.x, from.y);
           
           // Always ensure minimal distance from source before going vertical
-          let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE);
+          let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE, from.x);
           
           // Ensure minimum distance from source is always respected
           if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
             const minRequiredX = from.x + this.MIN_SOURCE_DISTANCE;
-            adjustedFromX = Math.ceil(minRequiredX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+            // Find next grid line in the source-based grid
+            const offset = from.x % this.VERTICAL_GRID_SPACING;
+            adjustedFromX = Math.ceil((minRequiredX - offset) / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING + offset;
+          }
+          
+          // Ensure distance to destination is greater than grid spacing
+          const distanceToTarget = Math.abs(lineEndPoint.x - adjustedFromX);
+          if (distanceToTarget <= this.VERTICAL_GRID_SPACING) {
+            // Move the vertical line further from target to ensure adequate spacing
+            if (lineEndPoint.x > adjustedFromX) {
+              // Target is to the right, move vertical line left
+              const offset = from.x % this.VERTICAL_GRID_SPACING;
+              adjustedFromX = adjustedFromX - this.VERTICAL_GRID_SPACING;
+              // But don't go below minimum source distance
+              if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
+                adjustedFromX = Math.ceil((from.x + this.MIN_SOURCE_DISTANCE - offset) / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING + offset;
+              }
+            } else {
+              // Target is to the left, move vertical line right
+              const offset = from.x % this.VERTICAL_GRID_SPACING;
+              adjustedFromX = adjustedFromX + this.VERTICAL_GRID_SPACING;
+            }
           }
           
           context.lineTo(adjustedFromX, from.y);
@@ -356,20 +380,37 @@ export class DependencyRenderer {
           
           context.moveTo(from.x, from.y);
           
-          // Always ensure minimal distance from source before going vertical
-          let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE);
+          // Always ensure minimal distance from source before going vertical (source-based grid)
+          let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE, from.x);
           
           // Ensure minimum distance from source is always respected
           if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
             const minRequiredX = from.x + this.MIN_SOURCE_DISTANCE;
-            adjustedFromX = Math.ceil(minRequiredX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+            // Find next grid line in the source-based grid
+            const offset = from.x % this.VERTICAL_GRID_SPACING;
+            adjustedFromX = Math.ceil((minRequiredX - offset) / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING + offset;
           }
           
-          // For routing, we need a point near the target
-          let adjustedToX = this.snapToVerticalGrid(lineEndPoint.x - this.MIN_TARGET_DISTANCE);
+          // For routing, find a point near the target using source-based grid
+          let adjustedToX = this.snapToVerticalGrid(lineEndPoint.x - this.MIN_TARGET_DISTANCE, from.x);
           if (lineEndPoint.x - adjustedToX < this.MIN_TARGET_DISTANCE) {
             const maxAllowedX = lineEndPoint.x - this.MIN_TARGET_DISTANCE;
-            adjustedToX = Math.floor(maxAllowedX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
+            const offset = from.x % this.VERTICAL_GRID_SPACING;
+            adjustedToX = Math.floor((maxAllowedX - offset) / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING + offset;
+          }
+          
+          // Ensure distance from last vertical line to destination is greater than grid spacing
+          const distanceToTarget = Math.abs(lineEndPoint.x - adjustedToX);
+          if (distanceToTarget <= this.VERTICAL_GRID_SPACING) {
+            // Move the vertical line further from target
+            const offset = from.x % this.VERTICAL_GRID_SPACING;
+            if (lineEndPoint.x > adjustedToX) {
+              // Target is to the right, move vertical line left
+              adjustedToX = adjustedToX - this.VERTICAL_GRID_SPACING;
+            } else {
+              // Target is to the left, move vertical line right  
+              adjustedToX = adjustedToX + this.VERTICAL_GRID_SPACING;
+            }
           }
           
           context.lineTo(adjustedFromX, from.y);
@@ -406,7 +447,7 @@ export class DependencyRenderer {
       case 'start-to-start':
         // Both elements start at the same time
         let ssBaseX = Math.min(from.x, lineEndPoint.x) - this.MIN_SOURCE_DISTANCE;
-        let ssMinX = this.snapToVerticalGrid(ssBaseX);
+        let ssMinX = this.snapToVerticalGrid(ssBaseX, from.x);
         
         // Ensure minimum distance from both elements
         const ssTargetX = Math.min(from.x, lineEndPoint.x) - this.MIN_SOURCE_DISTANCE;
@@ -430,7 +471,7 @@ export class DependencyRenderer {
       case 'finish-to-finish':
         // Both elements finish at the same time
         let ffBaseX = Math.max(from.x, lineEndPoint.x) + this.MIN_SOURCE_DISTANCE;
-        let ffMaxX = this.snapToVerticalGrid(ffBaseX);
+        let ffMaxX = this.snapToVerticalGrid(ffBaseX, from.x);
         
         // Ensure minimum distance from both elements
         const ffTargetX = Math.max(from.x, lineEndPoint.x) + this.MIN_SOURCE_DISTANCE;
@@ -458,7 +499,7 @@ export class DependencyRenderer {
         if (Math.abs(lineEndPoint.y - from.y) > 5 || 
             this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix)) {
           // Different rows or would intersect elements - go vertical immediately
-          let sfX = this.snapToVerticalGrid(from.x - this.MIN_SOURCE_DISTANCE);
+          let sfX = this.snapToVerticalGrid(from.x - this.MIN_SOURCE_DISTANCE, from.x);
           
           // Ensure minimum distance from source element
           if (from.x - sfX < this.MIN_SOURCE_DISTANCE) {

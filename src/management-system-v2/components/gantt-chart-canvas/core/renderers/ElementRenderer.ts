@@ -22,9 +22,20 @@ import { darken, hexToRgba } from '../../utils/colorUtils';
 
 export class ElementRenderer {
   private pixelRatio: number = 1;
+  private showLoopIcons: boolean = true;
 
-  constructor(pixelRatio: number = 1) {
+  constructor(pixelRatio: number = 1, showLoopIcons: boolean = true) {
     this.pixelRatio = pixelRatio;
+    this.showLoopIcons = showLoopIcons;
+  }
+
+  /**
+   * Update element renderer configuration
+   */
+  updateConfig(config: { showLoopIcons?: boolean }) {
+    if (config.showLoopIcons !== undefined) {
+      this.showLoopIcons = config.showLoopIcons;
+    }
   }
 
   /**
@@ -106,8 +117,15 @@ export class ElementRenderer {
     if (width > 20 && task.name) {
       // Create label with instance number if applicable
       let label = task.name;
-      if (task.instanceNumber && task.instanceNumber > 1) {
+      if (task.instanceNumber && task.totalInstances && task.totalInstances > 1) {
         label += ` #${task.instanceNumber}`;
+      }
+      if (this.showLoopIcons) {
+        if (task.isLoopCut) {
+          label += ' ✕';
+        } else if (task.isLoop) {
+          label += ' ↻';
+        }
       }
 
       this.drawLabel(
@@ -224,11 +242,25 @@ export class ElementRenderer {
     if (milestone.name) {
       // Create label with instance number if applicable
       let label = milestone.name;
-      if (milestone.instanceNumber && milestone.instanceNumber > 1) {
+      if (milestone.instanceNumber && milestone.totalInstances && milestone.totalInstances > 1) {
         label += ` #${milestone.instanceNumber}`;
       }
+      if (this.showLoopIcons) {
+        if (milestone.isLoopCut) {
+          label += ' ✕';
+        } else if (milestone.isLoop) {
+          label += ' ↻';
+        }
+      }
 
-      this.drawLabel(context, label, milestoneX + MILESTONE_SIZE / 2 + 4, y, 200, '#333333');
+      this.drawLabelWithBackground(
+        context,
+        label,
+        milestoneX + MILESTONE_SIZE / 2 + 4,
+        y,
+        200,
+        '#333333',
+      );
     }
 
     context.globalAlpha = 1;
@@ -292,8 +324,15 @@ export class ElementRenderer {
     if (width > 30 && group.name) {
       // Create label with instance number if applicable
       let label = group.name;
-      if (group.instanceNumber && group.instanceNumber > 1) {
+      if (group.instanceNumber && group.totalInstances && group.totalInstances > 1) {
         label += ` #${group.instanceNumber}`;
+      }
+      if (this.showLoopIcons) {
+        if (group.isLoopCut) {
+          label += ' ✕';
+        } else if (group.isLoop) {
+          label += ' ↻';
+        }
       }
 
       this.drawLabel(
@@ -418,5 +457,122 @@ export class ElementRenderer {
     });
 
     context.restore();
+  }
+
+  /**
+   * Draw text with a semi-transparent background for better readability
+   */
+  private drawLabelWithBackground(
+    context: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    color: string,
+    textAlign: CanvasTextAlign = 'left',
+    textBaseline: CanvasTextBaseline = 'middle',
+    bold: boolean = false,
+  ): void {
+    // Dynamic font sizing based on device pixel ratio
+    let fontSize = 12;
+
+    if (this.pixelRatio >= 2) {
+      fontSize = 6.5;
+    } else if (this.pixelRatio > 1.5) {
+      fontSize = 9;
+    } else if (this.pixelRatio > 1) {
+      fontSize = 10.5;
+    }
+
+    const fontFamily =
+      "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+
+    context.save();
+    context.scale(this.pixelRatio, this.pixelRatio);
+
+    // Set font for text measurement
+    context.font = `${bold ? 'bold ' : ''}${fontSize}px ${fontFamily}`;
+    context.textAlign = textAlign;
+    context.textBaseline = textBaseline;
+
+    // Calculate actual text dimensions
+    const scaledX = x / this.pixelRatio;
+    const scaledY = y / this.pixelRatio;
+    const scaledMaxWidth = maxWidth / this.pixelRatio;
+
+    // Measure the text that will actually be drawn (with ellipsis if needed)
+    const displayText = scaledMaxWidth
+      ? this.measureTextWithEllipsis(context, text, scaledMaxWidth)
+      : text;
+    const textMetrics = context.measureText(displayText);
+    const textWidth = textMetrics.width;
+    const textHeight = fontSize; // Approximate text height
+
+    // Calculate background rectangle position based on text alignment
+    let bgX = scaledX;
+    if (textAlign === 'center') {
+      bgX = scaledX - textWidth / 2;
+    } else if (textAlign === 'right') {
+      bgX = scaledX - textWidth;
+    }
+
+    let bgY = scaledY;
+    if (textBaseline === 'middle') {
+      bgY = scaledY - textHeight / 2;
+    } else if (textBaseline === 'bottom') {
+      bgY = scaledY - textHeight;
+    }
+
+    // Add padding around text
+    const padding = 2;
+    bgX -= padding;
+    bgY -= padding;
+    const bgWidth = textWidth + padding * 2;
+    const bgHeight = textHeight + padding * 2;
+
+    // Draw semi-transparent background
+    context.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    context.fillRect(bgX, bgY, bgWidth, bgHeight);
+
+    // Draw the text
+    context.fillStyle = color;
+    context.fillText(displayText, scaledX, scaledY);
+
+    context.restore();
+  }
+
+  /**
+   * Measure text with ellipsis (similar to the utility function but adapted for use here)
+   */
+  private measureTextWithEllipsis(
+    context: CanvasRenderingContext2D,
+    text: string,
+    maxWidth: number,
+  ): string {
+    const fullWidth = context.measureText(text).width;
+    if (fullWidth <= maxWidth) return text;
+
+    const ellipsis = '...';
+    const ellipsisWidth = context.measureText(ellipsis).width;
+
+    // Binary search for optimal text length
+    let left = 0;
+    let right = text.length;
+    let result = '';
+
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const truncated = text.substring(0, mid) + ellipsis;
+      const width = context.measureText(truncated).width;
+
+      if (width <= maxWidth) {
+        result = truncated;
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+
+    return result || ellipsis;
   }
 }

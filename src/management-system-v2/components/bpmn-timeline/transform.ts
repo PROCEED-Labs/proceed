@@ -391,7 +391,7 @@ export function transformBPMNToGantt(
   
   if (traversalMode === 'every-occurrence') {
     // Use path-based traversal
-    const pathTimings = calculatePathBasedTimings(supportedElements, startTime, defaultDurations, loopDepth);
+    const { timingsMap: pathTimings, dependencies: pathDependencies } = calculatePathBasedTimings(supportedElements, startTime, defaultDurations, loopDepth);
     
     // Assign colors based on connected components
     const elementColors = assignFlowColors(supportedElements);
@@ -400,164 +400,92 @@ export function transformBPMNToGantt(
     // Create maps to track path relationships
     const elementToInstances = new Map<string, string[]>();
     const instanceToPath = new Map<string, string>(); // Track which path each instance belongs to
-    const instanceToComponent = new Map<string, number>(); // Map instance IDs to component numbers
+    const instanceToComponent = new Map<string, number>(); // Map instance IDs to execution order numbers
     
-    // Transform elements with multiple instances
+    // Create a flat list of all elements in execution order
+    const allTimings: Array<{ elementId: string; timing: any; element: BPMNFlowElement; color: string }> = [];
+    
     pathTimings.forEach((timingInstances, elementId) => {
       const element = supportedElements.find(el => el.id === elementId);
       if (!element || element.$type === 'bpmn:SequenceFlow') return;
       
       const elementColor = elementColors.get(elementId);
-      const instanceIds: string[] = [];
       
-      timingInstances.forEach((timing, index) => {
-        // Always set instance number in every-occurrence mode (1 for single instances, 1,2,3... for multiple)
-        const instanceNumber = index + 1;
-        const totalInstances = timingInstances.length;
-        
-        if (isTaskElement(element)) {
-          const ganttElement = transformTask(
-            element as BPMNTask,
-            timing.startTime,
-            timing.duration,
-            elementColor
-          );
-          ganttElement.id = timing.instanceId || ganttElement.id;
-          ganttElement.name = ganttElement.name || element.id;
-          ganttElement.instanceNumber = instanceNumber;
-          ganttElement.totalInstances = totalInstances;
-          ganttElements.push(ganttElement);
-          instanceIds.push(ganttElement.id);
-          
-          // Track path relationship
-          const pathInfo = timing as any;
-          if (pathInfo.pathId) {
-            instanceToPath.set(ganttElement.id, pathInfo.pathId);
-          }
-          
-          // Map instance ID to component number (same as original element)
-          const componentNumber = originalElementToComponent.get(elementId);
-          if (componentNumber !== undefined) {
-            instanceToComponent.set(ganttElement.id, componentNumber);
-          }
-        } else if (isSupportedEventElement(element)) {
-          const ganttElement = transformEvent(
-            element as BPMNEvent,
-            timing.startTime,
-            timing.duration,
-            elementColor
-          );
-          ganttElement.id = timing.instanceId || ganttElement.id;
-          ganttElement.name = ganttElement.name || element.id;
-          ganttElement.instanceNumber = instanceNumber;
-          ganttElement.totalInstances = totalInstances;
-          ganttElements.push(ganttElement);
-          instanceIds.push(ganttElement.id);
-          
-          // Track path relationship
-          const pathInfo = timing as any;
-          if (pathInfo.pathId) {
-            instanceToPath.set(ganttElement.id, pathInfo.pathId);
-          }
-          
-          // Map instance ID to component number (same as original element)
-          const componentNumber = originalElementToComponent.get(elementId);
-          if (componentNumber !== undefined) {
-            instanceToComponent.set(ganttElement.id, componentNumber);
-          }
-        }
+      timingInstances.forEach((timing) => {
+        allTimings.push({ elementId, timing, element, color: elementColor });
       });
-      
-      elementToInstances.set(elementId, instanceIds);
     });
     
-    // Build path-specific dependency mapping by analyzing the actual path timings
-    const pathSpecificDependencies = new Map<string, { sourceInstanceId: string; targetInstanceId: string }[]>();
+    // Sort by start time to get execution order
+    allTimings.sort((a, b) => a.timing.startTime - b.timing.startTime);
     
-    // Build dependency mapping from path traversal results - handles both diverging and converging scenarios
-    supportedElements.forEach(element => {
-      if (element.$type === 'bpmn:SequenceFlow') {
-        const flow = element as BPMNSequenceFlow;
-        const sourceId = typeof flow.sourceRef === 'string' ? flow.sourceRef : (flow.sourceRef as any)?.id;
-        const targetId = typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id;
+    // Transform elements in execution order and assign sequential component numbers
+    allTimings.forEach((item, executionOrder) => {
+      const { elementId, timing, element, color } = item;
+      
+      // Count instances per element for numbering
+      const elementInstanceCount = new Map<string, number>();
+      for (let i = 0; i <= executionOrder; i++) {
+        const prevElementId = allTimings[i].elementId;
+        elementInstanceCount.set(prevElementId, (elementInstanceCount.get(prevElementId) || 0) + 1);
+      }
+      
+      const instanceNumber = elementInstanceCount.get(elementId)!;
+      const totalInstances = pathTimings.get(elementId)!.length;
+      
+      if (isTaskElement(element)) {
+        const ganttElement = transformTask(
+          element as BPMNTask,
+          timing.startTime,
+          timing.duration,
+          color
+        );
+        ganttElement.id = timing.instanceId || ganttElement.id;
+        ganttElement.name = ganttElement.name || element.id;
+        ganttElement.instanceNumber = instanceNumber;
+        ganttElement.totalInstances = totalInstances;
+        ganttElement.isPathCutoff = timing.isPathCutoff;
+        ganttElement.isLoop = timing.isLoop;
+        ganttElement.isLoopCut = timing.isLoopCut;
+        ganttElements.push(ganttElement);
         
-        const sourceTimings = pathTimings.get(sourceId);
-        const targetTimings = pathTimings.get(targetId);
+        // Assign execution order as component number for flow-based ordering
+        instanceToComponent.set(ganttElement.id, executionOrder);
         
-        if (sourceTimings && targetTimings) {
-          // For each source instance, find the appropriate target instance(s)
-          sourceTimings.forEach(sourceTiming => {
-            const sourcePathInfo = sourceTiming as any;
-            
-            // Find target instances that should be connected to this source
-            targetTimings.forEach((targetTiming, targetIndex) => {
-              const targetPathInfo = targetTiming as any;
-              
-              // Check if this source-target pair should be connected
-              let shouldConnect = false;
-              
-              // Case 1: Exact path match (converging scenarios)
-              if (sourcePathInfo.pathId === targetPathInfo.pathId) {
-                shouldConnect = true;
-              }
-              // Case 2: Direct branch relationship (diverging scenarios)
-              else {
-                const srcPath = sourcePathInfo.pathId;
-                const tgtPath = targetPathInfo.pathId;
-                
-                // Target should be exactly one branch level deeper than source
-                const branchPrefix = srcPath + '_branch_';
-                if (tgtPath.startsWith(branchPrefix)) {
-                  const remainder = tgtPath.substring(branchPrefix.length);
-                  // Should be just a number (no further branching)
-                  const isJustNumber = /^\d+$/.test(remainder);
-                  
-                  // Additional check: only connect to FIRST instance of target element
-                  // This prevents connecting to duplicates created by loops
-                  const isFirstInstance = targetIndex === 0;
-                  
-                  shouldConnect = isJustNumber && isFirstInstance;
-                }
-              }
-              
-              if (shouldConnect) {
-                // Check for loop-back dependencies - prevent cycles
-                const wouldCreateLoop = targetPathInfo.startTime < sourcePathInfo.startTime && 
-                                        sourceId !== targetId;
-                
-                if (!wouldCreateLoop) {
-                  const flowKey = flow.id;
-                  if (!pathSpecificDependencies.has(flowKey)) {
-                    pathSpecificDependencies.set(flowKey, []);
-                  }
-                  pathSpecificDependencies.get(flowKey)!.push({
-                    sourceInstanceId: sourcePathInfo.instanceId,
-                    targetInstanceId: targetPathInfo.instanceId
-                  });
-                }
-              }
-            });
-          });
-        }
+      } else if (isSupportedEventElement(element)) {
+        const ganttElement = transformEvent(
+          element as BPMNEvent,
+          timing.startTime,
+          timing.duration,
+          color
+        );
+        ganttElement.id = timing.instanceId || ganttElement.id;
+        ganttElement.name = ganttElement.name || element.id;
+        ganttElement.instanceNumber = instanceNumber;
+        ganttElement.totalInstances = totalInstances;
+        ganttElement.isPathCutoff = timing.isPathCutoff;
+        ganttElement.isLoop = timing.isLoop;
+        ganttElement.isLoopCut = timing.isLoopCut;
+        ganttElements.push(ganttElement);
+        
+        // Assign execution order as component number for flow-based ordering
+        instanceToComponent.set(ganttElement.id, executionOrder);
       }
     });
     
-    // Create dependencies based on actual path relationships
-    pathSpecificDependencies.forEach((connections, flowId) => {
-      const flow = supportedElements.find(el => el.id === flowId) as BPMNSequenceFlow;
+    // Create dependencies from path traversal results
+    pathDependencies.forEach((dep, index) => {
+      const flow = supportedElements.find(el => el.id === dep.flowId) as BPMNSequenceFlow;
       if (flow) {
-        connections.forEach(({ sourceInstanceId, targetInstanceId }, index) => {
-          // Create simple dependency ID: original flow ID + #number for duplicates
-          const dependencyId = connections.length > 1 ? `${flowId}#${index + 1}` : flowId;
-          
-          ganttDependencies.push({
-            id: dependencyId,
-            sourceId: sourceInstanceId,
-            targetId: targetInstanceId,
-            type: 'finish-to-start' as const,
-            name: flow.name,
-            flowType: getFlowType(flow)
-          });
+        const dependencyId = `${dep.flowId}_${index}`;
+        
+        ganttDependencies.push({
+          id: dependencyId,
+          sourceId: dep.sourceInstanceId,
+          targetId: dep.targetInstanceId,
+          type: 'finish-to-start' as const,
+          name: flow.name,
+          flowType: getFlowType(flow)
         });
       }
     });

@@ -196,9 +196,9 @@
 
 /* Shared column styles for header and content */
 .taskNameColumn {
-  width: 150px;
-  max-width: 150px;
-  min-width: 150px;
+  width: 120px;
+  max-width: 120px;
+  min-width: 120px;
   padding: 0 8px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -209,7 +209,6 @@
   width: 32px;
   max-width: 32px;
   min-width: 32px;
-  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -219,7 +218,6 @@
   width: 30px;
   max-width: 30px;
   min-width: 30px;
-  padding: 0 4px;
   border-left: 1px solid #f0f0f0;
   text-align: center;
   font-size: 12px;
@@ -229,8 +227,26 @@
   white-space: nowrap;
 }
 
+.loopStatusColumn {
+  width: 40px;
+  max-width: 40px;
+  min-width: 40px;
+  border-left: 1px solid #f0f0f0;
+  text-align: center;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  
+  /* Make loop icons larger in task items */
+  .taskItemColumns & {
+    font-size: 16px;
+  }
+}
+
 .extraInfoColumn {
   flex: 1;
+  font-size: 12px;
   padding: 0 8px;
   border-left: 1px solid #f0f0f0;
   overflow: hidden;

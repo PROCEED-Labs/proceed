@@ -120,6 +120,7 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
             group={settingsGroup}
             onUpdate={handleGroupUpdate}
             onNestedSettingUpdate={handleNestedSettingUpdate}
+            hideTitle={true}
           />
         )}
       </Modal>

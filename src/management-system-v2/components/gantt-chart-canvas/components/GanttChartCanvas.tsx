@@ -66,10 +66,22 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
     }
   };
 
-  // Get loop characteristics from BPMN timeline (if available)
-  const getLoopCharacteristics = () => {
-    // This would need to be passed from the BPMN data if available
-    // For now, we'll check if the element has any special characteristics
+  // Get BPMN loop characteristics (actual BPMN attributes)
+  const getBPMNLoopCharacteristics = () => {
+    // This would come from the original BPMN element data if available
+    // For now, we don't have access to the original BPMN element here
+    // This should be passed from the BPMN transformation if needed
+    return null;
+  };
+
+  // Get flow traversal status for inline display
+  const getFlowTraversalStatus = () => {
+    if (element.isLoopCut) {
+      return 'Flow cut off (depth limit)';
+    }
+    if (element.isLoop) {
+      return 'Loop instance';
+    }
     return null;
   };
 
@@ -114,6 +126,18 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
         </div>
         <div>
           <strong>Type:</strong> {getFullElementType(element)}
+          {getFlowTraversalStatus() && (
+            <span
+              style={{
+                marginLeft: '8px',
+                fontSize: '12px',
+                color: '#f57c00',
+                fontWeight: 'normal',
+              }}
+            >
+              ({getFlowTraversalStatus()})
+            </span>
+          )}
         </div>
         <div>
           <strong>ID:</strong> {element.id}
@@ -147,11 +171,11 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
         )}
       </div>
 
-      {/* Loop Characteristics */}
-      {getLoopCharacteristics() && (
+      {/* BPMN Loop Characteristics */}
+      {getBPMNLoopCharacteristics() && (
         <div style={{ marginBottom: '16px' }}>
-          <h4 style={{ margin: '0 0 8px 0', color: '#1890ff' }}>Loop Characteristics</h4>
-          <div>{getLoopCharacteristics()}</div>
+          <h4 style={{ margin: '0 0 8px 0', color: '#1890ff' }}>BPMN Loop Characteristics</h4>
+          <div>{getBPMNLoopCharacteristics()}</div>
         </div>
       )}
 
@@ -431,11 +455,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           selectedElementId, // Pass selected element ID for row highlighting
         );
 
-        // Update current time unit from renderer
-        const timeUnit = rendererRef.current.getCurrentTimeUnit();
-        if (timeUnit) {
-          setCurrentTimeUnit(timeUnit.charAt(0).toUpperCase() + timeUnit.slice(1));
-        }
+        // Update current time unit from renderer (moved to separate effect to avoid infinite loop)
       }
     }, [
       elements,
@@ -449,6 +469,16 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       selectedElementId,
       getOutgoingDependencies,
     ]);
+
+    // Update time unit display separately to avoid infinite loops
+    useEffect(() => {
+      if (rendererRef.current) {
+        const timeUnit = rendererRef.current.getCurrentTimeUnit();
+        if (timeUnit) {
+          setCurrentTimeUnit(timeUnit.charAt(0).toUpperCase() + timeUnit.slice(1));
+        }
+      }
+    }, [gantt.state.zoom]); // Only update when zoom changes, not during panning
 
     // Simple scroll handling with throttling
     const handleScroll = useCallback(
@@ -500,6 +530,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           taskBarHeight: Math.round(ROW_HEIGHT * 0.7),
           milestoneSize: Math.round(ROW_HEIGHT * 0.5),
           currentZoom: gantt.state.zoom, // Pass the current zoom level
+          showLoopIcons: options.showLoopIcons ?? true, // Default to true if not provided
         };
 
         // Add grid configuration if provided
@@ -662,6 +693,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     // Track previous configuration values to avoid unnecessary updates
     const prevConfigRef = useRef({
       zoom: gantt.state.zoom,
+      showLoopIcons: options.showLoopIcons,
       gridMajorLineWidth: options.grid?.major?.lineWidth,
       gridMajorColor: options.grid?.major?.color,
       gridMajorTimelineTickSize: options.grid?.major?.timelineTickSize,
@@ -676,6 +708,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         // Check if any relevant configuration value has actually changed
         const hasConfigChanged =
           gantt.state.zoom !== prevConfigRef.current.zoom ||
+          options.showLoopIcons !== prevConfigRef.current.showLoopIcons ||
           options.grid?.major?.lineWidth !== prevConfigRef.current.gridMajorLineWidth ||
           options.grid?.major?.color !== prevConfigRef.current.gridMajorColor ||
           options.grid?.major?.timelineTickSize !==
@@ -689,6 +722,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           // Create the update configuration
           const updateConfig: Partial<RendererConfig> = {
             currentZoom: gantt.state.zoom,
+            showLoopIcons: options.showLoopIcons ?? true,
           };
 
           // Add grid configuration if provided
@@ -729,6 +763,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           // Update previous values
           prevConfigRef.current = {
             zoom: gantt.state.zoom,
+            showLoopIcons: options.showLoopIcons,
             gridMajorLineWidth: options.grid?.major?.lineWidth,
             gridMajorColor: options.grid?.major?.color,
             gridMajorTimelineTickSize: options.grid?.major?.timelineTickSize,
@@ -741,6 +776,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     }, [
       gantt.state.zoom,
       renderChart,
+      options.showLoopIcons,
       options.grid?.major?.color,
       options.grid?.major?.lineWidth,
       options.grid?.major?.timelineTickSize,
@@ -925,6 +961,14 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
               <div className={styles.infoButtonColumn}></div>
               <div className={styles.taskNameColumn}>Task Name</div>
               {showInstanceColumn && <div className={styles.instanceColumn}>#</div>}
+              {showInstanceColumn && (
+                <div
+                  className={styles.loopStatusColumn}
+                  title="Loop Status: ↻ = Loop Element, ✕ = Loop Cut Off"
+                >
+                  Loop
+                </div>
+              )}
               <div className={styles.extraInfoColumn}>Type</div>
             </div>
             {/* Resize Handle */}
@@ -1046,6 +1090,20 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                         {showInstanceColumn && (
                           <div className={styles.instanceColumn}>
                             {element.instanceNumber || ''}
+                          </div>
+                        )}
+                        {showInstanceColumn && (
+                          <div
+                            className={styles.loopStatusColumn}
+                            title={
+                              element.isLoopCut
+                                ? 'Loop Cut Off: Flow traversal was stopped at this element due to loop depth limits'
+                                : element.isLoop
+                                  ? 'Loop Element: This element is part of a loop flow'
+                                  : 'Regular Element: Not part of any loop'
+                            }
+                          >
+                            {element.isLoopCut ? '✕' : element.isLoop ? '↻' : ''}
                           </div>
                         )}
                         <div className={styles.extraInfoColumn}>{element.elementType || ''}</div>

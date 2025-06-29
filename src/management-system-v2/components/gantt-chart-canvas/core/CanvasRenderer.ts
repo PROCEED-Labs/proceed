@@ -32,6 +32,7 @@ export interface RendererConfig {
   milestoneSize: number;
   taskBorderRadius: number;
   currentZoom?: number; // Current zoom level (0-100)
+  showLoopIcons?: boolean; // Show warning icons for loop elements (default: true)
   grid?: {
     major: {
       lineWidth: number;
@@ -68,6 +69,7 @@ const DEFAULT_CONFIG: RendererConfig = {
   milestoneSize: 14,
   taskBorderRadius: 3,
   currentZoom: 50, // Default zoom level
+  showLoopIcons: true, // Show loop icons by default
   grid: {
     major: {
       lineWidth: 1,
@@ -149,7 +151,7 @@ export class CanvasRenderer {
 
     // Initialize renderer modules
     this.gridRenderer = new GridRenderer(this.config);
-    this.elementRenderer = new ElementRenderer(this.pixelRatio);
+    this.elementRenderer = new ElementRenderer(this.pixelRatio, this.config.showLoopIcons);
     this.dependencyRenderer = new DependencyRenderer(this.pixelRatio);
   }
 
@@ -531,6 +533,11 @@ export class CanvasRenderer {
     } else {
       // Standard update for non-grid properties
       this.config = { ...this.config, ...config };
+    }
+
+    // Update element renderer if showLoopIcons changed
+    if (config.showLoopIcons !== undefined) {
+      this.elementRenderer.updateConfig({ showLoopIcons: config.showLoopIcons });
     }
 
     // Also update the time axis renderer config with grid settings

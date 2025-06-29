@@ -129,6 +129,9 @@ export interface ElementTiming {
   pathId?: string;
   instanceId?: string;
   isLoopInstance?: boolean;
+  isPathCutoff?: boolean; // Indicates this element is where path traversal stopped due to loop depth
+  isLoop?: boolean; // Indicates this element is part of a loop
+  isLoopCut?: boolean; // Indicates this element is where loop was cut off
 }
 
 export interface TransformationResult {

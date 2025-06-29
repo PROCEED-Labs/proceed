@@ -120,9 +120,9 @@ export class GridRenderer {
     // Draw horizontal lines for each row
     context.beginPath();
     for (let row = visibleRowStart; row <= visibleRowEnd + 1; row++) {
-      const y = row * ROW_HEIGHT;
-      context.moveTo(0, Math.floor(y) + 0.5);
-      context.lineTo(width, Math.floor(y) + 0.5);
+      const y = Math.round((row * ROW_HEIGHT) * 2) / 2; // Round to nearest 0.5 for crisp lines
+      context.moveTo(0, y);
+      context.lineTo(width, y);
     }
     context.stroke();
   }
@@ -173,8 +173,9 @@ export class GridRenderer {
       context.beginPath();
       subgridLines.forEach(line => {
         if (line.screenX >= 0 && line.screenX <= width) {
-          context.moveTo(Math.floor(line.screenX) + 0.5, 0);
-          context.lineTo(Math.floor(line.screenX) + 0.5, height);
+          const x = Math.round(line.screenX * 2) / 2; // Round to nearest 0.5 for crisp lines
+          context.moveTo(x, 0);
+          context.lineTo(x, height);
         }
       });
       context.stroke();
@@ -189,8 +190,9 @@ export class GridRenderer {
       context.beginPath();
       majorGridLines.forEach(line => {
         if (line.screenX >= 0 && line.screenX <= width) {
-          context.moveTo(Math.floor(line.screenX) + 0.5, 0);
-          context.lineTo(Math.floor(line.screenX) + 0.5, height);
+          const x = Math.round(line.screenX * 2) / 2; // Round to nearest 0.5 for crisp lines
+          context.moveTo(x, 0);
+          context.lineTo(x, height);
         }
       });
       context.stroke();
@@ -208,8 +210,9 @@ export class GridRenderer {
       context.setLineDash([]);
       
       context.beginPath();
-      context.moveTo(Math.floor(markerX) + 0.5, 0);
-      context.lineTo(Math.floor(markerX) + 0.5, height);
+      const x = Math.round(markerX * 2) / 2; // Round to nearest 0.5 for crisp lines
+      context.moveTo(x, 0);
+      context.lineTo(x, height);
       context.stroke();
     }
     

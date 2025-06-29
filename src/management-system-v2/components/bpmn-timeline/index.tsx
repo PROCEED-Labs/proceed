@@ -42,6 +42,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     positioningLogic: 'earliest-occurrence' | 'every-occurrence';
     loopDepth: number;
     chronologicalSorting: boolean;
+    showLoopIcons: boolean;
   } | null>(null); // Start with null to indicate settings not loaded
 
   // Add a refresh counter to force re-fetching of settings
@@ -60,6 +61,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           positioningLogic: ganttViewSettings?.['positioning-logic'] ?? 'earliest-occurrence',
           loopDepth: ganttViewSettings?.['loop-depth'] ?? 1,
           chronologicalSorting: ganttViewSettings?.['chronological-sorting'] ?? false,
+          showLoopIcons: ganttViewSettings?.['show-loop-icons'] ?? true,
         };
         setGanttSettings(newSettings);
       } catch (error) {
@@ -69,6 +71,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           positioningLogic: 'earliest-occurrence',
           loopDepth: 1,
           chronologicalSorting: false,
+          showLoopIcons: true,
         });
       }
     };
@@ -372,6 +375,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                 showControls: true,
                 autoFitToData: true,
                 autoFitPadding: 0.1,
+                showLoopIcons: ganttSettings.showLoopIcons,
               }}
             />
           </div>

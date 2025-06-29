@@ -21,9 +21,12 @@ export interface GanttElement {
   name?: string; // Optional - will display id if not provided
   color?: string;
   elementType?: string; // Optional element type description to display in second column
-  instanceNumber?: number; // For duplicate elements in path-based traversal
+  instanceNumber?: number; // For duplicate elements in flow-based traversal
   totalInstances?: number; // Total number of instances for this element
   type: 'task' | 'milestone' | 'group'; // Extensible for future element types
+  isPathCutoff?: boolean; // Indicates this element is where flow traversal stopped due to loop depth
+  isLoop?: boolean; // Indicates this element is part of a loop
+  isLoopCut?: boolean; // Indicates this element is where loop was cut off
 }
 
 /**
@@ -84,6 +87,7 @@ export interface GanttChartOptions {
   autoFitPadding?: number;   // Padding percentage when auto-fitting (default: 0.1 = 10%)
   showControls?: boolean;
   readOnly?: boolean;
+  showLoopIcons?: boolean;   // Show warning icons for loop elements (default: true)
   grid?: {
     major?: {
       color?: string; // Color now directly set here for simplicity in API

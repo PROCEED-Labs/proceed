@@ -32,7 +32,8 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       name: 'Loop Depth',
       type: 'number' as const,
       value: 1,
-      description: 'Maximum number of loop iterations to process in every-occurrence mode.',
+      description:
+        'Maximum number of loop iterations to process in every-occurrence mode. Minimum value is 0 which means no loops are processed.',
     },
     {
       key: 'chronological-sorting',
@@ -40,6 +41,14 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       type: 'boolean' as const,
       value: false,
       description: 'Sort Gantt tasks chronologically within their connected flow groups.',
+    },
+    {
+      key: 'show-loop-icons',
+      name: 'Show Loop Detection Icons',
+      type: 'boolean' as const,
+      value: true,
+      description:
+        'Show warning icons for elements that are part of loops or where flow traversal was cut off. Only for "Every Occurrence" mode.',
     },
   ],
 };

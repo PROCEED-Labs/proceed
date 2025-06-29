@@ -94,6 +94,11 @@ instanceId = `${elementId}_instance_${globalCounter++}`
 - **Loop detection**: Prevents infinite loops with iteration limits
 - **State tracking**: Maintains loop counts per element per path
 
+**Loop Depth Semantics**:
+- **Loop Depth 0**: Explore paths until first repetition is reached (allow initial visit + first repetition)
+- **Loop Depth 1**: Allow 1 loop iteration (initial visit + 1 repetition)
+- **Loop Depth N**: Allow N loop iterations (initial visit + N repetitions)
+
 #### Branching Logic
 ```typescript
 // When multiple outgoing flows exist:
@@ -155,8 +160,9 @@ Path 3 - Loop twice:
 #### Configuration
 ```typescript
 // Loop depth setting
-maxLoopIterations: number = 1 // Default: single iteration
-maxLoopIterations: number = 3 // Allow up to 3 loop iterations
+maxLoopIterations: number = 1 // Default: allow 1 loop iteration (initial + 1 repetition)
+maxLoopIterations: number = 0 // Stop at first repetition (initial + first repetition)
+maxLoopIterations: number = 3 // Allow up to 3 loop iterations (initial + 3 repetitions)
 
 // Available through space settings:
 // - 'positioning-logic': 'first-possible' | 'every-occurrence'  

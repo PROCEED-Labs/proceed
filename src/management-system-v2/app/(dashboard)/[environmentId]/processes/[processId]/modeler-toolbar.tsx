@@ -68,9 +68,9 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
     useState<ComponentProps<typeof ShareModal>['defaultOpenTab']>(undefined);
 
   const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
-  
-  const [ganttEnabled, setGanttEnabled] = useState(true);
-  
+
+  const [ganttEnabled, setGanttEnabled] = useState<boolean | null>(null);
+
   // Fetch gantt view settings
   useEffect(() => {
     const fetchGanttSettings = async () => {
@@ -83,7 +83,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
         setGanttEnabled(true);
       }
     };
-    
+
     fetchGanttSettings();
   }, [environment.spaceId]);
 
@@ -363,7 +363,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                   />
                 </Tooltip>
               )}
-              {env.PROCEED_PUBLIC_TIMELINE_VIEW === true && ganttEnabled && (
+              {env.PROCEED_PUBLIC_TIMELINE_VIEW === true && ganttEnabled === true && (
                 <Tooltip title="Switch to Gantt view">
                   <Button
                     icon={<Icon aria-label="gantt-view" component={SvgGantt} />}

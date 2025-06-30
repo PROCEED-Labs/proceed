@@ -249,9 +249,6 @@ export class CanvasRenderer {
 
     const { width } = sizeInfo;
     
-    // Start performance tracking with high precision
-    const renderStartTime = performance.now();
-    let timeMarker = renderStartTime;
 
     // Clear the canvas
     this.clearLayer(CanvasLayerType.Timeline);
@@ -323,11 +320,6 @@ export class CanvasRenderer {
     // We've removed the current date line from the timeline header per requirements
   }
 
-  // Track rendering state for better performance
-  // Initialize with -1 to ensure we always render horizontal lines on first render
-  private lastRowStartRef = -1;
-  private lastRowEndRef = -1;
-  private lastDebugMode = false; // Track debug mode changes
 
   /**
    * Render the main chart content with element bars and optimized performance
@@ -362,8 +354,6 @@ export class CanvasRenderer {
 
     const { width, height } = sizeInfo;
 
-    // Start performance tracking
-    const renderStartTime = performance.now();
 
     // Clear the canvas
     this.clearLayer(CanvasLayerType.ChartContent);

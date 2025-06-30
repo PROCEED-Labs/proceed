@@ -7,8 +7,8 @@
  */
 export enum DependencyType {
   FINISH_TO_START = 'finish-to-start',
+  START_TO_START = 'start-to-start',
   // Future types can be added here:
-  // START_TO_START = 'start-to-start',
   // FINISH_TO_FINISH = 'finish-to-finish',
   // START_TO_FINISH = 'start-to-finish',
 }

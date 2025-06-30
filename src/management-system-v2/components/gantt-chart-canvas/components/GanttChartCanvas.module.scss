@@ -1,6 +1,40 @@
 /* Gantt Chart Canvas styles */
 
+/* Base classes for common patterns */
+%column-base {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--gantt-border-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: 100%; /* Take full height of parent row */
+}
+
+%fixed-width-column {
+  @extend %column-base;
+  flex-shrink: 0;
+}
+
+%text-column {
+  font-size: 12px;
+  color: var(--gantt-text-color);
+  text-align: center;
+}
+
 .ganttContainer {
+  --gantt-border-color: #e0e0e0;
+  --gantt-border-light: #f0f0f0;
+  --gantt-background: #fff;
+  --gantt-background-alt: #fafafa;
+  --gantt-hover-background: #f9f9f9;
+  --gantt-selection-color: rgba(24, 144, 255, 0.1);
+  --gantt-primary-color: #1890ff;
+  --gantt-primary-hover: #40a9ff;
+  --gantt-text-color: #666;
+  --gantt-header-height: 50px;
+  
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -14,8 +48,8 @@
 .ganttControls {
   display: flex;
   padding: 8px;
-  border-bottom: 1px solid #e0e0e0;
-  background-color: #f5f5f5;
+  border-bottom: 1px solid var(--gantt-border-color);
+  background-color: var(--gantt-background-alt);
   align-items: center;
   gap: 8px;
   height: 40px;
@@ -23,21 +57,21 @@
 
 .headerRow {
   display: flex;
-  height: 50px; /* Optimized height for two-line labels */
+  height: var(--gantt-header-height);
   width: 100%;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--gantt-border-color);
 }
 
 .taskListHeader {
   position: relative;
   flex: 0 0 auto; /* Do not grow, do not shrink, size based on width */
-  background-color: #fafafa;
-  border-right: 1px solid #e0e0e0;
+  background-color: var(--gantt-background-alt);
+  border-right: 1px solid var(--gantt-border-color);
   padding: 0;
   display: flex;
   align-items: center;
   font-weight: bold;
-  height: 50px; /* Optimized height for two-line labels */
+  height: var(--gantt-header-height);
 }
 
 .taskListHeaderColumns {
@@ -47,11 +81,6 @@
   align-items: center;
 }
 
-.timelineHeader {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
 
 .contentRow {
   display: flex;
@@ -61,8 +90,8 @@
 }
 
 .taskList {
-  border-right: 1px solid #e0e0e0;
-  background-color: #fff;
+  border-right: 1px solid var(--gantt-border-color);
+  background-color: var(--gantt-background);
   overflow: auto;
   position: relative;
   flex: 0 0 auto; /* Do not grow or shrink */
@@ -75,15 +104,15 @@
   right: 0;
   width: 5px;
   cursor: col-resize;
-  background-color: #f0f0f0;
+  background-color: var(--gantt-border-light);
   z-index: 1;
 
   &:hover {
-    background-color: #e0e0e0;
+    background-color: var(--gantt-border-color);
   }
 
   &:active {
-    background-color: #d0d0d0;
+    background-color: var(--gantt-text-color);
   }
 }
 
@@ -98,10 +127,10 @@
 
 /* Timeline header - fixed height, full width */
 .timelineHeader {
-  height: 50px; /* Optimized height for two-line labels */
+  height: var(--gantt-header-height);
   position: relative;
   overflow: hidden;
-  background-color: #fafafa;
+  background-color: var(--gantt-background-alt);
   width: 100%;
 }
 
@@ -154,7 +183,7 @@
   padding: 0;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--gantt-border-light);
   position: absolute;
   left: 0;
   right: 0;
@@ -163,16 +192,16 @@
   box-sizing: border-box;
 
   &:hover {
-    background-color: #f9f9f9;
+    background-color: var(--gantt-hover-background);
   }
 }
 
 .selectedItem {
-  background-color: rgba(24, 144, 255, 0.1) !important;
-  border-left: 3px solid #1890ff;
+  background-color: var(--gantt-selection-color) !important;
+  border-left: 3px solid var(--gantt-primary-color);
 
   &:hover {
-    background-color: rgba(24, 144, 255, 0.15) !important;
+    background-color: rgba(24, 144, 255, 0.15) !important; /* Slightly darker than selection */
   }
 
   .infoButtonColumn {
@@ -189,7 +218,7 @@
   // Extra styles specific to content items
   .extraInfoColumn {
     font-size: 0.9em;
-    color: #666;
+    color: var(--gantt-text-color);
     font-weight: normal;
   }
 }
@@ -197,50 +226,25 @@
 /* Shared column styles for header and content */
 .taskNameColumn {
   width: 120px;
-  max-width: 120px;
-  min-width: 120px;
   padding: 0 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @extend %column-base;
 }
 
 .infoButtonColumn {
   width: 32px;
-  max-width: 32px;
-  min-width: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @extend %fixed-width-column;
 }
 
 .instanceColumn {
   width: 30px;
-  max-width: 30px;
-  min-width: 30px;
-  border-left: 1px solid #f0f0f0;
-  text-align: center;
-  font-size: 12px;
-  color: #666;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @extend %fixed-width-column;
+  @extend %text-column;
 }
 
 .loopStatusColumn {
   width: 40px;
-  max-width: 40px;
-  min-width: 40px;
-  border-left: 1px solid #f0f0f0;
-  text-align: center;
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%; /* Take full height of parent row */
+  @extend %fixed-width-column;
+  @extend %text-column;
   
   /* Make loop icons larger in task items */
   .taskItemColumns & {
@@ -250,31 +254,26 @@
 
 .extraInfoColumn {
   flex: 1;
-  font-size: 12px;
   padding: 0 8px;
-  border-left: 1px solid #f0f0f0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @extend %column-base;
+  @extend %text-column;
 }
-
-/* Selection styling removed */
 
 .controlButton {
   padding: 4px 8px;
   height: 30px;
-  background-color: #fff;
-  border: 1px solid #d9d9d9;
+  background-color: var(--gantt-background);
+  border: 1px solid var(--gantt-border-color);
   border-radius: 2px;
   cursor: pointer;
 
   &:hover {
-    background-color: #f9f9f9;
-    border-color: #40a9ff;
+    background-color: var(--gantt-hover-background);
+    border-color: var(--gantt-primary-hover);
   }
 
   &:active {
-    background-color: #e6f7ff;
+    background-color: rgba(24, 144, 255, 0.08);
   }
 }
 
@@ -289,7 +288,7 @@
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: #d9d9d9;
+  background: var(--gantt-border-color);
   border-radius: 2px;
   outline: none;
 
@@ -298,32 +297,32 @@
     appearance: none;
     width: 12px;
     height: 12px;
-    background: #1890ff;
+    background: var(--gantt-primary-color);
     border-radius: 50%;
     cursor: pointer;
 
     &:hover {
-      background: #40a9ff;
+      background: var(--gantt-primary-hover);
     }
   }
 
   &::-moz-range-thumb {
     width: 12px;
     height: 12px;
-    background: #1890ff;
+    background: var(--gantt-primary-color);
     border-radius: 50%;
     cursor: pointer;
     border: none;
 
     &:hover {
-      background: #40a9ff;
+      background: var(--gantt-primary-hover);
     }
   }
 }
 
 .zoomValue {
   font-size: 12px;
-  color: #666;
+  color: var(--gantt-text-color);
   margin-right: 3px;
 }
 
@@ -333,5 +332,5 @@
 
 .timeUnitValue {
   font-weight: 600;
-  color: #1890ff;
+  color: var(--gantt-primary-color);
 }

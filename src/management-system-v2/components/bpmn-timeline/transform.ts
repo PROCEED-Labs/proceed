@@ -483,7 +483,7 @@ export function transformBPMNToGantt(
           id: dependencyId,
           sourceId: dep.sourceInstanceId,
           targetId: dep.targetInstanceId,
-          type: 'finish-to-start' as const,
+          type: DependencyType.FINISH_TO_START,
           name: flow.name,
           flowType: getFlowType(flow)
         });
@@ -524,7 +524,7 @@ export function transformBPMNToGantt(
     pathTimings.forEach((timingInstances, elementId) => {
       if (!latestInstanceIdMap.has(elementId) && timingInstances.length > 0) {
         // If not already mapped, use the first (and only) instance
-        latestInstanceIdMap.set(elementId, timingInstances[0].instanceId);
+        latestInstanceIdMap.set(elementId, timingInstances[0].instanceId!);
       }
     });
     
@@ -607,14 +607,14 @@ export function transformBPMNToGantt(
       const flow = supportedElements.find(el => el.id === dep.flowId) as BPMNSequenceFlow;
       if (flow) {
         // Map instance IDs back to original element IDs
-        const sourceOriginalId = dep.sourceInstanceId.split('_instance_')[0];
-        const targetOriginalId = dep.targetInstanceId.split('_instance_')[0];
+        const sourceOriginalId = dep.sourceInstanceId!.split('_instance_')[0];
+        const targetOriginalId = dep.targetInstanceId!.split('_instance_')[0];
         
         ganttDependencies.push({
           id: `${dep.flowId}_latest`,
           sourceId: sourceOriginalId,
           targetId: targetOriginalId,
-          type: 'finish-to-start' as const,
+          type: DependencyType.FINISH_TO_START,
           name: flow.name,
           flowType: getFlowType(flow)
         });

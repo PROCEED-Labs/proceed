@@ -52,11 +52,11 @@
   transition: background-color var(--transition-duration);
 
   &:hover {
-    background-color: #f0f0f0;
+    background-color: var(--grid-minor-color);
   }
 
   &:active {
-    background-color: #e0e0e0;
+    background-color: var(--border-color);
   }
 }
 
@@ -102,7 +102,7 @@
   text-overflow: ellipsis;
 
   &:hover {
-    background-color: #f9f9f9;
+    background-color: var(--grid-minor-color);
   }
 
   &.selected {
@@ -257,7 +257,8 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #888;
+  color: var(--text-color);
+  opacity: 0.6;
   text-align: center;
   padding: 20px;
 

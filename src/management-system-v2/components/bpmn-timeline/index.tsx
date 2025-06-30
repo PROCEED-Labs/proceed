@@ -19,8 +19,8 @@ import type {
   DefaultDurationInfo,
 } from './types';
 import { transformBPMNToGantt } from './transform';
-import { formatGanttElementForLog, formatDependencyForLog } from './utils';
 import { GanttSettingsModal } from './GanttSettingsModal';
+import styles from './BPMNTimeline.module.scss';
 
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
@@ -180,19 +180,12 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   }, [disableTimelineView]);
 
   const headerTitle = (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '100%',
-      }}
-    >
-      <div>
-        <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
+    <div className={styles.headerContainer}>
+      <div className={styles.titleSection}>
+        <div className={styles.title}>
           BPMN Timeline View
         </div>
-        <div style={{ fontSize: '14px', color: '#666', fontWeight: 400 }}>
+        <div className={styles.subtitle}>
           {(isLoading || !ganttSettings) && 'Loading...'}
           {!isLoading && ganttSettings && (
             <div>
@@ -206,7 +199,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <div className={styles.actionSection}>
         <GanttSettingsModal
           onSettingsChange={() => {
             // Force settings refresh and timeline re-transformation
@@ -229,31 +222,16 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   );
 
   return (
-    <div
-      style={{
-        padding: '10px',
-        height: '100%',
-        minHeight: '400px',
-        maxHeight: 'calc(100vh - 100px)',
-        overflow: 'hidden',
-        boxSizing: 'border-box',
-      }}
-    >
+    <div className={styles.timelineContainer}>
       <Card
         {...props}
         title={headerTitle}
-        style={{
-          height: '100%',
-          boxShadow:
-            '0px 0px 1px 0px rgba(0, 0, 0, 0.17), 0px 0px 3px 0px rgba(0, 0, 0, 0.08), 0px 7px 14px 0px rgba(0, 0, 0, 0.05)',
-          borderRadius: '8px',
-          border: 'none',
-          ...props.style,
-        }}
+        className={styles.timelineCard}
+        style={props.style}
         styles={{
           body: {
             padding: 0,
-            height: 'calc(100% - 80px)', // Account for header
+            height: 'calc(100% - 80px)',
             display: 'flex',
             flexDirection: 'column',
           },
@@ -261,12 +239,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
       >
         {/* Error Report */}
         {errors.length > 0 && (
-          <div
-            style={{
-              margin: '16px 16px 0',
-              flexShrink: 0,
-            }}
-          >
+          <div className={styles.errorSection}>
             <Collapse
               size="small"
               ghost
@@ -274,28 +247,20 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                 {
                   key: 'errors',
                   label: (
-                    <div style={{ color: '#f57c00', fontWeight: 600 }}>
-                      <WarningOutlined style={{ marginRight: '8px' }} />
+                    <div className={styles.errorHeader}>
+                      <WarningOutlined className={styles.warningIcon} />
                       Unsupported Elements ({errors.length})
                     </div>
                   ),
                   children: (
-                    <div
-                      style={{
-                        padding: '12px',
-                        border: '1px solid #ff9800',
-                        borderRadius: '6px',
-                        backgroundColor: '#fff3e0',
-                        marginTop: '8px',
-                      }}
-                    >
-                      <div style={{ fontSize: '13px', marginBottom: '8px', color: '#666' }}>
+                    <div className={styles.errorPanel}>
+                      <div className={styles.errorDescription}>
                         The following elements could not be interpreted and are excluded from the
                         timeline:
                       </div>
-                      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px' }}>
+                      <ul className={styles.errorList}>
                         {errors.map((error, index) => (
-                          <li key={index} style={{ marginBottom: '4px' }}>
+                          <li key={index}>
                             <strong>{error.elementName || error.elementId}</strong> (
                             {error.elementType}): {error.reason}
                           </li>
@@ -305,23 +270,14 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                   ),
                 },
               ]}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-              }}
+              className={styles.collapseContainer}
             />
           </div>
         )}
 
         {/* Default Duration Information */}
         {defaultDurations.length > 0 && (
-          <div
-            style={{
-              margin: '16px',
-              marginTop: errors.length > 0 ? '0' : '16px',
-              flexShrink: 0,
-            }}
-          >
+          <div className={`${styles.defaultDurationSection} ${errors.length > 0 ? styles.afterErrors : ''}`}>
             <Collapse
               size="small"
               ghost
@@ -329,28 +285,20 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                 {
                   key: 'defaultDurations',
                   label: (
-                    <div style={{ color: '#1976d2', fontWeight: 600 }}>
-                      <span style={{ marginRight: '8px' }}>ℹ️</span>
+                    <div className={styles.defaultDurationLabel}>
+                      <span className={styles.infoIconInline}>ℹ️</span>
                       Tasks with Default Duration ({defaultDurations.length})
                     </div>
                   ),
                   children: (
-                    <div
-                      style={{
-                        padding: '12px',
-                        border: '1px solid #1976d2',
-                        borderRadius: '6px',
-                        backgroundColor: '#e3f2fd',
-                        marginTop: '8px',
-                      }}
-                    >
-                      <div style={{ fontSize: '13px', marginBottom: '8px', color: '#666' }}>
+                    <div className={styles.defaultDurationContent}>
+                      <div className={styles.defaultDurationDescription}>
                         The following tasks did not have explicit durations and received the default
                         value of 1 hour:
                       </div>
-                      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px' }}>
+                      <ul className={styles.defaultDurationList}>
                         {defaultDurations.map((item, index) => (
-                          <li key={index} style={{ marginBottom: '4px' }}>
+                          <li key={index}>
                             <strong>{item.elementName || item.elementId}</strong> (
                             {item.elementType}): 1 hour
                           </li>
@@ -360,17 +308,14 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                   ),
                 },
               ]}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-              }}
+              className={styles.defaultDurationCollapse}
             />
           </div>
         )}
 
         {/* Gantt Chart */}
         {!isLoading && ganttSettings && ganttData.elements.length > 0 && (
-          <div style={{ flex: 1, overflow: 'hidden', minHeight: '400px' }}>
+          <div className={styles.ganttSection}>
             <GanttChartCanvas
               elements={ganttData.elements}
               dependencies={ganttData.dependencies}
@@ -390,14 +335,14 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
 
         {/* Loading state while settings are being fetched */}
         {!ganttSettings && (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#666', flex: 1 }}>
+          <div className={styles.loadingSection}>
             Loading settings...
           </div>
         )}
 
         {/* No data message */}
         {!isLoading && ganttSettings && ganttData.elements.length === 0 && errors.length === 0 && (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#666', flex: 1 }}>
+          <div className={styles.noDataSection}>
             No supported elements found in the BPMN process.
           </div>
         )}

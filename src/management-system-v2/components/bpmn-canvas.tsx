@@ -206,7 +206,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       deactivateKeyboard: () => {
         modeler.current!.get<Keyboard>('keyboard').unbind();
       },
-      removeColors: () => {},
     }));
 
     const [Modeler, NavigatedViewer, Viewer] = use(BPMNJs);

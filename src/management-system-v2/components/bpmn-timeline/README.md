@@ -4,7 +4,7 @@ The BPMN Timeline component transforms BPMN process definitions into Gantt chart
 
 ## Overview
 
-This component converts BPMN process data into timeline representations using sophisticated algorithms that handle complex process flows, loops, and branching structures. The component supports two primary modes: **Earliest Occurrence** (default) and **Every Occurrence** (path-based).
+This component converts BPMN process data into timeline representations using sophisticated algorithms that handle complex process flows, loops, and branching structures. The component supports three primary modes: **Earliest Occurrence** (default), **Every Occurrence** (path-based), and **Latest Occurrence** (worst-case scenario).
 
 ## Transform Rules and Algorithms
 
@@ -157,6 +157,45 @@ Path 3 - Loop twice:
 - EndEvent: milestone at 08:00
 ```
 
+### 3. Latest Occurrence Mode (Worst-Case Scenario)
+
+**Algorithm**: Path-based traversal with latest occurrence selection
+**Implementation**: `transform.ts` → `calculateLatestOccurrenceTimings()`
+
+#### Core Principles
+- Each element appears exactly **once** in the timeline (like Earliest Occurrence)
+- Elements show their **latest possible start time** across all execution paths
+- Uses path-based exploration (like Every Occurrence) but selects latest timing
+- Supports configurable loop iterations
+- Shows **worst-case scenario** for process completion
+
+#### Algorithm Steps
+```
+1. Execute path-based traversal (same as Every Occurrence mode)
+2. For each element ID, collect all instances across all paths
+3. Select the instance with the latest start time
+4. Create single Gantt element using latest timing
+```
+
+#### Use Cases
+- **Risk assessment**: Understand worst-case execution scenarios
+- **Buffer planning**: Plan for maximum possible delays
+- **Capacity planning**: Prepare for peak resource requirements
+- **SLA definition**: Set realistic service level agreements
+- **Contingency planning**: Account for all possible delays
+
+#### Example Transformation
+```
+Same BPMN Process as Every Occurrence example:
+
+Timeline Result (Latest Occurrence):
+- StartEvent: milestone at 00:00 (same across all paths)
+- Task A: 05:00 - 07:00 (latest occurrence from Path 3)
+- Task C: 04:30 - 05:00 (latest occurrence from Path 3)
+- Task B: 07:00 - 08:00 (latest occurrence from Path 3)
+- EndEvent: milestone at 08:00 (worst-case completion)
+```
+
 #### Configuration
 ```typescript
 // Loop depth setting
@@ -165,9 +204,11 @@ maxLoopIterations: number = 0 // Stop at first repetition (initial + first repet
 maxLoopIterations: number = 3 // Allow up to 3 loop iterations (initial + 3 repetitions)
 
 // Available through space settings:
-// - 'positioning-logic': 'first-possible' | 'every-occurrence'  
-// - 'loop-depth': number (for every-occurrence mode)
+// - 'positioning-logic': 'earliest-occurrence' | 'every-occurrence' | 'latest-occurrence'
+// - 'loop-depth': number (for path-based modes)
 // - 'chronological-sorting': boolean (default: false)
+// - 'show-loop-icons': boolean (default: true)
+// - 'curved-dependencies': boolean (default: false)
 ```
 
 ## Element Transformation Rules
@@ -187,7 +228,11 @@ maxLoopIterations: number = 3 // Allow up to 3 loop iterations (initial + 3 repe
 **Transformation**:
 - **Visual**: Rectangular bars in Gantt chart
 - **Duration**: ISO 8601 from `proceed:timePlannedDuration` or 1 hour default
-- **ExtraInfo**: `<TaskType> [Loop-Characteristics]` (e.g., `<ManualTask> [Parallel-Multi-Instance]`)
+- **Type Column**: Shows human-readable task type (e.g., "User Task", "Service Task", "Manual Task")
+- **Enhanced Properties**: 
+  - `isLoop`: Indicates element participates in a loop structure
+  - `isPathCutoff`: Shows where flow traversal was terminated
+  - `isLoopCut`: Marks where loop iteration limit was reached
 
 ### Events → Gantt Milestones
 **Supported Types**: All except BoundaryEvents
@@ -200,7 +245,7 @@ maxLoopIterations: number = 3 // Allow up to 3 loop iterations (initial + 3 repe
 - **Visual**: Diamond markers at completion time (Option A implementation)
 - **Duration**: ISO 8601 from extensionElements or 0ms default
 - **Positioning**: Milestone appears at `startTime + duration`
-- **ExtraInfo**: `<EventDefinition>[EventKind]` (e.g., `<Message>[Start]`, `<Timer>[Intermediate-Catch]`)
+- **Type Column**: Shows event definition and position (e.g., "Message (Start)", "Timer (Intermediate)", "End")
 
 ### SequenceFlows → Gantt Dependencies
 **Supported Types**: All sequence flows
@@ -259,9 +304,9 @@ maxLoopIterations: number = 3 // Allow up to 3 loop iterations (initial + 3 repe
 #### Chronological Sorting Detailed Behavior
 
 **Default Sorting (chronological-sorting: false)**:
-- **Priority 0**: Start Events (appear first regardless of start time)
-- **Priority 1**: Tasks and Intermediate Events (sorted by start time within priority)
-- **Priority 2**: End Events (appear last regardless of start time)
+- **Preserves original traversal order** within connected components
+- **Maintains logical flow** as discovered during process traversal
+- **Groups related elements** naturally by their discovery sequence
 
 **Chronological Sorting (chronological-sorting: true)**:
 - **All elements** sorted purely by start time within their connected flow
@@ -273,9 +318,9 @@ maxLoopIterations: number = 3 // Allow up to 3 loop iterations (initial + 3 repe
 Process: StartEvent(00:00) → Task A(01:00-03:00) → EndEvent(02:30)
 
 Default Sorting Result:
-1. StartEvent (priority 0, time 00:00)
-2. Task A (priority 1, time 01:00) 
-3. EndEvent (priority 2, time 02:30)
+1. StartEvent (discovery order: 1st)
+2. Task A (discovery order: 2nd) 
+3. EndEvent (discovery order: 3rd)
 
 Chronological Sorting Result:
 1. StartEvent (time 00:00)
@@ -333,13 +378,17 @@ interface TransformError {
 enabled: boolean = false
 
 // Algorithm selection  
-positioning-logic: 'first-possible' | 'every-occurrence' = 'first-possible'
+positioning-logic: 'earliest-occurrence' | 'every-occurrence' | 'latest-occurrence' = 'earliest-occurrence'
 
-// Loop iteration control (every-occurrence mode only)
+// Loop iteration control (path-based modes)
 loop-depth: number = 1
 
 // Element sorting within connected flows
 chronological-sorting: boolean = false
+
+// Visual enhancements
+show-loop-icons: boolean = true
+curved-dependencies: boolean = false
 ```
 
 ### Runtime Parameters
@@ -362,22 +411,35 @@ chronologicalSorting: boolean = false
 
 ### Data Access
 ```typescript
-// Primary data source
-const definitions = bpmnjsModeler.getDefinitions();
-const process = definitions.rootElements[0];
-const elements = process.flowElements;
+// Enhanced data source - includes unsaved changes
+let bpmnXml = process.bpmn;
+if (modeler) {
+  const currentXml = await modeler.getXML();
+  if (currentXml) {
+    bpmnXml = currentXml;
+  }
+}
+const { rootElement: definitions } = await moddle.fromXML(bpmnXml);
 ```
 
 ### GanttChartCanvas Integration
 ```typescript
 import { GanttChartCanvas } from '@/components/gantt-chart-canvas';
 
-// Transform and render
-const result = transformBPMNToGantt(definitions, timestamp);
+// Transform and render with enhanced options
+const result = transformBPMNToGantt(definitions, timestamp, settings.positioningLogic, settings.loopDepth, settings.chronologicalSorting);
 <GanttChartCanvas
   elements={result.elements}
   dependencies={result.dependencies}
   currentDateMarkerTime={timestamp}
+  showInstanceColumn={settings.positioningLogic === 'every-occurrence'}
+  showLoopColumn={settings.positioningLogic !== 'earliest-occurrence'}
+  options={{
+    showControls: true,
+    autoFitToData: true,
+    showLoopIcons: settings.showLoopIcons,
+    curvedDependencies: settings.curvedDependencies,
+  }}
 />
 ```
 
@@ -385,6 +447,23 @@ const result = transformBPMNToGantt(definitions, timestamp);
 - **Timeline view store**: Controls visibility and settings
 - **Process modeler integration**: Receives bpmn-js modeler instance
 - **Error state**: Local error handling with status display
+- **Settings modal**: In-app configuration without leaving timeline view
+- **Default duration tracking**: Visual feedback for elements using default durations
+
+### User Interface Features
+
+#### Settings Modal (`GanttSettingsModal.tsx`)
+- **In-timeline configuration**: Change settings without leaving the view
+- **Real-time updates**: Settings changes immediately trigger re-transformation
+- **Space-level persistence**: Settings saved to space configuration
+- **All options available**: Algorithm selection, loop depth, visual preferences
+
+#### Visual Indicators
+- **Loop warning icons**: Show elements that are part of loops (configurable)
+- **Path cutoff markers**: Indicate where flow traversal was terminated
+- **Instance labeling**: Clear identification in every-occurrence mode
+- **Curved dependencies**: Optional rounded corners for dependency arrows
+- **Default duration panels**: Collapsible information about elements using defaults
 
 ## Future Extensions
 

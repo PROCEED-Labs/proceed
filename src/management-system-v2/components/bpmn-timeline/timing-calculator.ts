@@ -48,6 +48,7 @@ export function calculateElementTimings(
       const sourceId = typeof flow.sourceRef === 'string' ? flow.sourceRef : (flow.sourceRef as any)?.id || flow.sourceRef;
       const targetId = typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id || flow.targetRef;
       
+      
       // Track incoming flows for target
       const targetIncoming = incomingFlows.get(targetId) || [];
       targetIncoming.push(flow.id);

@@ -52,7 +52,7 @@ export function buildProcessGraph(elements: BPMNFlowElement[]): ProcessGraph {
     incomingCount.set(element.id, 0);
   });
 
-  // Build edge map and count incoming flows
+  // Build edge map and count incoming flows (excluding self-loops)
   sequenceFlows.forEach((flow) => {
     const sourceId =
       typeof flow.sourceRef === 'string'
@@ -68,7 +68,10 @@ export function buildProcessGraph(elements: BPMNFlowElement[]): ProcessGraph {
     }
     edges.get(sourceId)!.push(flow);
 
-    incomingCount.set(targetId, (incomingCount.get(targetId) || 0) + 1);
+    // Only count non-self-loop flows as incoming connections for start node detection
+    if (sourceId !== targetId) {
+      incomingCount.set(targetId, (incomingCount.get(targetId) || 0) + 1);
+    }
   });
 
   // Find start and end nodes

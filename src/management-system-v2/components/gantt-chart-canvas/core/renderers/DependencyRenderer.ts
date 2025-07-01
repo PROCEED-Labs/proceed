@@ -117,8 +117,12 @@ export class DependencyRenderer {
       fromPoint.y = fromIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
       toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
       
+      // Check if this is a self-loop (dependency from element to itself)
+      const isSelfLoop = dep.sourceId === dep.targetId || 
+                        (fromElement.id === toElement.id && fromElement.instanceNumber && toElement.instanceNumber);
+      
       // Draw the dependency arrow using the dependency's type
-      this.drawDependencyArrow(context, fromPoint, toPoint, dep.type, isHighlighted, elements, elementsByIndex, timeMatrix, curvedDependencies);
+      this.drawDependencyArrow(context, fromPoint, toPoint, dep.type, isHighlighted, elements, elementsByIndex, timeMatrix, curvedDependencies, isSelfLoop);
     };
     
     // Render normal dependencies first
@@ -281,7 +285,8 @@ export class DependencyRenderer {
     elements?: GanttElementType[],
     elementsByIndex?: Map<number, GanttElementType>,
     timeMatrix?: TimeMatrix,
-    curvedDependencies: boolean = false
+    curvedDependencies: boolean = false,
+    isSelfLoop: boolean = false
   ): void {
     // Calculate adjusted endpoint to stop before arrow head
     const arrowOffset = DEPENDENCY_ARROW_SIZE * 0.8; // Stop line slightly before arrow tip
@@ -322,7 +327,7 @@ export class DependencyRenderer {
         // Check if we need to route around elements
         const hasInsufficientSpace = lineEndPoint.x <= from.x + 20;
         const hasCollision = this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix);
-        const needsRouting = hasInsufficientSpace || hasCollision;
+        const needsRouting = hasInsufficientSpace || hasCollision || isSelfLoop;
         
         if (!needsRouting) {
           // Direct path with proper corners using grid snapping
@@ -394,9 +399,79 @@ export class DependencyRenderer {
             context.lineTo(lineEndPoint.x, lineEndPoint.y);
           }
         } else {
-          // Need to route around - use grid-snapped routing
+          // Need to route around
           
-          context.moveTo(from.x, from.y);
+          if (isSelfLoop) {
+            // Special routing for self-loops - use same height logic as regular dependencies
+            const loopY = from.y - ROW_HEIGHT / 2; // Same as regular dependency routing between rows
+            
+            // Use grid snapping for consistent spacing (same as regular dependencies)
+            let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE, from.x);
+            
+            // Ensure minimum distance from source is always respected
+            if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
+              const minRequiredX = from.x + this.MIN_SOURCE_DISTANCE;
+              const offset = from.x % this.VERTICAL_GRID_SPACING;
+              adjustedFromX = Math.ceil((minRequiredX - offset) / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING + offset;
+            }
+            
+            // For the target side, use similar grid snapping
+            let adjustedToX = this.snapToVerticalGrid(lineEndPoint.x - this.MIN_TARGET_DISTANCE, from.x);
+            if (lineEndPoint.x - adjustedToX < this.MIN_TARGET_DISTANCE) {
+              const maxAllowedX = lineEndPoint.x - this.MIN_TARGET_DISTANCE;
+              const offset = from.x % this.VERTICAL_GRID_SPACING;
+              adjustedToX = Math.floor((maxAllowedX - offset) / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING + offset;
+            }
+            
+            context.moveTo(from.x, from.y);
+            
+            if (curvedDependencies) {
+              const radius = 5;
+              
+              // Calculate directions using same logic as regular dependencies
+              const goingRight1 = adjustedFromX > from.x;
+              const goingUp = loopY < from.y; // Always true for self-loops (going up)
+              const goingRight2 = adjustedToX > adjustedFromX;
+              const goingDown = lineEndPoint.y > loopY; // Always true for self-loops (coming back down)
+              const finalGoingRight = lineEndPoint.x > adjustedToX;
+              
+              // First horizontal line (shortened)
+              context.lineTo(adjustedFromX - (goingRight1 ? radius : -radius), from.y);
+              
+              // First curve: horizontal to vertical
+              context.quadraticCurveTo(adjustedFromX, from.y, adjustedFromX, from.y + (goingUp ? -radius : radius));
+              
+              // Vertical line going up (shortened)
+              context.lineTo(adjustedFromX, loopY + (goingUp ? radius : -radius));
+              
+              // Second curve: vertical to horizontal
+              context.quadraticCurveTo(adjustedFromX, loopY, adjustedFromX + (goingRight2 ? radius : -radius), loopY);
+              
+              // Horizontal line above element (shortened)
+              context.lineTo(adjustedToX - (goingRight2 ? radius : -radius), loopY);
+              
+              // Third curve: horizontal to vertical
+              context.quadraticCurveTo(adjustedToX, loopY, adjustedToX, loopY + (goingDown ? radius : -radius));
+              
+              // Vertical line going down (shortened)
+              context.lineTo(adjustedToX, lineEndPoint.y - (goingDown ? radius : -radius));
+              
+              // Fourth curve: vertical to horizontal
+              context.quadraticCurveTo(adjustedToX, lineEndPoint.y, adjustedToX + (finalGoingRight ? radius : -radius), lineEndPoint.y);
+              
+              // Final horizontal line to target
+              context.lineTo(lineEndPoint.x, lineEndPoint.y);
+            } else {
+              // Straight lines for self-loop with grid snapping
+              context.lineTo(adjustedFromX, from.y);
+              context.lineTo(adjustedFromX, loopY);
+              context.lineTo(adjustedToX, loopY);
+              context.lineTo(adjustedToX, lineEndPoint.y);
+              context.lineTo(lineEndPoint.x, lineEndPoint.y);
+            }
+          } else {
+            // Normal routing for other cases
+            context.moveTo(from.x, from.y);
           
           // Always ensure minimal distance from source before going vertical (source-based grid)
           let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE, from.x);
@@ -515,6 +590,7 @@ export class DependencyRenderer {
             context.lineTo(adjustedToX, routeY);
             context.lineTo(adjustedToX, lineEndPoint.y);
             context.lineTo(lineEndPoint.x, lineEndPoint.y);
+          }
           }
         }
         break;

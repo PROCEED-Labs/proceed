@@ -13,8 +13,6 @@ import type {
   TransformationResult,
   TransformationError,
   DefaultDurationInfo,
-  ElementTiming,
-  DEFAULT_DURATIONS
 } from './types';
 import { calculatePathBasedTimings } from './path-traversal';
 import { calculateElementTimings } from './timing-calculator';
@@ -23,17 +21,14 @@ import {
   transformEvent,
   transformSequenceFlow,
   getFlowType,
+  preprocessExclusiveGateways,
+  isGatewayElement,
 } from './element-transformers';
 import {
-  extractDuration,
   isTaskElement,
   isSupportedEventElement,
   isSequenceFlowElement,
   getUnsupportedElementReason,
-  formatElementForLog,
-  formatTimingForLog,
-  formatGanttElementForLog,
-  formatDependencyForLog,
   assignFlowColors,
   findConnectedComponents,
   groupAndSortElements
@@ -70,14 +65,21 @@ export function transformBPMNToGantt(
     });
     return { elements: ganttElements, dependencies: ganttDependencies, errors, defaultDurations };
   }
+
+  // ============================================================================
+  // Gateway Preprocessing
+  // ============================================================================
   
-  const flowElements = process.flowElements || [];
+  // Preprocess exclusive gateways to create direct dependencies
+  const gatewayResult = preprocessExclusiveGateways(process.flowElements);
+  const elementsToProcess = gatewayResult.processedElements;
+  
   
   
   // Separate supported and unsupported elements
   const supportedElements: BPMNFlowElement[] = [];
   
-  flowElements.forEach(element => {
+  elementsToProcess.forEach(element => {
     // Check if element is supported
     if (isSequenceFlowElement(element)) {
       supportedElements.push(element);
@@ -85,8 +87,16 @@ export function transformBPMNToGantt(
       supportedElements.push(element);
     } else if (isSupportedEventElement(element)) {
       supportedElements.push(element);
+    } else if (isGatewayElement(element)) {
+      // Gateways that weren't preprocessed (non-exclusive) are unsupported for now
+      errors.push({
+        elementId: element.id,
+        elementType: element.$type,
+        elementName: element.name,
+        reason: 'Only exclusive gateways are currently supported'
+      });
     } else {
-      // Unsupported element
+      // Other unsupported elements
       errors.push({
         elementId: element.id,
         elementType: element.$type,
@@ -95,6 +105,7 @@ export function transformBPMNToGantt(
       });
     }
   });
+  
   
   // Calculate timings based on traversal mode
   let elementToComponent: Map<string, number>;
@@ -122,7 +133,7 @@ export function transformBPMNToGantt(
       const elementColor = elementColors.get(elementId);
       
       timingInstances.forEach((timing) => {
-        allTimings.push({ elementId, timing, element, color: elementColor });
+        allTimings.push({ elementId, timing, element, color: elementColor || '#666' });
       });
     });
     
@@ -386,6 +397,7 @@ export function transformBPMNToGantt(
   
   // Group and sort elements by connected components and start time
   const sortedElements = groupAndSortElements(ganttElements, elementToComponent, chronologicalSorting);
+
   
   return { elements: sortedElements, dependencies: ganttDependencies, errors, defaultDurations };
 }

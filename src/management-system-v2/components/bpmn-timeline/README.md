@@ -258,10 +258,60 @@ maxLoopIterations: number = 3 // Allow up to 3 loop iterations (initial + 3 repe
 - **Duration**: Optional delay from extensionElements or 0ms default
 - **Timing Impact**: Delays target element start by flow duration
 
+### Gateways → Dependency Transformations
+
+**Supported Types**: Exclusive Gateways only
+- `bpmn:ExclusiveGateway` (XOR)
+
+**Transformation Strategy**: **Gateway Preprocessing**
+- Gateways are **not rendered** as visible elements in the timeline
+- Instead, they are **preprocessed** to create direct dependencies between predecessor and successor elements
+- This approach preserves existing traversal algorithms while handling gateway logic
+
+#### Exclusive Gateway (XOR) Logic
+
+**Process**:
+1. **Detect exclusive gateways** in the BPMN flow
+2. **Create direct dependencies** from each predecessor to each successor element
+3. **Calculate combined durations**: `incoming_flow_duration + gateway_duration + outgoing_flow_duration`
+4. **Remove original flows** that connected through the gateway
+5. **Add synthetic flows** with combined durations as direct element-to-element dependencies
+
+**Duration Calculation**:
+```
+Total Dependency Duration = Incoming Flow Duration + Gateway Duration + Outgoing Flow Duration
+```
+- **Gateway Duration**: Defaults to 0ms (configurable via extensionElements)
+- **Flow Durations**: From extensionElements or 0ms default
+- **Combined Duration**: Stored in synthetic sequence flow for normal processing
+
+**Example Transformation**:
+```
+Original BPMN:
+TaskA ---(1s)---> ExclusiveGateway(0s) ---(2s)---> TaskB
+                       |
+                  ---(3s)---> TaskC
+
+After Preprocessing:
+TaskA ---(3s)---> TaskB  (1s + 0s + 2s = 3s total)
+TaskA ---(4s)---> TaskC  (1s + 0s + 3s = 4s total)
+```
+
+**Traversal Mode Behavior**:
+- **Earliest Occurrence**: TaskB starts at earliest possible time, TaskC starts at earliest possible time
+- **Every Occurrence**: Creates separate instances for each path (TaskA→TaskB path, TaskA→TaskC path)  
+- **Latest Occurrence**: Shows latest start times considering all possible gateway paths
+
+**Benefits**:
+- ✅ **Preserves existing algorithms** - No changes to timing calculation or path traversal
+- ✅ **Clean separation** - Gateway logic isolated in preprocessing
+- ✅ **Accurate timing** - Accounts for all flow and gateway durations
+- ✅ **Mode compatibility** - Works with all three traversal modes
+
 ### Unsupported Elements
 **Current Limitations**: These elements are excluded and reported as errors
-- All Gateway types (`bpmn:ExclusiveGateway`, `bpmn:ParallelGateway`, etc.)
-- `bpmn:SubProcess` and `bpmn:AdHocSubProcess`
+- Gateway types other than `bpmn:ExclusiveGateway` (`bpmn:ParallelGateway`, `bpmn:InclusiveGateway`, etc.)
+- `bpmn:SubProcess` and `bpmn:AdHocSubProcess`  
 - `bpmn:BoundaryEvent`
 
 **Error Handling**: Comprehensive error reporting with element details and exclusion reasons
@@ -486,19 +536,22 @@ const result = transformBPMNToGantt(definitions, timestamp, settings.positioning
 ### Code Structure
 ```
 components/bpmn-timeline/
-├── index.tsx           # Main component and UI
-├── transform.ts        # Earliest occurrence algorithm  
-├── path-traversal.ts   # Every occurrence algorithm
-├── types.ts           # TypeScript interfaces
-├── utils.ts           # Helper functions
-├── requirements.md    # Implementation requirements
-└── README.md         # This documentation
+├── index.tsx              # Main component and UI
+├── transform.ts           # Main transformation orchestration with gateway preprocessing
+├── element-transformers.ts # Element transformation functions and gateway preprocessing
+├── timing-calculator.ts   # Earliest occurrence timing calculation algorithm  
+├── path-traversal.ts      # Every occurrence algorithm
+├── types.ts              # TypeScript interfaces
+├── utils.ts              # Helper functions
+├── requirements.md       # Implementation requirements
+└── README.md            # This documentation
 ```
 
 ### Key Functions
-- `transformBPMNToGantt()`: Main transformation entry point
+- `transformBPMNToGantt()`: Main transformation entry point with gateway preprocessing
+- `preprocessExclusiveGateways()`: Gateway transformation and dependency creation
 - `calculateElementTimings()`: Earliest occurrence algorithm
-- `calculatePathBasedTimings()`: Every occurrence algorithm
+- `calculatePathBasedTimings()`: Every occurrence algorithm  
 - `buildProcessGraph()`: Graph construction for path traversal
 - `extractDuration()`: ISO 8601 duration parsing
 

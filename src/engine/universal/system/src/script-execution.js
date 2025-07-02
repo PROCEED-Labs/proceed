@@ -1,6 +1,9 @@
 // @ts-check
+//
 const { System } = require('./system');
 const { generateUniqueTaskID } = require('./utils');
+// @ts-ignore
+const Console = require('./console.ts').default;
 
 /**
  * @typedef {{
@@ -28,6 +31,13 @@ class ScriptExecutor extends System {
     this.childProcesses = new Map();
 
     this.options = options;
+  }
+
+  _getLogger() {
+    if (!this.logger) {
+      this.logger = Console._getLoggingModule().getLogger({ moduleName: 'SYSTEM' });
+    }
+    return this.logger;
   }
 
   /** @param {any} req  */
@@ -68,17 +78,33 @@ class ScriptExecutor extends System {
 
         try {
           if (
-            result &&
-            result.errorClass in req.process.dependencies &&
+            typeof result === 'object' &&
             'errorClass' in result &&
-            typeof result.errorClass === 'string' &&
-            typeof result.errorArgs === 'object' &&
-            'length' in result.errorArgs &&
-            (req.process.dependencies[result.errorClass].prototype instanceof Error ||
-              req.process.dependencies[result.errorClass] === Error)
-          )
-            result = new req.process.dependencies[result.errorClass](result.errorArgs);
-        } catch (_) {}
+            typeof result.errorClass === 'string'
+          ) {
+            if (result.errorClass === '_javascript_error') {
+              const error = global[result.name];
+
+              if ('prototype' in error && error.prototype instanceof Error) {
+                const resultError = new error(error.message);
+                resultError.message = result.message;
+                if ('stack' in result) delete result.stack;
+
+                result = resultError;
+              }
+            } else if (
+              result.errorClass in req.process.dependencies &&
+              typeof result.errorArgs === 'object' &&
+              Array.isArray(result.errorArgs) &&
+              (req.process.dependencies[result.errorClass].prototype instanceof Error ||
+                req.process.dependencies[result.errorClass] === Error)
+            ) {
+              result = new req.process.dependencies[result.errorClass](result.errorArgs);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
 
         req.process.result = result;
 
@@ -111,9 +137,25 @@ class ScriptExecutor extends System {
           let result = target;
           if (typeof target === 'function' || typeof target === 'object')
             result = await target(...args);
-          return { response: { result } };
-        } catch (e) {
-          return { response: { error: `Error: ${e.message}` }, statusCode: 500 };
+
+          return { response: { result: result || undefined } };
+        } catch (error) {
+          let errorResponse = 'Unknown Error';
+          if (error instanceof Error) {
+            errorResponse = error.name + ' ' + error.message;
+          } else {
+            try {
+              // If error is serializable we can send it back
+              JSON.stringify(error);
+              errorResponse = error;
+            } catch (_) {}
+          }
+
+          this._getLogger().error(
+            `Error in function call in script execution of processId: ${req.params.processId} processInstanceId: ${req.params.processInstanceId}: ${JSON.stringify(errorResponse)}`,
+          );
+
+          return { response: { error: errorResponse }, statusCode: 200 };
         }
       }.bind(this),
     );

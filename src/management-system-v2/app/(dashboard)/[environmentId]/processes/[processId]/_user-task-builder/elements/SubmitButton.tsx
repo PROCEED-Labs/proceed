@@ -52,6 +52,7 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,
             },
           ]}
+          onDoubleClick={() => setTextEditing(true)}
         >
           <EditableText
             style={{ whiteSpace: 'nowrap' }}

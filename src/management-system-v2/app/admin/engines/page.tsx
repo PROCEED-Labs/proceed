@@ -1,46 +1,57 @@
-import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEngines } from '@/lib/engines/endpoints/mqtt-endpoints';
-import { Result, Skeleton } from 'antd';
+import { Skeleton, Spin } from 'antd';
 import { notFound, redirect } from 'next/navigation';
+import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
+import { getDbEngines } from '@/lib/data/db/engines';
+import { getCurrentUser } from '@/components/auth';
 import { Suspense } from 'react';
-import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
-import EnginesTable from './engines-table';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
+import { Engine as DBEngine } from '@prisma/client';
 
-export type TableEngine = Awaited<ReturnType<typeof getEngines>>[number] & { name: string };
+const getEngineStatus = async (engine: DBEngine) => {
+  const engines = await savedEnginesToEngines([engine]);
 
-async function Engines() {
-  const user = await getCurrentUser();
-  if (!user.session) redirect('/');
-  const adminData = getSystemAdminByUserId(user.userId);
-  if (!adminData) redirect('/');
-
-  try {
-    const engines = (await getEngines()).map((e) => ({ ...e, name: e.id }));
-
-    return <EnginesTable engines={engines} />;
-  } catch (e) {
-    console.error(e);
-    return <Result status="500" title="Error" subTitle="Couldn't fetch engines" />;
+  if (engines.length === 0) {
+    return { online: false } as const;
+  } else {
+    return { online: true, engines } as const;
   }
-}
+};
 
-export default async function EnginesPage() {
+const EnginesPage = async () => {
   const msConfig = await getMSConfig();
-
   if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
-  if (!msConfig.MQTT_SERVER_ADDRESS)
-    return <Result status="500" title="Error" subTitle="No MQTT server address configured" />;
+  const { systemAdmin } = await getCurrentUser();
+  if (!systemAdmin) return redirect('/');
+
+  const engines = await getDbEngines(null, undefined, systemAdmin);
+
+  const enginesWithStatus = engines.map((engine) => {
+    return {
+      ...engine,
+      status: (
+        <Suspense fallback={<Spin spinning />}>
+          <EngineStatus engineId={engine.id} status={getEngineStatus(engine)} />
+        </Suspense>
+      ),
+    };
+  });
 
   return (
+    <SavedEnginesList savedEngines={enginesWithStatus} engineDashboardLinkPrefix="/admin/engines" />
+  );
+};
+
+const Page = () => {
+  return (
     <Content title="Engines">
-      <Suspense fallback={<Skeleton active />}>
-        <Engines />
+      <Suspense fallback={<Skeleton />}>
+        <EnginesPage />
       </Suspense>
     </Content>
   );
-}
+};
 
-export const dynamic = 'force-dynamic';
+export default Page;

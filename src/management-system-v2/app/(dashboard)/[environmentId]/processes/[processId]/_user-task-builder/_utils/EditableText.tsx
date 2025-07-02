@@ -75,17 +75,6 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
             return React.createElement(tagName, {
               contentEditable,
               ref: editableRef,
-              // we need to capture to prevent a new line being added when pressing enter without shift
-              onKeyDownCapture: async (e: KeyboardEvent) => {
-                if (e.shiftKey && e.key === 'Enter') {
-                  if (editorRef.current) {
-                    onChange(await editorRef.current.getCurrentValue());
-                  }
-                  onStopEditing?.();
-                  e.stopPropagation();
-                  e.preventDefault();
-                }
-              },
               onMouseDown: (e: MouseEvent) => {
                 e.stopPropagation();
                 selectingText.current = true;

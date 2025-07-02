@@ -17,6 +17,9 @@ export async function sendEmail({
 }) {
   const msConfig = await getMSConfig();
 
+  if (!msConfig.PROCEED_PUBLIC_MAILSERVER_ACTIVE)
+    throw new Error('Email sending is not enabled, set IAM_SIGNIN_MAIL_ACTIVE to true');
+
   if (msConfig.NODE_ENV === 'development') {
     console.log(`Email sent to ${to} with subject: ${subject} and text: ${text}`);
     return;

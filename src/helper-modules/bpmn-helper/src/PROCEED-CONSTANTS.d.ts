@@ -29,6 +29,7 @@ export function generateBpmnId(prefix?: string): string;
  */
 export function generateDefinitionsId(): string;
 export function generateProcessId(): string;
+export function generateStartFormFileName(): string;
 /**
  * Generates the 'fileName' attribute string of a PROCEED UserTask
  * @returns A new 'filename' value

@@ -1,19 +1,19 @@
-import React, { ComponentProps, use, useEffect, useState } from 'react';
+import { ComponentProps, use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App, Tooltip, Button, Space, Select, SelectProps, Divider } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
-  ExportOutlined,
   InfoCircleOutlined,
   PlusOutlined,
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
-  FilePdfOutlined,
   FormOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons';
+import { GrDocumentUser } from 'react-icons/gr';
+import { PiDownloadSimple } from 'react-icons/pi';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
@@ -26,23 +26,25 @@ import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
-import UserTaskBuilder from './_user-task-builder';
+import UserTaskBuilder, { canHaveForm } from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import { wrapServerCall } from '@/lib/wrap-server-call';
 import { Process } from '@/lib/data/process-schema';
+import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
+import { TimerEventButton, isTimerEvent } from './planned-duration-input';
+import XmlEditor from './xml-editor';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   process: Process;
-  onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  versionName?: string;
 };
-const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerToolbarProps) => {
+const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolbarProps) => {
   const processId = process.id;
 
   const router = useRouter();
@@ -55,6 +57,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
+  const [showFlowNodeConditionModal, setShowFlowNodeConditionModal] = useState(false);
 
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareModalDefaultOpenTab, setShareModalDefaultOpenTab] =
@@ -73,13 +76,47 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
   // Force rerender when the BPMN changes.
   useModelerStateStore((state) => state.changeCounter);
 
+  const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
+  const handleOpenXmlEditor = async () => {
+    // Undefined can maybe happen when click happens during router transition?
+    if (modeler) {
+      const xml = await modeler.getXML();
+      setXmlEditorBpmn(xml);
+    }
+  };
+  const handleXmlEditorSave = async (bpmn: string) => {
+    if (modeler) {
+      await modeler.loadBPMN(bpmn);
+      // If the bpmn contains unexpected content (text content for an element
+      // where the model does not define text) the modeler will remove it
+      // automatically => make sure the stored bpmn is the same as the one in
+      // the modeler.
+      const cleanedBpmn = await modeler.getXML();
+      await updateProcess(process.id, environment.spaceId, cleanedBpmn);
+    }
+  };
+
   const modalOpen =
-    showUserTaskEditor || showPropertiesPanel || showScriptTaskEditor || shareModalOpen;
+    showUserTaskEditor ||
+    showPropertiesPanel ||
+    showScriptTaskEditor ||
+    shareModalOpen ||
+    !!xmlEditorBpmn;
+
   useEffect(() => {
     if (modalOpen) {
       modeler?.deactivateKeyboard();
     } else modeler?.activateKeyboard();
   }, [modeler, modalOpen]);
+
+  useAddControlCallback(
+    'modeler',
+    'cut',
+    () => {
+      if (!modalOpen) handleOpenXmlEditor();
+    },
+    { blocking: modalOpen },
+  );
 
   const selectedVersionId = query.get('version');
 
@@ -166,15 +203,6 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
     }
   };
 
-  const handleOpenDocumentation = () => {
-    // the timestamp does not matter here since it is overridden by the user being an owner of the process
-    return wrapServerCall({
-      fn: () =>
-        generateSharedViewerUrl({ processId, timestamp: 0 }, selectedVersionId || undefined),
-      onSuccess: (url) => window.open(url, `${processId}-${selectedVersionId}-tab`),
-      app,
-    });
-  };
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
@@ -183,6 +211,16 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
     LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
+
+  let formEditorTitle = '';
+
+  if (canHaveForm(selectedElement)) {
+    if (bpmnIs(selectedElement, 'bpmn:UserTask')) {
+      formEditorTitle = 'Edit User Task Form';
+    } else if (bpmnIs(selectedElement, 'bpmn:StartEvent')) {
+      formEditorTitle = 'Edit Process Start Form';
+    }
+  }
 
   return (
     <>
@@ -253,8 +291,8 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
           <ToolbarGroup>
             {selectedElementId &&
               selectedElement &&
-              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
-                <Tooltip title="Edit User Task Form">
+              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && canHaveForm(selectedElement) && (
+                <Tooltip title={formEditorTitle}>
                   <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
                 </Tooltip>
               )) ||
@@ -273,7 +311,18 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                         onClick={() => setShowScriptTaskEditor(true)}
                       />
                     </Tooltip>
-                  )))}
+                  )) ||
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isConditionalFlow(selectedElement) && (
+                  <Tooltip title="Edit Condition">
+                    <Button
+                      icon={<FormOutlined />}
+                      onClick={() => setShowFlowNodeConditionModal(true)}
+                    />
+                  </Tooltip>
+                )) ||
+                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isTimerEvent(selectedElement) && (
+                  <TimerEventButton element={selectedElement} />
+                )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -287,13 +336,19 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
                 <Tooltip title="Show XML">
                   <Button
                     icon={<Icon aria-label="xml-sign" component={SvgXML} />}
-                    onClick={onOpenXmlEditor}
+                    onClick={handleOpenXmlEditor}
                   />
                 </Tooltip>
               )}
               <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
-              <Tooltip title="Open Documentation">
-                <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
+              <Tooltip title="View Process Documentation">
+                <Button
+                  aria-label="view-documentation"
+                  icon={<GrDocumentUser />}
+                  onClick={() => {
+                    handleOpenDocumentation(processId, selectedVersionId || undefined);
+                  }}
+                />
               </Tooltip>
               <Tooltip title="Share">
                 <Button
@@ -309,7 +364,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
               {!showMobileView && (
                 <Tooltip title="Download">
                   <Button
-                    icon={<ExportOutlined />}
+                    icon={<PiDownloadSimple />}
                     onClick={() => {
                       setShareModalOpen(true);
                       setShareModalDefaultOpenTab('bpmn');
@@ -329,12 +384,23 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
           </Space>
         </Space>
       </Toolbar>
+
       <ShareModal
         processes={[process]}
         open={shareModalOpen}
         setOpen={setShareModalOpen}
         defaultOpenTab={shareModalDefaultOpenTab}
       />
+
+      <XmlEditor
+        bpmn={xmlEditorBpmn}
+        canSave={!selectedVersionId}
+        onClose={() => setXmlEditorBpmn(undefined)}
+        onSaveXml={handleXmlEditorSave}
+        process={process}
+        versionName={versionName}
+      />
+
       {env.PROCEED_PUBLIC_ENABLE_EXECUTION && (
         <>
           <UserTaskBuilder
@@ -348,6 +414,12 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
             open={showScriptTaskEditor}
             onClose={() => setShowScriptTaskEditor(false)}
             selectedElement={selectedElement}
+          />
+
+          <FlowConditionModal
+            open={showFlowNodeConditionModal}
+            onClose={() => setShowFlowNodeConditionModal(false)}
+            element={selectedElement}
           />
         </>
       )}

@@ -22,10 +22,76 @@ import { Skeleton } from 'antd';
 import { UserTask } from '@/lib/user-task-schema';
 
 type UserTaskFormProps = {
+  html?: string;
+  isCompleted?: boolean;
+  isPaused?: boolean;
+  onMilestoneUpdate?: (milestones: { [key: string]: any }) => void;
+  onVariablesUpdate?: (variables: { [key: string]: any }) => void;
+  onSubmit?: (variables: { [key: string]: any }) => void;
+};
+
+export const UserTaskForm: React.FC<UserTaskFormProps> = ({
+  html,
+  isCompleted,
+  isPaused,
+  onMilestoneUpdate,
+  onVariablesUpdate,
+  onSubmit,
+}) => {
+  return (
+    <div
+      className={cn(styles.TaskView, {
+        [styles.Completed]: isCompleted,
+        [styles.Paused]: isPaused,
+      })}
+    >
+      {html && (
+        <>
+          <iframe
+            srcDoc={html}
+            style={{ width: '100%', height: '100%', border: 0 }}
+            onLoad={(ev) => {
+              const iframe = ev.currentTarget;
+              if (!iframe.contentWindow) return;
+
+              // block the user from interacting with paused or completed user tasks while allowing scrolling of
+              // the form itself
+              if (isCompleted || isPaused) {
+                Array.from(iframe.contentWindow.document.body.getElementsByTagName('form')).forEach(
+                  (form) => {
+                    form.style.pointerEvents = 'none';
+                  },
+                );
+              }
+
+              (iframe.contentWindow as any).PROCEED_DATA = {
+                post: async (path: string, body: { [key: string]: any }) => {
+                  if (path === '/tasklist/api/userTask') onSubmit?.(body);
+                },
+                put: async (path: string, body: { [key: string]: any }) => {
+                  if (path === '/tasklist/api/milestone') onMilestoneUpdate?.(body);
+                  else if (path === '/tasklist/api/variable') onVariablesUpdate?.(body);
+                },
+              };
+            }}
+          />
+          {(isCompleted || isPaused) && (
+            <div className={styles.overlay}>
+              {isCompleted && <h1>This task is completed!</h1>}
+              {isPaused && <h1>This task is paused!</h1>}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+type TaskListUserTaskFormProps = {
   task?: UserTask;
 };
 
-const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
+const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task }) => {
   const router = useRouter();
   const { spaceId } = useEnvironment();
 
@@ -58,67 +124,32 @@ const UserTaskForm: React.FC<UserTaskFormProps> = ({ task }) => {
   const isPaused = task?.state === 'PAUSED';
 
   return (
-    <div
-      className={cn(styles.TaskView, {
-        [styles.Completed]: isCompleted,
-        [styles.Paused]: isPaused,
-      })}
-    >
-      {task && html && (
-        <>
-          <iframe
-            srcDoc={html}
-            style={{ width: '100%', height: '100%', border: 0 }}
-            onLoad={(ev) => {
-              const iframe = ev.currentTarget;
-              if (!iframe.contentWindow) return;
-
-              // block the user from interacting with paused or completed user tasks while allowing scrolling of
-              // the form itself
-              if (isCompleted || isPaused) {
-                Array.from(iframe.contentWindow.document.body.getElementsByTagName('form')).forEach(
-                  (form) => {
-                    form.style.pointerEvents = 'none';
-                  },
-                );
-              }
-
-              (iframe.contentWindow as any).PROCEED_DATA = {
-                post: async (path: string, body: { [key: string]: any }) => {
-                  if (path === '/tasklist/api/userTask') {
-                    wrapServerCall({
-                      fn: () => completeTasklistEntry(spaceId, task.id, body),
-                      onSuccess: () => router.refresh(),
-                    });
-                  }
-                },
-                put: async (path: string, body: { [key: string]: any }) => {
-                  if (path === '/tasklist/api/milestone') {
-                    wrapServerCall({
-                      fn: () => setTasklistMilestoneValues(spaceId, task.id, body),
-                      onSuccess: () => {},
-                    });
-                  }
-                  if (path === '/tasklist/api/variable') {
-                    wrapServerCall({
-                      fn: () => setTasklistEntryVariableValues(spaceId, task.id, body),
-                      onSuccess: () => {},
-                    });
-                  }
-                },
-              };
-            }}
-          />
-          {(isCompleted || isPaused) && (
-            <div className={styles.overlay}>
-              {isCompleted && <h1>This task is completed!</h1>}
-              {isPaused && <h1>This task is paused!</h1>}
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    task && (
+      <UserTaskForm
+        html={html || undefined}
+        isCompleted={isCompleted}
+        isPaused={isPaused}
+        onSubmit={(variables) => {
+          wrapServerCall({
+            fn: () => completeTasklistEntry(spaceId, task.id, variables),
+            onSuccess: () => router.refresh(),
+          });
+        }}
+        onMilestoneUpdate={(newValues) =>
+          wrapServerCall({
+            fn: () => setTasklistMilestoneValues(spaceId, task.id, newValues),
+            onSuccess: () => {},
+          })
+        }
+        onVariablesUpdate={(newValues) => {
+          wrapServerCall({
+            fn: () => setTasklistEntryVariableValues(spaceId, task.id, newValues),
+            onSuccess: () => {},
+          });
+        }}
+      />
+    )
   );
 };
 
-export default UserTaskForm;
+export default TaskListUserTaskForm;

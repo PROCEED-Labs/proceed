@@ -161,6 +161,7 @@ async function writeSeedToDb(seed: DBSeed) {
       if (!org)
         org = (await addEnvironment(
           {
+            id: organization.id,
             ownerId: usernameToId.get(organization.owner)!,
             name: organization.name,
             description: organization.description,

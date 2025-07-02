@@ -24,15 +24,19 @@ import {
 } from '@ant-design/icons';
 
 import Link from 'next/link';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/db/iam/environments';
+import {
+  getEnvironmentById,
+  getOrganizationLogo,
+  organizationHasLogo,
+} from '@/lib/data/db/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { spaceURL } from '@/lib/utils';
 import { RemoveReadOnly, truthyFilter } from '@/lib/typescript-utils';
-import { env } from '@/lib/env-vars';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 const DashboardLayout = async ({
   children,
@@ -48,6 +52,7 @@ const DashboardLayout = async ({
     userOrgEnvs,
     async (envId) => (await getEnvironmentById(envId))!,
   );
+  const msConfig = await getMSConfig();
 
   userEnvironments.push(...orgEnvironments);
 
@@ -76,11 +81,6 @@ const DashboardLayout = async ({
           label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
           icon: <EditOutlined />,
         },
-        documentationSettings.templates?.active !== false && {
-          key: 'processes-templates',
-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Templates</Link>,
-          icon: <SnippetsOutlined />,
-        },
       ].filter(truthyFilter);
 
       if (children.length)
@@ -93,7 +93,7 @@ const DashboardLayout = async ({
     }
   }
 
-  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
     const automationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-automation',
@@ -104,13 +104,8 @@ const DashboardLayout = async ({
       let children: MenuProps['items'] = [
         automationSettings.dashboard?.active !== false && {
           key: 'dashboard',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Dashboard</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/executions-dashboard`)}>Dashboard</Link>,
           icon: <BarChartOutlined />,
-        },
-        automationSettings.projects?.active !== false && {
-          key: 'projects',
-          label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Projects</Link>,
-          icon: <HistoryOutlined />,
         },
         automationSettings.executions?.active !== false && {
           key: 'executions',
@@ -119,7 +114,7 @@ const DashboardLayout = async ({
         },
         automationSettings.machines?.active !== false && {
           key: 'machines',
-          label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Machines</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Process Engines</Link>,
           icon: <LaptopOutlined />,
         },
       ].filter(truthyFilter);
@@ -181,7 +176,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (systemAdmin && env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
     layoutMenuItems.push({
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,
@@ -190,8 +185,8 @@ const DashboardLayout = async ({
   }
 
   let logo;
-  if (activeEnvironment.isOrganization && (await organizationHasLogo(activeEnvironment.spaceId)))
-    logo = `/api/private/${activeEnvironment.spaceId}/logo`;
+  if (activeEnvironment.isOrganization)
+    logo = (await getOrganizationLogo(activeEnvironment.spaceId))?.spaceLogo ?? undefined;
 
   return (
     <>

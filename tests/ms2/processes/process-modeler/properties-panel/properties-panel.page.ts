@@ -28,6 +28,8 @@ export class PropertiesPanelPage {
     const fileChooser = await fileChooserPromise;
     const imagePath = path.join(__dirname, imageFileName);
     await fileChooser.setFiles(imagePath);
+    // TODO: wait for request response to finish instead of a timeout.
+    await page.waitForTimeout(2000);
   }
 
   async editPlannedDuration(durationValues: {

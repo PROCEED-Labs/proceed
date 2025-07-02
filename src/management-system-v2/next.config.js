@@ -8,7 +8,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    //instrumentationHook: true,
+    instrumentationHook: true,
   },
   /**
    *
@@ -22,20 +22,6 @@ const nextConfig = {
     config.experiments.topLevelAwait = true;
     // Important: return the modified config
     return config;
-  },
-  env: {
-    NEXT_PUBLIC_USE_AUTH: 'true',
-    // Provide default values for development if no .env file is present. In
-    // production, the environment variables are set in the deployment
-    // configuration during runtime.
-    ...(process.env.NODE_ENV === 'development'
-      ? {
-          NEXTAUTH_SECRET:
-            process.env.NEXTAUTH_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
-          SHARING_ENCRYPTION_SECRET:
-            process.env.SHARING_ENCRYPTION_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
-        }
-      : {}),
   },
   redirects: async () => {
     return [
@@ -54,6 +40,7 @@ const nextConfig = {
       'processes',
       'spaces',
       'executions',
+      'executions-dashboard',
       'engines',
       'tasklist',
       'general-settings',

@@ -23,7 +23,7 @@ export default defineConfig({
     timeout: 7000,
   },
   /* Run tests in files in parallel */
-  //  fullyParallel: true,
+  // fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
@@ -57,10 +57,11 @@ export default defineConfig({
       },
     },
 
-    {
+    // Banished for being the new IE
+    /*{
       name: 'firefox',
       use: { ...devices['Desktop Firefox'], ignoreHTTPSErrors: true },
-    },
+    },*/
 
     {
       name: 'webkit',

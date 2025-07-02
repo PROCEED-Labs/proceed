@@ -37,18 +37,18 @@ export const settings: SettingGroup = {
         },
       ],
     },
-    {
-      key: 'templates',
-      name: 'Process Templates',
-      children: [
-        {
-          key: 'active',
-          name: 'Enabled',
-          type: 'boolean',
-          description: 'Controls whether this view is activated in this space.',
-          value: true,
-        },
-      ],
-    },
+    // {
+    //   key: 'templates',
+    //   name: 'Process Templates',
+    //   children: [
+    //     {
+    //       key: 'active',
+    //       name: 'Enabled',
+    //       type: 'boolean',
+    //       description: 'Controls whether this view is activated in this space.',
+    //       value: true,
+    //     },
+    //   ],
+    // },
   ],
 };

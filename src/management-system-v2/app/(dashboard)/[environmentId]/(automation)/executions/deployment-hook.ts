@@ -1,7 +1,21 @@
 import { useEnvironment } from '@/components/auth-can';
-import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
-import { getDeployment } from '@/lib/engines/server-actions';
-import { deepEquals } from '@/lib/helpers/javascriptHelpers';
+import {
+  DeployedProcessInfo,
+  InstanceInfo,
+  VersionInfo,
+  getDeployments,
+} from '@/lib/engines/deployment';
+import {
+  pauseInstanceOnMachine,
+  resumeInstanceOnMachine,
+  startInstanceOnMachine,
+  stopInstanceOnMachine,
+} from '@/lib/engines/instances';
+import { Engine } from '@/lib/engines/machines';
+import { getStartFormFromMachine } from '@/lib/engines/tasklist';
+import useEngines from '@/lib/engines/use-engines';
+import { asyncFilter, asyncForEach, deepEquals } from '@/lib/helpers/javascriptHelpers';
+import { getErrorMessage, userError } from '@/lib/user-error';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
@@ -76,19 +90,114 @@ const mergeDeployment = (
 function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) {
   const space = useEnvironment();
 
-  const queryFn = useCallback(async () => {
-    return await getDeployment(space.spaceId, definitionId);
-  }, [space.spaceId, definitionId]);
+  const { data: engines } = useEngines({
+    key: [definitionId],
+    fn: async (engine) => {
+      const deployments = await getDeployments([engine]);
+      return deployments.some((d) => d.definitionId === definitionId);
+    },
+  });
 
-  return useQuery({
+  const startInstance = async (versionId: string, variables: { [key: string]: any } = {}) => {
+    if (engines?.length)
+      // TODO: in case of static deployment or different versions on different engines we will have
+      // to check if the engine can actually be used to start an instance
+      return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
+  };
+
+  const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
+  async function changeInstanceState(
+    instanceId: string,
+    stateValidator: (state: InstanceInfo['instanceState']) => boolean,
+    stateChangeFunction: typeof resumeInstanceOnMachine,
+  ) {
+    if (!engines) return;
+    try {
+      const targetEngines = await asyncFilter(engines, async (engine: Engine) => {
+        const deployments = await getDeployments([engine]);
+
+        return deployments.some((deployment) => {
+          if (deployment.definitionId !== definitionId) return false;
+
+          const instance = deployment.instances.find(
+            (instance) => instance.processInstanceId === instanceId,
+          );
+          if (!instance) return false;
+
+          return stateValidator(instance.instanceState);
+        });
+      });
+
+      await asyncForEach(targetEngines, async (engine) => {
+        await stateChangeFunction(definitionId, instanceId, engine);
+      });
+    } catch (e) {
+      const message = getErrorMessage(e);
+      return userError(message);
+    }
+  }
+
+  async function resumeInstance(instanceId: string) {
+    // TODO: manage permissions for starting an instance
+    return await changeInstanceState(
+      instanceId,
+      (tokenStates) => tokenStates.some((tokenState) => tokenState === 'PAUSED'),
+      resumeInstanceOnMachine,
+    );
+  }
+
+  async function pauseInstance(instanceId: string) {
+    // TODO: manage permissions for starting an instance
+    return await changeInstanceState(
+      instanceId,
+      (tokenStates) =>
+        tokenStates.some((state) => activeStates.includes(state) && state !== 'PAUSED'),
+      pauseInstanceOnMachine,
+    );
+  }
+
+  async function stopInstance(instanceId: string) {
+    // TODO: manage permissions for starting an instance
+    return await changeInstanceState(
+      instanceId,
+      (tokenStates) => tokenStates.some((state) => activeStates.includes(state)),
+      stopInstanceOnMachine,
+    );
+  }
+
+  async function getStartForm(versionId: string) {
+    if (!engines) return;
+    try {
+      // TODO: in case of static deployment or different versions on different engines we will have
+      // to check if the engine can actually be used to start an instance
+      return await getStartFormFromMachine(definitionId, versionId, engines[0]);
+    } catch (e) {
+      const message = getErrorMessage(e);
+      return userError(message);
+    }
+  }
+
+  const queryFn = useCallback(async () => {
+    if (engines?.length) {
+      // TODO: this only handles situations where we have only a single engine
+      // in the future we have to implement logic that merges data from multiple engines
+      const deployments = await getDeployments([engines[0]]);
+      return deployments.find((d) => d.definitionId === definitionId) || null;
+    }
+
+    return null;
+  }, [engines, definitionId]);
+
+  const query = useQuery({
     queryFn,
     initialData,
     queryKey: ['processDeployments', space.spaceId, definitionId],
-    refetchInterval: 5000,
+    refetchInterval: 1000,
     // return the same data if nothing has changed from the last fetch to prevent unnecessary
     // rerenders
     structuralSharing: (oldQuery, newQuery) => {
-      if (!oldQuery || !newQuery) return newQuery;
+      if (!newQuery) return oldQuery;
+      if (!oldQuery) return newQuery;
 
       const oldData = oldQuery as DeployedProcessInfo;
       const newData = newQuery as DeployedProcessInfo;
@@ -96,6 +205,8 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
       return mergeDeployment(newData, oldData);
     },
   });
+
+  return { ...query, startInstance, resumeInstance, pauseInstance, stopInstance, getStartForm };
 }
 
 export default useDeployment;

@@ -192,7 +192,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                   title: 'Email',
                   value: !userData.isGuest ? userData.email : 'Guest',
                   action: () => setChangeEmailModalOpen(true),
-                  disabled: !env.PROCEED_PUBLIC_IAM_SIGNIN_MAIL_ACTIVE,
+                  disabled: !env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE,
                 },
               ]}
               columns={[

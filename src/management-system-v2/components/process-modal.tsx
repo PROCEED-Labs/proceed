@@ -58,7 +58,8 @@ const ProcessModal = <
   initialData,
   modalProps,
   mode = 'create',
-}: ProcessModalProps<T>) => {
+  children,
+}: React.PropsWithChildren<ProcessModalProps<T>>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();

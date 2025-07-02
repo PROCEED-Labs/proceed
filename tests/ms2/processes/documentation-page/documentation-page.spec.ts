@@ -11,7 +11,7 @@ test('show process information', async ({ page, processListPage }) => {
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -25,12 +25,14 @@ test('show process information', async ({ page, processListPage }) => {
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();
   await expect(infoSection.getByText(/^Last Edit: .+$/)).toBeVisible();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator(
+    'css=[class^=process-document_ElementPage]',
+  );
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(1);
+  await expect(elementSectionsLocator).toHaveCount(1);
+
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the process overview is shown and the bpmn is correct
   const processOverview = elementSections[0];
@@ -64,18 +66,20 @@ test('show content of collapsed subprocesses in a separate section', async ({
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator(
+    'css=[class^=process-document_ElementPage]',
+  );
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(2);
+  await expect(elementSectionsLocator).toHaveCount(2);
+
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the overview of the subprocess is shown and the bpmn is correct
   const subprocessOverview = elementSections[1];
@@ -110,7 +114,7 @@ test('show version information', async ({ page, processListPage, processModelerP
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -135,18 +139,20 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator(
+    'css=[class^=process-document_ElementPage]',
+  );
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(3);
+  await expect(elementSectionsLocator).toHaveCount(3);
+
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the overview of the subprocess is shown with its name instead of its id
   const subprocessOverview = elementSections[1];
@@ -267,7 +273,7 @@ test('recursively show information about imports', async ({
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -281,12 +287,13 @@ test('recursively show information about imports', async ({
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();
   await expect(infoSection.getByText(/^Last Edit: .+$/)).toBeVisible();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  const elementSectionsLocator = documentationPage.locator(
+    'css=[class^=process-document_ElementPage]',
+  );
+  // wait for all sections to be visible
+  await expect(elementSectionsLocator).toHaveCount(5);
 
-  // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(5);
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the process overview is shown and the bpmn is correct
   const processOverview = elementSections[0];
@@ -489,18 +496,20 @@ test('a setting allows to show the subprocess element instead of its content', a
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator(
+    'css=[class^=process-document_ElementPage]',
+  );
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(3);
+  await expect(elementSectionsLocator).toHaveCount(3);
+
+  let elementSections = await elementSectionsLocator.all();
 
   // check if the overview of the subprocess is shown with its name instead of its id
   const subprocessOverview = elementSections[1];
@@ -523,12 +532,10 @@ test('a setting allows to show the subprocess element instead of its content', a
   await settingsModal.getByLabel('Nested Subprocesses').click();
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
-  elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  await expect(elementSectionsLocator).toHaveCount(2);
+  elementSections = await elementSectionsLocator.all();
 
   await expect(subprocessMilestoneTask.getByRole('heading', { name: 'A.A' })).toBeHidden();
-  expect(elementSections.length).toBe(2);
 
   // check if the bpmn shown for the (collapsed) subprocess is the subprocess element instead of the subrocess content
   const import1SubprocessElementView = elementSections[1];
@@ -617,7 +624,7 @@ test('a setting allows to show a call activity instead of the imported process',
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -631,12 +638,12 @@ test('a setting allows to show a call activity instead of the imported process',
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();
   await expect(infoSection.getByText(/^Last Edit: .+$/)).toBeVisible();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator(
+    'css=[class^=process-document_ElementPage]',
+  );
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(5);
+  await expect(elementSectionsLocator).toHaveCount(5);
 
   // check that the visualisation of a call activity can be set to show the call activity element instead of the imported process
   // which also removes all contained elements from the page
@@ -646,11 +653,9 @@ test('a setting allows to show a call activity instead of the imported process',
   await settingsModal.getByLabel('Imported Processes').click();
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
-  elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  await expect(elementSectionsLocator).toHaveCount(3);
 
-  expect(elementSections.length).toBe(3);
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the bpmn shown for the call activities is the call activity elements instead of the imported process
   const callActivity1View = elementSections[1];
@@ -709,18 +714,16 @@ test('a setting allows to show elements that have no meta data which are not sho
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSections = documentationPage.locator('css=[class^=process-document_ElementPage]');
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(3);
+  await expect(elementSections).toHaveCount(3);
 
   // check that the option to show elements that have no meta data and contain no other elements works as well (here in combination with the previously deselected options)
   const settingsModal = await openModal(documentationPage, () =>
@@ -735,9 +738,7 @@ test('a setting allows to show elements that have no meta data which are not sho
 
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
-  const elementSection = await documentationPage.locator(
-    'css=[class^=process-document_ElementPage]',
-  );
+  const elementSection = documentationPage.locator('css=[class^=process-document_ElementPage]');
 
   expect(elementSection).toHaveCount(9);
   // there should be sections for all the elements in the root process including the start and end event
@@ -802,18 +803,20 @@ test('the page shows only imported processes that are shared themselves to other
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator(
+    'css=[class^=process-document_ElementPage]',
+  );
 
   // check that the elements that should be visible to the owner are visible
-  expect(elementSections.length).toBe(5);
+  await expect(elementSectionsLocator).toHaveCount(5);
+
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the process overview is shown and the bpmn is correct
   const processOverview = elementSections[0];
@@ -890,7 +893,7 @@ test('allow a different user that was given the share link to import the shared 
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
   await expect(documentationPage.getByText('Loading process data')).toBeVisible();
@@ -944,11 +947,9 @@ test('allow a different user that was given the share link to import the shared 
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 
   // cleanup the process added by the guest user
-  const deleteModal = await openModal(newPage, () =>
-    newPage
-      .locator(`tr[data-row-key="${newProcessId}"]`)
-      .getByRole('button', { name: 'delete' })
-      .click(),
-  );
+  const deleteModal = await openModal(newPage, async () => {
+    await newPage.locator(`tr[data-row-key="${newProcessId}"]`).getByRole('checkbox').check();
+    await newPage.getByRole('button', { name: 'Delete' }).click();
+  });
   await closeModal(deleteModal, () => deleteModal.getByRole('button', { name: 'OK' }).click());
 });

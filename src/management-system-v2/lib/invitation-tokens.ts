@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { env } from './env-vars';
 import jwt from 'jsonwebtoken';
+import { env } from './ms-config/env-vars';
 
 const baseInvitationSchema = {
   spaceId: z.string(),
@@ -17,12 +17,12 @@ export function generateInvitationToken(invitation: Invitation, expiration: Date
   // in seconds
   const expiresIn = (expiration.getTime() - Date.now()) / 1000;
 
-  return jwt.sign(invitation, env.INVITATION_ENCRYPTION_SECRET, { expiresIn });
+  return jwt.sign(invitation, env.IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET, { expiresIn });
 }
 
 export function getInvitation(token: string) {
   try {
-    const payload = jwt.verify(token, env.INVITATION_ENCRYPTION_SECRET);
+    const payload = jwt.verify(token, env.IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET);
     return invitationSchema.parse(payload);
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError && error.name === 'TokenExpiredError') {

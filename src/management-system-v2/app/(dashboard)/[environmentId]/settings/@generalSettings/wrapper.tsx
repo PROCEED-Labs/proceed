@@ -1,0 +1,128 @@
+'use client';
+
+import React, { useEffect } from 'react';
+
+import { useState } from 'react';
+import { Setting, SettingGroup } from '../../settings/type-util';
+import { SettingsGroup } from '../../settings/components';
+import { useEnvironment } from '@/components/auth-can';
+import { App, Button, Form, Input, Image, theme, Space, Modal } from 'antd';
+import { useFileManager } from '@/lib/useFileManager';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { fallbackImage } from '../../processes/[processId]/image-selection-section';
+import ImageUpload from '@/components/image-upload';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+
+type WrapperProps = {
+  group: SettingGroup;
+};
+
+const Wrapper: React.FC<WrapperProps> = ({ group }) => {
+  const router = useRouter();
+  const { message } = App.useApp();
+  const [upToDateGroup, setUpToDateGroup] = useState(group);
+  const { spaceId } = useEnvironment();
+  const { download: getLogoUrl } = useFileManager({
+    entityType: EntityType.ORGANIZATION,
+  });
+  const { colorWarning } = theme.useToken().token;
+  const initialLogoFilePath = (
+    group.children.find((setting) => setting.key === 'spaceLogo') as Setting
+  ).value as string | null;
+  const [spaceLogoFilePath, setLogoFilePath] = useState<string | undefined>(
+    initialLogoFilePath || undefined,
+  );
+  const [spaceLogoUrl, setSpaceLogoUrl] = useState<undefined | string>();
+
+  useEffect(() => {
+    async function getLogo() {
+      if (!spaceLogoFilePath) return;
+      try {
+        const response = await getLogoUrl({ entityId: spaceId, filePath: spaceLogoFilePath });
+        if (response.fileUrl) {
+          setSpaceLogoUrl(response.fileUrl);
+        }
+      } catch (e) {}
+    }
+    getLogo();
+  }, [spaceId, spaceLogoFilePath, getLogoUrl]);
+
+  return (
+    <SettingsGroup
+      group={upToDateGroup}
+      onUpdate={setUpToDateGroup}
+      renderNestedSettingInput={(id, setting, _key) => {
+        if (setting.key !== 'spaceLogo') return;
+
+        return {
+          input: (
+            <Space id={id}>
+              <Image
+                src={spaceLogoUrl || fallbackImage}
+                fallback={fallbackImage}
+                style={{
+                  width: '100%',
+                  maxHeight: '7.5rem',
+                  borderRadius: '6px',
+                  border: '1px solid #d9d9d9',
+                }}
+                preview={{
+                  visible: false,
+                  mask: (
+                    <ImageUpload
+                      imageExists={!!spaceLogoUrl}
+                      onImageUpdate={(filePath) => {
+                        const deleted = typeof filePath === 'undefined';
+
+                        if (deleted) {
+                          setLogoFilePath(undefined);
+                          setSpaceLogoUrl(undefined);
+                        } else {
+                          setLogoFilePath(filePath);
+                        }
+
+                        if (deleted) message.success('Logo deleted');
+                        else message.success('Logo uploaded');
+
+                        router.refresh(); // To refresh other places in the page
+                      }}
+                      onUploadFail={() => message.error('Error uploading image')}
+                      config={{
+                        entityType: EntityType.ORGANIZATION,
+                        entityId: spaceId,
+                        useDefaultRemoveFunction: true,
+                        fileName: spaceLogoFilePath ?? undefined,
+                      }}
+                    />
+                  ),
+                }}
+                role="group"
+                aria-label="image-section"
+              />
+
+              <Button
+                onClick={() =>
+                  Modal.confirm({
+                    content:
+                      'Logo changes may take some time to appear everywhere. This is normal and should resolve itself shortly.',
+                    footer: (_, { OkBtn }) => <OkBtn />,
+                    maskClosable: true,
+                  })
+                }
+                style={{
+                  color: colorWarning,
+                }}
+                type="text"
+              >
+                <ExclamationCircleOutlined />
+              </Button>
+            </Space>
+          ),
+        };
+      }}
+    />
+  );
+};
+
+export default Wrapper;

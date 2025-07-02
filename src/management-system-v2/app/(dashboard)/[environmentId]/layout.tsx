@@ -21,14 +21,12 @@ import {
   SettingOutlined,
   SolutionOutlined,
   HomeOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
+import { TbUser, TbUserEdit } from 'react-icons/tb';
 
 import Link from 'next/link';
-import {
-  getEnvironmentById,
-  getOrganizationLogo,
-  organizationHasLogo,
-} from '@/lib/data/db/iam/environments';
+import { getEnvironmentById, getSpaceLogo, spaceHasLogo } from '@/lib/data/db/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { spaceURL } from '@/lib/utils';
@@ -37,12 +35,15 @@ import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { adminRules } from '@/lib/authorization/globalRules';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import GuestWarningButton from '@/components/guest-warning-button';
+import SpaceLink from '@/components/space-link';
+import { GoOrganization } from 'react-icons/go';
 
 const DashboardLayout = async ({
   children,
   params,
 }: PropsWithChildren<{ params: { environmentId: string } }>) => {
-  const { userId, systemAdmin } = await getCurrentUser();
+  const { userId, systemAdmin, user } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
@@ -66,7 +67,6 @@ const DashboardLayout = async ({
     const documentationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-documentation',
-      ability,
     );
 
     if (documentationSettings.active !== false) {
@@ -97,7 +97,6 @@ const DashboardLayout = async ({
     const automationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-automation',
-      ability,
     );
 
     if (automationSettings.active !== false) {
@@ -141,17 +140,29 @@ const DashboardLayout = async ({
   }
 
   if (
-    ability.can('manage', 'User') ||
-    ability.can('manage', 'RoleMapping') ||
-    ability.can('manage', 'Role')
+    can('manage', 'User') ||
+    can('manage', 'RoleMapping') ||
+    can('manage', 'Role') ||
+    can('update', 'Environment') ||
+    can('delete', 'Environment')
   ) {
     const children: MenuProps['items'] = [];
 
     if (can('update', 'Environment') || can('delete', 'Environment'))
       children.push({
         key: 'organization-settings',
-        label: <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>Settings</Link>,
+        label: <Link href={spaceURL(activeEnvironment, `/settings`)}>Settings</Link>,
         icon: <SettingOutlined />,
+      });
+
+    if (
+      activeEnvironment.isOrganization &&
+      (can('update', 'Environment') || can('delete', 'Environment'))
+    )
+      children.push({
+        key: 'organization-management',
+        label: <Link href={spaceURL(activeEnvironment, `/management`)}>Management</Link>,
+        icon: <GoOrganization />,
       });
 
     if (can('manage', 'User'))
@@ -161,7 +172,7 @@ const DashboardLayout = async ({
         icon: <UserOutlined />,
       });
 
-    if (ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
+    if (can('manage', 'RoleMapping') || can('manage', 'Role'))
       children.push({
         key: 'roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,
@@ -176,6 +187,53 @@ const DashboardLayout = async ({
     });
   }
 
+  if (msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
+    layoutMenuItems.push({
+      key: 'iam-personal',
+      label: 'Personal',
+      icon: <TbUser />,
+      children: [
+        {
+          key: 'personal-profile',
+          label: user?.isGuest ? (
+            <GuestWarningButton>My Profile</GuestWarningButton>
+          ) : (
+            <SpaceLink href="/profile">My Profile</SpaceLink>
+          ),
+          icon: <TbUserEdit />,
+        },
+        {
+          key: 'personal-spaces',
+          label: user?.isGuest ? (
+            <GuestWarningButton>My Spaces</GuestWarningButton>
+          ) : (
+            <SpaceLink href="/spaces">My Spaces</SpaceLink>
+          ),
+          icon: <AppstoreOutlined />,
+        },
+      ],
+    });
+  }
+
+  if (!activeEnvironment.isOrganization) {
+    layoutMenuItems.push({
+      key: 'personal-space-home',
+      label: 'Home',
+      icon: <HomeOutlined />,
+      children: [
+        {
+          key: 'personal-space-settings',
+          label: user?.isGuest ? (
+            <GuestWarningButton>Settings</GuestWarningButton>
+          ) : (
+            <SpaceLink href="/settings">Settings</SpaceLink>
+          ),
+          icon: <SettingOutlined />,
+        },
+      ],
+    });
+  }
+
   if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
     layoutMenuItems.push({
       key: 'ms-admin',
@@ -184,9 +242,7 @@ const DashboardLayout = async ({
     });
   }
 
-  let logo;
-  if (activeEnvironment.isOrganization)
-    logo = (await getOrganizationLogo(activeEnvironment.spaceId))?.spaceLogo ?? undefined;
+  const logo = (await getSpaceLogo(activeEnvironment.spaceId))?.spaceLogo ?? undefined;
 
   return (
     <>

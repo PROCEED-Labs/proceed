@@ -27,7 +27,7 @@ function parseInitialData(data?: CustomNavigationLink): Prettify<
         username: url.username,
         password: url.password,
       };
-    } catch (e) {}
+    } catch (e) { }
   }
 
   if (!parsedUrl) {
@@ -83,7 +83,10 @@ export default function CustomLinkModal({
       open={open}
       onCancel={() => close()}
       title={title}
-      onOk={() => form.submit()}
+      onOk={async () => {
+        await form.validateFields();
+        form.submit();
+      }}
       {...modalProps}
     >
       {open && (
@@ -95,6 +98,22 @@ export default function CustomLinkModal({
           wrapperCol={{ span: 24 }}
           autoComplete="off"
           preserve={false}
+          onValuesChange={(changed, values) => {
+            const changedProtocol = changed.protocol;
+            if (!changedProtocol) return;
+
+            const clickable = values.clickable;
+            const showStatus = values.showStatus;
+
+            if (changedProtocol.startsWith('mqtt')) {
+              if (clickable) {
+                form.setFieldValue('clickable', false);
+              }
+              if (!showStatus) {
+                form.setFieldValue('showStatus', true);
+              }
+            }
+          }}
           onFinish={(values) => {
             const { hostname, port, protocol, username, password, ...otherValues } = values;
 
@@ -149,17 +168,11 @@ export default function CustomLinkModal({
             />
           </Form.Item>
 
-          <Form.Item
-            name="hostname"
-            label="Host"
-            required
-            rules={[{ required: true, message: 'Please input the Address!' }]}
-          >
+          <Form.Item name="hostname" label="Host" required rules={[{ required: true }]}>
             <Input
               addonBefore={
                 <Form.Item name="protocol" noStyle>
                   <Select
-                    defaultValue={'http:' satisfies Protocol}
                     options={
                       [
                         { value: 'http:', label: 'HTTP://' },
@@ -178,7 +191,7 @@ export default function CustomLinkModal({
             <Input />
           </Form.Item>
 
-          {values?.protocol.startsWith('mqtt') && (
+          {values?.protocol?.startsWith('mqtt') && (
             <>
               <Form.Item name="username" label="Username" rules={[{ required: false }]}>
                 <Input />
@@ -189,17 +202,68 @@ export default function CustomLinkModal({
             </>
           )}
 
-          {values?.protocol.startsWith('mqtt') && (
+          {values?.protocol?.startsWith('mqtt') && (
             <Form.Item name="topic" label="Topic">
               <Input />
             </Form.Item>
           )}
 
-          <Form.Item name="showStatus" valuePropName="checked">
+          <Form.Item
+            name="showStatus"
+            valuePropName="checked"
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const protocol = getFieldValue('protocol');
+                  const clickable = getFieldValue('clickable');
+
+                  if (protocol.startsWith('mqtt') && !value) {
+                    return Promise.reject(new Error('Show Status must be enabled for MQTT links.'));
+                  }
+
+                  if (!clickable && !value) {
+                    return Promise.reject(
+                      new Error('Either Show Status or Clickable must be enabled.'),
+                    );
+                  }
+
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+          >
             <Checkbox>Show Status</Checkbox>
           </Form.Item>
 
-          <Form.Item name="clickable" valuePropName="checked">
+          <Form.Item
+            name="clickable"
+            valuePropName="checked"
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const protocol = getFieldValue('protocol');
+                  const showStatus = getFieldValue('showStatus');
+                  const isMqtt = protocol.startsWith('mqtt');
+
+                  if (isMqtt && value) {
+                    return Promise.reject(new Error('Clickable cannot be enabled for MQTT links.'));
+                  }
+
+                  if (isMqtt && !value) {
+                    return Promise.resolve();
+                  }
+
+                  if (!showStatus && !value) {
+                    return Promise.reject(
+                      new Error('Either Show Status or Clickable must be enabled.'),
+                    );
+                  }
+
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+          >
             <Checkbox>Clickable</Checkbox>
           </Form.Item>
 

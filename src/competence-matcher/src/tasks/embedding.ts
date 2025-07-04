@@ -24,7 +24,7 @@ class Embedding {
    */
   public static async getInstance(
     progressCallback: ProgressCallback | null = (progressInfo) => {
-      console.log(progressInfo);
+      // console.log(progressInfo);
     },
   ) {
     if (Embedding.instance === null) {

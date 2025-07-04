@@ -42,7 +42,7 @@ app.get('/', (req, res, next) => {
 
 // Routes
 app.use(PATHS.resource, ResourceRouter);
-// app.use('/match', MatchRouter);
+app.use(PATHS.match, MatchRouter);
 
 app.listen(PORT, () => {
   console.log(`Matching-Server is running on http://localhost:${PORT}`);

@@ -64,6 +64,23 @@ class VectorDataBase {
       );
     `);
 
+    // matches
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS match_results (
+        id            TEXT   PRIMARY KEY,      -- UUID for this match record
+        job_id        TEXT   NOT NULL          REFERENCES jobs(id) ON DELETE CASCADE,
+        task_id       TEXT   NOT NULL,         -- task ID this match belongs to
+        competence_id TEXT   NOT NULL,         -- matched competence
+        distance      REAL   NOT NULL,         -- similarity score
+        text          TEXT   NOT NULL,         -- the matched snippet
+        type          TEXT   NOT NULL          -- 'name' | 'description' | 'proficiencyLevel'
+      );
+    `);
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS ix_match_results_job
+      ON match_results(job_id);
+    `);
+
     // resource_list
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS resource_list (
@@ -89,7 +106,7 @@ class VectorDataBase {
       CREATE TABLE IF NOT EXISTS competence (
         _cid            INTEGER PRIMARY KEY AUTOINCREMENT,
         competence_id   TEXT    NOT NULL,
-        resource__rid   INTEGER NOT NULL REFERENCES resource(_rid) ON DELETE CASCADE,
+        resource_rid    INTEGER NOT NULL REFERENCES resource(_rid) ON DELETE CASCADE,
         competence_name TEXT,
         competence_description TEXT,
         external_qualification_needed BOOLEAN DEFAULT FALSE,
@@ -101,7 +118,7 @@ class VectorDataBase {
     `);
     this.db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS ux_competence_rescid
-        ON competence(resource__rid, competence_id);
+        ON competence(resource_rid, competence_id);
     `);
 
     // embeddings (virtual vec0 table; explicit deletes required)
@@ -142,7 +159,7 @@ class VectorDataBase {
           SELECT _cid 
           FROM competence 
           WHERE competence_id = ?
-          AND resource__rid = ?
+          AND resource_rid = ?
         `,
       )
       .get(competenceId, _rid);
@@ -195,6 +212,57 @@ class VectorDataBase {
   }
 
   /*--------------------------------------------------------------------
+   * Match Methods
+   *------------------------------------------------------------------*/
+
+  public addMatchResult(opts: {
+    jobId: string;
+    taskId: string;
+    competenceId: string;
+    text: string;
+    type: 'name' | 'description' | 'proficiencyLevel';
+    distance: number;
+  }): void {
+    const id = uuid();
+    this.db
+      .prepare(
+        `
+    INSERT INTO match_results
+      (id, job_id, task_id, competence_id, text, type, distance)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `,
+      )
+      .run(id, opts.jobId, opts.taskId, opts.competenceId, opts.text, opts.type, opts.distance);
+  }
+
+  public getMatchResults(jobId: string): Array<{
+    taskId: string;
+    competenceId: string;
+    text: string;
+    type: string;
+    distance: number;
+  }> {
+    return this.db
+      .prepare(
+        `
+    SELECT task_id, competence_id, text, type, distance
+      FROM match_results
+     WHERE job_id = ?
+     GROUP BY task_id, competence_id
+     ORDER BY distance ASC
+  `,
+      )
+      .all(jobId)
+      .map((r: any) => ({
+        taskId: r.task_id,
+        competenceId: r.competence_id,
+        text: r.text,
+        type: r.type,
+        distance: r.distance,
+      }));
+  }
+
+  /*--------------------------------------------------------------------
    * ResourceList Methods
    *------------------------------------------------------------------*/
 
@@ -218,7 +286,7 @@ class VectorDataBase {
           WHERE cid IN (
             SELECT c._cid
             FROM competence c
-            JOIN resource r ON c.resource__rid = r._rid
+            JOIN resource r ON c.resource_rid = r._rid
             WHERE r.list_id = ?
           )
         `,
@@ -273,19 +341,10 @@ class VectorDataBase {
                    external_qualification_needed, renew_time,
                    proficiency_level, qualification_dates, last_usages
             FROM competence
-            WHERE resource__rid = ?
+            WHERE resource_rid = ?
           `,
           )
-          .all(_rid) as Array<{
-          competence_id: string;
-          competence_name: string | null;
-          competence_description: string | null;
-          external_qualification_needed: number;
-          renew_time: number | null;
-          proficiency_level: string | null;
-          qualification_dates: string | null;
-          last_usages: string | null;
-        }>;
+          .all(_rid) as CompetenceDBOutput[];
         return {
           resourceId: resource_id,
           competencies: comps.map((c) => ({
@@ -338,7 +397,7 @@ class VectorDataBase {
         .prepare(
           `
           DELETE FROM competence_embedding
-          WHERE cid IN (SELECT _cid FROM competence WHERE resource__rid = ?)
+          WHERE cid IN (SELECT _cid FROM competence WHERE resource_rid = ?)
         `,
         )
         .run(_rid);
@@ -391,19 +450,10 @@ class VectorDataBase {
                external_qualification_needed, renew_time,
                proficiency_level, qualification_dates, last_usages
         FROM competence
-        WHERE resource__rid = ?
+        WHERE resource_rid = ?
       `,
       )
-      .all(row._rid) as Array<{
-      competence_id: string;
-      competence_name: string | null;
-      competence_description: string | null;
-      external_qualification_needed: number;
-      renew_time: number | null;
-      proficiency_level: string | null;
-      qualification_dates: string | null;
-      last_usages: string | null;
-    }>;
+      .all(row._rid) as CompetenceDBOutput[];
 
     return {
       listId: row.list_id,
@@ -453,7 +503,7 @@ class VectorDataBase {
       .prepare(
         `
         INSERT INTO competence
-          (competence_id, resource__rid,
+          (competence_id, resource_rid,
            competence_name, competence_description,
            external_qualification_needed, renew_time,
            proficiency_level, qualification_dates, last_usages)
@@ -500,7 +550,7 @@ class VectorDataBase {
   ): void {
     const _rid = this.getResourceRid(resourceId, listId);
     const _cid = this.db
-      .prepare(`SELECT _cid FROM competence WHERE competence_id = ? AND resource__rid = ?`)
+      .prepare(`SELECT _cid FROM competence WHERE competence_id = ? AND resource_rid = ?`)
       .get(competenceId, _rid)?.['_cid'];
     if (!_cid) throw new Error(`Competence '${competenceId}' not on resource '${resourceId}'`);
 
@@ -552,7 +602,7 @@ class VectorDataBase {
     this.atomicStep(() => {
       const _rid = this.getResourceRid(resourceId, listId);
       const _cid = this.db
-        .prepare(`SELECT _cid FROM competence WHERE competence_id = ? AND resource__rid = ?`)
+        .prepare(`SELECT _cid FROM competence WHERE competence_id = ? AND resource_rid = ?`)
         .get(competenceId, _rid)?._cid;
       if (!_cid) throw new Error(`Competence '${competenceId}' not on resource '${resourceId}'`);
 
@@ -596,7 +646,7 @@ class VectorDataBase {
                c.external_qualification_needed, c.renew_time,
                c.proficiency_level, c.qualification_dates, c.last_usages
         FROM competence c
-        WHERE c.competence_id = ? AND c.resource__rid = ?
+        WHERE c.competence_id = ? AND c.resource_rid = ?
       `,
       )
       .get(competenceId, _rid) as
@@ -652,7 +702,7 @@ class VectorDataBase {
     const cid = this.getCompetenceCidByCompetenceId(listId, resourceId, competenceId);
     // console.log(`Upserting embedding for competence ${competenceId} (${cid}) with text "${text}"`);
 
-    const cidInt = `${Math.floor(cid)}`;
+    const cidInt = `${Math.floor(cid)}`; // This + the cast is a workaround, sqlite-vec or sqlite read the cid as a float even though it is an integer. (Could be the lib or the fact that it is a virtual table, not sure)
 
     this.db
       .prepare(
@@ -685,7 +735,7 @@ class VectorDataBase {
    * @param embedding the query vector to search for
    * @param options optional parameters:
    *  - k: number of nearest neighbors to return (default: all)
-   *  - filter: optional filter by resourceId and listId
+   *  - filter: optional filter by resourceId and/or listId
    *  - similarityMetric: 'cosine', 'hamming', or 'euclidean' (default: 'cosine')
    * @returns an array of objects with competenceId, text, type, and distance.
    * @throws if the embedding length does not match the configured dimension.
@@ -720,7 +770,7 @@ class VectorDataBase {
              ${metric}(ce.embedding, vec_f32(?)) AS distance
       FROM competence_embedding ce
       JOIN competence c    ON ce.cid = c._cid
-      JOIN resource   r    ON c.resource__rid = r._rid
+      JOIN resource   r    ON c.resource_rid = r._rid
     `;
     const params: any[] = [new Float32Array(embedding)];
 
@@ -736,7 +786,7 @@ class VectorDataBase {
     if (whereClauses.length > 0) {
       sql += ` WHERE ` + whereClauses.join(' AND ');
     }
-
+    sql += ` GROUP BY c.competence_id, ce.type`;
     sql += ` ORDER BY distance ASC`;
 
     if (k) {

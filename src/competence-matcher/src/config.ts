@@ -5,4 +5,7 @@ export const config = {
   modelCache: process.env.MODEL_CACHE || 'src/models/',
   port: parseInt(process.env.PORT || '8501', 10),
   multipleDBs: process.env.MULTIPLE_DBS === 'true' || false,
+  ollamaPath: process.env.OLLAMA_PATH || 'http://localhost:11434',
+  ollamaModel: process.env.OLLAMA_MODEL || 'llama3.2:3b',
+  splittingSymbol: process.env.SPLITTING_SYMBOL || '__________',
 };

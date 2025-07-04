@@ -5,7 +5,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "run-production": "node dist/server.js"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,7 @@
   "dependencies": {
     "@huggingface/transformers": "^3.5.2",
     "express": "^5.1.0",
+    "ollama": "^0.5.16",
     "sqlite-vec": "^0.1.7-alpha.2"
   },
   "devDependencies": {

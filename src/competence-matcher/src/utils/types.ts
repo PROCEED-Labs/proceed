@@ -48,17 +48,27 @@ type ResourceList = {
 
 type ResourceListInput = ResourceInput[];
 
-type Task = {
+type MatchingTask = {
   taskId: string; // UUIDString
-  taskName?: string; // optional
-  taskDescription?: string; // optional but recommended to have content
+  name?: string; // optional
+  description?: string; // optional but recommended to have content
   executionInstructions?: string; // optional, e.g. HTML
   requiredCompetencies?: string[] | CompetenceInput[]; // either array of competenceIds or array of CompetenceInput
 };
 
+type MatchingTaskInput =
+  | {
+      competenceListId: string; // UUIDString
+      tasks: MatchingTask[]; // array of tasks to match
+    }
+  | {
+      competenceList: ResourceListInput; // array of resources with competencies
+      tasks: MatchingTask[]; // array of tasks to match
+    };
+
 type Match = {
   [resourceId: string]: {
-    matchingProbability: number; // 0-1
+    matchingConfidence: number; // 0-1
     reason: string;
   };
 };
@@ -69,7 +79,7 @@ interface VectorDBOptions {
 }
 
 type CompetenceDBOutput = {
-  id: string;
+  competence_id: string;
   competence_name: string | null;
   competence_description: string | null;
   external_qualification_needed: number; // 0 or 1
@@ -79,14 +89,24 @@ type CompetenceDBOutput = {
   last_usages: string | null; // JSON string
 };
 
+type EmbeddingTask = {
+  listId: string; // UUIDString
+  resourceId: string; // UUIDString
+  competenceId: string; // UUIDString
+  text: string; // Text to embed
+  type: 'name' | 'description' | 'proficiencyLevel'; // Type of text
+};
+
 interface EmbeddingJob {
   jobId: string;
   dbName: string;
-  tasks: Array<{
-    listId: string;
-    resourceId: string;
-    competenceId: string;
-    text: string;
-    type: 'name' | 'description' | 'proficiencyLevel';
-  }>;
+  tasks: EmbeddingTask[];
+}
+
+interface MatchingJob {
+  jobId: string;
+  dbName: string;
+  listId?: string; // Which List to match against
+  resourceId?: string; // Optional: If matching against a single resource
+  tasks: MatchingTask[]; // Tasks to match
 }

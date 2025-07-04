@@ -1,15 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import DBManager from '../db/db-manager';
 import { PATHS } from '../server';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { Worker } from 'worker_threads';
-
-function getDB(name: string) {
-  const dbManager = DBManager.getInstance();
-  DBManager.setActiveDB(name);
-  return dbManager.getDB(name);
-}
+import { getDB } from '../utils/db';
+import { createWorker } from '../utils/worker';
 
 export function getResourceLists(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -137,31 +129,12 @@ export function createResourceList(req: Request, res: Response, next: NextFuncti
     tasks: descriptionEmbeddingInput,
   };
 
-  const tsPath = path.resolve(__dirname, '../worker/embedder.ts');
-  const jsPath = path.resolve(__dirname, '../worker/embedder.js');
-  const isTs = fs.existsSync(tsPath);
-
-  const workerFile = isTs ? tsPath : jsPath;
-
-  const execArgv = isTs
-    ? [...process.execArgv, '-r', 'ts-node/register/transpile-only']
-    : process.execArgv;
-
-  const worker = new Worker(workerFile, { execArgv });
-
-  worker.on('error', (err) => {
-    console.error('Embedding worker crashed:', err);
-  });
-  worker.on('exit', (code) => {
-    if (code !== 0) {
-      console.error(`Worker for job ${jobId} exited with code ${code}`);
-    }
-  });
+  const worker = createWorker('embedder');
 
   // Send the job
   worker.postMessage(job);
 
-  // Respond with listId in location header
+  // Respond with jobid in location header
   res
     .setHeader('Location', `${PATHS.resource}/jobs/${jobId!}`)
     // Rspond with accepted status and jobId

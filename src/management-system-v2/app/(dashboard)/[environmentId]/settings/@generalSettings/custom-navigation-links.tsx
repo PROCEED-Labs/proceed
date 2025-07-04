@@ -5,6 +5,7 @@ import { Button, Table, Checkbox, Space, Popconfirm, TableProps } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import CustomLinkModal from './custom-navigation-link-modal';
 import { customLinkIcons } from '@/lib/custom-links/icons';
+import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 
 const CustomNavigationLinks = ({
   values,

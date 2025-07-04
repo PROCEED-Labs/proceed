@@ -89,6 +89,22 @@ const DashboardLayout = async ({
     });
   }
 
+  const automationSettings = await getSpaceSettingsValues(
+    activeEnvironment.spaceId,
+    'process-automation',
+  );
+  if (
+    msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+    automationSettings.active !== false &&
+    automationSettings.tasklist?.active !== false
+  ) {
+    layoutMenuItems.push({
+      key: 'tasklist',
+      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
+      icon: <CheckSquareOutlined />,
+    });
+  }
+
   if (can('view', 'Process')) {
     const documentationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
@@ -120,11 +136,6 @@ const DashboardLayout = async ({
   }
 
   if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
-    const automationSettings = await getSpaceSettingsValues(
-      activeEnvironment.spaceId,
-      'process-automation',
-    );
-
     if (automationSettings.active !== false) {
       let children: MenuProps['items'] = [
         automationSettings.dashboard?.active !== false && {
@@ -151,26 +162,16 @@ const DashboardLayout = async ({
           icon: <PlaySquareOutlined />,
           children,
         });
-
-      if (automationSettings.tasklist?.active !== false) {
-        layoutMenuItems = [
-          {
-            key: 'tasklist',
-            label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
-            icon: <CheckSquareOutlined />,
-          },
-          ...layoutMenuItems,
-        ];
-      }
     }
   }
 
   if (
-    can('manage', 'User') ||
-    can('manage', 'RoleMapping') ||
-    can('manage', 'Role') ||
-    can('update', 'Environment') ||
-    can('delete', 'Environment')
+    activeEnvironment.isOrganization &&
+    (can('manage', 'User') ||
+      can('manage', 'RoleMapping') ||
+      can('manage', 'Role') ||
+      can('update', 'Environment') ||
+      can('delete', 'Environment'))
   ) {
     const children: MenuProps['items'] = [];
 

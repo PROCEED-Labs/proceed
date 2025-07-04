@@ -117,11 +117,11 @@ export default function CustomLinkModal({
             close({ address, ...otherValues });
           }}
         >
-          <Form.Item name="name" label="Name" rules={[{ required: false }]}>
+          <Form.Item name="name" label="Name" required rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item name="icon" label="Icon" rules={[{ required: true }]}>
+          <Form.Item name="icon" label="Icon" required rules={[{ required: true }]}>
             <Select
               options={customLinkIcons.map((opt) => ({
                 label: (
@@ -134,7 +134,7 @@ export default function CustomLinkModal({
             />
           </Form.Item>
 
-          <Form.Item name="position" label="Position" rules={[{ required: true }]}>
+          <Form.Item name="position" label="Position" required rules={[{ required: true }]}>
             <Select
               options={[
                 {
@@ -152,6 +152,7 @@ export default function CustomLinkModal({
           <Form.Item
             name="hostname"
             label="Host"
+            required
             rules={[{ required: true, message: 'Please input the Address!' }]}
           >
             <Input
@@ -177,7 +178,7 @@ export default function CustomLinkModal({
             <Input />
           </Form.Item>
 
-          {values?.protocol === 'mqtt:' && (
+          {values?.protocol.startsWith('mqtt') && (
             <>
               <Form.Item name="username" label="Username" rules={[{ required: false }]}>
                 <Input />

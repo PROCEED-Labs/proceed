@@ -29,12 +29,7 @@ export function CustomLink({ link }: { link: CustomNavigationLink }) {
 
   if (link.clickable) {
     return (
-      <a
-        href={link.address}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{ display: 'flex', justifyContent: 'space-between' }}
-      >
+      <a href={link.address} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
         {children}
       </a>
     );

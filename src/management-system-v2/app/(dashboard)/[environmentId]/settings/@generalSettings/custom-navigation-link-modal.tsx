@@ -1,8 +1,8 @@
 import { Checkbox, Form, Input, Modal, ModalProps, Select, Space } from 'antd';
-import { CustomNavigationLink } from './custom-navigation-links';
 import { Prettify } from '@/lib/typescript-utils';
 import { useEffect } from 'react';
 import { customLinkIcons } from '@/lib/custom-links/icons';
+import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 
 type Protocol = 'http:' | 'https:' | 'mqtt:' | 'mqtts:';
 

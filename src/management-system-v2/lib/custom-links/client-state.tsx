@@ -1,10 +1,10 @@
 'use client';
 
-import { CustomNavigationLink } from '@/app/(dashboard)/[environmentId]/settings/@generalSettings/custom-navigation-links';
 import { useQuery } from '@tanstack/react-query';
 import { createContext, use } from 'react';
 import { getCustomLinksStatus } from './server-actions';
 import { Badge } from 'antd';
+import { CustomNavigationLink } from './custom-link';
 
 type LinkState = (CustomNavigationLink & { status?: boolean })[];
 

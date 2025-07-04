@@ -37,10 +37,10 @@ import GuestWarningButton from '@/components/guest-warning-button';
 import SpaceLink from '@/components/space-link';
 import { GoOrganization } from 'react-icons/go';
 import { LinkOutlined } from '@ant-design/icons';
-import { CustomNavigationLink } from './settings/@generalSettings/custom-navigation-links';
 import { CustomLinkStateProvider } from '@/lib/custom-links/client-state';
 import { CustomLink } from '@/lib/custom-links/state';
 import { customLinkIcons } from '@/lib/custom-links/icons';
+import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 
 const DashboardLayout = async ({
   children,

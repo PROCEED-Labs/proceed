@@ -6,19 +6,6 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import CustomLinkModal from './custom-navigation-link-modal';
 import { customLinkIcons } from '@/lib/custom-links/icons';
 
-// TODO: define this type in a more appropriate place, I don't think it should be exported from this
-// component
-// TODO: check type
-export type CustomNavigationLink = {
-  name: string;
-  icon: string;
-  address: string;
-  topic?: string;
-  showStatus: boolean;
-  clickable: boolean;
-  position: 'top' | 'bottom';
-};
-
 const CustomNavigationLinks = ({
   values,
   onUpdate,

@@ -2,9 +2,9 @@
 
 import { getCurrentEnvironment } from '@/components/auth';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
-import { CustomNavigationLink } from '@/app/(dashboard)/[environmentId]/settings/@generalSettings/custom-navigation-links';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import { checkCustomLinkStatus } from './get-link-state';
+import { CustomNavigationLink } from './custom-link';
 
 export async function getCustomLinksStatus(spaceId: string) {
   // Check that the user is a member of the space

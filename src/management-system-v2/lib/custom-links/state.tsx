@@ -1,8 +1,8 @@
-import { CustomNavigationLink } from '@/app/(dashboard)/[environmentId]/settings/@generalSettings/custom-navigation-links';
 import { checkCustomLinkStatus } from './get-link-state';
 import { Badge, Spin } from 'antd';
 import { ClientLinkState } from './client-state';
 import { Suspense } from 'react';
+import { CustomNavigationLink } from './custom-link';
 
 async function ServerLinkStatus({ link }: { link: CustomNavigationLink }) {
   const status = await checkCustomLinkStatus(link);

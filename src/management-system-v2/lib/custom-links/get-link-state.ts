@@ -1,5 +1,5 @@
-import { CustomNavigationLink } from '@/app/(dashboard)/[environmentId]/settings/@generalSettings/custom-navigation-links';
 import 'server-only';
+import { CustomNavigationLink } from './custom-link';
 
 export async function checkCustomLinkStatus(link: CustomNavigationLink): Promise<boolean> {
   try {

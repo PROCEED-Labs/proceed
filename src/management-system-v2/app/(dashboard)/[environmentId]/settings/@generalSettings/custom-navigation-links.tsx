@@ -56,7 +56,7 @@ const CustomNavigationLinks = ({
         );
       },
     },
-    { title: 'URL', dataIndex: 'url', key: 'url' },
+    { title: 'Address', dataIndex: 'address', key: 'address' },
     {
       title: 'Show Status',
       dataIndex: 'showStatus',
@@ -104,7 +104,12 @@ const CustomNavigationLinks = ({
         Add Link
       </Button>
 
-      <Table columns={columns} dataSource={values} rowKey="id" />
+      <Table
+        columns={columns}
+        dataSource={values}
+        rowKey="id"
+        pagination={{ position: ['bottomCenter'] }}
+      />
 
       <CustomLinkModal
         title={editingLinkIdx !== undefined ? 'Edit Navigation Link' : 'Add Navigation Link'}

@@ -189,6 +189,12 @@ export default function CustomLinkModal({
             </>
           )}
 
+          {values?.protocol.startsWith('mqtt') && (
+            <Form.Item name="topic" label="Topic">
+              <Input />
+            </Form.Item>
+          )}
+
           <Form.Item name="showStatus" valuePropName="checked">
             <Checkbox>Show Status</Checkbox>
           </Form.Item>

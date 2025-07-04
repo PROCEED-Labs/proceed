@@ -46,7 +46,7 @@ function parseInitialData(data?: CustomNavigationLink): Prettify<
       name: '',
       icon: '',
       showStatus: false,
-      clickable: false,
+      clickable: true,
       position: 'bottom',
     };
 

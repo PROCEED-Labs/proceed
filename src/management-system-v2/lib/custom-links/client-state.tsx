@@ -20,7 +20,7 @@ export function CustomLinkStateProvider({
   const { data } = useQuery({
     queryKey: [spaceId, 'custom-links-state'],
     queryFn: () => getCustomLinksStatus(spaceId),
-    refetchInterval: 5_000,
+    refetchInterval: 15_000,
   });
 
   return <LinkStateProvider.Provider value={data ?? []}>{children}</LinkStateProvider.Provider>;

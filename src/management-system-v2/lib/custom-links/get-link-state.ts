@@ -13,7 +13,6 @@ export async function checkCustomLinkStatus(link: CustomNavigationLink): Promise
       throw new Error('Unsupported URL protocol');
     }
   } catch (error) {
-    console.error('Error checking custom link status:', error);
     return false;
   }
 }

@@ -11,11 +11,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { config } from '../config';
 
-const { model, modelCache, embeddingDim } = config;
+const { embeddingModel, embeddingModelCache, embeddingDim, useGPU } = config;
 
 class Embedding {
   private static task: PipelineType = 'feature-extraction';
-  private static model = model;
+  private static model = embeddingModel;
   private static instance: FeatureExtractionPipeline | null = null;
 
   /**
@@ -25,6 +25,9 @@ class Embedding {
   public static async getInstance(
     progressCallback: ProgressCallback | null = (progressInfo) => {
       // console.log(progressInfo);
+      if (progressInfo.status === 'ready') {
+        console.log('Embedding model loaded successfully.');
+      }
     },
   ) {
     if (Embedding.instance === null) {
@@ -32,6 +35,8 @@ class Embedding {
 
       const opts: PretrainedModelOptions = {
         use_external_data_format: true,
+        dtype: 'fp32',
+        device: useGPU ? 'cuda' : 'cpu',
       };
       //   { progress_callback, config, cache_dir, local_files_only, revision, device, dtype, subfolder, use_external_data_format, model_file_name, session_options, }
       if (progressCallback) opts.progress_callback = progressCallback;
@@ -46,8 +51,8 @@ class Embedding {
   }
 
   private static configureEnv() {
-    if (modelCache) {
-      const absCache = path.resolve(modelCache);
+    if (embeddingModelCache) {
+      const absCache = path.resolve(embeddingModelCache);
       if (!fs.existsSync(absCache)) {
         fs.mkdirSync(absCache, { recursive: true });
       }

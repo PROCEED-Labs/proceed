@@ -22,28 +22,9 @@ type CompetenceInput = {
   lastUsages?: string[];
 };
 
-type CompetenceEmbedding = {
-  competenceId: string; // UUIDString
-  embedding: number[]; // array of numbers representing the embedding
-};
-
-type Resource = {
-  listId: string; // UUIDString
-  resourceId: string; // UUIDString
-  competencies: Competence[]; // array of competencies
-};
-
 type ResourceInput = {
   resourceId?: string;
   competencies: CompetenceInput[];
-};
-
-type ResourceList = {
-  listId: string; // UUIDString
-  resources: {
-    resourceId: string; // UUIDString
-    competencies: Competence[]; // array of competencies
-  }[];
 };
 
 type ResourceListInput = ResourceInput[];
@@ -56,21 +37,12 @@ type MatchingTask = {
   requiredCompetencies?: string[] | CompetenceInput[]; // either array of competenceIds or array of CompetenceInput
 };
 
-type MatchingTaskInput =
-  | {
-      competenceListId: string; // UUIDString
-      tasks: MatchingTask[]; // array of tasks to match
-    }
-  | {
-      competenceList: ResourceListInput; // array of resources with competencies
-      tasks: MatchingTask[]; // array of tasks to match
-    };
-
 type Match = {
-  [resourceId: string]: {
-    matchingConfidence: number; // 0-1
-    reason: string;
-  };
+  competenceId: string;
+  text: string;
+  type: string;
+  distance: number;
+  reason?: string;
 };
 
 interface VectorDBOptions {
@@ -110,3 +82,17 @@ interface MatchingJob {
   resourceId?: string; // Optional: If matching against a single resource
   tasks: MatchingTask[]; // Tasks to match
 }
+
+type GroupedMatchResults = {
+  taskId: string;
+  competences: {
+    competenceId: string;
+    matchings: {
+      text: string;
+      type: 'name' | 'description' | 'proficiencyLevel';
+      similarity: number;
+      reason?: string;
+    }[];
+    avgsimilarity: number;
+  }[];
+}[];

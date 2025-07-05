@@ -7,13 +7,18 @@ const SEMANTIC_SPLITTER_INTRUCT: Message = {
   role: 'system',
   content: `
     Your task is to segment the following text (i.e. user input such as plain prose, bullet points or listings) into semantically independent parts.
-    Do not add, remove, or modify any words.
-    Preserve the original ordering of words within each group—but groups themselves need not follow the original sequence.
+    Do not add, remove, or modify any words - under no circumstances should you ever add any additional text, comments, or explanations.
+    Preserve the original ordering of words within each group — but groups themselves need not follow the original sequence.
     Separate each group only by the delimiter
     ${splittingSymbol}
     (i.e. exactly as shown, on a line by themselves).
     If the entire input is already one coherent semantic unit, return it verbatim without any delimiter.
     Grouping need do not be adjacent - just semantically related (i.e. two related text parts might be separated by other text parts).
+    If the input is empty, return an empty string.
+    If the input is a single word, return it verbatim without any delimiter.
+    If the input is a single sentence, return it verbatim without any delimiter.
+    If you are unsure about the grouping, return the entire input as a single group without any delimiters.
+    Under no circumstances should you ever add any additional text, comments, or explanations.
     `,
 };
 const SEMANTIC_SPLITTER_EXAMPLES: Message[] = [
@@ -99,6 +104,74 @@ export const SEMANTIC_SPLITTER: Message[] = [
   SEMANTIC_SPLITTER_INTRUCT,
   ...SEMANTIC_SPLITTER_EXAMPLES,
 ];
+
+/**
+ * -------------------------------------------------------------
+ */
+
+const MATCH_REASON_INTRUCT: Message = {
+  role: 'system',
+  content: `
+    You are an expert in generating reasons for matching scores between tasks and competences.
+    Your task is to generate a reason for the matching score between a task and a competence.
+    The reason should be one to three short, concise sentence that explain why the task and competence match as well as they did or why they did not match that well.
+    Do not mention the similarity score in your response.
+    The reason should be based on the text of the task and the competence and their estimated normalized similarity score.
+    The similarity score is a number between 0 and 1, where 0 means no similarity and 1 means perfect similarity.
+    Do not mention the similarity score in your response.
+    `,
+};
+
+const MATCH_REASON_EXAMPLES: Message[] = [
+  {
+    role: 'user',
+    content: `
+        Task: Operate CNC milling machines to produce precision metal parts.
+        Competence: Experience with CNC milling machines and precision machining.
+        Similarity Score: 0.95
+    `,
+  },
+  {
+    role: 'assistant',
+    content: `
+        The task and competence match very well because the task requires operating CNC milling machines, which is exactly what the competence is about.
+    `,
+  },
+  {
+    role: 'user',
+    content: `
+        Task: Assemble circuit boards according to schematic diagrams.
+        Competence: Basic knowledge of electronics and soldering skills.
+        Similarity Score: 0.65
+    `,
+  },
+  {
+    role: 'assistant',
+    content: `
+        The task and competence have a moderate match because while assembling circuit boards requires some knowledge of electronics, it does not specifically require advanced soldering skills. 
+    `,
+  },
+  {
+    role: 'user',
+    content: `
+        Task: Prepare raw materials for production.
+        Competence: Experience with inventory management and supply chain logistics.
+        Similarity Score: 0.30
+    `,
+  },
+  {
+    role: 'assistant',
+    content: `
+        The task and competence have a low match because preparing raw materials is a basic task that does not require advanced inventory management or supply chain logistics skills.
+    `,
+  },
+];
+
+export const MATCH_REASON: Message[] = [MATCH_REASON_INTRUCT, ...MATCH_REASON_EXAMPLES];
+
+/**
+ * -------------------------------------------------------------
+ */
 
 // """"""""""
 // The warehouse must maintain ambient temperatures between 15°C and 25°C to protect sensitive goods. Humidity levels should not exceed 60% to prevent corrosion and mold growth. Inventory audits are scheduled weekly to ensure accuracy and compliance with safety standards.

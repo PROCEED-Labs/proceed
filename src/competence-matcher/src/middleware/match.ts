@@ -154,19 +154,56 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
   }
   if (job.status === 'failed') {
     res.status(500).json({
-      error: `Job with ID ${jobId} failed. Please check the job logs for more details.`,
+      error: `Job with ID ${jobId} failed.`,
     });
     return;
   }
   if (job.status !== 'completed') {
     // This should not happen, but just in case
+    console.error(`Unexpected job status: ${job.status} for jobId: ${jobId}`);
     res.status(500).json({
-      error: `Job with ID ${jobId} is in an unknown state: ${job.status}.`,
+      error: `Job with ID ${jobId} failed.`,
     });
     return;
   }
 
   // Return match results
   const results = db.getMatchResults(jobId);
-  res.status(200).json(results);
+  // Group by taskId and within each taskId by competenceId
+  // where matches are sorted by distance ascending
+  // and competences are sorted by avgDistance ascending
+  const groupedResults: GroupedMatchResults = results.reduce((acc, result) => {
+    const { taskId, competenceId, text, type, distance } = result as {
+      taskId: string;
+      competenceId: string;
+      text: string;
+      type: 'name' | 'description' | 'proficiencyLevel';
+      distance: number;
+    };
+
+    let task = acc.find((t) => t.taskId === taskId);
+    if (!task) {
+      task = { taskId, competences: [] };
+      acc.push(task);
+    }
+
+    let competence = task.competences.find((c) => c.competenceId === competenceId);
+    if (!competence) {
+      competence = { competenceId, matchings: [], avgsimilarity: 0 };
+      task.competences.push(competence);
+    }
+
+    competence.matchings.push({ text, type, similarity: distance });
+    competence.matchings.sort((a, b) => a.similarity - b.similarity);
+
+    competence.avgsimilarity =
+      competence.matchings.reduce((sum, match) => sum + match.similarity, 0) /
+      competence.matchings.length;
+
+    task.competences.sort((a, b) => a.avgsimilarity - b.avgsimilarity);
+
+    return acc;
+  }, [] as GroupedMatchResults);
+
+  res.status(200).json(groupedResults);
 }

@@ -4,11 +4,6 @@ import * as path from 'node:path';
 import * as sqliteVec from 'sqlite-vec';
 import { v4 as uuid } from 'uuid';
 
-export interface VectorDBOptions {
-  filePath?: string; // file path or ":memory:"
-  embeddingDim: number; // dimension of each embedding
-}
-
 class VectorDataBase {
   private db: DatabaseSync;
   private embeddingDim: number;
@@ -73,7 +68,8 @@ class VectorDataBase {
         competence_id TEXT   NOT NULL,         -- matched competence
         distance      REAL   NOT NULL,         -- similarity score
         text          TEXT   NOT NULL,         -- the matched snippet
-        type          TEXT   NOT NULL          -- 'name' | 'description' | 'proficiencyLevel'
+        type          TEXT   NOT NULL,         -- 'name' | 'description' | 'proficiencyLevel'
+        reason        TEXT                    -- llm based reason for the match
       );
     `);
     this.db.exec(`
@@ -215,6 +211,12 @@ class VectorDataBase {
    * Match Methods
    *------------------------------------------------------------------*/
 
+  /**
+   * Add a match result for a job, task, and competence.
+   *
+   * @param opts Options for adding a match result.
+   * @throws if the jobId, taskId, or competenceId do not exist.
+   */
   public addMatchResult(opts: {
     jobId: string;
     taskId: string;
@@ -222,19 +224,33 @@ class VectorDataBase {
     text: string;
     type: 'name' | 'description' | 'proficiencyLevel';
     distance: number;
+    reason?: string; // optional reason for the match
   }): void {
     const id = uuid();
     this.db
       .prepare(
         `
     INSERT INTO match_results
-      (id, job_id, task_id, competence_id, text, type, distance)
+      (id, job_id, task_id, competence_id, text, type, distance, reason)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `,
       )
-      .run(id, opts.jobId, opts.taskId, opts.competenceId, opts.text, opts.type, opts.distance);
+      .run(
+        id,
+        opts.jobId,
+        opts.taskId,
+        opts.competenceId,
+        opts.text,
+        opts.type,
+        opts.distance,
+        opts.reason ?? null,
+      );
   }
 
+  /**
+   * Fetch all match results for a given jobId.
+   * @returns an array of match results, sorted by taskId and distance.
+   */
   public getMatchResults(jobId: string): Array<{
     taskId: string;
     competenceId: string;
@@ -245,11 +261,10 @@ class VectorDataBase {
     return this.db
       .prepare(
         `
-    SELECT task_id, competence_id, text, type, distance
+    SELECT task_id, competence_id, text, type, distance, reason
       FROM match_results
      WHERE job_id = ?
-     GROUP BY task_id, competence_id
-     ORDER BY distance ASC
+     ORDER BY task_id, distance
   `,
       )
       .all(jobId)
@@ -259,6 +274,7 @@ class VectorDataBase {
         text: r.text,
         type: r.type,
         distance: r.distance,
+        reason: r.reason ?? undefined,
       }));
   }
 
@@ -795,12 +811,33 @@ class VectorDataBase {
     }
 
     const rows = this.db.prepare(sql).all(...params) as Array<any>;
-    return rows.map((r) => ({
+
+    let result = rows.map((r) => ({
       competenceId: r.competence_id,
       text: r.text,
       type: r.type,
       distance: r.distance,
     }));
+
+    // Normalise distances to [0, 1], depending on the metric:
+    if (similarityMetric === 'cosine') {
+      // Cosine distance is in [0, 2]
+      result = result.map((row) => ({
+        ...row,
+        distance: row.distance / 2,
+      }));
+    } else if (similarityMetric === 'hamming') {
+      // Hamming distance is in [0, 1], so we leave it as is
+    } else if (similarityMetric === 'euclidean') {
+      // Euclidean distance is in [0, sqrt(embeddingDim)]
+      const maxDistance = Math.sqrt(this.embeddingDim);
+      result = result.map((row) => ({
+        ...row,
+        distance: row.distance / maxDistance,
+      }));
+    }
+
+    return result;
   }
 }
 

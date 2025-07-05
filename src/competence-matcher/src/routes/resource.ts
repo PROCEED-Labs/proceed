@@ -5,6 +5,9 @@ import {
   getResourceList,
   getResourceLists,
 } from '../middleware/resource';
+import { config } from '../config';
+
+const { multipleDBs } = config;
 
 const router = express.Router();
 
@@ -19,7 +22,9 @@ const router = express.Router();
 // '/:resource-list-id/:resource-id'
 // '/:resource-list-id/:resource-id/:competence-id'
 
-router.route('/').get(getResourceLists);
+// Getting an overview of all resource lists should be tennant-specific,
+// so it should only be available if multipleDBs is true.
+if (multipleDBs) router.route('/').get(getResourceLists);
 
 router.route('/jobs').post(createResourceList);
 router.route('/jobs/:jobId').get(getJobStatus);

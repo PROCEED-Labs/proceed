@@ -27,7 +27,7 @@ function parseInitialData(data?: CustomNavigationLink): Prettify<
         username: url.username,
         password: url.password,
       };
-    } catch (e) { }
+    } catch (e) {}
   }
 
   if (!parsedUrl) {

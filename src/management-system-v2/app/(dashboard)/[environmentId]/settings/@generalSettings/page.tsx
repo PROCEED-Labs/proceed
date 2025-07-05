@@ -3,7 +3,6 @@ import { getCurrentEnvironment } from '@/components/auth';
 import SettingsInjector from '../settings-injector';
 import { SettingGroup } from '../type-util';
 import Wrapper from './wrapper';
-import { getMSConfig } from '@/lib/ms-config/ms-config';
 import db from '@/lib/data/db';
 import { SpaceNotFoundError } from '@/lib/errors';
 
@@ -31,8 +30,19 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
         description: 'The logo that is displayed in the top left corner of the space.',
         value: spaceLogo.spaceLogo,
       },
+      {
+        key: 'customNavigationLinks',
+        name: 'Custom Navigation Links',
+        type: 'custom',
+        description: 'Pinned links',
+        value: [],
+      },
     ],
   };
+
+  // Read config values from the db and write them to the settings object
+  await populateSpaceSettingsGroup(spaceId, settings);
+
   return (
     <>
       <SettingsInjector sectionName="generalSettings" group={settings} priority={1000} />

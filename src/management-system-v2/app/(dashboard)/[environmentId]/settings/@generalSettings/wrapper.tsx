@@ -6,13 +6,15 @@ import { useState } from 'react';
 import { Setting, SettingGroup } from '../../settings/type-util';
 import { SettingsGroup } from '../../settings/components';
 import { useEnvironment } from '@/components/auth-can';
-import { App, Button, Form, Input, Image, theme, Space, Modal } from 'antd';
+import { App, Button, Image, theme, Space, Modal } from 'antd';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { fallbackImage } from '../../processes/[processId]/image-selection-section';
 import ImageUpload from '@/components/image-upload';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import CustomNavigationLinks from './custom-navigation-links';
+import { debouncedSettingsUpdate } from '../utils';
 
 type WrapperProps = {
   group: SettingGroup;
@@ -23,6 +25,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const { message } = App.useApp();
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
+
   const { download: getLogoUrl } = useFileManager({
     entityType: EntityType.ORGANIZATION,
   });
@@ -52,74 +55,79 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     <SettingsGroup
       group={upToDateGroup}
       onUpdate={setUpToDateGroup}
-      renderNestedSettingInput={(id, setting, _key) => {
-        if (setting.key !== 'spaceLogo') return;
+      onNestedSettingUpdate={(key, value) => debouncedSettingsUpdate(spaceId, key, value)}
+      renderNestedSettingInput={(id, setting, _key, onUpdate) => {
+        if (setting.key === 'spaceLogo') {
+          return {
+            input: (
+              <Space id={id}>
+                <Image
+                  src={spaceLogoUrl || fallbackImage}
+                  fallback={fallbackImage}
+                  style={{
+                    width: '100%',
+                    maxHeight: '7.5rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d9d9d9',
+                  }}
+                  preview={{
+                    visible: false,
+                    mask: (
+                      <ImageUpload
+                        imageExists={!!spaceLogoUrl}
+                        onImageUpdate={(filePath) => {
+                          const deleted = typeof filePath === 'undefined';
 
-        return {
-          input: (
-            <Space id={id}>
-              <Image
-                src={spaceLogoUrl || fallbackImage}
-                fallback={fallbackImage}
-                style={{
-                  width: '100%',
-                  maxHeight: '7.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid #d9d9d9',
-                }}
-                preview={{
-                  visible: false,
-                  mask: (
-                    <ImageUpload
-                      imageExists={!!spaceLogoUrl}
-                      onImageUpdate={(filePath) => {
-                        const deleted = typeof filePath === 'undefined';
+                          if (deleted) {
+                            setLogoFilePath(undefined);
+                            setSpaceLogoUrl(undefined);
+                          } else {
+                            setLogoFilePath(filePath);
+                          }
 
-                        if (deleted) {
-                          setLogoFilePath(undefined);
-                          setSpaceLogoUrl(undefined);
-                        } else {
-                          setLogoFilePath(filePath);
-                        }
+                          if (deleted) message.success('Logo deleted');
+                          else message.success('Logo uploaded');
 
-                        if (deleted) message.success('Logo deleted');
-                        else message.success('Logo uploaded');
+                          router.refresh(); // To refresh other places in the page
+                        }}
+                        onUploadFail={() => message.error('Error uploading image')}
+                        config={{
+                          entityType: EntityType.ORGANIZATION,
+                          entityId: spaceId,
+                          useDefaultRemoveFunction: true,
+                          fileName: spaceLogoFilePath ?? undefined,
+                        }}
+                      />
+                    ),
+                  }}
+                  role="group"
+                  aria-label="image-section"
+                />
 
-                        router.refresh(); // To refresh other places in the page
-                      }}
-                      onUploadFail={() => message.error('Error uploading image')}
-                      config={{
-                        entityType: EntityType.ORGANIZATION,
-                        entityId: spaceId,
-                        useDefaultRemoveFunction: true,
-                        fileName: spaceLogoFilePath ?? undefined,
-                      }}
-                    />
-                  ),
-                }}
-                role="group"
-                aria-label="image-section"
-              />
-
-              <Button
-                onClick={() =>
-                  Modal.confirm({
-                    content:
-                      'Logo changes may take some time to appear everywhere. This is normal and should resolve itself shortly.',
-                    footer: (_, { OkBtn }) => <OkBtn />,
-                    maskClosable: true,
-                  })
-                }
-                style={{
-                  color: colorWarning,
-                }}
-                type="text"
-              >
-                <ExclamationCircleOutlined />
-              </Button>
-            </Space>
-          ),
-        };
+                <Button
+                  onClick={() =>
+                    Modal.confirm({
+                      content:
+                        'Logo changes may take some time to appear everywhere. This is normal and should resolve itself shortly.',
+                      footer: (_, { OkBtn }) => <OkBtn />,
+                      maskClosable: true,
+                    })
+                  }
+                  style={{
+                    color: colorWarning,
+                  }}
+                  type="text"
+                >
+                  <ExclamationCircleOutlined />
+                </Button>
+              </Space>
+            ),
+          };
+        } else if (setting.key === 'customNavigationLinks') {
+          return {
+            input: <CustomNavigationLinks onUpdate={onUpdate} values={setting.value} />,
+          };
+        }
       }}
     />
   );

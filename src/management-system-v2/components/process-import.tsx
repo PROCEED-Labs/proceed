@@ -55,7 +55,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
     await Promise.all(
       fileList.map(async (file) => {
         try {
-          if (file.type === 'application/zip') {
+          if (file.name.toLowerCase().endsWith('.zip')) {
             await handleZipFile(file, processesData, errors);
           } else {
             await handleBpmnFile(file, processesData, errors);
@@ -151,7 +151,8 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
       };
       if (zip) {
         // Handle artefacts in the same directory as the BPMN file
-        const artefactPath = bpmnFilePath.split('/').slice(0, -1).join('/');
+        const normalizedBpmnPath = bpmnFilePath.replace(/\\/g, '/');
+        const artefactPath = normalizedBpmnPath.split('/').slice(0, -1).join('/');
         const artefactFiles = Object.keys(zip.files).filter(
           (name) =>
             name.startsWith(artefactPath.concat('/')) &&

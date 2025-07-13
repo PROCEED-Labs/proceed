@@ -182,13 +182,3 @@ export interface TransformationResult {
 export type BPMNTimelineProps = React.HTMLAttributes<HTMLDivElement> & {
   process: { name: string; id: string; bpmn: string };
 };
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-export const DEFAULT_DURATIONS = {
-  task: 3600000, // 1 hour in milliseconds
-  event: 0, // 0 ms
-  sequenceFlow: 0, // 0 ms
-} as const;

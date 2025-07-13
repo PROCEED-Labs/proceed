@@ -114,12 +114,14 @@ export function transformBPMNToGantt(
   issues.push(...elementIssues);
 
   // Calculate timings using path-based traversal
-  const { timingsMap: pathTimings, dependencies: pathDependencies } = calculateTimingsForMode(
-    supportedElements,
-    startTime,
-    defaultDurations,
-    loopDepth,
-  );
+  const {
+    timingsMap: pathTimings,
+    dependencies: pathDependencies,
+    issues: pathIssues,
+  } = calculateTimingsForMode(supportedElements, startTime, defaultDurations, loopDepth);
+
+  // Add path traversal issues (loop limits, path explosion)
+  issues.push(...pathIssues);
 
   // Handle mode-specific transformations
   const modeResult = handleTraversalMode(

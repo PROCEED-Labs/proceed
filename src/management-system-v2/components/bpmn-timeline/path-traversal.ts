@@ -117,9 +117,16 @@ export function calculatePathBasedTimings(
 ): {
   timingsMap: Map<string, ElementTiming[]>;
   dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>;
+  issues: Array<{
+    elementId: string;
+    elementType: string;
+    elementName?: string;
+    reason: string;
+    severity: 'warning' | 'error';
+  }>;
 } {
   const graph = buildProcessGraph(elements);
-  const { pathElements, dependencies } = traverseAllPaths(
+  const { pathElements, dependencies, issues } = traverseAllPaths(
     graph,
     startTime,
     defaultDurations,
@@ -156,7 +163,7 @@ export function calculatePathBasedTimings(
     });
   });
 
-  return { timingsMap, dependencies };
+  return { timingsMap, dependencies, issues };
 }
 
 /**
@@ -172,12 +179,26 @@ function traverseAllPaths(
 ): {
   pathElements: PathElement[];
   dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>;
+  issues: Array<{
+    elementId: string;
+    elementType: string;
+    elementName?: string;
+    reason: string;
+    severity: 'warning' | 'error';
+  }>;
 } {
   const pathElements: PathElement[] = [];
   const dependencies: Array<{
     sourceInstanceId: string;
     targetInstanceId: string;
     flowId: string;
+  }> = [];
+  const issues: Array<{
+    elementId: string;
+    elementType: string;
+    elementName?: string;
+    reason: string;
+    severity: 'warning' | 'error';
   }> = [];
   const globalElementCount = new Map<string, number>(); // Global count of how many times each element has been visited
   let instanceCounter = 0;
@@ -309,6 +330,17 @@ function traverseAllPaths(
     const MAX_ITERATIONS = 1000; // Safety limit
 
     while (pathsToExplore.length > 0 && iterationCount < MAX_ITERATIONS) {
+      // Check if we've exceeded the maximum paths limit
+      if (pathsToExplore.length > MAX_PATHS) {
+        issues.push({
+          elementId: 'path-explosion',
+          elementType: 'System',
+          reason: `Maximum paths limit (${MAX_PATHS}) reached during path exploration`,
+          severity: 'warning',
+        });
+        // Keep only the first MAX_PATHS to continue processing
+        pathsToExplore.splice(MAX_PATHS);
+      }
       iterationCount++;
       const {
         elementId,
@@ -414,11 +446,12 @@ function traverseAllPaths(
             // Create dependencies from ALL source instances to this ONE target instance
             for (const queuedPath of queuedPaths) {
               if (queuedPath.sourceInstanceId && queuedPath.flowId) {
-                dependencies.push({
+                const dependency = {
                   sourceInstanceId: queuedPath.sourceInstanceId,
                   targetInstanceId: pathElement.instanceId,
                   flowId: queuedPath.flowId,
-                });
+                };
+                dependencies.push(dependency);
               }
             }
 
@@ -481,6 +514,15 @@ function traverseAllPaths(
 
       if (visitCount > actualMaxIterations) {
         // We've exceeded the loop depth, don't create instance and stop this path
+        const element = allElements.find((el) => el.id === elementId);
+        issues.push({
+          elementId: elementId,
+          elementType: element?.$type || 'Unknown',
+          elementName: element?.name,
+          reason: `Loop iteration limit reached for element ${element?.name || elementId} (max depth: ${actualMaxIterations})`,
+          severity: 'warning',
+        });
+
         // Mark the source element as loop cut-off since this path terminates here
         if (sourceInstanceId) {
           const sourceElement = pathElements.find((pe) => pe.instanceId === sourceInstanceId);
@@ -512,11 +554,12 @@ function traverseAllPaths(
 
         // Create dependency if this gateway was reached from another instance
         if (sourceInstanceId && flowId) {
-          dependencies.push({
+          const dependency = {
             sourceInstanceId,
             targetInstanceId: pathElement.instanceId,
             flowId,
-          });
+          };
+          dependencies.push(dependency);
         }
 
         // Update path-specific visit count for loop detection
@@ -566,11 +609,12 @@ function traverseAllPaths(
 
         // Create dependency if this element was reached from another instance
         if (sourceInstanceId && flowId) {
-          dependencies.push({
+          const dependency = {
             sourceInstanceId,
             targetInstanceId: pathElement.instanceId,
             flowId,
-          });
+          };
+          dependencies.push(dependency);
         }
 
         // Update path-specific visit count and visited elements
@@ -611,9 +655,12 @@ function traverseAllPaths(
     }
 
     if (iterationCount >= MAX_ITERATIONS) {
-      console.error(
-        `Path traversal exceeded maximum iterations (${MAX_ITERATIONS}), stopping to prevent infinite loop`,
-      );
+      issues.push({
+        elementId: 'path-traversal',
+        elementType: 'System',
+        reason: `Path traversal exceeded maximum iterations (${MAX_ITERATIONS}), stopping to prevent infinite loop`,
+        severity: 'warning',
+      });
     }
   }
 
@@ -630,5 +677,5 @@ function traverseAllPaths(
     .filter(([elementId, count]) => count > 1)
     .map(([elementId, count]) => ({ elementId, count }));
 
-  return { pathElements, dependencies };
+  return { pathElements, dependencies, issues };
 }

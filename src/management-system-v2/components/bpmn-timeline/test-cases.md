@@ -5,12 +5,14 @@ These test cases are designed to systematically verify the gateway-semantic appr
 ## Recent Changes (Post-Refactor)
 
 **Architecture Simplified**:
+
 - **Single approach**: All modes now use path-based traversal with gateway-semantic processing
 - **Dead code removed**: ~600 lines of unused preprocessing logic eliminated
 - **Unified algorithm**: Gateway semantics applied during path traversal, not preprocessing
 - **Visibility control**: `renderGateways` parameter controls whether gateways appear in timeline
 
 **Testing Focus**:
+
 - Verify gateway instances are created during traversal (even when hidden)
 - Confirm dependency bypass logic works correctly when `renderGateways = false`
 - Test that both visibility modes produce consistent results
@@ -108,9 +110,9 @@ Flows:
 
 ---
 
-## Test Case 4: Gateway Chain (Current Problem Case)
+## Test Case 4: Gateway Chain (Solved)
 
-**Purpose**: Verify the original failing case with gateway chains
+**Purpose**: Verify gateway chains with transitive bypass dependencies  
 **Gateway Types**: **PARALLEL GATEWAY** Chain (G1→G2)
 
 ```
@@ -138,7 +140,8 @@ Flows:
 
 - Elements: S, T1, T2 (instance 1), T2 (instance 2) (G1, G2 hidden)
 - Dependencies: S→T1, S→T2(inst1), S→T2(inst2)
-- T2 appears TWICE (once per path)
+- T2 instances created via different paths
+- **Fixed**: Transitive bypass logic correctly creates S→T2(inst2) through gateway chain
 
 ---
 
@@ -308,10 +311,10 @@ Flows:
 
 ---
 
-## Test Case 10: Mixed Gateway Chain
+## Test Case 10: Gateway Mismatch Pattern (Structural Warning)
 
-**Purpose**: Verify exclusive and parallel gateways in sequence
-**Gateway Types**: **EXCLUSIVE GATEWAY** → **PARALLEL GATEWAY**
+**Purpose**: Verify detection of exclusive → parallel join deadlock patterns
+**Gateway Types**: **EXCLUSIVE GATEWAY** → **PARALLEL GATEWAY** (problematic pattern)
 
 ```
 BPMN Structure:
@@ -322,8 +325,8 @@ Elements:
 - StartEvent (S)
 - ExclusiveGateway (G1) - Fork type
 - Task (T1, T2, T3, T4)
-- ParallelGateway (G2) - Join type
-- ParallelGateway (G3) - Fork + Join type
+- ParallelGateway (G2) - Join type (PROBLEMATIC)
+- ParallelGateway (G3) - Join type
 - EndEvent (E)
 
 Flows:
@@ -337,9 +340,22 @@ Flows:
 
 **Expected Result**:
 
-- **Every Occurrence**: S, T1 (inst1), T2 (inst1), T3 (inst1), T4 (inst1), E (inst1)
+- **Timeline Generated**: S, T1 (inst1), T2 (inst1), T3 (inst1), T4 (inst1), E (inst1)
 - **Dependencies**: S→T1, S→T2, T1→T3, T1→T4, T2→T3, T2→T4, T3→E, T4→E
-- **Semantics**: Two exclusive paths converge at G2 (parallel join), fork to T3+T4, then converge again at G3
+- **Structural Warning Expected**:
+  ```
+  "Potential deadlock detected: Parallel join gateway 'G2' receives flows from
+  exclusive gateway(s) 'G1'. In real BPMN execution, this could cause the parallel
+  join to wait indefinitely for flows that may never arrive."
+  ```
+- **Semantics**: Shows structural path analysis, not BPMN token flow semantics
+- **Issue**: In real BPMN execution, G2 waits for BOTH T1 AND T2, but G1 only sends flow to ONE path
+
+**Testing Focus**:
+
+- Verify warning message appears in transformation issues
+- Confirm timeline still generates despite structural problem
+- Check that warning includes gateway names and path information
 
 ---
 
@@ -597,17 +613,20 @@ Start with **Test Case 1** (simplest) and progress through complexity.
 ### Error Messages (Block Timeline Generation)
 
 **Unsupported Gateway Types**:
+
 ```
 Gateway type bpmn:InclusiveGateway is not supported. Only exclusive and parallel gateways are currently supported.
 ```
 
 **Unsupported Elements**:
+
 ```
 Element type bpmn:SubProcess is not supported in timeline transformation
 Element type bpmn:BoundaryEvent is not supported in timeline transformation
 ```
 
 **BPMN Parsing Errors**:
+
 ```
 Failed to parse BPMN XML
 No valid process found in definitions
@@ -616,17 +635,20 @@ No valid process found in definitions
 ### Warning Messages (Allow Timeline Generation)
 
 **Gateway Mismatch Detection**:
+
 ```
 Potential deadlock detected: Parallel join gateway 'Gateway_2' receives flows from exclusive gateway(s) 'Gateway_1'. In real BPMN execution, this could cause the parallel join to wait indefinitely for flows that may never arrive. Paths: Path through Gateway_1: [StartEvent → Task_1 → Gateway_1 → Task_2 → Gateway_2]
 ```
 
 **Path Explosion Limits**:
+
 ```
 Path traversal exceeded maximum iterations (1000), stopping to prevent infinite loop
 Maximum paths limit (100) reached during path exploration
 ```
 
 **Loop Iteration Limits**:
+
 ```
 Loop iteration limit reached for element Task_1 (max depth: 2)
 ```
@@ -634,12 +656,14 @@ Loop iteration limit reached for element Task_1 (max depth: 2)
 ### Success Messages
 
 **Successful Transformation**:
+
 ```
 15/20 elements processed successfully (75%)
 Timeline generated with 3 warnings
 ```
 
 **Status Display Format**:
+
 ```
 Elements: 15 processed, 3 errors, 2 warnings
 Dependencies: 12 created (8 direct, 4 bypass)
@@ -648,11 +672,13 @@ Dependencies: 12 created (8 direct, 4 bypass)
 ### Debug Information
 
 **When renderGateways = true**:
+
 - Gateway elements appear as milestones in timeline
 - All dependencies visible including gateway connections
 - Useful for debugging gateway logic
 
 **When renderGateways = false (default)**:
+
 - Gateway instances hidden from final output
 - Bypass dependencies created automatically
 - Clean timeline showing only tasks and events
@@ -660,16 +686,341 @@ Dependencies: 12 created (8 direct, 4 bypass)
 ### Testing Error Scenarios
 
 **Test Unsupported Gateways**:
+
 1. Create BPMN with InclusiveGateway
 2. Expected: Error message blocking timeline generation
 3. Verify error details include gateway ID and type
 
 **Test Gateway Mismatches**:
+
 1. Create ExclusiveGateway → ParallelGateway pattern
 2. Expected: Warning message with deadlock explanation
 3. Verify timeline still generates with warning indicator
 
 **Test BPMN Parsing**:
+
 1. Provide invalid BPMN XML
 2. Expected: Error message with parsing failure details
 3. Verify graceful error handling without component crash
+
+---
+
+## Structural Issue Test Cases
+
+These test cases are designed to systematically test all types of structural warnings and errors that the component can detect. Each case should trigger specific validation logic.
+
+### Test Case S1: Simple Exclusive → Parallel Deadlock
+
+**Purpose**: Test basic exclusive-to-parallel deadlock detection
+**Issue Type**: Structural Warning (Gateway Mismatch)
+
+```
+BPMN Structure:
+S → G1(EXCLUSIVE) → T1 → G2(PARALLEL) → E
+    G1            → T2 → G2
+
+Elements:
+- StartEvent (S)
+- ExclusiveGateway (G1) - Fork
+- Task (T1, T2)
+- ParallelGateway (G2) - Join
+- EndEvent (E)
+
+Flows:
+- S → G1
+- G1 → T1 (condition: path1)
+- G1 → T2 (condition: path2)
+- T1 → G2, T2 → G2
+- G2 → E
+```
+
+**Expected Warning**:
+
+```
+Potential deadlock detected in parallel join gateway 'G2' - it expects multiple incoming flows but receives them from exclusive gateway(s) 'G1' which only executes one path. The parallel join will wait indefinitely for flows that never arrive.
+```
+
+**Expected Result**: Timeline generates with warning
+
+---
+
+### Test Case S2: Multiple Exclusive → Single Parallel
+
+**Purpose**: Test multiple exclusive gateways feeding one parallel join
+**Issue Type**: Structural Warning (Gateway Mismatch)
+
+```
+BPMN Structure:
+S1 → G1(EXCLUSIVE) → T1 → G3(PARALLEL) → E
+      G1           → T2 → G3
+S2 → G2(EXCLUSIVE) → T3 → G3
+     G2            → T4 → G3
+
+Elements:
+- StartEvent (S1, S2)
+- ExclusiveGateway (G1, G2) - Forks
+- Task (T1, T2, T3, T4)
+- ParallelGateway (G3) - Join
+- EndEvent (E)
+```
+
+**Expected Warning**:
+
+```
+Potential deadlock detected in parallel join gateway 'G3' - it expects multiple incoming flows but receives them from exclusive gateway(s) 'G1, G2' which only executes one path. The parallel join will wait indefinitely for flows that never arrive.
+```
+
+**Expected Result**: Timeline generates with warning
+
+---
+
+### Test Case S3: Nested Exclusive → Parallel Chain
+
+**Purpose**: Test deep exclusive-to-parallel chains
+**Issue Type**: Structural Warning (Gateway Mismatch)
+
+```
+BPMN Structure:
+S → G1(EXCLUSIVE) → T1 → G2(EXCLUSIVE) → T3 → G3(PARALLEL) → E
+    G1            → T2 → G2           → T4 → G3
+
+Elements:
+- StartEvent (S)
+- ExclusiveGateway (G1, G2) - Forks
+- Task (T1, T2, T3, T4)
+- ParallelGateway (G3) - Join
+- EndEvent (E)
+```
+
+**Expected Warning**:
+
+```
+Potential deadlock detected in parallel join gateway 'G3' - it expects multiple incoming flows but receives them from exclusive gateway(s) 'G1, G2' which only executes one path. The parallel join will wait indefinitely for flows that never arrive.
+```
+
+**Expected Result**: Timeline generates with warning
+
+---
+
+### Test Case S4: Unsupported Gateway Types
+
+**Purpose**: Test error handling for unsupported gateway types
+**Issue Type**: Error (Unsupported Elements)
+
+```
+BPMN Structure:
+S → G1(INCLUSIVE) → T1 → E1
+    G1           → T2 → E2
+
+Elements:
+- StartEvent (S)
+- InclusiveGateway (G1) - Fork
+- Task (T1, T2)
+- EndEvent (E1, E2)
+
+Flows:
+- S → G1
+- G1 → T1, G1 → T2
+- T1 → E1, T2 → E2
+```
+
+**Expected Error**:
+
+```
+Gateway type bpmn:InclusiveGateway is not supported. Only exclusive and parallel gateways are currently supported.
+```
+
+**Expected Result**: Timeline generation blocked
+
+---
+
+### Test Case S5: Unsupported Element Types
+
+**Purpose**: Test error handling for unsupported element types
+**Issue Type**: Error (Unsupported Elements)
+
+```
+BPMN Structure:
+S → T1 → SUB → T2 → E
+         ↑ BoundaryEvent
+
+Elements:
+- StartEvent (S)
+- Task (T1, T2)
+- SubProcess (SUB)
+- BoundaryEvent (attached to SUB)
+- EndEvent (E)
+```
+
+**Expected Errors**:
+
+```
+Element type bpmn:SubProcess is not supported in timeline transformation
+Element type bpmn:BoundaryEvent is not supported in timeline transformation
+```
+
+**Expected Result**: Timeline generation blocked
+
+---
+
+### Test Case S6: Complex Gateway Mismatch
+
+**Purpose**: Test complex exclusive-to-parallel patterns with multiple levels
+**Issue Type**: Structural Warning (Gateway Mismatch)
+
+```
+BPMN Structure:
+S → G1(EXCLUSIVE) → T1 → G3(PARALLEL) → T5 → G4(PARALLEL) → E
+    G1            → T2 → G3           → T6 → G4
+
+Elements:
+- StartEvent (S)
+- ExclusiveGateway (G1) - Fork
+- Task (T1, T2, T5, T6)
+- ParallelGateway (G3, G4) - Joins
+- EndEvent (E)
+```
+
+**Expected Warnings**:
+
+```
+Potential deadlock detected in parallel join gateway 'G3' - it expects multiple incoming flows but receives them from exclusive gateway(s) 'G1' which only executes one path...
+Potential deadlock detected in parallel join gateway 'G4' - it expects multiple incoming flows but receives them from exclusive gateway(s) 'G1' which only executes one path...
+```
+
+**Expected Result**: Timeline generates with multiple warnings
+
+---
+
+### Test Case S7: Mixed Supported/Unsupported Elements
+
+**Purpose**: Test partial processing with mixed element support
+**Issue Type**: Mixed (Errors + Successful Processing)
+
+```
+BPMN Structure:
+S → T1 → G1(INCLUSIVE) → T2 → SUB → T3 → E
+                       → T4 ────────→
+
+Elements:
+- StartEvent (S) ✓
+- Task (T1, T2, T3, T4) ✓
+- InclusiveGateway (G1) ✗
+- SubProcess (SUB) ✗
+- EndEvent (E) ✓
+```
+
+**Expected Results**:
+
+- **Errors**: InclusiveGateway and SubProcess not supported
+- **Timeline**: Shows S, T1, E (T2, T3, T4 unreachable due to unsupported G1)
+- **Status**: "3/7 elements processed successfully (43%)"
+
+---
+
+### Test Case S8: Path Explosion Prevention
+
+**Purpose**: Test path explosion limits in complex branching
+**Issue Type**: Warning (Performance Limits)
+
+```
+BPMN Structure:
+Complex branching pattern with multiple exclusive gateways creating
+exponential path explosion (design to exceed 100 paths or 1000 elements)
+
+S → G1(EXCLUSIVE) → G2(EXCLUSIVE) → G3(EXCLUSIVE) → ... (deep nesting)
+```
+
+**Expected Warning**:
+
+```
+Maximum paths limit (100) reached during path exploration
+Path traversal exceeded maximum iterations (1000), stopping to prevent infinite loop
+```
+
+**Expected Result**: Timeline generates with path cutoff warnings displayed in issues panel
+
+---
+
+### Test Case S9: Loop Iteration Limits
+
+**Purpose**: Test loop iteration limit handling
+**Issue Type**: Warning (Performance Limits)
+
+```
+BPMN Structure:
+S → T1 → G1(EXCLUSIVE) → T2 → E
+     ↑     G1           → T3 → (loop back to T1)
+
+With loop-depth setting that causes iteration limit to be reached
+```
+
+**Expected Warning**:
+
+```
+Loop iteration limit reached for element T1 (max depth: 2)
+```
+
+**Expected Result**: Timeline generates with loop cutoff warnings displayed in issues panel
+
+---
+
+### Test Case S10: Invalid BPMN Structure
+
+**Purpose**: Test handling of malformed BPMN
+**Issue Type**: Error (Parsing/Structure)
+
+```
+Test scenarios:
+1. Invalid XML structure
+2. Missing process definition
+3. Circular references without proper gateways
+4. Disconnected elements
+5. Missing target/source references in flows
+```
+
+**Expected Errors**:
+
+```
+Failed to parse BPMN XML
+No valid process found in definitions
+Invalid references: Sequence flows pointing to non-existent elements
+```
+
+**Expected Result**: Timeline generation blocked with specific error details
+
+---
+
+## Testing Instructions for Structural Issues
+
+### Systematic Testing Approach
+
+1. **Create each test case** in BPMN modeler
+2. **Test with renderGateways = false** (default mode)
+3. **Verify expected warnings/errors** appear in issue panel
+4. **Check timeline generation** - should generate for warnings, block for errors
+5. **Verify error details** include element IDs, types, and explanations
+6. **Test with renderGateways = true** - should show same structural issues
+
+### Success Criteria
+
+**Warning Cases (S1-S3, S6, S8, S9)**:
+
+- ✅ Timeline generates successfully
+- ✅ Warning appears in issues panel with expandable details
+- ✅ Warning message includes specific element names and explanations
+- ✅ Timeline shows structural path analysis (not BPMN token flow)
+- ✅ Performance limit warnings (S8, S9) now properly displayed in UI
+
+**Error Cases (S4, S5, S7, S10)**:
+
+- ✅ Timeline generation blocked
+- ✅ Specific error messages appear
+- ✅ Error details include element IDs and types
+- ✅ Component handles errors gracefully without crashing
+
+**Mixed Cases (S7)**:
+
+- ✅ Partial timeline generation
+- ✅ Success rate percentage shown
+- ✅ Both errors and successful elements reported

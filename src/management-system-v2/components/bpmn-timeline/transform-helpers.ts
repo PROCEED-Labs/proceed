@@ -71,7 +71,7 @@ export function detectAndReportGatewayIssues(
       elementId: mismatch.parallelJoinId,
       elementType: 'bpmn:ParallelGateway',
       elementName: mismatch.parallelJoinName,
-      reason: `Potential deadlock detected: Parallel join gateway '${mismatch.parallelJoinName || mismatch.parallelJoinId}' receives flows from exclusive gateway(s) '${exclusiveGatewayNames}'. In real BPMN execution, this could cause the parallel join to wait indefinitely for flows that may never arrive. Paths: ${pathDescription}`,
+      reason: `Potential deadlock detected in parallel join gateway '${mismatch.parallelJoinName || mismatch.parallelJoinId}' - it expects multiple incoming flows but receives them from exclusive gateway(s) '${exclusiveGatewayNames}' which only executes one path. The parallel join will wait indefinitely for flows that never arrive. ${pathDescription}`,
       severity: 'warning',
     });
   });
@@ -138,7 +138,17 @@ export function calculateTimingsForMode(
   startTime: number,
   defaultDurations: DefaultDurationInfo[],
   loopDepth: number,
-) {
+): {
+  timingsMap: Map<string, any[]>;
+  dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>;
+  issues: Array<{
+    elementId: string;
+    elementType: string;
+    elementName?: string;
+    reason: string;
+    severity: 'warning' | 'error';
+  }>;
+} {
   return calculatePathBasedTimings(supportedElements, startTime, defaultDurations, loopDepth);
 }
 
@@ -195,18 +205,42 @@ export function filterDependenciesForVisibleElements(
       }
     });
 
-    // Second pass: create bypass dependencies
+    // Second pass: create transitive bypass dependencies for gateway chains
     const bypassDependencies: any[] = [];
     const processedPairs = new Set<string>();
 
-    gatewayBypass.forEach((sources, gatewayId) => {
-      const targets = gatewayTargets.get(gatewayId) || [];
+    // Helper function to find all reachable targets from a source through gateway chains
+    function findTransitiveTargets(sourceId: string, visited = new Set<string>()): string[] {
+      if (visited.has(sourceId)) return []; // Prevent cycles
 
-      // Connect each source to each target, bypassing the gateway
+      const newVisited = new Set(visited);
+      newVisited.add(sourceId);
+
+      const directTargets = gatewayTargets.get(sourceId) || [];
+      const allTargets: string[] = [];
+
+      directTargets.forEach((targetId) => {
+        if (visibleIds.has(targetId)) {
+          // Target is visible - add it
+          allTargets.push(targetId);
+        } else {
+          // Target is another hidden gateway - recurse through it
+          const transitiveTargets = findTransitiveTargets(targetId, newVisited);
+          allTargets.push(...transitiveTargets);
+        }
+      });
+
+      return allTargets;
+    }
+
+    // For each gateway, find all visible sources and connect them to all reachable visible targets
+    gatewayBypass.forEach((sources, gatewayId) => {
       sources.forEach((sourceId) => {
-        targets.forEach((targetId) => {
-          // Only create bypass if both source and target are visible
-          if (visibleIds.has(sourceId) && visibleIds.has(targetId)) {
+        if (visibleIds.has(sourceId)) {
+          // Source is visible - find all reachable targets through gateway chains
+          const reachableTargets = findTransitiveTargets(gatewayId);
+
+          reachableTargets.forEach((targetId) => {
             const pairKey = `${sourceId}->${targetId}`;
             if (!processedPairs.has(pairKey)) {
               processedPairs.add(pairKey);
@@ -220,17 +254,19 @@ export function filterDependenciesForVisibleElements(
                   (d) => d.targetId === targetId && !visibleIds.has(d.sourceId),
                 );
 
-              bypassDependencies.push({
+              const bypassDep = {
                 id: `${sourceId}_to_${targetId}_bypass`,
                 sourceId,
                 targetId,
                 type: throughGatewayDep?.type || 'FINISH_TO_START',
                 name: throughGatewayDep?.name,
                 flowType: throughGatewayDep?.flowType,
-              });
+              };
+
+              bypassDependencies.push(bypassDep);
             }
-          }
-        });
+          });
+        }
       });
     });
 
@@ -241,5 +277,6 @@ export function filterDependenciesForVisibleElements(
 
     return [...directDependencies, ...bypassDependencies];
   }
+
   return ganttDependencies;
 }

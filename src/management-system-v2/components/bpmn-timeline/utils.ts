@@ -2,7 +2,7 @@
  * Utility functions for BPMN timeline transformation
  */
 
-import type { BPMNBaseElement, BPMNTask, BPMNEvent, BPMNGateway, DEFAULT_DURATIONS } from './types';
+import type { BPMNBaseElement, BPMNTask, BPMNEvent, BPMNGateway } from './types';
 import { isGatewayElement, isExclusiveGateway, isParallelGateway } from './element-transformers';
 
 // ============================================================================

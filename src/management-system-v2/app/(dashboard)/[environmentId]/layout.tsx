@@ -11,10 +11,8 @@ import {
   UserOutlined,
   BarChartOutlined,
   EditOutlined,
-  SnippetsOutlined,
   CopyOutlined,
   CheckSquareOutlined,
-  HistoryOutlined,
   NodeExpandOutlined,
   PlaySquareOutlined,
   LaptopOutlined,
@@ -26,7 +24,7 @@ import {
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 
 import Link from 'next/link';
-import { getEnvironmentById, getSpaceLogo, spaceHasLogo } from '@/lib/data/db/iam/environments';
+import { getEnvironmentById, getSpaceLogo } from '@/lib/data/db/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { spaceURL } from '@/lib/utils';
@@ -38,6 +36,11 @@ import { getMSConfig } from '@/lib/ms-config/ms-config';
 import GuestWarningButton from '@/components/guest-warning-button';
 import SpaceLink from '@/components/space-link';
 import { GoOrganization } from 'react-icons/go';
+import { LinkOutlined } from '@ant-design/icons';
+import { CustomLinkStateProvider } from '@/lib/custom-links/client-state';
+import { CustomLink } from '@/lib/custom-links/state';
+import { customLinkIcons } from '@/lib/custom-links/icons';
+import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 
 const DashboardLayout = async ({
   children,
@@ -61,7 +64,46 @@ const DashboardLayout = async ({
     ? (adminRules as RemoveReadOnly<typeof adminRules>)
     : await getUserRules(userId, activeEnvironment.spaceId);
 
+  const generalSettings = await getSpaceSettingsValues(
+    activeEnvironment.spaceId,
+    'general-settings',
+  );
+  const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks || [];
+  const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
+  const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');
+
   let layoutMenuItems: MenuProps['items'] = [];
+
+  if (topCustomNavLinks.length > 0) {
+    layoutMenuItems.push(
+      ...topCustomNavLinks.map((link, idx) => ({
+        key: `top-${idx}`,
+        label: <CustomLink link={link} />,
+        icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
+      })),
+    );
+
+    layoutMenuItems.push({
+      key: 'top-custom-links-divider',
+      type: 'divider',
+    });
+  }
+
+  const automationSettings = await getSpaceSettingsValues(
+    activeEnvironment.spaceId,
+    'process-automation',
+  );
+  if (
+    msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+    automationSettings.active !== false &&
+    automationSettings.tasklist?.active !== false
+  ) {
+    layoutMenuItems.push({
+      key: 'tasklist',
+      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
+      icon: <CheckSquareOutlined />,
+    });
+  }
 
   if (can('view', 'Process')) {
     const documentationSettings = await getSpaceSettingsValues(
@@ -94,11 +136,6 @@ const DashboardLayout = async ({
   }
 
   if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
-    const automationSettings = await getSpaceSettingsValues(
-      activeEnvironment.spaceId,
-      'process-automation',
-    );
-
     if (automationSettings.active !== false) {
       let children: MenuProps['items'] = [
         automationSettings.dashboard?.active !== false && {
@@ -125,26 +162,16 @@ const DashboardLayout = async ({
           icon: <PlaySquareOutlined />,
           children,
         });
-
-      if (automationSettings.tasklist?.active !== false) {
-        layoutMenuItems = [
-          {
-            key: 'tasklist',
-            label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
-            icon: <CheckSquareOutlined />,
-          },
-          ...layoutMenuItems,
-        ];
-      }
     }
   }
 
   if (
-    can('manage', 'User') ||
-    can('manage', 'RoleMapping') ||
-    can('manage', 'Role') ||
-    can('update', 'Environment') ||
-    can('delete', 'Environment')
+    activeEnvironment.isOrganization &&
+    (can('manage', 'User') ||
+      can('manage', 'RoleMapping') ||
+      can('manage', 'Role') ||
+      can('update', 'Environment') ||
+      can('delete', 'Environment'))
   ) {
     const children: MenuProps['items'] = [];
 
@@ -242,6 +269,21 @@ const DashboardLayout = async ({
     });
   }
 
+  if (bottomCustomNavLinks.length > 0) {
+    layoutMenuItems.push({
+      key: 'bottom-custom-links-divider',
+      type: 'divider',
+    });
+
+    layoutMenuItems.push(
+      ...bottomCustomNavLinks.map((link, idx) => ({
+        key: idx,
+        label: <CustomLink link={link} />,
+        icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
+      })),
+    );
+  }
+
   const logo = (await getSpaceLogo(activeEnvironment.spaceId))?.spaceLogo ?? undefined;
 
   return (
@@ -251,15 +293,17 @@ const DashboardLayout = async ({
         environmentId={activeEnvironment.spaceId}
         treeMap={await getSpaceFolderTree(activeEnvironment.spaceId)}
       />
-      <Layout
-        loggedIn={!!userId}
-        userEnvironments={userEnvironments}
-        layoutMenuItems={layoutMenuItems}
-        activeSpace={activeEnvironment}
-        customLogo={logo}
-      >
-        {children}
-      </Layout>
+      <CustomLinkStateProvider spaceId={activeEnvironment.spaceId}>
+        <Layout
+          loggedIn={!!userId}
+          userEnvironments={userEnvironments}
+          layoutMenuItems={layoutMenuItems}
+          activeSpace={activeEnvironment}
+          customLogo={logo}
+        >
+          {children}
+        </Layout>
+      </CustomLinkStateProvider>
     </>
   );
 };

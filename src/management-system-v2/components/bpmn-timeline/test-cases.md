@@ -1,6 +1,19 @@
 # Gateway-Semantic Implementation Test Cases
 
-These test cases are designed to systematically verify the new gateway-semantic approach. Build each BPMN process and test with ALL modes ("earliest occurrence", "every occurrence", "latest occurrence") and "renderGateways = false".
+These test cases are designed to systematically verify the gateway-semantic approach. Build each BPMN process and test with ALL modes ("earliest occurrence", "every occurrence", "latest occurrence") and both "renderGateways = false" (default) and "renderGateways = true" (debug mode).
+
+## Recent Changes (Post-Refactor)
+
+**Architecture Simplified**:
+- **Single approach**: All modes now use path-based traversal with gateway-semantic processing
+- **Dead code removed**: ~600 lines of unused preprocessing logic eliminated
+- **Unified algorithm**: Gateway semantics applied during path traversal, not preprocessing
+- **Visibility control**: `renderGateways` parameter controls whether gateways appear in timeline
+
+**Testing Focus**:
+- Verify gateway instances are created during traversal (even when hidden)
+- Confirm dependency bypass logic works correctly when `renderGateways = false`
+- Test that both visibility modes produce consistent results
 
 ## Test Case 1: Simple Parallel Fork
 
@@ -163,7 +176,7 @@ Flows:
 - **Semantics**: E has two prerequisites (T1 AND T2) but appears only once after synchronization
 - **Timing**: E starts only after BOTH T1 and T2 complete (parallel join semantics)
 
-**⚠️ Note**: This tests **parallel join semantics** - elements that were split from the same source and rejoin should create only one target instance with multiple prerequisites.
+**Note**: This tests **parallel join semantics** - elements that were split from the same source and rejoin should create only one target instance with multiple prerequisites.
 
 ---
 
@@ -197,7 +210,7 @@ Flows:
 - **Dependencies**: S→T1, S→T2, T1→E1, T1→E2, T2→E1, T2→E2
 - **Semantics**: Both E1 and E2 are reachable from both T1 and T2 (4 total paths)
 
-**⚠️ Note**: This contrasts with Test Case 5 - here the **exclusive** join creates multiple paths to each target.
+**Note**: This contrasts with Test Case 5 - here the **exclusive** join creates multiple paths to each target.
 
 ---
 
@@ -530,7 +543,7 @@ Flows:
 - **Dependencies**: S→T2(inst1), S→T1, T1→T2(inst2), T2(inst1)→E(inst1), T2(inst2)→E(inst2)
 - **Semantics**: G1 forks to T1 and T2 in parallel, T1 leads to a second T2 instance, each T2 instance follows the same outgoing path (T2→G2→E) creating separate execution paths
 
-**⚠️ KEY INSIGHT**: This pattern shows that when the same element appears in multiple paths, each instance follows its own execution path through subsequent elements. G2 doesn't synchronize the T2 instances because they represent different executions of the same task, not different tasks converging.
+**KEY INSIGHT**: This pattern shows that when the same element appears in multiple paths, each instance follows its own execution path through subsequent elements. G2 doesn't synchronize the T2 instances because they represent different executions of the same task, not different tasks converging.
 
 **Note**: This tests whether the implementation correctly handles:
 
@@ -554,7 +567,7 @@ For each test case:
 
 ## Success Criteria
 
-✅ **Gateway-Semantic Working**: If all test cases show:
+**Gateway-Semantic Working**: If all test cases show:
 
 - Gateways hidden from visualization
 - Correct dependencies created (source→target, no gateway IDs)
@@ -570,9 +583,93 @@ For each test case:
 
 ## Current Implementation Status
 
-- ✅ **Gateway-semantic traversal**: Implemented
-- ✅ **Direct source→target dependencies**: Implemented
-- ⚠️ **Synchronization logic**: May need updates for new approach
-- ⚠️ **Complex gateway patterns**: Untested
+- **Gateway-semantic traversal**: Fully implemented and tested
+- **Direct source→target dependencies**: Implemented and working
+- **Synchronization logic**: Fully implemented with queueing mechanism
+- **Gateway visibility control**: Implemented via renderGateways parameter
+- **Dependency filtering**: Bypass logic working for hidden gateways
+- **Complex gateway patterns**: Ready for testing
 
 Start with **Test Case 1** (simplest) and progress through complexity.
+
+## Expected Issue Messages
+
+### Error Messages (Block Timeline Generation)
+
+**Unsupported Gateway Types**:
+```
+Gateway type bpmn:InclusiveGateway is not supported. Only exclusive and parallel gateways are currently supported.
+```
+
+**Unsupported Elements**:
+```
+Element type bpmn:SubProcess is not supported in timeline transformation
+Element type bpmn:BoundaryEvent is not supported in timeline transformation
+```
+
+**BPMN Parsing Errors**:
+```
+Failed to parse BPMN XML
+No valid process found in definitions
+```
+
+### Warning Messages (Allow Timeline Generation)
+
+**Gateway Mismatch Detection**:
+```
+Potential deadlock detected: Parallel join gateway 'Gateway_2' receives flows from exclusive gateway(s) 'Gateway_1'. In real BPMN execution, this could cause the parallel join to wait indefinitely for flows that may never arrive. Paths: Path through Gateway_1: [StartEvent → Task_1 → Gateway_1 → Task_2 → Gateway_2]
+```
+
+**Path Explosion Limits**:
+```
+Path traversal exceeded maximum iterations (1000), stopping to prevent infinite loop
+Maximum paths limit (100) reached during path exploration
+```
+
+**Loop Iteration Limits**:
+```
+Loop iteration limit reached for element Task_1 (max depth: 2)
+```
+
+### Success Messages
+
+**Successful Transformation**:
+```
+15/20 elements processed successfully (75%)
+Timeline generated with 3 warnings
+```
+
+**Status Display Format**:
+```
+Elements: 15 processed, 3 errors, 2 warnings
+Dependencies: 12 created (8 direct, 4 bypass)
+```
+
+### Debug Information
+
+**When renderGateways = true**:
+- Gateway elements appear as milestones in timeline
+- All dependencies visible including gateway connections
+- Useful for debugging gateway logic
+
+**When renderGateways = false (default)**:
+- Gateway instances hidden from final output
+- Bypass dependencies created automatically
+- Clean timeline showing only tasks and events
+
+### Testing Error Scenarios
+
+**Test Unsupported Gateways**:
+1. Create BPMN with InclusiveGateway
+2. Expected: Error message blocking timeline generation
+3. Verify error details include gateway ID and type
+
+**Test Gateway Mismatches**:
+1. Create ExclusiveGateway → ParallelGateway pattern
+2. Expected: Warning message with deadlock explanation
+3. Verify timeline still generates with warning indicator
+
+**Test BPMN Parsing**:
+1. Provide invalid BPMN XML
+2. Expected: Error message with parsing failure details
+3. Verify graceful error handling without component crash

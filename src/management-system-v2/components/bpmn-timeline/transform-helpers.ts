@@ -82,10 +82,10 @@ export function detectAndReportGatewayIssues(
     for (const gateway of gateways) {
       if (!isExclusiveGateway(gateway) && !isParallelGateway(gateway)) {
         issues.push({
-          elementId: gateway.id,
-          elementType: gateway.$type,
-          elementName: gateway.name,
-          reason: `Gateway type ${gateway.$type} is not supported. Only exclusive and parallel gateways are currently supported.`,
+          elementId: (gateway as any).id,
+          elementType: (gateway as any).$type,
+          elementName: (gateway as any).name,
+          reason: `Gateway type ${(gateway as any).$type} is not supported. Only exclusive and parallel gateways are currently supported.`,
           severity: 'error',
         });
       }
@@ -144,7 +144,25 @@ export function calculateTimingsForMode(
 
 /**
  * Filter dependencies to only include visible elements
- * When gateways are hidden, this will reconnect the dependency chain
+ *
+ * When gateways are hidden (renderGateways=false), this function creates "bypass dependencies"
+ * that connect sources directly to targets, skipping the hidden gateway instances.
+ *
+ * **Algorithm**:
+ * 1. Identify all gateway connections (dependencies involving hidden elements)
+ * 2. Map gateway inputs (sources that connect TO gateways)
+ * 3. Map gateway outputs (targets that connect FROM gateways)
+ * 4. Create direct source→target bypass dependencies
+ * 5. Return combination of direct dependencies + bypass dependencies
+ *
+ * **Example**:
+ * ```
+ * Original: TaskA → Gateway → TaskB
+ * Filtered: TaskA → TaskB (bypass dependency)
+ * ```
+ *
+ * This preserves logical flow while hiding implementation details (gateways)
+ * from the user interface.
  */
 export function filterDependenciesForVisibleElements(
   ganttDependencies: any[],

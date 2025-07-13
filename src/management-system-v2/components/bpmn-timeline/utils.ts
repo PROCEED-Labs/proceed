@@ -81,8 +81,8 @@ export function extractDuration(element: BPMNBaseElement): number {
 
   for (const extension of element.extensionElements.values) {
     // Check for direct timePlannedDuration property on extension
-    if (extension.timePlannedDuration && extension.timePlannedDuration.value) {
-      const durationValue = extension.timePlannedDuration.value;
+    if ((extension as any).timePlannedDuration && (extension as any).timePlannedDuration.value) {
+      const durationValue = (extension as any).timePlannedDuration.value;
       return parseISO8601Duration(durationValue);
     }
 
@@ -91,7 +91,7 @@ export function extractDuration(element: BPMNBaseElement): number {
       for (const child of extension.$children) {
         // Check for proceed:timePlannedDuration in multiple formats
         if (child.$type === 'proceed:timePlannedDuration') {
-          const durationValue = child.value || child.body || child.$body;
+          const durationValue = (child as any).value || child.$body;
           if (durationValue) {
             return parseISO8601Duration(durationValue);
           }
@@ -99,7 +99,7 @@ export function extractDuration(element: BPMNBaseElement): number {
 
         // Legacy check with name property
         if (child.name === 'proceed:timePlannedDuration') {
-          const durationValue = child.value || child.body || child.$body;
+          const durationValue = (child as any).value || child.$body;
           if (durationValue) {
             return parseISO8601Duration(durationValue);
           }
@@ -321,7 +321,7 @@ export function findConnectedComponents(
     elementToComponent.set(elementId, currentComponentId);
 
     const neighbors = adjacencyList.get(elementId) || new Set();
-    for (const neighborId of neighbors) {
+    for (const neighborId of Array.from(neighbors)) {
       if (!visited.has(neighborId)) {
         dfs(neighborId, currentComponentId);
       }
@@ -560,7 +560,7 @@ export function tracePathsToOrigins(
     };
 
     // If it's a gateway, record it
-    if (isGatewayElement(element)) {
+    if (isGatewayElement(element as any)) {
       const gatewayInfo = {
         id: element.id,
         type: element.$type,
@@ -629,7 +629,9 @@ export function detectGatewayMismatches(
   }> = [];
 
   // Find all parallel join gateways
-  const parallelJoins = elements.filter((el) => isParallelGateway(el) && isJoinGateway(el));
+  const parallelJoins = elements.filter(
+    (el) => isParallelGateway(el as any) && isJoinGateway(el as any),
+  );
 
   parallelJoins.forEach((parallelJoin) => {
     const paths = tracePathsToOrigins(parallelJoin, elements);
@@ -652,7 +654,7 @@ export function detectGatewayMismatches(
     paths.forEach((path) => {
       // Look for exclusive gateways in the path that are forks
       const exclusiveForksInPath = path.gateways.filter(
-        (gw) => isExclusiveGateway({ $type: gw.type }) && gw.position === 'fork',
+        (gw) => isExclusiveGateway({ $type: gw.type } as any) && gw.position === 'fork',
       );
 
       exclusiveForksInPath.forEach((exclusiveFork) => {

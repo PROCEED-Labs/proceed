@@ -1,5 +1,15 @@
 /**
  * BPMN to Gantt transformation logic
+ *
+ * This module orchestrates the transformation of BPMN process definitions
+ * into Gantt chart data using gateway-semantic path traversal.
+ *
+ * **Architecture**:
+ * 1. Validate and extract BPMN process
+ * 2. Detect gateway issues and separate supported elements
+ * 3. Use path-based traversal for ALL modes (earliest/every/latest)
+ * 4. Apply mode-specific result processing
+ * 5. Filter dependencies based on gateway visibility (renderGateways)
  */
 
 import type { GanttElementType, GanttDependency } from '@/components/gantt-chart-canvas/types';
@@ -16,16 +26,12 @@ import type {
   DefaultDurationInfo,
 } from './types';
 import { calculatePathBasedTimings } from './path-traversal';
-import { calculateElementTimings } from './timing-calculator';
 import {
   transformTask,
   transformEvent,
-  transformGateway,
   transformSequenceFlow,
   getFlowType,
   isGatewayElement,
-  isExclusiveGateway,
-  isParallelGateway,
 } from './element-transformers';
 import {
   isTaskElement,
@@ -60,6 +66,16 @@ import {
 
 /**
  * Transform BPMN process to Gantt chart data
+ *
+ * Uses unified path-based traversal for all modes with gateway-semantic processing.
+ * Gateways are processed during traversal and can be optionally hidden via renderGateways.
+ *
+ * @param definitions - BPMN process definitions from bpmn-js
+ * @param startTime - Process start time (default: current time)
+ * @param traversalMode - How to handle multiple paths: earliest/every/latest occurrence
+ * @param loopDepth - Maximum loop iterations for path-based modes
+ * @param chronologicalSorting - Sort elements by start time vs discovery order
+ * @param renderGateways - Show gateway instances in timeline (default: false)
  */
 export function transformBPMNToGantt(
   definitions: BPMNDefinitions,

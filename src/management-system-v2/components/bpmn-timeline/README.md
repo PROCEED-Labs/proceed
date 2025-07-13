@@ -292,7 +292,7 @@ maxLoopIterations: number = 3; // Allow up to 3 loop iterations (initial + 3 rep
 - `bpmn:ExclusiveGateway` (XOR) - Choice/decision points
 - `bpmn:ParallelGateway` (AND) - Synchronization and parallel execution
 
-**Transformation Strategy**: **Gateway-Semantic Path Traversal** ✅ **Implemented**
+**Transformation Strategy**: **Gateway-Semantic Path Traversal** **Implemented**
 
 - Gateways are **not rendered** as visible elements in the timeline (hidden when `renderGateways = false`)
 - **Current Implementation**: Gateway semantics are applied directly during path traversal
@@ -530,10 +530,10 @@ interface TokenBasedElement {
 
 #### **Benefits of Token Flow:**
 
-- ✅ **BPMN Specification Compliance**: Matches actual process engine behavior
-- ✅ **Accurate Resource Modeling**: Single instances with extended durations
-- ✅ **Proper Synchronization**: Parallel joins wait for all required tokens
-- ✅ **Realistic Timing**: Accounts for sequential token processing
+- **BPMN Specification Compliance**: Matches actual process engine behavior
+- **Accurate Resource Modeling**: Single instances with extended durations
+- **Proper Synchronization**: Parallel joins wait for all required tokens
+- **Realistic Timing**: Accounts for sequential token processing
 
 #### **Why Current Approach is Preferred:**
 
@@ -547,7 +547,7 @@ interface TokenBasedElement {
 
 ### **Implementation Status**
 
-**✅ Current Features:**
+**Current Features:**
 
 - **Gateway-semantic traversal**: Implemented and tested
 - **Parallel gateway synchronization**: Working with queueing mechanism
@@ -556,7 +556,7 @@ interface TokenBasedElement {
 - **Structural validation**: Deadlock pattern detection
 - **Complex gateway patterns**: Nested, chained, and mixed gateway types supported
 
-**⚠️ Known Considerations:**
+**Known Considerations:**
 
 - **BPMN vs. Structural semantics**: Shows structural paths, not token flow execution
 - **Instance proliferation**: Same elements may appear multiple times in complex paths
@@ -652,22 +652,6 @@ Chronological Sorting Result:
 - **Unique coloring**: Each instance gets consistent color
 - **Path identification**: Instances grouped by originating path
 
-## Performance Considerations
-
-### Path Explosion Prevention
-
-- **MAX_PATHS = 100**: Concurrent path limit
-- **Element limit**: 1000 total path elements maximum
-- **Early termination**: Stops exploration when limits reached
-- **Memory management**: Efficient data structures for large processes
-
-### Optimization Strategies
-
-- **Graph preprocessing**: Build efficient node/edge maps
-- **Lazy evaluation**: Only compute visible portions when possible
-- **Instance pooling**: Reuse objects to reduce garbage collection
-- **Caching**: Store computed results for repeated transformations
-
 ## Issue Reporting and Validation
 
 ### Comprehensive Issue Reporting
@@ -698,9 +682,13 @@ interface TransformationIssue {
 
 ### Status Display
 
-- **Success rate**: "15/20 elements processed successfully (75%)"
-- **Issue summary**: "5 errors, 2 warnings occurred" with expandable details
-- **Element breakdown**: Total vs processed vs failed vs warned counts
+The component displays transformation results in the UI:
+
+- **Issue Panel**: Collapsible panel showing process issues when errors or warnings exist
+- **Error Section**: "Unsupported Elements (N)" - elements excluded from timeline
+- **Warning Section**: "Structural Warnings (N)" - patterns that may not execute as expected
+- **Default Duration Panel**: Shows elements using default durations with expandable details
+- **Issue Details**: Each issue shows element name/ID, type, and specific reason
 
 ### Issue Categories
 
@@ -722,48 +710,6 @@ interface TransformationIssue {
 - **Disconnected components**: Elements not connected to main flow
 - **Invalid references**: Sequence flows pointing to non-existent elements
 
-### Testing Gateway Mismatch Detection
-
-**Example Test Case**:
-
-```typescript
-// Process structure that triggers deadlock warning:
-const testElements = [
-  { id: 'start', $type: 'bpmn:StartEvent', outgoing: ['flow1'] },
-  { id: 'task1', $type: 'bpmn:Task', incoming: ['flow1'], outgoing: ['flow2'] },
-  {
-    id: 'exclusive1',
-    $type: 'bpmn:ExclusiveGateway',
-    incoming: ['flow2'],
-    outgoing: ['flow3', 'flow4'],
-  },
-  { id: 'task2', $type: 'bpmn:Task', incoming: ['flow3'], outgoing: ['flow5'] },
-  { id: 'task3', $type: 'bpmn:Task', incoming: ['flow4'], outgoing: ['flow6'] },
-  {
-    id: 'parallel1',
-    $type: 'bpmn:ParallelGateway',
-    incoming: ['flow5', 'flow6'],
-    outgoing: ['flow7'],
-  },
-  { id: 'task4', $type: 'bpmn:Task', incoming: ['flow7'], outgoing: ['flow8'] },
-  { id: 'end', $type: 'bpmn:EndEvent', incoming: ['flow8'] },
-  // Sequence flows...
-];
-
-// Expected warning:
-// "Potential deadlock detected: Parallel join gateway 'parallel1' receives flows
-//  from exclusive gateway(s) 'exclusive1'. In real BPMN execution, this could cause
-//  the parallel join to wait indefinitely for flows that may never arrive."
-```
-
-**Test Patterns Covered**:
-
-- ✅ **Direct exclusive → parallel**: Simple case above
-- ✅ **Nested gateways**: Exclusive → Task → Exclusive → Parallel
-- ✅ **Multiple exclusive origins**: Two exclusive gateways feeding one parallel join
-- ✅ **Gateway chains**: Complex sequences with multiple gateway types
-- ✅ **Loop structures**: Gateway mismatches within loop constructs
-
 ## Configuration
 
 ### Space Settings Integration
@@ -784,6 +730,9 @@ chronological-sorting: boolean = false
 // Visual enhancements
 show-loop-icons: boolean = true
 curved-dependencies: boolean = false
+
+// Gateway visibility control
+renderGateways: boolean = false
 ```
 
 ### Runtime Parameters
@@ -801,7 +750,37 @@ maxPaths: number = 100
 
 // Element sorting preference
 chronologicalSorting: boolean = false
+
+// Gateway visibility control
+renderGateways: boolean = false
 ```
+
+### Gateway Visibility and Filtering
+
+The `renderGateways` parameter controls whether gateway elements are visible in the final timeline:
+
+**When `renderGateways = false` (Default)**:
+
+- Gateway instances are created during path traversal but filtered out of final output
+- Dependencies are automatically "bypassed" to connect around hidden gateways
+- Direct source→target connections are created via `filterDependenciesForVisibleElements()`
+- Users see a clean timeline with tasks and events connected by logical dependencies
+
+**When `renderGateways = true`**:
+
+- Gateway instances appear as milestones in the timeline
+- All dependencies preserved as-is, including connections to/from gateways
+- Useful for debugging gateway logic and understanding process structure
+
+**Bypass Dependency Creation**:
+
+```typescript
+// When gateways are hidden, direct connections are created:
+// Original: Task A → Gateway → Task B
+// Filtered: Task A → Task B (bypass dependency)
+```
+
+This approach allows the same gateway processing logic to serve both visualization modes without duplicating the transformation algorithms.
 
 ## Integration Points
 
@@ -866,154 +845,61 @@ const result = transformBPMNToGantt(definitions, timestamp, settings.positioning
 - **Curved dependencies**: Optional rounded corners for dependency arrows
 - **Default duration panels**: Collapsible information about elements using defaults
 
-## Future Extensions
-
-### Planned Features
-
-- **Gateway support**: All gateway types with proper branching logic
-- **SubProcess support**: Nested process handling
-- **BoundaryEvent support**: Exception and interruption handling
-- **Advanced time features**: Time zones, working hours, calendars
-
-### Enhancement Opportunities
-
-- **Critical path analysis**: Identify bottlenecks and dependencies
-- **Resource modeling**: Capacity constraints and allocation
-- **Simulation features**: Monte Carlo analysis, what-if scenarios
-- **Export capabilities**: PDF, image, or data export options
-
 ---
 
-## Development Notes
+## Implementation Architecture
 
-### Code Structure
+### Core Components
 
 ```
 components/bpmn-timeline/
 ├── index.tsx              # Main component and UI
-├── transform.ts           # Main transformation orchestration with gateway preprocessing
-├── element-transformers.ts # Element transformation functions and gateway preprocessing
-├── timing-calculator.ts   # Earliest occurrence timing calculation algorithm
-├── path-traversal.ts      # Every occurrence algorithm
+├── transform.ts           # Transformation orchestration
+├── transform-helpers.ts   # Validation and utility functions
+├── mode-handlers.ts       # Mode-specific result processing
+├── element-transformers.ts # Element transformation functions
+├── path-traversal.ts      # Path-based traversal algorithm
 ├── types.ts              # TypeScript interfaces
 ├── utils.ts              # Helper functions
-├── requirements.md       # Implementation requirements
 └── README.md            # This documentation
 ```
 
-### Key Functions
+### Key Implementation Details
 
-- `transformBPMNToGantt()`: Main transformation entry point with mode-specific gateway handling
-- `calculateElementTimings()`: Earliest occurrence algorithm with mathematical synchronization
-- `calculatePathBasedTimings()`: Every occurrence algorithm with gateway-semantic traversal
-- `buildProcessGraph()`: Graph construction for path traversal
-- `traverseAllPaths()`: Core path exploration with **new gateway-semantic handling**
-- `buildSynchronizationRequirements()`: Creates synchronization rules for parallel gateway joins
-- `extractDuration()`: ISO 8601 duration parsing
-- ~~`preprocessGateways()`~~: **Being phased out** - replaced by semantic approach
-- ~~`extractGatewayMetadata()`~~: **May be deprecated** - less needed with semantic approach
+**Unified Path-Based Architecture**:
 
-### Gateway-Semantic Path Traversal Implementation ⚠️ **New Approach**
+- All modes (earliest/every/latest) use path-based traversal with gateway-semantic processing
+- Gateway semantics applied during traversal, not in post-processing
+- Optional gateway visibility controlled by `renderGateways` parameter
+- Dependency filtering creates bypass connections when gateways are hidden
 
-**Core Concept**: Instead of preprocessing gateways into synthetic flows, apply gateway semantics directly during path traversal.
+**Gateway Processing**:
 
-**Implementation Logic**:
+- Gateways processed semantically during path traversal
+- Direct source→target dependencies created, skipping gateway instances
+- Parallel gateway synchronization uses queueing mechanism
+- Gateway timing and flow durations combined in single operation
 
-```typescript
-// When encountering an element during traversal:
-if (isGatewayElement(element)) {
-  // Gateway: Apply semantics and continue to targets
-  const gatewayDuration = extractDuration(element) || 0;
-  const gatewayEndTime = currentTime + gatewayDuration;
+**Performance Safeguards**:
 
-  // Get outgoing flows and create paths directly to targets
-  outgoingFlows.forEach((flow, flowIndex) => {
-    const flowDuration = extractDuration(flow) || 0;
-    const nextTime = gatewayEndTime + flowDuration; // Combined timing
+- Maximum 100 concurrent paths (path explosion prevention)
+- Maximum 1000 total path elements
+- Configurable loop iteration limits
+- Early termination when limits reached
 
-    pathsToExplore.push({
-      elementId: targetId,
-      pathKey: `${pathKey}_gw_${elementId}_${flowIndex}`,
-      currentTime: nextTime,
-      sourceInstanceId: sourceInstanceId, // Skip gateway in dependency chain
-      flowId: flow.id,
-    });
-  });
-} else {
-  // Non-gateway: Create instance and continue normally
-  // ... standard instance creation and dependency logic
-}
-```
+### Current Implementation Status
 
-**Key Benefits**:
+- **Gateway-semantic traversal**: Fully implemented
+- **Parallel/exclusive gateway support**: Complete
+- **All traversal modes**: Working (earliest/every/latest occurrence)
+- **Gateway visibility control**: Implemented via `renderGateways`
+- **Dependency filtering**: Bypass logic for hidden gateways
+- **Synchronization logic**: Queueing mechanism for parallel joins
+- **Issue detection**: Gateway mismatch warnings, unsupported element errors
 
-- ✅ **Eliminates complex transitive logic**: No post-processing dependency transformation needed
-- ✅ **Natural instance flow**: Dependencies go directly from source to target instances
-- ✅ **Consistent timing**: Gateway duration properly included in flow timing
-- ✅ **Mode compatibility**: Works identically across earliest/every/latest occurrence modes
-- ✅ **Simplified debugging**: No mismatch between element IDs and instance IDs
+### Future Enhancements
 
-**Gateway Semantics Applied**:
-
-- **Parallel Fork**: All outgoing paths get same source instance, different targets
-- **Parallel Join**: Multiple source instances connect to same target (via synchronization)
-- **Exclusive Gateway**: Alternative paths from same source to different targets
-- **Gateway Chains**: Natural traversal through gateway sequences
-
-**Current Status**:
-
-- ✅ **Path traversal updated**: Gateway handling implemented in `traverseAllPaths()`
-- ✅ **Instance creation**: Only non-gateway elements create instances
-- ✅ **Dependency creation**: Direct source→target connections
-- ⚠️ **Needs validation**: Parallel gateway synchronization behavior
-- ⚠️ **Needs testing**: Complex gateway patterns and edge cases
-
-### Synchronization Queue Implementation (Every Occurrence Mode)
-
-**Core Algorithm**: Path-based synchronization with queueing mechanism
-
-**Queue Management**:
-
-```typescript
-// Queue paths that need synchronization
-const syncQueues = new Map<string, Array<QueuedPath>>(); // key: "targetId:gatewayId"
-
-// Track which sources have arrived for each sync point
-const syncArrivals = new Map<
-  string,
-  {
-    arrivedSources: Set<string>;
-    completionTimes: Map<string, number>;
-  }
->(); // key: "targetId:gatewayId"
-```
-
-**Synchronization Process**:
-
-1. **Path Detection**: When a path reaches an element requiring synchronization
-2. **Queue Addition**: Path is queued with its completion time and source information
-3. **Arrival Tracking**: System tracks which required sources have arrived
-4. **Synchronization Check**: When all required sources arrive, synchronization triggers
-5. **Batch Processing**: All queued paths are processed with synchronized timing (latest completion time)
-6. **Unique Path Keys**: Synchronized paths get unique identifiers to prevent duplicate detection
-
-**Path Signature Management**:
-
-- **Duplicate Prevention**: Uses `elementId:pathKey:visitedElements` signatures to prevent infinite loops
-- **Synchronized Path Uniqueness**: Adds sync markers to path keys (e.g., `_sync_targetId:gatewayId`) to ensure synchronized paths are processed
-- **Visited Element Tracking**: Maintains full path history for accurate loop detection
-
-**Benefits**:
-
-- ✅ **Accurate parallel semantics**: All instances start at the correct synchronized time
-- ✅ **Multi-path convergence**: Handles complex scenarios with multiple parallel branches
-- ✅ **Loop compatibility**: Works correctly with parallel gateways inside loops
-- ✅ **Performance optimized**: Only synchronizes when actually needed
-
-### Testing Considerations
-
-- **Unit tests**: Individual algorithm components, gateway preprocessing, synchronization logic
-- **Integration tests**: Full transformation workflows with complex parallel structures
-- **Performance tests**: Large process handling, path explosion scenarios
-- **Edge case tests**: Loops, branches, malformed data, gateway chains, asymmetric flows
-- **Synchronization tests**: Multi-path convergence, nested parallel gateways, mixed gateway types
+- **Additional gateway types**: Inclusive, complex, event-based gateways
+- **SubProcess support**: Nested process handling
+- **BoundaryEvent support**: Exception and interruption handling
+- **Advanced features**: Critical path analysis, resource modeling

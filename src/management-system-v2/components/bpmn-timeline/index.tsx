@@ -161,6 +161,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
             elementId: 'import',
             elementType: 'BPMN',
             reason: 'Failed to parse BPMN XML',
+            severity: 'error' as const,
           },
         ]);
         setIsLoading(false);

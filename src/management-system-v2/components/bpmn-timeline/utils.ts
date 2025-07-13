@@ -660,10 +660,16 @@ export function detectGatewayMismatches(
 
         // Only add if we haven't seen this gateway before
         if (!uniqueExclusiveOrigins.has(exclusiveFork.id)) {
+          // Convert element IDs to names when available
+          const pathElementNames = path.elements.map((elementId) => {
+            const element = elements.find((el) => el.id === elementId);
+            return element?.name || elementId;
+          });
+
           uniqueExclusiveOrigins.set(exclusiveFork.id, {
             gatewayId: exclusiveFork.id,
             gatewayName: gatewayElement?.name,
-            pathElements: path.elements,
+            pathElements: pathElementNames,
           });
         }
       });

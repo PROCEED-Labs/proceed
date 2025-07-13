@@ -24,16 +24,16 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
   useEffect(() => {
     const loadSettings = async () => {
       if (!isOpen || !spaceId) return;
-      
+
       setIsLoading(true);
       try {
         const currentSettings = await getSpaceSettingsValues(spaceId, 'process-documentation');
         const ganttViewSettings = currentSettings?.['gantt-view'] || {};
-        
+
         // Manually populate the settings group with current values
         const populatedGroup = populateSettingsGroupFromValues(
           ganttViewSettingsDefinition,
-          ganttViewSettings
+          ganttViewSettings,
         );
         setSettingsGroup(populatedGroup);
       } catch (error) {
@@ -59,7 +59,7 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
       // The key already includes the full path from SettingsGroup, just add the process-documentation prefix
       const dbKey = `process-documentation.${key}`;
       await debouncedSettingsUpdate(spaceId, dbKey, value);
-      
+
       // Notify parent component of settings change
       onSettingsChange?.();
     } catch (error) {
@@ -77,7 +77,7 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
           const ganttViewSettings = currentSettings?.['gantt-view'] || {};
           const populatedGroup = populateSettingsGroupFromValues(
             ganttViewSettingsDefinition,
-            ganttViewSettings
+            ganttViewSettings,
           );
           setSettingsGroup(populatedGroup);
         } catch (error) {
@@ -91,8 +91,8 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
   return (
     <>
       <Tooltip title="Gantt Settings">
-        <Button 
-          icon={<SettingOutlined />} 
+        <Button
+          icon={<SettingOutlined />}
           onClick={() => setIsOpen(true)}
           style={{
             width: '32px',
@@ -100,11 +100,11 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
             padding: '0',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
           }}
         />
       </Tooltip>
-      
+
       <Modal
         title="Gantt View Settings"
         open={isOpen}
@@ -129,10 +129,13 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
 };
 
 // Helper function to populate settings group with current values from database
-function populateSettingsGroupFromValues(group: SettingGroup, values: Record<string, any>): SettingGroup {
+function populateSettingsGroupFromValues(
+  group: SettingGroup,
+  values: Record<string, any>,
+): SettingGroup {
   return {
     ...group,
-    children: group.children.map(child => {
+    children: group.children.map((child) => {
       if ('children' in child) {
         // It's a nested group
         return populateSettingsGroupFromValues(child, values);
@@ -141,10 +144,10 @@ function populateSettingsGroupFromValues(group: SettingGroup, values: Record<str
         const savedValue = values[child.key];
         return {
           ...child,
-          value: savedValue !== undefined ? savedValue : child.value
+          value: savedValue !== undefined ? savedValue : child.value,
         };
       }
-    })
+    }),
   };
 }
 
@@ -152,7 +155,7 @@ function populateSettingsGroupFromValues(group: SettingGroup, values: Record<str
 function updateSettingInGroup(group: SettingGroup, key: string, value: any): SettingGroup {
   return {
     ...group,
-    children: group.children.map(child => {
+    children: group.children.map((child) => {
       if ('children' in child) {
         // It's a nested group
         return updateSettingInGroup(child, key, value);
@@ -163,6 +166,6 @@ function updateSettingInGroup(group: SettingGroup, key: string, value: any): Set
         }
         return child;
       }
-    })
+    }),
   };
 }

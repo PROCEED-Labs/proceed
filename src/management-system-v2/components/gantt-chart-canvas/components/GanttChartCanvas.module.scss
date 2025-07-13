@@ -34,7 +34,7 @@
   --gantt-primary-hover: #40a9ff;
   --gantt-text-color: #666;
   --gantt-header-height: 50px;
-  
+
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -80,7 +80,6 @@
   height: 100%;
   align-items: center;
 }
-
 
 .contentRow {
   display: flex;
@@ -201,7 +200,12 @@
   border-left: 3px solid var(--gantt-primary-color);
 
   &:hover {
-    background-color: rgba(24, 144, 255, 0.15) !important; /* Slightly darker than selection */
+    background-color: rgba(
+      24,
+      144,
+      255,
+      0.15
+    ) !important; /* Slightly darker than selection */
   }
 
   .infoButtonColumn {
@@ -245,7 +249,7 @@
   width: 40px;
   @extend %fixed-width-column;
   @extend %text-column;
-  
+
   /* Make loop icons larger in task items */
   .taskItemColumns & {
     font-size: 16px;

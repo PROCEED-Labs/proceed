@@ -8,7 +8,25 @@ import type {
   ElementTiming,
   DefaultDurationInfo,
 } from './types';
-import { extractDuration, isTaskElement, isSupportedEventElement } from './utils';
+import {
+  extractDuration,
+  extractGatewayMetadata,
+  isTaskElement,
+  isSupportedEventElement,
+} from './utils';
+import { isGatewayElement, isParallelGateway, isExclusiveGateway } from './element-transformers';
+import {
+  buildSynchronizationRequirements,
+  incomingFlowsCountForGateway,
+  isSynchronizationReady,
+  calculateSyncTime,
+  createSyncKey,
+  initializeSyncTracking,
+  recordSourceArrival,
+  type SynchronizationRequirement,
+  type SyncQueue,
+  type SyncArrival,
+} from './synchronization';
 
 export interface PathElement {
   elementId: string;
@@ -31,6 +49,13 @@ export interface ProcessGraph {
 }
 
 const MAX_PATHS = 100;
+
+interface EmptyBranch {
+  sourceId: string;
+  targetId: string;
+  gatewayId: string;
+  gatewayType: string;
+}
 
 /**
  * Build process graph from BPMN elements
@@ -89,9 +114,18 @@ export function calculatePathBasedTimings(
   startTime: number,
   defaultDurations: DefaultDurationInfo[] = [],
   maxLoopIterations: number = 1,
-): { timingsMap: Map<string, ElementTiming[]>; dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }> } {
+): {
+  timingsMap: Map<string, ElementTiming[]>;
+  dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>;
+} {
   const graph = buildProcessGraph(elements);
-  const { pathElements, dependencies } = traverseAllPaths(graph, startTime, defaultDurations, maxLoopIterations);
+  const { pathElements, dependencies } = traverseAllPaths(
+    graph,
+    startTime,
+    defaultDurations,
+    maxLoopIterations,
+    elements,
+  );
 
   // Group path elements by original element ID
   const timingsMap = new Map<string, ElementTiming[]>();
@@ -112,7 +146,14 @@ export function calculatePathBasedTimings(
       isPathCutoff: pathElement.isPathCutoff,
       isLoop: pathElement.isLoop,
       isLoopCut: pathElement.isLoopCut,
-    } as ElementTiming & { pathId: string; instanceId: string; isLoopInstance: boolean; isPathCutoff?: boolean; isLoop?: boolean; isLoopCut?: boolean });
+    } as ElementTiming & {
+      pathId: string;
+      instanceId: string;
+      isLoopInstance: boolean;
+      isPathCutoff?: boolean;
+      isLoop?: boolean;
+      isLoopCut?: boolean;
+    });
   });
 
   return { timingsMap, dependencies };
@@ -127,12 +168,20 @@ function traverseAllPaths(
   startTime: number,
   defaultDurations: DefaultDurationInfo[],
   maxLoopIterations: number,
-): { pathElements: PathElement[]; dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }> } {
+  allElements: BPMNFlowElement[], // Pass all elements for gateway metadata lookup
+): {
+  pathElements: PathElement[];
+  dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>;
+} {
   const pathElements: PathElement[] = [];
-  const dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }> = [];
+  const dependencies: Array<{
+    sourceInstanceId: string;
+    targetInstanceId: string;
+    flowId: string;
+  }> = [];
   const globalElementCount = new Map<string, number>(); // Global count of how many times each element has been visited
   let instanceCounter = 0;
-  
+
   /**
    * Extract the base path (without loop iterations) for loop detection
    */
@@ -141,29 +190,28 @@ function traverseAllPaths(
     // Example: "main_StartEvent_0_loop_2" -> "main_StartEvent_0"
     return pathKey.replace(/_loop_\d+/g, '');
   }
-  
+
   /**
    * Get or create an element instance for a specific path context with loop detection
    */
   function getOrCreateInstance(
-    element: BPMNFlowElement, 
-    pathKey: string, 
+    element: BPMNFlowElement,
+    pathKey: string,
     timing: { startTime: number; endTime: number; duration: number },
     visitedElements: string[],
-    pathSpecificVisits: Map<string, number>
+    pathSpecificVisits: Map<string, number>,
   ): { pathElement: PathElement; shouldContinue: boolean } {
-    
     // Check how many times this element has been visited on this specific path
     const visitCount = pathSpecificVisits.get(element.id) || 0;
     const isLoopInstance = visitCount > 0;
-    
+
     // Determine if we should create a new instance or stop
     // Loop depth semantics:
     // - Loop depth <0: Treated as 0 (allow only initial visit, no repetitions)
     // - Loop depth 0: Allow only initial visit, no repetitions (visitCount 0 only)
     // - Loop depth 1: Allow initial visit + 1 loop iteration (visitCount 0,1)
     // - Loop depth N: Allow initial visit + N loop iterations (visitCount 0 through N)
-    // 
+    //
     // visitCount 0: first visit (always allow and continue)
     // visitCount 1: first repetition/loop iteration (allow and continue if within depth)
     // visitCount N: Nth repetition/loop iteration (allow and continue if within depth)
@@ -172,16 +220,15 @@ function traverseAllPaths(
     const shouldCreateNewInstance = visitCount <= actualMaxIterations;
     // Continue traversal as long as we create the instance - we only stop when we refuse to create
     const shouldContinueTraversal = shouldCreateNewInstance;
-    
-    
+
     if (shouldCreateNewInstance) {
       // Increment global counter for this element to get sequential numbering
       const globalCount = (globalElementCount.get(element.id) || 0) + 1;
       globalElementCount.set(element.id, globalCount);
-      
+
       const loopPathKey = isLoopInstance ? `${pathKey}_loop_${globalCount}` : pathKey;
       const instanceId = `${element.id}_instance_${++instanceCounter}`;
-      
+
       const pathElement: PathElement = {
         elementId: element.id,
         pathId: loopPathKey,
@@ -193,9 +240,9 @@ function traverseAllPaths(
         isLoop: isLoopInstance, // Mark as loop if it's a loop instance
         isLoopCut: false, // Will be set later if traversal is cut
       };
-      
+
       pathElements.push(pathElement);
-      
+
       return { pathElement, shouldContinue: shouldContinueTraversal };
     } else {
       // Loop depth exceeded - this shouldn't happen with our new logic
@@ -204,10 +251,36 @@ function traverseAllPaths(
     }
   }
 
+  const synchronizationRequirements = buildSynchronizationRequirements(allElements);
+
   /**
    * Explore all execution paths starting from start nodes
    */
   function explorePaths() {
+    // Queue paths that need synchronization
+    const syncQueues = new Map<
+      string,
+      Array<{
+        elementId: string;
+        pathKey: string;
+        currentTime: number;
+        visitedElements: string[];
+        pathSpecificVisits: Map<string, number>;
+        sourceInstanceId?: string;
+        flowId?: string;
+        sourceElementId?: string;
+      }>
+    >(); // key: "targetId:gatewayId"
+
+    // Track which sources have arrived for each sync point
+    const syncArrivals = new Map<
+      string,
+      {
+        arrivedSources: Set<string>;
+        completionTimes: Map<string, number>;
+      }
+    >(); // key: "targetId:gatewayId"
+
     const pathsToExplore: Array<{
       elementId: string;
       pathKey: string;
@@ -216,6 +289,7 @@ function traverseAllPaths(
       pathSpecificVisits: Map<string, number>; // Track visit count per element on this path
       sourceInstanceId?: string; // The instance that led to this element
       flowId?: string; // The flow that led to this element
+      sourceElementId?: string; // The source element (not instance) for synchronization tracking
     }> = [];
 
     // Initialize with start nodes
@@ -233,20 +307,158 @@ function traverseAllPaths(
 
     let iterationCount = 0;
     const MAX_ITERATIONS = 1000; // Safety limit
-    
+
     while (pathsToExplore.length > 0 && iterationCount < MAX_ITERATIONS) {
       iterationCount++;
-      const { elementId, pathKey, currentTime, visitedElements, pathSpecificVisits, sourceInstanceId, flowId } = pathsToExplore.shift()!;
-      
+      const {
+        elementId,
+        pathKey,
+        currentTime,
+        visitedElements,
+        pathSpecificVisits,
+        sourceInstanceId,
+        flowId,
+        sourceElementId,
+      } = pathsToExplore.shift()!;
+
       // Create a signature that includes visited elements to detect true loops
       const pathSignature = `${elementId}:${pathKey}:${visitedElements.join('-')}`;
+
       if (processedPaths.has(pathSignature)) {
         continue;
       }
       processedPaths.add(pathSignature);
 
       const element = graph.nodes.get(elementId);
-      if (!element) continue;
+      if (!element) {
+        continue;
+      }
+
+      // Check if this element requires synchronization
+      const syncReq = synchronizationRequirements.get(elementId);
+
+      if (syncReq && sourceInstanceId) {
+        // This element requires synchronization
+        const syncKey = createSyncKey(elementId, syncReq.gatewayId);
+
+        // Initialize sync tracking if needed
+        if (!syncArrivals.has(syncKey)) {
+          syncArrivals.set(syncKey, initializeSyncTracking());
+        }
+
+        const syncInfo = syncArrivals.get(syncKey)!;
+
+        // Record the arrival of this source
+        recordSourceArrival(syncInfo, sourceInstanceId, currentTime);
+
+        // Queue this path
+        if (!syncQueues.has(syncKey)) {
+          syncQueues.set(syncKey, []);
+        }
+        syncQueues.get(syncKey)!.push({
+          elementId,
+          pathKey,
+          currentTime,
+          visitedElements,
+          pathSpecificVisits,
+          sourceInstanceId,
+          flowId,
+          sourceElementId,
+        });
+
+        // Check if we have received enough instances for synchronization
+        const expectedArrivals = incomingFlowsCountForGateway(syncReq.gatewayId, allElements);
+
+        if (isSynchronizationReady(syncInfo, expectedArrivals)) {
+          // All sources ready - process all queued paths with synchronized timing
+          const queuedPaths = syncQueues.get(syncKey) || [];
+          const syncTime = calculateSyncTime(syncInfo);
+
+          // Clear the queues first to prevent re-processing
+          syncQueues.delete(syncKey);
+          syncArrivals.delete(syncKey);
+
+          // Create ONE instance of the target element with synchronized timing
+          // Use the first queued path as the template
+          if (queuedPaths.length > 0) {
+            const templatePath = queuedPaths[0];
+
+            // Calculate duration for the target element
+            let duration = extractDuration(element);
+            if (duration === 0 && (isTaskElement(element) || isSupportedEventElement(element))) {
+              if (isTaskElement(element)) {
+                duration = 3600000; // 1 hour default
+                defaultDurations.push({
+                  elementId: element.id,
+                  elementType: element.$type,
+                  elementName: element.name,
+                  appliedDuration: duration,
+                  durationType: 'task',
+                });
+              }
+            }
+
+            // Create the synchronized element instance
+            const { pathElement } = getOrCreateInstance(
+              element,
+              `${templatePath.pathKey}_sync_${syncKey}`,
+              {
+                startTime: syncTime,
+                endTime: syncTime + duration,
+                duration,
+              },
+              templatePath.visitedElements,
+              templatePath.pathSpecificVisits,
+            );
+
+            // Create dependencies from ALL source instances to this ONE target instance
+            for (const queuedPath of queuedPaths) {
+              if (queuedPath.sourceInstanceId && queuedPath.flowId) {
+                dependencies.push({
+                  sourceInstanceId: queuedPath.sourceInstanceId,
+                  targetInstanceId: pathElement.instanceId,
+                  flowId: queuedPath.flowId,
+                });
+              }
+            }
+
+            // Continue paths from this synchronized element (but only once)
+            const newVisitedElements = [...templatePath.visitedElements, elementId];
+            const newPathSpecificVisits = new Map(templatePath.pathSpecificVisits);
+            newPathSpecificVisits.set(elementId, (newPathSpecificVisits.get(elementId) || 0) + 1);
+
+            // Get outgoing flows and continue the path
+            const outgoingFlows = graph.edges.get(elementId) || [];
+            outgoingFlows.forEach((flow, flowIndex) => {
+              const targetId =
+                typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id;
+              if (!graph.nodes.has(targetId)) return;
+
+              const flowDuration = extractDuration(flow) || 0;
+              const nextTime = pathElement.endTime + flowDuration;
+
+              let nextPathKey = templatePath.pathKey;
+              if (outgoingFlows.length > 1) {
+                nextPathKey = `${templatePath.pathKey}_${elementId}_${flowIndex}`;
+              }
+
+              pathsToExplore.push({
+                elementId: targetId,
+                pathKey: nextPathKey,
+                currentTime: nextTime,
+                visitedElements: newVisitedElements,
+                pathSpecificVisits: newPathSpecificVisits,
+                sourceInstanceId: pathElement.instanceId,
+                flowId: flow.id,
+                sourceElementId: elementId,
+              });
+            });
+          }
+        }
+
+        // Don't process this path yet - it's been queued
+        continue;
+      }
 
       // Calculate duration
       let duration = extractDuration(element);
@@ -266,76 +478,157 @@ function traverseAllPaths(
       // Check if we should create an instance for this element visit
       const visitCount = pathSpecificVisits.get(elementId) || 0;
       const actualMaxIterations = Math.max(0, maxLoopIterations); // Clamp negative values to 0
-      
+
       if (visitCount > actualMaxIterations) {
         // We've exceeded the loop depth, don't create instance and stop this path
         // Mark the source element as loop cut-off since this path terminates here
         if (sourceInstanceId) {
-          const sourceElement = pathElements.find(pe => pe.instanceId === sourceInstanceId);
+          const sourceElement = pathElements.find((pe) => pe.instanceId === sourceInstanceId);
           if (sourceElement) {
             sourceElement.isLoopCut = true;
           }
         }
-        
+
         continue;
       }
 
-      // Create or get the element instance for this path with loop detection
-      const { pathElement, shouldContinue } = getOrCreateInstance(element, pathKey, {
-        startTime: currentTime,
-        endTime: currentTime + duration,
-        duration,
-      }, visitedElements, pathSpecificVisits);
+      // Handle gateways - create instances and apply their semantics
+      if (isGatewayElement(element)) {
+        // Gateway: Create instance and apply semantics
+        const gatewayDuration = extractDuration(element) || 0;
 
+        // Create gateway instance (will be filtered out during rendering if renderGateways is false)
+        const { pathElement } = getOrCreateInstance(
+          element,
+          pathKey,
+          {
+            startTime: currentTime,
+            endTime: currentTime + gatewayDuration,
+            duration: gatewayDuration,
+          },
+          visitedElements,
+          pathSpecificVisits,
+        );
 
-      // Create dependency if this element was reached from another instance
-      if (sourceInstanceId && flowId) {
-        dependencies.push({
-          sourceInstanceId,
-          targetInstanceId: pathElement.instanceId,
-          flowId
+        // Create dependency if this gateway was reached from another instance
+        if (sourceInstanceId && flowId) {
+          dependencies.push({
+            sourceInstanceId,
+            targetInstanceId: pathElement.instanceId,
+            flowId,
+          });
+        }
+
+        // Update path-specific visit count for loop detection
+        const newVisitedElements = [...visitedElements, elementId];
+        const newPathSpecificVisits = new Map(pathSpecificVisits);
+        newPathSpecificVisits.set(elementId, (newPathSpecificVisits.get(elementId) || 0) + 1);
+
+        // Get outgoing flows from gateway
+        const outgoingFlows = graph.edges.get(elementId) || [];
+
+        // For each outgoing flow, create paths that go directly to final targets
+        outgoingFlows.forEach((flow, flowIndex) => {
+          const targetId =
+            typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id;
+          if (!graph.nodes.has(targetId)) return;
+
+          const flowDuration = extractDuration(flow) || 0;
+          const nextTime = pathElement.endTime + flowDuration;
+
+          // Create unique path for each gateway branch
+          const nextPathKey = `${pathKey}_gw_${elementId}_${flowIndex}`;
+
+          pathsToExplore.push({
+            elementId: targetId,
+            pathKey: nextPathKey,
+            currentTime: nextTime,
+            visitedElements: newVisitedElements,
+            pathSpecificVisits: newPathSpecificVisits,
+            sourceInstanceId: pathElement.instanceId, // Use gateway instance as source
+            flowId: flow.id,
+            sourceElementId: elementId, // Gateway is now a proper source element
+          });
+        });
+      } else {
+        // Non-gateway: Create instance and continue normally
+        const { pathElement, shouldContinue } = getOrCreateInstance(
+          element,
+          pathKey,
+          {
+            startTime: currentTime,
+            endTime: currentTime + duration,
+            duration,
+          },
+          visitedElements,
+          pathSpecificVisits,
+        );
+
+        // Create dependency if this element was reached from another instance
+        if (sourceInstanceId && flowId) {
+          dependencies.push({
+            sourceInstanceId,
+            targetInstanceId: pathElement.instanceId,
+            flowId,
+          });
+        }
+
+        // Update path-specific visit count and visited elements
+        const newVisitedElements = [...visitedElements, elementId];
+        const newPathSpecificVisits = new Map(pathSpecificVisits);
+        newPathSpecificVisits.set(elementId, (newPathSpecificVisits.get(elementId) || 0) + 1);
+
+        // Get outgoing flows
+        const outgoingFlows = graph.edges.get(elementId) || [];
+
+        // For each outgoing flow, create a path that leads to the target
+        outgoingFlows.forEach((flow, flowIndex) => {
+          const targetId =
+            typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id;
+          if (!graph.nodes.has(targetId)) return;
+
+          const flowDuration = extractDuration(flow) || 0;
+          const nextTime = pathElement.endTime + flowDuration;
+
+          // Create unique path for each branch
+          let nextPathKey = pathKey;
+          if (outgoingFlows.length > 1) {
+            nextPathKey = `${pathKey}_${elementId}_${flowIndex}`;
+          }
+
+          pathsToExplore.push({
+            elementId: targetId,
+            pathKey: nextPathKey,
+            currentTime: nextTime,
+            visitedElements: newVisitedElements,
+            pathSpecificVisits: newPathSpecificVisits,
+            sourceInstanceId: pathElement.instanceId,
+            flowId: flow.id,
+            sourceElementId: elementId, // Pass the source element ID for synchronization tracking
+          });
         });
       }
-
-      // Update path-specific visit count and visited elements
-      const newVisitedElements = [...visitedElements, elementId];
-      const newPathSpecificVisits = new Map(pathSpecificVisits);
-      newPathSpecificVisits.set(elementId, (newPathSpecificVisits.get(elementId) || 0) + 1);
-
-      // Get outgoing flows
-      const outgoingFlows = graph.edges.get(elementId) || [];
-      
-      // For each outgoing flow, create a path that leads to the target
-      outgoingFlows.forEach((flow, flowIndex) => {
-        const targetId = typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id;
-        if (!graph.nodes.has(targetId)) return;
-
-        const flowDuration = extractDuration(flow) || 0;
-        const nextTime = pathElement.endTime + flowDuration;
-
-        // Create a unique path key for this execution sequence
-        // For multiple outgoing flows, each gets its own path
-        const nextPathKey = outgoingFlows.length === 1 
-          ? pathKey 
-          : `${pathKey}_${elementId}_${flowIndex}`;
-
-        pathsToExplore.push({
-          elementId: targetId,
-          pathKey: nextPathKey,
-          currentTime: nextTime,
-          visitedElements: newVisitedElements,
-          pathSpecificVisits: newPathSpecificVisits,
-          sourceInstanceId: pathElement.instanceId,
-          flowId: flow.id,
-        });
-      });
     }
-    
+
     if (iterationCount >= MAX_ITERATIONS) {
-      console.error(`Path traversal exceeded maximum iterations (${MAX_ITERATIONS}), stopping to prevent infinite loop`);
+      console.error(
+        `Path traversal exceeded maximum iterations (${MAX_ITERATIONS}), stopping to prevent infinite loop`,
+      );
     }
   }
 
   explorePaths();
+
+  // Debug final path elements to identify duplicates
+  const elementCounts = new Map<string, number>();
+  pathElements.forEach((pe) => {
+    const count = elementCounts.get(pe.elementId) || 0;
+    elementCounts.set(pe.elementId, count + 1);
+  });
+
+  const duplicateElements = Array.from(elementCounts.entries())
+    .filter(([elementId, count]) => count > 1)
+    .map(([elementId, count]) => ({ elementId, count }));
+
   return { pathElements, dependencies };
 }

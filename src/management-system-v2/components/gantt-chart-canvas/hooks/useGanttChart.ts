@@ -3,13 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { GanttChartOptions, GanttChartState, GanttElementType } from '../types';
 import { TimeMatrix, ZoomCurveCalculator } from '../core';
-import { 
-  DEFAULT_TASK_LIST_WIDTH,
-  DEFAULT_ZOOM,
-  ROW_HEIGHT,
-} from '../core/constants';
-import { calculateAutoFit, shouldAutoFit } from '../utils/autoFitUtils'; 
-
+import { DEFAULT_TASK_LIST_WIDTH, DEFAULT_ZOOM, ROW_HEIGHT } from '../core/constants';
+import { calculateAutoFit, shouldAutoFit } from '../utils/autoFitUtils';
 
 /**
  * Main hook for Gantt chart functionality
@@ -38,7 +33,6 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
   // Track initialization state
   const hasInitializedRef = useRef(false);
 
-
   // State for the chart
   // Initialize state with a placeholder zoom value - this will be updated by initializeTimeMatrix
   const [state, setState] = useState<GanttChartState>({
@@ -55,7 +49,6 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
   // Create and maintain transformation matrix with default values
   // We'll initialize this properly in useEffect
   const timeMatrixRef = useRef(new TimeMatrix(initialZoom / 5000, 0));
-
 
   // Calculate data time range
   const calculateDataRange = useCallback(() => {
@@ -132,8 +125,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
     // Check if zoom/position were explicitly provided in options
     const hasExplicitZoom = options.initialZoom !== undefined;
     const hasExplicitPosition = options.initialPosition !== undefined;
-    
-    
+
     // Check if we should auto-fit to data
     if (shouldAutoFit(autoFitToData, hasExplicitZoom, hasExplicitPosition)) {
       // Use auto-fit calculations
@@ -141,25 +133,23 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
       calculatedZoom = autoFitResult.zoom;
       centerTime = autoFitResult.centerTime;
       dataRange = autoFitResult.dataRange;
-      
     } else {
       // Use manual positioning or default centering
       centerTime = initialPosition ?? (dataRange.start + dataRange.end) / 2;
     }
-    
+
     // Get scale from the calculated zoom level
     const scaleFromZoomCurve = zoomCalculator.calculateScale(calculatedZoom);
-    
+
     // Create matrix centered on the calculated center time
     // We want the center time to appear at the center of the viewport
     const centerScreenX = chartWidth / 2;
-    
+
     // Create matrix with centerTime as baseTime and proper translation
     // When baseTime = centerTime, the relative time at center is 0
     // So translate should equal centerScreenX to position it at viewport center
     const matrix = new TimeMatrix(scaleFromZoomCurve, centerScreenX, centerTime);
-    
-    
+
     // Set the matrix to our reference
     timeMatrixRef.current = matrix;
 
@@ -173,16 +163,21 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
       visibleTimeEnd: visibleRange[1],
       zoom: calculatedZoom, // Don't round - preserve exact zoom for accurate scaling
     }));
-
-  }, [calculateDataRange, getChartWidth, initialZoom, initialPosition, autoFitToData, autoFitPadding, elements, options]);
-
+  }, [
+    calculateDataRange,
+    getChartWidth,
+    initialZoom,
+    initialPosition,
+    autoFitToData,
+    autoFitPadding,
+    elements,
+    options,
+  ]);
 
   // Handle zoom change with precise center point maintenance and baseTime preservation
   const handleZoomChange = useCallback(
     (newZoom: number, centerX?: number) => {
       if (newZoom === state.zoom) return;
-
-
 
       const matrix = timeMatrixRef.current;
       const chartWidth = getChartWidth();
@@ -225,7 +220,6 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
     [state.zoom, getChartWidth, onZoomChange, onViewChange],
   );
 
-  
   // Track buffer state for re-rendering
   const bufferStateRef = useRef({
     lastRenderOffset: 0,
@@ -236,7 +230,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
     (deltaX: number, isTemporary: boolean = true) => {
       const matrix = timeMatrixRef.current;
       const chartWidth = getChartWidth();
-      
+
       if (isTemporary) {
         // During dragging, update state with pan offset for CSS transform
         // This should NOT trigger re-renders since panOffset is not in dependencies
@@ -246,11 +240,10 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
           ...prev,
           panOffset: relativePanOffset,
         }));
-        
+
         // With 5x canvas buffer (2x on each side), no re-renders needed during normal panning
         // Buffer covers 200% viewport width in each direction - more than enough for typical usage
       } else {
-        
         // When pan ends, update the time matrix and reset transform
         matrix.translate += deltaX - bufferStateRef.current.lastRenderOffset;
         bufferStateRef.current.lastRenderOffset = 0;
@@ -312,7 +305,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
       // We need to get the container element, not the transformed canvas
       const chartContainer = chartCanvasRef.current?.parentElement?.parentElement;
       if (!chartContainer) return;
-      
+
       const rect = chartContainer.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
 
@@ -362,19 +355,19 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
       const handleMouseMove = (e: MouseEvent) => {
         const totalDelta = e.clientX - startX;
         accumulatedDelta = totalDelta;
-        
+
         // Pan the view with CSS transform (temporary)
         handlePan(totalDelta, true);
       };
 
       const handleMouseUp = () => {
         setState((prev) => ({ ...prev, isDragging: false }));
-        
+
         // Commit the final pan position
         if (accumulatedDelta !== 0) {
           handlePan(accumulatedDelta, false);
         }
-        
+
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
@@ -395,42 +388,45 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
 
   // Track previous elements to avoid unnecessary re-initialization
   const prevElementsRef = useRef<GanttElementType[]>([]);
-  
+
   // Initialize the chart
   useEffect(() => {
     if (!containerRef.current) return;
-    
+
     // Check if only the selection or minor properties have changed
     // This prevents full re-initialization when elements are just selected
-    const elementsChanged = elements.length !== prevElementsRef.current.length ||
+    const elementsChanged =
+      elements.length !== prevElementsRef.current.length ||
       elements.some((el, i) => {
         const prevEl = prevElementsRef.current[i];
         // Only compare essential properties that affect rendering position
         if (!prevEl) return true;
         if (el.id !== prevEl.id) return true;
-        
+
         // For tasks and groups, check start/end times
-        if ((el.type === 'task' || el.type === 'group') && 
-            (prevEl.type === 'task' || prevEl.type === 'group')) {
+        if (
+          (el.type === 'task' || el.type === 'group') &&
+          (prevEl.type === 'task' || prevEl.type === 'group')
+        ) {
           return el.start !== prevEl.start || el.end !== prevEl.end;
         }
-        
+
         // For milestones, check the start/end times
         if (el.type === 'milestone' && prevEl.type === 'milestone') {
           return el.start !== prevEl.start || el.end !== prevEl.end;
         }
-        
+
         return false;
       });
 
     // Store current elements for next comparison
     prevElementsRef.current = elements;
-    
+
     // Skip initialization if elements haven't significantly changed
     if (hasInitializedRef.current && !elementsChanged) {
       return;
     }
-    
+
     // Force initialization to react to data changes
     hasInitializedRef.current = false;
 
@@ -477,8 +473,6 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
     handleWheel,
     handleMouseDown,
     handleAutoFit,
-
-
   };
 }
 

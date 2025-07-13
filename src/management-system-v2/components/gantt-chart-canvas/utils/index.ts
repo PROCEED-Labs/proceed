@@ -3,7 +3,7 @@
  */
 
 // Export everything except formatDuration from mathUtils
-export { 
+export {
   clamp,
   roundToPixel,
   yPositionToRow,
@@ -14,7 +14,7 @@ export {
   lerp,
   inverseLerp,
   mapRange,
-  calculateOptimalTimeUnit
+  calculateOptimalTimeUnit,
 } from './mathUtils';
 
 export * from './colorUtils';

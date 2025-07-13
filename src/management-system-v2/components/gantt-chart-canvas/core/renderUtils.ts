@@ -30,7 +30,7 @@ export function drawLine(
   y1: number,
   x2: number,
   y2: number,
-  style: DrawStyle = {}
+  style: DrawStyle = {},
 ): void {
   ctx.save();
   setupCanvasStyle(ctx, style);
@@ -48,7 +48,7 @@ export function drawRoundedRect(
   width: number,
   height: number,
   radius: number,
-  style: DrawStyle = {}
+  style: DrawStyle = {},
 ): void {
   ctx.save();
   setupCanvasStyle(ctx, style);
@@ -62,24 +62,24 @@ export function drawRoundedRect(
 export function measureTextWithEllipsis(
   ctx: CanvasRenderingContext2D,
   text: string,
-  maxWidth: number
+  maxWidth: number,
 ): string {
   const fullWidth = ctx.measureText(text).width;
   if (fullWidth <= maxWidth) return text;
 
   const ellipsis = '...';
   const ellipsisWidth = ctx.measureText(ellipsis).width;
-  
+
   // Binary search for optimal text length
   let left = 0;
   let right = text.length;
   let result = '';
-  
+
   while (left <= right) {
     const mid = Math.floor((left + right) / 2);
     const truncated = text.substring(0, mid) + ellipsis;
     const width = ctx.measureText(truncated).width;
-    
+
     if (width <= maxWidth) {
       result = truncated;
       left = mid + 1;
@@ -87,7 +87,7 @@ export function measureTextWithEllipsis(
       right = mid - 1;
     }
   }
-  
+
   return result || ellipsis;
 }
 
@@ -97,19 +97,19 @@ export function drawText(
   x: number,
   y: number,
   maxWidth?: number,
-  style: DrawStyle = {}
+  style: DrawStyle = {},
 ): void {
   ctx.save();
   setupCanvasStyle(ctx, style);
-  
+
   const displayText = maxWidth ? measureTextWithEllipsis(ctx, text, maxWidth) : text;
-  
+
   if (style.strokeStyle) {
     ctx.strokeText(displayText, x, y);
   }
   if (style.fillStyle) {
     ctx.fillText(displayText, x, y);
   }
-  
+
   ctx.restore();
 }

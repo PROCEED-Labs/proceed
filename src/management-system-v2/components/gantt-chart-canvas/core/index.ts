@@ -24,11 +24,7 @@ export {
 } from './TimeAxisRenderer';
 
 // Export CanvasRenderer classes
-export { 
-  CanvasRenderer, 
-  CanvasLayerType, 
-  type RendererConfig 
-} from './CanvasRenderer';
+export { CanvasRenderer, CanvasLayerType, type RendererConfig } from './CanvasRenderer';
 
 // Export ZoomCurveCalculator
 export {

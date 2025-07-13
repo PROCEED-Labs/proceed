@@ -16,6 +16,7 @@ import type {
   BPMNDefinitions,
   BPMNTimelineProps,
   TransformationError,
+  TransformationIssue,
   DefaultDurationInfo,
 } from './types';
 import { transformBPMNToGantt } from './transform';
@@ -34,6 +35,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   }>({ elements: [], dependencies: [] });
 
   const [errors, setErrors] = useState<TransformationError[]>([]);
+  const [warnings, setWarnings] = useState<TransformationIssue[]>([]);
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [nowTimestamp, setNowTimestamp] = useState<number>(0);
@@ -44,6 +46,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     chronologicalSorting: boolean;
     showLoopIcons: boolean;
     curvedDependencies: boolean;
+    renderGateways: boolean;
   } | null>(null); // Start with null to indicate settings not loaded
 
   // Add a refresh counter to force re-fetching of settings
@@ -64,6 +67,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           chronologicalSorting: ganttViewSettings?.['chronological-sorting'] ?? false,
           showLoopIcons: ganttViewSettings?.['show-loop-icons'] ?? true,
           curvedDependencies: ganttViewSettings?.['curved-dependencies'] ?? false,
+          renderGateways: ganttViewSettings?.['render-gateways'] ?? false,
         };
         setGanttSettings(newSettings);
       } catch (error) {
@@ -75,6 +79,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           chronologicalSorting: false,
           showLoopIcons: true,
           curvedDependencies: false,
+          renderGateways: false,
         });
       }
     };
@@ -126,6 +131,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           ganttSettings.positioningLogic,
           ganttSettings.loopDepth,
           ganttSettings.chronologicalSorting,
+          ganttSettings.renderGateways,
         );
 
         // Check again if component is still mounted before setting state
@@ -138,6 +144,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           dependencies: transformationResult.dependencies,
         });
         setErrors(transformationResult.errors);
+        setWarnings(
+          transformationResult.issues?.filter((issue) => issue.severity === 'warning') || [],
+        );
         setDefaultDurations(transformationResult.defaultDurations);
         setIsLoading(false);
       } catch (error) {
@@ -182,9 +191,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const headerTitle = (
     <div className={styles.headerContainer}>
       <div className={styles.titleSection}>
-        <div className={styles.title}>
-          BPMN Timeline View
-        </div>
+        <div className={styles.title}>BPMN Timeline View</div>
         <div className={styles.subtitle}>
           {(isLoading || !ganttSettings) && 'Loading...'}
           {!isLoading && ganttSettings && (
@@ -237,35 +244,75 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           },
         }}
       >
-        {/* Error Report */}
-        {errors.length > 0 && (
-          <div className={styles.errorSection}>
+        {/* Process Issues */}
+        {(errors.length > 0 || warnings.length > 0) && (
+          <div className={styles.issuesSection}>
             <Collapse
               size="small"
               ghost
               items={[
                 {
-                  key: 'errors',
+                  key: 'issues',
                   label: (
-                    <div className={styles.errorHeader}>
+                    <div className={styles.issuesHeader}>
                       <WarningOutlined className={styles.warningIcon} />
-                      Unsupported Elements ({errors.length})
+                      Process Issues ({errors.length + warnings.length})
                     </div>
                   ),
                   children: (
-                    <div className={styles.errorPanel}>
-                      <div className={styles.errorDescription}>
-                        The following elements could not be interpreted and are excluded from the
-                        timeline:
-                      </div>
-                      <ul className={styles.errorList}>
-                        {errors.map((error, index) => (
-                          <li key={index}>
-                            <strong>{error.elementName || error.elementId}</strong> (
-                            {error.elementType}): {error.reason}
-                          </li>
-                        ))}
-                      </ul>
+                    <div className={styles.issuesPanel}>
+                      {errors.length > 0 && (
+                        <div className={styles.issueCategory}>
+                          <div className={styles.issueCategoryHeader}>
+                            <WarningOutlined style={{ color: '#ff4d4f', marginRight: '8px' }} />
+                            Unsupported Elements ({errors.length})
+                          </div>
+                          <div className={styles.issueCategoryDescription}>
+                            The following elements could not be interpreted and are excluded from
+                            the timeline:
+                          </div>
+                          <ul className={styles.issueList}>
+                            {errors.map((error, index) => (
+                              <li key={`error-${index}`}>
+                                <strong>{error.elementName || error.elementId}</strong> (
+                                {error.elementType}): {error.reason}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {warnings.length > 0 && (
+                        <div
+                          className={`${styles.issueCategory} ${errors.length > 0 ? styles.categorySpacing : ''}`}
+                        >
+                          <div className={styles.issueCategoryHeader}>
+                            <WarningOutlined style={{ color: '#faad14', marginRight: '8px' }} />
+                            Structural Warnings ({warnings.length})
+                          </div>
+                          <div className={styles.issueCategoryDescription}>
+                            These process patterns are shown in the timeline but may not execute as
+                            expected in a real BPMN engine:
+                          </div>
+                          <ul className={styles.issueList}>
+                            {warnings.map((warning, index) => {
+                              const elementDisplayName =
+                                warning.elementName ||
+                                (warning.elementType === 'bpmn:ParallelGateway'
+                                  ? 'Parallel Gateway'
+                                  : warning.elementType === 'bpmn:ExclusiveGateway'
+                                    ? 'Exclusive Gateway'
+                                    : warning.elementId);
+
+                              return (
+                                <li key={`warning-${index}`}>
+                                  <strong>{elementDisplayName}</strong>: {warning.reason}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   ),
                 },
@@ -277,7 +324,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
 
         {/* Default Duration Information */}
         {defaultDurations.length > 0 && (
-          <div className={`${styles.defaultDurationSection} ${errors.length > 0 ? styles.afterErrors : ''}`}>
+          <div
+            className={`${styles.defaultDurationSection} ${errors.length > 0 || warnings.length > 0 ? styles.afterErrors : ''}`}
+          >
             <Collapse
               size="small"
               ghost
@@ -321,7 +370,10 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
               dependencies={ganttData.dependencies}
               currentDateMarkerTime={nowTimestamp}
               showInstanceColumn={ganttSettings.positioningLogic === 'every-occurrence'}
-              showLoopColumn={ganttSettings.positioningLogic === 'every-occurrence' || ganttSettings.positioningLogic === 'latest-occurrence'}
+              showLoopColumn={
+                ganttSettings.positioningLogic === 'every-occurrence' ||
+                ganttSettings.positioningLogic === 'latest-occurrence'
+              }
               options={{
                 showControls: true,
                 autoFitToData: true,
@@ -334,11 +386,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         )}
 
         {/* Loading state while settings are being fetched */}
-        {!ganttSettings && (
-          <div className={styles.loadingSection}>
-            Loading settings...
-          </div>
-        )}
+        {!ganttSettings && <div className={styles.loadingSection}>Loading settings...</div>}
 
         {/* No data message */}
         {!isLoading && ganttSettings && ganttData.elements.length === 0 && errors.length === 0 && (

@@ -9,7 +9,7 @@
   --timeline-spacing-md: 12px;
   --timeline-spacing-lg: 16px;
   --timeline-border-radius: 6px;
-  
+
   padding: 10px;
   height: 100%;
   min-height: 400px;
@@ -20,9 +20,10 @@
 
 .timelineCard {
   height: 100%;
-  box-shadow: 0px 0px 1px 0px rgba(0, 0, 0, 0.17), 
-              0px 0px 3px 0px rgba(0, 0, 0, 0.08), 
-              0px 7px 14px 0px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0px 0px 1px 0px rgba(0, 0, 0, 0.17),
+    0px 0px 3px 0px rgba(0, 0, 0, 0.08),
+    0px 7px 14px 0px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   border: none;
 }
@@ -70,7 +71,7 @@
 .errorHeader {
   color: var(--timeline-warning-color);
   font-weight: 600;
-  
+
   .warningIcon {
     margin-right: var(--timeline-spacing-sm);
   }
@@ -83,6 +84,65 @@
 }
 
 .errorList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+
+  li {
+    margin-bottom: var(--timeline-spacing-xs);
+  }
+}
+
+/* Combined Issues Section */
+.issuesSection {
+  margin: var(--timeline-spacing-lg) var(--timeline-spacing-lg) 0;
+  flex-shrink: 0;
+}
+
+.issuesPanel {
+  padding: var(--timeline-spacing-md);
+  border: 1px solid var(--timeline-warning-color);
+  border-radius: var(--timeline-border-radius);
+  background-color: #fff3e0;
+  margin-top: var(--timeline-spacing-sm);
+}
+
+.issuesHeader {
+  color: var(--timeline-warning-color);
+  font-weight: 600;
+
+  .warningIcon {
+    margin-right: var(--timeline-spacing-sm);
+  }
+}
+
+.issueCategory {
+  &:not(:first-child) {
+    margin-top: var(--timeline-spacing-lg);
+  }
+}
+
+.categorySpacing {
+  margin-top: var(--timeline-spacing-lg);
+  padding-top: var(--timeline-spacing-lg);
+  border-top: 1px solid #e0e0e0;
+}
+
+.issueCategoryHeader {
+  font-weight: 600;
+  margin-bottom: var(--timeline-spacing-sm);
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.issueCategoryDescription {
+  font-size: 13px;
+  margin-bottom: var(--timeline-spacing-sm);
+  color: var(--timeline-text-muted);
+}
+
+.issueList {
   margin: 0;
   padding-left: 20px;
   font-size: 13px;

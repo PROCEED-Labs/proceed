@@ -7,6 +7,7 @@ The bpmn-timeline component is used by the process view of the management-system
 ## Current Implementation Status ✅
 
 **COMPLETED FEATURES:**
+
 - ✅ Full component restructure with clean separation of concerns (`index.tsx`, `transform.ts`, `types.ts`, `utils.ts`)
 - ✅ Tasks (all types) transformation to Gantt tasks
 - ✅ Events (excluding BoundaryEvents) transformation to Gantt milestones
@@ -273,7 +274,10 @@ The bpmn-timeline component successfully uses the existing `GanttChartCanvas` co
 import { GanttChartCanvas } from '@/components/gantt-chart-canvas';
 
 // Transform BPMN data to gantt format ✅
-const transformationResult = transformBPMNToGantt(definitions, transformationTimestamp);
+const transformationResult = transformBPMNToGantt(
+  definitions,
+  transformationTimestamp,
+);
 
 // Render with appropriate options ✅
 <GanttChartCanvas
@@ -282,7 +286,7 @@ const transformationResult = transformBPMNToGantt(definitions, transformationTim
   currentDateMarkerTime={nowTimestamp}
   width="100%"
   height="600px"
-/>
+/>;
 ```
 
 **✅ DATA FORMAT IMPLEMENTATION:**
@@ -547,11 +551,13 @@ The following features are planned for future implementation:
 The bpmn-timeline component is **fully functional** and ready for production use with the following capabilities:
 
 1. **Complete BPMN Element Support** (for supported types):
+
    - ✅ All Task types (Task, ManualTask, UserTask, ServiceTask, etc.)
    - ✅ All Events except BoundaryEvents (StartEvent, EndEvent, IntermediateThrowEvent, IntermediateCatchEvent)
    - ✅ SequenceFlows with optional durations
 
 2. **Advanced Timeline Features**:
+
    - ✅ First Possible Occurrence algorithm for accurate timeline calculation
    - ✅ Connected component analysis for color grouping
    - ✅ ISO 8601 duration parsing (P1D, PT2H, P1DT2H30M format)
@@ -559,6 +565,7 @@ The bpmn-timeline component is **fully functional** and ready for production use
    - ✅ Proper element ordering and grouping
 
 3. **Robust Error Handling**:
+
    - ✅ Comprehensive error reporting for unsupported elements
    - ✅ Status header showing processing statistics
    - ✅ Expandable error details panel
@@ -573,6 +580,7 @@ The bpmn-timeline component is **fully functional** and ready for production use
 ### Ready for Extension
 
 The codebase is well-structured to support future additions:
+
 - Gateway support can be added by extending the transformation logic
 - BoundaryEvent support requires additional event handling
 - UI enhancements can be added without affecting core logic

@@ -10,13 +10,13 @@ import { TimeMatrix } from './TimeMatrix';
 import { TimeAxisRenderer, TimeLevel, TimeAxisGridLine } from './TimeAxisRenderer';
 import { TimeUnit } from './TimeUnits';
 import { GanttElementType, GanttDependency } from '../types';
-import { 
-  ROW_HEIGHT, 
-  TASK_PADDING, 
-  MILESTONE_SIZE, 
+import {
+  ROW_HEIGHT,
+  TASK_PADDING,
+  MILESTONE_SIZE,
   DEPENDENCY_ARROW_SIZE,
   VIRTUALIZATION_BUFFER_ROWS,
-  MS_PER_DAY
+  MS_PER_DAY,
 } from './constants';
 import { GridRenderer, ElementRenderer, DependencyRenderer } from './renderers';
 
@@ -82,7 +82,7 @@ const DEFAULT_CONFIG: RendererConfig = {
   },
   colors: {
     grid: {
-      major: '#C9C9C9', 
+      major: '#C9C9C9',
       minor: '#E8E8E8', // Lighter color for minor grid lines for better visibility
     },
     text: '#333333',
@@ -120,7 +120,6 @@ export class CanvasRenderer {
   private currentTimeLevel?: TimeLevel;
   private currentPixelsPerDay: number = 0; // Store actual pixels per day for debugging
 
-  
   // Current date for "now" line
   private currentDate: Date = new Date();
 
@@ -137,17 +136,20 @@ export class CanvasRenderer {
     this.config = { ...DEFAULT_CONFIG, ...config };
 
     // Initialize time axis renderer with grid settings and pixel ratio
-    this.timeAxisRenderer = new TimeAxisRenderer({
-      labelFontSize: this.config.font.size,
-      labelPrimaryColor: this.config.colors.text,
-      labelSecondaryColor: this.config.colors.text,
-      gridMajorColor: this.config.colors.grid.major,
-      gridMinorColor: this.config.colors.grid.minor,
-      gridMajorLineWidth: this.config.grid?.major.lineWidth || 1,
-      gridMinorLineWidth: this.config.grid?.minor.lineWidth || 0.5,
-      gridMajorTimelineTickSize: this.config.grid?.major.timelineTickSize,
-      gridMinorTimelineTickSize: this.config.grid?.minor.timelineTickSize,
-    }, this.pixelRatio);
+    this.timeAxisRenderer = new TimeAxisRenderer(
+      {
+        labelFontSize: this.config.font.size,
+        labelPrimaryColor: this.config.colors.text,
+        labelSecondaryColor: this.config.colors.text,
+        gridMajorColor: this.config.colors.grid.major,
+        gridMinorColor: this.config.colors.grid.minor,
+        gridMajorLineWidth: this.config.grid?.major.lineWidth || 1,
+        gridMinorLineWidth: this.config.grid?.minor.lineWidth || 0.5,
+        gridMajorTimelineTickSize: this.config.grid?.major.timelineTickSize,
+        gridMinorTimelineTickSize: this.config.grid?.minor.timelineTickSize,
+      },
+      this.pixelRatio,
+    );
 
     // Initialize renderer modules
     this.gridRenderer = new GridRenderer(this.config);
@@ -204,7 +206,7 @@ export class CanvasRenderer {
 
     this.canvasSizes.set(layerType, { width, height });
     this.configureHiDPI(layerType);
-    
+
     // When resizing the chart content layer, we need to make sure
     // horizontal grid lines get redrawn as the full height may have changed
     if (layerType === CanvasLayerType.ChartContent && this.gridRenderer) {
@@ -212,7 +214,6 @@ export class CanvasRenderer {
       this.gridRenderer.resetRowReferences();
     }
   }
-
 
   /**
    * Clear a specific canvas layer
@@ -232,7 +233,7 @@ export class CanvasRenderer {
    */
   clearAllLayers(): void {
     // Convert to array to avoid iterator issues in downlevel compilation
-    Array.from(this.contexts.keys()).forEach(layerType => {
+    Array.from(this.contexts.keys()).forEach((layerType) => {
       this.clearLayer(layerType);
     });
   }
@@ -248,23 +249,22 @@ export class CanvasRenderer {
     if (!sizeInfo) return;
 
     const { width } = sizeInfo;
-    
 
     // Clear the canvas
     this.clearLayer(CanvasLayerType.Timeline);
-    
+
     // Since canvas is 5x viewport width, we need to adjust our time calculations
     // The viewport width is 1/5 of the canvas width
     const viewportWidth = width / 5;
-    
+
     // Get the time range for the center viewport
     const centerTimeRange = timeMatrix.getVisibleTimeRange(viewportWidth);
     const timeSpan = centerTimeRange[1] - centerTimeRange[0];
-    
+
     // Expand to cover the full 5x canvas width (2x on each side)
-    const visibleStartTime = centerTimeRange[0] - (timeSpan * 2);
-    const visibleEndTime = centerTimeRange[1] + (timeSpan * 2);
-    
+    const visibleStartTime = centerTimeRange[0] - timeSpan * 2;
+    const visibleEndTime = centerTimeRange[1] + timeSpan * 2;
+
     // Store current date for "now" line with actual current time
     this.currentDate = new Date();
 
@@ -287,7 +287,7 @@ export class CanvasRenderer {
     // We need to shift coordinates by 2 viewport widths to the right
     const transformFn = (time: number) => {
       const x = timeMatrix.transformPoint(time);
-      return x + (viewportWidth * 2); // Shift right by 2 viewport widths
+      return x + viewportWidth * 2; // Shift right by 2 viewport widths
     };
 
     // Calculate appropriate spacing for different time units
@@ -316,10 +316,9 @@ export class CanvasRenderer {
 
     // Render the time axis using the time axis renderer
     this.timeAxisRenderer.renderTimeAxis(context, majorGridLines, subgridLines, width, height);
-    
+
     // We've removed the current date line from the timeline header per requirements
   }
-
 
   /**
    * Render the main chart content with element bars and optimized performance
@@ -344,7 +343,7 @@ export class CanvasRenderer {
     scrollTop?: number,
     highlightedDependencies?: GanttDependency[],
     selectedElementId?: string | null,
-    curvedDependencies?: boolean
+    curvedDependencies?: boolean,
   ): void {
     const context = this.contexts.get(CanvasLayerType.ChartContent);
     if (!context) return;
@@ -354,20 +353,19 @@ export class CanvasRenderer {
 
     const { width, height } = sizeInfo;
 
-
     // Clear the canvas
     this.clearLayer(CanvasLayerType.ChartContent);
 
     // Save the current context state
     context.save();
-    
+
     // Translate canvas for smooth scrolling
     const scrollOffset = scrollTop || 0;
     context.translate(0, -scrollOffset);
 
     // Since canvas is 5x viewport width, adjust calculations
     const viewportWidth = width / 5;
-    
+
     // Get visible time range
     let timeRange: [number, number];
     const shouldRecalculateTimeRange =
@@ -379,22 +377,19 @@ export class CanvasRenderer {
       // Get the time range for the center viewport
       const centerTimeRange = timeMatrix.getVisibleTimeRange(viewportWidth);
       const timeSpan = centerTimeRange[1] - centerTimeRange[0];
-      
+
       // Expand to cover the full 5x canvas width (2x on each side)
-      timeRange = [
-        centerTimeRange[0] - (timeSpan * 2), 
-        centerTimeRange[1] + (timeSpan * 2)
-      ];
-      
+      timeRange = [centerTimeRange[0] - timeSpan * 2, centerTimeRange[1] + timeSpan * 2];
+
       this.visibleTimeRange = timeRange;
       this.lastTimeMatrix = timeMatrix.clone();
     } else {
       timeRange = this.visibleTimeRange;
     }
-    
+
     // Create a modified time matrix that accounts for the 5x canvas
     const modifiedMatrix = timeMatrix.clone();
-    modifiedMatrix.translate += (viewportWidth * 2); // Shift by 2 viewport widths
+    modifiedMatrix.translate += viewportWidth * 2; // Shift by 2 viewport widths
 
     // Delegate grid rendering to GridRenderer with modified matrix
     this.gridRenderer.renderGrid(
@@ -408,12 +403,12 @@ export class CanvasRenderer {
       visibleRowEnd,
       modifiedMatrix, // Use modified matrix
       customDateMarkerTime || this.currentDate.getTime(),
-      scrollOffset
+      scrollOffset,
     );
 
     // Render selected element row highlighting (very subtle)
     if (selectedElementId) {
-      const selectedElementIndex = elements.findIndex(el => el.id === selectedElementId);
+      const selectedElementIndex = elements.findIndex((el) => el.id === selectedElementId);
       if (selectedElementIndex !== -1) {
         context.save();
         context.fillStyle = 'rgba(24, 144, 255, 0.06)'; // Subtle blue highlight
@@ -433,7 +428,7 @@ export class CanvasRenderer {
         visibleRowStart,
         visibleRowEnd,
         highlightedDependencies,
-        curvedDependencies || false // Pass curved dependencies setting
+        curvedDependencies || false, // Pass curved dependencies setting
       );
     }
 
@@ -444,27 +439,15 @@ export class CanvasRenderer {
       modifiedMatrix, // Use modified matrix
       visibleRowStart,
       visibleRowEnd,
-      undefined // hoveredElementId
+      undefined, // hoveredElementId
     );
-    
+
     // Update visible elements for debugging
     this.visibleElements = renderResult.visibleElements;
-    
+
     // Restore the context state
     context.restore();
   }
-
-
-
-
-
-
-
-
-
-
-
-
 
   // Note: Selection functionality was intentionally removed
 
@@ -492,17 +475,14 @@ export class CanvasRenderer {
     context.closePath();
   }
 
-  
-  
-
-
   /**
    * Update renderer configuration
    * @param config Partial configuration to update
    */
   updateConfig(config: Partial<RendererConfig> & { _forceGridLineRedraw?: boolean }): void {
     // Check if zoom level is changing (we'll need to force grid line recalculation)
-    const isZoomChanging = 'currentZoom' in config && config.currentZoom !== this.config.currentZoom;
+    const isZoomChanging =
+      'currentZoom' in config && config.currentZoom !== this.config.currentZoom;
     // Check for explicit request to force grid line redraw
     const forceGridLineRedraw = config._forceGridLineRedraw === true;
 
@@ -547,10 +527,10 @@ export class CanvasRenderer {
       gridMajorTimelineTickSize: this.config.grid?.major.timelineTickSize,
       gridMinorTimelineTickSize: this.config.grid?.minor.timelineTickSize,
     });
-    
+
     // Only GridRenderer needs config updates for grid styling
     this.gridRenderer.updateConfig(this.config);
-    
+
     // Clear the grid line cache to force regeneration with new styles
     TimeAxisRenderer.clearCache();
 
@@ -559,13 +539,13 @@ export class CanvasRenderer {
     if (isZoomChanging || forceGridLineRedraw) {
       // Reset element rendering caches
       this.visibleElements = [];
-      
+
       // Force grid line recalculation in GridRenderer
       // This ensures horizontal grid lines are redrawn
       if (this.gridRenderer) {
         this.gridRenderer.resetRowReferences();
       }
-      
+
       // Remove internal property before applying to config
       if ('_forceGridLineRedraw' in config) {
         delete (config as any)._forceGridLineRedraw;

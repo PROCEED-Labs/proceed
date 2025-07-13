@@ -71,7 +71,7 @@ export function isTimeUnitBoundary(date: Date, unit: TimeUnit): boolean {
         date.getSeconds() === 0 &&
         date.getMilliseconds() === 0
       );
-      case TimeUnit.Year:
+    case TimeUnit.Year:
       return (
         date.getMonth() === 0 &&
         date.getDate() === 1 &&
@@ -110,7 +110,6 @@ export function snapToTimeUnitBoundary(date: Date, unit: TimeUnit): void {
       date.setMilliseconds(0);
       break;
   }
-
 
   // Special handling for weeks
   if (unit === TimeUnit.Week) {

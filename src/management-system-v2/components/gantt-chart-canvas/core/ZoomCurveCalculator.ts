@@ -162,7 +162,7 @@ export class ZoomCurveCalculator {
 
   /**
    * Calculate zoom level from a scale factor (inverse of calculateScale)
-   * 
+   *
    * @param scale Scale factor (milliseconds per pixel)
    * @returns Zoom level (0-100)
    */
@@ -189,7 +189,7 @@ export class ZoomCurveCalculator {
 
       // Get the accelerated progress value
       const acceleratedProgress = (logScale - logMidScale) / (logMaxScale - logMidScale);
-      
+
       // Reverse the acceleration formula: acceleratedProgress = 0.5 * progress + 0.5 * progress^2
       // This is a quadratic equation: 0.5 * progress^2 + 0.5 * progress - acceleratedProgress = 0
       // Using quadratic formula: progress = (-b + sqrt(b^2 - 4ac)) / 2a
@@ -198,10 +198,10 @@ export class ZoomCurveCalculator {
       const b = 0.5;
       const c = -acceleratedProgress;
       const discriminant = b * b - 4 * a * c;
-      
+
       // We want the positive root
       const progress = (-b + Math.sqrt(discriminant)) / (2 * a);
-      
+
       return breakpoint + progress * (100 - breakpoint);
     }
   }
@@ -254,19 +254,21 @@ export class ZoomCurveCalculator {
    */
   verifyInverseFunctions(tolerance: number = 0.01): boolean {
     let allPassed = true;
-    
+
     // Test zoom -> scale -> zoom
     for (let zoom = 0; zoom <= 100; zoom += 5) {
       const scale = this.calculateScale(zoom);
       const reversedZoom = this.scaleToZoom(scale);
       const diff = Math.abs(zoom - reversedZoom);
-      
+
       if (diff > tolerance) {
-        console.warn(`Zoom curve inverse mismatch: zoom ${zoom} -> scale ${scale} -> zoom ${reversedZoom} (diff: ${diff})`);
+        console.warn(
+          `Zoom curve inverse mismatch: zoom ${zoom} -> scale ${scale} -> zoom ${reversedZoom} (diff: ${diff})`,
+        );
         allPassed = false;
       }
     }
-    
+
     // Test scale -> zoom -> scale
     const testScales = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000];
     for (const scale of testScales) {
@@ -274,14 +276,16 @@ export class ZoomCurveCalculator {
         const zoom = this.scaleToZoom(scale);
         const reversedScale = this.calculateScale(zoom);
         const relDiff = Math.abs(scale - reversedScale) / scale;
-        
+
         if (relDiff > tolerance) {
-          console.warn(`Zoom curve inverse mismatch: scale ${scale} -> zoom ${zoom} -> scale ${reversedScale} (rel diff: ${relDiff})`);
+          console.warn(
+            `Zoom curve inverse mismatch: scale ${scale} -> zoom ${zoom} -> scale ${reversedScale} (rel diff: ${relDiff})`,
+          );
           allPassed = false;
         }
       }
     }
-    
+
     return allPassed;
   }
 }

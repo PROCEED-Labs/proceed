@@ -48,13 +48,25 @@ export interface BPMNProcess {
 }
 
 // Flow elements union type
-export type BPMNFlowElement = BPMNTask | BPMNSequenceFlow | BPMNEvent | BPMNGateway | BPMNSubProcess;
+export type BPMNFlowElement =
+  | BPMNTask
+  | BPMNSequenceFlow
+  | BPMNEvent
+  | BPMNGateway
+  | BPMNSubProcess;
 
 // Task types
 export interface BPMNTask extends BPMNBaseElement {
-  $type: 'bpmn:Task' | 'bpmn:ManualTask' | 'bpmn:UserTask' | 'bpmn:ServiceTask' | 
-         'bpmn:ScriptTask' | 'bpmn:BusinessRuleTask' | 'bpmn:SendTask' | 'bpmn:ReceiveTask' |
-         'bpmn:CallActivity';
+  $type:
+    | 'bpmn:Task'
+    | 'bpmn:ManualTask'
+    | 'bpmn:UserTask'
+    | 'bpmn:ServiceTask'
+    | 'bpmn:ScriptTask'
+    | 'bpmn:BusinessRuleTask'
+    | 'bpmn:SendTask'
+    | 'bpmn:ReceiveTask'
+    | 'bpmn:CallActivity';
   incoming?: string[];
   outgoing?: string[];
   loopCharacteristics?: {
@@ -73,22 +85,37 @@ export interface BPMNSequenceFlow extends BPMNBaseElement {
 
 // Events
 export interface BPMNEvent extends BPMNBaseElement {
-  $type: 'bpmn:StartEvent' | 'bpmn:EndEvent' | 'bpmn:IntermediateThrowEvent' | 
-         'bpmn:IntermediateCatchEvent' | 'bpmn:BoundaryEvent';
+  $type:
+    | 'bpmn:StartEvent'
+    | 'bpmn:EndEvent'
+    | 'bpmn:IntermediateThrowEvent'
+    | 'bpmn:IntermediateCatchEvent'
+    | 'bpmn:BoundaryEvent';
   incoming?: string[];
   outgoing?: string[];
   eventDefinitions?: Array<{
-    $type: 'bpmn:MessageEventDefinition' | 'bpmn:TimerEventDefinition' | 'bpmn:SignalEventDefinition' |
-           'bpmn:ErrorEventDefinition' | 'bpmn:EscalationEventDefinition' | 'bpmn:CancelEventDefinition' |
-           'bpmn:CompensateEventDefinition' | 'bpmn:ConditionalEventDefinition' | 'bpmn:LinkEventDefinition' |
-           'bpmn:TerminateEventDefinition';
+    $type:
+      | 'bpmn:MessageEventDefinition'
+      | 'bpmn:TimerEventDefinition'
+      | 'bpmn:SignalEventDefinition'
+      | 'bpmn:ErrorEventDefinition'
+      | 'bpmn:EscalationEventDefinition'
+      | 'bpmn:CancelEventDefinition'
+      | 'bpmn:CompensateEventDefinition'
+      | 'bpmn:ConditionalEventDefinition'
+      | 'bpmn:LinkEventDefinition'
+      | 'bpmn:TerminateEventDefinition';
   }>;
 }
 
 // Gateways (for future implementation)
 export interface BPMNGateway extends BPMNBaseElement {
-  $type: 'bpmn:ExclusiveGateway' | 'bpmn:InclusiveGateway' | 'bpmn:ParallelGateway' | 
-         'bpmn:ComplexGateway' | 'bpmn:EventBasedGateway';
+  $type:
+    | 'bpmn:ExclusiveGateway'
+    | 'bpmn:InclusiveGateway'
+    | 'bpmn:ParallelGateway'
+    | 'bpmn:ComplexGateway'
+    | 'bpmn:EventBasedGateway';
   incoming?: string[];
   outgoing?: string[];
 }
@@ -105,12 +132,16 @@ export interface BPMNSubProcess extends BPMNBaseElement {
 // Transformation State Interfaces
 // ============================================================================
 
-export interface TransformationError {
+export interface TransformationIssue {
   elementId: string;
   elementType: string;
   elementName?: string;
   reason: string;
+  severity: 'error' | 'warning';
 }
+
+// Legacy alias for backward compatibility
+export type TransformationError = TransformationIssue;
 
 export interface DefaultDurationInfo {
   elementId: string;
@@ -137,8 +168,11 @@ export interface ElementTiming {
 export interface TransformationResult {
   elements: GanttElementType[];
   dependencies: GanttDependency[];
-  errors: TransformationError[];
+  issues: TransformationIssue[];
   defaultDurations: DefaultDurationInfo[];
+  // Legacy properties for backward compatibility
+  errors: TransformationIssue[];
+  warnings: TransformationIssue[];
 }
 
 // ============================================================================
@@ -154,7 +188,7 @@ export type BPMNTimelineProps = React.HTMLAttributes<HTMLDivElement> & {
 // ============================================================================
 
 export const DEFAULT_DURATIONS = {
-  task: 3600000,      // 1 hour in milliseconds
-  event: 0,           // 0 ms
-  sequenceFlow: 0     // 0 ms
+  task: 3600000, // 1 hour in milliseconds
+  event: 0, // 0 ms
+  sequenceFlow: 0, // 0 ms
 } as const;

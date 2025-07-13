@@ -10,7 +10,7 @@
  */
 export function formatDate(
   date: Date,
-  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' }
+  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' },
 ): string {
   return new Intl.DateTimeFormat(undefined, options).format(date);
 }
@@ -23,7 +23,7 @@ export function formatDate(
  */
 export function formatTime(
   date: Date,
-  options: Intl.DateTimeFormatOptions = { timeStyle: 'short' }
+  options: Intl.DateTimeFormatOptions = { timeStyle: 'short' },
 ): string {
   return new Intl.DateTimeFormat(undefined, options).format(date);
 }
@@ -36,7 +36,7 @@ export function formatTime(
  */
 export function formatDateTime(
   date: Date,
-  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }
+  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' },
 ): string {
   return new Intl.DateTimeFormat(undefined, options).format(date);
 }
@@ -51,34 +51,34 @@ export function formatDuration(durationMs: number, includeMilliseconds: boolean 
   if (isNaN(durationMs) || !isFinite(durationMs)) {
     return '—';
   }
-  
+
   const abs = Math.abs(durationMs);
   const sign = durationMs < 0 ? '-' : '';
-  
+
   // For very short durations
   if (abs < 1000 && includeMilliseconds) {
     return `${sign}${abs}ms`;
   }
-  
+
   const seconds = Math.floor(abs / 1000) % 60;
   const minutes = Math.floor(abs / (1000 * 60)) % 60;
   const hours = Math.floor(abs / (1000 * 60 * 60)) % 24;
   const days = Math.floor(abs / (1000 * 60 * 60 * 24));
-  
+
   const parts: string[] = [];
-  
+
   if (days > 0) parts.push(`${days}d`);
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
-  
+
   // Include seconds for shorter durations
   if (seconds > 0 || parts.length === 0) {
-    const secondsStr = includeMilliseconds ? 
-      (seconds + (abs % 1000) / 1000).toFixed(3) : 
-      seconds.toString();
+    const secondsStr = includeMilliseconds
+      ? (seconds + (abs % 1000) / 1000).toFixed(3)
+      : seconds.toString();
     parts.push(`${secondsStr}s`);
   }
-  
+
   return sign + parts.join(' ');
 }
 
@@ -101,39 +101,42 @@ export function getDaysDifference(start: Date, end: Date): number {
  * @param unit Time unit to snap to
  * @returns Date at the start of the specified unit
  */
-export function getUnitStart(date: Date, unit: 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'): Date {
+export function getUnitStart(
+  date: Date,
+  unit: 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year',
+): Date {
   const result = new Date(date);
-  
+
   switch (unit) {
     case 'year':
       result.setMonth(0);
-      // Fall through to month case
+    // Fall through to month case
     case 'quarter':
       // Set to start of quarter (Jan, Apr, Jul, Oct)
       result.setMonth(Math.floor(result.getMonth() / 3) * 3);
-      // Fall through to month case
+    // Fall through to month case
     case 'month':
       result.setDate(1);
-      // Fall through to day case
+    // Fall through to day case
     case 'week':
       // Set to start of week (Sunday)
       const day = result.getDay();
       result.setDate(result.getDate() - day);
-      // Fall through to day case
+    // Fall through to day case
     case 'day':
       result.setHours(0);
-      // Fall through to hour case
+    // Fall through to hour case
     case 'hour':
       result.setMinutes(0);
-      // Fall through to minute case
+    // Fall through to minute case
     case 'minute':
       result.setSeconds(0);
-      // Fall through to second case
+    // Fall through to second case
     case 'second':
       result.setMilliseconds(0);
       break;
   }
-  
+
   return result;
 }
 
@@ -143,10 +146,13 @@ export function getUnitStart(date: Date, unit: 'second' | 'minute' | 'hour' | 'd
  * @param unit Time unit to snap to
  * @returns Date at the end of the specified unit
  */
-export function getUnitEnd(date: Date, unit: 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'): Date {
+export function getUnitEnd(
+  date: Date,
+  unit: 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year',
+): Date {
   // Start with beginning of the next unit
   let result: Date;
-  
+
   switch (unit) {
     case 'year':
       result = new Date(date.getFullYear() + 1, 0, 1);
@@ -186,7 +192,7 @@ export function getUnitEnd(date: Date, unit: 'second' | 'minute' | 'hour' | 'day
       result = new Date(date);
       break;
   }
-  
+
   // Subtract 1 millisecond to get the last moment of the previous unit
   result.setMilliseconds(result.getMilliseconds() - 1);
   return result;
@@ -202,85 +208,94 @@ export function getUnitEnd(date: Date, unit: 'second' | 'minute' | 'hour' | 'day
  */
 export function addTime(
   date: Date,
-  unit: 'millisecond' | 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year',
-  amount: number
+  unit:
+    | 'millisecond'
+    | 'second'
+    | 'minute'
+    | 'hour'
+    | 'day'
+    | 'week'
+    | 'month'
+    | 'quarter'
+    | 'year',
+  amount: number,
 ): Date {
   if (amount === 0) return new Date(date);
-  
+
   const result = new Date(date);
   const timestamp = date.getTime();
-  
+
   switch (unit) {
     case 'millisecond':
       return new Date(timestamp + amount);
-    
+
     case 'second':
       return new Date(timestamp + amount * 1000);
-    
+
     case 'minute':
       return new Date(timestamp + amount * 60 * 1000);
-    
+
     case 'hour':
       return new Date(timestamp + amount * 60 * 60 * 1000);
-    
+
     case 'day':
       return new Date(timestamp + amount * 24 * 60 * 60 * 1000);
-    
+
     case 'week':
       return new Date(timestamp + amount * 7 * 24 * 60 * 60 * 1000);
-    
+
     case 'month':
       // For months, we need to be careful with variable month lengths
       const wholeMonths = Math.floor(amount);
       const fraction = amount - wholeMonths;
-      
+
       // Add whole months directly
       result.setMonth(result.getMonth() + wholeMonths);
-      
+
       // For fractional part, convert to days and add
       if (fraction !== 0) {
         // Get days in the target month
         const daysInTargetMonth = new Date(
           result.getFullYear(),
           result.getMonth() + 1,
-          0
+          0,
         ).getDate();
-        
+
         // Add the fractional part as days
         const daysToAdd = Math.round(daysInTargetMonth * fraction);
         result.setDate(result.getDate() + daysToAdd);
       }
-      
+
       return result;
-    
+
     case 'quarter':
       // A quarter is 3 months
       return addTime(date, 'month', amount * 3);
-    
+
     case 'year':
       // For years, handle leap years correctly
       const wholeYears = Math.floor(amount);
       const yearFraction = amount - wholeYears;
-      
+
       // Add whole years directly
       result.setFullYear(result.getFullYear() + wholeYears);
-      
+
       // For fractional part, convert to days and add
       if (yearFraction !== 0) {
         // Check if target year is a leap year
         const isLeapYear = (year: number) => {
-          return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+          return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
         };
-        
+
         const daysInYear = isLeapYear(result.getFullYear()) ? 366 : 365;
-        
+
         // Add the fractional part as days
         const daysToAdd = Math.round(daysInYear * yearFraction);
         result.setDate(result.getDate() + daysToAdd);
       }
-      
+
       return result;
-    
+
     default:
       // Should never reach here
       return result;

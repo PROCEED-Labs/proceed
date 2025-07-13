@@ -1,6 +1,6 @@
 /**
  * Mathematical utility functions for the Gantt Chart Canvas
- * 
+ *
  * Pure functions for coordinate transformations, time calculations,
  * and other mathematical operations. Following CLAUDE.md guidelines
  * for using pure functions for mathematical operations.
@@ -30,7 +30,7 @@ export function pixelToTime(pixel: number, scale: number, translate: number): nu
 export function calculateVisibleTimeRange(
   viewportWidth: number,
   scale: number,
-  translate: number
+  translate: number,
 ): [number, number] {
   const startTime = pixelToTime(0, scale, translate);
   const endTime = pixelToTime(viewportWidth, scale, translate);
@@ -44,10 +44,10 @@ export function calculateScaleToFit(
   startTime: number,
   endTime: number,
   viewportWidth: number,
-  padding: number = 0
+  padding: number = 0,
 ): number {
   const duration = endTime - startTime;
-  const availableWidth = viewportWidth - (padding * 2);
+  const availableWidth = viewportWidth - padding * 2;
   return availableWidth / duration;
 }
 
@@ -58,11 +58,11 @@ export function calculateTranslateToCenter(
   startTime: number,
   endTime: number,
   viewportWidth: number,
-  scale: number
+  scale: number,
 ): number {
   const centerTime = (startTime + endTime) / 2;
   const centerPixel = viewportWidth / 2;
-  return centerPixel - (centerTime * scale);
+  return centerPixel - centerTime * scale;
 }
 
 /**
@@ -73,17 +73,17 @@ export function applyZoomAroundPoint(
   currentScale: number,
   currentTranslate: number,
   zoomFactor: number,
-  focalPointPixel: number
+  focalPointPixel: number,
 ): { scale: number; translate: number } {
   // Convert focal point to time before zoom
   const focalTime = pixelToTime(focalPointPixel, currentScale, currentTranslate);
-  
+
   // Apply zoom to scale
   const newScale = currentScale * zoomFactor;
-  
+
   // Calculate new translate to maintain focal point
-  const newTranslate = focalPointPixel - (focalTime * newScale);
-  
+  const newTranslate = focalPointPixel - focalTime * newScale;
+
   return { scale: newScale, translate: newTranslate };
 }
 
@@ -122,7 +122,7 @@ export function timeRangesOverlap(
   start1: number,
   end1: number,
   start2: number,
-  end2: number
+  end2: number,
 ): boolean {
   return start1 <= end2 && end1 >= start2;
 }
@@ -135,12 +135,12 @@ export function timeRangeIntersection(
   start1: number,
   end1: number,
   start2: number,
-  end2: number
+  end2: number,
 ): [number, number] | null {
   if (!timeRangesOverlap(start1, end1, start2, end2)) {
     return null;
   }
-  
+
   return [Math.max(start1, start2), Math.min(end1, end2)];
 }
 
@@ -151,7 +151,7 @@ export function formatDuration(milliseconds: number): string {
   const days = Math.floor(milliseconds / MS_PER_DAY);
   const hours = Math.floor((milliseconds % MS_PER_DAY) / MS_PER_HOUR);
   const minutes = Math.floor((milliseconds % MS_PER_HOUR) / MS_PER_MINUTE);
-  
+
   if (days > 0) {
     return `${days}d ${hours}h`;
   } else if (hours > 0) {
@@ -169,14 +169,14 @@ export function calculateVisibleRows(
   viewportHeight: number,
   rowHeight: number,
   totalRows: number,
-  bufferRows: number = 0
+  bufferRows: number = 0,
 ): { start: number; end: number } {
   const start = Math.max(0, Math.floor(scrollTop / rowHeight) - bufferRows);
   const end = Math.min(
     totalRows - 1,
-    Math.ceil((scrollTop + viewportHeight) / rowHeight) + bufferRows
+    Math.ceil((scrollTop + viewportHeight) / rowHeight) + bufferRows,
   );
-  
+
   return { start, end };
 }
 
@@ -203,7 +203,7 @@ export function mapRange(
   inMin: number,
   inMax: number,
   outMin: number,
-  outMax: number
+  outMax: number,
 ): number {
   const t = inverseLerp(inMin, inMax, value);
   return lerp(outMin, outMax, t);
@@ -224,9 +224,9 @@ export function calculateOptimalTimeUnit(pixelsPerDay: number): {
     { unit: 'quarter' as const, pixelsPerUnit: pixelsPerDay * 91 },
     { unit: 'year' as const, pixelsPerUnit: pixelsPerDay * 365 },
   ];
-  
+
   // Find the unit that gives approximately 50-200 pixels per unit
-  const optimal = units.find(u => u.pixelsPerUnit >= 50 && u.pixelsPerUnit <= 200);
-  
+  const optimal = units.find((u) => u.pixelsPerUnit >= 50 && u.pixelsPerUnit <= 200);
+
   return optimal || units[units.length - 1];
 }

@@ -3,7 +3,11 @@
  */
 
 import { GanttElementType } from '../types';
-import { ZoomCurveCalculator, ZOOM_PRESETS, getTimeUnitForScale } from '../core/ZoomCurveCalculator';
+import {
+  ZoomCurveCalculator,
+  ZOOM_PRESETS,
+  getTimeUnitForScale,
+} from '../core/ZoomCurveCalculator';
 
 export interface DataRange {
   start: number;
@@ -72,45 +76,43 @@ export function calculateDataTimeRange(elements: GanttElementType[]): DataRange 
 export function calculateAutoFit(
   elements: GanttElementType[],
   viewportWidth: number,
-  padding: number = 0.1
+  padding: number = 0.1,
 ): AutoFitResult {
   const dataRange = calculateDataTimeRange(elements);
-  
-  
+
   const centerTime = (dataRange.start + dataRange.end) / 2;
-  
+
   // Add padding to the data range
   const timeSpan = dataRange.end - dataRange.start;
-  
+
   // Simple, natural padding - let the zoom curve handle the scaling appropriately
   const paddedTimeSpan = timeSpan * (1 + padding * 2);
-  
+
   // Calculate the scale needed to fit the padded time span in the viewport
   // Scale should be pixels per millisecond (how many pixels each ms takes up)
   const requiredScale = viewportWidth / paddedTimeSpan;
-  
-  
+
   // Convert scale to zoom level using ZoomCurveCalculator
   const zoomCalculator = new ZoomCurveCalculator(ZOOM_PRESETS.DEFAULT);
-  
+
   // Check if required scale is within zoom curve range
   const { minScale, maxScale } = zoomCalculator.getConfig();
   let zoom: number;
-  
+
   if (requiredScale < minScale) {
     // Required scale is too small (too zoomed out) - use minimum zoom
     zoom = 0;
   } else if (requiredScale > maxScale) {
-    // Required scale is too large (too zoomed in) - use maximum zoom  
+    // Required scale is too large (too zoomed in) - use maximum zoom
     zoom = 100;
   } else {
     // Required scale is within range - use normal calculation
     zoom = zoomCalculator.scaleToZoom(requiredScale);
   }
-  
+
   // Clamp zoom to valid range (0-100) - should already be within range but safety check
   const clampedZoom = Math.max(0, Math.min(100, zoom));
-  
+
   return {
     zoom: clampedZoom,
     centerTime,
@@ -124,7 +126,7 @@ export function calculateAutoFit(
 export function shouldAutoFit(
   autoFitToData?: boolean,
   hasExplicitZoom: boolean = false,
-  hasExplicitPosition: boolean = false
+  hasExplicitPosition: boolean = false,
 ): boolean {
   // Only auto-fit if explicitly enabled and no manual zoom/position specified
   return autoFitToData === true && !hasExplicitZoom && !hasExplicitPosition;

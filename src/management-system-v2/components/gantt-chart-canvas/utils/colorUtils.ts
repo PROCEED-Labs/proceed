@@ -1,6 +1,6 @@
 /**
  * Color utility functions for the Gantt Chart Canvas
- * 
+ *
  * Pure functions for color manipulation and calculations.
  */
 
@@ -10,16 +10,16 @@
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   // Remove # if present
   const cleanHex = hex.replace('#', '');
-  
+
   if (cleanHex.length !== 6) {
     return null;
   }
-  
+
   const num = parseInt(cleanHex, 16);
   return {
     r: (num >> 16) & 255,
     g: (num >> 8) & 255,
-    b: num & 255
+    b: num & 255,
   };
 }
 
@@ -31,7 +31,7 @@ export function rgbToHex(r: number, g: number, b: number): string {
     const hex = Math.max(0, Math.min(255, Math.round(n))).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   };
-  
+
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
@@ -44,14 +44,10 @@ export function rgbToHex(r: number, g: number, b: number): string {
 export function adjustBrightness(color: string, percent: number): string {
   const rgb = hexToRgb(color);
   if (!rgb) return color;
-  
+
   const amount = Math.round(2.55 * percent);
-  
-  return rgbToHex(
-    rgb.r + amount,
-    rgb.g + amount,
-    rgb.b + amount
-  );
+
+  return rgbToHex(rgb.r + amount, rgb.g + amount, rgb.b + amount);
 }
 
 /**
@@ -83,7 +79,7 @@ export function darken(color: string, percent: number): string {
 export function hexToRgba(color: string, alpha: number): string {
   const rgb = hexToRgb(color);
   if (!rgb) return color;
-  
+
   const clampedAlpha = Math.max(0, Math.min(1, alpha));
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${clampedAlpha})`;
 }
@@ -98,16 +94,16 @@ export function hexToRgba(color: string, alpha: number): string {
 export function mixColors(color1: string, color2: string, ratio: number): string {
   const rgb1 = hexToRgb(color1);
   const rgb2 = hexToRgb(color2);
-  
+
   if (!rgb1 || !rgb2) return color1;
-  
+
   const clampedRatio = Math.max(0, Math.min(1, ratio));
   const inverseRatio = 1 - clampedRatio;
-  
+
   return rgbToHex(
     rgb1.r * inverseRatio + rgb2.r * clampedRatio,
     rgb1.g * inverseRatio + rgb2.g * clampedRatio,
-    rgb1.b * inverseRatio + rgb2.b * clampedRatio
+    rgb1.b * inverseRatio + rgb2.b * clampedRatio,
   );
 }
 
@@ -119,10 +115,10 @@ export function mixColors(color1: string, color2: string, ratio: number): string
 export function getContrastingTextColor(backgroundColor: string): string {
   const rgb = hexToRgb(backgroundColor);
   if (!rgb) return '#000000';
-  
+
   // Calculate relative luminance
   const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-  
+
   return luminance > 0.5 ? '#000000' : '#ffffff';
 }
 
@@ -134,14 +130,14 @@ export function getContrastingTextColor(backgroundColor: string): string {
  */
 export function generateColorPalette(baseColor: string, count: number): string[] {
   if (count <= 1) return [baseColor];
-  
+
   const palette: string[] = [];
   const step = 200 / (count - 1); // Range from -100 to +100
-  
+
   for (let i = 0; i < count; i++) {
-    const brightness = -100 + (step * i);
+    const brightness = -100 + step * i;
     palette.push(adjustBrightness(baseColor, brightness));
   }
-  
+
   return palette;
 }

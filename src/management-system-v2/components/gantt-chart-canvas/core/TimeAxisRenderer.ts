@@ -68,7 +68,7 @@ export class TimeAxisRenderer {
       timestamp: number;
     };
   } = {};
-  
+
   /**
    * Clear the grid line cache
    * This is useful when grid styling has changed and we need to regenerate all grid lines
@@ -736,22 +736,22 @@ export class TimeAxisRenderer {
 
     // 4. Render two-row labels for major grid lines
     context.textAlign = 'center';
-    
+
     // Dynamic font sizing based on device pixel ratio
     let baseFontSize = this.config.labelFontSize;
-    
+
     // Much more aggressive reduction for high-DPI displays
     if (this.pixelRatio >= 2) {
-      baseFontSize = 6.5;  // Very small for Retina displays
+      baseFontSize = 6.5; // Very small for Retina displays
     } else if (this.pixelRatio > 1.5) {
       baseFontSize = 9;
     } else if (this.pixelRatio > 1) {
       baseFontSize = 10.5;
     }
-    
+
     const primaryFontSize = baseFontSize;
     const secondaryFontSize = baseFontSize - 1;
-    
+
     majorGridLines.forEach((gridLine) => {
       // Slightly wider range to ensure labels at the edges are visible
       if (gridLine.screenX >= -5 && gridLine.screenX <= width + 5 && gridLine.shouldShowLabel) {

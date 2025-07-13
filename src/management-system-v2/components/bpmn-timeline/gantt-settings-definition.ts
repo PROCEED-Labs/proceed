@@ -56,7 +56,16 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       name: 'Curved Dependencies',
       type: 'boolean' as const,
       value: false,
-      description: 'Use curved lines for dependency arrows instead of straight edges for a more organic appearance.',
+      description:
+        'Use curved lines for dependency arrows instead of straight edges for a more organic appearance.',
+    },
+    {
+      key: 'render-gateways',
+      name: 'Render Gateways as Milestones',
+      type: 'boolean' as const,
+      value: false,
+      description:
+        'When enabled, gateways are rendered as milestones in the timeline instead of being preprocessed into direct dependencies.',
     },
   ],
 };

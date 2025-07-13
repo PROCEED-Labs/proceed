@@ -29,6 +29,7 @@ scale = 10^logScale
 ```
 
 Where:
+
 - `minScale` (default: 4.0e-9) is the scale at zoom=0 (years view)
 - `midScale` is calculated as the logarithmic midpoint between minScale and maxScale
 - `breakpoint` (default: 50) is where the transition to the accelerated curve occurs
@@ -47,20 +48,21 @@ scale = 10^logScale
 ```
 
 Where:
+
 - `midScale` is calculated as the logarithmic midpoint between minScale and maxScale
 - `maxScale` (default: 1.0e-5) is the scale at zoom=100 (seconds view)
 - `upperExponent` (default: 2.0) controls the steepness of the acceleration curve
 
 ## Approximate Scale Mappings
 
-| Zoom Level | Scale Factor (approx) | Typical View        |
-|------------|----------------------|---------------------|
-| 0          | 4.0e-9               | Years               |
-| 25         | ~3.5e-8              | Months              |
-| 50 (Break) | ~6.3e-7              | Days/Hours          |
-| 75         | ~7.0e-6              | Minutes             |
-| 90         | ~5.0e-6              | Seconds             |
-| 100        | 1.0e-5               | Seconds (max zoom)  |
+| Zoom Level | Scale Factor (approx) | Typical View       |
+| ---------- | --------------------- | ------------------ |
+| 0          | 4.0e-9                | Years              |
+| 25         | ~3.5e-8               | Months             |
+| 50 (Break) | ~6.3e-7               | Days/Hours         |
+| 75         | ~7.0e-6               | Minutes            |
+| 90         | ~5.0e-6               | Seconds            |
+| 100        | 1.0e-5                | Seconds (max zoom) |
 
 ## Preset System
 
@@ -70,29 +72,29 @@ The ZoomCurveCalculator includes several ready-to-use presets:
 export const ZOOM_PRESETS = {
   DEFAULT: {
     breakpoint: 50,
-    minScale: 4.0e-9,    // Years view
-    maxScale: 1.0e-5,    // Seconds view
-    upperExponent: 2.0   // Moderate acceleration
+    minScale: 4.0e-9, // Years view
+    maxScale: 1.0e-5, // Seconds view
+    upperExponent: 2.0, // Moderate acceleration
   },
   GENTLE: {
     breakpoint: 60,
     minScale: 4.0e-9,
     maxScale: 1.0e-5,
-    upperExponent: 1.5   // Gentler acceleration
+    upperExponent: 1.5, // Gentler acceleration
   },
   STEEP: {
     breakpoint: 40,
     minScale: 4.0e-9,
     maxScale: 1.0e-5,
-    upperExponent: 2.5   // Steeper acceleration
+    upperExponent: 2.5, // Steeper acceleration
   },
   EXTREME: {
     breakpoint: 30,
     minScale: 4.0e-9,
-    maxScale: 5.0e-6,    // Close to seconds
-    upperExponent: 3.0   // Dramatic acceleration
-  }
-}
+    maxScale: 5.0e-6, // Close to seconds
+    upperExponent: 3.0, // Dramatic acceleration
+  },
+};
 ```
 
 ## Usage in Code
@@ -108,7 +110,7 @@ const calculator = new ZoomCurveCalculator({
   breakpoint: 45,
   minScale: 5.0e-9,
   maxScale: 2.0e-5,
-  upperExponent: 2.2
+  upperExponent: 2.2,
 });
 
 // Calculate scale for a given zoom level
@@ -140,14 +142,14 @@ The curve can be customized by providing a configuration object to the ZoomCurve
 ```typescript
 const customCalculator = new ZoomCurveCalculator({
   // Control the transition point
-  breakpoint: 40,     // Lower value = earlier acceleration
+  breakpoint: 40, // Lower value = earlier acceleration
 
   // Control the range (min to max)
-  minScale: 5.0e-9,   // Adjust starting scale (zoom=0)
-  maxScale: 8.0e-6,   // Adjust maximum scale (zoom=100)
-  
+  minScale: 5.0e-9, // Adjust starting scale (zoom=0)
+  maxScale: 8.0e-6, // Adjust maximum scale (zoom=100)
+
   // Control the acceleration curve
-  upperExponent: 2.5  // Higher = steeper acceleration curve
+  upperExponent: 2.5, // Higher = steeper acceleration curve
 });
 ```
 

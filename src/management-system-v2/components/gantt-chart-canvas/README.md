@@ -25,37 +25,40 @@ const elements = [
     end: new Date('2023-01-15').getTime(),
     row: 0,
     color: '#1890ff',
-    extraInfo: 'Phase 1' // Optional second column
-  }
+    extraInfo: 'Phase 1', // Optional second column
+  },
 ];
 
-<GanttChartCanvas 
-  elements={elements}
-  width="100%"
-  height={600}
-/>
+<GanttChartCanvas elements={elements} width="100%" height={600} />;
 ```
 
 ## Element Types
 
 All element types support optional `name` and `extraInfo` fields:
+
 - If `name` is not provided, the `id` will be displayed in italics surrounded by pointy brackets (e.g., `<task1>`)
 - The `extraInfo` field will be displayed in a second column
 
 ### Task
+
 `{ type: 'task', start: number, end: number, name?: string, extraInfo?: string }`
+
 - Renders as a horizontal bar from start to end time
 
 ### Milestone
+
 `{ type: 'milestone', start: number, end?: number, name?: string, extraInfo?: string }`
+
 - If only `start` is provided: renders as a diamond at the start position
-- If both `start` and `end` are provided: 
+- If both `start` and `end` are provided:
   - Diamond is centered between start and end
   - The time range is visualized with translucent diagonal lines
   - Brackets appear at both ends to indicate the range
 
 ### Group
+
 `{ type: 'group', start: number, end: number, childIds: string[], name?: string, extraInfo?: string }`
+
 - Renders as brackets encompassing the time range
 - Can contain references to child elements
 
@@ -104,6 +107,7 @@ The component uses a hybrid DOM/Canvas architecture:
 ### Mathematical Model
 
 Uses matrix transformations for all coordinate conversions:
+
 - **World Coordinates**: Time-based (milliseconds since epoch)
 - **Screen Coordinates**: Pixel positions
 - **Transform Matrix**: Handles conversions with mathematical precision
@@ -114,12 +118,12 @@ Uses matrix transformations for all coordinate conversions:
 
 ```tsx
 interface GanttChartOptions {
-  showGrid?: boolean;              // Default: true
-  showDependencies?: boolean;      // Default: true
-  rowHeight?: number;             // Default: 40px
-  minZoom?: number;               // Default: 0.1
-  maxZoom?: number;               // Default: 100
-  timeFormat?: 'auto' | string;   // Default: 'auto'
+  showGrid?: boolean; // Default: true
+  showDependencies?: boolean; // Default: true
+  rowHeight?: number; // Default: 40px
+  minZoom?: number; // Default: 0.1
+  maxZoom?: number; // Default: 100
+  timeFormat?: 'auto' | string; // Default: 'auto'
   colorScheme?: 'light' | 'dark'; // Default: 'light'
 }
 ```
@@ -133,14 +137,11 @@ const dependencies = [
   {
     sourceId: 'task1',
     targetId: 'task2',
-    type: 'finish-to-start' // Currently the only supported type
-  }
+    type: 'finish-to-start', // Currently the only supported type
+  },
 ];
 
-<GanttChartCanvas 
-  elements={elements}
-  dependencies={dependencies}
-/>
+<GanttChartCanvas elements={elements} dependencies={dependencies} />;
 ```
 
 ### Current Date Marker
@@ -148,10 +149,7 @@ const dependencies = [
 Display a red vertical line at current time:
 
 ```tsx
-<GanttChartCanvas 
-  elements={elements}
-  currentDateMarkerTime={Date.now()}
-/>
+<GanttChartCanvas elements={elements} currentDateMarkerTime={Date.now()} />
 ```
 
 ## Time Scale System
@@ -179,11 +177,11 @@ The component automatically adjusts time units based on zoom level:
 Add debug visualizations during development:
 
 ```tsx
-<GanttChartCanvas 
+<GanttChartCanvas
   elements={elements}
-  options={{ 
-    debug: true,           // Shows coordinate grids
-    debugPerformance: true // Shows render metrics
+  options={{
+    debug: true, // Shows coordinate grids
+    debugPerformance: true, // Shows render metrics
   }}
 />
 ```

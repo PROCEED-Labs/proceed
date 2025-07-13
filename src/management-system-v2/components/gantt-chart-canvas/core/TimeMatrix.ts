@@ -5,11 +5,11 @@
  * and screen pixel coordinates. This is the mathematical foundation for accurate zooming.
  */
 
-import { 
-  timeToPixel, 
-  pixelToTime, 
+import {
+  timeToPixel,
+  pixelToTime,
   calculateVisibleTimeRange,
-  applyZoomAroundPoint 
+  applyZoomAroundPoint,
 } from '../utils/mathUtils';
 
 // Base time is set per-instance in constructor
@@ -49,7 +49,6 @@ export class TimeMatrix {
     return timeToPixel(relativeTime, this.scale, this.translate);
   }
 
-
   /**
    * Transform a screen pixel position to time value (world coordinate)
    * @param screenX Pixel position on screen
@@ -81,20 +80,20 @@ export class TimeMatrix {
   createZoomedMatrix(newScale: number, focalPointWorld: number): TimeMatrix {
     // Calculate the current screen position of the focal point
     const focalPointScreen = this.transformPoint(focalPointWorld);
-    
+
     // Convert to relative coordinates for the pure function
     const relativeFocalPoint = focalPointWorld - this.baseTime;
     const focalPixel = timeToPixel(relativeFocalPoint, this.scale, this.translate);
-    
+
     // Use pure function to calculate new transform
     const zoomFactor = newScale / this.scale;
     const { scale: _, translate: newTranslate } = applyZoomAroundPoint(
       this.scale,
       this.translate,
       zoomFactor,
-      focalPixel
+      focalPixel,
     );
-    
+
     // Create new matrix with calculated values
     return new TimeMatrix(newScale, newTranslate, this.baseTime);
   }
@@ -106,7 +105,11 @@ export class TimeMatrix {
    */
   getVisibleTimeRange(viewportWidth: number): [number, number] {
     // Use pure function for calculation, but need to adjust for base time
-    const [relativeStart, relativeEnd] = calculateVisibleTimeRange(viewportWidth, this.scale, this.translate);
+    const [relativeStart, relativeEnd] = calculateVisibleTimeRange(
+      viewportWidth,
+      this.scale,
+      this.translate,
+    );
     return [relativeStart + this.baseTime, relativeEnd + this.baseTime];
   }
 
@@ -117,7 +120,7 @@ export class TimeMatrix {
   clone(): TimeMatrix {
     return new TimeMatrix(this.scale, this.translate, this.baseTime);
   }
-  
+
   /**
    * Get the base time used for relative calculations
    * @returns The base time in milliseconds
@@ -125,7 +128,7 @@ export class TimeMatrix {
   getBaseTime(): number {
     return this.baseTime;
   }
-  
+
   /**
    * Create a new matrix specifically for a given data range
    * @param dataStart Start time of data range
@@ -139,29 +142,29 @@ export class TimeMatrix {
     dataEnd: number,
     viewportWidth: number,
     scale: number,
-    padding: number = 0.1
+    padding: number = 0.1,
   ): TimeMatrix {
     // Use the data start as the base time for relative calculations
     const baseTime = dataStart;
-    
+
     // Calculate time span with padding
     const timeSpan = dataEnd - dataStart;
     const paddedTimeSpan = timeSpan * (1 + padding * 2);
-    
+
     // Create matrix with the provided scale and the data start as base time
     const matrix = new TimeMatrix(scale, 0, baseTime);
-    
+
     // Calculate where data center would be with zero translation
     const dataCenterTime = (dataStart + dataEnd) / 2;
     const dataCenterPixel = matrix.transformPoint(dataCenterTime);
-    
+
     // Calculate translation to center the data
     const viewportCenterX = viewportWidth / 2;
     const translation = viewportCenterX - dataCenterPixel;
-    
+
     // Set the translation
     matrix.translate = translation;
-    
+
     return matrix;
   }
 }

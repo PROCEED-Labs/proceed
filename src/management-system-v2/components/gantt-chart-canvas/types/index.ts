@@ -34,8 +34,8 @@ export interface GanttElement {
  */
 export interface GanttTask extends GanttElement {
   type: 'task';
-  start: number;  // Timestamp in milliseconds
-  end: number;    // Timestamp in milliseconds
+  start: number; // Timestamp in milliseconds
+  end: number; // Timestamp in milliseconds
 }
 
 /**
@@ -43,8 +43,8 @@ export interface GanttTask extends GanttElement {
  */
 export interface GanttMilestone extends GanttElement {
   type: 'milestone';
-  start: number;   // Timestamp in milliseconds
-  end?: number;    // Optional end timestamp - if provided, milestone will be centered between start and end
+  start: number; // Timestamp in milliseconds
+  end?: number; // Optional end timestamp - if provided, milestone will be centered between start and end
 }
 
 /**
@@ -52,8 +52,8 @@ export interface GanttMilestone extends GanttElement {
  */
 export interface GanttGroup extends GanttElement {
   type: 'group';
-  start: number;  // Timestamp in milliseconds
-  end: number;    // Timestamp in milliseconds
+  start: number; // Timestamp in milliseconds
+  end: number; // Timestamp in milliseconds
   childIds: string[];
   isExpanded?: boolean;
 }
@@ -82,12 +82,12 @@ export interface GanttChartOptions {
   height?: number;
   taskListWidth?: number;
   initialZoom?: number;
-  initialPosition?: number;  // Timestamp to center on
-  autoFitToData?: boolean;   // Auto-fit zoom and position to show all data
-  autoFitPadding?: number;   // Padding percentage when auto-fitting (default: 0.1 = 10%)
+  initialPosition?: number; // Timestamp to center on
+  autoFitToData?: boolean; // Auto-fit zoom and position to show all data
+  autoFitPadding?: number; // Padding percentage when auto-fitting (default: 0.1 = 10%)
   showControls?: boolean;
   readOnly?: boolean;
-  showLoopIcons?: boolean;   // Show warning icons for loop elements (default: true)
+  showLoopIcons?: boolean; // Show warning icons for loop elements (default: true)
   curvedDependencies?: boolean; // Use curved lines for dependency arrows (default: false)
   grid?: {
     major?: {
@@ -110,12 +110,12 @@ export interface GanttChartOptions {
  * Internal chart state
  */
 export interface GanttChartState {
-  zoom: number;              // Current zoom level (0-100)
-  visibleTimeStart: number;  // Start time of visible area in ms
-  visibleTimeEnd: number;    // End time of visible area in ms
-  taskListWidth: number;     // Width of the task list in pixels
-  scrollLeft: number;        // Horizontal scroll position
-  isDragging: boolean;       // Whether user is currently dragging/panning
-  isResizing: boolean;       // Whether task list is being resized
-  panOffset?: number;        // CSS transform offset during panning
+  zoom: number; // Current zoom level (0-100)
+  visibleTimeStart: number; // Start time of visible area in ms
+  visibleTimeEnd: number; // End time of visible area in ms
+  taskListWidth: number; // Width of the task list in pixels
+  scrollLeft: number; // Horizontal scroll position
+  isDragging: boolean; // Whether user is currently dragging/panning
+  isResizing: boolean; // Whether task list is being resized
+  panOffset?: number; // CSS transform offset during panning
 }

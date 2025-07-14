@@ -178,3 +178,17 @@ export function isParallelGateway(element: BPMNFlowElement): element is BPMNGate
 export function isInclusiveGateway(element: BPMNFlowElement): element is BPMNGateway {
   return element.$type === 'bpmn:InclusiveGateway';
 }
+
+/**
+ * Check if an element is a complex gateway
+ */
+export function isComplexGateway(element: BPMNFlowElement): element is BPMNGateway {
+  return element.$type === 'bpmn:ComplexGateway';
+}
+
+/**
+ * Check if an element is an event-based gateway
+ */
+export function isEventBasedGateway(element: BPMNFlowElement): element is BPMNGateway {
+  return element.$type === 'bpmn:EventBasedGateway';
+}

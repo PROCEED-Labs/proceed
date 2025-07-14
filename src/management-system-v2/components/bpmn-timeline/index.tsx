@@ -38,6 +38,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [warnings, setWarnings] = useState<TransformationIssue[]>([]);
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
   const [hasInclusiveGateways, setHasInclusiveGateways] = useState<boolean>(false);
+  const [hasComplexGateways, setHasComplexGateways] = useState<boolean>(false);
+  const [hasEventBasedGateways, setHasEventBasedGateways] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [nowTimestamp, setNowTimestamp] = useState<number>(0);
   const [ganttSettings, setGanttSettings] = useState<{
@@ -122,12 +124,20 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           return;
         }
 
-        // Check for inclusive gateways in the process
+        // Check for special gateways in the process
         const bpmnProcess = (definitions as BPMNDefinitions).rootElements?.[0];
         const hasInclusive = bpmnProcess?.flowElements?.some(
           (element: any) => element.$type === 'bpmn:InclusiveGateway'
         ) || false;
+        const hasComplex = bpmnProcess?.flowElements?.some(
+          (element: any) => element.$type === 'bpmn:ComplexGateway'
+        ) || false;
+        const hasEventBased = bpmnProcess?.flowElements?.some(
+          (element: any) => element.$type === 'bpmn:EventBasedGateway'
+        ) || false;
         setHasInclusiveGateways(hasInclusive);
+        setHasComplexGateways(hasComplex);
+        setHasEventBasedGateways(hasEventBased);
 
         // Use a single timestamp for both transformation and red line marker
         const transformationTimestamp = Date.now();
@@ -332,7 +342,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         )}
 
         {/* Process Information */}
-        {(defaultDurations.length > 0 || hasInclusiveGateways) && (
+        {(defaultDurations.length > 0 || hasInclusiveGateways || hasComplexGateways || hasEventBasedGateways) && (
           <div
             className={`${styles.defaultDurationSection} ${errors.length > 0 || warnings.length > 0 ? styles.afterErrors : ''}`}
           >
@@ -345,7 +355,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                   label: (
                     <div className={styles.defaultDurationLabel}>
                       <span className={styles.infoIconInline}>ℹ</span>
-                      Process Information ({(defaultDurations.length > 0 ? 1 : 0) + (hasInclusiveGateways ? 1 : 0)} items)
+                      Process Information ({(defaultDurations.length > 0 ? 1 : 0) + (hasInclusiveGateways ? 1 : 0) + (hasComplexGateways ? 1 : 0) + (hasEventBasedGateways ? 1 : 0)} items)
                     </div>
                   ),
                   children: (
@@ -358,13 +368,39 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                           <div className={styles.processInfoDescription}>
                             This process contains inclusive gateways (OR gateways). For timeline visualization, 
                             all conditional flows are assumed to be taken, showing a conservative "worst-case" 
-                            timeline useful for capacity planning and resource estimation.
+                            timeline.
+                          </div>
+                        </div>
+                      )}
+
+                      {hasComplexGateways && (
+                        <div className={`${styles.processInfoSection} ${hasInclusiveGateways ? styles.sectionSpacing : ''}`}>
+                          <div className={styles.processInfoHeader}>
+                            <strong>Complex Gateway Behavior</strong>
+                          </div>
+                          <div className={styles.processInfoDescription}>
+                            This process contains complex gateways with custom activation expressions that cannot be 
+                            evaluated during static analysis. All possible paths are shown without forced synchronization, 
+                            as actual behavior depends on runtime conditions.
+                          </div>
+                        </div>
+                      )}
+
+                      {hasEventBasedGateways && (
+                        <div className={`${styles.processInfoSection} ${(hasInclusiveGateways || hasComplexGateways) ? styles.sectionSpacing : ''}`}>
+                          <div className={styles.processInfoHeader}>
+                            <strong>Event-Based Gateway Behavior</strong>
+                          </div>
+                          <div className={styles.processInfoDescription}>
+                            This process contains event-based gateways that consume tokens immediately without 
+                            synchronization. Each token independently waits for events and continues when an event 
+                            occurs, showing alternative execution paths.
                           </div>
                         </div>
                       )}
                       
                       {defaultDurations.length > 0 && (
-                        <div className={`${styles.processInfoSection} ${hasInclusiveGateways ? styles.sectionSpacing : ''}`}>
+                        <div className={`${styles.processInfoSection} ${(hasInclusiveGateways || hasComplexGateways || hasEventBasedGateways) ? styles.sectionSpacing : ''}`}>
                           <div className={styles.processInfoHeader}>
                             <strong>Tasks with Default Duration ({defaultDurations.length})</strong>
                           </div>

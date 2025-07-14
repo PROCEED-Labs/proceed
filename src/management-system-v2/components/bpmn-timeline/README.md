@@ -287,159 +287,44 @@ maxLoopIterations: number = 3; // Allow up to 3 loop iterations (initial + 3 rep
 
 ### Gateways → Dependency Transformations
 
-**Supported Types**:
+**All BPMN gateway types are supported** with gateway-semantic path traversal:
 
-- `bpmn:ExclusiveGateway` (XOR) - Choice/decision points
-- `bpmn:ParallelGateway` (AND) - Synchronization and parallel execution
+| Gateway Type | BPMN Element | Fork Behavior | Join Behavior | Synchronization |
+|-------------|--------------|---------------|---------------|-----------------|
+| **Exclusive** | `bpmn:ExclusiveGateway` | Alternative paths | Immediate consumption | None |
+| **Parallel** | `bpmn:ParallelGateway` | Simultaneous paths | Wait for ALL tokens | Yes |
+| **Inclusive** | `bpmn:InclusiveGateway` | Conditional paths | Wait for ALL tokens | Yes |
+| **Complex** | `bpmn:ComplexGateway` | Alternative paths* | Immediate consumption | None* |
+| **Event-Based** | `bpmn:EventBasedGateway` | Alternative paths | Immediate consumption | None |
 
-**Transformation Strategy**: **Gateway-Semantic Path Traversal** **Implemented**
+*Complex gateways: Shows all possible paths since custom conditions can't be evaluated - actual execution could be exclusive, parallel, inclusive, or custom behavior.
 
-- Gateways are **not rendered** as visible elements in the timeline (hidden when `renderGateways = false`)
-- **Current Implementation**: Gateway semantics are applied directly during path traversal
-  - When encountering a gateway, apply its timing and continue to targets
-  - No gateway instances created - direct source→target dependencies
-  - Gateway duration combined with flow durations
-  - Synchronization logic handles parallel gateway joins with queueing mechanism
+**Implementation**: Gateway-semantic path traversal processes gateways during traversal without creating visible instances. Timing and dependencies are applied directly, with synchronization queueing for parallel/inclusive joins only.
 
-#### Exclusive Gateway (XOR) Logic
+#### Gateway Processing Details
 
-**Gateway-Semantic Process**:
-
-1. **During path traversal**: When encountering an exclusive gateway
-2. **Apply gateway timing**: Add gateway duration to current time
-3. **Create branching paths**: Each outgoing flow creates a separate execution path
-4. **Direct dependencies**: Create source→target dependencies skipping gateway instances
-5. **Combined timing**: Gateway duration + flow duration applied to path timing
-
-**Duration Calculation**:
+**Core Algorithm**: Gateway-semantic path traversal processes timing during traversal:
 
 ```
 Next Element Start Time = Current Time + Gateway Duration + Flow Duration
 ```
 
-- **Gateway Duration**: From extensionElements or 0ms default
-- **Flow Durations**: From extensionElements or 0ms default
-- **Path Timing**: Applied directly during traversal
+**Synchronization Strategy** (Parallel/Inclusive only):
+- **Fork**: All outgoing paths start simultaneously
+- **Join**: Queue paths until ALL required sources complete, use latest completion time
 
-**Path-Based Execution**:
+**Conservative Analysis Approach**:
+- **Inclusive**: Show all conditional paths with synchronization for capacity planning
+- **Complex**: Show all possible paths without synchronization assumptions (unknown conditions)
+- **Exclusive/Event-Based**: Show alternative paths without synchronization  
 
+**Example Pattern**:
 ```
-Original BPMN:
-TaskA → ExclusiveGateway → TaskB
-                        → TaskC
-
-Path Traversal Result:
-Path 1: TaskA → TaskB (via gateway timing)
-Path 2: TaskA → TaskC (via gateway timing)
-Dependencies: TaskA→TaskB, TaskA→TaskC
+TaskA → Gateway → TaskB, TaskC
+Result: Dependencies TaskA→TaskB, TaskA→TaskC (direct, gateway hidden)
 ```
 
-#### Parallel Gateway (AND) Logic
-
-**Gateway-Semantic Process**:
-
-1. **Fork Pattern**: One incoming flow, multiple outgoing flows
-   - Apply gateway timing and create separate paths for each outgoing flow
-   - All paths start simultaneously after gateway completion
-2. **Join Pattern**: Multiple incoming flows, one or more outgoing flows
-   - Use synchronization queuing to wait for all required source elements
-   - Create single target instance once all sources arrive
-
-**Synchronization Behavior**:
-
-- **Fork semantics**: All outgoing branches start simultaneously when the incoming branch completes
-- **Join semantics**: Queues paths until ALL required sources complete, then proceeds with synchronized timing
-- **Path-based synchronization**: Each source element must complete before join gateway activates
-- **Single instance creation**: Join creates one target instance with multiple dependencies
-
-**Advanced Synchronization Features**:
-
-- **Synchronization queue**: Paths are queued at parallel joins until all required sources arrive
-- **Multi-source detection**: Automatically identifies which source elements must synchronize
-- **Timing coordination**: Uses latest completion time across all sources for synchronized start
-- **Source element tracking**: Maintains original source elements through gateway chains
-
-**Timing Calculation**:
-
-```
-For Parallel Fork:
-Next Element Start Time = Current Time + Gateway Duration + Flow Duration
-(Applied to each outgoing flow simultaneously)
-
-For Parallel Join:
-Synchronized Start Time = max(all source completion times) + Gateway Duration + Flow Duration
-```
-
-**Path-Based Execution Examples**:
-
-**Parallel Fork (Split)**:
-
-```
-Original BPMN:
-TaskA → ParallelGateway → TaskB
-                       → TaskC
-
-Path Traversal Result:
-Path 1: TaskA → TaskB (fork branch 1)
-Path 2: TaskA → TaskC (fork branch 2)
-Dependencies: TaskA→TaskB, TaskA→TaskC
-Both TaskB and TaskC start simultaneously after TaskA
-```
-
-**Parallel Join (Synchronization)**:
-
-```
-Original BPMN:
-TaskA → ParallelGateway → TaskD
-TaskB → ParallelGateway → TaskE
-
-Path Traversal Result:
-- TaskA and TaskB execute in parallel
-- ParallelGateway queues paths until both TaskA AND TaskB complete
-- Creates single TaskD instance with dependencies: TaskA→TaskD, TaskB→TaskD
-- Creates single TaskE instance with dependencies: TaskA→TaskE, TaskB→TaskE
-- TaskD and TaskE start simultaneously at synchronization point
-```
-
-#### Inclusive Gateway (OR) Logic
-
-**Timeline Visualization Approach**:
-
-For timeline visualization purposes, inclusive gateways are treated identically to parallel gateways. This design choice provides a conservative analysis showing the maximum possible process duration.
-
-**Reasoning**:
-
-1. **Condition Evaluation Challenge**: BPMN inclusive gateways depend on runtime conditions (e.g., `amount > 1000`, `urgent == true`) that are not available during static process analysis.
-
-2. **Conservative Analysis**: By treating inclusive gateways like parallel gateways, we show the "worst-case scenario" where all conditional flows are taken, providing useful insights for:
-   - **Capacity planning**: Maximum resource requirements
-   - **Timeline estimation**: Longest possible process duration
-   - **Bottleneck identification**: All potential execution paths
-
-3. **Semantic Translation**: 
-   - **Inclusive Fork**: Creates paths for ALL outgoing flows (same as parallel fork)
-   - **Inclusive Join**: Waits for ALL incoming flows (same as parallel join)
-   - **Result**: Conservative timeline showing maximum complexity
-
-**Gateway-Semantic Process**:
-
-```
-Original BPMN:
-TaskA → InclusiveGateway → TaskB (condition: amount > 1000)
-                        → TaskC (condition: urgent == true)
-
-Timeline Visualization:
-Path 1: TaskA → TaskB (showing potential execution)
-Path 2: TaskA → TaskC (showing potential execution)
-Dependencies: TaskA→TaskB, TaskA→TaskC
-Result: Shows timeline if both conditions were true
-```
-
-**Benefits of This Approach**:
-- **Simple implementation**: Reuses proven parallel gateway logic
-- **Conservative estimates**: Never underestimates process complexity
-- **No false assumptions**: Doesn't guess at business rule conditions
-- **Useful for planning**: Shows maximum resource and time requirements
+See table above for specific fork/join behavior per gateway type.
 
 ## Structural Path Interpretation and Validation
 
@@ -606,7 +491,6 @@ interface TokenBasedElement {
 
 **Current Limitations**: These elements are excluded and reported as errors
 
-- Gateway types other than `bpmn:ExclusiveGateway` and `bpmn:ParallelGateway` (`bpmn:InclusiveGateway`, `bpmn:ComplexGateway`, `bpmn:EventBasedGateway`)
 - `bpmn:SubProcess` and `bpmn:AdHocSubProcess`
 - `bpmn:BoundaryEvent`
 

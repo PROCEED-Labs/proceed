@@ -39,7 +39,10 @@ export function buildSynchronizationRequirements(
 ): Map<string, SynchronizationRequirement> {
   const syncReqs = new Map<string, SynchronizationRequirement>();
 
-  // Find all parallel and inclusive gateways (both use same synchronization logic)
+  // Find all gateways that require synchronization (parallel semantics)
+  // NOTE: Event-based and Complex gateways do NOT synchronize:
+  // - Event-based: consume tokens immediately, each waits for events independently
+  // - Complex: custom conditions determine behavior, can't assume synchronization
   const parallelGateways = allElements.filter((el) => el.$type === 'bpmn:ParallelGateway');
   const inclusiveGateways = allElements.filter((el) => el.$type === 'bpmn:InclusiveGateway');
   const syncGateways = [...parallelGateways, ...inclusiveGateways];

@@ -53,6 +53,19 @@ export function calculateDataTimeRange(elements: GanttElementType[]): DataRange 
         maxTime = Math.max(maxTime, element.end);
       }
     }
+
+    // Include ghost occurrences in the time range calculation
+    if (element.ghostOccurrences && element.ghostOccurrences.length > 0) {
+      element.ghostOccurrences.forEach((ghost) => {
+        if (ghost.start && ghost.start > 0) {
+          minTime = Math.min(minTime, ghost.start);
+          maxTime = Math.max(maxTime, ghost.start);
+        }
+        if (ghost.end && ghost.end > 0) {
+          maxTime = Math.max(maxTime, ghost.end);
+        }
+      });
+    }
   });
 
   // Fallback if no valid timestamps found

@@ -51,6 +51,8 @@ import {
  * @param loopDepth - Maximum loop iterations for path-based modes
  * @param chronologicalSorting - Sort elements by start time vs discovery order
  * @param renderGateways - Show gateway instances in timeline (default: false)
+ * @param showGhostElements - Show ghost occurrences as ghost elements (default: false)
+ * @param showGhostDependencies - Show dependencies to ghost elements (default: false)
  */
 export function transformBPMNToGantt(
   definitions: BPMNDefinitions,
@@ -62,6 +64,8 @@ export function transformBPMNToGantt(
   loopDepth: number = 1,
   chronologicalSorting: boolean = false,
   renderGateways: boolean = false,
+  showGhostElements: boolean = false,
+  showGhostDependencies: boolean = false,
 ): TransformationResult {
   const issues: TransformationIssue[] = [];
   const defaultDurations: DefaultDurationInfo[] = [];
@@ -105,6 +109,8 @@ export function transformBPMNToGantt(
     pathDependencies,
     supportedElements,
     renderGateways,
+    showGhostElements,
+    showGhostDependencies,
   );
 
   // Group and sort elements by connected components and start time
@@ -140,6 +146,8 @@ function handleTraversalMode(
   pathDependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
   supportedElements: BPMNFlowElement[],
   renderGateways: boolean,
+  showGhostElements: boolean,
+  showGhostDependencies: boolean,
 ): ModeHandlerResult {
   switch (traversalMode) {
     case 'every-occurrence':
@@ -155,6 +163,8 @@ function handleTraversalMode(
         pathDependencies,
         supportedElements,
         renderGateways,
+        showGhostElements,
+        showGhostDependencies,
       );
     case 'earliest-occurrence':
     default:
@@ -163,6 +173,8 @@ function handleTraversalMode(
         pathDependencies,
         supportedElements,
         renderGateways,
+        showGhostElements,
+        showGhostDependencies,
       );
   }
 }

@@ -6,7 +6,8 @@ import { WarningOutlined } from '@ant-design/icons';
 import { GanttChartCanvas } from '@/components/gantt-chart-canvas';
 import type { GanttElementType, GanttDependency } from '@/components/gantt-chart-canvas/types';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
-import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { getSpaceSettingsValues } from '@/lib/data/space-settings';
+import { isUserErrorResponse } from '@/lib/user-error';
 import { useEnvironment } from '@/components/auth-can';
 import { moddle } from '@proceed/bpmn-helper';
 import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
@@ -50,6 +51,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
     showLoopIcons: boolean;
     curvedDependencies: boolean;
     renderGateways: boolean;
+    showGhostElements: boolean;
+    showGhostDependencies: boolean;
   } | null>(null); // Start with null to indicate settings not loaded
 
   // Add a refresh counter to force re-fetching of settings
@@ -61,8 +64,29 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const settings = await getSpaceSettingsValues(spaceId, 'process-documentation');
-        const ganttViewSettings = settings?.['gantt-view'];
+        const settingsResult = await getSpaceSettingsValues(spaceId, 'process-documentation');
+
+        // Handle userError result from server action (e.g., permission errors)
+        if (isUserErrorResponse(settingsResult)) {
+          console.warn('Cannot access settings, using defaults:', settingsResult.error.message);
+          // Use defaults when settings are not accessible
+          setGanttSettings({
+            enabled: true,
+            positioningLogic: 'earliest-occurrence',
+            loopDepth: 1,
+            chronologicalSorting: false,
+            showLoopIcons: true,
+            curvedDependencies: false,
+            renderGateways: false,
+            showGhostElements: false,
+            showGhostDependencies: false,
+          });
+          return;
+        }
+
+        const ganttViewSettings = settingsResult?.['gantt-view'];
+        const showGhostElements = ganttViewSettings?.['show-ghost-elements'] ?? false;
+
         const newSettings = {
           enabled: ganttViewSettings?.enabled ?? true,
           positioningLogic: ganttViewSettings?.['positioning-logic'] ?? 'earliest-occurrence',
@@ -71,10 +95,15 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           showLoopIcons: ganttViewSettings?.['show-loop-icons'] ?? true,
           curvedDependencies: ganttViewSettings?.['curved-dependencies'] ?? false,
           renderGateways: ganttViewSettings?.['render-gateways'] ?? false,
+          showGhostElements,
+          // Ghost dependencies can only be enabled if ghost elements are enabled
+          showGhostDependencies:
+            showGhostElements && (ganttViewSettings?.['show-ghost-dependencies'] ?? false),
         };
         setGanttSettings(newSettings);
       } catch (error) {
-        console.error('Failed to fetch gantt view settings:', error);
+        console.warn('Failed to fetch gantt view settings, using defaults:', error);
+        const defaultShowGhostElements = false;
         setGanttSettings({
           enabled: true,
           positioningLogic: 'earliest-occurrence',
@@ -83,6 +112,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           showLoopIcons: true,
           curvedDependencies: false,
           renderGateways: false,
+          showGhostElements: defaultShowGhostElements,
+          // Ghost dependencies can only be enabled if ghost elements are enabled
+          showGhostDependencies: defaultShowGhostElements && false,
         });
       }
     };
@@ -153,6 +185,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           ganttSettings.loopDepth,
           ganttSettings.chronologicalSorting,
           ganttSettings.renderGateways,
+          ganttSettings.showGhostElements,
+          ganttSettings.showGhostDependencies,
         );
 
         // Check again if component is still mounted before setting state
@@ -428,7 +462,11 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                             default value of 1 hour:
                           </div>
                           <ul className={styles.defaultDurationList}>
-                            {defaultDurations.map((item, index) => (
+                            {Array.from(
+                              new Map(
+                                defaultDurations.map((item) => [item.elementId, item]),
+                              ).values(),
+                            ).map((item, index) => (
                               <li key={index}>
                                 <strong>{item.elementName || item.elementId}</strong> (
                                 {item.elementType}): 1 hour

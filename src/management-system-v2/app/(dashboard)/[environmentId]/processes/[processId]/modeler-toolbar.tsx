@@ -33,7 +33,7 @@ import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { getSpaceSettingsValues } from '@/lib/data/space-settings';
 import { Process } from '@/lib/data/process-schema';
 import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
 import { TimerEventButton, isTimerEvent } from './planned-duration-input';
@@ -74,11 +74,22 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   useEffect(() => {
     const fetchGanttSettings = async () => {
       try {
-        const settings = await getSpaceSettingsValues(environment.spaceId, 'process-documentation');
-        const ganttViewSettings = settings?.['gantt-view'];
+        const settingsResult = await getSpaceSettingsValues(
+          environment.spaceId,
+          'process-documentation',
+        );
+
+        // Handle userError result from server action (e.g., permission errors)
+        if (isUserErrorResponse(settingsResult)) {
+          console.warn('Cannot access settings, using defaults:', settingsResult.error.message);
+          setGanttEnabled(true);
+          return;
+        }
+
+        const ganttViewSettings = settingsResult?.['gantt-view'];
         setGanttEnabled(ganttViewSettings?.enabled ?? true);
       } catch (error) {
-        console.error('Failed to fetch gantt view settings:', error);
+        console.warn('Failed to fetch gantt view settings, using defaults:', error);
         setGanttEnabled(true);
       }
     };

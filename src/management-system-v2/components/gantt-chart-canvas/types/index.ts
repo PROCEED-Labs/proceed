@@ -27,6 +27,11 @@ export interface GanttElement {
   isPathCutoff?: boolean; // Indicates this element is where flow traversal stopped due to loop depth
   isLoop?: boolean; // Indicates this element is part of a loop
   isLoopCut?: boolean; // Indicates this element is where loop was cut off
+  ghostOccurrences?: Array<{
+    start: number;
+    end?: number; // For tasks only
+    instanceId?: string; // For dependency tracking
+  }>;
 }
 
 /**
@@ -73,6 +78,9 @@ export interface GanttDependency {
   type: DependencyType; // Type of dependency relationship
   name?: string; // Optional name for the dependency
   flowType?: 'conditional' | 'default' | 'normal'; // Type of flow for BPMN sequence flows
+  isGhost?: boolean; // Indicates this is a ghost dependency
+  sourceInstanceId?: string; // For ghost dependencies, the specific instance
+  targetInstanceId?: string; // For ghost dependencies, the specific instance
 }
 
 /**

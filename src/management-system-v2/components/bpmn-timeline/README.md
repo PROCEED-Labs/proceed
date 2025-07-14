@@ -643,10 +643,10 @@ The component displays transformation results in the UI:
 
 ```typescript
 // Timeline toggle
-enabled: boolean = false
+enabled: boolean = true
 
-// Algorithm selection
-positioning-logic: 'earliest-occurrence' | 'every-occurrence' | 'latest-occurrence' = 'earliest-occurrence'
+// Algorithm selection (every-occurrence listed first in UI)
+positioning-logic: 'every-occurrence' | 'earliest-occurrence' | 'latest-occurrence' = 'earliest-occurrence'
 
 // Loop iteration control (path-based modes)
 loop-depth: number = 1
@@ -657,9 +657,107 @@ chronological-sorting: boolean = false
 // Visual enhancements
 show-loop-icons: boolean = true
 curved-dependencies: boolean = false
+show-ghost-elements: boolean = false
+show-ghost-dependencies: boolean = false
 
 // Gateway visibility control
 renderGateways: boolean = false
+```
+
+### Settings Dependencies
+
+The gantt settings implement a dependency system similar to Process Documentation settings:
+
+#### Main Dependencies
+
+- **`enabled`**: Controls all other gantt settings
+  - When disabled, all other settings are disabled and grayed out
+  - Affects both modal and main settings views
+
+#### Mode-Specific Dependencies
+
+- **`positioning-logic`**: Controls availability of related settings
+  - **Earliest Occurrence**: Disables `loop-depth` and `show-loop-icons` (not relevant for single occurrences)
+  - **Every/Latest Occurrence**: All settings available
+
+#### Ghost Dependencies
+
+- **`show-ghost-elements`**: Required for ghost dependencies
+  - When disabled, `show-ghost-dependencies` is disabled
+  - Ghost dependencies only work when ghost elements are enabled
+
+#### Implementation
+
+- Uses shared `createGanttSettingsRenderer()` utility function
+- Consistent behavior in both timeline modal and main settings page
+- Real-time updates when dependencies change
+- Settings remain visible but are disabled (not hidden)
+
+### Ghost Elements
+
+**Ghost elements** provide visualization of alternative occurrences in Earliest and Latest Occurrence modes. When enabled, ghost elements appear as semi-transparent shapes showing where elements could occur at different times.
+
+#### Configuration
+
+```typescript
+show-ghost-elements: boolean = false     // Enable/disable ghost elements
+show-ghost-dependencies: boolean = false // Enable/disable ghost dependencies
+```
+
+#### Visual Behavior
+
+**Earliest Occurrence Mode with Ghosts**:
+
+- **Primary element**: Solid rendering at earliest possible time
+- **Ghost elements**: Semi-transparent (75% opacity) at all later occurrence times
+- **Dependencies**: Connect to primary occurrences (or ghost occurrences if ghost dependencies enabled)
+
+**Latest Occurrence Mode with Ghosts**:
+
+- **Primary element**: Solid rendering at latest possible time
+- **Ghost elements**: Semi-transparent (75% opacity) at all earlier occurrence times
+- **Dependencies**: Connect to primary occurrences (or ghost occurrences if ghost dependencies enabled)
+
+#### Rendering Details
+
+**Ghost Elements**:
+
+- **Opacity**: Fixed at 75% for ghost elements
+- **Styling**: Fill-only rendering (no borders)
+- **Color**: Same as primary element
+- **Interaction**: No hover or click interactions on ghosts
+
+**Ghost Dependencies**:
+
+- **Opacity**: Fixed at 75% for ghost dependencies
+- **Styling**: Same line style as regular dependencies
+- **Connection**: Connect to specific ghost occurrence timing
+- **Visibility**: Only shown when `show-ghost-dependencies` is enabled
+
+#### Use Cases
+
+- **Process awareness**: Understand timing flexibility while maintaining timeline clarity
+- **Alternative paths**: Visualize how different execution paths affect element timing
+- **Decision impact**: See how gateway choices influence element scheduling
+- **Optimization**: Identify elements with high timing variability
+- **Dependency tracking**: See how alternative timings affect process flow connections
+- **Path analysis**: Understand complete alternative execution scenarios including dependencies
+
+#### Example
+
+```
+BPMN Process:
+Start → Gateway → Task A (2h) → End
+            ↓
+        Task B (1h) → Task A
+
+Timeline (Earliest + Ghosts + Ghost Dependencies):
+- Task A: Primary at 02:00-04:00, Ghost at 01:00-03:00
+- Task B: Primary at 00:00-01:00
+- Dependencies:
+  - Regular: Gateway → Task B
+  - Ghost: Task B → Task A (ghost occurrence at 01:00-03:00)
+  - Regular: Task A (primary) → End
 ```
 
 ### Runtime Parameters
@@ -763,6 +861,8 @@ const result = transformBPMNToGantt(definitions, timestamp, settings.positioning
 - **Real-time updates**: Settings changes immediately trigger re-transformation
 - **Space-level persistence**: Settings saved to space configuration
 - **All options available**: Algorithm selection, loop depth, visual preferences
+- **Mode descriptions**: Expandable info box with detailed explanations of positioning logic modes
+- **Dependency system**: Settings automatically disabled based on dependencies
 
 #### Visual Indicators
 
@@ -843,10 +943,5 @@ components/bpmn-timeline/
 - **Dependency filtering**: Bypass logic for hidden gateways
 - **Synchronization logic**: Queueing mechanism for parallel joins
 - **Issue detection**: Gateway mismatch warnings, unsupported element errors
-
-### Future Enhancements
-
-- **Additional gateway types**: Inclusive, complex, event-based gateways
-- **SubProcess support**: Nested process handling
-- **BoundaryEvent support**: Exception and interruption handling
-- **Advanced features**: Critical path analysis, resource modeling
+- **Ghost elements and dependencies**: Fully implemented with replacement logic
+- **Settings dependency system**: Complete with shared utility functions

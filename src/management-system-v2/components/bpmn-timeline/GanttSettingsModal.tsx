@@ -6,8 +6,10 @@ import { SettingOutlined } from '@ant-design/icons';
 import { useEnvironment } from '@/components/auth-can';
 import { SettingsGroup } from '../../app/(dashboard)/[environmentId]/settings/components';
 import { debouncedSettingsUpdate } from '../../app/(dashboard)/[environmentId]/settings/utils';
-import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { getSpaceSettingsValues } from '@/lib/data/space-settings';
+import { isUserErrorResponse } from '@/lib/user-error';
 import { ganttViewSettingsDefinition } from './gantt-settings-definition';
+import { createGanttSettingsRenderer } from './gantt-settings-utils';
 import type { SettingGroup } from '../../app/(dashboard)/[environmentId]/settings/type-util';
 
 interface GanttSettingsModalProps {
@@ -28,6 +30,14 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
       setIsLoading(true);
       try {
         const currentSettings = await getSpaceSettingsValues(spaceId, 'process-documentation');
+
+        // Handle userError result from server action
+        if (isUserErrorResponse(currentSettings)) {
+          console.error('Settings error:', currentSettings.error.message);
+          setIsLoading(false);
+          return;
+        }
+
         const ganttViewSettings = currentSettings?.['gantt-view'] || {};
 
         // Manually populate the settings group with current values
@@ -73,8 +83,15 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
     if (spaceId) {
       const loadSettings = async () => {
         try {
-          const currentSettings = await getSpaceSettingsValues(spaceId, 'process-documentation');
-          const ganttViewSettings = currentSettings?.['gantt-view'] || {};
+          const settingsResult = await getSpaceSettingsValues(spaceId, 'process-documentation');
+
+          // Handle userError result from server action
+          if (isUserErrorResponse(settingsResult)) {
+            console.error('Settings error:', settingsResult.error.message);
+            return;
+          }
+
+          const ganttViewSettings = settingsResult?.['gantt-view'] || {};
           const populatedGroup = populateSettingsGroupFromValues(
             ganttViewSettingsDefinition,
             ganttViewSettings,
@@ -120,6 +137,7 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
             group={settingsGroup}
             onUpdate={handleGroupUpdate}
             onNestedSettingUpdate={handleNestedSettingUpdate}
+            renderNestedSettingInput={createGanttSettingsRenderer(settingsGroup)}
             hideTitle={true}
           />
         )}

@@ -101,9 +101,42 @@ export class DependencyRenderer {
 
       if (!fromVisible && !toVisible) return;
 
-      // Calculate connection points
-      const fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex);
-      const toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'start', toIndex);
+      // Calculate connection points for ghost dependencies
+      let fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex);
+      let toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'start', toIndex);
+
+      // For ghost dependencies, adjust connection points to ghost occurrences
+      if (dep.isGhost && dep.sourceInstanceId && dep.targetInstanceId) {
+        // Find the specific ghost occurrence for source
+        const sourceGhost = fromElement.ghostOccurrences?.find(
+          (ghost) => ghost.instanceId === dep.sourceInstanceId,
+        );
+        if (sourceGhost) {
+          if (fromElement.type === 'milestone') {
+            // For ghost milestones, position arrow to originate from the right side of the diamond
+            const milestoneX = timeMatrix.transformPoint(sourceGhost.start);
+            fromPoint = { x: milestoneX + MILESTONE_SIZE / 2, y: fromPoint.y };
+          } else {
+            // For tasks, use end of ghost occurrence
+            const endTime = sourceGhost.end || sourceGhost.start;
+            fromPoint = { x: timeMatrix.transformPoint(endTime), y: fromPoint.y };
+          }
+        }
+
+        // Find the specific ghost occurrence for target
+        const targetGhost = toElement.ghostOccurrences?.find(
+          (ghost) => ghost.instanceId === dep.targetInstanceId,
+        );
+        if (targetGhost) {
+          if (toElement.type === 'milestone') {
+            // For ghost milestones, position arrow to go into the left side of the diamond
+            const milestoneX = timeMatrix.transformPoint(targetGhost.start);
+            toPoint = { x: milestoneX - MILESTONE_SIZE / 2, y: toPoint.y };
+          } else {
+            toPoint = { x: timeMatrix.transformPoint(targetGhost.start), y: toPoint.y };
+          }
+        }
+      }
 
       // Skip if points are outside visible area
       const canvasWidth = context.canvas.width / this.pixelRatio;
@@ -137,6 +170,7 @@ export class DependencyRenderer {
         timeMatrix,
         curvedDependencies,
         isSelfLoop,
+        dep.isGhost,
       );
     };
 
@@ -306,6 +340,7 @@ export class DependencyRenderer {
     timeMatrix?: TimeMatrix,
     curvedDependencies: boolean = false,
     isSelfLoop: boolean = false,
+    isGhost: boolean = false,
   ): void {
     // Calculate adjusted endpoint to stop before arrow head
     const arrowOffset = DEPENDENCY_ARROW_SIZE * 0.8; // Stop line slightly before arrow tip
@@ -314,14 +349,16 @@ export class DependencyRenderer {
     // Save current context state
     context.save();
 
-    // Set line style for dependencies based on highlight status
+    // Set line style for dependencies based on highlight status and ghost status
     // Use fixed line widths that look good on all screen densities
     if (isHighlighted) {
       context.strokeStyle = '#000000'; // Black color for highlighted dependencies
       context.lineWidth = 2.5; // Thicker lines for highlighted dependencies
+      context.globalAlpha = isGhost ? 0.75 : 1.0; // Reduce opacity for ghost dependencies
     } else {
       context.strokeStyle = DEPENDENCY_LINE_COLOR;
       context.lineWidth = 1.5; // Thinner lines for normal dependencies
+      context.globalAlpha = isGhost ? 0.75 : 1.0; // Reduce opacity for ghost dependencies
     }
     context.setLineDash([]);
 
@@ -768,7 +805,7 @@ export class DependencyRenderer {
     }
 
     // Draw arrow head
-    this.drawArrowHead(context, to, type, isHighlighted);
+    this.drawArrowHead(context, to, type, isHighlighted, isGhost);
 
     // Restore context state
     context.restore();
@@ -782,8 +819,10 @@ export class DependencyRenderer {
     point: { x: number; y: number },
     _type: DependencyType,
     isHighlighted: boolean = false,
+    isGhost: boolean = false,
   ): void {
     context.fillStyle = isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR;
+    // The globalAlpha is already set from the main drawing context, so arrow head will inherit the ghost opacity
     context.beginPath();
 
     // Arrow pointing left (into the element)

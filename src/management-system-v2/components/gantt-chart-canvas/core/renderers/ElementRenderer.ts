@@ -138,6 +138,11 @@ export class ElementRenderer {
       );
     }
 
+    // Render ghost occurrences if present
+    if (task.ghostOccurrences && task.ghostOccurrences.length > 0) {
+      this.renderGhostOccurrences(context, task.ghostOccurrences, rowIndex, timeMatrix, color);
+    }
+
     context.globalAlpha = 1;
   }
 
@@ -261,6 +266,11 @@ export class ElementRenderer {
         200,
         '#333333',
       );
+    }
+
+    // Render ghost occurrences if present
+    if (milestone.ghostOccurrences && milestone.ghostOccurrences.length > 0) {
+      this.renderGhostMilestones(context, milestone.ghostOccurrences, rowIndex, timeMatrix, color);
     }
 
     context.globalAlpha = 1;
@@ -574,5 +584,79 @@ export class ElementRenderer {
     }
 
     return result || ellipsis;
+  }
+
+  /**
+   * Render ghost occurrences for task elements
+   */
+  private renderGhostOccurrences(
+    context: CanvasRenderingContext2D,
+    ghostOccurrences: Array<{ start: number; end?: number }>,
+    rowIndex: number,
+    timeMatrix: TimeMatrix,
+    color: string,
+  ): void {
+    const y = rowIndex * ROW_HEIGHT + TASK_PADDING;
+    const height = ROW_HEIGHT - TASK_PADDING * 2;
+
+    context.save();
+    context.globalAlpha = 0.75; // Ghost opacity
+
+    ghostOccurrences.forEach((ghost) => {
+      const startX = timeMatrix.transformPoint(ghost.start);
+      const endX = timeMatrix.transformPoint(ghost.end || ghost.start);
+      const width = Math.max(endX - startX, ELEMENT_MIN_WIDTH);
+
+      // Skip if completely outside visible area
+      if (startX + width < 0 || startX > context.canvas.width / this.pixelRatio) {
+        return;
+      }
+
+      // Draw ghost task bar (fill only, no border)
+      context.fillStyle = color;
+      context.fillRect(Math.floor(startX), Math.floor(y), Math.ceil(width), Math.ceil(height));
+    });
+
+    context.restore();
+  }
+
+  /**
+   * Render ghost occurrences for milestone elements
+   */
+  private renderGhostMilestones(
+    context: CanvasRenderingContext2D,
+    ghostOccurrences: Array<{ start: number; end?: number }>,
+    rowIndex: number,
+    timeMatrix: TimeMatrix,
+    color: string,
+  ): void {
+    const y = rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+
+    context.save();
+    context.globalAlpha = 0.75; // Ghost opacity
+    context.fillStyle = color;
+
+    ghostOccurrences.forEach((ghost) => {
+      const ghostX = timeMatrix.transformPoint(ghost.start);
+
+      // Skip if completely outside visible area
+      if (
+        ghostX < -MILESTONE_SIZE ||
+        ghostX > context.canvas.width / this.pixelRatio + MILESTONE_SIZE
+      ) {
+        return;
+      }
+
+      // Draw ghost milestone diamond
+      context.beginPath();
+      context.moveTo(ghostX, y - MILESTONE_SIZE / 2);
+      context.lineTo(ghostX + MILESTONE_SIZE / 2, y);
+      context.lineTo(ghostX, y + MILESTONE_SIZE / 2);
+      context.lineTo(ghostX - MILESTONE_SIZE / 2, y);
+      context.closePath();
+      context.fill();
+    });
+
+    context.restore();
   }
 }

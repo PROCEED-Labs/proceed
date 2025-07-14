@@ -128,10 +128,10 @@ function getOnTokenEndedHandler(engine, instance) {
  */
 function getOnScriptTaskErrorHandler(engine, instance) {
   return (execution) => {
-    // engine._log.info({
-    //   msg: `Technical Error in Script Task with id ${execution.flowElementId} on token ${execution.tokenId}. InstanceId = ${instance.id} `,
-    //   instanceId: instance.id,
-    // });
+    engine._log.info({
+      msg: `${execution.errorMessage} in Script Task with id ${execution.flowElementId} on token ${execution.tokenId}. InstanceId = ${instance.id} `,
+      instanceId: instance.id,
+    });
   };
 }
 

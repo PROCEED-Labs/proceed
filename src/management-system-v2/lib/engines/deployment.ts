@@ -1,4 +1,4 @@
-import 'server-only';
+'use server';
 
 import {
   getElementMachineMapping,
@@ -13,7 +13,7 @@ import {
 import { Engine } from './machines';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
-import { engineRequest } from './endpoints';
+import { engineRequest } from './endpoints/index';
 import { asyncForEach } from '../helpers/javascriptHelpers';
 import { UserFacingError } from '../user-error';
 
@@ -302,13 +302,16 @@ export type DeployedProcessInfo = {
   instances: InstanceInfo[];
 };
 
-export async function getDeployments(engines: Engine[]) {
+export async function getDeployments(engines: Engine[], entries?: string) {
   const deploymentsresponse = await Promise.allSettled(
     engines.map(async (engine) =>
       engineRequest({
         method: 'get',
         endpoint: '/process/',
         engine,
+        queryParams: {
+          entries,
+        },
       }),
     ),
   );

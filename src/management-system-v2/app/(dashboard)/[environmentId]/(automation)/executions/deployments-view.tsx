@@ -1,7 +1,7 @@
 'use client';
 
 import { App, Button } from 'antd';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import DeploymentsModal from './deployments-modal';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
@@ -17,6 +17,7 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import { SpaceEngine } from '@/lib/engines/machines';
 import { userError } from '@/lib/user-error';
 import { removeDeployment as serverRemoveDeployment } from '@/lib/engines/server-actions';
+import { useQueryClient } from '@tanstack/react-query';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -40,6 +41,7 @@ const DeploymentsView = ({
   const app = App.useApp();
   const space = useEnvironment();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: deployedProcesses ?? [],
@@ -69,13 +71,17 @@ const DeploymentsView = ({
 
           if (!latestVersion) throw userError('Process has no versions').error;
 
-          return await serverDeployProcess(
+          const res = await serverDeployProcess(
             process.id,
             latestVersion.id,
             space.spaceId,
             'dynamic',
             forceEngine,
           );
+          queryClient.removeQueries({
+            queryKey: ['processDeployments', space.spaceId, process.id],
+          });
+          return res;
         },
         onSuccess: () => {
           app.message.success('Process deployed successfully');
@@ -96,7 +102,17 @@ const DeploymentsView = ({
     );
   }
 
-  const loading = checkingProcessVersion || removingDeployment;
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  useEffect(() => {
+    setInitialLoading(false);
+  }, []);
+
+  const loading = initialLoading || checkingProcessVersion || removingDeployment;
+
+  const tableProps: { loading: boolean; pagination?: false } = { loading };
+
+  if (initialLoading) tableProps.pagination = false;
 
   return (
     <div>
@@ -106,6 +122,7 @@ const DeploymentsView = ({
           onClick={() => {
             setModalIsOpen(true);
           }}
+          loading={initialLoading}
         >
           Deploy Process
         </Button>
@@ -121,7 +138,7 @@ const DeploymentsView = ({
 
       <DeploymentsList
         processes={filteredData}
-        tableProps={{ loading }}
+        tableProps={tableProps}
         removeDeployment={removeDeployment}
       />
 

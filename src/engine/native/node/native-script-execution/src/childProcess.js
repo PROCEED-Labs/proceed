@@ -226,9 +226,17 @@ context
   })
   .catch((err) => {
     let result = err;
-    try {
-      result = JSON.parse(err);
-    } catch (_) {}
+    if (typeof err === 'string') {
+      try {
+        result = JSON.parse(err);
+      } catch (_) {}
+    } else if (err instanceof Error) {
+      result = {
+        errorClass: '_javascript_error',
+        name: err.name,
+        message: err.message,
+      };
+    }
 
     console.error(result);
 

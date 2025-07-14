@@ -178,6 +178,8 @@ declare const _exports: {
   }>;
   getProcessDocumentation(bpmn: string | object): Promise<string>;
   getProcessDocumentationByObject(processObject: object): string;
+  getVariablesFromElement(element: object): getters.Variable[];
+  getVariablesFromElementById(bpmn: string | object, elementId: string): getters.Variable[];
   getStartFormFileNameMapping(bpmn: string | object): Promise<{
     [processId: string]: string;
   }>;

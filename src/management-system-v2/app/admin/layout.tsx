@@ -30,12 +30,6 @@ let adminViews = [
     label: <Link href="/admin/systemadmins">Manage admins</Link>,
     icon: <RiAdminFill />,
   },
-
-  {
-    key: 'saved-engines',
-    label: <Link href="/admin/saved-engines">Saved Engines</Link>,
-    icon: <AiOutlineDatabase />,
-  },
   {
     key: 'engines',
     label: <Link href="/admin/engines">Engines</Link>,

@@ -27,7 +27,11 @@
     "/configuration/api/config": {},
     "/logging/api/log": {},
     "/": {},
-    "/process/": {},
+    "/process/": {
+      "queryParams": {
+        "entries": true
+      }
+    },
     "/process/:definitionId": {},
     "/process/:definitionId/versions": {},
     "/process/:definitionId/versions/:version": {},

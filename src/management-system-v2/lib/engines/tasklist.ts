@@ -1,8 +1,8 @@
-import 'server-only';
+'use server';
 
 import { Engine } from './machines';
-import { engineRequest } from './endpoints';
-import { version } from 'os';
+import { engineRequest } from './endpoints/index';
+import { inlineUserTaskData } from '@proceed/user-task-helper';
 
 export type TaskListEntry = {
   id: string;
@@ -74,7 +74,7 @@ export async function getStartFormFromMachine(
   versionId: string,
   engine: Engine,
 ) {
-  const html = await engineRequest({
+  let html = await engineRequest({
     method: 'get',
     endpoint: '/process/:definitionId/versions/:version/start-form',
     engine,
@@ -83,6 +83,11 @@ export async function getStartFormFromMachine(
       version: versionId,
     },
   });
+
+  // initialize the placeholders in the form with empty strings
+  // TODO: use the information from the variable data in the bpmn to initialize the actual initial
+  // values set by the process designer
+  if (html) html = inlineUserTaskData(html, '', '', {}, []);
 
   return html as string;
 }

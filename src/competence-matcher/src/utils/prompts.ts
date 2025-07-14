@@ -11,7 +11,7 @@ const SEMANTIC_SPLITTER_INTRUCT: Message = {
     Preserve the original ordering of words within each group — but groups themselves need not follow the original sequence.
     Separate each group only by the delimiter
     ${splittingSymbol}
-    (i.e. exactly as shown, on a line by themselves).
+    (i.e. exactly as shown, on a line by themselves, no additional whitespaces, just '${splittingSymbol}').
     If the entire input is already one coherent semantic unit, return it verbatim without any delimiter.
     Grouping need do not be adjacent - just semantically related (i.e. two related text parts might be separated by other text parts).
     If the input is empty, return an empty string.
@@ -134,7 +134,7 @@ const MATCH_REASON_EXAMPLES: Message[] = [
   {
     role: 'assistant',
     content: `
-        The task and competence match very well because the task requires operating CNC milling machines, which is exactly what the competence is about.
+        The statements match very well because the task requires operating CNC milling machines, which is exactly what the competence is about.
     `,
   },
   {
@@ -148,7 +148,7 @@ const MATCH_REASON_EXAMPLES: Message[] = [
   {
     role: 'assistant',
     content: `
-        The task and competence have a moderate match because while assembling circuit boards requires some knowledge of electronics, it does not specifically require advanced soldering skills. 
+        The the statements have a moderate match because while assembling circuit boards requires some knowledge of electronics, it does not specifically require advanced soldering skills. 
     `,
   },
   {
@@ -162,7 +162,7 @@ const MATCH_REASON_EXAMPLES: Message[] = [
   {
     role: 'assistant',
     content: `
-        The task and competence have a low match because preparing raw materials is a basic task that does not require advanced inventory management or supply chain logistics skills.
+        The statements have a low match because preparing raw materials is a basic task that does not require advanced inventory management or supply chain logistics skills.
     `,
   },
 ];
@@ -172,7 +172,6 @@ export const MATCH_REASON: Message[] = [MATCH_REASON_INTRUCT, ...MATCH_REASON_EX
 /**
  * -------------------------------------------------------------
  */
-
 // """"""""""
 // The warehouse must maintain ambient temperatures between 15°C and 25°C to protect sensitive goods. Humidity levels should not exceed 60% to prevent corrosion and mold growth. Inventory audits are scheduled weekly to ensure accuracy and compliance with safety standards.
 // """"""""""

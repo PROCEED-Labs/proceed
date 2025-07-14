@@ -2,25 +2,26 @@ import { ollama } from '../utils/ollama';
 import { config } from '../config';
 import { MATCH_REASON as intructPrompt } from '../utils/prompts';
 import type { Message } from 'ollama';
+import { Match } from '../utils/types';
 
-const { ollamaReasonModel } = config;
+const { reasonModel } = config;
 
-export async function addReason(matches: Match[], targetText: string): Promise<Match[]> {
+export async function addReason<T extends Match>(matches: T[], targetText: string): Promise<T[]> {
   if (matches.length === 0) {
     return matches; // No matches to reason about
   }
-  const reasonMatches: Match[] = await Promise.all(
+  const reasonMatches: T[] = await Promise.all(
     matches.map(async (match) => {
       const messages: Message[] = [
         ...intructPrompt,
         {
           role: 'user',
-          content: `Task: ${targetText}\nCompetence: ${match.text}\nSimilarity Score: ${match.distance.toFixed(2)}`,
+          content: `Task: ${targetText}\nCompetence: ${match.text}\nSimilarity Score: ${match.distance}`,
         },
       ];
       try {
         const response = await ollama.chat({
-          model: ollamaReasonModel,
+          model: reasonModel,
           messages: messages,
         });
 

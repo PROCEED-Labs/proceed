@@ -6,7 +6,11 @@ import { config } from './config';
 import { dbHeader } from './middleware/db-locator';
 import { requestLogger } from './middleware/logging';
 import Embedding from './tasks/embedding';
-import { ensureAllModelsAreAvailable } from './utils/ollama';
+import { ensureAllOllamaModelsAreAvailable } from './utils/ollama';
+import { splitSemantically } from './tasks/semantic-split';
+import { createWorker } from './utils/worker';
+import { ensureAllHuggingfaceModelsAreAvailable } from './utils/huggingface';
+import { EmbeddingTask } from './utils/types';
 
 const { port: PORT } = config;
 
@@ -25,10 +29,58 @@ declare module 'express-serve-static-core' {
 async function main() {
   const app = express();
 
-  // Ensure embedding model is loaded
-  Embedding.getInstance();
   // Ensure all required models are available
-  await ensureAllModelsAreAvailable();
+  // Hugging Face models
+  await ensureAllHuggingfaceModelsAreAvailable();
+  // Ollama models
+  await ensureAllOllamaModelsAreAvailable();
+
+  const tasks = [
+    {
+      listId: 'test-list',
+      resourceId: 'test-resource',
+      competenceId: 'test-competence',
+      text: 'This competence covers the principles and best practices of designing scalable software systems. It includes high-level architecture, component interaction, and trade-off analysis. Practitioners will need to balance performance, reliability, and maintainability when making design decisions.',
+      type: 'description',
+    },
+    {
+      listId: 'test-list',
+      resourceId: 'test-resource',
+      competenceId: 'test-competence',
+      text: 'This competence focuses on building and maintaining RESTful and GraphQL APIs. It covers endpoint design, versioning strategies, and error handling. Learners will gain hands-on experience with request validation, authentication, and performance tuning.',
+      type: 'description',
+    },
+    {
+      listId: 'test-list',
+      resourceId: 'test-resource',
+      competenceId: 'test-competence',
+      text: 'This competence entails designing effective database schemas to represent business domains. It involves normalization, denormalization, and indexing strategies for optimal query performance. Real-world scenarios will illustrate when to choose relational versus NoSQL approaches.',
+      type: 'description',
+    },
+    {
+      listId: 'test-list',
+      resourceId: 'test-resource',
+      competenceId: 'test-competence',
+      text: 'This competence covers fundamental security principles for web applications. Topics include authentication, authorization, encryption, and secure configuration management. Practical exercises demonstrate common vulnerabilities and how to mitigate them effectively.',
+      type: 'description',
+    },
+    {
+      listId: 'test-list',
+      resourceId: 'test-resource',
+      competenceId: 'test-competence',
+      text: "This person can not swim at all. Please don't let them close water at all.",
+      type: 'description',
+    },
+  ] as EmbeddingTask[];
+
+  // const testworker = createWorker('test');
+  // testworker.on('message', (message) => {
+  //   console.log(message);
+  // });
+  // testworker.postMessage(tasks);
+
+  // const result = await splitSemantically(tasks);
+  // console.log(result);
 
   // Parse JSON
   app.use(express.json());
@@ -55,6 +107,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Error starting the server:', error);
+  console.error('Server shutdown due to error:', error);
   process.exit(1);
 });

@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import * as path from 'node:path';
 import * as sqliteVec from 'sqlite-vec';
 import { v4 as uuid } from 'uuid';
+import { CompetenceDBOutput, VectorDBOptions } from '../utils/types';
 
 class VectorDataBase {
   private db: DatabaseSync;
@@ -226,13 +227,14 @@ class VectorDataBase {
     distance: number;
     reason?: string; // optional reason for the match
   }): void {
+    console.log(opts);
     const id = uuid();
     this.db
       .prepare(
         `
     INSERT INTO match_results
       (id, job_id, task_id, competence_id, text, type, distance, reason)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
       )
       .run(
@@ -257,6 +259,7 @@ class VectorDataBase {
     text: string;
     type: string;
     distance: number;
+    reason?: string;
   }> {
     return this.db
       .prepare(
@@ -716,7 +719,6 @@ class VectorDataBase {
       throw new Error(`Embedding must have length ${this.embeddingDim}`);
     }
     const cid = this.getCompetenceCidByCompetenceId(listId, resourceId, competenceId);
-    // console.log(`Upserting embedding for competence ${competenceId} (${cid}) with text "${text}"`);
 
     const cidInt = `${Math.floor(cid)}`; // This + the cast is a workaround, sqlite-vec or sqlite read the cid as a float even though it is an integer. (Could be the lib or the fact that it is a virtual table, not sure)
 
@@ -802,7 +804,7 @@ class VectorDataBase {
     if (whereClauses.length > 0) {
       sql += ` WHERE ` + whereClauses.join(' AND ');
     }
-    sql += ` GROUP BY c.competence_id, ce.type`;
+    // sql += ` GROUP BY c.competence_id, ce.type`;
     sql += ` ORDER BY distance ASC`;
 
     if (k) {
@@ -836,6 +838,13 @@ class VectorDataBase {
         distance: row.distance / maxDistance,
       }));
     }
+
+    // Since similariy is now normalised to [0, 1],
+    // we need to adapt it, as it should be somewhat interpretable as a probability
+    result = result.map((row) => ({
+      ...row,
+      distance: 1 - row.distance, // Convert distance to similarity
+    }));
 
     return result;
   }

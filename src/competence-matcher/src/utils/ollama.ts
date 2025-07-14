@@ -1,7 +1,7 @@
 import { Ollama } from 'ollama';
 import { config } from '../config';
 
-const { ollamaPath, ollamaSplittingModel, ollamaReasonModel } = config;
+const { ollamaPath, splittingModel, reasonModel } = config;
 
 export const ollama = new Ollama({
   host: ollamaPath,
@@ -16,8 +16,8 @@ export const ollama = new Ollama({
  * If the model cannot be downloaded or is not available, an error will be thrown.
  * (Ensures all needed models are actually available)
  */
-export const ensureAllModelsAreAvailable = async () => {
-  const models = [ollamaSplittingModel, ollamaReasonModel];
+export async function ensureAllOllamaModelsAreAvailable() {
+  const models = [splittingModel, reasonModel];
 
   const availableModels = (await ollama.list()).models.map((model) => model.model);
 
@@ -39,4 +39,4 @@ export const ensureAllModelsAreAvailable = async () => {
   }
 
   console.log('All required models are available in ollama.');
-};
+}

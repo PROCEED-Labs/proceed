@@ -2,6 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import { PATHS } from '../server';
 import { getDB } from '../utils/db';
 import { createWorker } from '../utils/worker';
+import workerManager from '../worker/worker-manager';
+import {
+  CompetenceInput,
+  GroupedMatchResults,
+  MatchingJob,
+  MatchingTask,
+  ResourceListInput,
+} from '../utils/types';
 
 export function matchCompetenceList(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -106,9 +114,7 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
         }),
       };
 
-      const worker = createWorker('matcher');
-
-      worker.postMessage(job);
+      workerManager.enqueue(job, 'matcher');
 
       // Respond with jobId in location header
       res
@@ -173,34 +179,42 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
   // where matches are sorted by distance ascending
   // and competences are sorted by avgDistance ascending
   const groupedResults: GroupedMatchResults = results.reduce((acc, result) => {
-    const { taskId, competenceId, text, type, distance } = result as {
+    const { taskId, competenceId, text, type, distance, reason } = result as {
       taskId: string;
       competenceId: string;
       text: string;
       type: 'name' | 'description' | 'proficiencyLevel';
       distance: number;
+      reason?: string;
     };
 
+    // Find or create task in accumulator
     let task = acc.find((t) => t.taskId === taskId);
     if (!task) {
       task = { taskId, competences: [] };
       acc.push(task);
     }
 
+    // Find or create competence in task
     let competence = task.competences.find((c) => c.competenceId === competenceId);
     if (!competence) {
-      competence = { competenceId, matchings: [], avgsimilarity: 0 };
+      competence = { competenceId, matchings: [], avgMatchProbability: 0 };
       task.competences.push(competence);
     }
 
-    competence.matchings.push({ text, type, similarity: distance });
-    competence.matchings.sort((a, b) => a.similarity - b.similarity);
+    // Add match to competence
+    competence.matchings.push({ text, type, matchProbability: distance, reason });
 
-    competence.avgsimilarity =
-      competence.matchings.reduce((sum, match) => sum + match.similarity, 0) /
+    // Sort matches by matchProbability (distance) in descending order
+    competence.matchings.sort((a, b) => b.matchProbability - a.matchProbability);
+
+    // Calculate average match probability for competence
+    competence.avgMatchProbability =
+      competence.matchings.reduce((sum, match) => sum + match.matchProbability, 0) /
       competence.matchings.length;
 
-    task.competences.sort((a, b) => a.avgsimilarity - b.avgsimilarity);
+    // Sort competences by avgMatchProbability in descending order
+    task.competences.sort((a, b) => b.avgMatchProbability - a.avgMatchProbability);
 
     return acc;
   }, [] as GroupedMatchResults);

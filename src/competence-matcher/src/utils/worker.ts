@@ -1,8 +1,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { Worker } from 'worker_threads';
-import { parentPort } from 'worker_threads';
+import { Worker, parentPort } from 'worker_threads';
 import VectorDataBase from '../db/db';
+import { getDB } from './db';
+import { config } from '../config';
+
+const { maxJobTime } = config;
 
 export function createWorker(filename: string): Worker {
   const tsPath = path.resolve(__dirname, `../worker/${filename}.ts`);
@@ -17,55 +20,60 @@ export function createWorker(filename: string): Worker {
 
   const worker = new Worker(workerFile, { execArgv });
 
-  worker.on('error', (err) => {
-    console.error('Embedding worker crashed:', err);
-  });
-  worker.on('exit', (code) => {
-    if (code !== 0) {
-      console.error(`Worker exited with code ${code}`);
-    }
-  });
-  worker.on('message', (message) => {
-    switch (message.type) {
-      case 'status':
-        console.log(`Worker for job ${message.jobId} status:`, message.status);
-        break;
-      case 'error':
-        console.error(`Worker for job ${message.jobId} error:`, message.error);
-        break;
-    }
-  });
-
   return worker;
 }
 
-export async function workerWrapper(db: VectorDataBase, jobId: string, func: () => Promise<void>) {
+export async function withJobUpdates<T>(
+  job: { jobId: string; dbName: string },
+  cb: (db: VectorDataBase, payload: T) => Promise<void>,
+  options?: {
+    onStart?: () => void;
+    onDone?: () => void;
+    onError?: (error: Error) => void;
+  },
+) {
+  const db = getDB(job.dbName);
+  let exitCode = 0; // success by default
+  let maxTimeCheck = setTimeout(() => {
+    // if not completed by then, timeout
+    process.exit(2);
+  }, maxJobTime);
   try {
-    // Mark job as running
-    db.updateJobStatus(jobId, 'running');
-    parentPort!.postMessage({ type: 'status', status: 'running', jobId });
+    if (options && options.onStart) {
+      options.onStart();
+    } else {
+      db.updateJobStatus(job.jobId, 'running');
+      parentPort!.postMessage({ type: 'status', jobId: job.jobId, status: 'running' });
+    }
 
-    await func();
+    await cb(db, job as any as T);
 
-    // Mark job completed
-    db.updateJobStatus(jobId, 'completed');
-    // Notify parent (not really necessary)
-    parentPort!.postMessage({ type: 'status', status: 'completed', jobId });
+    if (options && options.onDone) {
+      options.onDone();
+    } else {
+      db.updateJobStatus(job.jobId, 'completed');
+      parentPort!.postMessage({ type: 'status', jobId: job.jobId, status: 'completed' });
+    }
   } catch (err) {
-    // Notify parent about error
-    !parentPort?.postMessage({
-      jobId,
-      status: 'failed',
-      error: err instanceof Error ? err.message : 'Unknown error',
-    });
-    // On any error: mark job as failed
-    try {
-      db.updateJobStatus(jobId, 'failed');
-    } catch {}
+    if (options && options.onError) {
+      options.onError(err as Error);
+    } else {
+      exitCode = 1; // indicate failure
+      parentPort!.postMessage({
+        type: 'error',
+        jobId: job.jobId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      db.updateJobStatus(job.jobId, 'failed');
+    }
   } finally {
-    // Clean up: close DB and exit
+    clearTimeout(maxTimeCheck);
     db.close();
     parentPort!.close();
-    process.exit(0);
+    process.exit(exitCode);
   }
+}
+
+export function log(...args: any[]) {
+  parentPort?.postMessage({ type: 'log', message: args.map(String).join(' ') });
 }

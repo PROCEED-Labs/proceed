@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { PATHS } from '../server';
 import { getDB } from '../utils/db';
 import { createWorker } from '../utils/worker';
+import workerManager from '../worker/worker-manager';
+import { splitSemantically } from '../tasks/semantic-split';
+import { CompetenceInput, EmbeddingJob, EmbeddingTask, ResourceInput } from '../utils/types';
 
 export function getResourceLists(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -120,19 +123,37 @@ export function createResourceList(req: Request, res: Response, next: NextFuncti
         };
       });
     })
-    .flat();
+    .flat() as EmbeddingTask[];
 
-  const job: EmbeddingJob = {
-    jobId: jobId!,
-    dbName: req.dbName!,
-    // @ts-ignore (Checked above)
-    tasks: descriptionEmbeddingInput,
-  };
-
-  const worker = createWorker('embedder');
-
-  // Send the job
-  worker.postMessage(job);
+  // This is a workaround to avoid the worker crashing silently
+  // Preferably the splitting should be done in the worker
+  // For now it is just done asynchronously here
+  splitSemantically(descriptionEmbeddingInput)
+    .then((tasks) => {
+      // console.log(tasks);
+      const job: EmbeddingJob = {
+        jobId: jobId!,
+        dbName: req.dbName!,
+        tasks,
+      };
+      workerManager.enqueue(job, 'embedder');
+    })
+    .catch((err) => {
+      console.error('Error splitting semantically:', err);
+      // Do embedding without splitting in case of error
+      const job: EmbeddingJob = {
+        jobId: jobId!,
+        dbName: req.dbName!,
+        tasks: descriptionEmbeddingInput,
+      };
+      workerManager.enqueue(job, 'embedder');
+    });
+  // const job: EmbeddingJob = {
+  //   jobId: jobId!,
+  //   dbName: req.dbName!,
+  //   tasks: descriptionEmbeddingInput,
+  // };
+  // workerManager.enqueue(job, 'embedder');
 
   // Respond with jobid in location header
   res
@@ -158,7 +179,7 @@ export function getJobStatus(req: Request, res: Response) {
         res
           .status(201)
           .setHeader('Location', `${PATHS.resource}/${job.referenceId}`)
-          .json({ jobId: job.jobId, status: job.status, id: job.referenceId });
+          .json({ jobId: job.jobId, status: job.status, competenceListId: job.referenceId });
         return;
       case 'failed':
         res.status(500).json({ jobId: job.jobId, status: job.status });

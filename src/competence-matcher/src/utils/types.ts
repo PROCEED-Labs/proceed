@@ -1,4 +1,6 @@
-type Competence = {
+import { PretrainedModelOptions } from '@huggingface/transformers';
+
+export type Competence = {
   listId: string; // UUIDString
   resourceId: string; // UUIDString
   competenceId: string; // UUIDString
@@ -11,7 +13,7 @@ type Competence = {
   lastUsages?: string[]; // ISO date strings, optional
 };
 
-type CompetenceInput = {
+export type CompetenceInput = {
   competenceId?: string;
   name?: string;
   description?: string;
@@ -22,14 +24,14 @@ type CompetenceInput = {
   lastUsages?: string[];
 };
 
-type ResourceInput = {
+export type ResourceInput = {
   resourceId?: string;
   competencies: CompetenceInput[];
 };
 
-type ResourceListInput = ResourceInput[];
+export type ResourceListInput = ResourceInput[];
 
-type MatchingTask = {
+export type MatchingTask = {
   taskId: string; // UUIDString
   name?: string; // optional
   description?: string; // optional but recommended to have content
@@ -37,7 +39,7 @@ type MatchingTask = {
   requiredCompetencies?: string[] | CompetenceInput[]; // either array of competenceIds or array of CompetenceInput
 };
 
-type Match = {
+export type Match = {
   competenceId: string;
   text: string;
   type: string;
@@ -45,12 +47,12 @@ type Match = {
   reason?: string;
 };
 
-interface VectorDBOptions {
+export interface VectorDBOptions {
   filePath?: string; // If undefined or ":memory:", use in-memory; else path to file - Note: memory will not work with workers!!
   embeddingDim: number;
 }
 
-type CompetenceDBOutput = {
+export type CompetenceDBOutput = {
   competence_id: string;
   competence_name: string | null;
   competence_description: string | null;
@@ -61,7 +63,7 @@ type CompetenceDBOutput = {
   last_usages: string | null; // JSON string
 };
 
-type EmbeddingTask = {
+export type EmbeddingTask = {
   listId: string; // UUIDString
   resourceId: string; // UUIDString
   competenceId: string; // UUIDString
@@ -69,30 +71,44 @@ type EmbeddingTask = {
   type: 'name' | 'description' | 'proficiencyLevel'; // Type of text
 };
 
-interface EmbeddingJob {
+export interface Job {
   jobId: string;
   dbName: string;
+}
+
+export interface EmbeddingJob extends Job {
   tasks: EmbeddingTask[];
 }
 
-interface MatchingJob {
-  jobId: string;
-  dbName: string;
+export interface MatchingJob extends Job {
   listId?: string; // Which List to match against
   resourceId?: string; // Optional: If matching against a single resource
   tasks: MatchingTask[]; // Tasks to match
 }
 
-type GroupedMatchResults = {
+export type GroupedMatchResults = {
   taskId: string;
   competences: {
     competenceId: string;
     matchings: {
       text: string;
       type: 'name' | 'description' | 'proficiencyLevel';
-      similarity: number;
+      matchProbability: number;
       reason?: string;
     }[];
-    avgsimilarity: number;
+    avgMatchProbability: number;
   }[];
 }[];
+
+export type workerTypes = 'embedder' | 'matcher';
+
+export interface WorkerQueue {
+  job: any;
+  workerScript: workerTypes;
+}
+
+export interface TransformerPipelineOptions {
+  task: string;
+  model: string;
+  options?: PretrainedModelOptions;
+}

@@ -1,30 +1,24 @@
 import { parentPort } from 'worker_threads';
 import Embedding from '../tasks/embedding';
-import { getDB } from '../utils/db';
 import { splitSemantically } from '../tasks/semantic-split';
-import { workerWrapper } from '../utils/worker';
+import { withJobUpdates } from '../utils/worker';
+import { config } from '../config';
+import { EmbeddingJob } from '../utils/types';
 
 parentPort!.once('message', async (job: EmbeddingJob) => {
-  const { jobId, dbName, tasks } = job;
+  (global as any).CURRENT_JOB = job.jobId;
 
-  // Open the DB in this thread
-  // Note: This is another DB-Connector instance, not the one used by the main thread
-  // But it refers to the same database file
-  const db = getDB(dbName);
-
-  workerWrapper(db, jobId, async () => {
+  await withJobUpdates<EmbeddingJob>(job, async (db, { tasks, jobId }) => {
     let work = tasks;
-    try {
-      work = await splitSemantically(tasks);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      parentPort!.postMessage({ type: 'error', error: errorMessage });
-    }
+    // TODO: This appears to cause the worker to crash silently
+    // Split tasks semantically
+    // work = await splitSemantically(tasks);
 
     // For each task: embed & upsert
     for (const { listId, resourceId, competenceId, text, type } of work) {
       const [vector] = await Embedding.embed(text);
       // console.log(`Embedded text for job ${jobId}:`, text, '->', vector);
+
       db.upsertEmbedding({ listId, resourceId, competenceId, text, type, embedding: vector });
     }
   });

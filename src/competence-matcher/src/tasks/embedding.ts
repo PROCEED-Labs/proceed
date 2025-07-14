@@ -1,96 +1,48 @@
 import {
-  pipeline,
-  env as huggingfaceEnv,
   PipelineType,
-  ProgressCallback,
   FeatureExtractionPipeline,
   FeatureExtractionPipelineOptions,
-  PretrainedModelOptions,
 } from '@huggingface/transformers';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { config } from '../config';
+import { TransformerPipeline } from '../utils/model';
+import { TransformerPipelineOptions } from '../utils/types';
 
-const { embeddingModel, embeddingModelCache, embeddingDim, useGPU } = config;
-
-class Embedding {
-  private static task: PipelineType = 'feature-extraction';
-  private static model = embeddingModel;
-  private static instance: FeatureExtractionPipeline | null = null;
-
-  /**
-   * Return the singleton pipeline instance, loading if needed.
-   * @param progressCallback Optional progress callback for model loading.
-   */
-  public static async getInstance(
-    progressCallback: ProgressCallback | null = (progressInfo) => {
-      // console.log(progressInfo);
-      if (progressInfo.status === 'ready') {
-        console.log('Embedding model loaded successfully.');
-      }
-    },
-  ) {
-    if (Embedding.instance === null) {
-      Embedding.configureEnv();
-
-      const opts: PretrainedModelOptions = {
-        use_external_data_format: true,
-        dtype: 'fp32',
-        device: useGPU ? 'cuda' : 'cpu',
-      };
-      //   { progress_callback, config, cache_dir, local_files_only, revision, device, dtype, subfolder, use_external_data_format, model_file_name, session_options, }
-      if (progressCallback) opts.progress_callback = progressCallback;
-      if (progressCallback) {
-        opts.progress_callback = progressCallback;
-      }
-
-      const pipelineResult: any = await pipeline(Embedding.task, Embedding.model, opts);
-      Embedding.instance = pipelineResult as FeatureExtractionPipeline;
-    }
-    return Embedding.instance;
-  }
-
-  private static configureEnv() {
-    if (embeddingModelCache) {
-      const absCache = path.resolve(embeddingModelCache);
-      if (!fs.existsSync(absCache)) {
-        fs.mkdirSync(absCache, { recursive: true });
-      }
-      huggingfaceEnv.cacheDir = absCache;
-    }
-    huggingfaceEnv.allowLocalModels = true;
+export default class Embedding extends TransformerPipeline<FeatureExtractionPipeline> {
+  protected static override getPipelineOptions(): TransformerPipelineOptions {
+    return {
+      task: 'feature-extraction' as PipelineType,
+      model: config.embeddingModel,
+      options: {
+        // progress_callback: (progress) => {
+        //   console.log(`Embedding progress: ${progress}`);
+        // },
+      },
+    };
   }
 
   /**
-   * Compute embeddings (mean-pooled, normalised by default) for one or more texts.
-   * @param texts Single string or array of strings to embed.
-   * @param options Pipeline options, e.g. { pooling: 'mean', normalize: true }.
-   * @returns 2D array [numText][embeddingDim]
+   * Turn text (or array of text) into one or more vectors.
+   * @param texts string or array
+   * @param opts override default mean-pooling/normalize
    */
   public static async embed(
     texts: string | string[],
-    options: FeatureExtractionPipelineOptions = { pooling: 'mean', normalize: true },
+    opts: FeatureExtractionPipelineOptions = { pooling: 'mean', normalize: true },
   ): Promise<number[][]> {
-    const pipe = await Embedding.getInstance();
-    const inputs = Array.isArray(texts) ? texts : [texts];
-    const output = await pipe(inputs, options);
-
-    // The pipeline returns a Tensor or array of Tensors (depending on input)
-    const raw = Array.isArray(output) ? output : [output];
-
-    const embeddings = raw.map((tensor) => {
+    // Pipeline is loaded & cached by TransformerPipeline
+    const pipe = await this.getInstance<FeatureExtractionPipeline>();
+    const input = Array.isArray(texts) ? texts : [texts];
+    // call the pipeline
+    const raw = await pipe(input, opts);
+    const arrs = (Array.isArray(raw) ? raw : [raw]).map((tensor) => {
+      // each tensor.data is a Float32Array
       const data = (tensor as any).data as Float32Array;
-      const arr = Array.from(data);
-      if (arr.length !== embeddingDim) {
-        throw new Error(
-          `Embedding dimension mismatch: expected ${embeddingDim}, got ${arr.length}`,
-        );
+      const vec = Array.from(data);
+      if (vec.length !== config.embeddingDim) {
+        throw new Error(`Expected embeddingDim=${config.embeddingDim}, got ${vec.length}`);
       }
-      return arr;
+      return vec;
     }) as number[][];
-
-    return embeddings;
+    return arrs;
   }
 }
-
-export default Embedding;

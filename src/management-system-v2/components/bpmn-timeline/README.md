@@ -289,15 +289,15 @@ maxLoopIterations: number = 3; // Allow up to 3 loop iterations (initial + 3 rep
 
 **All BPMN gateway types are supported** with gateway-semantic path traversal:
 
-| Gateway Type | BPMN Element | Fork Behavior | Join Behavior | Synchronization |
-|-------------|--------------|---------------|---------------|-----------------|
-| **Exclusive** | `bpmn:ExclusiveGateway` | Alternative paths | Immediate consumption | None |
-| **Parallel** | `bpmn:ParallelGateway` | Simultaneous paths | Wait for ALL tokens | Yes |
-| **Inclusive** | `bpmn:InclusiveGateway` | Conditional paths | Wait for ALL tokens | Yes |
-| **Complex** | `bpmn:ComplexGateway` | Alternative paths* | Immediate consumption | None* |
-| **Event-Based** | `bpmn:EventBasedGateway` | Alternative paths | Immediate consumption | None |
+| Gateway Type    | BPMN Element             | Fork Behavior       | Join Behavior         | Synchronization |
+| --------------- | ------------------------ | ------------------- | --------------------- | --------------- |
+| **Exclusive**   | `bpmn:ExclusiveGateway`  | Alternative paths   | Immediate consumption | None            |
+| **Parallel**    | `bpmn:ParallelGateway`   | Simultaneous paths  | Wait for ALL tokens   | Yes             |
+| **Inclusive**   | `bpmn:InclusiveGateway`  | Conditional paths   | Wait for ALL tokens   | Yes             |
+| **Complex**     | `bpmn:ComplexGateway`    | Alternative paths\* | Immediate consumption | None\*          |
+| **Event-Based** | `bpmn:EventBasedGateway` | Alternative paths   | Immediate consumption | None            |
 
-*Complex gateways: Shows all possible paths since custom conditions can't be evaluated - actual execution could be exclusive, parallel, inclusive, or custom behavior.
+\*Complex gateways: Shows all possible paths since custom conditions can't be evaluated - actual execution could be exclusive, parallel, inclusive, or custom behavior.
 
 **Implementation**: Gateway-semantic path traversal processes gateways during traversal without creating visible instances. Timing and dependencies are applied directly, with synchronization queueing for parallel/inclusive joins only.
 
@@ -310,15 +310,18 @@ Next Element Start Time = Current Time + Gateway Duration + Flow Duration
 ```
 
 **Synchronization Strategy** (Parallel/Inclusive only):
+
 - **Fork**: All outgoing paths start simultaneously
 - **Join**: Queue paths until ALL required sources complete, use latest completion time
 
 **Conservative Analysis Approach**:
+
 - **Inclusive**: Show all conditional paths with synchronization for capacity planning
 - **Complex**: Show all possible paths without synchronization assumptions (unknown conditions)
-- **Exclusive/Event-Based**: Show alternative paths without synchronization  
+- **Exclusive/Event-Based**: Show alternative paths without synchronization
 
 **Example Pattern**:
+
 ```
 TaskA → Gateway → TaskB, TaskC
 Result: Dependencies TaskA→TaskB, TaskA→TaskC (direct, gateway hidden)

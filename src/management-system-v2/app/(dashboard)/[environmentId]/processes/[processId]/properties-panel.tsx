@@ -36,10 +36,7 @@ import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import VariableDefinition from './variable-definition';
 
 // Elements that should not display the planned duration field
-const ELEMENTS_WITHOUT_PLANNED_DURATION = [
-  'bpmn:StartEvent',
-  'bpmn:TextAnnotation',
-];
+const ELEMENTS_WITHOUT_PLANNED_DURATION = ['bpmn:StartEvent', 'bpmn:TextAnnotation'];
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;

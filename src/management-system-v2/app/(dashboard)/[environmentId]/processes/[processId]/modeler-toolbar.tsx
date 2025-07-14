@@ -43,7 +43,6 @@ const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   process: Process;
-  onOpenXmlEditor: () => void;
   canUndo: boolean;
   canRedo: boolean;
   versionName?: string;

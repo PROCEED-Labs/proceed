@@ -8,7 +8,7 @@
 
 import { TimeMatrix } from './TimeMatrix';
 import { TimeAxisRenderer, TimeLevel, TimeAxisGridLine } from './TimeAxisRenderer';
-import { TimeUnit } from './TimeUnits';
+import { TimeUnit, getTimeUnitName } from './TimeUnits';
 import { GanttElementType, GanttDependency } from '../types';
 import {
   ROW_HEIGHT,
@@ -558,6 +558,6 @@ export class CanvasRenderer {
    * @returns The current time unit or undefined if not set
    */
   getCurrentTimeUnit(): string | undefined {
-    return this.currentTimeUnit?.name;
+    return this.currentTimeUnit ? getTimeUnitName(this.currentTimeUnit) : undefined;
   }
 }

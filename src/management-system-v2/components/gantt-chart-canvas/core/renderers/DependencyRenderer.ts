@@ -121,7 +121,9 @@ export class DependencyRenderer {
       // Check if this is a self-loop (dependency from element to itself)
       const isSelfLoop =
         dep.sourceId === dep.targetId ||
-        (fromElement.id === toElement.id && fromElement.instanceNumber && toElement.instanceNumber);
+        (fromElement.id === toElement.id &&
+          !!fromElement.instanceNumber &&
+          !!toElement.instanceNumber);
 
       // Draw the dependency arrow using the dependency's type
       this.drawDependencyArrow(

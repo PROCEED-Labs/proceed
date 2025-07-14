@@ -167,7 +167,7 @@ export class ElementManager {
     // Find earliest start and latest end times
     for (const element of this.elements) {
       if (element.type === 'milestone') {
-        const time = element.date;
+        const time = element.start;
         start = Math.min(start, time);
         end = Math.max(end, time);
       } else if (element.type === 'task' || element.type === 'group') {
@@ -253,7 +253,7 @@ export class ElementManager {
     const [rangeStart, rangeEnd] = timeRange;
 
     if (element.type === 'milestone') {
-      const isVisible = element.date >= rangeStart && element.date <= rangeEnd;
+      const isVisible = element.start >= rangeStart && element.start <= rangeEnd;
       return {
         isVisible,
         isPartiallyVisible: false,
@@ -336,7 +336,7 @@ export class ElementManager {
 
       if (element.type === 'milestone') {
         const milestone = element as GanttMilestone;
-        const screenX = timeMatrix.transformPoint(milestone.date);
+        const screenX = timeMatrix.transformPoint(milestone.start);
         const isVisible = screenX >= -10 && screenX <= viewportWidth + 10;
 
         return {
@@ -417,7 +417,7 @@ export class ElementManager {
     // Check if point is within element bounds
     if (element.type === 'milestone') {
       // For milestones, use a small clickable area (±5px)
-      const milestoneX = timeMatrix.transformPoint(element.date);
+      const milestoneX = timeMatrix.transformPoint(element.start);
       const hitDistance = Math.abs(screenX - milestoneX);
       return hitDistance <= 5 ? element : null;
     } else if (element.type === 'task' || element.type === 'group') {

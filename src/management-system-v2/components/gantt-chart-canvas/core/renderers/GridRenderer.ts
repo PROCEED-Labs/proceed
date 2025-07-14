@@ -6,7 +6,7 @@
  */
 
 import { TimeMatrix } from '../TimeMatrix';
-import { TimeAxisRenderer, TimeAxisGridLine } from '../TimeAxisRenderer';
+import { TimeAxisRenderer, TimeAxisGridLine, TimeLevel } from '../TimeAxisRenderer';
 import { TimeUnit } from '../TimeUnits';
 import {
   GRID_LINE_COLOR,
@@ -54,14 +54,17 @@ export class GridRenderer {
     } else {
       // Generate new grid lines
       const timeAxisRenderer = new TimeAxisRenderer({} as any);
-      gridLines = timeAxisRenderer.generateGridLines(
+      const mappedTimeLevel = timeLevel === 'primary' ? TimeLevel.Level1 : TimeLevel.Level2;
+      const gridResult = timeAxisRenderer.generateGridLines(
         visibleStartTime,
         visibleEndTime,
         timeUnit,
-        timeLevel,
+        mappedTimeLevel,
         (time: number) => timeMatrix.transformPoint(time),
         50,
       );
+      // Combine major and subgrid lines
+      gridLines = [...gridResult.majorGridLines, ...gridResult.subgridLines];
 
       // Cache the result
       this.gridLineCache.set(cacheKey, gridLines);

@@ -589,7 +589,7 @@ Elements:
 Flows:
 - S → G1
 - G1 → T1 (condition: amount > 1000)
-- G1 → T2 (condition: urgent == true)  
+- G1 → T2 (condition: urgent == true)
 - G1 → T3 (condition: vip == true)
 ```
 
@@ -599,7 +599,6 @@ Flows:
 - **Dependencies**: S→T1, S→T2, S→T3
 - **Semantics**: Conservative analysis - shows all possible paths as if all conditions were true
 - **Timing**: All tasks start simultaneously after S (parallel fork behavior)
-
 
 ---
 
@@ -633,7 +632,6 @@ Flows:
 - **Dependencies**: S1→T1, S2→T2, S3→T3, T1→T4, T2→T4, T3→T4, T4→E
 - **Semantics**: T4 waits for ALL three tasks (T1, T2, T3) to complete
 - **Timing**: Conservative analysis assuming all paths are active
-
 
 ---
 

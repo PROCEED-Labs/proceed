@@ -2,8 +2,8 @@
  * Synchronization logic for BPMN path traversal
  */
 
-import type { BPMNFlowElement, BPMNSequenceFlow } from './types';
-import { isGatewayElement } from './element-transformers';
+import type { BPMNFlowElement, BPMNSequenceFlow } from '../types/types';
+import { isGatewayElement } from '../transformers/element-transformers';
 
 export interface SynchronizationRequirement {
   requiredSources: Set<string>;

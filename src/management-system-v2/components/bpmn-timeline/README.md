@@ -849,19 +849,39 @@ const result = transformBPMNToGantt(definitions, timestamp, settings.positioning
 
 ## Implementation Architecture
 
+### File Organization
+
+The component is organized into logical folders for better maintainability and scalability:
+
+- **`core/`** - Core transformation algorithms and orchestration logic
+- **`transformers/`** - Element-specific transformation functions and mode handlers
+- **`types/`** - All TypeScript interface and type definitions
+- **`utils/`** - Utility functions and helper methods
+- **`styles/`** - Component styling and CSS modules
+
 ### Core Components
 
 ```
 components/bpmn-timeline/
-├── index.tsx              # Main component and UI
-├── transform.ts           # Transformation orchestration
-├── transform-helpers.ts   # Validation and utility functions
-├── mode-handlers.ts       # Mode-specific result processing
-├── element-transformers.ts # Element transformation functions
-├── path-traversal.ts      # Path-based traversal algorithm
-├── types.ts              # TypeScript interfaces
-├── utils.ts              # Helper functions
-└── README.md            # This documentation
+├── index.tsx                          # Main component and UI
+├── GanttSettingsModal.tsx             # Settings modal component
+├── gantt-settings-definition.ts       # Settings configuration
+├── README.md                          # This documentation
+├── test-cases.md                      # Comprehensive test cases
+├── core/                              # Core transformation logic
+│   ├── transform.ts                   # Transformation orchestration
+│   ├── transform-helpers.ts           # Validation and utility functions
+│   ├── path-traversal.ts              # Path-based traversal algorithm
+│   └── synchronization.ts             # Gateway synchronization logic
+├── transformers/                      # Element-specific transformers
+│   ├── element-transformers.ts        # Element transformation functions
+│   └── mode-handlers.ts               # Mode-specific result processing
+├── types/                             # TypeScript definitions
+│   └── types.ts                       # All interface definitions
+├── utils/                             # Utilities and helpers
+│   └── utils.ts                       # Helper functions and utilities
+└── styles/                            # Component styling
+    └── BPMNTimeline.module.scss       # CSS modules for styling
 ```
 
 ### Key Implementation Details

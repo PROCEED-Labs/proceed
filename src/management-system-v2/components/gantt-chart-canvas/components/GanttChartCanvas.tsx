@@ -963,6 +963,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
             <div className={styles.taskListHeaderColumns}>
               <div className={styles.infoButtonColumn}></div>
               <div className={styles.taskNameColumn}>Task Name</div>
+              <div className={styles.extraInfoColumn}>Type</div>
               {showInstanceColumn && <div className={styles.instanceColumn}>#</div>}
               {showLoopColumn && (
                 <div
@@ -972,7 +973,6 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   Loop
                 </div>
               )}
-              <div className={styles.extraInfoColumn}>Type</div>
             </div>
             {/* Resize Handle */}
             <div className={styles.resizeHandle} onMouseDown={gantt.handleResizeStart} />
@@ -1090,6 +1090,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                               </span>
                             )}
                         </div>
+                        <div className={styles.extraInfoColumn}>{element.elementType || ''}</div>
                         {showInstanceColumn && (
                           <div className={styles.instanceColumn}>
                             {element.instanceNumber || ''}
@@ -1109,7 +1110,6 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                             {element.isLoopCut ? '✕' : element.isLoop ? '↻' : ''}
                           </div>
                         )}
-                        <div className={styles.extraInfoColumn}>{element.elementType || ''}</div>
                       </div>
                     </div>,
                   );

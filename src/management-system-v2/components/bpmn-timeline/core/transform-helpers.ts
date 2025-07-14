@@ -7,15 +7,19 @@ import type {
   BPMNFlowElement,
   TransformationIssue,
   DefaultDurationInfo,
-} from './types';
-import { isGatewayElement, isExclusiveGateway, isParallelGateway } from './element-transformers';
+} from '../types/types';
+import {
+  isGatewayElement,
+  isExclusiveGateway,
+  isParallelGateway,
+} from '../transformers/element-transformers';
 import {
   isTaskElement,
   isSupportedEventElement,
   isSequenceFlowElement,
   getUnsupportedElementReason,
   detectGatewayMismatches,
-} from './utils';
+} from '../utils/utils';
 import { calculatePathBasedTimings } from './path-traversal';
 
 export interface ProcessValidationResult {

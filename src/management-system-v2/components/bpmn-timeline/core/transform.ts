@@ -12,45 +12,20 @@
  * 5. Filter dependencies based on gateway visibility (renderGateways)
  */
 
-import type { GanttElementType, GanttDependency } from '@/components/gantt-chart-canvas/types';
-import { DependencyType } from '@/components/gantt-chart-canvas/types';
 import type {
   BPMNDefinitions,
   BPMNFlowElement,
-  BPMNTask,
-  BPMNEvent,
-  BPMNSequenceFlow,
-  BPMNGateway,
   TransformationResult,
   TransformationIssue,
   DefaultDurationInfo,
-} from './types';
-import { calculatePathBasedTimings } from './path-traversal';
-import {
-  transformTask,
-  transformEvent,
-  transformSequenceFlow,
-  getFlowType,
-  isGatewayElement,
-} from './element-transformers';
-import {
-  isTaskElement,
-  isSupportedEventElement,
-  isSequenceFlowElement,
-  getUnsupportedElementReason,
-  assignFlowColors,
-  findConnectedComponents,
-  groupAndSortElements,
-  detectGatewayMismatches,
-} from './utils';
+} from '../types/types';
+import { groupAndSortElements } from '../utils/utils';
 import {
   handleEveryOccurrenceMode,
   handleLatestOccurrenceMode,
   handleEarliestOccurrenceMode,
   type ModeHandlerResult,
-} from './mode-handlers';
-
-// ============================================================================
+} from '../transformers/mode-handlers';
 
 // ============================================================================
 // Main Transformation Function

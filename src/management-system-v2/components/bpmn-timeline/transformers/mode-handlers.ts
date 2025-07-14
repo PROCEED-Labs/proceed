@@ -10,8 +10,7 @@ import type {
   BPMNEvent,
   BPMNGateway,
   BPMNSequenceFlow,
-  DefaultDurationInfo,
-} from './types';
+} from '../types/types';
 import {
   transformTask,
   transformEvent,
@@ -24,7 +23,7 @@ import {
   isSupportedEventElement,
   assignFlowColors,
   findConnectedComponents,
-} from './utils';
+} from '../utils/utils';
 
 export interface ModeHandlerResult {
   ganttElements: GanttElementType[];

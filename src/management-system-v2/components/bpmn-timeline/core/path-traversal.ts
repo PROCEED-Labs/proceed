@@ -7,14 +7,9 @@ import type {
   BPMNSequenceFlow,
   ElementTiming,
   DefaultDurationInfo,
-} from './types';
-import {
-  extractDuration,
-  extractGatewayMetadata,
-  isTaskElement,
-  isSupportedEventElement,
-} from './utils';
-import { isGatewayElement, isParallelGateway, isExclusiveGateway } from './element-transformers';
+} from '../types/types';
+import { extractDuration, isTaskElement, isSupportedEventElement } from '../utils/utils';
+import { isGatewayElement } from '../transformers/element-transformers';
 import {
   buildSynchronizationRequirements,
   incomingFlowsCountForGateway,
@@ -23,9 +18,6 @@ import {
   createSyncKey,
   initializeSyncTracking,
   recordSourceArrival,
-  type SynchronizationRequirement,
-  type SyncQueue,
-  type SyncArrival,
 } from './synchronization';
 
 export interface PathElement {
@@ -49,13 +41,6 @@ export interface ProcessGraph {
 }
 
 const MAX_PATHS = 100;
-
-interface EmptyBranch {
-  sourceId: string;
-  targetId: string;
-  gatewayId: string;
-  gatewayType: string;
-}
 
 /**
  * Build process graph from BPMN elements
@@ -204,24 +189,14 @@ function traverseAllPaths(
   let instanceCounter = 0;
 
   /**
-   * Extract the base path (without loop iterations) for loop detection
-   */
-  function getBasePath(pathKey: string): string {
-    // Remove loop iterations from path key to get the base execution path
-    // Example: "main_StartEvent_0_loop_2" -> "main_StartEvent_0"
-    return pathKey.replace(/_loop_\d+/g, '');
-  }
-
-  /**
    * Get or create an element instance for a specific path context with loop detection
    */
   function getOrCreateInstance(
     element: BPMNFlowElement,
     pathKey: string,
     timing: { startTime: number; endTime: number; duration: number },
-    visitedElements: string[],
     pathSpecificVisits: Map<string, number>,
-  ): { pathElement: PathElement; shouldContinue: boolean } {
+  ): PathElement {
     // Check how many times this element has been visited on this specific path
     const visitCount = pathSpecificVisits.get(element.id) || 0;
     const isLoopInstance = visitCount > 0;
@@ -239,8 +214,6 @@ function traverseAllPaths(
     // visitCount > maxLoopIterations: don't create new instance, stop here
     const actualMaxIterations = Math.max(0, maxLoopIterations); // Clamp negative values to 0
     const shouldCreateNewInstance = visitCount <= actualMaxIterations;
-    // Continue traversal as long as we create the instance - we only stop when we refuse to create
-    const shouldContinueTraversal = shouldCreateNewInstance;
 
     if (shouldCreateNewInstance) {
       // Increment global counter for this element to get sequential numbering
@@ -264,7 +237,7 @@ function traverseAllPaths(
 
       pathElements.push(pathElement);
 
-      return { pathElement, shouldContinue: shouldContinueTraversal };
+      return pathElement;
     } else {
       // Loop depth exceeded - this shouldn't happen with our new logic
       // since we check before calling this function
@@ -431,7 +404,7 @@ function traverseAllPaths(
             }
 
             // Create the synchronized element instance
-            const { pathElement } = getOrCreateInstance(
+            const pathElement = getOrCreateInstance(
               element,
               `${templatePath.pathKey}_sync_${syncKey}`,
               {
@@ -439,7 +412,6 @@ function traverseAllPaths(
                 endTime: syncTime + duration,
                 duration,
               },
-              templatePath.visitedElements,
               templatePath.pathSpecificVisits,
             );
 
@@ -540,7 +512,7 @@ function traverseAllPaths(
         const gatewayDuration = extractDuration(element) || 0;
 
         // Create gateway instance (will be filtered out during rendering if renderGateways is false)
-        const { pathElement } = getOrCreateInstance(
+        const pathElement = getOrCreateInstance(
           element,
           pathKey,
           {
@@ -548,7 +520,6 @@ function traverseAllPaths(
             endTime: currentTime + gatewayDuration,
             duration: gatewayDuration,
           },
-          visitedElements,
           pathSpecificVisits,
         );
 
@@ -595,7 +566,7 @@ function traverseAllPaths(
         });
       } else {
         // Non-gateway: Create instance and continue normally
-        const { pathElement, shouldContinue } = getOrCreateInstance(
+        const pathElement = getOrCreateInstance(
           element,
           pathKey,
           {
@@ -603,7 +574,6 @@ function traverseAllPaths(
             endTime: currentTime + duration,
             duration,
           },
-          visitedElements,
           pathSpecificVisits,
         );
 
@@ -665,17 +635,6 @@ function traverseAllPaths(
   }
 
   explorePaths();
-
-  // Debug final path elements to identify duplicates
-  const elementCounts = new Map<string, number>();
-  pathElements.forEach((pe) => {
-    const count = elementCounts.get(pe.elementId) || 0;
-    elementCounts.set(pe.elementId, count + 1);
-  });
-
-  const duplicateElements = Array.from(elementCounts.entries())
-    .filter(([elementId, count]) => count > 1)
-    .map(([elementId, count]) => ({ elementId, count }));
 
   return { pathElements, dependencies, issues };
 }

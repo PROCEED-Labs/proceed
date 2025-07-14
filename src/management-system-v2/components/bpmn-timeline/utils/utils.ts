@@ -2,8 +2,12 @@
  * Utility functions for BPMN timeline transformation
  */
 
-import type { BPMNBaseElement, BPMNTask, BPMNEvent, BPMNGateway } from './types';
-import { isGatewayElement, isExclusiveGateway, isParallelGateway } from './element-transformers';
+import type { BPMNBaseElement, BPMNTask, BPMNEvent, BPMNGateway } from '../types/types';
+import {
+  isGatewayElement,
+  isExclusiveGateway,
+  isParallelGateway,
+} from '../transformers/element-transformers';
 
 // ============================================================================
 // Duration and Time Utilities
@@ -411,65 +415,6 @@ export function groupAndSortElements<T extends { id: string; start: number; elem
 }
 
 // ============================================================================
-// Logging Utilities
-// ============================================================================
-
-/**
- * Format element for logging
- */
-export function formatElementForLog(element: any) {
-  return {
-    id: element.id,
-    type: element.$type,
-    name: element.name,
-    incoming: element.incoming,
-    outgoing: element.outgoing,
-    sourceRef: element.sourceRef,
-    targetRef: element.targetRef,
-  };
-}
-
-/**
- * Format timing for logging
- */
-export function formatTimingForLog(
-  id: string,
-  timing: { startTime: number; endTime: number; duration: number },
-) {
-  return {
-    id,
-    startTime: new Date(timing.startTime).toISOString(),
-    endTime: new Date(timing.endTime).toISOString(),
-    duration: timing.duration,
-  };
-}
-
-/**
- * Format gantt element for logging
- */
-export function formatGanttElementForLog(el: any) {
-  return {
-    id: el.id,
-    name: el.name,
-    type: el.type,
-    start: new Date(el.start || 0).toISOString(),
-    end: el.type === 'task' ? new Date(el.end).toISOString() : 'N/A',
-    elementType: el.elementType,
-  };
-}
-
-/**
- * Format dependency for logging
- */
-export function formatDependencyForLog(dep: { id: string; sourceId: string; targetId: string }) {
-  return {
-    id: dep.id,
-    sourceId: dep.sourceId,
-    targetId: dep.targetId,
-  };
-}
-
-// ============================================================================
 // Gateway Mismatch Detection
 // ============================================================================
 
@@ -635,11 +580,6 @@ export function detectGatewayMismatches(
 
   parallelJoins.forEach((parallelJoin) => {
     const paths = tracePathsToOrigins(parallelJoin, elements);
-    const exclusiveOrigins: Array<{
-      gatewayId: string;
-      gatewayName?: string;
-      pathElements: string[];
-    }> = [];
 
     // Check each path for exclusive gateway origins
     const uniqueExclusiveOrigins = new Map<

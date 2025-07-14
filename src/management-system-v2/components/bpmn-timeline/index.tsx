@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Collapse, Card } from 'antd';
-import { CloseOutlined, WarningOutlined } from '@ant-design/icons';
+import { WarningOutlined } from '@ant-design/icons';
 import { GanttChartCanvas } from '@/components/gantt-chart-canvas';
 import type { GanttElementType, GanttDependency } from '@/components/gantt-chart-canvas/types';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
@@ -18,10 +18,10 @@ import type {
   TransformationError,
   TransformationIssue,
   DefaultDurationInfo,
-} from './types';
-import { transformBPMNToGantt } from './transform';
+} from './types/types';
+import { transformBPMNToGantt } from './core/transform';
 import { GanttSettingsModal } from './GanttSettingsModal';
-import styles from './BPMNTimeline.module.scss';
+import styles from './styles/BPMNTimeline.module.scss';
 
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
@@ -114,7 +114,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         }
 
         // Parse BPMN XML using moddle
-        const { rootElement: definitions, warnings } = await moddle.fromXML(bpmnXml);
+        const { rootElement: definitions } = await moddle.fromXML(bpmnXml);
 
         // Check if component is still mounted
         if (isUnmountingRef.current) {

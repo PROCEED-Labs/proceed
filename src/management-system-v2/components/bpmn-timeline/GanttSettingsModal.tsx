@@ -150,22 +150,3 @@ function populateSettingsGroupFromValues(
     }),
   };
 }
-
-// Helper function to update a setting value within the settings group
-function updateSettingInGroup(group: SettingGroup, key: string, value: any): SettingGroup {
-  return {
-    ...group,
-    children: group.children.map((child) => {
-      if ('children' in child) {
-        // It's a nested group
-        return updateSettingInGroup(child, key, value);
-      } else {
-        // It's a setting
-        if (child.key === key) {
-          return { ...child, value };
-        }
-        return child;
-      }
-    }),
-  };
-}

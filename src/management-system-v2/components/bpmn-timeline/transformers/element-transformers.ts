@@ -7,13 +7,14 @@
 
 import type { GanttElementType, GanttDependency } from '@/components/gantt-chart-canvas/types';
 import { DependencyType } from '@/components/gantt-chart-canvas/types';
-import type { BPMNTask, BPMNEvent, BPMNSequenceFlow, BPMNGateway, BPMNFlowElement } from './types';
-import {
-  getTaskTypeString,
-  getEventTypeString,
-  getGatewayTypeString,
-  extractDuration,
-} from './utils';
+import type {
+  BPMNTask,
+  BPMNEvent,
+  BPMNSequenceFlow,
+  BPMNGateway,
+  BPMNFlowElement,
+} from '../types/types';
+import { getTaskTypeString, getEventTypeString, getGatewayTypeString } from '../utils/utils';
 
 // ============================================================================
 // Element Transformation Functions

@@ -14,7 +14,7 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
     activeEnvironment: { spaceId },
   } = await getCurrentEnvironment(params.environmentId);
 
-  await populateSpaceSettingsGroup(spaceId, settings, ability);
+  await populateSpaceSettingsGroup(spaceId, settings);
 
   return (
     <>

@@ -37,6 +37,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [errors, setErrors] = useState<TransformationError[]>([]);
   const [warnings, setWarnings] = useState<TransformationIssue[]>([]);
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
+  const [hasInclusiveGateways, setHasInclusiveGateways] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [nowTimestamp, setNowTimestamp] = useState<number>(0);
   const [ganttSettings, setGanttSettings] = useState<{
@@ -120,6 +121,13 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         if (isUnmountingRef.current) {
           return;
         }
+
+        // Check for inclusive gateways in the process
+        const bpmnProcess = (definitions as BPMNDefinitions).rootElements?.[0];
+        const hasInclusive = bpmnProcess?.flowElements?.some(
+          (element: any) => element.$type === 'bpmn:InclusiveGateway'
+        ) || false;
+        setHasInclusiveGateways(hasInclusive);
 
         // Use a single timestamp for both transformation and red line marker
         const transformationTimestamp = Date.now();
@@ -323,8 +331,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           </div>
         )}
 
-        {/* Default Duration Information */}
-        {defaultDurations.length > 0 && (
+        {/* Process Information */}
+        {(defaultDurations.length > 0 || hasInclusiveGateways) && (
           <div
             className={`${styles.defaultDurationSection} ${errors.length > 0 || warnings.length > 0 ? styles.afterErrors : ''}`}
           >
@@ -333,27 +341,47 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
               ghost
               items={[
                 {
-                  key: 'defaultDurations',
+                  key: 'processInfo',
                   label: (
                     <div className={styles.defaultDurationLabel}>
-                      <span className={styles.infoIconInline}>ℹ️</span>
-                      Tasks with Default Duration ({defaultDurations.length})
+                      <span className={styles.infoIconInline}>ℹ</span>
+                      Process Information ({(defaultDurations.length > 0 ? 1 : 0) + (hasInclusiveGateways ? 1 : 0)} items)
                     </div>
                   ),
                   children: (
                     <div className={styles.defaultDurationContent}>
-                      <div className={styles.defaultDurationDescription}>
-                        The following tasks did not have explicit durations and received the default
-                        value of 1 hour:
-                      </div>
-                      <ul className={styles.defaultDurationList}>
-                        {defaultDurations.map((item, index) => (
-                          <li key={index}>
-                            <strong>{item.elementName || item.elementId}</strong> (
-                            {item.elementType}): 1 hour
-                          </li>
-                        ))}
-                      </ul>
+                      {hasInclusiveGateways && (
+                        <div className={styles.processInfoSection}>
+                          <div className={styles.processInfoHeader}>
+                            <strong>Inclusive Gateway Behavior</strong>
+                          </div>
+                          <div className={styles.processInfoDescription}>
+                            This process contains inclusive gateways (OR gateways). For timeline visualization, 
+                            all conditional flows are assumed to be taken, showing a conservative "worst-case" 
+                            timeline useful for capacity planning and resource estimation.
+                          </div>
+                        </div>
+                      )}
+                      
+                      {defaultDurations.length > 0 && (
+                        <div className={`${styles.processInfoSection} ${hasInclusiveGateways ? styles.sectionSpacing : ''}`}>
+                          <div className={styles.processInfoHeader}>
+                            <strong>Tasks with Default Duration ({defaultDurations.length})</strong>
+                          </div>
+                          <div className={styles.defaultDurationDescription}>
+                            The following tasks did not have explicit durations and received the default
+                            value of 1 hour:
+                          </div>
+                          <ul className={styles.defaultDurationList}>
+                            {defaultDurations.map((item, index) => (
+                              <li key={index}>
+                                <strong>{item.elementName || item.elementId}</strong> (
+                                {item.elementType}): 1 hour
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   ),
                 },

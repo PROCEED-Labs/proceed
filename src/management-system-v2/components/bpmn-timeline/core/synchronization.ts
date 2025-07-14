@@ -39,10 +39,12 @@ export function buildSynchronizationRequirements(
 ): Map<string, SynchronizationRequirement> {
   const syncReqs = new Map<string, SynchronizationRequirement>();
 
-  // Find all parallel gateways
+  // Find all parallel and inclusive gateways (both use same synchronization logic)
   const parallelGateways = allElements.filter((el) => el.$type === 'bpmn:ParallelGateway');
+  const inclusiveGateways = allElements.filter((el) => el.$type === 'bpmn:InclusiveGateway');
+  const syncGateways = [...parallelGateways, ...inclusiveGateways];
 
-  for (const gateway of parallelGateways) {
+  for (const gateway of syncGateways) {
     const { incomingFlows, outgoingFlows } = getGatewayFlows(gateway, allElements);
 
     // Only create synchronization requirements for JOINS (multiple incoming, one or more outgoing)

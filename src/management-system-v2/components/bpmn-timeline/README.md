@@ -401,6 +401,46 @@ Path Traversal Result:
 - TaskD and TaskE start simultaneously at synchronization point
 ```
 
+#### Inclusive Gateway (OR) Logic
+
+**Timeline Visualization Approach**:
+
+For timeline visualization purposes, inclusive gateways are treated identically to parallel gateways. This design choice provides a conservative analysis showing the maximum possible process duration.
+
+**Reasoning**:
+
+1. **Condition Evaluation Challenge**: BPMN inclusive gateways depend on runtime conditions (e.g., `amount > 1000`, `urgent == true`) that are not available during static process analysis.
+
+2. **Conservative Analysis**: By treating inclusive gateways like parallel gateways, we show the "worst-case scenario" where all conditional flows are taken, providing useful insights for:
+   - **Capacity planning**: Maximum resource requirements
+   - **Timeline estimation**: Longest possible process duration
+   - **Bottleneck identification**: All potential execution paths
+
+3. **Semantic Translation**: 
+   - **Inclusive Fork**: Creates paths for ALL outgoing flows (same as parallel fork)
+   - **Inclusive Join**: Waits for ALL incoming flows (same as parallel join)
+   - **Result**: Conservative timeline showing maximum complexity
+
+**Gateway-Semantic Process**:
+
+```
+Original BPMN:
+TaskA → InclusiveGateway → TaskB (condition: amount > 1000)
+                        → TaskC (condition: urgent == true)
+
+Timeline Visualization:
+Path 1: TaskA → TaskB (showing potential execution)
+Path 2: TaskA → TaskC (showing potential execution)
+Dependencies: TaskA→TaskB, TaskA→TaskC
+Result: Shows timeline if both conditions were true
+```
+
+**Benefits of This Approach**:
+- **Simple implementation**: Reuses proven parallel gateway logic
+- **Conservative estimates**: Never underestimates process complexity
+- **No false assumptions**: Doesn't guess at business rule conditions
+- **Useful for planning**: Shows maximum resource and time requirements
+
 ## Structural Path Interpretation and Validation
 
 ### **Current Approach: Structural Path Analysis**

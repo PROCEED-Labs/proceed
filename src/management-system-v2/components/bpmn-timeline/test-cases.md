@@ -570,6 +570,108 @@ Flows:
 
 ---
 
+## Test Case 17: Inclusive Gateway Fork
+
+**Purpose**: Verify inclusive gateway fork behavior (treated as parallel fork)
+**Gateway Type**: **INCLUSIVE GATEWAY** (OR Fork)
+
+```
+BPMN Structure:
+S → G1(INCLUSIVE) → T1 (condition: amount > 1000)
+         G1       → T2 (condition: urgent == true)
+         G1       → T3 (condition: vip == true)
+
+Elements:
+- StartEvent (S)
+- InclusiveGateway (G1) - Fork type
+- Task (T1, T2, T3)
+
+Flows:
+- S → G1
+- G1 → T1 (condition: amount > 1000)
+- G1 → T2 (condition: urgent == true)  
+- G1 → T3 (condition: vip == true)
+```
+
+**Expected Result**:
+
+- **Elements**: S, T1, T2, T3 (G1 hidden)
+- **Dependencies**: S→T1, S→T2, S→T3
+- **Semantics**: Conservative analysis - shows all possible paths as if all conditions were true
+- **Timing**: All tasks start simultaneously after S (parallel fork behavior)
+
+
+---
+
+## Test Case 18: Inclusive Gateway Join
+
+**Purpose**: Verify inclusive gateway join behavior (treated as parallel join)
+**Gateway Type**: **INCLUSIVE GATEWAY** (OR Join)
+
+```
+BPMN Structure:
+S1 → T1 → G1(INCLUSIVE) → T4 → E
+S2 → T2 → G1
+S3 → T3 → G1
+
+Elements:
+- StartEvent (S1, S2, S3)
+- Task (T1, T2, T3, T4)
+- InclusiveGateway (G1) - Join type
+- EndEvent (E)
+
+Flows:
+- S1 → T1, S2 → T2, S3 → T3
+- T1 → G1, T2 → G1, T3 → G1
+- G1 → T4
+- T4 → E
+```
+
+**Expected Result**:
+
+- **Elements**: S1, S2, S3, T1, T2, T3, T4, E (G1 hidden)
+- **Dependencies**: S1→T1, S2→T2, S3→T3, T1→T4, T2→T4, T3→T4, T4→E
+- **Semantics**: T4 waits for ALL three tasks (T1, T2, T3) to complete
+- **Timing**: Conservative analysis assuming all paths are active
+
+
+---
+
+## Test Case 19: Mixed Inclusive and Parallel Gateways
+
+**Purpose**: Verify inclusive gateways work correctly with other gateway types
+**Gateway Types**: **PARALLEL GATEWAY** + **INCLUSIVE GATEWAY**
+
+```
+BPMN Structure:
+S → G1(PARALLEL) → T1 → G2(INCLUSIVE) → T4 → E1
+    G1           → T2 → G2           → T5 → E2
+    G1           → T3 ──────────────────────→ E3
+
+Elements:
+- StartEvent (S)
+- ParallelGateway (G1) - Fork type
+- Task (T1, T2, T3, T4, T5)
+- InclusiveGateway (G2) - Join + Fork type
+- EndEvent (E1, E2, E3)
+
+Flows:
+- S → G1
+- G1 → T1, G1 → T2, G1 → T3
+- T1 → G2, T2 → G2
+- G2 → T4, G2 → T5
+- T4 → E1, T5 → E2, T3 → E3
+```
+
+**Expected Result**:
+
+- **Elements**: S, T1, T2, T3, T4, T5, E1, E2, E3 (G1, G2 hidden)
+- **Dependencies**: S→T1, S→T2, S→T3, T1→T4, T1→T5, T2→T4, T2→T5, T4→E1, T5→E2, T3→E3
+- **Semantics**: G1 creates parallel paths, G2 waits for T1+T2 then forks to T4+T5, T3 is independent
+- **Timing**: Mixed gateway behavior working together
+
+---
+
 ## Testing Instructions
 
 For each test case:

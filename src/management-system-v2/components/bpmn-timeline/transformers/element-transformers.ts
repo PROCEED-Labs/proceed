@@ -171,3 +171,10 @@ export function isExclusiveGateway(element: BPMNFlowElement): element is BPMNGat
 export function isParallelGateway(element: BPMNFlowElement): element is BPMNGateway {
   return element.$type === 'bpmn:ParallelGateway';
 }
+
+/**
+ * Check if an element is an inclusive gateway (OR)
+ */
+export function isInclusiveGateway(element: BPMNFlowElement): element is BPMNGateway {
+  return element.$type === 'bpmn:InclusiveGateway';
+}

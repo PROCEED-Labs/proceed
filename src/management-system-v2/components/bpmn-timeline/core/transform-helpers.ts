@@ -12,6 +12,7 @@ import {
   isGatewayElement,
   isExclusiveGateway,
   isParallelGateway,
+  isInclusiveGateway,
 } from '../transformers/element-transformers';
 import {
   isTaskElement,
@@ -84,12 +85,16 @@ export function detectAndReportGatewayIssues(
   if (!renderGateways) {
     const gateways = flowElements.filter(isGatewayElement);
     for (const gateway of gateways) {
-      if (!isExclusiveGateway(gateway) && !isParallelGateway(gateway)) {
+      if (
+        !isExclusiveGateway(gateway) &&
+        !isParallelGateway(gateway) &&
+        !isInclusiveGateway(gateway)
+      ) {
         issues.push({
           elementId: (gateway as any).id,
           elementType: (gateway as any).$type,
           elementName: (gateway as any).name,
-          reason: `Gateway type ${(gateway as any).$type} is not supported. Only exclusive and parallel gateways are currently supported.`,
+          reason: `Gateway type ${(gateway as any).$type} is not supported. Only exclusive, parallel, and inclusive gateways are currently supported.`,
           severity: 'error',
         });
       }

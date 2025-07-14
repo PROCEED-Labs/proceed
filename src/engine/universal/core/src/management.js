@@ -557,6 +557,7 @@ const Management = {
               priority: userTaskToken.priority,
               progress: userTaskToken.currentFlowNodeProgress.value,
               performers: userTaskToken.performers,
+              actualOwner: userTaskToken.actualOwner,
             };
           } else {
             const userTaskLogEntry = archivedInstance.log.find(
@@ -568,6 +569,7 @@ const Management = {
               priority: userTaskLogEntry.priority,
               progress: userTaskLogEntry.progress.value,
               performers: userTaskLogEntry.performers,
+              actualOwner: userTaskLogEntry.actualOwner,
             };
           }
         });

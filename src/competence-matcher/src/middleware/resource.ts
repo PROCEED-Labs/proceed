@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PATHS } from '../server';
 import { getDB } from '../utils/db';
-import { createWorker } from '../utils/worker';
 import workerManager from '../worker/worker-manager';
 import { splitSemantically } from '../tasks/semantic-split';
 import { CompetenceInput, EmbeddingJob, EmbeddingTask, ResourceInput } from '../utils/types';
@@ -12,7 +11,7 @@ export function getResourceLists(req: Request, res: Response, next: NextFunction
 
     const availableResourceLists = db.getAvailableResourceLists();
 
-    res.status(200).json(availableResourceLists);
+    res.status(200).json(availableResourceLists); // string[]
   } catch (error) {
     console.error('Error retrieving resource lists:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -29,88 +28,92 @@ export function getResourceList(req: Request, res: Response, next: NextFunction)
       return;
     }
 
-    const resourceList = db.getResourceList(resourceListId);
-
-    if (!resourceList) {
+    let resourceList;
+    try {
+      resourceList = db.getResourceList(resourceListId);
+    } catch (error) {
       res.status(404).json({ error: 'Resource list not found' });
       return;
     }
 
     res.status(200).json(resourceList);
+    // type:
+    // resourceList: {
+    //     competenceListId: string;
+    //     resources: Array<{
+    //         resourceId: string;
+    //         competencies: Array<{
+    //             competenceId: string;
+    //             name?: string;
+    //             description?: string;
+    //             externalQualificationNeeded: boolean;
+    //             renewTime?: number;
+    //             proficiencyLevel?: string;
+    //             qualificationDates: string[];
+    //             lastUsages: string[];
+    //         }>;
+    //     }>;
+    // }
   } catch (error) {
     console.error('Error retrieving resource list:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
-export function createResourceList(req: Request, res: Response, next: NextFunction): void {
-  // Check if the request body contains the necessary data
+// Helper function to handle the creation logic
+export async function handleCreateResourceList(
+  dbName: string,
+  resources: ResourceInput[],
+  onWorkerExit?: (job: any, code: number, jobId: string) => void,
+): Promise<{ jobId: string; status: string }> {
   let resourceIds: string[] = [];
-  let competences: CompetenceInput /* resourceIndex */[] /* competenceIndex */[] = [];
-  try {
-    if (!Array.isArray(req.body) || req.body.length === 0) {
-      res.status(400).json({ error: 'Invalid request body. Expected an array of resources.' });
-    }
-    req.body.forEach(({ resourceId, competencies }: ResourceInput) => {
-      if (!resourceId || typeof resourceId !== 'string') {
-        throw new Error('Invalid resourceId in request body');
-      }
-      if (!Array.isArray(competencies) /* || competencies.length === 0 */) {
-        throw new Error('Invalid competencies in request body');
-      }
-      resourceIds.push(resourceId);
-      const checkedCompetences = competencies.map((c: CompetenceInput) => {
-        if (!c.competenceId || typeof c.competenceId !== 'string') {
-          throw new Error('Invalid competenceId in request body');
-        }
-        return {
-          competenceId: c.competenceId,
-          name: c.name,
-          description: c.description,
-          externalQualificationNeeded: c.externalQualificationNeeded,
-          renewTime: c.renewTime,
-          proficiencyLevel: c.proficiencyLevel,
-          qualificationDates: c.qualificationDates,
-          lastUsages: c.lastUsages,
-        };
-      });
+  let competences: CompetenceInput[][] = [];
 
-      competences.push(checkedCompetences);
+  // Validate and extract data
+  resources.forEach(({ resourceId, competencies }: ResourceInput) => {
+    if (!resourceId || typeof resourceId !== 'string') {
+      throw new Error('Invalid resourceId in request body');
+    }
+    if (!Array.isArray(competencies)) {
+      throw new Error('Invalid competencies in request body');
+    }
+    resourceIds.push(resourceId);
+    const checkedCompetences = competencies.map((c: CompetenceInput) => {
+      if (!c.competenceId || typeof c.competenceId !== 'string') {
+        throw new Error('Invalid competenceId in request body');
+      }
+      return {
+        competenceId: c.competenceId,
+        name: c.name,
+        description: c.description,
+        externalQualificationNeeded: c.externalQualificationNeeded,
+        renewTime: c.renewTime,
+        proficiencyLevel: c.proficiencyLevel,
+        qualificationDates: c.qualificationDates,
+        lastUsages: c.lastUsages,
+      };
     });
-  } catch (error) {
-    console.error('Error processing request body:', error);
-    res.status(400).json({ error: 'Invalid request body format' });
-    return;
-  }
-  /* ------------------------- */
+    competences.push(checkedCompetences);
+  });
+
+  // Create a new resource list in the database
   let listId: string;
   let jobId: string;
-  try {
-    const db = getDB(req.dbName!);
-    // TODO: Should we blindly trust that client only send integrity data? -> Maybe add a check for id duplicates?
-    db.atomicStep(() => {
-      // ResourceList
-      listId = db.createResourceList();
-      // Resources
-      resourceIds.forEach((resourceId) => {
-        db.addResource(listId, resourceId);
-      });
-      // Competences
-      competences.forEach((competenceArray, resourceIndex) => {
-        competenceArray.forEach((competence) => {
-          db.addCompetence(listId, resourceIds[resourceIndex], competence);
-        });
-      });
-      // Embeddings is offloaded to worker -> Just create a job
-      jobId = db.createJob(listId);
+  const db = getDB(dbName);
+  db.atomicStep(() => {
+    listId = db.createResourceList();
+    resourceIds.forEach((resourceId) => {
+      db.addResource(listId, resourceId);
     });
-  } catch (error) {
-    console.error('Error adding resource list:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-    return;
-  }
+    competences.forEach((competenceArray, resourceIndex) => {
+      competenceArray.forEach((competence) => {
+        db.addCompetence(listId, resourceIds[resourceIndex], competence);
+      });
+    });
+    jobId = db.createJob(listId);
+  });
 
-  // Start Embedding Worker
+  // Prepare embedding tasks
   const descriptionEmbeddingInput = competences
     .map((competenceArray, resourceIndex) => {
       return competenceArray.map((competence) => {
@@ -125,42 +128,54 @@ export function createResourceList(req: Request, res: Response, next: NextFuncti
     })
     .flat() as EmbeddingTask[];
 
-  // This is a workaround to avoid the worker crashing silently
-  // Preferably the splitting should be done in the worker
-  // For now it is just done asynchronously here
-  splitSemantically(descriptionEmbeddingInput)
-    .then((tasks) => {
-      // console.log(tasks);
-      const job: EmbeddingJob = {
-        jobId: jobId!,
-        dbName: req.dbName!,
-        tasks,
-      };
-      workerManager.enqueue(job, 'embedder');
-    })
-    .catch((err) => {
-      console.error('Error splitting semantically:', err);
-      // Do embedding without splitting in case of error
-      const job: EmbeddingJob = {
-        jobId: jobId!,
-        dbName: req.dbName!,
-        tasks: descriptionEmbeddingInput,
-      };
-      workerManager.enqueue(job, 'embedder');
-    });
-  // const job: EmbeddingJob = {
-  //   jobId: jobId!,
-  //   dbName: req.dbName!,
-  //   tasks: descriptionEmbeddingInput,
-  // };
-  // workerManager.enqueue(job, 'embedder');
+  // Workaround for now
+  // Ideally, the worker should handle the splitting as well
+  db.updateJobStatus(jobId!, 'preprocessing');
+  let job: EmbeddingJob | undefined;
+  try {
+    const tasks = await splitSemantically(descriptionEmbeddingInput);
+    job = {
+      jobId: jobId!,
+      dbName: dbName,
+      tasks,
+    };
+  } catch (err) {
+    console.error('Error splitting semantically:', err);
+    job = {
+      jobId: jobId!,
+      dbName: dbName,
+      tasks: descriptionEmbeddingInput,
+    };
+  }
+  db.updateJobStatus(jobId!, 'pending');
+  workerManager.enqueue(job, 'embedder', {
+    onExit: (job, code) => onWorkerExit?.(job, code, jobId!),
+  });
 
-  // Respond with jobid in location header
-  res
-    .setHeader('Location', `${PATHS.resource}/jobs/${jobId!}`)
-    // Rspond with accepted status and jobId
-    .status(202)
-    .json({ jobId: jobId!, status: 'pending' });
+  return { jobId: jobId!, status: 'pending' };
+}
+
+export function createResourceList(req: Request, res: Response, next: NextFunction): void {
+  if (!Array.isArray(req.body) || req.body.length === 0) {
+    res.status(400).json({ error: 'Invalid request body. Expected an array of resources.' });
+    return;
+  }
+  try {
+    handleCreateResourceList(req.dbName!, req.body)
+      .then(({ jobId, status }) => {
+        res
+          .setHeader('Location', `${PATHS.resource}/jobs/${jobId}`)
+          .status(202)
+          .json({ jobId, status });
+      })
+      .catch((error) => {
+        console.error('Error adding resource list:', error);
+        res.status(400).json({ error: error.message || 'Invalid request body format' });
+      });
+  } catch (error) {
+    console.error('Error processing request body:', error);
+    res.status(400).json({ error: 'Invalid request body format' });
+  }
 }
 
 export function getJobStatus(req: Request, res: Response) {
@@ -170,10 +185,9 @@ export function getJobStatus(req: Request, res: Response) {
 
     switch (job.status) {
       case 'pending':
-        res.status(202).json({ jobId: job.jobId, status: job.status });
-        return;
+      case 'preprocessing':
       case 'running':
-        res.status(202).json({ jobId: job.jobId, status: job.status });
+        res.status(202).json({ jobId: job.jobId, status: job.status }); // both strings
         return;
       case 'completed':
         res
@@ -182,7 +196,7 @@ export function getJobStatus(req: Request, res: Response) {
           .json({ jobId: job.jobId, status: job.status, competenceListId: job.referenceId });
         return;
       case 'failed':
-        res.status(500).json({ jobId: job.jobId, status: job.status });
+        res.status(500).json({ jobId: job.jobId, status: job.status }); //both strings
         return;
       default:
         res.status(500).json({ error: 'Internal Server Error' });

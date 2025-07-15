@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PATHS } from '../server';
 import { getDB } from '../utils/db';
-import { createWorker } from '../utils/worker';
 import workerManager from '../worker/worker-manager';
 import {
   CompetenceInput,
@@ -10,6 +9,7 @@ import {
   MatchingTask,
   ResourceListInput,
 } from '../utils/types';
+import { handleCreateResourceList } from './resource';
 
 export function matchCompetenceList(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -128,11 +128,63 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
     /**--------------------------------------------
      * Case new Competence-List was passed
      *---------------------------------------------*/
-    res.status(501).json({
-      error:
-        'Matching with new competence lists is not implemented, yet. For now, please create a competence list first and then match against it.',
-    });
-    return;
+    // Create a new competence list
+    const matchingJobId = db.createJob();
+    if (list!) {
+      db.updateJobStatus(matchingJobId, 'preprocessing');
+      handleCreateResourceList(req.dbName!, list, (job, code, jobId) => {
+        try {
+          // Embedding fails -> no matching possible (i.e. fail the matching job)
+          if (code !== 0) {
+            db.updateJobStatus(matchingJobId, 'failed');
+            return;
+          }
+          db.updateJobStatus(matchingJobId, 'pending');
+
+          // Retrieve the competence list ID
+          const { referenceId: listId } = db.getJob(jobId);
+          // Create the matching job
+          const matchingJob: MatchingJob = {
+            jobId: matchingJobId,
+            dbName: req.dbName!,
+            listId,
+            resourceId: undefined, // For now, we don't support matching against a single resource
+            tasks: taskInput.map((task) => {
+              return {
+                taskId: task.taskId,
+                name: task.name,
+                description: task.description,
+                executionInstructions: task.executionInstructions,
+                requiredCompetencies: (task.requiredCompetencies ?? []).map((competence) =>
+                  typeof competence === 'string'
+                    ? (competence as string)
+                    : ({
+                        competenceId: competence.competenceId,
+                        name: competence.name,
+                        description: competence.description,
+                        externalQualificationNeeded: competence.externalQualificationNeeded,
+                        renewTime: competence.renewTime,
+                        proficiencyLevel: competence.proficiencyLevel,
+                        qualificationDates: competence.qualificationDates,
+                        lastUsages: competence.lastUsages,
+                      } as CompetenceInput),
+                ) as string[] | CompetenceInput[],
+              };
+            }),
+          };
+          // Enqueue the matching job
+          workerManager.enqueue(matchingJob, 'matcher');
+        } catch (error) {
+          db.updateJobStatus(matchingJobId, 'failed');
+          console.error('Error creating (inline) matching job:', error);
+        }
+      });
+
+      res
+        .setHeader('Location', `${PATHS.match}/jobs/${matchingJobId}`)
+        .status(202)
+        .json({ jobId: matchingJobId, status: 'pending' });
+    }
   } catch (error) {
     console.error('Error matching:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -151,7 +203,7 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
   }
 
   // Job can be pending, running, completed, or failed
-  if (job.status === 'pending' || job.status === 'running') {
+  if (job.status === 'pending' || job.status === 'running' || job.status === 'preprocessing') {
     res.status(202).json({
       jobId,
       status: job.status,

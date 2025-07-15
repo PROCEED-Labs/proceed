@@ -105,6 +105,12 @@ export type workerTypes = 'embedder' | 'matcher';
 export interface WorkerQueue {
   job: any;
   workerScript: workerTypes;
+  options?: {
+    onOnline?: (job: any) => void;
+    onExit?: (job: any, code: number) => void;
+    onError?: (job: any, error: Error) => void;
+    onMessage?: (job: any, message: any) => void;
+  };
 }
 
 export interface TransformerPipelineOptions {

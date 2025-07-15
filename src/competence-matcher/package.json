@@ -1,6 +1,6 @@
 {
   "name": "competence-matcher",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Matching microservice that allows to allows to define and match on data criteria",
   "main": "dist/server.js",
   "scripts": {

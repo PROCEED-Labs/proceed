@@ -35,43 +35,43 @@ async function main() {
   // Ollama models
   await ensureAllOllamaModelsAreAvailable();
 
-  const tasks = [
-    {
-      listId: 'test-list',
-      resourceId: 'test-resource',
-      competenceId: 'test-competence',
-      text: 'This competence covers the principles and best practices of designing scalable software systems. It includes high-level architecture, component interaction, and trade-off analysis. Practitioners will need to balance performance, reliability, and maintainability when making design decisions.',
-      type: 'description',
-    },
-    {
-      listId: 'test-list',
-      resourceId: 'test-resource',
-      competenceId: 'test-competence',
-      text: 'This competence focuses on building and maintaining RESTful and GraphQL APIs. It covers endpoint design, versioning strategies, and error handling. Learners will gain hands-on experience with request validation, authentication, and performance tuning.',
-      type: 'description',
-    },
-    {
-      listId: 'test-list',
-      resourceId: 'test-resource',
-      competenceId: 'test-competence',
-      text: 'This competence entails designing effective database schemas to represent business domains. It involves normalization, denormalization, and indexing strategies for optimal query performance. Real-world scenarios will illustrate when to choose relational versus NoSQL approaches.',
-      type: 'description',
-    },
-    {
-      listId: 'test-list',
-      resourceId: 'test-resource',
-      competenceId: 'test-competence',
-      text: 'This competence covers fundamental security principles for web applications. Topics include authentication, authorization, encryption, and secure configuration management. Practical exercises demonstrate common vulnerabilities and how to mitigate them effectively.',
-      type: 'description',
-    },
-    {
-      listId: 'test-list',
-      resourceId: 'test-resource',
-      competenceId: 'test-competence',
-      text: "This person can not swim at all. Please don't let them close water at all.",
-      type: 'description',
-    },
-  ] as EmbeddingTask[];
+  // const tasks = [
+  //   {
+  //     listId: 'test-list',
+  //     resourceId: 'test-resource',
+  //     competenceId: 'test-competence',
+  //     text: 'This competence covers the principles and best practices of designing scalable software systems. It includes high-level architecture, component interaction, and trade-off analysis. Practitioners will need to balance performance, reliability, and maintainability when making design decisions.',
+  //     type: 'description',
+  //   },
+  //   {
+  //     listId: 'test-list',
+  //     resourceId: 'test-resource',
+  //     competenceId: 'test-competence',
+  //     text: 'This competence focuses on building and maintaining RESTful and GraphQL APIs. It covers endpoint design, versioning strategies, and error handling. Learners will gain hands-on experience with request validation, authentication, and performance tuning.',
+  //     type: 'description',
+  //   },
+  //   {
+  //     listId: 'test-list',
+  //     resourceId: 'test-resource',
+  //     competenceId: 'test-competence',
+  //     text: 'This competence entails designing effective database schemas to represent business domains. It involves normalization, denormalization, and indexing strategies for optimal query performance. Real-world scenarios will illustrate when to choose relational versus NoSQL approaches.',
+  //     type: 'description',
+  //   },
+  //   {
+  //     listId: 'test-list',
+  //     resourceId: 'test-resource',
+  //     competenceId: 'test-competence',
+  //     text: 'This competence covers fundamental security principles for web applications. Topics include authentication, authorization, encryption, and secure configuration management. Practical exercises demonstrate common vulnerabilities and how to mitigate them effectively.',
+  //     type: 'description',
+  //   },
+  //   {
+  //     listId: 'test-list',
+  //     resourceId: 'test-resource',
+  //     competenceId: 'test-competence',
+  //     text: "This person can not swim at all. Please don't let them close water at all.",
+  //     type: 'description',
+  //   },
+  // ] as EmbeddingTask[];
 
   // const testworker = createWorker('test');
   // testworker.on('message', (message) => {

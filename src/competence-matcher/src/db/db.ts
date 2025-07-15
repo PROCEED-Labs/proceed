@@ -190,7 +190,7 @@ class VectorDataBase {
    */
   public updateJobStatus(
     jobId: string,
-    status: 'pending' | 'running' | 'completed' | 'failed',
+    status: 'pending' | 'preprocessing' | 'running' | 'completed' | 'failed',
   ): void {
     const result = this.db.prepare(`UPDATE jobs SET status = ? WHERE id = ?`).run(status, jobId);
     if (result.changes === 0) throw new Error(`Job with id ${jobId} not found`);
@@ -227,15 +227,14 @@ class VectorDataBase {
     distance: number;
     reason?: string; // optional reason for the match
   }): void {
-    console.log(opts);
     const id = uuid();
     this.db
       .prepare(
         `
-    INSERT INTO match_results
-      (id, job_id, task_id, competence_id, text, type, distance, reason)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `,
+          INSERT INTO match_results
+            (id, job_id, task_id, competence_id, text, type, distance, reason)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
       )
       .run(
         id,
@@ -328,7 +327,7 @@ class VectorDataBase {
    * @throws if listId doesn’t exist.
    */
   public getResourceList(listId: string): {
-    listId: string;
+    competenceListId: string;
     resources: Array<{
       resourceId: string;
       competencies: Array<{
@@ -351,7 +350,7 @@ class VectorDataBase {
       .all(listId) as Array<{ _rid: number; resource_id: string }>;
 
     return {
-      listId,
+      competenceListId: listId,
       resources: resources.map(({ _rid, resource_id }) => {
         const comps = this.db
           .prepare(

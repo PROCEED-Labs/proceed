@@ -263,13 +263,17 @@ export function getVariableTooltip(variables: ProcessVariable[], name?: string) 
 
 type VariableSettingProps = {
   variable?: string;
-  onChange: (newVariable?: string) => void;
+  onChange: (newVariableName?: string, newVariableType?: 'number' | 'text') => void;
 };
 
 export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onChange }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
   const { variables, addVariable } = useProcessVariables();
+
+  const validVariables = variables.filter(
+    (variable) => variable.dataType === 'string' || variable.dataType === 'number',
+  );
 
   return (
     <Setting
@@ -280,13 +284,17 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onCh
             value={variable}
             style={{ display: 'block' }}
             title={getVariableTooltip(variables, variable)}
-            options={variables.map((v) => ({
+            options={validVariables.map((v) => ({
               label: v.name,
               title: getVariableTooltip(variables, v.name),
               value: v.name,
             }))}
             onChange={(val) => {
-              onChange(val);
+              const variableType = variables.find((v) => v.name === val)?.dataType;
+              onChange(
+                val,
+                variableType === 'string' ? 'text' : (variableType as 'number' | undefined),
+              );
             }}
             dropdownRender={(menu) => (
               <>
@@ -302,10 +310,11 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onCh
           <ProcessVariableForm
             open={showVariableForm}
             variables={variables}
+            allowedTypes={['string', 'number']}
             onSubmit={(newVar) => {
               addVariable(newVar);
               setShowVariableForm(false);
-              onChange(newVar.name);
+              onChange(newVar.name, newVar.dataType === 'string' ? 'text' : 'number');
             }}
             onCancel={() => setShowVariableForm(false)}
           />

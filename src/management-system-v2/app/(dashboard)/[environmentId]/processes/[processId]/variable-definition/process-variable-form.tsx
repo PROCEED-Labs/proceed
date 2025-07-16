@@ -15,14 +15,6 @@ import { FaRegQuestionCircle } from 'react-icons/fa';
 
 import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 
-type ProcessVariableFormProps = {
-  open?: boolean;
-  originalVariable?: ProcessVariable;
-  variables: ProcessVariable[];
-  onSubmit: (variable: ProcessVariable) => void;
-  onCancel: () => void;
-};
-
 // maps from the data types to what we want to display to the user
 export const typeLabelMap = {
   string: 'Text',
@@ -30,6 +22,15 @@ export const typeLabelMap = {
   boolean: 'On/Off - True/False',
   object: 'Combined Structure',
   array: 'List',
+};
+
+type ProcessVariableFormProps = {
+  open?: boolean;
+  originalVariable?: ProcessVariable;
+  allowedTypes?: (keyof typeof typeLabelMap)[];
+  variables: ProcessVariable[];
+  onSubmit: (variable: ProcessVariable) => void;
+  onCancel: () => void;
 };
 
 type DefaultValueInputProps = {
@@ -83,6 +84,7 @@ function isNumber(num: string) {
 const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
   open,
   variables,
+  allowedTypes = Object.keys(typeLabelMap),
   originalVariable,
   onSubmit,
   onCancel,
@@ -180,7 +182,9 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
           rules={[{ required: true, message: 'Every variabel needs to have a type' }]}
         >
           <Select
-            options={Object.entries(typeLabelMap).map(([value, label]) => ({ value, label }))}
+            options={Object.entries(typeLabelMap)
+              .filter(([value]) => allowedTypes.includes(value))
+              .map(([value, label]) => ({ value, label }))}
             onChange={(value) => {
               setEditVariable({
                 ...editVariable,

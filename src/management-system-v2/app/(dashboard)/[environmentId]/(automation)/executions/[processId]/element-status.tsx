@@ -133,10 +133,10 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   statusEntries.push([
     'Planned Costs:',
     costs &&
-    generateNumberString(+costs.value, {
-      style: 'currency',
-      currency: costs.unit,
-    }),
+      generateNumberString(+costs.value, {
+        style: 'currency',
+        currency: costs.unit,
+      }),
   ]);
 
   // Real Costs

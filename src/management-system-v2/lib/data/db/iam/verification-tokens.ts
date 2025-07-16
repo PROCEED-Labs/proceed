@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 const baseEmailVerificationTokenSchema = z.object({
   token: z.string(),
   identifier: z.string().email(),
-  expires: z.date(),
+  expiresAt: z.date(),
 });
 
 const emailVerificationTokenSchemam = z.union([
@@ -79,7 +79,7 @@ export async function updateEmailVerificationTokenExpiration(
   return await mutator.emailVerificationToken.update({
     where: tokenIdentifier,
     data: {
-      expires: newExpiration,
+      expiresAt: newExpiration,
     },
   });
 }

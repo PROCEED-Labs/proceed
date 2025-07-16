@@ -261,24 +261,15 @@ model GuestSignin {
 // Register new user (data is temporarily stored here)
 model EmailVerificationToken {
   token        String   @id /// Hashed UUID + Salt (the Auth secret is used as salt)
-  type         TokenType
+  type         String
   identifier   String /// Stores an email (it's named this way because of NextAuth)
-  expires      DateTime 
+  expiresAt      DateTime 
   user         User?     @relation(name: "verificationToken", fields: [userId], references: [id])
   userId       String? /// If this is set, then the token is for an email change: userId is the user who wants to change his email and the idenrtifier is the new email
   username     String?
   firstName    String?
   lastName     String?
   passwordHash String?
-}
-
-enum TokenType {
-  /// Passwordless auth: stores email to either create new account or sign in existing user
-  signin_with_email
-  /// Email change: stores userId and new email address pending verification
-  change_email
-  /// Registration process: temporarily stores user info until email is verified
-  register_new_user 
 }
 
 model SpaceSettings {

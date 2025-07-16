@@ -33,8 +33,12 @@ const Adapter = {
   getUserByEmail: async (email: string) => {
     return getUserByEmail(email) ?? null;
   },
-  createVerificationToken: async (token: VerificationToken) => {
-    return await saveEmailVerificationToken({ type: 'signin_with_email', ...token });
+  createVerificationToken: async ({ expires, ...token }: VerificationToken) => {
+    return await saveEmailVerificationToken({
+      type: 'signin_with_email',
+      ...token,
+      expiresAt: expires,
+    });
   },
   useVerificationToken: async (params: { identifier: string; token: string }) => {
     try {

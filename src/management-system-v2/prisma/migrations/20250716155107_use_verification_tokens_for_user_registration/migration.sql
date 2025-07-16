@@ -4,9 +4,6 @@
   - You are about to drop the `VerificationToken` table. If the table is not empty, all the data it contains will be lost.
 
 */
--- CreateEnum
-CREATE TYPE "TokenType" AS ENUM ('signin_with_email', 'change_email', 'register_new_user');
-
 -- DropForeignKey
 ALTER TABLE "VerificationToken" DROP CONSTRAINT "VerificationToken_userId_fkey";
 
@@ -16,9 +13,9 @@ DROP TABLE "VerificationToken";
 -- CreateTable
 CREATE TABLE "EmailVerificationToken" (
     "token" TEXT NOT NULL,
-    "type" "TokenType" NOT NULL,
+    "type" TEXT NOT NULL,
     "identifier" TEXT NOT NULL,
-    "expires" TIMESTAMP(3) NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
     "userId" TEXT,
     "username" TEXT,
     "firstName" TEXT,

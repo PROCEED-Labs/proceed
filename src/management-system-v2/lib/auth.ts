@@ -360,7 +360,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
 
           const signinMail = renderSigninLinkEmail({
             signInLink: userRegistrationToken.redirectUrl,
-            expires: userRegistrationToken.verificationToken.expires,
+            expires: userRegistrationToken.verificationToken.expiresAt,
           });
 
           await sendEmail({

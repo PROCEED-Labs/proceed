@@ -1,14 +1,7 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { invalidRequest, readImage } from '../image-helpers';
-import {
-  deleteOrganizationLogo,
-  getEnvironmentById,
-  getOrganizationLogo,
-} from '@/lib/data/db/iam/environments';
-import { fileTypeFromBuffer } from 'file-type';
-import { saveEntityFile, saveOrganizationLogo } from '@/lib/data/file-manager-facade';
-import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { deleteSpaceLogo, getEnvironmentById, getSpaceLogo } from '@/lib/data/db/iam/environments';
 
 export async function GET(
   _: NextRequest,
@@ -116,7 +109,7 @@ export async function DELETE(
   }
 
   try {
-    deleteOrganizationLogo(activeEnvironment.spaceId);
+    deleteSpaceLogo(activeEnvironment.spaceId);
   } catch (e) {
     // We assume the organization didn't have a logo
     return new NextResponse(null, {

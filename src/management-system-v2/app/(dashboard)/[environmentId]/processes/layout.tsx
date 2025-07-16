@@ -2,7 +2,6 @@ import React from 'react';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { notFound } from 'next/navigation';
 import { getCurrentEnvironment } from '@/components/auth';
-import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 type DocumentationLayoutProps = {
   params: { environmentId: string };

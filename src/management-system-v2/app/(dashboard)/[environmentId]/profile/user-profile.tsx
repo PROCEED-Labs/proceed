@@ -138,7 +138,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               afterClose={() => setErrorMessage(null)}
             />
           )}
-          <Typography.Title level={3}>Profile data</Typography.Title>
+          <Typography.Title level={3}>Profile Settings</Typography.Title>
 
           <UserAvatar user={userData} size={90} style={{ marginBottom: '1rem' }} />
 
@@ -165,7 +165,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 <Alert
                   message={
                     <>
-                      To change your profile data <Link href="/signin">Sign in</Link>
+                      To change your profile settings <Link href="/signin">Sign in</Link>
                     </>
                   }
                   type="info"

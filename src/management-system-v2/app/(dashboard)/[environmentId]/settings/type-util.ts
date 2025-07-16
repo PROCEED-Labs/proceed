@@ -22,11 +22,17 @@ type SelectSetting = {
   options?: { value: string; label: string }[];
 };
 
+type CustomSetting = {
+  type: 'custom';
+  value: any;
+};
+
 export type Setting = (
   | AtomicSetting<'boolean'>
   | AtomicSetting<'string'>
   | AtomicSetting<'number'>
   | SelectSetting
+  | CustomSetting
 ) &
   SettingsEntryInfo;
 

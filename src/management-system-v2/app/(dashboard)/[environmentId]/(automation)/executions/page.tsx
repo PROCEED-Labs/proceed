@@ -3,13 +3,12 @@ import { getCurrentEnvironment } from '@/components/auth';
 import DeploymentsView from './deployments-view';
 import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/folders';
 import { getUsersFavourites } from '@/lib/data/users';
-import { DeployedProcessInfo, getDeployments } from '@/lib/engines/deployment';
-import { getProceedEngines } from '@/lib/engines/machines';
-import { getDbEngines } from '@/lib/data/engines';
-import { getDeployedProcessesFromSpaceEngines } from '@/lib/engines/space-engines-helpers';
+import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engines-helpers';
+import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { Skeleton } from 'antd';
 import { Suspense } from 'react';
+import { getDbEngines } from '@/lib/data/db/engines';
 
 function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
   deployments: T[],
@@ -35,7 +34,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
   // TODO: check ability
 
   // TODO: once the legacy storage is dropped, it would be better to do one db transaction
-  const [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] =
+  let [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] =
     await Promise.all([
       getUsersFavourites(),
       (async () => {
@@ -45,15 +44,17 @@ async function Executions({ environmentId }: { environmentId: string }) {
         return [folder, folderContents];
       })(),
       (async () => {
-        const engines = await getProceedEngines();
-        return await getDeployments(engines);
+        const engines = await getDbEngines(null, ability, 'dont-check');
+        return await getDeployedProcessesFromSavedEngines(engines);
       })(),
       (async () => {
-        const spaceEngines = await getDbEngines(activeEnvironment.spaceId);
+        const spaceEngines = await getDbEngines(activeEnvironment.spaceId, ability);
         if (isUserErrorResponse(spaceEngines)) return [];
-        return await getDeployedProcessesFromSpaceEngines(spaceEngines);
+        return await getDeployedProcessesFromSavedEngines(spaceEngines);
       })(),
     ]);
+
+  folderContents = folderContents.filter((p) => p.type === 'folder' || p.versions.length);
 
   const deployedWithRemappedIds: (Omit<DeployedProcessInfo, 'definitionId'> & { id: string })[] =
     deployedInProceed.concat(deployedInSpaceEngines).map((_process) => {
@@ -77,9 +78,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
 export default function ExecutionsPage({ params }: { params: { environmentId: string } }) {
   return (
     <Content title="Executions">
-      <Suspense fallback={<Skeleton active />}>
-        <Executions environmentId={params.environmentId} />
-      </Suspense>
+      <Executions environmentId={params.environmentId} />
     </Content>
   );
 }

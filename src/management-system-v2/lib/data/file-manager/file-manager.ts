@@ -21,7 +21,9 @@ const cache = new LRUCache<string, Buffer>({
 const getLocalStorageBasePath = (): string => {
   let appDir = envPaths('proceed-management-system').config;
   appDir = appDir.slice(0, appDir.search('-nodejs'));
-  return process.env.NODE_ENV === 'development' ? path.join(appDir, 'development') : appDir;
+  return process.env.NODE_ENV === 'development'
+    ? path.join(appDir, 'development')
+    : path.join(process.cwd(), 'volume');
 };
 
 const LOCAL_STORAGE_BASE = getLocalStorageBasePath();

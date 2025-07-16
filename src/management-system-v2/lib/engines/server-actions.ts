@@ -8,25 +8,11 @@ import {
   getDeployments as fetchDeployments,
   removeDeploymentFromMachines,
 } from './deployment';
-import {
-  Engine,
-  SpaceEngine,
-  getProceedEngines as _getEngines,
-  getProceedEngines,
-} from './machines';
-import { spaceEnginesToEngines } from './space-engines-helpers';
+import { Engine, SpaceEngine } from './machines';
+import { savedEnginesToEngines } from './saved-engines-helpers';
 import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
-import {
-  getDbEngines as getSpaceEnginesFromDb,
-  getDbEngineByAddress as getSpaceEngineByAddressFromDb,
-} from '@/lib/data/db/engines';
-import {
-  startInstanceOnMachine,
-  pauseInstanceOnMachine,
-  resumeInstanceOnMachine,
-  stopInstanceOnMachine,
-} from './instances';
+import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
 
 import {
@@ -53,7 +39,7 @@ import {
   deleteUserTask,
 } from '../data/user-tasks';
 
-async function getCorrectTargetEngines(
+export async function getCorrectTargetEngines(
   spaceId: string,
   onlyProceedEngines = false,
   validatorFunc?: (engine: Engine) => Promise<boolean>,
@@ -63,20 +49,17 @@ async function getCorrectTargetEngines(
   let engines: Engine[] = [];
   if (onlyProceedEngines) {
     // force that only proceed engines are supposed to be used
-    engines = await getProceedEngines();
+    const proceedSavedEngines = await getDbEngines(null, undefined, 'dont-check');
+    engines = await savedEnginesToEngines(proceedSavedEngines);
   } else {
     // use all available engines
     const [proceedEngines, spaceEngines] = await Promise.allSettled([
-      getProceedEngines(),
-      getSpaceEnginesFromDb(spaceId, ability),
+      getDbEngines(null, undefined, 'dont-check').then(savedEnginesToEngines),
+      getDbEngines(spaceId, ability).then(savedEnginesToEngines),
     ]);
 
     if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
-
-    if (spaceEngines.status === 'fulfilled') {
-      let availableSpaceEngines = await spaceEnginesToEngines(spaceEngines.value);
-      engines = engines.concat(availableSpaceEngines);
-    }
+    if (spaceEngines.status === 'fulfilled') engines = engines.concat(spaceEngines.value);
   }
 
   if (validatorFunc) engines = await asyncFilter(engines, validatorFunc);
@@ -102,9 +85,9 @@ export async function deployProcess(
       const { ability } = await getCurrentEnvironment(spaceId);
       const address =
         _forceEngine.type === 'http' ? _forceEngine.address : _forceEngine.brokerAddress;
-      const spaceEngine = await getSpaceEngineByAddressFromDb(address, spaceId, ability);
+      const spaceEngine = await getDbEngineByAddress(address, spaceId, ability);
       if (!spaceEngine) throw new Error('No matching space engine found');
-      engines = await spaceEnginesToEngines([spaceEngine]);
+      engines = await savedEnginesToEngines([spaceEngine]);
       if (engines.length === 0) throw new Error("Engine couldn't be reached");
     } else {
       engines = await getCorrectTargetEngines(spaceId, _forceEngine === 'PROCEED');
@@ -130,38 +113,6 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     });
 
     await removeDeploymentFromMachines(engines, definitionId);
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
-}
-
-export async function startInstance(
-  definitionId: string,
-  versionId: string,
-  spaceId: string,
-  variables: { [key: string]: any } = {},
-) {
-  try {
-    // TODO: manage permissions for starting an instance
-
-    if (!enableUseDB) throw new Error('startInstance is only available with enableUseDB');
-
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
-      const deployments = await fetchDeployments([engine]);
-
-      // TODO: in case of static deployment we will need to only return the engines that are
-      // assigned an entry point of the process
-      return deployments.some(
-        (deployment) =>
-          deployment.definitionId === definitionId &&
-          deployment.versions.some((version) => version.versionId === versionId),
-      );
-    });
-
-    // TODO: if there are multiple possible engines maybe try to find the one that fits the best
-    // (e.g. the one with the least load)
-    return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -498,79 +449,6 @@ export async function completeTasklistEntry(
   }
 }
 
-const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
-async function changeInstanceState(
-  definitionId: string,
-  instanceId: string,
-  spaceId: string,
-  stateValidator: (state: InstanceInfo['instanceState']) => boolean,
-  stateChangeFunction: typeof resumeInstanceOnMachine,
-) {
-  try {
-    const engines = await getCorrectTargetEngines(spaceId, undefined, async (engine: Engine) => {
-      const deployments = await fetchDeployments([engine]);
-
-      return deployments.some((deployment) => {
-        if (deployment.definitionId !== definitionId) return false;
-
-        const instance = deployment.instances.find(
-          (instance) => instance.processInstanceId === instanceId,
-        );
-        if (!instance) return false;
-
-        return stateValidator(instance.instanceState);
-      });
-    });
-
-    await asyncForEach(engines, async (engine) => {
-      await stateChangeFunction(definitionId, instanceId, engine);
-    });
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
-}
-
-export async function resumeInstance(definitionId: string, instanceId: string, spaceId: string) {
-  // TODO: manage permissions for starting an instance
-  if (!enableUseDB) throw new Error('resumeInstance is only available with enableUseDB');
-
-  return await changeInstanceState(
-    definitionId,
-    instanceId,
-    spaceId,
-    (tokenStates) => tokenStates.some((tokenState) => tokenState === 'PAUSED'),
-    resumeInstanceOnMachine,
-  );
-}
-
-export async function pauseInstance(definitionId: string, instanceId: string, spaceId: string) {
-  // TODO: manage permissions for starting an instance
-  if (!enableUseDB) throw new Error('pauseInstance is only available with enableUseDB');
-
-  return await changeInstanceState(
-    definitionId,
-    instanceId,
-    spaceId,
-    (tokenStates) =>
-      tokenStates.some((state) => activeStates.includes(state) && state !== 'PAUSED'),
-    pauseInstanceOnMachine,
-  );
-}
-
-export async function stopInstance(definitionId: string, instanceId: string, spaceId: string) {
-  // TODO: manage permissions for starting an instance
-  if (!enableUseDB) throw new Error('stopInstance is only available with enableUseDB');
-
-  return await changeInstanceState(
-    definitionId,
-    instanceId,
-    spaceId,
-    (tokenStates) => tokenStates.some((state) => activeStates.includes(state)),
-    stopInstanceOnMachine,
-  );
-}
-
 /** Returns space engines that are currently online */
 export async function getAvailableSpaceEngines(spaceId: string) {
   try {
@@ -578,8 +456,8 @@ export async function getAvailableSpaceEngines(spaceId: string) {
       throw new Error('getAvailableEnginesForSpace only available with enableUseDB');
 
     const { ability } = await getCurrentEnvironment(spaceId);
-    const spaceEngines = await getSpaceEnginesFromDb(spaceId, ability);
-    return await spaceEnginesToEngines(spaceEngines);
+    const spaceEngines = await getDbEngines(spaceId, ability);
+    return (await savedEnginesToEngines(spaceEngines)) as SpaceEngine[];
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

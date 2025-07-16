@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 
-export type ArtifactType = 'images' | 'user-tasks' | 'script-tasks' | 'bpmns' | 'others';
+export type ArtifactType = 'images' | 'html-forms' | 'script-tasks' | 'bpmns' | 'others';
 
 export enum EntityType {
   PROCESS = 'PROCESS',
@@ -17,10 +17,10 @@ const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
   svg: 'images',
   bmp: 'images',
   webp: 'images',
-  html: 'user-tasks',
-  htm: 'user-tasks',
+  html: 'html-forms',
+  htm: 'html-forms',
   pdf: 'others',
-  json: 'user-tasks',
+  json: 'html-forms',
   docx: 'others',
   js: 'script-tasks',
   ts: 'script-tasks',
@@ -35,8 +35,8 @@ const MIME_TYPE_CATEGORIES: Record<string, ArtifactType> = {
   'image/svg+xml': 'images',
   'image/bmp': 'images',
   'image/webp': 'images',
-  'text/html': 'user-tasks',
-  'application/json': 'user-tasks',
+  'text/html': 'html-forms',
+  'application/json': 'html-forms',
   'application/js': 'script-tasks',
   'application/pdf': 'others',
   'application/xml': 'bpmns',
@@ -89,6 +89,6 @@ export const generateProcessFilePath = (
     return `processes/${processId}/${fileName}`;
   }
 
-  // For user-tasks, scripts
+  // For html-tasks, scripts
   return `processes/${processId}/${versionCreatedOn ? versionCreatedOn : 'latest'}/${artifactType}/${fileName}`;
 };

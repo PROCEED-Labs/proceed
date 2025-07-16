@@ -191,11 +191,7 @@ export async function updateOrganization(
 
 // TODO below: implement db logic
 
-export async function saveOrganizationLogo(
-  organizationId: string,
-  image: Buffer,
-  ability?: Ability,
-) {
+export async function saveSpaceLogo(organizationId: string, image: Buffer, ability?: Ability) {
   const organization = await getEnvironmentById(organizationId, undefined, {
     throwOnNotFound: true,
   });
@@ -212,12 +208,7 @@ export async function saveOrganizationLogo(
   }
 }
 
-export async function getOrganizationLogo(organizationId: string) {
-  const organization = await getEnvironmentById(organizationId, undefined, {
-    throwOnNotFound: true,
-  });
-  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
-
+export async function getSpaceLogo(organizationId: string) {
   try {
     return await db.space.findUnique({
       where: { id: organizationId },
@@ -228,7 +219,7 @@ export async function getOrganizationLogo(organizationId: string) {
   }
 }
 
-export async function organizationHasLogo(organizationId: string) {
+export async function spaceHasLogo(organizationId: string) {
   const res = await db.space.findUnique({
     where: { id: organizationId },
     select: { spaceLogo: true },
@@ -239,11 +230,10 @@ export async function organizationHasLogo(organizationId: string) {
   return false;
 }
 
-export async function deleteOrganizationLogo(organizationId: string) {
-  const organization = await getEnvironmentById(organizationId, undefined, {
+export async function deleteSpaceLogo(organizationId: string) {
+  await getEnvironmentById(organizationId, undefined, {
     throwOnNotFound: true,
   });
-  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
 
   //if (!hasLogo(organizationId)) throw new Error("Organization doesn't have a logo");
 

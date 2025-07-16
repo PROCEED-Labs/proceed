@@ -32,6 +32,7 @@ import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import StartFormModal from './start-form-modal';
+import { getProcessIds, getVariablesFromElementById, toBpmnObject } from '@proceed/bpmn-helper';
 
 export default function ProcessDeploymentView({
   processId,
@@ -181,7 +182,8 @@ export default function ProcessDeploymentView({
                     setStartingInstance(true);
                     await wrapServerCall({
                       fn: async () => {
-                        const versionId = getLatestDeployment(deploymentInfo).versionId;
+                        const latestDeployment = getLatestDeployment(deploymentInfo);
+                        const versionId = latestDeployment.versionId;
 
                         const startForm = await getStartForm(versionId);
 
@@ -189,7 +191,43 @@ export default function ProcessDeploymentView({
 
                         if (startForm) {
                           setStartForm(startForm);
-                        } else return startInstance(versionId);
+                        } else {
+                          const variables: Record<string, any> = {};
+
+                          try {
+                            const bpmnObj = await toBpmnObject(latestDeployment.bpmn);
+                            const [processElementId] = await getProcessIds(bpmnObj);
+                            if (processElementId) {
+                              const variableDefinitions = await getVariablesFromElementById(
+                                bpmnObj,
+                                processElementId,
+                              );
+
+                              for (const variable of variableDefinitions) {
+                                if (variable.defaultValue) {
+                                  // TODO: transform all types from string (missing: list, object)
+                                  switch (variable.dataType) {
+                                    case 'string':
+                                      variables[variable.name] = { value: variable.defaultValue };
+                                      break;
+                                    case 'number':
+                                      variables[variable.name] = {
+                                        value: parseFloat(variable.defaultValue),
+                                      };
+                                      break;
+                                    case 'boolean':
+                                      variables[variable.name] = {
+                                        value: variable.defaultValue === 'true' ? true : false,
+                                      };
+                                      break;
+                                  }
+                                }
+                              }
+                            }
+                          } catch (err) {}
+
+                          return startInstance(versionId, variables);
+                        }
                       },
                       onSuccess: async (instanceId) => {
                         await refetch();

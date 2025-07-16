@@ -3,12 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import styles from './planned-duration-input.module.scss';
 
-import { Button, Col, Form, Grid, Input, InputNumber, Modal, Row } from 'antd';
+import { Button, Col, Form, Grid, Input, InputNumber, Modal, Row, Tooltip } from 'antd';
 
 import { ClockCircleOutlined, EditOutlined } from '@ant-design/icons';
 import FormSubmitButton from '@/components/form-submit-button';
 import { parseISODuration } from '@proceed/bpmn-helper/src/getters';
 import { calculateTimeFormalExpression } from '@/lib/helpers/timeHelper';
+import { Element } from 'bpmn-js/lib/model/Types';
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+import { hasEventDefinition } from 'bpmn-js/lib/util/DiUtil';
+import useModelerStateStore from './use-modeler-state-store';
+import { updateMetaData } from './properties-panel';
+
 type DurationValues = {
   years: number | null;
   months: number | null;
@@ -23,7 +29,7 @@ type PlannedDurationModalProperties = {
   show: boolean;
   close: (values?: DurationValues) => void;
 };
-const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
+export const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
   durationValues,
   show,
   close,
@@ -163,6 +169,85 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
             const timeFormalExpression = calculateTimeFormalExpression(values);
             onChange(timeFormalExpression);
           }
+          setIsPlannedDurationModalOpen(false);
+        }}
+      ></PlannedDurationModal>
+    </>
+  );
+};
+
+export function isTimerEvent(element?: Element) {
+  if (!element) return false;
+
+  if (!bpmnIs(element, 'bpmn:Event')) return false;
+
+  const eventDefinitions = element.businessObject.eventDefinitions;
+  return eventDefinitions?.some((definition: any) =>
+    bpmnIs(definition, 'bpmn:TimerEventDefinition'),
+  );
+}
+
+function getTimer(element?: Element): string {
+  if (!isTimerEvent(element)) return '';
+
+  const eventDefinitions = element!.businessObject.eventDefinitions;
+  return (
+    eventDefinitions!.find((definition: any) => bpmnIs(definition, 'bpmn:TimerEventDefinition'))
+      ?.timeDuration?.body || ''
+  );
+}
+
+type TimerEventButtonProps = {
+  element?: Element;
+};
+
+export const TimerEventButton: React.FC<TimerEventButtonProps> = ({ element }) => {
+  const [isPlannedDurationModalOpen, setIsPlannedDurationModalOpen] = useState(false);
+  const [durationValues, setDurationValues] = useState(parseISODuration(''));
+
+  const modeler = useModelerStateStore((state) => state.modeler);
+
+  useEffect(() => {
+    if (isTimerEvent(element)) {
+      setDurationValues(parseISODuration(getTimer(element)));
+    }
+  }, [element]);
+
+  return (
+    <>
+      <Tooltip title="Edit Timer Event Duration">
+        <Button
+          icon={<ClockCircleOutlined />}
+          onClick={() => setIsPlannedDurationModalOpen(true)}
+        />
+      </Tooltip>
+      <PlannedDurationModal
+        durationValues={durationValues}
+        show={isPlannedDurationModalOpen}
+        close={async (values) => {
+          if (modeler && element && values) {
+            const modeling = modeler.getModeling();
+            const factory = modeler.getFactory();
+
+            const eventDefinitions = element.businessObject.eventDefinitions.filter(
+              (definition: any) => !bpmnIs(definition, 'bpmn:TimerEventDefinition'),
+            );
+            const newTimer = values ? calculateTimeFormalExpression(values) : '';
+            const timeDuration = newTimer
+              ? factory.create('bpmn:FormalExpression', { body: newTimer })
+              : null;
+            const timerEventDefinition = factory.create('bpmn:TimerEventDefinition', {
+              timeDuration,
+            });
+            eventDefinitions.push(timerEventDefinition);
+
+            await updateMetaData(modeler, element, 'timePlannedDuration', newTimer);
+            modeling.updateProperties(element, {
+              eventDefinitions,
+            });
+            setDurationValues({ ...values });
+          }
+
           setIsPlannedDurationModalOpen(false);
         }}
       ></PlannedDurationModal>

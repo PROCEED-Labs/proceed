@@ -50,7 +50,7 @@ class Machine extends NativeModule {
     }
     if (properties.includes('cpu')) {
       const cpu = await si.cpu();
-      const currentLoad = (await si.currentLoad()).currentload;
+      const currentLoad = (await si.currentLoad()).currentLoad;
       deviceInfo.cpu = {
         cores: cpu.cores,
         physicalCores: cpu.physicalCores,
@@ -88,9 +88,9 @@ class Machine extends NativeModule {
     if (properties.includes('battery')) {
       const battery = await si.battery();
       deviceInfo.battery = {
-        hasBattery: battery.hasbattery,
+        hasBattery: battery.hasBattery,
         percent: battery.percent,
-        maxCapacity: battery.maxcapacity,
+        maxCapacity: battery.maxCapacity,
       };
     }
     if (properties.includes('display')) {

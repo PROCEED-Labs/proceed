@@ -33,8 +33,7 @@ function getSubOptions(giveSelectionOption?: boolean) {
       {
         label: 'with artefacts',
         value: 'artefacts',
-        tooltip:
-          'Also export html and images used in User-Tasks and images used for other process elements',
+        tooltip: 'Also export html, scripts and images used in process elements',
       },
       // NOTE: not supported yet
       // {

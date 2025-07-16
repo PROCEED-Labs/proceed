@@ -10,6 +10,7 @@ import {
   Descriptions,
   Skeleton,
   Result,
+  Typography,
 } from 'antd';
 import { UnorderedListOutlined, AppstoreOutlined, DownOutlined } from '@ant-design/icons';
 import Bar from '@/components/bar';
@@ -218,10 +219,12 @@ const DeploymentsModal = ({
       throw new Error('Failed to fetch folder');
     }
 
-    const folderContents = await getFolderContents(environment.spaceId, folder.id);
+    let folderContents = await getFolderContents(environment.spaceId, folder.id);
     if ('error' in folderContents) {
       throw new Error('Failed to fetch folder children');
     }
+
+    folderContents = folderContents.filter((c) => c.type === 'folder' || c.versions.length);
 
     if (folder.parentId) {
       setProcesses([
@@ -272,17 +275,23 @@ const DeploymentsModal = ({
         selectedProcessForStaticDeployment ? (
           `Select an engine to deploy ${selectedProcessForStaticDeployment.name.value}`
         ) : (
-          <Space size="large">
-            <span>Deployment Selection</span>
-            <Dropdown menu={{ items: dropdownItems }}>
-              <Button size="small" type="link" style={{ padding: 0 }}>
-                <Space>
-                  Options
-                  <DownOutlined />
-                </Space>
-              </Button>
-            </Dropdown>
-          </Space>
+          <>
+            <Space size="large">
+              <span>Deployment Selection</span>
+              <Dropdown menu={{ items: dropdownItems }}>
+                <Button size="small" type="link" style={{ padding: 0 }}>
+                  <Space>
+                    Options
+                    <DownOutlined />
+                  </Space>
+                </Button>
+              </Dropdown>
+            </Space>
+            <Typography.Paragraph type="secondary">
+              Hint: For deployment, a process must be versioned. Only the newest version will be
+              deployed.
+            </Typography.Paragraph>
+          </>
         )
       }
       closeIcon={null}

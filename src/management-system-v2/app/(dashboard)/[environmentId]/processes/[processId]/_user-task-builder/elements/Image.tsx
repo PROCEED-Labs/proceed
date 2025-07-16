@@ -1,4 +1,4 @@
-import { useEditor, useNode, UserComponent, Node } from '@craftjs/core';
+import { useEditor, useNode, UserComponent } from '@craftjs/core';
 
 import { InputNumber } from 'antd';
 
@@ -6,12 +6,10 @@ import { useEffect, useRef, useState } from 'react';
 
 import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
-import { useEnvironment } from '@/components/auth-can';
 import { ContextMenu, Setting } from './utils';
 import ImageUpload from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
-import { enableUseFileManager } from 'FeatureFlags';
 import { useCanEdit } from '../../modeler';
 
 type ImageProps = {
@@ -42,7 +40,7 @@ export const ExportImage: UserComponent<ImageProps> = ({ src, width }) => {
 };
 
 // the Image component to use in the Editor
-export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
+export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
   const { query } = useEditor();
 
   const [showResize, setShowResize] = useState(false);
@@ -62,21 +60,15 @@ export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }
 
   const editingEnabled = useCanEdit();
 
-  const {
-    fileUrl: imageUrl,
-    download: getImageUrl,
-    remove,
-  } = useFileManager({ entityType: EntityType.PROCESS });
+  const { fileUrl: imageUrl, download: getImageUrl } = useFileManager({
+    entityType: EntityType.PROCESS,
+  });
 
   const params = useParams<{ processId: string }>();
-  const environment = useEnvironment();
-
-  const baseUrl =
-    editingEnabled && `/api/private/${environment.spaceId}/processes/${params.processId}/images`;
 
   useEffect(() => {
-    if (enableUseFileManager && src) {
-      getImageUrl(params.processId as string, src);
+    if (src) {
+      getImageUrl({ entityId: params.processId as string, filePath: src });
     }
   }, [src]);
 
@@ -98,9 +90,9 @@ export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }
         <img
           ref={imageRef}
           style={{ width: width && `${width}%` }}
-          src={src ? (enableUseFileManager ? imageUrl! : `${src}?${reloadParam}`) : fallbackImage}
+          src={src ? imageUrl! : fallbackImage}
         />
-        {editingEnabled && baseUrl && isHovered && (
+        {editingEnabled && isHovered && (
           <ImageUpload
             imageExists={!!src}
             onReload={() => {
@@ -108,16 +100,9 @@ export const EditImage: UserComponent<ImageProps> = ({ src, reloadParam, width }
             }}
             onImageUpdate={(imageFileName) => {
               setProp((props: ImageProps) => {
-                props.src =
-                  imageFileName &&
-                  (enableUseFileManager ? imageFileName : `${baseUrl}/${imageFileName}`);
+                props.src = imageFileName && imageFileName;
                 props.width = undefined;
               });
-            }}
-            endpoints={{
-              postEndpoint: baseUrl,
-              putEndpoint: src,
-              deleteEndpoint: src,
             }}
             config={{
               entityType: EntityType.PROCESS,
@@ -255,6 +240,8 @@ export const ImageSettings = () => {
   );
 };
 
+// clean up the uploaded image if it is not referenced anymore due to the form component being deleted
+// is handled by onNodesChange in index.tsx file
 EditImage.craft = {
   rules: {
     canDrag: () => false,
@@ -266,18 +253,5 @@ EditImage.craft = {
     src: undefined,
     reloadParam: 0,
     width: undefined,
-  },
-  custom: {
-    // clean up the uploaded image if it is not referenced anymore due to the form component being deleted
-    onDelete: async (node: Node) => {
-      const src = node.data.props.src as undefined | string;
-      if (src) {
-        enableUseFileManager
-          ? null // already handled by onNodesChange in index.tsx file
-          : await fetch(src, {
-              method: 'DELETE',
-            });
-      }
-    },
   },
 };

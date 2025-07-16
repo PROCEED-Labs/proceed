@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, Fragment, useEffect, useState } from 'react';
+import { FC, Fragment, use, useEffect, useState } from 'react';
 import {
   Typography,
   Alert,
@@ -27,6 +27,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/lib/auth';
+import { EnvVarsContext } from '@/components/env-vars-context';
 import AuthModal from '../auth-modal';
 
 const verticalGap = '1rem';
@@ -96,6 +97,7 @@ const SignIn: FC<{
   userType: 'guest' | 'user' | 'none';
   guestReferenceToken?: string;
 }> = ({ providers, userType, guestReferenceToken }) => {
+  const env = use(EnvVarsContext);
   const breakpoint = Grid.useBreakpoint();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? undefined;
@@ -227,19 +229,13 @@ const SignIn: FC<{
     });
   }
 
-  // TODO: disable this when only one organization is enabled
-  if (true) {
+  if (!env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
     tabs.push({
       icon: <GoOrganization size={26} />,
       label: 'Create Organization',
       key: 'create-organization',
       href: '/create-organization',
-      children: (
-        <CredentialsSignIn
-          provider={passwordSignupProvider as any}
-          callbackUrl={callbackUrlWithGuestRef}
-        />
-      ),
+      children: null,
     });
   }
 

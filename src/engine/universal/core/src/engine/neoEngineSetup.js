@@ -25,6 +25,22 @@ function networkResponseToSerializable(response) {
   return { response: filteredResponse, body: response.body };
 }
 
+/** @param {(...args: any[]) => Promise<any>} fn */
+function errorWrapper(fn) {
+  return async function (...args) {
+    try {
+      const response = await fn.call(...args);
+      return networkResponseToSerializable(response);
+    } catch (error) {
+      if (error && typeof error === 'object' && 'body' in error && 'response' in error) {
+        throw networkResponseToSerializable(error);
+      } else {
+        throw error;
+      }
+    }
+  };
+}
+
 module.exports = {
   setupNeoEngine() {
     // Register the modules which we wish to make use of in the script environment
@@ -33,14 +49,17 @@ module.exports = {
         capabilities.startCapability.call(capabilities, capabilityName, args, callback),
     });
     NeoEngine.provideService('network', {
-      get: async (_processId, _processInstanceId, _tokenId, url, options) => {
-        const response = await system.http.request.call(system.http, url, {
-          ...options,
-          method: 'GET',
-        });
-        return networkResponseToSerializable(response);
+      get: (_processId, _processInstanceId, _tokenId, url, options) => {
+        try {
+          return errorWrapper(system.http.request)(system.http, url, {
+            ...options,
+            method: 'GET',
+          });
+        } catch (e) {
+          console.error(e);
+        }
       },
-      post: async (
+      post: (
         _processId,
         _processInstanceId,
         _tokenId,
@@ -49,7 +68,7 @@ module.exports = {
         contentType = 'text/plain',
         options = {},
       ) => {
-        const response = await system.http.request.call(system.http, url, {
+        return errorWrapper(system.http.request)(system.http, url, {
           ...options,
           body,
           method: 'POST',
@@ -58,9 +77,8 @@ module.exports = {
             'Content-Type': contentType,
           },
         });
-        return networkResponseToSerializable(response);
       },
-      put: async (
+      put: (
         _processId,
         _processInstanceId,
         _tokenId,
@@ -69,7 +87,7 @@ module.exports = {
         contentType = 'text/plain',
         options = {},
       ) => {
-        const response = await system.http.request.call(system.http, url, {
+        return errorWrapper(system.http.request)(system.http, url, {
           ...options,
           body,
           method: 'PUT',
@@ -78,21 +96,18 @@ module.exports = {
             'Content-Type': contentType,
           },
         });
-        return networkResponseToSerializable(response);
       },
-      delete: async (_processId, _processInstanceId, _tokenId, url, options) => {
-        const response = await system.http.request.call(system.http, url, {
+      delete: (_processId, _processInstanceId, _tokenId, url, options) => {
+        return errorWrapper(system.http.request)(system.http, url, {
           ...options,
           method: 'DELETE',
         });
-        return networkResponseToSerializable(response);
       },
-      head: async (_processId, _processInstanceId, _tokenId, url, options) => {
-        const response = await system.http.request.call(system.http, url, {
+      head: (_processId, _processInstanceId, _tokenId, url, options) => {
+        return errorWrapper(system.http.request)(system.http, url, {
           ...options,
           method: 'HEAD',
         });
-        return networkResponseToSerializable(response);
       },
     });
   },

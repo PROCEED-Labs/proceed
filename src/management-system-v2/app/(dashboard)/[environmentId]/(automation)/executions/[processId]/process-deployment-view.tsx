@@ -23,12 +23,6 @@ import { MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import {
-  startInstance,
-  pauseInstance,
-  resumeInstance,
-  stopInstance,
-} from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useDeployment from '../deployment-hook';
@@ -37,6 +31,7 @@ import { getLatestDeployment, getVersionInstances, getYoungestInstance } from '.
 import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
+import StartFormModal from './start-form-modal';
 
 export default function ProcessDeploymentView({
   processId,
@@ -55,12 +50,22 @@ export default function ProcessDeploymentView({
   const [pausingInstance, setPausingInstance] = useState(false);
   const [stoppingInstance, setStoppingInstance] = useState(false);
 
+  const [startForm, setStartForm] = useState('');
+
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
   const { spaceId } = useEnvironment();
 
-  const { data: deploymentInfo, refetch } = useDeployment(processId, initialDeploymentInfo);
+  const {
+    data: deploymentInfo,
+    refetch,
+    startInstance,
+    resumeInstance,
+    pauseInstance,
+    stopInstance,
+    getStartForm,
+  } = useDeployment(processId, initialDeploymentInfo);
 
   const {
     selectedVersion,
@@ -175,12 +180,17 @@ export default function ProcessDeploymentView({
                   onClick={async () => {
                     setStartingInstance(true);
                     await wrapServerCall({
-                      fn: () =>
-                        startInstance(
-                          deploymentInfo.definitionId,
-                          getLatestDeployment(deploymentInfo).versionId,
-                          spaceId,
-                        ),
+                      fn: async () => {
+                        const versionId = getLatestDeployment(deploymentInfo).versionId;
+
+                        const startForm = await getStartForm(versionId);
+
+                        if (typeof startForm !== 'string') return startForm;
+
+                        if (startForm) {
+                          setStartForm(startForm);
+                        } else return startInstance(versionId);
+                      },
                       onSuccess: async (instanceId) => {
                         await refetch();
                         setSelectedInstanceId(instanceId);
@@ -265,8 +275,7 @@ export default function ProcessDeploymentView({
                     onClick={async () => {
                       setResumingInstance(true);
                       await wrapServerCall({
-                        fn: () =>
-                          resumeInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        fn: () => resumeInstance(selectedInstance.processInstanceId),
                         onSuccess: async () => await refetch(),
                       });
                       setResumingInstance(false);
@@ -283,8 +292,7 @@ export default function ProcessDeploymentView({
                     onClick={async () => {
                       setPausingInstance(true);
                       await wrapServerCall({
-                        fn: async () =>
-                          pauseInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        fn: async () => pauseInstance(selectedInstance.processInstanceId),
                         onSuccess: async () => await refetch(),
                       });
                       setPausingInstance(false);
@@ -301,8 +309,7 @@ export default function ProcessDeploymentView({
                     onClick={async () => {
                       setStoppingInstance(true);
                       await wrapServerCall({
-                        fn: async () =>
-                          stopInstance(processId, selectedInstance.processInstanceId, spaceId),
+                        fn: async () => stopInstance(selectedInstance.processInstanceId),
                         onSuccess: async () => await refetch(),
                       });
                       setStoppingInstance(false);
@@ -337,6 +344,27 @@ export default function ProcessDeploymentView({
             </Space>
           </Space>
         </Toolbar>
+
+        <StartFormModal
+          html={startForm}
+          onSubmit={(variables) => {
+            const versionId = getLatestDeployment(deploymentInfo).versionId;
+
+            const mappedVariables = Object.fromEntries(
+              Object.entries(variables).map(([key, value]) => [key, { value }]),
+            );
+            wrapServerCall({
+              fn: () => startInstance(versionId, mappedVariables),
+
+              onSuccess: async (instanceId) => {
+                await refetch();
+                setSelectedInstanceId(instanceId);
+                setStartForm('');
+              },
+            });
+          }}
+          onCancel={() => setStartForm('')}
+        />
 
         <div style={{ zIndex: '100', height: '100%' }}>
           <BPMNCanvas

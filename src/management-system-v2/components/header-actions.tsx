@@ -85,7 +85,7 @@ const HeaderActions: FC = () => {
         }),
       icon: <FaSignOutAlt />,
     });
-  } else if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+  } else if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
     avatarDropdownItems.push({
       key: 'profile',
       title: 'Profile Settings',
@@ -134,7 +134,7 @@ const HeaderActions: FC = () => {
       icon: <AppstoreOutlined />,
     });
 
-    if (envVars.PROCEED_PUBLIC_IAM_ACTIVATE) {
+    if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
       avatarDropdownItems.push({
         key: 'signout',
         title: 'Sign Out',
@@ -167,17 +167,22 @@ const HeaderActions: FC = () => {
       <Space style={{ float: 'right', padding: '16px' }}>
         {enableChatbot && <Assistant />}
         {actionButton}
-        <Dropdown
-          menu={{
-            items: avatarDropdownItems,
-          }}
-        >
-          {envVars.PROCEED_PUBLIC_IAM_ACTIVATE ? (
-            <SpaceLink href={`/profile`}>
-              <UserAvatar user={session.data.user} />
-            </SpaceLink>
-          ) : null}
-        </Dropdown>
+        <div id="PROCEED-profile-menu-button">
+          <Dropdown
+            menu={{
+              items: avatarDropdownItems,
+            }}
+            trigger={['click']}
+          >
+            {envVars.PROCEED_PUBLIC_IAM_ACTIVE ? (
+              <span>
+                {/* <SpaceLink href={`/profile`}> */}
+                <UserAvatar user={session.data.user} style={{ cursor: 'pointer' }} />
+                {/* </SpaceLink> */}
+              </span>
+            ) : null}
+          </Dropdown>
+        </div>
       </Space>
     </>
   );

@@ -94,7 +94,6 @@ export async function addUser(
   try {
     const userExists = await tx.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
-
     await tx.user.create({
       data: {
         ...user,

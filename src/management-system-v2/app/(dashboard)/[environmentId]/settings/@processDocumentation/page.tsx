@@ -6,11 +6,10 @@ import { settings } from './settings';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
   const {
-    ability,
     activeEnvironment: { spaceId },
   } = await getCurrentEnvironment(params.environmentId);
 
-  await populateSpaceSettingsGroup(spaceId, settings, ability);
+  await populateSpaceSettingsGroup(spaceId, settings);
 
   return (
     <>

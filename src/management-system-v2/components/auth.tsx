@@ -10,10 +10,10 @@ import {
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
+import { env } from '@/lib/ms-config/env-vars';
+import * as noIamUser from '@/lib/no-iam-user';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { cookies } from 'next/headers';
-import * as noIamUser from '@/lib/no-iam-user';
-import { env } from '@/lib/ms-config/env-vars';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 export const getCurrentUser = cache(async () => {

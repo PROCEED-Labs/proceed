@@ -5,9 +5,9 @@ import { userError } from '../user-error';
 import { createChangeEmailVerificationToken, getTokenHash, notExpired } from './utils';
 import { getCurrentUser } from '@/components/auth';
 import {
-  saveVerificationToken,
-  getVerificationToken,
-  deleteVerificationToken,
+  saveEmailVerificationToken,
+  getEmailVerificationToken,
+  deleteEmailVerificationToken,
 } from '@/lib/data/db/iam/verification-tokens';
 import { updateUser } from '@/lib/data/db/iam/users';
 import { sendEmail } from '../email/mailer';
@@ -27,11 +27,11 @@ export async function requestEmailChange(newEmail: string) {
       userId,
     });
 
-    await saveVerificationToken(verificationToken);
+    await saveEmailVerificationToken(verificationToken);
 
     const signinMail = renderSigninLinkEmail({
       signInLink: redirectUrl,
-      expires: verificationToken.expires,
+      expires: verificationToken.expiresAt,
       headerText: 'Change your email address',
       description:
         'Hi, you have requested to change the email address associated with your PROCEED account. Please click the link below to confirm this change:',
@@ -58,9 +58,10 @@ export async function changeEmail(token: string, identifier: string, cancel: boo
     return userError('You must be signed in to change your email');
 
   const tokenParams = { identifier, token: await getTokenHash(token) };
-  const verificationToken = await getVerificationToken(tokenParams);
+  const verificationToken = await getEmailVerificationToken(tokenParams);
   if (
     !verificationToken ||
+    verificationToken.type !== 'change_email' ||
     verificationToken.userId !== userId ||
     !(await notExpired(verificationToken))
   )
@@ -68,5 +69,5 @@ export async function changeEmail(token: string, identifier: string, cancel: boo
 
   if (!cancel) updateUser(userId, { email: verificationToken.identifier, isGuest: false });
 
-  await deleteVerificationToken(tokenParams);
+  await deleteEmailVerificationToken(tokenParams);
 }

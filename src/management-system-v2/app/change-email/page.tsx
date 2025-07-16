@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/components/auth';
-import { getTokenHash, notExpired } from '@/lib/change-email/utils';
-import { getVerificationToken } from '@/lib/data/db/iam/verification-tokens';
+import { getTokenHash, notExpired } from '@/lib/email-verification-tokens/utils';
+import { getEmailVerificationToken } from '@/lib/data/db/iam/verification-tokens';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import ChangeEmailCard from './change-email-card';
@@ -37,13 +37,14 @@ export default async function ChangeEmailPage({ searchParams }: { searchParams: 
   if (session.user.isGuest) redirect('/');
   const previousEmail = session.user.email;
 
-  const verificationToken = await getVerificationToken({
+  const verificationToken = await getEmailVerificationToken({
     identifier: email,
     token: await getTokenHash(token),
   });
 
   if (
     !verificationToken ||
+    verificationToken.type !== 'change_email' ||
     verificationToken.userId !== userId ||
     !(await notExpired(verificationToken))
   )

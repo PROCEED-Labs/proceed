@@ -15,6 +15,8 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import CustomNavigationLinks from './custom-navigation-links';
 import { debouncedSettingsUpdate } from '../utils';
+import { updateSpaceSettings } from '@/lib/data/space-settings';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type WrapperProps = {
   group: SettingGroup;
@@ -22,7 +24,7 @@ type WrapperProps = {
 
 const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const router = useRouter();
-  const { message } = App.useApp();
+  const app = App.useApp();
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
 
@@ -55,7 +57,21 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     <SettingsGroup
       group={upToDateGroup}
       onUpdate={setUpToDateGroup}
-      onNestedSettingUpdate={(key, value) => debouncedSettingsUpdate(spaceId, key, value)}
+      onNestedSettingUpdate={async (key, value) => {
+        if (key.includes('customNavigationLinks')) {
+          updateSpaceSettings;
+          wrapServerCall({
+            fn: () => updateSpaceSettings(spaceId, { [key]: value }),
+            onSuccess: () => {
+              app.message.success('Custom navigation links updated');
+              router.refresh(); // to refresh the page's layout
+            },
+            app,
+          });
+        } else {
+          debouncedSettingsUpdate(spaceId, key, value);
+        }
+      }}
       renderNestedSettingInput={(id, setting, _key, onUpdate) => {
         if (setting.key === 'spaceLogo') {
           return {
@@ -85,12 +101,12 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                             setLogoFilePath(filePath);
                           }
 
-                          if (deleted) message.success('Logo deleted');
-                          else message.success('Logo uploaded');
+                          if (deleted) app.message.success('Logo deleted');
+                          else app.message.success('Logo uploaded');
 
                           router.refresh(); // To refresh other places in the page
                         }}
-                        onUploadFail={() => message.error('Error uploading image')}
+                        onUploadFail={() => app.message.error('Error uploading image')}
                         config={{
                           entityType: EntityType.ORGANIZATION,
                           entityId: spaceId,

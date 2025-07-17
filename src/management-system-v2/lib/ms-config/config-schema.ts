@@ -15,7 +15,6 @@ export const mSConfigEnvironmentOnlyKeys = [
   'SHARING_ENCRYPTION_SECRET',
   'DATABASE_URL',
   'NODE_ENV',
-  'MS_ENABLED_RESOURCES',
   'MQTT_SERVER_ADDRESS',
   'MQTT_USERNAME',
   'MQTT_PASSWORD',

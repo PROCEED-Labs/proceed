@@ -236,7 +236,7 @@ export default function CustomLinkModal({
               }),
             ]}
           >
-            <Checkbox>Show Status</Checkbox>
+            <Checkbox disabled={values?.protocol?.startsWith('mqtt')}>Show Status</Checkbox>
           </Form.Item>
 
           <Form.Item
@@ -268,7 +268,7 @@ export default function CustomLinkModal({
               }),
             ]}
           >
-            <Checkbox>Clickable</Checkbox>
+            <Checkbox disabled={values?.protocol?.startsWith('mqtt')}>Clickable</Checkbox>
           </Form.Item>
 
           {/* Needed for submitting the form pressing enter */}

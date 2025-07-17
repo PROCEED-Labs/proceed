@@ -105,7 +105,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (can('view', 'Process')) {
+  if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && can('view', 'Process')) {
     const documentationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-documentation',

@@ -261,18 +261,24 @@ export function getVariableTooltip(variables: ProcessVariable[], name?: string) 
   return tooltip;
 }
 
+type AllowedTypes = React.ComponentProps<typeof ProcessVariableForm>['allowedTypes'];
 type VariableSettingProps = {
   variable?: string;
-  onChange: (newVariableName?: string, newVariableType?: 'number' | 'text') => void;
+  allowedTypes?: AllowedTypes;
+  onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
 };
 
-export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onChange }) => {
+export const VariableSetting: React.FC<VariableSettingProps> = ({
+  variable,
+  allowedTypes,
+  onChange,
+}) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
   const { variables, addVariable } = useProcessVariables();
 
   const validVariables = variables.filter(
-    (variable) => variable.dataType === 'string' || variable.dataType === 'number',
+    (variable) => !allowedTypes || allowedTypes.includes(variable.dataType),
   );
 
   return (
@@ -291,10 +297,7 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onCh
             }))}
             onChange={(val) => {
               const variableType = variables.find((v) => v.name === val)?.dataType;
-              onChange(
-                val,
-                variableType === 'string' ? 'text' : (variableType as 'number' | undefined),
-              );
+              onChange(val, variableType);
             }}
             dropdownRender={(menu) => (
               <>
@@ -310,11 +313,11 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onCh
           <ProcessVariableForm
             open={showVariableForm}
             variables={variables}
-            allowedTypes={['string', 'number']}
+            allowedTypes={allowedTypes}
             onSubmit={(newVar) => {
               addVariable(newVar);
               setShowVariableForm(false);
-              onChange(newVar.name, newVar.dataType === 'string' ? 'text' : 'number');
+              onChange(newVar.name, newVar.dataType);
             }}
             onCancel={() => setShowVariableForm(false)}
           />

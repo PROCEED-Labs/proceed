@@ -24,17 +24,19 @@ export const typeLabelMap = {
   array: 'List',
 };
 
+export type Variable = Omit<ProcessVariable, 'dataType'> & { dataType: keyof typeof typeLabelMap };
+
 type ProcessVariableFormProps = {
   open?: boolean;
-  originalVariable?: ProcessVariable;
-  allowedTypes?: (keyof typeof typeLabelMap)[];
-  variables: ProcessVariable[];
-  onSubmit: (variable: ProcessVariable) => void;
+  originalVariable?: Variable;
+  allowedTypes?: Variable['dataType'][];
+  variables: Variable[];
+  onSubmit: (variable: Variable) => void;
   onCancel: () => void;
 };
 
 type DefaultValueInputProps = {
-  variable?: Partial<ProcessVariable>;
+  variable?: Partial<Variable>;
   onChange: (newValue: any) => void;
 };
 
@@ -89,7 +91,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
-  const [editVariable, setEditVariable] = useState<Partial<ProcessVariable> | undefined>();
+  const [editVariable, setEditVariable] = useState<Partial<Variable> | undefined>();
 
   const [form] = Form.useForm();
 
@@ -108,8 +110,8 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
     try {
       await form.validateFields();
 
-      onSubmit(editVariable as ProcessVariable);
-    } catch (err) {}
+      onSubmit(editVariable as Variable);
+    } catch (err) { }
   };
 
   if (!editVariable) return <></>;

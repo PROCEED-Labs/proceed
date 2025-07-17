@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
+import type { Variable as ProcessVariable } from './variable-definition/process-variable-form';
 import {
   deepCopyElementById,
   getVariablesFromElement,
@@ -25,7 +25,7 @@ export default function useProcessVariables() {
 
       if (processEl) {
         setProcessElement(processEl);
-        setVariables(getVariablesFromElement(processEl.businessObject));
+        setVariables(getVariablesFromElement(processEl.businessObject) as ProcessVariable[]);
 
         // watch for updates in the bpmn and mirror them in this components state
         const onUpdate = (event: any) => {
@@ -34,7 +34,7 @@ export default function useProcessVariables() {
 
           if (context.element.id === processEl.id) {
             const variables = getVariablesFromElement(context.element.businessObject);
-            setVariables(variables);
+            setVariables(variables as ProcessVariable[]);
           }
         };
 

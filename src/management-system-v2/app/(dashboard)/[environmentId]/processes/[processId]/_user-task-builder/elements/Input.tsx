@@ -45,11 +45,11 @@ export const ExportInput: UserComponent<InputProps> = ({
               style={{ whiteSpace: 'nowrap' }}
               value={label}
               active={false}
-              onStopEditing={() => {}}
+              onStopEditing={() => { }}
               tagName="label"
               htmlFor={inputId}
-              onClick={() => {}}
-              onChange={() => {}}
+              onClick={() => { }}
+              onChange={() => { }}
             />
           </div>
         )}
@@ -198,10 +198,11 @@ export const InputSettings = () => {
 
       <VariableSetting
         variable={variable}
+        allowedTypes={['string', 'number']}
         onChange={(newVariable, newVariableType) =>
           setProp((props: InputProps) => {
             props.variable = newVariable;
-            props.type = newVariableType;
+            props.type = newVariableType && newVariableType === 'string' ? 'text' : 'number';
           })
         }
       />

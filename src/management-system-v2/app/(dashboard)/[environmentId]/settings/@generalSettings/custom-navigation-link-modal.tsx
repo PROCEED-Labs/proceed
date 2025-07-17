@@ -161,6 +161,10 @@ export default function CustomLinkModal({
                   value: 'top',
                 },
                 {
+                  label: 'Middle',
+                  value: 'middle',
+                },
+                {
                   label: 'Bottom',
                   value: 'bottom',
                 },

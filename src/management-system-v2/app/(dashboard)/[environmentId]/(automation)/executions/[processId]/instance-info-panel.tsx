@@ -5,6 +5,7 @@ import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/de
 import { Drawer, Grid, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
+import InstanceVariables from './instance-variables';
 
 export type RelevantInstanceInfo = {
   instance?: InstanceInfo;
@@ -74,6 +75,11 @@ export default function InstanceInfoPanel({
           key: 'Assignments',
           label: 'Assignments',
           children: 'How to proceed',
+        },
+        {
+          key: 'Variables',
+          label: 'Variables',
+          children: <InstanceVariables info={info} />,
         },
         {
           key: 'Resources',

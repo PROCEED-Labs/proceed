@@ -56,8 +56,6 @@ export default function ProcessDeploymentView({
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
-  const { spaceId } = useEnvironment();
-
   const {
     data: deploymentInfo,
     refetch,
@@ -224,7 +222,7 @@ export default function ProcessDeploymentView({
                                 }
                               }
                             }
-                          } catch (err) {}
+                          } catch (err) { }
 
                           return startInstance(versionId, variables);
                         }
@@ -250,11 +248,11 @@ export default function ProcessDeploymentView({
                       },
                       ...(selectedVersion
                         ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
                         : []),
                       ...deploymentInfo.versions.map((version) => ({
                         label: version.versionName || version.definitionName,
@@ -373,7 +371,7 @@ export default function ProcessDeploymentView({
                     instance: selectedInstance,
                     element: selectedElement!,
                     process: deploymentInfo,
-                    version: selectedVersion!,
+                    version: currentVersion!,
                   }}
                   open={infoPanelOpen}
                   close={() => setInfoPanelOpen(false)}

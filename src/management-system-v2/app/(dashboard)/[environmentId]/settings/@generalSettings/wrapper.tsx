@@ -36,11 +36,18 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const [spaceLogoFilePath, setLogoFilePath] = useState<string | undefined>(
     initialLogoFilePath || undefined,
   );
-  const [spaceLogoUrl, setSpaceLogoUrl] = useState<undefined | string>();
+  const [spaceLogoUrl, setSpaceLogoUrl] = useState<undefined | string>(() => {
+    if (initialLogoFilePath && initialLogoFilePath.startsWith('public/')) {
+      return initialLogoFilePath.replace('public/', '/');
+    }
+  });
 
   useEffect(() => {
     async function getLogo() {
-      if (!spaceLogoFilePath) return;
+      if (!spaceLogoFilePath || spaceLogoFilePath?.startsWith('public/')) {
+        return;
+      }
+
       try {
         const response = await getLogoUrl({ entityId: spaceId, filePath: spaceLogoFilePath });
         if (response.fileUrl) {
@@ -74,7 +81,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                     visible: false,
                     mask: (
                       <ImageUpload
-                        imageExists={!!spaceLogoUrl}
+                        imageExists={!!spaceLogoUrl && !spaceLogoFilePath!.startsWith('public/')}
                         onImageUpdate={(filePath) => {
                           const deleted = typeof filePath === 'undefined';
 

@@ -161,7 +161,7 @@ async function writeSeedToDb(seed: DBSeed) {
     for (const organization of seed.organizations) {
       // create org
       let org = await getEnvironmentById(organization.id);
-      if (!org)
+      if (!org) {
         org = (await addEnvironment(
           {
             id: organization.id,
@@ -172,10 +172,12 @@ async function writeSeedToDb(seed: DBSeed) {
             contactEmail: organization.contactEmail,
             isOrganization: true,
             isActive: true,
+            spaceLogo: organization.spaceLogo,
           },
           undefined,
           tx,
         )) as OrganizationEnvironment;
+      }
 
       // Add members + get their roles
       const userRoleMappings = new Map<string, string[]>();

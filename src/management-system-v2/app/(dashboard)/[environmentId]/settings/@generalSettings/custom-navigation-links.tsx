@@ -61,13 +61,13 @@ const CustomNavigationLinks = ({
       title: 'Show Status',
       dataIndex: 'showStatus',
       key: 'showStatus',
-      render: (show: boolean) => <Checkbox checked={show} />,
+      render: (show: boolean) => <Checkbox checked={show} disabled />,
     },
     {
       title: 'Clickable',
       dataIndex: 'clickable',
       key: 'clickable',
-      render: (show: boolean) => <Checkbox checked={show} />,
+      render: (show: boolean) => <Checkbox checked={show} disabled />,
     },
     {
       title: 'Action',

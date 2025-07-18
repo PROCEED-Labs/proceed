@@ -11,8 +11,25 @@ async function ServerLinkStatus({ link }: { link: CustomNavigationLink }) {
 
 export function CustomLink({ link }: { link: CustomNavigationLink }) {
   const children = (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      {link.name}
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        width: '100%',
+        alignItems: 'center',
+      }}
+    >
+      <div style={{ display: 'flex', overflow: 'hidden' }}>
+        <span
+          style={{
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {link.name}
+        </span>
+      </div>
 
       {link.showStatus && (
         <ClientLinkState

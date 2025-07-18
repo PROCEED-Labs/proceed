@@ -1,6 +1,6 @@
 import z from 'zod';
 import db from '@/lib/data/db';
-import { addUser, getUserById } from './data/db/iam/users';
+import { addUser, getUserById, setUserPassword } from './data/db/iam/users';
 import { addRoleMappings } from './data/db/iam/role-mappings';
 import {
   OrganizationEnvironment,
@@ -14,6 +14,7 @@ import { getRoleMappingByUserId } from './data/db/iam/role-mappings';
 import { zodPhoneNumber } from './utils';
 import { permissionIdentifiersToNumber } from './authorization/permissionHelpers';
 import { ResourceType, resourceAction, resources } from './ability/caslAbility';
+import { hashPassword } from './password-hashes';
 
 /* -------------------------------------------------------------------------------------------------
  * Schema + Verification
@@ -151,6 +152,8 @@ async function writeSeedToDb(seed: DBSeed) {
       }
 
       const newUser = await addUser({ ...user, isGuest: false, emailVerifiedOn: null }, tx);
+      const hashedPassword = await hashPassword(user.initialPassword);
+      await setUserPassword(user.id, hashedPassword, tx);
       usernameToId.set(user.username, newUser.id);
     }
 

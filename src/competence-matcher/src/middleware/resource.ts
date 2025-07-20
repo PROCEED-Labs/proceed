@@ -132,25 +132,29 @@ export async function handleCreateResourceList(
   // Ideally, the worker should handle the splitting as well
   db.updateJobStatus(jobId!, 'preprocessing');
   let job: EmbeddingJob | undefined;
-  try {
-    const tasks = await splitSemantically(descriptionEmbeddingInput);
-    job = {
-      jobId: jobId!,
-      dbName: dbName,
-      tasks,
-    };
-  } catch (err) {
-    console.error('Error splitting semantically:', err);
-    job = {
-      jobId: jobId!,
-      dbName: dbName,
-      tasks: descriptionEmbeddingInput,
-    };
-  }
-  db.updateJobStatus(jobId!, 'pending');
-  workerManager.enqueue(job, 'embedder', {
-    onExit: (job, code) => onWorkerExit?.(job, code, jobId!),
-  });
+
+  splitSemantically(descriptionEmbeddingInput)
+    .then((tasks) => {
+      job = {
+        jobId: jobId!,
+        dbName: dbName,
+        tasks,
+      };
+    })
+    .catch((err) => {
+      console.error('Error splitting semantically:', err);
+      job = {
+        jobId: jobId!,
+        dbName: dbName,
+        tasks: descriptionEmbeddingInput,
+      };
+    })
+    .finally(() => {
+      db.updateJobStatus(jobId!, 'pending');
+      workerManager.enqueue(job!, 'embedder', {
+        onExit: (job, code) => onWorkerExit?.(job, code, jobId!),
+      });
+    });
 
   return { jobId: jobId!, status: 'pending' };
 }

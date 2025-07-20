@@ -96,10 +96,15 @@ async function handleReasoning(job: any, message: any) {
   // Add reasoning before saving in DB
   for (const [task, matches] of Object.entries(message.workload)) {
     const taskMatches = await addReason<
-      Match & { taskId: string; type: 'name' | 'description' | 'proficiencyLevel' }
+      Match & {
+        taskId: string;
+        taskText: string;
+        type: 'name' | 'description' | 'proficiencyLevel';
+      }
     >(
       matches as (Match & {
         taskId: string;
+        taskText: string;
         type: 'name' | 'description' | 'proficiencyLevel';
       })[],
       task,
@@ -114,10 +119,12 @@ async function handleReasoning(job: any, message: any) {
     db.addMatchResult({
       jobId: job.jobId,
       taskId: match.taskId,
+      taskText: match.taskText,
       competenceId: match.competenceId,
+      resourceId: match.resourceId,
+      distance: match.distance,
       text: match.text,
       type: match.type,
-      distance: match.distance,
       reason: match.reason,
     });
   }

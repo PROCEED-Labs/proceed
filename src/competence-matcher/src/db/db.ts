@@ -65,12 +65,14 @@ class VectorDataBase {
       CREATE TABLE IF NOT EXISTS match_results (
         id            TEXT   PRIMARY KEY,      -- UUID for this match record
         job_id        TEXT   NOT NULL          REFERENCES jobs(id) ON DELETE CASCADE,
-        task_id       TEXT   NOT NULL,         -- task ID this match belongs to
+        task_id       TEXT   NOT NULL,         -- task ID this match belongs to,
+        task_text     TEXT   NOT NULL,         -- task text that was used for matching
         competence_id TEXT   NOT NULL,         -- matched competence
+        resource_id   TEXT   NOT NULL,         -- resource ID the competence belongs to
         distance      REAL   NOT NULL,         -- similarity score
         text          TEXT   NOT NULL,         -- the matched snippet
         type          TEXT   NOT NULL,         -- 'name' | 'description' | 'proficiencyLevel'
-        reason        TEXT                    -- llm based reason for the match
+        reason        TEXT                     -- llm based reason for the match
       );
     `);
     this.db.exec(`
@@ -221,10 +223,12 @@ class VectorDataBase {
   public addMatchResult(opts: {
     jobId: string;
     taskId: string;
+    taskText: string;
     competenceId: string;
+    resourceId: string;
+    distance: number;
     text: string;
     type: 'name' | 'description' | 'proficiencyLevel';
-    distance: number;
     reason?: string; // optional reason for the match
   }): void {
     const id = uuid();
@@ -232,18 +236,20 @@ class VectorDataBase {
       .prepare(
         `
           INSERT INTO match_results
-            (id, job_id, task_id, competence_id, text, type, distance, reason)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (id, job_id, task_id, task_text, competence_id, resource_id, distance, text, type, reason)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
       )
       .run(
         id,
         opts.jobId,
         opts.taskId,
+        opts.taskText,
         opts.competenceId,
+        opts.resourceId,
+        opts.distance,
         opts.text,
         opts.type,
-        opts.distance,
         opts.reason ?? null,
       );
   }
@@ -254,16 +260,18 @@ class VectorDataBase {
    */
   public getMatchResults(jobId: string): Array<{
     taskId: string;
+    taskText: string;
     competenceId: string;
+    resourceId: string;
+    distance: number;
     text: string;
     type: string;
-    distance: number;
     reason?: string;
   }> {
     return this.db
       .prepare(
         `
-    SELECT task_id, competence_id, text, type, distance, reason
+    SELECT task_id, task_text, competence_id, resource_id, distance, text, type, reason
       FROM match_results
      WHERE job_id = ?
      ORDER BY task_id, distance
@@ -272,10 +280,12 @@ class VectorDataBase {
       .all(jobId)
       .map((r: any) => ({
         taskId: r.task_id,
+        taskText: r.task_text,
         competenceId: r.competence_id,
+        resourceId: r.resource_id,
+        distance: r.distance,
         text: r.text,
         type: r.type,
-        distance: r.distance,
         reason: r.reason ?? undefined,
       }));
   }
@@ -767,6 +777,7 @@ class VectorDataBase {
     },
   ): Array<{
     competenceId: string;
+    resourceId: string;
     text: string;
     type: string;
     distance: number;
@@ -783,7 +794,7 @@ class VectorDataBase {
     if (k !== undefined && k <= 0) throw new Error('k must be > 0');
 
     let sql = `
-      SELECT c.competence_id, ce.text, ce.type,
+      SELECT c.competence_id, r.resource_id, ce.text, ce.type,
              ${metric}(ce.embedding, vec_f32(?)) AS distance
       FROM competence_embedding ce
       JOIN competence c    ON ce.cid = c._cid
@@ -815,9 +826,10 @@ class VectorDataBase {
 
     let result = rows.map((r) => ({
       competenceId: r.competence_id,
+      resourceId: r.resource_id,
+      distance: r.distance,
       text: r.text,
       type: r.type,
-      distance: r.distance,
     }));
 
     // Normalise distances to [0, 1], depending on the metric:
@@ -844,7 +856,6 @@ class VectorDataBase {
       ...row,
       distance: 1 - row.distance, // Convert distance to similarity
     }));
-
     return result;
   }
 }

@@ -10,6 +10,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { TransformerPipelineOptions } from './types';
 
+import { isMainThread } from 'node:worker_threads';
+
 /**
  * Base class that handles:
  *  - singleton pipeline instance
@@ -50,7 +52,7 @@ export abstract class TransformerPipeline<PI> {
       this.instance = await pipeline(task as PipelineType, model, opts);
 
       // mark it as loaded and log on first load
-      if (!this.loaded) {
+      if (!this.loaded && isMainThread) {
         console.log(`${model} (${task}) is ready`);
         this.loaded = true;
       }

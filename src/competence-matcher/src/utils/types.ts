@@ -41,6 +41,7 @@ export type MatchingTask = {
 
 export type Match = {
   competenceId: string;
+  resourceId: string;
   text: string;
   type: string;
   distance: number;
@@ -87,18 +88,28 @@ export interface MatchingJob extends Job {
 }
 
 export type GroupedMatchResults = {
-  taskId: string;
-  competences: {
-    competenceId: string;
-    matchings: {
-      text: string;
-      type: 'name' | 'description' | 'proficiencyLevel';
-      matchProbability: number;
-      reason?: string;
-    }[];
-    avgMatchProbability: number;
-  }[];
-}[];
+  resourceId: string;
+  taskMatchings: {
+    taskId: string;
+    taskText: string;
+    competenceMatchings: {
+      competenceId: string;
+      matchings: {
+        text: string;
+        type: 'name' | 'description' | 'proficiencyLevel';
+        // Sorted by DESC
+        matchProbability: number; // Normalised inverted distance (, where distance refers to the cosine similarity)
+        reason?: string; // Reason for the match
+      }[]; // Array: Competence-Parts matched to task
+      // Sorted by DESC
+      avgMatchProbability: number; // Average matchProbability of all parts of this competence
+    }[]; // Array: Competences matched to task
+    // Sorted by DESC
+    maxMatchProbability: number; // Best avgMatchingProbability of all competences for this task
+  }[]; // Array: Matching of the resource to each task, respectively
+  // Sorted by DESC
+  avgTaskMatchProbability: number; // Average maxMatchProbability of all tasks for this resource
+}[]; // Array: All available resources with their matchings
 
 export type workerTypes = 'embedder' | 'matcher';
 

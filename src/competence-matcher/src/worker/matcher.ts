@@ -19,7 +19,7 @@ parentPort!.once('message', async (job: MatchingJob) => {
 
   await withJobUpdates<MatchingJob>(
     job,
-    async (db, { jobId, tasks, listId, resourceId }) => {
+    async (db, { jobId, tasks, listId: listIdFilter, resourceId: resourceIdFilter }) => {
       for (const task of tasks) {
         const { taskId, name, description, executionInstructions, requiredCompetencies } = task;
         if (!description) {
@@ -31,8 +31,8 @@ parentPort!.once('message', async (job: MatchingJob) => {
         // Search for matches in the competence list (and resource if provided)
         let matches: Match[] = db.searchEmbedding(vector, {
           filter: {
-            listId: listId,
-            resourceId: resourceId, // Optional: If matching against a single resource
+            listId: listIdFilter,
+            resourceId: resourceIdFilter, // Optional: If matching against a single resource
           },
         });
 
@@ -68,7 +68,9 @@ parentPort!.once('message', async (job: MatchingJob) => {
           matchResults[description].push({
             jobId,
             taskId,
+            taskText: description,
             competenceId: match.competenceId,
+            resourceId: match.resourceId,
             text: match.text,
             type: match.type as 'name' | 'description' | 'proficiencyLevel',
             distance: match.distance,

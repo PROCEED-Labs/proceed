@@ -563,37 +563,64 @@
                 "items": {
                     "type": "object",
                     "required": [
-                        "taskId",
-                        "competences"
+                        "resourceId",
+                        "taskMatchings",
+                        "avgTaskMatchProbability"
                     ],
                     "properties": {
-                        "taskId": {
+                        "resourceId": {
                             "type": "string"
                         },
-                        "competences": {
+                        "taskMatchings": {
                             "type": "array",
                             "items": {
                                 "type": "object",
                                 "required": [
-                                    "competenceId",
-                                    "avgMatchProbability",
-                                    "matchings"
+                                    "taskId",
+                                    "taskText",
+                                    "competenceMatchings",
+                                    "maxMatchProbability"
                                 ],
                                 "properties": {
-                                    "competenceId": {
+                                    "taskId": {
                                         "type": "string"
                                     },
-                                    "avgMatchProbability": {
-                                        "type": "number"
+                                    "taskText": {
+                                        "type": "string"
                                     },
-                                    "matchings": {
+                                    "competenceMatchings": {
                                         "type": "array",
                                         "items": {
-                                            "$ref": "#/components/schemas/MatchDetail"
+                                            "type": "object",
+                                            "required": [
+                                                "competenceId",
+                                                "matchings",
+                                                "avgMatchProbability"
+                                            ],
+                                            "properties": {
+                                                "competenceId": {
+                                                    "type": "string"
+                                                },
+                                                "matchings": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/MatchDetail"
+                                                    }
+                                                },
+                                                "avgMatchProbability": {
+                                                    "type": "number"
+                                                }
+                                            }
                                         }
+                                    },
+                                    "maxMatchProbability": {
+                                        "type": "number"
                                     }
                                 }
                             }
+                        },
+                        "avgTaskMatchProbability": {
+                            "type": "number"
                         }
                     }
                 }

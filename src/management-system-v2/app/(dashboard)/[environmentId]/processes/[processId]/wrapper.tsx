@@ -23,6 +23,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
@@ -44,6 +45,8 @@ type SubprocessInfo = {
 type WrapperProps = PropsWithChildren<{
   processName: string;
   processes: { id: string; name: string }[];
+  modelerComponent: React.ReactNode;
+  timelineComponent: React.ReactNode;
   // potentialOwner: { user: UserType; roles: RoleType };
 }>;
 
@@ -51,6 +54,8 @@ const Wrapper = ({
   children,
   processName,
   processes,
+  modelerComponent,
+  timelineComponent,
   // potentialOwner: { user, roles },
 }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
@@ -67,6 +72,9 @@ const Wrapper = ({
   const modeler = useModelerStateStore((state) => state.modeler);
   const rootElement = useModelerStateStore((state) => state.rootElement);
   const [editingName, setEditingName] = useState<null | string>(null);
+  const timelineViewActive = useTimelineViewStore((state) => state.timelineViewActive);
+  const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
+  const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
 
   const {
     token: { fontSizeHeading1 },
@@ -106,6 +114,28 @@ const Wrapper = ({
       setClosed(false);
     }
   }, [minimized]);
+
+  // Check for #gantt-view hash and automatically activate/deactivate timeline view
+  useEffect(() => {
+    const checkHashAndToggleTimeline = () => {
+      const hash = window.location.hash;
+      if (hash === '#gantt-view' && !timelineViewActive) {
+        enableTimelineView();
+      } else if (hash !== '#gantt-view' && timelineViewActive) {
+        disableTimelineView();
+      }
+    };
+
+    // Check on mount
+    checkHashAndToggleTimeline();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', checkHashAndToggleTimeline);
+
+    return () => {
+      window.removeEventListener('hashchange', checkHashAndToggleTimeline);
+    };
+  }, [enableTimelineView, disableTimelineView, timelineViewActive]);
 
   const showMobileView = useMobileModeler();
 
@@ -303,7 +333,26 @@ const Wrapper = ({
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      {children}
+      <div
+        style={{
+          visibility: timelineViewActive ? 'hidden' : 'visible',
+          position: timelineViewActive ? 'absolute' : 'relative',
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        {modelerComponent}
+      </div>
+      <div
+        style={{
+          visibility: timelineViewActive ? 'visible' : 'hidden',
+          position: timelineViewActive ? 'relative' : 'absolute',
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        {timelineViewActive && timelineComponent}
+      </div>
       {minimized ? (
         <Overlay processId={processId as string} onClose={() => setClosed(true)} />
       ) : null}

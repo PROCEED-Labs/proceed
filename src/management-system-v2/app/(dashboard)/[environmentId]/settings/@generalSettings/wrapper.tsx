@@ -48,7 +48,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
         if (response.fileUrl) {
           setSpaceLogoUrl(response.fileUrl);
         }
-      } catch (e) { }
+      } catch (e) {}
     }
     getLogo();
   }, [spaceId, spaceLogoFilePath, getLogoUrl]);

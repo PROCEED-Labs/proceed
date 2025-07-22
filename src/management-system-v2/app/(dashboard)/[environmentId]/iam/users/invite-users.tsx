@@ -158,7 +158,7 @@ const AddUsersModal: FC<{
   );
 };
 
-const HeaderActions: FC = () => {
+const InviteUserButton: FC = () => {
   const env = use(EnvVarsContext);
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
   const breakpoint = Grid.useBreakpoint();
@@ -175,7 +175,7 @@ const HeaderActions: FC = () => {
             onClick={() => setCreateUserModalOpen(true)}
             style={{ marginRight: '10px' }}
           >
-            {breakpoint.xl ? 'New User' : 'New'}
+            {breakpoint.xl ? 'Invite User' : 'Invite'}
           </Button>
         </AuthCan>
       )}
@@ -202,4 +202,4 @@ export const FloatButtonActions: FC = () => {
   );
 };
 
-export default HeaderActions;
+export default InviteUserButton;

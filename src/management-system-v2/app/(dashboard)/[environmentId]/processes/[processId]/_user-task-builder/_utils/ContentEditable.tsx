@@ -48,7 +48,7 @@ const CustomContentEditable: React.FC<CustomContentEditableProps> = ({ EditableE
         editor.update(() => {
           $selectAll();
         }),
-      10,
+      0,
     );
   }, [isEditable]);
 

@@ -10,9 +10,11 @@ import {
   UserHasToDeleteOrganizationsError,
   deleteUser as _deleteUser,
   updateUser as _updateUser,
+  setUserPassword as _setUserPassword,
   getUserById,
 } from '@/lib/data/db/iam/users';
 import { getEnvironmentById } from './db/iam/environments';
+import { hashPassword } from '../password-hashes';
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
@@ -92,4 +94,25 @@ export async function isUserGuest() {
   const user = await getUserById(userId);
 
   return user?.isGuest;
+}
+
+export async function setUserPassword(newPassword: string) {
+  try {
+    const { userId } = await getCurrentUser();
+    const user = await getUserById(userId);
+
+    if (!user) {
+      return userError('Invalid session, please sign in again');
+    }
+
+    if (user?.isGuest) {
+      return userError('Guest users cannot change their password');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await _setUserPassword(userId, passwordHash);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 }

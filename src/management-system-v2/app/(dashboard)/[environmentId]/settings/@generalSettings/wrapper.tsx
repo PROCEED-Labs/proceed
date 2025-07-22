@@ -14,7 +14,7 @@ import ImageUpload from '@/components/image-upload';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import CustomNavigationLinks from './custom-navigation-links';
-import { debouncedSettingsUpdate } from '../utils';
+import { useDebouncedSettingsUpdate } from '../utils';
 
 type WrapperProps = {
   group: SettingGroup;
@@ -25,6 +25,8 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const { message } = App.useApp();
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
+
+  const debouncedUpdate = useDebouncedSettingsUpdate();
 
   const { download: getLogoUrl } = useFileManager({
     entityType: EntityType.ORGANIZATION,
@@ -46,7 +48,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
         if (response.fileUrl) {
           setSpaceLogoUrl(response.fileUrl);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     getLogo();
   }, [spaceId, spaceLogoFilePath, getLogoUrl]);
@@ -55,7 +57,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     <SettingsGroup
       group={upToDateGroup}
       onUpdate={setUpToDateGroup}
-      onNestedSettingUpdate={(key, value) => debouncedSettingsUpdate(spaceId, key, value)}
+      onNestedSettingUpdate={(key, value) => debouncedUpdate(spaceId, key, value)}
       renderNestedSettingInput={(id, setting, _key, onUpdate) => {
         if (setting.key === 'spaceLogo') {
           return {

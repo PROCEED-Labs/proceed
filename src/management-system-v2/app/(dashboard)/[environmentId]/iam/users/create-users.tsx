@@ -1,8 +1,20 @@
 import { useEnvironment } from '@/components/auth-can';
 import { createUserAndAddToOrganization } from '@/lib/data/environment-memberships';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { App, Button, Form, Input, Modal, ModalProps, Space } from 'antd';
+import {
+  App,
+  Button,
+  Divider,
+  Form,
+  Input,
+  Modal,
+  ModalProps,
+  Select,
+  Space,
+  Typography,
+} from 'antd';
 import { useRouter } from 'next/navigation';
+import useOrganizationRoles from './use-org-roles';
 
 // TODO: check permissions
 
@@ -19,6 +31,7 @@ export function CreateUsersModal({
   const [form] = Form.useForm();
   const { spaceId } = useEnvironment();
   const router = useRouter();
+  const { roles } = useOrganizationRoles(spaceId);
 
   function close() {
     _close();
@@ -32,7 +45,9 @@ export function CreateUsersModal({
           firstName: values.firstName,
           lastName: values.lastName,
           username: values.username,
+
           password: values.password,
+          roles: values.roles || [],
         }),
       onSuccess: () => {
         router.refresh();
@@ -70,6 +85,27 @@ export function CreateUsersModal({
         >
           <Input.Password />
         </Form.Item>
+
+        {roles && roles.length > 0 && (
+          <>
+            <Divider />
+
+            <Typography.Title style={{ marginBottom: 0 }}>Roles</Typography.Title>
+            <Typography.Text style={{ display: 'block', marginBottom: '0.5rem' }}>
+              You can select roles for this user.
+            </Typography.Text>
+
+            <Form.Item name="roles">
+              <Select
+                mode="multiple"
+                allowClear
+                style={{ width: '100%' }}
+                placeholder="Select roles"
+                options={roles.map((role) => ({ label: role.name, value: role.id }))}
+              />
+            </Form.Item>
+          </>
+        )}
 
         <Space style={{ justifyContent: 'end', width: '100%' }}>
           <Button onClick={close}>Cancel</Button>

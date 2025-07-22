@@ -9,14 +9,17 @@ import { OrganizationEnvironment } from './environment-schema';
 import { generateInvitationToken } from '../invitation-tokens';
 import { toCaslResource } from '../ability/caslAbility';
 import { getRoleById } from '@/lib/data/db/iam/roles';
-import { type RoleMapping } from '@/lib/data/db/iam/role-mappings';
+import { addRoleMappings, type RoleMapping } from '@/lib/data/db/iam/role-mappings';
 import { addUser, getUserByEmail, setUserPassword } from '@/lib/data/db/iam/users';
 import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { addMember, isMember, removeMember } from '@/lib/data/db/iam/memberships';
 import { env } from '../ms-config/env-vars';
-import { AuthenticatedUserSchema } from './user-schema';
+import { AuthenticatedUser, AuthenticatedUserSchema } from './user-schema';
 import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
+import { getRoles } from './roles';
+import { asyncMap } from '../helpers/javascriptHelpers';
+import { User } from '@prisma/client';
 
 const EmailListSchema = z.array(z.string().email());
 
@@ -118,7 +121,11 @@ const createUserDataSchema = AuthenticatedUserSchema.pick({
 });
 export async function createUserAndAddToOrganization(
   organizationId: string,
-  { password, ...userDataInput }: z.infer<typeof createUserDataSchema> & { password: string },
+  {
+    password,
+    roles,
+    ...userDataInput
+  }: z.infer<typeof createUserDataSchema> & { password: string; roles: string[] },
 ) {
   try {
     const { ability } = await getCurrentEnvironment(organizationId);
@@ -133,16 +140,30 @@ export async function createUserAndAddToOrganization(
 
     const userDataParsed = createUserDataSchema.parse(userDataInput);
 
-    let user;
+    let user: AuthenticatedUser;
     await db.$transaction(async (tx) => {
-      user = await addUser({ ...userDataParsed, isGuest: false, emailVerifiedOn: null }, tx);
+      // no need to check the if the user has permissions to create the role mappings since it's
+      // he's an admin
+      user = (await addUser(
+        { ...userDataParsed, isGuest: false, emailVerifiedOn: null },
+        tx,
+      )) as AuthenticatedUser;
       const passwordHash = await hashPassword(password);
       await setUserPassword(user.id, passwordHash, tx, true);
 
-      await addMember(organizationId, user.id, undefined, tx);
+      await addMember(organizationId, user.id, ability, tx);
+      await addRoleMappings(
+        roles.map((roleId) => ({
+          roleId,
+          environmentId: organizationId,
+          userId: user.id,
+        })),
+        ability,
+        tx,
+      );
     });
 
-    return user;
+    return user!;
   } catch (error) {
     const message = getErrorMessage(error);
     return userError(message);

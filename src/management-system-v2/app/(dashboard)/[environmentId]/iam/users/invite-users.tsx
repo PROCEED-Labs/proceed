@@ -23,6 +23,7 @@ import { DefaultOptionType } from 'antd/es/select';
 import { useRouter } from 'next/navigation';
 import { FC, use, useEffect, useState, useTransition } from 'react';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import useOrganizationRoles from './use-org-roles';
 
 const AddUsersModal: FC<{
   modalOpen: boolean;
@@ -36,15 +37,7 @@ const AddUsersModal: FC<{
   const [users, setUsers] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<DefaultOptionType[]>([]);
 
-  const { data } = useQuery({
-    queryFn: async () => {
-      const roles = await getRoles(environment.spaceId);
-      if ('error' in roles) throw new Error();
-      return roles;
-    },
-    queryKey: ['roles', environment.spaceId],
-  });
-  const roles = data?.filter((role) => !['@guest', '@everyone'].includes(role.name));
+  const { roles } = useOrganizationRoles(environment.spaceId);
 
   useEffect(() => {
     form.resetFields();

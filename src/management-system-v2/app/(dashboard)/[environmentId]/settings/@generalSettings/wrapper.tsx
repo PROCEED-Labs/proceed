@@ -14,9 +14,7 @@ import ImageUpload from '@/components/image-upload';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import CustomNavigationLinks from './custom-navigation-links';
-import { debouncedSettingsUpdate } from '../utils';
-import { updateSpaceSettings } from '@/lib/data/space-settings';
-import { wrapServerCall } from '@/lib/wrap-server-call';
+import { useDebouncedSettingsUpdate } from '../utils';
 
 type WrapperProps = {
   group: SettingGroup;
@@ -27,6 +25,8 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const app = App.useApp();
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
+
+  const debouncedUpdate = useDebouncedSettingsUpdate();
 
   const { download: getLogoUrl } = useFileManager({
     entityType: EntityType.ORGANIZATION,
@@ -57,21 +57,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     <SettingsGroup
       group={upToDateGroup}
       onUpdate={setUpToDateGroup}
-      onNestedSettingUpdate={async (key, value) => {
-        if (key.includes('customNavigationLinks')) {
-          updateSpaceSettings;
-          wrapServerCall({
-            fn: () => updateSpaceSettings(spaceId, { [key]: value }),
-            onSuccess: () => {
-              app.message.success('Custom navigation links updated');
-              router.refresh(); // to refresh the page's layout
-            },
-            app,
-          });
-        } else {
-          debouncedSettingsUpdate(spaceId, key, value);
-        }
-      }}
+      onNestedSettingUpdate={(key, value) => debouncedUpdate(spaceId, key, value)}
       renderNestedSettingInput={(id, setting, _key, onUpdate) => {
         if (setting.key === 'spaceLogo') {
           return {

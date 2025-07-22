@@ -89,13 +89,6 @@ export async function getUsersFavourites(): Promise<String[]> {
   return user?.favourites ?? [];
 }
 
-export async function isUserGuest() {
-  const { userId } = await getCurrentUser();
-  const user = await getUserById(userId);
-
-  return user?.isGuest;
-}
-
 export async function setUserPassword(newPassword: string) {
   try {
     const { userId } = await getCurrentUser();

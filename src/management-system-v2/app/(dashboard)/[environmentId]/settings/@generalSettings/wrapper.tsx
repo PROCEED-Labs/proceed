@@ -22,7 +22,7 @@ type WrapperProps = {
 
 const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const router = useRouter();
-  const { message } = App.useApp();
+  const app = App.useApp();
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
 
@@ -87,12 +87,12 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                             setLogoFilePath(filePath);
                           }
 
-                          if (deleted) message.success('Logo deleted');
-                          else message.success('Logo uploaded');
+                          if (deleted) app.message.success('Logo deleted');
+                          else app.message.success('Logo uploaded');
 
                           router.refresh(); // To refresh other places in the page
                         }}
-                        onUploadFail={() => message.error('Error uploading image')}
+                        onUploadFail={() => app.message.error('Error uploading image')}
                         config={{
                           entityType: EntityType.ORGANIZATION,
                           entityId: spaceId,

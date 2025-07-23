@@ -40,10 +40,12 @@ export default function InstanceInfoPanel({
   open,
   close,
   info,
+  refetch,
 }: {
   close: () => void;
   open: boolean;
   info: RelevantInstanceInfo;
+  refetch: () => void;
 }) {
   const resizableElementRef = useRef<ResizableElementRefType>(null);
   const breakpoints = Grid.useBreakpoint();
@@ -79,7 +81,7 @@ export default function InstanceInfoPanel({
         {
           key: 'Variables',
           label: 'Variables',
-          children: <InstanceVariables info={info} />,
+          children: <InstanceVariables refetch={refetch} info={info} />,
         },
         {
           key: 'Resources',

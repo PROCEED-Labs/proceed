@@ -5,20 +5,31 @@ import { EditOutlined } from '@ant-design/icons';
 
 import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
-import { Button, Form, Input, InputNumber, Modal, Switch, Table } from 'antd';
+import { App, Button, Form, Input, InputNumber, Modal, Switch, Table } from 'antd';
 import { typeLabelMap } from '../../../processes/[processId]/variable-definition/process-variable-form';
 import { updateVariables } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import TextArea from 'antd/es/input/TextArea';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type InstanceVariableProps = {
   info: RelevantInstanceInfo;
+  refetch: () => void;
 };
 
-const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
+type Variable = {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'unknown';
+  allowed?: string;
+  value: any;
+};
+
+const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) => {
   const [variableDefinitions, setVariableDefinitions] = useState<ProcessVariable[]>([]);
-  const [variableToEdit, setVariableToEdit] = useState('');
   const [updatedValue, setUpdatedValue] = useState<any>(undefined);
+  const [submitting, setSubmitting] = useState(false);
+
+  const { message } = App.useApp();
 
   const { spaceId } = useEnvironment();
 
@@ -39,34 +50,76 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
 
   const variables = useMemo(() => {
     const { instance } = info;
-    // TODO: also show variables that are not defined in the BPMN but set by a script task
-    return variableDefinitions.map((v) => {
-      let value = instance && instance.variables[v.name]?.value;
 
-      if (v.dataType === 'object' || v.dataType === 'array') {
-        value = value || '';
-      }
+    const variables: Record<string, Variable> = {};
 
-      if (typeof value !== 'string') {
-        value = value !== undefined ? JSON.stringify(value, null, 2) : undefined;
+    if (instance) {
+      const instanceVariables = instance.variables as Record<string, { value: any }>;
+
+      Object.entries(instanceVariables).forEach(([name, { value }]) => {
+        let type: Variable['type'] = 'unknown';
+        const valueType = typeof value;
+        switch (valueType) {
+          case 'number':
+          case 'boolean':
+          case 'string':
+            type = valueType;
+            break;
+          case 'object': {
+            if (Array.isArray(value)) {
+              type = 'array';
+              break;
+            } else if (value) {
+              type = 'object';
+              break;
+            }
+          }
+        }
+
+        variables[name] = { name, type, value };
+      });
+    }
+
+    variableDefinitions.forEach((def) => {
+      if (!variables[def.name]) {
+        variables[def.name] = {
+          name: def.name,
+          type: def.dataType as Variable['type'],
+          value: undefined,
+        };
       }
-      return {
-        name: v.name,
-        type: v.dataType,
-        allowed: v.enum,
-        value,
-      };
+      if (variables[def.name].type === 'unknown') {
+        variables[def.name].type = def.dataType as Variable['type'];
+      }
+      variables[def.name].allowed = def.enum;
     });
+
+    return Object.values(variables);
   }, [variableDefinitions, info.instance]);
+
+  const [variableToEdit, setVariableToEdit] = useState<(typeof variables)[number] | undefined>(
+    undefined,
+  );
 
   const columns: React.ComponentProps<typeof Table>['columns'] = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Value', dataIndex: 'value', key: 'value' },
+    {
+      title: 'Value',
+      dataIndex: 'value',
+      key: 'value',
+      render: (value: Variable['value']) => {
+        if (typeof value === 'boolean') {
+          return value ? 'True' : 'False';
+        }
+        if (value && typeof value === 'object') return JSON.stringify(value);
+        return value;
+      },
+    },
     {
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
-      render: (variable) => typeLabelMap[variable],
+      render: (type: Variable['type']) => (type === 'unknown' ? '' : typeLabelMap[type]),
     },
   ];
 
@@ -80,10 +133,12 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
             icon={<EditOutlined />}
             type="text"
             onClick={() => {
-              setVariableToEdit(variable.name);
+              setVariableToEdit(variable);
               switch (variable.type) {
                 case 'object':
                 case 'array':
+                  setUpdatedValue(variable.value ? JSON.stringify(variable.value, null, 2) : '');
+                  break;
                 case 'string':
                   setUpdatedValue(variable.value || '');
                   break;
@@ -91,7 +146,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
                   setUpdatedValue(variable.value ? parseFloat(variable.value) : 0);
                   break;
                 case 'boolean':
-                  setUpdatedValue(variable.value === 'true' ? true : false);
+                  setUpdatedValue(variable.value || false);
               }
             }}
           />
@@ -102,11 +157,10 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
 
   let updatedValueInput = <></>;
 
-  const editVariable = variables.find((v) => v.name === variableToEdit);
-  switch (editVariable?.type) {
+  switch (variableToEdit?.type) {
     case 'object':
     case 'array':
-      updatedValueInput = <TextArea rows={6} onChange={(e) => setUpdatedValue(e.target.value)} />;
+      updatedValueInput = <TextArea rows={10} onChange={(e) => setUpdatedValue(e.target.value)} />;
       break;
     case 'string':
       updatedValueInput = <Input onChange={(e) => setUpdatedValue(e.target.value)} />;
@@ -121,31 +175,63 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
       break;
   }
 
+  const handleClose = () => {
+    setVariableToEdit(undefined);
+  };
+
   return (
     <>
-      <Table pagination={false} columns={columns} dataSource={variables} />
+      <Table
+        pagination={{ position: ['bottomCenter'] }}
+        rowKey="name"
+        scroll={{ x: true }}
+        columns={columns}
+        dataSource={variables}
+      />
       <Modal
         open={!!variableToEdit}
-        title={`Change value of ${variableToEdit}`}
-        onClose={() => setVariableToEdit('')}
-        onCancel={() => setVariableToEdit('')}
+        title={`Change value of ${variableToEdit?.name}`}
+        onClose={handleClose}
+        onCancel={handleClose}
         destroyOnClose
+        okButtonProps={{ loading: submitting }}
         onOk={async () => {
           await form.validateFields();
 
           let value = updatedValue;
 
-          switch (editVariable?.type) {
+          // we handle objects as string during the users change so we need to transform them back
+          // here
+          switch (variableToEdit?.type) {
             case 'object':
             case 'array':
               value = value ? JSON.parse(value) : null;
               break;
           }
 
-          updateVariables(spaceId, info.process.definitionId, info.instance!.processInstanceId, {
-            [variableToEdit]: value,
+          wrapServerCall({
+            fn: async () => {
+              setSubmitting(true);
+              await updateVariables(
+                spaceId,
+                info.process.definitionId,
+                info.instance!.processInstanceId,
+                {
+                  [variableToEdit!.name]: value,
+                },
+              );
+            },
+            onSuccess: () => {
+              message.success('Applied Changes');
+              refetch();
+              setSubmitting(false);
+              handleClose();
+            },
+            onError: () => {
+              message.error('Could not apply changes');
+              setSubmitting(false);
+            },
           });
-          setVariableToEdit('');
         }}
       >
         <Form form={form} clearOnDestroy>
@@ -156,15 +242,16 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
               {
                 validator(_, value: any) {
                   if (value) {
-                    const editVariable = variables.find((v) => v.name === variableToEdit);
-                    switch (editVariable?.type) {
+                    switch (variableToEdit?.type) {
+                      // for numbers and strings we have to check if the value is part of the
+                      // optionally defined allowed values
                       case 'number':
                         value = JSON.stringify(value);
                       case 'string':
                         {
                           value = (value as string).trim();
-                          if (editVariable.allowed) {
-                            const allowedValues = editVariable.allowed.split(';');
+                          if (variableToEdit.allowed) {
+                            const allowedValues = variableToEdit.allowed.split(';');
 
                             if (!allowedValues.includes(value)) {
                               return Promise.reject(
@@ -176,14 +263,15 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
                           }
                         }
                         break;
+                      // check if the entered text can be transformed to the respective object type
                       case 'object':
                       case 'array':
                         {
                           try {
                             const parsed = JSON.parse(value);
                             if (
-                              (editVariable.type === 'array' && Array.isArray(parsed)) ||
-                              (editVariable.type === 'object' && !Array.isArray(parsed))
+                              (variableToEdit.type === 'array' && Array.isArray(parsed)) ||
+                              (variableToEdit.type === 'object' && !Array.isArray(parsed))
                             ) {
                               return Promise.resolve();
                             }
@@ -191,7 +279,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
 
                           return Promise.reject(
                             new Error(
-                              `Input is not a valid JS ${editVariable.type === 'object' ? 'Object' : 'List'}.`,
+                              `Input is not a valid JSON ${variableToEdit.type === 'object' ? 'Object' : 'List'}.`,
                             ),
                           );
                         }

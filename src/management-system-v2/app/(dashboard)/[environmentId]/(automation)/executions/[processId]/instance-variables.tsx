@@ -5,10 +5,11 @@ import { EditOutlined } from '@ant-design/icons';
 
 import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
-import { Button, Input, InputNumber, Modal, Switch, Table } from 'antd';
+import { Button, Form, Input, InputNumber, Modal, Switch, Table } from 'antd';
 import { typeLabelMap } from '../../../processes/[processId]/variable-definition/process-variable-form';
 import { updateVariables } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
+import TextArea from 'antd/es/input/TextArea';
 
 type InstanceVariableProps = {
   info: RelevantInstanceInfo;
@@ -20,6 +21,8 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
   const [updatedValue, setUpdatedValue] = useState<any>(undefined);
 
   const { spaceId } = useEnvironment();
+
+  const [form] = Form.useForm();
 
   useEffect(() => {
     const initVariables = async () => {
@@ -39,12 +42,18 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
     // TODO: also show variables that are not defined in the BPMN but set by a script task
     return variableDefinitions.map((v) => {
       let value = instance && instance.variables[v.name]?.value;
+
+      if (v.dataType === 'object' || v.dataType === 'array') {
+        value = value || '';
+      }
+
       if (typeof value !== 'string') {
-        value = value !== undefined ? JSON.stringify(value) : undefined;
+        value = value !== undefined ? JSON.stringify(value, null, 2) : undefined;
       }
       return {
         name: v.name,
         type: v.dataType,
+        allowed: v.enum,
         value,
       };
     });
@@ -73,9 +82,9 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
             onClick={() => {
               setVariableToEdit(variable.name);
               switch (variable.type) {
-                case 'string':
-                case 'array':
                 case 'object':
+                case 'array':
+                case 'string':
                   setUpdatedValue(variable.value || '');
                   break;
                 case 'number':
@@ -93,23 +102,22 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
 
   let updatedValueInput = <></>;
 
-  switch (typeof updatedValue) {
+  const editVariable = variables.find((v) => v.name === variableToEdit);
+  switch (editVariable?.type) {
+    case 'object':
+    case 'array':
+      updatedValueInput = <TextArea rows={6} onChange={(e) => setUpdatedValue(e.target.value)} />;
+      break;
     case 'string':
-      updatedValueInput = (
-        <Input value={updatedValue} onChange={(e) => setUpdatedValue(e.target.value)} />
-      );
+      updatedValueInput = <Input onChange={(e) => setUpdatedValue(e.target.value)} />;
       break;
     case 'number':
       updatedValueInput = (
-        <InputNumber
-          style={{ width: '100%' }}
-          value={updatedValue}
-          onChange={(val) => setUpdatedValue(val)}
-        />
+        <InputNumber style={{ width: '100%' }} onChange={(val) => setUpdatedValue(val || 0)} />
       );
       break;
     case 'boolean':
-      updatedValueInput = <Switch value={updatedValue} onChange={(val) => setUpdatedValue(val)} />;
+      updatedValueInput = <Switch onChange={(val) => setUpdatedValue(val)} />;
       break;
   }
 
@@ -121,15 +129,84 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info }) => {
         title={`Change value of ${variableToEdit}`}
         onClose={() => setVariableToEdit('')}
         onCancel={() => setVariableToEdit('')}
-        onOk={() => {
-          // TODO: check if the value is allowed
+        destroyOnClose
+        onOk={async () => {
+          await form.validateFields();
+
+          let value = updatedValue;
+
+          switch (editVariable?.type) {
+            case 'object':
+            case 'array':
+              value = value ? JSON.parse(value) : null;
+              break;
+          }
+
           updateVariables(spaceId, info.process.definitionId, info.instance!.processInstanceId, {
-            [variableToEdit]: updatedValue,
+            [variableToEdit]: value,
           });
           setVariableToEdit('');
         }}
       >
-        {updatedValueInput}
+        <Form form={form} clearOnDestroy>
+          <Form.Item
+            name="value"
+            initialValue={updatedValue}
+            rules={[
+              {
+                validator(_, value: any) {
+                  if (value) {
+                    const editVariable = variables.find((v) => v.name === variableToEdit);
+                    switch (editVariable?.type) {
+                      case 'number':
+                        value = JSON.stringify(value);
+                      case 'string':
+                        {
+                          value = (value as string).trim();
+                          if (editVariable.allowed) {
+                            const allowedValues = editVariable.allowed.split(';');
+
+                            if (!allowedValues.includes(value)) {
+                              return Promise.reject(
+                                new Error(
+                                  `Invalid value. Expected one of: ${allowedValues.join(', ')}`,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                        break;
+                      case 'object':
+                      case 'array':
+                        {
+                          try {
+                            const parsed = JSON.parse(value);
+                            if (
+                              (editVariable.type === 'array' && Array.isArray(parsed)) ||
+                              (editVariable.type === 'object' && !Array.isArray(parsed))
+                            ) {
+                              return Promise.resolve();
+                            }
+                          } catch (err) {}
+
+                          return Promise.reject(
+                            new Error(
+                              `Input is not a valid JS ${editVariable.type === 'object' ? 'Object' : 'List'}.`,
+                            ),
+                          );
+                        }
+                        break;
+                    }
+                  }
+
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            {updatedValueInput}
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );

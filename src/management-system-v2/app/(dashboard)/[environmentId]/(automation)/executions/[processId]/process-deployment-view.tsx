@@ -203,7 +203,6 @@ export default function ProcessDeploymentView({
 
                               for (const variable of variableDefinitions) {
                                 if (variable.defaultValue) {
-                                  // TODO: transform all types from string (missing: list, object)
                                   switch (variable.dataType) {
                                     case 'string':
                                       variables[variable.name] = { value: variable.defaultValue };

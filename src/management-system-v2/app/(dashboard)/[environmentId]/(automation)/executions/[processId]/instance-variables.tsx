@@ -97,9 +97,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
     return Object.values(variables);
   }, [variableDefinitions, info.instance]);
 
-  const [variableToEdit, setVariableToEdit] = useState<(typeof variables)[number] | undefined>(
-    undefined,
-  );
+  const [variableToEdit, setVariableToEdit] = useState<Variable | undefined>(undefined);
 
   const columns: React.ComponentProps<typeof Table>['columns'] = [
     { title: 'Name', dataIndex: 'name', key: 'name' },

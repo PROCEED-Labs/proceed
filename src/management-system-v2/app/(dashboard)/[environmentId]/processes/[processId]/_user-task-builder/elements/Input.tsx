@@ -45,11 +45,11 @@ export const ExportInput: UserComponent<InputProps> = ({
               style={{ whiteSpace: 'nowrap' }}
               value={label}
               active={false}
-              onStopEditing={() => { }}
+              onStopEditing={() => {}}
               tagName="label"
               htmlFor={inputId}
-              onClick={() => { }}
-              onChange={() => { }}
+              onClick={() => {}}
+              onChange={() => {}}
             />
           </div>
         )}

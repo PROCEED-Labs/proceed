@@ -32,10 +32,8 @@ export async function checkCustomLinkStatus(link: CustomNavigationLink): Promise
 
   const cachedStatus = customLinkStatusCache.get(cacheKey);
   if (cachedStatus !== undefined) {
-    console.log('Cache hit');
     return cachedStatus;
   }
-  console.log('>> Cache miss');
 
   let status = false;
   try {

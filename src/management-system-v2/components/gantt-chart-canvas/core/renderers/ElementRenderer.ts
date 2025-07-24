@@ -46,7 +46,6 @@ export class ElementRenderer {
     task: GanttElementType & { type: 'task'; start: number; end: number },
     rowIndex: number,
     timeMatrix: TimeMatrix,
-    visibleRowStart: number = 0,
     isHovered: boolean = false,
   ): void {
     // Check for invalid timestamps
@@ -75,8 +74,15 @@ export class ElementRenderer {
     const y = rowIndex * ROW_HEIGHT + TASK_PADDING;
     const height = ROW_HEIGHT - TASK_PADDING * 2;
 
-    // Skip if completely outside visible area
-    if (endX < 0 || startX > context.canvas.width / this.pixelRatio) {
+    // Skip if main element AND all ghost occurrences are outside visible area
+    const canvasWidth = context.canvas.width / this.pixelRatio;
+    const mainElementVisible = !(endX < 0 || startX > canvasWidth);
+    const ghostsVisible =
+      task.ghostOccurrences && task.ghostOccurrences.length > 0
+        ? this.areAnyGhostOccurrencesVisible(task.ghostOccurrences, timeMatrix, canvasWidth)
+        : false;
+
+    if (!mainElementVisible && !ghostsVisible) {
       return;
     }
 
@@ -140,7 +146,22 @@ export class ElementRenderer {
 
     // Render ghost occurrences if present
     if (task.ghostOccurrences && task.ghostOccurrences.length > 0) {
-      this.renderGhostOccurrences(context, task.ghostOccurrences, rowIndex, timeMatrix, color);
+      // Pass main element bounds to avoid covering text
+      const mainElementBounds = {
+        startX: startX,
+        endX: startX + width,
+        textStartX: startX + 4,
+        textEndX: startX + width - 4,
+        hasText: width > 20 && !!task.name,
+      };
+      this.renderGhostOccurrences(
+        context,
+        task.ghostOccurrences,
+        rowIndex,
+        timeMatrix,
+        color,
+        mainElementBounds,
+      );
     }
 
     context.globalAlpha = 1;
@@ -154,7 +175,6 @@ export class ElementRenderer {
     milestone: GanttElementType & { type: 'milestone'; start: number; end?: number },
     rowIndex: number,
     timeMatrix: TimeMatrix,
-    visibleRowStart: number = 0,
     isHovered: boolean = false,
   ): void {
     const startX = timeMatrix.transformPoint(milestone.start);
@@ -164,9 +184,15 @@ export class ElementRenderer {
     // Calculate milestone position - centered if there's a range, otherwise at start
     const milestoneX = hasRange ? (startX + endX) / 2 : startX;
 
-    // Skip if completely outside visible area
+    // Skip if main milestone AND all ghost occurrences are outside visible area
     const canvasWidth = context.canvas.width / this.pixelRatio;
-    if (endX < -MILESTONE_SIZE || startX > canvasWidth + MILESTONE_SIZE) {
+    const mainMilestoneVisible = !(endX < -MILESTONE_SIZE || startX > canvasWidth + MILESTONE_SIZE);
+    const ghostsVisible =
+      milestone.ghostOccurrences && milestone.ghostOccurrences.length > 0
+        ? this.areAnyGhostMilestonesVisible(milestone.ghostOccurrences, timeMatrix, canvasWidth)
+        : false;
+
+    if (!mainMilestoneVisible && !ghostsVisible) {
       return;
     }
 
@@ -284,7 +310,6 @@ export class ElementRenderer {
     group: GanttElementType & { type: 'group'; start: number; end: number },
     rowIndex: number,
     timeMatrix: TimeMatrix,
-    visibleRowStart: number = 0,
     isHovered: boolean = false,
   ): void {
     const startX = timeMatrix.transformPoint(group.start);
@@ -394,7 +419,6 @@ export class ElementRenderer {
             element as GanttElementType & { type: 'group'; start: number; end: number },
             rowIndex,
             timeMatrix,
-            visibleRowStart,
             element.id === hoveredElementId,
           );
           break;
@@ -405,7 +429,6 @@ export class ElementRenderer {
             element as GanttElementType & { type: 'task'; start: number; end: number },
             rowIndex,
             timeMatrix,
-            visibleRowStart,
             element.id === hoveredElementId,
           );
           break;
@@ -416,7 +439,6 @@ export class ElementRenderer {
             element as GanttElementType & { type: 'milestone'; start: number; end?: number },
             rowIndex,
             timeMatrix,
-            visibleRowStart,
             element.id === hoveredElementId,
           );
           break;
@@ -587,6 +609,22 @@ export class ElementRenderer {
   }
 
   /**
+   * Check if any ghost occurrences are visible
+   */
+  private areAnyGhostOccurrencesVisible(
+    ghostOccurrences: Array<{ start: number; end?: number }>,
+    timeMatrix: TimeMatrix,
+    canvasWidth: number,
+  ): boolean {
+    return ghostOccurrences.some((ghost) => {
+      const ghostStartX = timeMatrix.transformPoint(ghost.start);
+      const ghostEndX = timeMatrix.transformPoint(ghost.end || ghost.start);
+      const ghostWidth = Math.max(ghostEndX - ghostStartX, ELEMENT_MIN_WIDTH);
+      return !(ghostStartX + ghostWidth < 0 || ghostStartX > canvasWidth);
+    });
+  }
+
+  /**
    * Render ghost occurrences for task elements
    */
   private renderGhostOccurrences(
@@ -595,6 +633,13 @@ export class ElementRenderer {
     rowIndex: number,
     timeMatrix: TimeMatrix,
     color: string,
+    mainElementBounds?: {
+      startX: number;
+      endX: number;
+      textStartX: number;
+      textEndX: number;
+      hasText: boolean;
+    },
   ): void {
     const y = rowIndex * ROW_HEIGHT + TASK_PADDING;
     const height = ROW_HEIGHT - TASK_PADDING * 2;
@@ -602,22 +647,150 @@ export class ElementRenderer {
     context.save();
     context.globalAlpha = 0.75; // Ghost opacity
 
-    ghostOccurrences.forEach((ghost) => {
-      const startX = timeMatrix.transformPoint(ghost.start);
-      const endX = timeMatrix.transformPoint(ghost.end || ghost.start);
-      const width = Math.max(endX - startX, ELEMENT_MIN_WIDTH);
+    ghostOccurrences.forEach((ghost, index) => {
+      const ghostStartX = timeMatrix.transformPoint(ghost.start);
+      const ghostEndX = timeMatrix.transformPoint(ghost.end || ghost.start);
+      const ghostWidth = Math.max(ghostEndX - ghostStartX, ELEMENT_MIN_WIDTH);
 
       // Skip if completely outside visible area
-      if (startX + width < 0 || startX > context.canvas.width / this.pixelRatio) {
+      if (ghostStartX + ghostWidth < 0 || ghostStartX > context.canvas.width / this.pixelRatio) {
         return;
       }
 
-      // Draw ghost task bar (fill only, no border)
-      context.fillStyle = color;
-      context.fillRect(Math.floor(startX), Math.floor(y), Math.ceil(width), Math.ceil(height));
+      // Check if ghost overlaps with main element's text area
+      if (mainElementBounds && mainElementBounds.hasText) {
+        const ghostStart = ghostStartX;
+        const ghostEnd = ghostStartX + ghostWidth;
+        const textStart = mainElementBounds.textStartX;
+        const textEnd = mainElementBounds.textEndX;
+
+        // If ghost overlaps with text area, split the rendering
+        if (ghostStart < textEnd && ghostEnd > textStart) {
+          // Draw left part (before text area)
+          if (ghostStart < textStart) {
+            const leftWidth = Math.min(textStart - ghostStart, ghostWidth);
+            if (leftWidth > 0) {
+              context.fillStyle = color;
+              context.fillRect(
+                Math.floor(ghostStart),
+                Math.floor(y),
+                Math.ceil(leftWidth),
+                Math.ceil(height),
+              );
+            }
+          }
+
+          // Draw right part (after text area)
+          if (ghostEnd > textEnd) {
+            const rightStart = Math.max(textEnd, ghostStart);
+            const rightWidth = ghostEnd - rightStart;
+            if (rightWidth > 0) {
+              context.fillStyle = color;
+              context.fillRect(
+                Math.floor(rightStart),
+                Math.floor(y),
+                Math.ceil(rightWidth),
+                Math.ceil(height),
+              );
+            }
+          }
+
+          // Add borders at the actual ghost boundaries (not split boundaries)
+          context.strokeStyle = 'black';
+          context.globalAlpha = 0.45;
+          context.lineWidth = 1;
+
+          // Left border (original ghost start)
+          context.beginPath();
+          context.moveTo(Math.floor(ghostStart), Math.floor(y));
+          context.lineTo(Math.floor(ghostStart), Math.floor(y) + Math.ceil(height));
+          context.stroke();
+
+          // Right border (original ghost end)
+          context.beginPath();
+          context.moveTo(Math.floor(ghostEnd), Math.floor(y));
+          context.lineTo(Math.floor(ghostEnd), Math.floor(y) + Math.ceil(height));
+          context.stroke();
+
+          context.globalAlpha = 0.75; // Restore ghost opacity
+        } else {
+          // No overlap with text area, render normally
+          context.fillStyle = color;
+          context.fillRect(
+            Math.floor(ghostStartX),
+            Math.floor(y),
+            Math.ceil(ghostWidth),
+            Math.ceil(height),
+          );
+
+          // Add borders
+          context.strokeStyle = 'black';
+          context.globalAlpha = 0.45;
+          context.lineWidth = 1;
+
+          context.beginPath();
+          context.moveTo(Math.floor(ghostStartX), Math.floor(y));
+          context.lineTo(Math.floor(ghostStartX), Math.floor(y) + Math.ceil(height));
+          context.stroke();
+
+          context.beginPath();
+          context.moveTo(Math.floor(ghostStartX) + Math.ceil(ghostWidth), Math.floor(y));
+          context.lineTo(
+            Math.floor(ghostStartX) + Math.ceil(ghostWidth),
+            Math.floor(y) + Math.ceil(height),
+          );
+          context.stroke();
+
+          context.globalAlpha = 0.75; // Restore ghost opacity
+        }
+      } else {
+        // No main element bounds provided or no text, render normally
+        context.fillStyle = color;
+        context.fillRect(
+          Math.floor(ghostStartX),
+          Math.floor(y),
+          Math.ceil(ghostWidth),
+          Math.ceil(height),
+        );
+
+        // Add borders
+        context.strokeStyle = 'black';
+        context.globalAlpha = 0.45;
+        context.lineWidth = 1;
+
+        context.beginPath();
+        context.moveTo(Math.floor(ghostStartX), Math.floor(y));
+        context.lineTo(Math.floor(ghostStartX), Math.floor(y) + Math.ceil(height));
+        context.stroke();
+
+        context.beginPath();
+        context.moveTo(Math.floor(ghostStartX) + Math.ceil(ghostWidth), Math.floor(y));
+        context.lineTo(
+          Math.floor(ghostStartX) + Math.ceil(ghostWidth),
+          Math.floor(y) + Math.ceil(height),
+        );
+        context.stroke();
+
+        context.globalAlpha = 0.75; // Restore ghost opacity
+      }
     });
 
     context.restore();
+  }
+
+  /**
+   * Check if any ghost milestones are visible
+   */
+  private areAnyGhostMilestonesVisible(
+    ghostOccurrences: Array<{ start: number; end?: number }>,
+    timeMatrix: TimeMatrix,
+    canvasWidth: number,
+  ): boolean {
+    return ghostOccurrences.some((ghost) => {
+      const startX = timeMatrix.transformPoint(ghost.start);
+      const endX = ghost.end ? timeMatrix.transformPoint(ghost.end) : startX;
+      return !(endX < -MILESTONE_SIZE || startX > canvasWidth + MILESTONE_SIZE);
+    });
   }
 
   /**
@@ -636,23 +809,87 @@ export class ElementRenderer {
     context.globalAlpha = 0.75; // Ghost opacity
     context.fillStyle = color;
 
-    ghostOccurrences.forEach((ghost) => {
-      const ghostX = timeMatrix.transformPoint(ghost.start);
+    ghostOccurrences.forEach((ghost, index) => {
+      const startX = timeMatrix.transformPoint(ghost.start);
+      const endX = ghost.end ? timeMatrix.transformPoint(ghost.end) : startX;
+      const hasRange = ghost.end && ghost.end !== ghost.start;
+
+      // Calculate milestone position - centered if there's a range, otherwise at start
+      const milestoneX = hasRange ? (startX + endX) / 2 : startX;
 
       // Skip if completely outside visible area
       if (
-        ghostX < -MILESTONE_SIZE ||
-        ghostX > context.canvas.width / this.pixelRatio + MILESTONE_SIZE
+        endX < -MILESTONE_SIZE ||
+        startX > context.canvas.width / this.pixelRatio + MILESTONE_SIZE
       ) {
         return;
       }
 
+      // If there's a range, render it with semi-transparent pattern (same as main milestone)
+      if (hasRange) {
+        const rangeWidth = endX - startX;
+        const minimumRangeWidth = MILESTONE_SIZE * 1.5; // Milestone size + 50%
+
+        // Only render the range visual if it's wide enough
+        if (rangeWidth > minimumRangeWidth) {
+          context.save();
+
+          // Create clipping region for the range area
+          const rangeHeight = ROW_HEIGHT - 8;
+          const rangeY = y - rangeHeight / 2;
+
+          context.beginPath();
+          context.rect(startX, rangeY, rangeWidth, rangeHeight);
+          context.clip();
+
+          // Draw slanted lines pattern
+          context.strokeStyle = hexToRgba(color, 0.15 * 0.75); // Apply ghost opacity to pattern
+          context.lineWidth = 1;
+          const lineSpacing = 6;
+
+          // Draw diagonal lines at 45 degree angle
+          for (let i = startX - rangeHeight; i < endX + rangeHeight; i += lineSpacing) {
+            context.beginPath();
+            context.moveTo(i, rangeY);
+            context.lineTo(i + rangeHeight, rangeY + rangeHeight);
+            context.stroke();
+          }
+
+          context.restore();
+
+          // Draw brackets at the ends
+          context.strokeStyle = color;
+          context.lineWidth = 2;
+          context.globalAlpha = 0.75; // Ghost opacity
+
+          const bracketSize = 6;
+
+          // Left bracket
+          context.beginPath();
+          context.moveTo(startX + bracketSize, rangeY);
+          context.lineTo(startX, rangeY);
+          context.lineTo(startX, rangeY + rangeHeight);
+          context.lineTo(startX + bracketSize, rangeY + rangeHeight);
+          context.stroke();
+
+          // Right bracket
+          context.beginPath();
+          context.moveTo(endX - bracketSize, rangeY);
+          context.lineTo(endX, rangeY);
+          context.lineTo(endX, rangeY + rangeHeight);
+          context.lineTo(endX - bracketSize, rangeY + rangeHeight);
+          context.stroke();
+        }
+      }
+
       // Draw ghost milestone diamond
+      context.fillStyle = color;
+      context.globalAlpha = 0.75; // Ensure ghost opacity
       context.beginPath();
-      context.moveTo(ghostX, y - MILESTONE_SIZE / 2);
-      context.lineTo(ghostX + MILESTONE_SIZE / 2, y);
-      context.lineTo(ghostX, y + MILESTONE_SIZE / 2);
-      context.lineTo(ghostX - MILESTONE_SIZE / 2, y);
+      context.moveTo(milestoneX, y - MILESTONE_SIZE / 2);
+      context.lineTo(milestoneX + MILESTONE_SIZE / 2, y);
+      context.lineTo(milestoneX, y + MILESTONE_SIZE / 2);
+      context.lineTo(milestoneX - MILESTONE_SIZE / 2, y);
       context.closePath();
       context.fill();
     });

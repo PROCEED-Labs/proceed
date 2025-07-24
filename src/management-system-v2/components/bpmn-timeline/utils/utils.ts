@@ -26,8 +26,7 @@ export function parseISO8601Duration(duration: string | undefined): number {
   const matches = duration.match(regex);
 
   if (!matches) {
-    console.warn('Invalid ISO 8601 duration format:', duration);
-    return 0;
+    return 0; // Invalid ISO 8601 duration format
   }
 
   // matches[1]: days, matches[2]: hours, matches[3]: minutes, matches[4]: seconds

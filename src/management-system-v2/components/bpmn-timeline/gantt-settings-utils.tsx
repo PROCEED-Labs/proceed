@@ -1,6 +1,5 @@
 import React from 'react';
 import { Checkbox, Select, InputNumber, Collapse, Typography } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
 import { SettingDescription } from '../../app/(dashboard)/[environmentId]/settings/components';
 import type {
   SettingGroup,
@@ -25,14 +24,21 @@ export function createGanttSettingsRenderer(settingsGroup: SettingGroup) {
 
     const mainEnabled = enabledSetting.value;
 
-    // For ghost dependencies, also check if ghost elements are enabled
+    // Find the positioning logic setting
+    const positioningLogicSetting = settingsGroup.children.find(
+      (child) => child.key === 'positioning-logic',
+    ) as Setting;
+
+    const isEveryOccurrenceMode = positioningLogicSetting.value === 'every-occurrence';
+
+    // For ghost dependencies, also check if ghost elements are enabled and not in every-occurrence mode
     if (key === 'gantt-view.show-ghost-dependencies') {
       const showGhostElementsSetting = settingsGroup.children.find(
         (child) => child.key === 'show-ghost-elements',
       ) as Setting;
 
       const ghostElementsEnabled = showGhostElementsSetting.value;
-      const disabled = !mainEnabled || !ghostElementsEnabled;
+      const disabled = !mainEnabled || !ghostElementsEnabled || isEveryOccurrenceMode;
 
       return {
         input: (
@@ -47,19 +53,26 @@ export function createGanttSettingsRenderer(settingsGroup: SettingGroup) {
       };
     }
 
-    // For all other boolean settings, check main enabled flag and specific dependencies
+    // For ghost elements setting, disable when in every-occurrence mode
+    if (key === 'gantt-view.show-ghost-elements') {
+      const disabled = !mainEnabled || isEveryOccurrenceMode;
+
+      return {
+        input: (
+          <Checkbox
+            id={id}
+            disabled={disabled}
+            checked={setting.value}
+            onChange={(e) => onUpdate(e.target.checked)}
+          />
+        ),
+        descriptionRight: <SettingDescription description={setting.description} position="right" />,
+      };
+    }
+
+    // For all other boolean settings, only check main enabled flag
     if (setting.type === 'boolean') {
-      let disabled = !mainEnabled;
-
-      // For loop icons, also disable when earliest occurrence is selected
-      if (key === 'gantt-view.show-loop-icons') {
-        const positioningLogicSetting = settingsGroup.children.find(
-          (child) => child.key === 'positioning-logic',
-        ) as Setting;
-
-        const isEarliestOccurrence = positioningLogicSetting.value === 'earliest-occurrence';
-        disabled = disabled || isEarliestOccurrence;
-      }
+      const disabled = !mainEnabled;
 
       return {
         input: (
@@ -99,10 +112,7 @@ export function createGanttSettingsRenderer(settingsGroup: SettingGroup) {
                   {
                     key: 'positioning-modes-info',
                     label: (
-                      <span style={{ fontSize: '12px', color: '#666' }}>
-                        <InfoCircleOutlined style={{ marginRight: '4px' }} />
-                        Mode Descriptions
-                      </span>
+                      <span style={{ fontSize: '12px', color: '#666' }}>Mode Descriptions</span>
                     ),
                     children: (
                       <div style={{ fontSize: '12px', lineHeight: '1.4' }}>
@@ -150,19 +160,9 @@ export function createGanttSettingsRenderer(settingsGroup: SettingGroup) {
       };
     }
 
-    // For number settings - special handling for loop depth
+    // For number settings
     if (setting.type === 'number') {
-      let disabled = !mainEnabled;
-
-      // For loop depth, also disable when earliest occurrence is selected
-      if (key === 'gantt-view.loop-depth') {
-        const positioningLogicSetting = settingsGroup.children.find(
-          (child) => child.key === 'positioning-logic',
-        ) as Setting;
-
-        const isEarliestOccurrence = positioningLogicSetting.value === 'earliest-occurrence';
-        disabled = disabled || isEarliestOccurrence;
-      }
+      const disabled = !mainEnabled;
 
       return {
         input: (

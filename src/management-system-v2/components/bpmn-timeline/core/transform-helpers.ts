@@ -195,6 +195,19 @@ export function filterDependenciesForVisibleElements(
   if (!renderGateways) {
     const visibleIds = new Set(ganttElements.map((el) => el.id));
 
+    // Helper function to extract base element ID from instance ID
+    function getBaseElementId(id: string): string {
+      // Instance IDs have format: "ElementId_instance_N"
+      // Base IDs are just: "ElementId"
+      return id.split('_instance_')[0];
+    }
+
+    // Helper function to check if an element is visible
+    function isElementVisible(id: string): boolean {
+      const baseId = getBaseElementId(id);
+      return visibleIds.has(baseId) || visibleIds.has(id);
+    }
+
     // Build a map of gateway bypass connections
     const gatewayBypass = new Map<string, string[]>(); // gateway instance ID -> source instance IDs that lead to it
     const gatewayTargets = new Map<string, string[]>(); // gateway instance ID -> target instance IDs it leads to
@@ -202,7 +215,7 @@ export function filterDependenciesForVisibleElements(
     // First pass: identify gateway connections
     ganttDependencies.forEach((dep) => {
       // If target is a gateway (not visible), track the source
-      if (!visibleIds.has(dep.targetId)) {
+      if (!isElementVisible(dep.targetId)) {
         if (!gatewayBypass.has(dep.targetId)) {
           gatewayBypass.set(dep.targetId, []);
         }
@@ -210,7 +223,7 @@ export function filterDependenciesForVisibleElements(
       }
 
       // If source is a gateway (not visible), track the target
-      if (!visibleIds.has(dep.sourceId)) {
+      if (!isElementVisible(dep.sourceId)) {
         if (!gatewayTargets.has(dep.sourceId)) {
           gatewayTargets.set(dep.sourceId, []);
         }
@@ -233,7 +246,7 @@ export function filterDependenciesForVisibleElements(
       const allTargets: string[] = [];
 
       directTargets.forEach((targetId) => {
-        if (visibleIds.has(targetId)) {
+        if (isElementVisible(targetId)) {
           // Target is visible - add it
           allTargets.push(targetId);
         } else {
@@ -249,22 +262,36 @@ export function filterDependenciesForVisibleElements(
     // For each gateway, find all visible sources and connect them to all reachable visible targets
     gatewayBypass.forEach((sources, gatewayId) => {
       sources.forEach((sourceId) => {
-        if (visibleIds.has(sourceId)) {
+        if (isElementVisible(sourceId)) {
           // Source is visible - find all reachable targets through gateway chains
           const reachableTargets = findTransitiveTargets(gatewayId);
 
           reachableTargets.forEach((targetId) => {
             const pairKey = `${sourceId}->${targetId}`;
+
+            // Check if this would be a self-loop (same element)
+            if (sourceId === targetId) {
+              // For self-loops, check if target element has ghost occurrences
+              const targetElement = ganttElements.find((el) => el.id === targetId);
+              if (
+                targetElement &&
+                targetElement.ghostOccurrences &&
+                targetElement.ghostOccurrences.length > 0
+              ) {
+                return; // Skip creating self-loop bypass - this should be a ghost dependency
+              }
+            }
+
             if (!processedPairs.has(pairKey)) {
               processedPairs.add(pairKey);
 
               // Find the original flow through the gateway for metadata
               const throughGatewayDep =
                 ganttDependencies.find(
-                  (d) => d.sourceId === sourceId && !visibleIds.has(d.targetId),
+                  (d) => d.sourceId === sourceId && !isElementVisible(d.targetId),
                 ) ||
                 ganttDependencies.find(
-                  (d) => d.targetId === targetId && !visibleIds.has(d.sourceId),
+                  (d) => d.targetId === targetId && !isElementVisible(d.sourceId),
                 );
 
               const bypassDep = {
@@ -284,12 +311,108 @@ export function filterDependenciesForVisibleElements(
     });
 
     // Return original dependencies that don't involve gateways + bypass dependencies
-    const directDependencies = ganttDependencies.filter(
-      (dep) => visibleIds.has(dep.sourceId) && visibleIds.has(dep.targetId),
-    );
+    // BUT preserve ghost dependencies even if they involve gateways
+    const directDependencies = ganttDependencies.filter((dep) => {
+      const bothVisible = isElementVisible(dep.sourceId) && isElementVisible(dep.targetId);
+      const isGhost = dep.isGhost;
+      return bothVisible || isGhost; // Keep if both visible OR if it's a ghost dependency
+    });
 
     return [...directDependencies, ...bypassDependencies];
   }
 
   return ganttDependencies;
+}
+
+/**
+ * Detect ghost dependencies that would go through gateways (unsupported)
+ */
+export function detectGhostDependenciesThroughGateways(
+  ganttElements: any[],
+  pathDependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
+  supportedElements: BPMNFlowElement[],
+): TransformationIssue[] {
+  const issues: TransformationIssue[] = [];
+  const elementsWithGhosts = ganttElements.filter(
+    (el) => el.ghostOccurrences && el.ghostOccurrences.length > 0,
+  );
+
+  if (elementsWithGhosts.length === 0) {
+    return issues; // No ghost elements, no need to check
+  }
+
+  // Check if any paths between ghost occurrences go through gateways
+  const affectedElements = new Set<string>();
+
+  // For each element with ghosts, check if any path between instances goes through a gateway
+  elementsWithGhosts.forEach((element) => {
+    const elementId = element.id;
+    let hasGatewayPath = false;
+
+    // Check all dependencies to see if there's a path through a gateway
+    for (let i = 0; i < pathDependencies.length; i++) {
+      const dep1 = pathDependencies[i];
+
+      // Skip if not related to our element
+      const dep1SourceId = dep1.sourceInstanceId.split('_instance_')[0];
+      const dep1TargetId = dep1.targetInstanceId.split('_instance_')[0];
+
+      if (dep1SourceId !== elementId && dep1TargetId !== elementId) {
+        continue;
+      }
+
+      // Look for a connecting dependency through a gateway
+      for (let j = 0; j < pathDependencies.length; j++) {
+        const dep2 = pathDependencies[j];
+
+        // Check if dep1.target connects to dep2.source (potential gateway in between)
+        if (dep1.targetInstanceId === dep2.sourceInstanceId) {
+          const intermediateId = dep1.targetInstanceId.split('_instance_')[0];
+          const finalTargetId = dep2.targetInstanceId.split('_instance_')[0];
+
+          // Check if the intermediate element is a gateway
+          const intermediateElement = supportedElements.find((el) => el.id === intermediateId);
+
+          if (intermediateElement && isGatewayElement(intermediateElement)) {
+            // Check if this creates a path between main and ghost instances
+            if (dep1SourceId === elementId && finalTargetId === elementId) {
+              // This is a self-loop through a gateway
+              const dep1IsFromMain = !element.ghostOccurrences.some(
+                (ghost: any) => ghost.instanceId === dep1.sourceInstanceId,
+              );
+              const dep2IsToGhost = element.ghostOccurrences.some(
+                (ghost: any) => ghost.instanceId === dep2.targetInstanceId,
+              );
+
+              if ((dep1IsFromMain && dep2IsToGhost) || (!dep1IsFromMain && !dep2IsToGhost)) {
+                hasGatewayPath = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (hasGatewayPath) break;
+    }
+
+    if (hasGatewayPath) {
+      affectedElements.add(elementId);
+    }
+  });
+
+  // Create warnings for affected elements
+  affectedElements.forEach((elementId) => {
+    const element = supportedElements.find((el) => el.id === elementId);
+    issues.push({
+      elementId: elementId,
+      elementType: element?.$type || 'unknown',
+      elementName: element?.name,
+      reason:
+        'Ghost dependencies through gateways are not supported. Enable "Show Gateways" or disable ghost dependencies for this element.',
+      severity: 'warning' as const,
+    });
+  });
+
+  return issues;
 }

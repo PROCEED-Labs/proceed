@@ -293,7 +293,7 @@ maxLoopIterations: number = 3; // Allow up to 3 loop iterations (initial + 3 rep
 | --------------- | ------------------------ | ------------------- | --------------------- | --------------- |
 | **Exclusive**   | `bpmn:ExclusiveGateway`  | Alternative paths   | Immediate consumption | None            |
 | **Parallel**    | `bpmn:ParallelGateway`   | Simultaneous paths  | Wait for ALL tokens   | Yes             |
-| **Inclusive**   | `bpmn:InclusiveGateway`  | Conditional paths   | Wait for ALL tokens   | Yes             |
+| **Inclusive**   | `bpmn:InclusiveGateway`  | Simultaneous paths  | Wait for ALL tokens   | Yes             |
 | **Complex**     | `bpmn:ComplexGateway`    | Alternative paths\* | Immediate consumption | None\*          |
 | **Event-Based** | `bpmn:EventBasedGateway` | Alternative paths   | Immediate consumption | None            |
 
@@ -316,7 +316,7 @@ Next Element Start Time = Current Time + Gateway Duration + Flow Duration
 
 **Conservative Analysis Approach**:
 
-- **Inclusive**: Show all conditional paths with synchronization for capacity planning
+- **Inclusive**: Show all possible paths with synchronization (conservative since conditions can't be evaluated at design time)
 - **Complex**: Show all possible paths without synchronization assumptions (unknown conditions)
 - **Exclusive/Event-Based**: Show alternative paths without synchronization
 
@@ -676,9 +676,10 @@ The gantt settings implement a dependency system similar to Process Documentatio
 
 #### Mode-Specific Dependencies
 
-- **`positioning-logic`**: Controls availability of related settings
-  - **Earliest Occurrence**: Disables `loop-depth` and `show-loop-icons` (not relevant for single occurrences)
-  - **Every/Latest Occurrence**: All settings available
+- **`positioning-logic`**: All settings are available in all modes
+  - Loop-related settings (`loop-depth`, `show-loop-icons`) are useful in all modes
+  - In earliest/latest modes, loop settings affect ghost elements when enabled
+  - In every-occurrence mode, loop settings control path exploration directly
 
 #### Ghost Dependencies
 

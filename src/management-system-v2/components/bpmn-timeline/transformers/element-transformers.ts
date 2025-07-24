@@ -76,18 +76,21 @@ export function transformEvent(
 }
 
 /**
- * Transform BPMN gateway to Gantt milestone
+ * Transform BPMN gateway to Gantt element
+ * Gateways are always rendered as milestones (diamond shape)
+ * If they have duration, the milestone will show the duration range
  */
 export function transformGateway(
   gateway: BPMNGateway,
   startTime: number,
   duration: number,
   color?: string,
+  isVisible: boolean = false,
 ): GanttElementType {
   return {
     id: gateway.id,
     name: gateway.name,
-    type: 'milestone',
+    type: 'milestone', // Always render as milestone
     start: startTime,
     end: startTime + duration,
     elementType: getGatewayTypeString(gateway),

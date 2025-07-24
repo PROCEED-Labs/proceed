@@ -37,6 +37,7 @@ import {
   separateSupportedElements,
   calculateTimingsForMode,
   filterDependenciesForVisibleElements,
+  detectGhostDependenciesThroughGateways,
 } from './transform-helpers';
 
 /**
@@ -112,6 +113,16 @@ export function transformBPMNToGantt(
     showGhostElements,
     showGhostDependencies,
   );
+
+  // Check for ghost dependencies through gateways (unsupported)
+  if (showGhostDependencies && !renderGateways) {
+    const ghostGatewayIssues = detectGhostDependenciesThroughGateways(
+      modeResult.ganttElements,
+      pathDependencies,
+      supportedElements,
+    );
+    issues.push(...ghostGatewayIssues);
+  }
 
   // Group and sort elements by connected components and start time
   const sortedElements = groupAndSortElements(

@@ -494,7 +494,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
               showInstanceColumn={ganttSettings.positioningLogic === 'every-occurrence'}
               showLoopColumn={
                 ganttSettings.positioningLogic === 'every-occurrence' ||
-                ganttSettings.positioningLogic === 'latest-occurrence'
+                ganttSettings.positioningLogic === 'latest-occurrence' ||
+                ganttSettings.positioningLogic === 'earliest-occurrence'
               }
               options={{
                 showControls: true,

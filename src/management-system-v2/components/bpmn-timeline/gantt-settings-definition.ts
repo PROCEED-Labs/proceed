@@ -21,7 +21,7 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       name: 'Timeline Positioning Logic',
       type: 'select' as const,
       optionType: 'string' as const,
-      value: 'earliest-occurrence',
+      value: 'every-occurrence',
       description: 'Controls how element timing is calculated in the timeline.',
       options: [
         { value: 'every-occurrence', label: 'Every Occurrence' },
@@ -35,7 +35,7 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       type: 'number' as const,
       value: 1,
       description:
-        'Maximum number of loop iterations to process. Only used in every-occurrence and latest-occurrence modes. Minimum value is 0 which means no loops are processed.',
+        'Maximum number of loop iterations to process in path-based analysis. Affects every-occurrence and latest-occurrence modes, and ghost elements in earliest-occurrence mode. Minimum value is 0 which means no loops are processed.',
     },
     {
       key: 'show-loop-icons',
@@ -43,7 +43,7 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       type: 'boolean' as const,
       value: true,
       description:
-        'Show warning icons for elements that are part of loops or where flow traversal was cut off. Relevant for every-occurrence and latest-occurrence modes.',
+        'Show warning icons directly in the chart for elements that are part of loops or where flow traversal was cut off.',
     },
     // Ghost Elements
     {
@@ -52,7 +52,7 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       type: 'boolean' as const,
       value: false,
       description:
-        'Show semi-transparent elements for alternative timing occurrences in earliest/latest modes.',
+        'Show semi-transparent elements for alternative timing occurrences in earliest/latest modes. Not available for "Every Occurence mode".',
     },
     {
       key: 'show-ghost-dependencies',
@@ -83,7 +83,7 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       key: 'curved-dependencies',
       name: 'Curved Dependencies',
       type: 'boolean' as const,
-      value: false,
+      value: true,
       description:
         'Use curved lines for dependency arrows instead of straight edges for a more organic appearance.',
     },

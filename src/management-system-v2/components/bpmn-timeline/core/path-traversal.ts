@@ -636,5 +636,19 @@ function traverseAllPaths(
 
   explorePaths();
 
-  return { pathElements, dependencies, issues };
+  // Deduplicate loop detection warnings to ensure each element is only warned about once
+  const deduplicatedIssues = issues.filter((issue, index, arr) => {
+    // Keep non-loop warnings as is
+    if (!issue.reason.includes('Loop iteration limit reached')) {
+      return true;
+    }
+    
+    // For loop warnings, keep only the first occurrence for each elementId
+    return arr.findIndex(other => 
+      other.elementId === issue.elementId && 
+      other.reason.includes('Loop iteration limit reached')
+    ) === index;
+  });
+
+  return { pathElements, dependencies, issues: deduplicatedIssues };
 }

@@ -22,6 +22,7 @@ export const TASK_PADDING = 4; // Vertical padding for task bars
 export const MILESTONE_SIZE = 12; // Diamond size for milestones
 export const DEPENDENCY_ARROW_SIZE = 8; // Arrow head size for dependencies
 export const ELEMENT_MIN_WIDTH = 20; // Minimum width for rendered elements
+export const MIN_ARROW_TIP_DISTANCE = 16; // Minimum distance to show arrow tips for ghost dependencies
 
 // Performance thresholds
 export const VIRTUALIZATION_BUFFER_ROWS = 5; // Extra rows to render above/below viewport

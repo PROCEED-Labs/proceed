@@ -13,7 +13,53 @@ import {
   DEPENDENCY_LINE_COLOR,
   MILESTONE_SIZE,
   ELEMENT_MIN_WIDTH,
+  MIN_ARROW_TIP_DISTANCE,
 } from '../constants';
+
+// Core data structures
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface PathSegment {
+  from: Point;
+  to: Point;
+  type: 'horizontal' | 'vertical';
+}
+
+interface RoutingConstraints {
+  minSourceDistance: number;
+  minTargetDistance: number;
+  gridSpacing: number;
+  elements: GanttElementType[];
+  elementsByIndex: Map<number, GanttElementType>;
+  timeMatrix: TimeMatrix;
+}
+
+interface RoutingContext {
+  isSelfLoop: boolean;
+  isGhost: boolean;
+  hasCollision: boolean;
+  needsRouting: boolean;
+  isVeryShort: boolean;
+  constraints: RoutingConstraints;
+}
+
+interface RenderStyle {
+  curved: boolean;
+  radius: number;
+  color: string;
+  width: number;
+  opacity: number;
+}
+
+// Routing strategy interface
+interface RoutingStrategy {
+  calculatePath(from: Point, to: Point, context: RoutingContext): PathSegment[];
+}
+
+type RouteType = 'direct' | 'complex' | 'selfLoop';
 
 export class DependencyRenderer {
   private pixelRatio: number = 1;
@@ -36,7 +82,378 @@ export class DependencyRenderer {
   }
 
   /**
-   * Render all dependencies between elements
+   * Filter out main instance self-loops when ghost dependencies exist
+   */
+  private filterMainInstanceSelfLoops(
+    deps: GanttDependency[],
+    allDeps: GanttDependency[],
+  ): GanttDependency[] {
+    return deps.filter((dep) => {
+      // Check if this is a main instance self-loop (not a ghost dependency)
+      const isMainInstanceSelfLoop = dep.sourceId === dep.targetId && !dep.isGhost;
+
+      if (isMainInstanceSelfLoop) {
+        // Check if there are ghost dependencies for this element
+        const hasGhostDependencies = allDeps.some(
+          (otherDep) => otherDep.sourceId === dep.sourceId && otherDep.isGhost,
+        );
+
+        if (hasGhostDependencies) {
+          return false; // Filter out this dependency
+        }
+      }
+
+      return true; // Keep this dependency
+    });
+  }
+
+  /**
+   * Snap coordinate with minimum distance enforcement
+   */
+  private snapWithMinDistance(x: number, sourceX: number, minDistance: number): number {
+    let adjustedX = this.snapToVerticalGrid(x, sourceX);
+
+    // Ensure minimum distance from source is always respected
+    if (Math.abs(adjustedX - sourceX) < minDistance) {
+      const minRequiredX = sourceX + (x > sourceX ? minDistance : -minDistance);
+      // Find next grid line in the source-based grid
+      const offset = sourceX % this.VERTICAL_GRID_SPACING;
+      const direction = x > sourceX ? 1 : -1;
+      adjustedX =
+        Math.ceil((minRequiredX - offset) / this.VERTICAL_GRID_SPACING) *
+          this.VERTICAL_GRID_SPACING +
+        offset;
+    }
+
+    return adjustedX;
+  }
+
+  /**
+   * Draw a curved corner transition
+   */
+  private drawCurvedCorner(
+    context: CanvasRenderingContext2D,
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    radius: number,
+  ): void {
+    const goingRight = toX > fromX;
+    const goingDown = toY > fromY;
+
+    // Shorten the line before the curve
+    const lineEndX = fromX + (goingRight ? radius : -radius);
+    context.lineTo(lineEndX, fromY);
+
+    // Draw the curve
+    context.quadraticCurveTo(toX, fromY, toX, fromY + (goingDown ? radius : -radius));
+  }
+
+  /**
+   * Find a ghost occurrence by instance ID
+   */
+  private findGhostOccurrence(element: GanttElementType, instanceId: string): any | undefined {
+    return element.ghostOccurrences?.find((ghost) => ghost.instanceId === instanceId);
+  }
+
+  /**
+   * Calculate connection point for a ghost dependency
+   */
+  private calculateGhostConnectionPoint(
+    element: GanttElementType,
+    ghost: any,
+    side: 'source' | 'target',
+    timeMatrix: TimeMatrix,
+    elementIndex: number,
+  ): { x: number; y: number } {
+    const y = elementIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+
+    if (element.type === 'milestone') {
+      const startX = timeMatrix.transformPoint(ghost.start);
+      const endX = ghost.end ? timeMatrix.transformPoint(ghost.end) : startX;
+      const hasRange = ghost.end && ghost.end !== ghost.start;
+
+      if (hasRange) {
+        // For milestones with ranges (e.g., events with duration)
+        if (side === 'source') {
+          // Outgoing arrows originate from the end of the range
+          return { x: endX, y };
+        } else {
+          // Incoming arrows (target) should point to the start of the duration
+          return { x: startX, y };
+        }
+      } else {
+        // For point milestones (no range)
+        const milestoneX = startX;
+        return {
+          x: side === 'source' ? milestoneX + MILESTONE_SIZE / 2 : milestoneX - MILESTONE_SIZE / 2,
+          y,
+        };
+      }
+    } else {
+      // Tasks and groups: account for minimum width adjustment like regular elements
+      const startX = timeMatrix.transformPoint(ghost.start);
+      const endX = timeMatrix.transformPoint(ghost.end || ghost.start);
+      const width = Math.max(endX - startX, ELEMENT_MIN_WIDTH);
+
+      if (side === 'source') {
+        // Connection from the right side of the element
+        return { x: startX + width, y };
+      } else {
+        // Connection to the left side of the element
+        return { x: startX, y };
+      }
+    }
+  }
+
+  /**
+   * Check if ghost dependency should bypass collision detection
+   */
+  private shouldBypassGhostCollision(
+    dep: any,
+    from: { x: number; y: number },
+    lineEndPoint: { x: number; y: number },
+  ): boolean {
+    return dep && dep.isGhost && Math.abs(lineEndPoint.y - from.y) <= 5;
+  }
+
+  // Routing strategy implementations
+  private directRoutingStrategy: RoutingStrategy = {
+    calculatePath: (from: Point, to: Point, context: RoutingContext): PathSegment[] => {
+      const { minSourceDistance } = context.constraints;
+
+      // For very short same-row dependencies, use direct line (but not for ghost dependencies)
+      const sameRow = Math.abs(to.y - from.y) <= 5;
+      const totalDistance = Math.abs(to.x - from.x);
+      if (context.isVeryShort && sameRow && !context.isGhost) {
+        return [{ from, to, type: 'horizontal' }];
+      }
+
+      // For direct routing, we can go in either direction
+      const needsToGoLeft = to.x < from.x;
+      const targetX = needsToGoLeft ? from.x - minSourceDistance : from.x + minSourceDistance;
+      const vLineX = this.snapWithMinDistance(targetX, from.x, minSourceDistance);
+
+      // Simple L-shaped path
+      return [
+        { from, to: { x: vLineX, y: from.y }, type: 'horizontal' },
+        { from: { x: vLineX, y: from.y }, to: { x: vLineX, y: to.y }, type: 'vertical' },
+        { from: { x: vLineX, y: to.y }, to, type: 'horizontal' },
+      ];
+    },
+  };
+
+  private complexRoutingStrategy: RoutingStrategy = {
+    calculatePath: (from: Point, to: Point, context: RoutingContext): PathSegment[] => {
+      const { minSourceDistance, minTargetDistance, gridSpacing } = context.constraints;
+
+      // For complex routing (around obstacles), always go right first from source
+      // This makes visual sense since elements emit from their end (right side)
+      const sourceTargetX = from.x + minSourceDistance;
+      const vLineFromX = this.snapWithMinDistance(sourceTargetX, from.x, minSourceDistance);
+
+      // Calculate target vertical line position
+      let vLineToX = this.snapToVerticalGrid(to.x - minTargetDistance, from.x);
+      if (to.x - vLineToX < minTargetDistance) {
+        const maxAllowedX = to.x - minTargetDistance;
+        const offset = from.x % gridSpacing;
+        vLineToX = Math.floor((maxAllowedX - offset) / gridSpacing) * gridSpacing + offset;
+      }
+
+      // Ensure adequate spacing between vertical lines
+      const distanceToTarget = Math.abs(to.x - vLineToX);
+      if (distanceToTarget <= gridSpacing) {
+        if (to.x > vLineToX) {
+          vLineToX = vLineToX - gridSpacing;
+        } else {
+          vLineToX = vLineToX + gridSpacing;
+        }
+      }
+
+      // Calculate intermediate routing Y position
+      const fromRow = Math.round(from.y / ROW_HEIGHT);
+      const toRow = Math.round(to.y / ROW_HEIGHT);
+      const rowDifference = Math.abs(toRow - fromRow);
+
+      let routeY: number;
+      if (rowDifference <= 1) {
+        routeY = (from.y + to.y) / 2;
+      } else {
+        routeY = from.y < to.y ? from.y + ROW_HEIGHT / 2 : from.y - ROW_HEIGHT / 2;
+      }
+
+      // Multi-segment path that routes around obstacles
+      return [
+        { from, to: { x: vLineFromX, y: from.y }, type: 'horizontal' },
+        { from: { x: vLineFromX, y: from.y }, to: { x: vLineFromX, y: routeY }, type: 'vertical' },
+        { from: { x: vLineFromX, y: routeY }, to: { x: vLineToX, y: routeY }, type: 'horizontal' },
+        { from: { x: vLineToX, y: routeY }, to: { x: vLineToX, y: to.y }, type: 'vertical' },
+        { from: { x: vLineToX, y: to.y }, to, type: 'horizontal' },
+      ];
+    },
+  };
+
+  private selfLoopRoutingStrategy: RoutingStrategy = {
+    calculatePath: (from: Point, to: Point, context: RoutingContext): PathSegment[] => {
+      const { minSourceDistance, minTargetDistance } = context.constraints;
+      const loopY = from.y - ROW_HEIGHT / 2;
+
+      const vLineFromX = this.snapWithMinDistance(
+        from.x + minSourceDistance,
+        from.x,
+        minSourceDistance,
+      );
+
+      let vLineToX = this.snapToVerticalGrid(to.x - minTargetDistance, from.x);
+      if (to.x - vLineToX < minTargetDistance) {
+        const maxAllowedX = to.x - minTargetDistance;
+        const offset = from.x % this.VERTICAL_GRID_SPACING;
+        vLineToX =
+          Math.floor((maxAllowedX - offset) / this.VERTICAL_GRID_SPACING) *
+            this.VERTICAL_GRID_SPACING +
+          offset;
+      }
+
+      // Self-loop path that goes up and around
+      return [
+        { from, to: { x: vLineFromX, y: from.y }, type: 'horizontal' },
+        { from: { x: vLineFromX, y: from.y }, to: { x: vLineFromX, y: loopY }, type: 'vertical' },
+        { from: { x: vLineFromX, y: loopY }, to: { x: vLineToX, y: loopY }, type: 'horizontal' },
+        { from: { x: vLineToX, y: loopY }, to: { x: vLineToX, y: to.y }, type: 'vertical' },
+        { from: { x: vLineToX, y: to.y }, to, type: 'horizontal' },
+      ];
+    },
+  };
+
+  private routeDependency(from: Point, to: Point, context: RoutingContext): PathSegment[] {
+    if (context.isSelfLoop) {
+      return this.selfLoopRoutingStrategy.calculatePath(from, to, context);
+    } else if (context.needsRouting) {
+      return this.complexRoutingStrategy.calculatePath(from, to, context);
+    } else {
+      return this.directRoutingStrategy.calculatePath(from, to, context);
+    }
+  }
+
+  private renderPath(
+    context: CanvasRenderingContext2D,
+    segments: PathSegment[],
+    style: RenderStyle,
+    arrowTarget: Point,
+    showArrowTip: boolean = true,
+  ): void {
+    // Set style
+    context.strokeStyle = style.color;
+    context.lineWidth = style.width;
+    context.globalAlpha = style.opacity;
+    context.setLineDash([]);
+
+    if (style.curved) {
+      context.lineJoin = 'round';
+      context.lineCap = 'round';
+    } else {
+      context.lineJoin = 'miter';
+      context.lineCap = 'butt';
+    }
+
+    context.beginPath();
+
+    if (segments.length === 0) return;
+
+    // Always start from the exact connection point (no gap)
+    context.moveTo(segments[0].from.x, segments[0].from.y);
+
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const nextSegment = segments[i + 1];
+
+      if (style.curved && nextSegment && this.isCorner(segment, nextSegment)) {
+        // For the first segment, we need to draw from element edge to curve start
+        if (i === 0) {
+          const dir1 = this.getSegmentDirection(segment);
+          const curveStart = {
+            x: segment.to.x - dir1.x * style.radius,
+            y: segment.to.y - dir1.y * style.radius,
+          };
+          context.lineTo(curveStart.x, curveStart.y);
+
+          const dir2 = this.getSegmentDirection(nextSegment);
+          const curveEnd = {
+            x: segment.to.x + dir2.x * style.radius,
+            y: segment.to.y + dir2.y * style.radius,
+          };
+          context.quadraticCurveTo(segment.to.x, segment.to.y, curveEnd.x, curveEnd.y);
+        } else {
+          this.renderCurvedCorner(context, segment, nextSegment, style.radius);
+        }
+      } else {
+        // For the last segment, account for arrow head only if arrow tip will be shown
+        if (i === segments.length - 1) {
+          if (showArrowTip) {
+            const totalDistance = Math.abs(segment.to.x - segment.from.x);
+            const arrowOffset =
+              totalDistance < 30
+                ? Math.min(DEPENDENCY_ARROW_SIZE * 0.5, totalDistance * 0.3)
+                : DEPENDENCY_ARROW_SIZE * 0.8;
+            const lineEndX = segment.to.x - arrowOffset;
+            context.lineTo(lineEndX, segment.to.y);
+          } else {
+            // No arrow tip, draw line all the way to target
+            context.lineTo(segment.to.x, segment.to.y);
+          }
+        } else {
+          // For non-final segments in curved mode, adjust endpoint if there's a curve coming
+          if (style.curved && nextSegment && this.isCorner(segment, nextSegment)) {
+            continue;
+          } else {
+            context.lineTo(segment.to.x, segment.to.y);
+          }
+        }
+      }
+    }
+
+    context.stroke();
+  }
+
+  private isCorner(current: PathSegment, next: PathSegment): boolean {
+    return current.type !== next.type;
+  }
+
+  private renderCurvedCorner(
+    context: CanvasRenderingContext2D,
+    current: PathSegment,
+    next: PathSegment,
+    radius: number,
+  ): void {
+    const corner = current.to;
+    const dir1 = this.getSegmentDirection(current);
+    const dir2 = this.getSegmentDirection(next);
+
+    // Stop current line before corner
+    const curveStart = {
+      x: corner.x - dir1.x * radius,
+      y: corner.y - dir1.y * radius,
+    };
+    context.lineTo(curveStart.x, curveStart.y);
+
+    // Draw curve to next segment start
+    const curveEnd = {
+      x: corner.x + dir2.x * radius,
+      y: corner.y + dir2.y * radius,
+    };
+    context.quadraticCurveTo(corner.x, corner.y, curveEnd.x, curveEnd.y);
+  }
+
+  private getSegmentDirection(segment: PathSegment): Point {
+    const dx = segment.to.x - segment.from.x;
+    const dy = segment.to.y - segment.from.y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    return length > 0 ? { x: dx / length, y: dy / length } : { x: 0, y: 0 };
+  }
+
+  /**
+   * Render all dependencies between elements (new unified approach)
    */
   renderDependencies(
     context: CanvasRenderingContext2D,
@@ -48,137 +465,244 @@ export class DependencyRenderer {
     highlightedDependencies?: GanttDependency[],
     curvedDependencies: boolean = false,
   ): void {
-    // Create element lookup map for quick access and index map for positions
-    // For elements, we need to handle potential duplicates properly
+    // Create element lookup maps
     const elementsByIndex = new Map<number, GanttElementType>();
-    elements.forEach((el, index) => {
-      elementsByIndex.set(index, el);
-    });
+    elements.forEach((el, index) => elementsByIndex.set(index, el));
 
-    // Create a set of highlighted dependency IDs for quick lookup
     const highlightedIds = new Set(
       highlightedDependencies?.map((dep) => `${dep.sourceId}-${dep.targetId}`) || [],
     );
 
-    // Separate dependencies into normal and highlighted arrays for proper z-ordering
-    const normalDeps: typeof dependencies = [];
-    const highlightedDeps: typeof dependencies = [];
+    // Separate into normal and highlighted dependencies
+    const normalDeps = dependencies.filter(
+      (dep) => !highlightedIds.has(`${dep.sourceId}-${dep.targetId}`),
+    );
+    const highlightedDeps = dependencies.filter((dep) =>
+      highlightedIds.has(`${dep.sourceId}-${dep.targetId}`),
+    );
 
-    dependencies.forEach((dep) => {
-      if (highlightedIds.has(`${dep.sourceId}-${dep.targetId}`)) {
-        highlightedDeps.push(dep);
-      } else {
-        normalDeps.push(dep);
-      }
-    });
+    // Filter out main instance self-loops if ghost dependencies exist
+    const filteredNormalDeps = this.filterMainInstanceSelfLoops(normalDeps, dependencies);
+    const filteredHighlightedDeps = this.filterMainInstanceSelfLoops(highlightedDeps, dependencies);
 
-    // Render normal dependencies first (behind highlighted ones)
-    const renderDependency = (dep: (typeof dependencies)[0], isHighlighted: boolean) => {
-      // Find the actual elements by their IDs in the elements array
-      let fromElement: GanttElementType | undefined;
-      let toElement: GanttElementType | undefined;
-      let fromIndex = -1;
-      let toIndex = -1;
-
-      // Search through all elements to find the matching source and target
-      // In every-occurrence mode, dependencies should use unique instance IDs
-      elements.forEach((el, index) => {
-        if (el.id === dep.sourceId && fromIndex === -1) {
-          fromElement = el;
-          fromIndex = index;
-        }
-        if (el.id === dep.targetId && toIndex === -1) {
-          toElement = el;
-          toIndex = index;
-        }
-      });
-
-      if (!fromElement || !toElement || fromIndex === -1 || toIndex === -1) return;
-
-      // Check if either element is visible
-      const fromVisible = fromIndex >= visibleRowStart && fromIndex <= visibleRowEnd;
-      const toVisible = toIndex >= visibleRowStart && toIndex <= visibleRowEnd;
-
-      if (!fromVisible && !toVisible) return;
-
-      // Calculate connection points for ghost dependencies
-      let fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex);
-      let toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'start', toIndex);
-
-      // For ghost dependencies, adjust connection points to ghost occurrences
-      if (dep.isGhost && dep.sourceInstanceId && dep.targetInstanceId) {
-        // Find the specific ghost occurrence for source
-        const sourceGhost = fromElement.ghostOccurrences?.find(
-          (ghost) => ghost.instanceId === dep.sourceInstanceId,
-        );
-        if (sourceGhost) {
-          if (fromElement.type === 'milestone') {
-            // For ghost milestones, position arrow to originate from the right side of the diamond
-            const milestoneX = timeMatrix.transformPoint(sourceGhost.start);
-            fromPoint = { x: milestoneX + MILESTONE_SIZE / 2, y: fromPoint.y };
-          } else {
-            // For tasks, use end of ghost occurrence
-            const endTime = sourceGhost.end || sourceGhost.start;
-            fromPoint = { x: timeMatrix.transformPoint(endTime), y: fromPoint.y };
-          }
-        }
-
-        // Find the specific ghost occurrence for target
-        const targetGhost = toElement.ghostOccurrences?.find(
-          (ghost) => ghost.instanceId === dep.targetInstanceId,
-        );
-        if (targetGhost) {
-          if (toElement.type === 'milestone') {
-            // For ghost milestones, position arrow to go into the left side of the diamond
-            const milestoneX = timeMatrix.transformPoint(targetGhost.start);
-            toPoint = { x: milestoneX - MILESTONE_SIZE / 2, y: toPoint.y };
-          } else {
-            toPoint = { x: timeMatrix.transformPoint(targetGhost.start), y: toPoint.y };
-          }
-        }
-      }
-
-      // Skip if points are outside visible area
-      const canvasWidth = context.canvas.width / this.pixelRatio;
-      if (
-        (fromPoint.x < 0 && toPoint.x < 0) ||
-        (fromPoint.x > canvasWidth && toPoint.x > canvasWidth)
-      ) {
-        return;
-      }
-
-      // Use absolute row positions
-      fromPoint.y = fromIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
-      toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
-
-      // Check if this is a self-loop (dependency from element to itself)
-      const isSelfLoop =
-        dep.sourceId === dep.targetId ||
-        (fromElement.id === toElement.id &&
-          !!fromElement.instanceNumber &&
-          !!toElement.instanceNumber);
-
-      // Draw the dependency arrow using the dependency's type
-      this.drawDependencyArrow(
+    // Render normal dependencies first, then highlighted on top
+    [...filteredNormalDeps, ...filteredHighlightedDeps].forEach((dep, index) => {
+      const isHighlighted = index >= filteredNormalDeps.length;
+      this.renderSingleDependency(
         context,
-        fromPoint,
-        toPoint,
-        dep.type,
-        isHighlighted,
+        dep,
         elements,
         elementsByIndex,
         timeMatrix,
+        visibleRowStart,
+        visibleRowEnd,
         curvedDependencies,
-        isSelfLoop,
-        dep.isGhost,
+        isHighlighted,
       );
+    });
+  }
+
+  /**
+   * Render a single dependency using the new unified approach
+   */
+  private renderSingleDependency(
+    context: CanvasRenderingContext2D,
+    dep: GanttDependency,
+    elements: GanttElementType[],
+    elementsByIndex: Map<number, GanttElementType>,
+    timeMatrix: TimeMatrix,
+    visibleRowStart: number,
+    visibleRowEnd: number,
+    curvedDependencies: boolean,
+    isHighlighted: boolean,
+  ): void {
+    // Find elements by ID
+    const { fromElement, toElement, fromIndex, toIndex } = this.findDependencyElements(
+      dep,
+      elements,
+    );
+    if (!fromElement || !toElement || fromIndex === -1 || toIndex === -1) return;
+
+    // Check visibility
+    const fromVisible = fromIndex >= visibleRowStart && fromIndex <= visibleRowEnd;
+    const toVisible = toIndex >= visibleRowStart && toIndex <= visibleRowEnd;
+    if (!fromVisible && !toVisible) return;
+
+    // Calculate connection points
+    let fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex);
+    let toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'start', toIndex);
+
+    // Adjust for ghost dependencies
+    if (dep.isGhost && dep.sourceInstanceId && dep.targetInstanceId) {
+      const sourceGhost = this.findGhostOccurrence(fromElement, dep.sourceInstanceId);
+      if (sourceGhost) {
+        const originalFromPoint = { ...fromPoint };
+        fromPoint = this.calculateGhostConnectionPoint(
+          fromElement,
+          sourceGhost,
+          'source',
+          timeMatrix,
+          fromIndex,
+        );
+      }
+
+      const targetGhost = this.findGhostOccurrence(toElement, dep.targetInstanceId);
+      if (targetGhost) {
+        const originalToPoint = { ...toPoint };
+        toPoint = this.calculateGhostConnectionPoint(
+          toElement,
+          targetGhost,
+          'target',
+          timeMatrix,
+          toIndex,
+        );
+      }
+    }
+
+    // Skip if outside visible canvas area
+    const canvasWidth = context.canvas.width / this.pixelRatio;
+    if (
+      (fromPoint.x < 0 && toPoint.x < 0) ||
+      (fromPoint.x > canvasWidth && toPoint.x > canvasWidth)
+    ) {
+      return;
+    }
+
+    // Use absolute row positions
+    fromPoint.y = fromIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+
+    // Calculate distance for arrow tip logic
+    const totalDistance = Math.abs(toPoint.x - fromPoint.x);
+    const isSameRow = Math.abs(toPoint.y - fromPoint.y) <= 5;
+
+    // Skip rendering ghost dependencies that are problematic when elements overlap
+    if (dep.isGhost) {
+      // For same-row dependencies, skip if they would cause visual artifacts
+      if (isSameRow) {
+        // Skip if target is at or left of source (negative dependency)
+        if (toPoint.x <= fromPoint.x) {
+          return;
+        }
+
+        // Skip if distance is too small and causes visual artifacts when overlapping
+        if (totalDistance < 5) {
+          return;
+        }
+      }
+      // Different-row dependencies should always render, even with overlapping elements
+    }
+
+    // Build routing context
+    const context_routing = this.buildRoutingContext(
+      dep,
+      fromPoint,
+      toPoint,
+      elements,
+      elementsByIndex,
+      timeMatrix,
+    );
+
+    // Calculate path using new routing system
+    const segments = this.routeDependency(fromPoint, toPoint, context_routing);
+
+    // Draw arrow head - hide for very short ghost dependencies on same row
+    const shouldShowArrowTip = !(
+      dep.isGhost &&
+      isSameRow &&
+      totalDistance < MIN_ARROW_TIP_DISTANCE
+    );
+
+    // Create render style
+    const style: RenderStyle = {
+      curved: curvedDependencies,
+      radius: 5,
+      color: isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR,
+      width: isHighlighted ? 2.5 : 1.5,
+      opacity: dep.isGhost ? 0.75 : 1.0,
     };
 
-    // Render normal dependencies first
-    normalDeps.forEach((dep) => renderDependency(dep, false));
+    // Save context state
+    context.save();
 
-    // Render highlighted dependencies last (on top)
-    highlightedDeps.forEach((dep) => renderDependency(dep, true));
+    // Render the path
+    this.renderPath(context, segments, style, toPoint, shouldShowArrowTip);
+    if (shouldShowArrowTip) {
+      this.drawArrowHead(context, toPoint, isHighlighted);
+    }
+
+    // Restore context state
+    context.restore();
+  }
+
+  private findDependencyElements(dep: GanttDependency, elements: GanttElementType[]) {
+    let fromElement: GanttElementType | undefined;
+    let toElement: GanttElementType | undefined;
+    let fromIndex = -1;
+    let toIndex = -1;
+
+    elements.forEach((el, index) => {
+      if (el.id === dep.sourceId && fromIndex === -1) {
+        fromElement = el;
+        fromIndex = index;
+      }
+      if (el.id === dep.targetId && toIndex === -1) {
+        toElement = el;
+        toIndex = index;
+      }
+    });
+
+    return { fromElement, toElement, fromIndex, toIndex };
+  }
+
+  private buildRoutingContext(
+    dep: GanttDependency,
+    fromPoint: Point,
+    toPoint: Point,
+    elements: GanttElementType[],
+    elementsByIndex: Map<number, GanttElementType>,
+    timeMatrix: TimeMatrix,
+  ): RoutingContext {
+    const totalDistance = Math.abs(toPoint.x - fromPoint.x);
+    const isVeryShort = totalDistance < 30;
+    const isSelfLoop = dep.sourceId === dep.targetId && fromPoint.x >= toPoint.x && !dep.isGhost;
+
+    // Check for insufficient space and collisions
+    // For ghost dependencies on same row, don't enforce minimum space requirements
+    const isSameRow = Math.abs(toPoint.y - fromPoint.y) <= 5;
+    const hasInsufficientSpace = dep.isGhost && isSameRow ? false : toPoint.x <= fromPoint.x + 20;
+    let hasCollision = this.wouldIntersectElements(
+      fromPoint,
+      toPoint,
+      elements,
+      elementsByIndex,
+      timeMatrix,
+    );
+
+    // Override collision detection for ghost dependencies on same row
+    if (this.shouldBypassGhostCollision(dep, fromPoint, toPoint)) {
+      hasCollision = false;
+    }
+
+    // For different-row ghost dependencies, always use complex routing for cleaner lines
+    const needsComplexRouting = Boolean(dep.isGhost) && !isSameRow;
+    const needsRouting = Boolean(hasInsufficientSpace || hasCollision || isSelfLoop || needsComplexRouting);
+
+    return {
+      isSelfLoop,
+      isGhost: dep.isGhost || false,
+      hasCollision,
+      needsRouting,
+      isVeryShort,
+      constraints: {
+        minSourceDistance: dep.isGhost && isSameRow ? 0 : this.MIN_SOURCE_DISTANCE,
+        minTargetDistance: dep.isGhost && isSameRow ? 0 : this.MIN_TARGET_DISTANCE,
+        gridSpacing: this.VERTICAL_GRID_SPACING,
+        elements,
+        elementsByIndex,
+        timeMatrix,
+      },
+    };
   }
 
   /**
@@ -216,14 +740,13 @@ export class DependencyRenderer {
         const hasRange = milestone.end && milestone.end !== milestone.start;
 
         if (hasRange) {
-          // For milestones with ranges
+          // For milestones with ranges (e.g., events with duration)
           const startX = timeMatrix.transformPoint(milestone.start);
           const endX = timeMatrix.transformPoint(milestone.end!);
-          const centerX = (startX + endX) / 2;
 
           if (side === 'start') {
-            // Incoming arrows go to the milestone diamond at center
-            return { x: centerX - MILESTONE_SIZE / 2, y };
+            // Incoming arrows should point to the start of the duration
+            return { x: startX, y };
           } else {
             // Outgoing arrows originate from the end of the range
             return { x: endX, y };
@@ -261,8 +784,8 @@ export class DependencyRenderer {
    * Check if a horizontal line would intersect with any elements between source and target
    */
   private wouldIntersectElements(
-    from: { x: number; y: number },
-    to: { x: number; y: number },
+    from: Point,
+    to: Point,
     elements?: GanttElementType[],
     elementsByIndex?: Map<number, GanttElementType>,
     timeMatrix?: TimeMatrix,
@@ -280,7 +803,6 @@ export class DependencyRenderer {
     const minRow = Math.min(fromRow, toRow);
     const maxRow = Math.max(fromRow, toRow);
 
-    // Early exit for very large row ranges to avoid performance issues
     if (maxRow - minRow > 20) {
       return false; // Skip collision detection for very long dependencies
     }
@@ -288,7 +810,7 @@ export class DependencyRenderer {
     // Check all elements to see if any fall on the affected rows and within the X range
     for (const [elementIndex, element] of elementsByIndex) {
       if (elementIndex < minRow || elementIndex > maxRow) {
-        continue; // Not on any affected row
+        continue;
       }
 
       // Get element position and boundaries
@@ -319,496 +841,11 @@ export class DependencyRenderer {
       // Add some padding to avoid elements
       const padding = 5;
       if (elementMaxX + padding > minX && elementMinX - padding < maxX) {
-        return true; // Would intersect with this element
+        return true;
       }
     }
 
     return false;
-  }
-
-  /**
-   * Draw a dependency arrow between two points
-   */
-  private drawDependencyArrow(
-    context: CanvasRenderingContext2D,
-    from: { x: number; y: number },
-    to: { x: number; y: number },
-    type: DependencyType,
-    isHighlighted: boolean = false,
-    elements?: GanttElementType[],
-    elementsByIndex?: Map<number, GanttElementType>,
-    timeMatrix?: TimeMatrix,
-    curvedDependencies: boolean = false,
-    isSelfLoop: boolean = false,
-    isGhost: boolean = false,
-  ): void {
-    // Calculate adjusted endpoint to stop before arrow head
-    const arrowOffset = DEPENDENCY_ARROW_SIZE * 0.8; // Stop line slightly before arrow tip
-    const lineEndPoint = { x: to.x - arrowOffset, y: to.y };
-
-    // Save current context state
-    context.save();
-
-    // Set line style for dependencies based on highlight status and ghost status
-    // Use fixed line widths that look good on all screen densities
-    if (isHighlighted) {
-      context.strokeStyle = '#000000'; // Black color for highlighted dependencies
-      context.lineWidth = 2.5; // Thicker lines for highlighted dependencies
-      context.globalAlpha = isGhost ? 0.75 : 1.0; // Reduce opacity for ghost dependencies
-    } else {
-      context.strokeStyle = DEPENDENCY_LINE_COLOR;
-      context.lineWidth = 1.5; // Thinner lines for normal dependencies
-      context.globalAlpha = isGhost ? 0.75 : 1.0; // Reduce opacity for ghost dependencies
-    }
-    context.setLineDash([]);
-
-    // Set line join and cap based on curved dependencies setting
-    if (curvedDependencies) {
-      context.lineJoin = 'round';
-      context.lineCap = 'round';
-    } else {
-      context.lineJoin = 'miter';
-      context.lineCap = 'butt';
-    }
-
-    context.beginPath();
-
-    // Flag to skip main stroke if we draw individual segments
-    let skipMainStroke = false;
-
-    // Draw based on dependency type
-    switch (type) {
-      case DependencyType.FINISH_TO_START:
-      default:
-        // Check if we need to route around elements
-        const hasInsufficientSpace = lineEndPoint.x <= from.x + 20;
-        const hasCollision = this.wouldIntersectElements(
-          from,
-          lineEndPoint,
-          elements,
-          elementsByIndex,
-          timeMatrix,
-        );
-        const needsRouting = hasInsufficientSpace || hasCollision || isSelfLoop;
-
-        if (!needsRouting) {
-          // Direct path with proper corners using grid snapping
-          context.moveTo(from.x, from.y);
-
-          // Always ensure minimal distance from source before going vertical
-          let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE, from.x);
-
-          // Ensure minimum distance from source is always respected
-          if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
-            const minRequiredX = from.x + this.MIN_SOURCE_DISTANCE;
-            // Find next grid line in the source-based grid
-            const offset = from.x % this.VERTICAL_GRID_SPACING;
-            adjustedFromX =
-              Math.ceil((minRequiredX - offset) / this.VERTICAL_GRID_SPACING) *
-                this.VERTICAL_GRID_SPACING +
-              offset;
-          }
-
-          // Ensure distance to destination is greater than grid spacing
-          const distanceToTarget = Math.abs(lineEndPoint.x - adjustedFromX);
-          if (distanceToTarget <= this.VERTICAL_GRID_SPACING) {
-            // Move the vertical line further from target to ensure adequate spacing
-            if (lineEndPoint.x > adjustedFromX) {
-              // Target is to the right, move vertical line left
-              const offset = from.x % this.VERTICAL_GRID_SPACING;
-              adjustedFromX = adjustedFromX - this.VERTICAL_GRID_SPACING;
-              // But don't go below minimum source distance
-              if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
-                adjustedFromX =
-                  Math.ceil(
-                    (from.x + this.MIN_SOURCE_DISTANCE - offset) / this.VERTICAL_GRID_SPACING,
-                  ) *
-                    this.VERTICAL_GRID_SPACING +
-                  offset;
-              }
-            } else {
-              // Target is to the left, move vertical line right
-              adjustedFromX = adjustedFromX + this.VERTICAL_GRID_SPACING;
-            }
-          }
-
-          // Always use the same routing logic, just add curves if enabled
-          const radius = 5;
-
-          if (curvedDependencies && Math.abs(lineEndPoint.y - from.y) > 5) {
-            // Curved version: shorten lines by radius and add curves
-
-            // Calculate directions
-            const goingRight = adjustedFromX > from.x;
-            const goingDown = lineEndPoint.y > from.y;
-            const finalGoingRight = lineEndPoint.x > adjustedFromX;
-
-            // First horizontal line (shortened)
-            context.lineTo(adjustedFromX - (goingRight ? radius : -radius), from.y);
-
-            // First curve (horizontal to vertical)
-            context.quadraticCurveTo(
-              adjustedFromX,
-              from.y,
-              adjustedFromX,
-              from.y + (goingDown ? radius : -radius),
-            );
-
-            // Vertical line (shortened on both ends)
-            context.lineTo(adjustedFromX, lineEndPoint.y - (goingDown ? radius : -radius));
-
-            // Second curve (vertical to horizontal)
-            context.quadraticCurveTo(
-              adjustedFromX,
-              lineEndPoint.y,
-              adjustedFromX + (finalGoingRight ? radius : -radius),
-              lineEndPoint.y,
-            );
-
-            // Final horizontal line
-            context.lineTo(lineEndPoint.x, lineEndPoint.y);
-          } else {
-            // Straight lines (original behavior)
-            context.lineTo(adjustedFromX, from.y);
-
-            if (Math.abs(lineEndPoint.y - from.y) > 5) {
-              // Different rows - go vertical immediately, then to target
-              context.lineTo(adjustedFromX, lineEndPoint.y);
-            }
-
-            context.lineTo(lineEndPoint.x, lineEndPoint.y);
-          }
-        } else {
-          // Need to route around
-
-          if (isSelfLoop) {
-            // Special routing for self-loops - use same height logic as regular dependencies
-            const loopY = from.y - ROW_HEIGHT / 2; // Same as regular dependency routing between rows
-
-            // Use grid snapping for consistent spacing (same as regular dependencies)
-            let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE, from.x);
-
-            // Ensure minimum distance from source is always respected
-            if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
-              const minRequiredX = from.x + this.MIN_SOURCE_DISTANCE;
-              const offset = from.x % this.VERTICAL_GRID_SPACING;
-              adjustedFromX =
-                Math.ceil((minRequiredX - offset) / this.VERTICAL_GRID_SPACING) *
-                  this.VERTICAL_GRID_SPACING +
-                offset;
-            }
-
-            // For the target side, use similar grid snapping
-            let adjustedToX = this.snapToVerticalGrid(
-              lineEndPoint.x - this.MIN_TARGET_DISTANCE,
-              from.x,
-            );
-            if (lineEndPoint.x - adjustedToX < this.MIN_TARGET_DISTANCE) {
-              const maxAllowedX = lineEndPoint.x - this.MIN_TARGET_DISTANCE;
-              const offset = from.x % this.VERTICAL_GRID_SPACING;
-              adjustedToX =
-                Math.floor((maxAllowedX - offset) / this.VERTICAL_GRID_SPACING) *
-                  this.VERTICAL_GRID_SPACING +
-                offset;
-            }
-
-            context.moveTo(from.x, from.y);
-
-            if (curvedDependencies) {
-              const radius = 5;
-
-              // Calculate directions using same logic as regular dependencies
-              const goingRight1 = adjustedFromX > from.x;
-              const goingUp = loopY < from.y; // Always true for self-loops (going up)
-              const goingRight2 = adjustedToX > adjustedFromX;
-              const goingDown = lineEndPoint.y > loopY; // Always true for self-loops (coming back down)
-              const finalGoingRight = lineEndPoint.x > adjustedToX;
-
-              // First horizontal line (shortened)
-              context.lineTo(adjustedFromX - (goingRight1 ? radius : -radius), from.y);
-
-              // First curve: horizontal to vertical
-              context.quadraticCurveTo(
-                adjustedFromX,
-                from.y,
-                adjustedFromX,
-                from.y + (goingUp ? -radius : radius),
-              );
-
-              // Vertical line going up (shortened)
-              context.lineTo(adjustedFromX, loopY + (goingUp ? radius : -radius));
-
-              // Second curve: vertical to horizontal
-              context.quadraticCurveTo(
-                adjustedFromX,
-                loopY,
-                adjustedFromX + (goingRight2 ? radius : -radius),
-                loopY,
-              );
-
-              // Horizontal line above element (shortened)
-              context.lineTo(adjustedToX - (goingRight2 ? radius : -radius), loopY);
-
-              // Third curve: horizontal to vertical
-              context.quadraticCurveTo(
-                adjustedToX,
-                loopY,
-                adjustedToX,
-                loopY + (goingDown ? radius : -radius),
-              );
-
-              // Vertical line going down (shortened)
-              context.lineTo(adjustedToX, lineEndPoint.y - (goingDown ? radius : -radius));
-
-              // Fourth curve: vertical to horizontal
-              context.quadraticCurveTo(
-                adjustedToX,
-                lineEndPoint.y,
-                adjustedToX + (finalGoingRight ? radius : -radius),
-                lineEndPoint.y,
-              );
-
-              // Final horizontal line to target
-              context.lineTo(lineEndPoint.x, lineEndPoint.y);
-            } else {
-              // Straight lines for self-loop with grid snapping
-              context.lineTo(adjustedFromX, from.y);
-              context.lineTo(adjustedFromX, loopY);
-              context.lineTo(adjustedToX, loopY);
-              context.lineTo(adjustedToX, lineEndPoint.y);
-              context.lineTo(lineEndPoint.x, lineEndPoint.y);
-            }
-          } else {
-            // Normal routing for other cases
-            context.moveTo(from.x, from.y);
-
-            // Always ensure minimal distance from source before going vertical (source-based grid)
-            let adjustedFromX = this.snapToVerticalGrid(from.x + this.MIN_SOURCE_DISTANCE, from.x);
-
-            // Ensure minimum distance from source is always respected
-            if (adjustedFromX - from.x < this.MIN_SOURCE_DISTANCE) {
-              const minRequiredX = from.x + this.MIN_SOURCE_DISTANCE;
-              // Find next grid line in the source-based grid
-              const offset = from.x % this.VERTICAL_GRID_SPACING;
-              adjustedFromX =
-                Math.ceil((minRequiredX - offset) / this.VERTICAL_GRID_SPACING) *
-                  this.VERTICAL_GRID_SPACING +
-                offset;
-            }
-
-            // For routing, find a point near the target using source-based grid
-            let adjustedToX = this.snapToVerticalGrid(
-              lineEndPoint.x - this.MIN_TARGET_DISTANCE,
-              from.x,
-            );
-            if (lineEndPoint.x - adjustedToX < this.MIN_TARGET_DISTANCE) {
-              const maxAllowedX = lineEndPoint.x - this.MIN_TARGET_DISTANCE;
-              const offset = from.x % this.VERTICAL_GRID_SPACING;
-              adjustedToX =
-                Math.floor((maxAllowedX - offset) / this.VERTICAL_GRID_SPACING) *
-                  this.VERTICAL_GRID_SPACING +
-                offset;
-            }
-
-            // Ensure distance from last vertical line to destination is greater than grid spacing
-            const distanceToTarget = Math.abs(lineEndPoint.x - adjustedToX);
-            if (distanceToTarget <= this.VERTICAL_GRID_SPACING) {
-              // Move the vertical line further from target
-              if (lineEndPoint.x > adjustedToX) {
-                // Target is to the right, move vertical line left
-                adjustedToX = adjustedToX - this.VERTICAL_GRID_SPACING;
-              } else {
-                // Target is to the left, move vertical line right
-                adjustedToX = adjustedToX + this.VERTICAL_GRID_SPACING;
-              }
-            }
-
-            context.lineTo(adjustedFromX, from.y);
-
-            // Route between elements, but avoid going through intermediate rows
-            let routeY: number;
-            const fromRow = Math.round(from.y / ROW_HEIGHT);
-            const toRow = Math.round(lineEndPoint.y / ROW_HEIGHT);
-            const rowDifference = Math.abs(toRow - fromRow);
-
-            if (rowDifference <= 1) {
-              // Adjacent rows or same row - use midpoint
-              routeY = (from.y + lineEndPoint.y) / 2;
-            } else {
-              // Multiple rows between - route between rows closer to source
-              if (from.y < lineEndPoint.y) {
-                // Going down - route between source row and next row
-                routeY = from.y + ROW_HEIGHT / 2;
-              } else {
-                // Going up - route between source row and previous row
-                routeY = from.y - ROW_HEIGHT / 2;
-              }
-            }
-
-            // Draw the path - go vertical as early as possible
-            if (curvedDependencies) {
-              // Simplified curved routing - draw each segment individually for proper curves
-              const radius = 5;
-
-              // Calculate directions
-              const goingRight = adjustedFromX > from.x;
-              const goingDown = routeY > from.y;
-              const finalGoingRight = adjustedToX > adjustedFromX;
-
-              // Draw path as individual segments to avoid overshoot
-              context.beginPath();
-              context.moveTo(from.x, from.y);
-              context.lineTo(adjustedFromX - (goingRight ? radius : -radius), from.y);
-              context.stroke();
-
-              context.beginPath();
-              context.moveTo(adjustedFromX - (goingRight ? radius : -radius), from.y);
-              context.quadraticCurveTo(
-                adjustedFromX,
-                from.y,
-                adjustedFromX,
-                from.y + (goingDown ? radius : -radius),
-              );
-              context.stroke();
-
-              context.beginPath();
-              context.moveTo(adjustedFromX, from.y + (goingDown ? radius : -radius));
-              context.lineTo(adjustedFromX, routeY - (goingDown ? radius : -radius));
-              context.stroke();
-
-              context.beginPath();
-              context.moveTo(adjustedFromX, routeY - (goingDown ? radius : -radius));
-              context.quadraticCurveTo(
-                adjustedFromX,
-                routeY,
-                adjustedFromX + (finalGoingRight ? radius : -radius),
-                routeY,
-              );
-              context.stroke();
-
-              context.beginPath();
-              context.moveTo(adjustedFromX + (finalGoingRight ? radius : -radius), routeY);
-              context.lineTo(adjustedToX - (finalGoingRight ? radius : -radius), routeY);
-              context.stroke();
-
-              context.beginPath();
-              context.moveTo(adjustedToX - (finalGoingRight ? radius : -radius), routeY);
-              context.quadraticCurveTo(
-                adjustedToX,
-                routeY,
-                adjustedToX,
-                routeY + (lineEndPoint.y > routeY ? radius : -radius),
-              );
-              context.stroke();
-
-              context.beginPath();
-              context.moveTo(adjustedToX, routeY + (lineEndPoint.y > routeY ? radius : -radius));
-              context.lineTo(
-                adjustedToX,
-                lineEndPoint.y - (lineEndPoint.y > routeY ? radius : -radius),
-              );
-              context.stroke();
-
-              context.beginPath();
-              context.moveTo(
-                adjustedToX,
-                lineEndPoint.y - (lineEndPoint.y > routeY ? radius : -radius),
-              );
-              context.quadraticCurveTo(
-                adjustedToX,
-                lineEndPoint.y,
-                adjustedToX + (lineEndPoint.x > adjustedToX ? radius : -radius),
-                lineEndPoint.y,
-              );
-              context.stroke();
-
-              context.beginPath();
-              context.moveTo(
-                adjustedToX + (lineEndPoint.x > adjustedToX ? radius : -radius),
-                lineEndPoint.y,
-              );
-              context.lineTo(lineEndPoint.x, lineEndPoint.y);
-              context.stroke();
-
-              skipMainStroke = true;
-            } else {
-              context.lineTo(adjustedFromX, from.y);
-              context.lineTo(adjustedFromX, routeY);
-              context.lineTo(adjustedToX, routeY);
-              context.lineTo(adjustedToX, lineEndPoint.y);
-              context.lineTo(lineEndPoint.x, lineEndPoint.y);
-            }
-          }
-        }
-        break;
-
-      case DependencyType.START_TO_START:
-        // Both elements start at the same time
-        let ssBaseX = Math.min(from.x, lineEndPoint.x) - this.MIN_SOURCE_DISTANCE;
-        let ssMinX = this.snapToVerticalGrid(ssBaseX, from.x);
-
-        // Ensure minimum distance from both elements
-        const ssTargetX = Math.min(from.x, lineEndPoint.x) - this.MIN_SOURCE_DISTANCE;
-        if (Math.min(from.x, lineEndPoint.x) - ssMinX < this.MIN_SOURCE_DISTANCE) {
-          ssMinX = Math.floor(ssTargetX / this.VERTICAL_GRID_SPACING) * this.VERTICAL_GRID_SPACING;
-        }
-        context.moveTo(from.x, from.y);
-
-        if (
-          Math.abs(lineEndPoint.y - from.y) > 5 ||
-          this.wouldIntersectElements(from, lineEndPoint, elements, elementsByIndex, timeMatrix)
-        ) {
-          // Different rows or would intersect elements - go vertical immediately
-          if (curvedDependencies) {
-            const radius = 5;
-            const vSpace = Math.abs(lineEndPoint.y - from.y);
-            const actualRadius = Math.min(radius, vSpace / 2);
-
-            // Horizontal to corner
-            const dirH = ssMinX > from.x ? 1 : -1;
-            context.lineTo(ssMinX - actualRadius * dirH, from.y);
-
-            // First corner (horizontal to vertical)
-            const dir1 = lineEndPoint.y > from.y ? 1 : -1;
-            context.quadraticCurveTo(ssMinX, from.y, ssMinX, from.y + actualRadius * dir1);
-
-            // Vertical line (straight)
-            const dir1_ss = lineEndPoint.y > from.y ? 1 : -1;
-            context.lineTo(ssMinX, lineEndPoint.y - actualRadius * dir1_ss);
-
-            // Second corner (vertical to horizontal)
-            const dir2 = lineEndPoint.x > ssMinX ? 1 : -1;
-            context.quadraticCurveTo(
-              ssMinX,
-              lineEndPoint.y,
-              ssMinX + actualRadius * dir2,
-              lineEndPoint.y,
-            );
-
-            // Final horizontal line
-            context.lineTo(lineEndPoint.x, lineEndPoint.y);
-          } else {
-            context.lineTo(ssMinX, from.y);
-            context.lineTo(ssMinX, lineEndPoint.y);
-            context.lineTo(lineEndPoint.x, lineEndPoint.y);
-          }
-        } else {
-          // Same row and no intersections - direct connection
-          context.lineTo(lineEndPoint.x, lineEndPoint.y);
-        }
-        break;
-    }
-
-    // Only stroke if we haven't already drawn colored segments
-    if (typeof skipMainStroke === 'undefined' || !skipMainStroke) {
-      context.stroke();
-    }
-
-    // Draw arrow head
-    this.drawArrowHead(context, to, type, isHighlighted, isGhost);
-
-    // Restore context state
-    context.restore();
   }
 
   /**
@@ -817,12 +854,9 @@ export class DependencyRenderer {
   private drawArrowHead(
     context: CanvasRenderingContext2D,
     point: { x: number; y: number },
-    _type: DependencyType,
     isHighlighted: boolean = false,
-    isGhost: boolean = false,
   ): void {
     context.fillStyle = isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR;
-    // The globalAlpha is already set from the main drawing context, so arrow head will inherit the ghost opacity
     context.beginPath();
 
     // Arrow pointing left (into the element)

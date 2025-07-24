@@ -198,8 +198,9 @@ export function handleLatestOccurrenceMode(
       ganttElement.instanceNumber = undefined;
       ganttElement.totalInstances = undefined;
       ganttElement.isPathCutoff = timing.isPathCutoff;
-      ganttElement.isLoop = timing.isLoop;
-      ganttElement.isLoopCut = timing.isLoopCutoff;
+      // In latest mode, prioritize showing termination over loop containment
+      ganttElement.isLoop = timing.isLoopCut ? false : timing.isLoop;
+      ganttElement.isLoopCut = timing.isLoopCut;
 
       // Add ghost occurrences if enabled and there are multiple occurrences
       if (showGhostElements && timingInstances.length > 1) {
@@ -242,6 +243,9 @@ export function handleLatestOccurrenceMode(
 
   // Add ghost dependencies if enabled
   if (showGhostDependencies && showGhostElements) {
+    // Note: Ghost dependencies through gateways are not supported
+    // This would require complex multi-gateway chain traversal logic
+
     pathDependencies.forEach((dep, index) => {
       const flow = supportedElements.find((el) => el.id === dep.flowId) as BPMNSequenceFlow;
       if (flow) {
@@ -394,6 +398,9 @@ export function handleEarliestOccurrenceMode(
 
   // Add ghost dependencies if enabled
   if (showGhostDependencies && showGhostElements) {
+    // Note: Ghost dependencies through gateways are not supported
+    // This would require complex multi-gateway chain traversal logic
+
     pathDependencies.forEach((dep, index) => {
       const flow = supportedElements.find((el) => el.id === dep.flowId) as BPMNSequenceFlow;
       if (flow) {
@@ -412,33 +419,53 @@ export function handleEarliestOccurrenceMode(
         );
 
         if (sourceIsGhost || targetIsGhost) {
-          // Check if there's already a regular dependency for this flow that we should replace
-          const regularDepIndex = ganttDependencies.findIndex(
-            (d) =>
-              d.sourceId === sourceOriginalId &&
-              d.targetId === targetOriginalId &&
-              d.flowType === getFlowType(flow) &&
-              !d.isGhost,
-          );
+          // Special case: if this is a self-loop pattern (same base element) with ghost occurrences,
+          // create a direct main-to-ghost dependency instead of gateway dependencies
+          if (sourceOriginalId === targetOriginalId && targetIsGhost && !sourceIsGhost) {
+            // Create direct main-to-ghost dependency
+            const mainToGhostDep = {
+              id: `${dep.flowId}_main_to_ghost_${index}`,
+              sourceId: sourceOriginalId,
+              targetId: targetOriginalId,
+              type: DependencyType.FINISH_TO_START,
+              name: flow.name,
+              flowType: getFlowType(flow),
+              isGhost: true,
+              sourceInstanceId: dep.sourceInstanceId, // This should be the main instance
+              targetInstanceId: dep.targetInstanceId, // This is the ghost instance
+            };
 
-          const ghostDep = {
-            id: `${dep.flowId}_ghost_${index}`,
-            sourceId: sourceOriginalId,
-            targetId: targetOriginalId,
-            type: DependencyType.FINISH_TO_START,
-            name: flow.name,
-            flowType: getFlowType(flow),
-            isGhost: true,
-            sourceInstanceId: dep.sourceInstanceId,
-            targetInstanceId: dep.targetInstanceId,
-          };
-
-          if (regularDepIndex >= 0) {
-            // Replace the regular dependency with the ghost dependency
-            ganttDependencies[regularDepIndex] = ghostDep;
+            ganttDependencies.push(mainToGhostDep);
           } else {
-            // No regular dependency found, just add the ghost dependency
-            ganttDependencies.push(ghostDep);
+            // Regular ghost dependency logic
+            // Check if there's already a regular dependency for this flow that we should replace
+            const regularDepIndex = ganttDependencies.findIndex(
+              (d) =>
+                d.sourceId === sourceOriginalId &&
+                d.targetId === targetOriginalId &&
+                d.flowType === getFlowType(flow) &&
+                !d.isGhost,
+            );
+
+            const ghostDep = {
+              id: `${dep.flowId}_ghost_${index}`,
+              sourceId: sourceOriginalId,
+              targetId: targetOriginalId,
+              type: DependencyType.FINISH_TO_START,
+              name: flow.name,
+              flowType: getFlowType(flow),
+              isGhost: true,
+              sourceInstanceId: dep.sourceInstanceId,
+              targetInstanceId: dep.targetInstanceId,
+            };
+
+            if (regularDepIndex >= 0) {
+              // Replace the regular dependency with the ghost dependency
+              ganttDependencies[regularDepIndex] = ghostDep;
+            } else {
+              // No regular dependency found, just add the ghost dependency
+              ganttDependencies.push(ghostDep);
+            }
           }
         }
       }
@@ -466,7 +493,7 @@ function createGanttElement(
   } else if (isSupportedEventElement(element)) {
     return transformEvent(element as BPMNEvent, timing.startTime, timing.duration, color);
   } else if (isGatewayElement(element) && renderGateways) {
-    return transformGateway(element as BPMNGateway, timing.startTime, timing.duration, color);
+    return transformGateway(element as BPMNGateway, timing.startTime, timing.duration, color, true);
   }
   return null;
 }

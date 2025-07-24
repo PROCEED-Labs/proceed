@@ -35,6 +35,7 @@ import {
   validateAndExtractProcess,
   detectAndReportGatewayIssues,
   separateSupportedElements,
+  extractInformationalArtifacts,
   calculateTimingsForMode,
   filterDependenciesForVisibleElements,
   detectGhostDependenciesThroughGateways,
@@ -93,6 +94,17 @@ export function transformBPMNToGantt(
   );
   issues.push(...elementIssues);
 
+  // Extract informational artifacts (annotations, data objects, etc.)
+  // Note: Some artifacts might be outside flowElements (e.g., in artifacts array)
+  const allElementsForArtifacts = [
+    ...(process.flowElements || []),
+    ...(process.artifacts || []),
+    ...(process.ioSpecification?.dataInputs || []),
+    ...(process.ioSpecification?.dataOutputs || []),
+  ];
+
+  const informationalArtifacts = extractInformationalArtifacts(allElementsForArtifacts);
+
   // Calculate timings using path-based traversal
   const {
     timingsMap: pathTimings,
@@ -143,6 +155,7 @@ export function transformBPMNToGantt(
     dependencies: finalDependencies,
     issues,
     defaultDurations,
+    informationalArtifacts,
     errors: issues.filter((issue) => issue.severity === 'error'),
     warnings: issues.filter((issue) => issue.severity === 'warning'),
   };
@@ -202,6 +215,7 @@ function createEmptyResult(
     dependencies: [],
     issues,
     defaultDurations,
+    informationalArtifacts: [],
     errors: issues.filter((issue) => issue.severity === 'error'),
     warnings: issues.filter((issue) => issue.severity === 'warning'),
   };

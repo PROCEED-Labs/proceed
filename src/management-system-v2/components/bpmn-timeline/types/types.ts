@@ -129,6 +129,52 @@ export interface BPMNSubProcess extends BPMNBaseElement {
 }
 
 // ============================================================================
+// Informational Artifacts (not part of flow execution)
+// ============================================================================
+
+export interface BPMNTextAnnotation extends BPMNBaseElement {
+  $type: 'bpmn:TextAnnotation';
+  text?: string;
+  textFormat?: string;
+}
+
+export interface BPMNDataObject extends BPMNBaseElement {
+  $type: 'bpmn:DataObject' | 'bpmn:DataObjectReference';
+  dataState?: {
+    $type: 'bpmn:DataState';
+    name?: string;
+  };
+  itemSubjectRef?: string;
+  dataObjectRef?: string; // For DataObjectReference elements
+}
+
+export interface BPMNDataStore extends BPMNBaseElement {
+  $type: 'bpmn:DataStore' | 'bpmn:DataStoreReference';
+  capacity?: number;
+  isUnlimited?: boolean;
+  itemSubjectRef?: string;
+  dataStoreRef?: string | { id: string }; // For DataStoreReference elements
+}
+
+export interface BPMNGroup extends BPMNBaseElement {
+  $type: 'bpmn:Group';
+  categoryValueRef?: string;
+}
+
+export interface BPMNGenericResource extends BPMNBaseElement {
+  $type: 'proceed:genericResource' | 'proceed:GenericResource';
+  resourceType?: string;
+}
+
+// Union type for all informational artifacts
+export type BPMNInformationalArtifact =
+  | BPMNTextAnnotation
+  | BPMNDataObject
+  | BPMNDataStore
+  | BPMNGroup
+  | BPMNGenericResource;
+
+// ============================================================================
 // Transformation State Interfaces
 // ============================================================================
 
@@ -170,6 +216,7 @@ export interface TransformationResult {
   dependencies: GanttDependency[];
   issues: TransformationIssue[];
   defaultDurations: DefaultDurationInfo[];
+  informationalArtifacts: BPMNInformationalArtifact[];
   // Legacy properties for backward compatibility
   errors: TransformationIssue[];
   warnings: TransformationIssue[];

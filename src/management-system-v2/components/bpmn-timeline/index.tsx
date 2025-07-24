@@ -38,6 +38,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [errors, setErrors] = useState<TransformationError[]>([]);
   const [warnings, setWarnings] = useState<TransformationIssue[]>([]);
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
+  const [informationalArtifacts, setInformationalArtifacts] = useState<
+    import('./types/types').BPMNInformationalArtifact[]
+  >([]);
   const [hasInclusiveGateways, setHasInclusiveGateways] = useState<boolean>(false);
   const [hasComplexGateways, setHasComplexGateways] = useState<boolean>(false);
   const [hasEventBasedGateways, setHasEventBasedGateways] = useState<boolean>(false);
@@ -203,6 +206,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           transformationResult.issues?.filter((issue) => issue.severity === 'warning') || [],
         );
         setDefaultDurations(transformationResult.defaultDurations);
+        setInformationalArtifacts(transformationResult.informationalArtifacts || []);
         setIsLoading(false);
       } catch (error) {
         // Check if component is still mounted
@@ -312,7 +316,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                   label: (
                     <div className={styles.issuesHeader}>
                       <WarningOutlined className={styles.warningIcon} />
-                      Process Issues ({errors.length + warnings.length})
+                      Process Issues
                     </div>
                   ),
                   children: (
@@ -382,7 +386,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         {(defaultDurations.length > 0 ||
           hasInclusiveGateways ||
           hasComplexGateways ||
-          hasEventBasedGateways) && (
+          hasEventBasedGateways ||
+          informationalArtifacts.length > 0) && (
           <div
             className={`${styles.defaultDurationSection} ${errors.length > 0 || warnings.length > 0 ? styles.afterErrors : ''}`}
           >
@@ -395,12 +400,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                   label: (
                     <div className={styles.defaultDurationLabel}>
                       <span className={styles.infoIconInline}>ℹ</span>
-                      Process Information (
-                      {(defaultDurations.length > 0 ? 1 : 0) +
-                        (hasInclusiveGateways ? 1 : 0) +
-                        (hasComplexGateways ? 1 : 0) +
-                        (hasEventBasedGateways ? 1 : 0)}{' '}
-                      items)
+                      Process Information
                     </div>
                   ),
                   children: (
@@ -455,7 +455,17 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                           className={`${styles.processInfoSection} ${hasInclusiveGateways || hasComplexGateways || hasEventBasedGateways ? styles.sectionSpacing : ''}`}
                         >
                           <div className={styles.processInfoHeader}>
-                            <strong>Tasks with Default Duration ({defaultDurations.length})</strong>
+                            <strong>
+                              Tasks with Default Duration (
+                              {
+                                Array.from(
+                                  new Map(
+                                    defaultDurations.map((item) => [item.elementId, item]),
+                                  ).values(),
+                                ).length
+                              }
+                              )
+                            </strong>
                           </div>
                           <div className={styles.defaultDurationDescription}>
                             The following tasks did not have explicit durations and received the
@@ -470,6 +480,48 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                               <li key={index}>
                                 <strong>{item.elementName || item.elementId}</strong> (
                                 {item.elementType}): 1 hour
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {informationalArtifacts.length > 0 && (
+                        <div
+                          className={`${styles.processInfoSection} ${hasInclusiveGateways || hasComplexGateways || hasEventBasedGateways || defaultDurations.length > 0 ? styles.sectionSpacing : ''}`}
+                        >
+                          <div className={styles.processInfoHeader}>
+                            <strong>Process Artifacts ({informationalArtifacts.length})</strong>
+                          </div>
+                          <div className={styles.processInfoDescription}>
+                            The following informational artifacts were found in the process and are
+                            not displayed in the timeline:
+                          </div>
+                          <ul className={styles.defaultDurationList}>
+                            {informationalArtifacts.map((artifact, index) => (
+                              <li key={index}>
+                                <strong>{artifact.name || artifact.id}</strong> (
+                                {artifact.$type === 'bpmn:TextAnnotation' && 'Text Annotation'}
+                                {artifact.$type === 'bpmn:DataObject' && 'Data Object'}
+                                {artifact.$type === 'bpmn:DataObjectReference' &&
+                                  'Data Object Reference'}
+                                {artifact.$type === 'bpmn:DataStore' && 'Data Store'}
+                                {artifact.$type === 'bpmn:DataStoreReference' &&
+                                  'Data Store Reference'}
+                                {artifact.$type === 'bpmn:Group' && 'Group'}
+                                {(artifact.$type === 'proceed:genericResource' ||
+                                  artifact.$type === 'proceed:GenericResource') &&
+                                  `Generic Resource${(artifact as any).resourceType ? ` - ${(artifact as any).resourceType}` : ''}`}
+                                )
+                                {artifact.$type === 'bpmn:TextAnnotation' &&
+                                  (artifact as any).text &&
+                                  `: "${(artifact as any).text}"`}
+                                {artifact.$type === 'bpmn:DataObjectReference' &&
+                                  (artifact as any).dataObjectRef &&
+                                  ` → ${typeof (artifact as any).dataObjectRef === 'string' ? (artifact as any).dataObjectRef : (artifact as any).dataObjectRef?.id || ''}`}
+                                {artifact.$type === 'bpmn:DataStoreReference' &&
+                                  (artifact as any).dataStoreRef &&
+                                  ` → ${typeof (artifact as any).dataStoreRef === 'string' ? (artifact as any).dataStoreRef : (artifact as any).dataStoreRef?.id || ''}`}
                               </li>
                             ))}
                           </ul>

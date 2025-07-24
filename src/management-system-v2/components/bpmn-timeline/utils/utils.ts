@@ -144,6 +144,22 @@ export function isSequenceFlowElement(element: { $type: string }): boolean {
   return element.$type === 'bpmn:SequenceFlow';
 }
 
+/**
+ * Check if element is an informational artifact
+ */
+export function isInformationalArtifact(element: { $type: string }): boolean {
+  return (
+    element.$type === 'bpmn:TextAnnotation' ||
+    element.$type === 'bpmn:DataObject' ||
+    element.$type === 'bpmn:DataObjectReference' ||
+    element.$type === 'bpmn:DataStore' ||
+    element.$type === 'bpmn:DataStoreReference' ||
+    element.$type === 'bpmn:Group' ||
+    element.$type === 'proceed:genericResource' ||
+    element.$type === 'proceed:GenericResource' // Note the capital 'G'
+  );
+}
+
 // ============================================================================
 // Element Type Generation
 // ============================================================================

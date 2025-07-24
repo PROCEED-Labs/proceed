@@ -20,6 +20,7 @@ import {
   isTaskElement,
   isSupportedEventElement,
   isSequenceFlowElement,
+  isInformationalArtifact,
   getUnsupportedElementReason,
   detectGatewayMismatches,
 } from '../utils/utils';
@@ -128,6 +129,9 @@ export function separateSupportedElements(elementsToProcess: BPMNFlowElement[]):
       // Always include gateways in supported elements for path traversal
       // They'll be filtered out during rendering if renderGateways is false
       supportedElements.push(element);
+    } else if (isInformationalArtifact(element)) {
+      // Informational artifacts are handled separately and don't go into supported elements
+      // They're not errors - they're just informational and displayed in process info
     } else {
       // Other unsupported elements
       issues.push({
@@ -141,6 +145,36 @@ export function separateSupportedElements(elementsToProcess: BPMNFlowElement[]):
   });
 
   return { supportedElements, issues };
+}
+
+/**
+ * Extract informational artifacts from BPMN elements
+ */
+export function extractInformationalArtifacts(
+  allElements: any[],
+): import('../types/types').BPMNInformationalArtifact[] {
+  const artifacts = allElements.filter((element) => isInformationalArtifact(element));
+
+  // Filter out DataObjects that are referenced by DataObjectReferences
+  // We only want to show the reference, not the object itself
+  const dataObjectRefs = artifacts
+    .filter((a) => a.$type === 'bpmn:DataObjectReference')
+    .map((ref) => {
+      const refId =
+        typeof ref.dataObjectRef === 'string' ? ref.dataObjectRef : ref.dataObjectRef?.id;
+      return refId;
+    })
+    .filter(Boolean);
+
+  const filteredArtifacts = artifacts.filter((artifact) => {
+    // Keep DataObject only if it's NOT referenced by any DataObjectReference
+    if (artifact.$type === 'bpmn:DataObject') {
+      return !dataObjectRefs.includes(artifact.id);
+    }
+    return true;
+  });
+
+  return filteredArtifacts;
 }
 
 /**

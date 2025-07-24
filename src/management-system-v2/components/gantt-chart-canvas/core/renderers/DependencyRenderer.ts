@@ -686,7 +686,9 @@ export class DependencyRenderer {
 
     // For different-row ghost dependencies, always use complex routing for cleaner lines
     const needsComplexRouting = Boolean(dep.isGhost) && !isSameRow;
-    const needsRouting = Boolean(hasInsufficientSpace || hasCollision || isSelfLoop || needsComplexRouting);
+    const needsRouting = Boolean(
+      hasInsufficientSpace || hasCollision || isSelfLoop || needsComplexRouting,
+    );
 
     return {
       isSelfLoop,

@@ -65,6 +65,57 @@ export function handleEveryOccurrenceMode(
     color: string;
   }> = [];
 
+  // If gateways are hidden, transfer loop cut status from gateway instances to previous non-gateway elements
+  if (!renderGateways) {
+    pathTimings.forEach((timingInstances, elementId) => {
+      const element = supportedElements.find((el) => el.id === elementId);
+      if (element && element.$type !== 'bpmn:SequenceFlow' && isGatewayElement(element)) {
+        // This is a gateway - check if any instances have loop cut
+        timingInstances.forEach((gatewayTiming) => {
+          if (gatewayTiming.isLoopCut) {
+            // Find the previous non-gateway element in the path that should show the loop cut
+            // Look through all elements to find the one with the highest instance number that's not a gateway
+            let previousElement = null;
+            let previousTiming = null;
+            let maxInstanceNumber = 0;
+
+            pathTimings.forEach((otherTimingInstances, otherElementId) => {
+              const otherElement = supportedElements.find((el) => el.id === otherElementId);
+              if (
+                otherElement &&
+                otherElement.$type !== 'bpmn:SequenceFlow' &&
+                !isGatewayElement(otherElement)
+              ) {
+                otherTimingInstances.forEach((otherTiming) => {
+                  // Extract instance number from instanceId (e.g., "Activity_1qmrx7u_instance_30" -> 30)
+                  const instanceMatch = otherTiming.instanceId.match(/_instance_(\d+)$/);
+                  const instanceNumber = instanceMatch ? parseInt(instanceMatch[1], 10) : 0;
+                  const gatewayInstanceMatch = gatewayTiming.instanceId.match(/_instance_(\d+)$/);
+                  const gatewayInstanceNumber = gatewayInstanceMatch
+                    ? parseInt(gatewayInstanceMatch[1], 10)
+                    : 0;
+                  if (
+                    instanceNumber > maxInstanceNumber &&
+                    instanceNumber < gatewayInstanceNumber
+                  ) {
+                    maxInstanceNumber = instanceNumber;
+                    previousElement = otherElement;
+                    previousTiming = otherTiming;
+                  }
+                });
+              }
+            });
+
+            if (previousTiming) {
+              (previousTiming as any).isLoopCut = true;
+              (previousTiming as any).isLoop = false; // Prioritize loop cut over loop
+            }
+          }
+        });
+      }
+    });
+  }
+
   pathTimings.forEach((timingInstances, elementId) => {
     const element = supportedElements.find((el) => el.id === elementId);
     if (!element || element.$type === 'bpmn:SequenceFlow') return;
@@ -102,6 +153,7 @@ export function handleEveryOccurrenceMode(
       ganttElement.isPathCutoff = timing.isPathCutoff;
       ganttElement.isLoop = timing.isLoop;
       ganttElement.isLoopCut = timing.isLoopCut;
+
       ganttElements.push(ganttElement);
 
       // Map instance to its original element's component

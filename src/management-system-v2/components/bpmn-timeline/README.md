@@ -497,6 +497,30 @@ interface TokenBasedElement {
 - `bpmn:SubProcess` and `bpmn:AdHocSubProcess`
 - `bpmn:BoundaryEvent`
 
+### Informational Artifacts
+
+**Supported Artifacts**: These elements are displayed in the Process Information area but not included in the timeline
+
+- `bpmn:TextAnnotation` - Text annotations and documentation with quoted text content
+- `bpmn:DataObject` and `bpmn:DataObjectReference` - Data objects (only unreferenced DataObjects are shown separately)
+- `bpmn:DataStore` and `bpmn:DataStoreReference` - Data stores with reference relationships
+- `bpmn:Group` - Visual grouping containers
+- `proceed:genericResource` / `proceed:GenericResource` - Custom resource definitions with type information
+
+**Smart Filtering**:
+
+- DataObjects referenced by DataObjectReferences are automatically filtered out to avoid duplication
+- References show target relationships (e.g., "DataObjectRef → DataObject_123")
+- Generic Resources display their resource type (e.g., "Generic Resource - Laptop")
+
+**Display**: Informational artifacts appear in the "Process Artifacts" section with element counts and details
+
+**Artifact Locations**: Searches across multiple BPMN sections:
+
+- `process.flowElements` - Standard flow-level artifacts
+- `process.artifacts` - Dedicated artifacts array (Groups, Annotations)
+- `process.ioSpecification` - Data inputs/outputs
+
 **Issue Reporting**: Comprehensive reporting with element details and exclusion reasons
 
 - **Errors**: Block timeline generation (e.g., unsupported elements, malformed data)

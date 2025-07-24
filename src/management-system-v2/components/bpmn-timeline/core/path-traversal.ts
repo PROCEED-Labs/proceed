@@ -642,12 +642,15 @@ function traverseAllPaths(
     if (!issue.reason.includes('Loop iteration limit reached')) {
       return true;
     }
-    
+
     // For loop warnings, keep only the first occurrence for each elementId
-    return arr.findIndex(other => 
-      other.elementId === issue.elementId && 
-      other.reason.includes('Loop iteration limit reached')
-    ) === index;
+    return (
+      arr.findIndex(
+        (other) =>
+          other.elementId === issue.elementId &&
+          other.reason.includes('Loop iteration limit reached'),
+      ) === index
+    );
   });
 
   return { pathElements, dependencies, issues: deduplicatedIssues };

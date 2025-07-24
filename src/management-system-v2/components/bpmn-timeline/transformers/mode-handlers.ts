@@ -24,11 +24,100 @@ import {
   assignFlowColors,
   findConnectedComponents,
 } from '../utils/utils';
+import { applyLoopStatus } from '../utils/loop-helpers';
+import { parseInstanceId, getBaseElementId } from '../utils/id-helpers';
 
 export interface ModeHandlerResult {
   ganttElements: GanttElementType[];
   ganttDependencies: GanttDependency[];
   elementToComponent: Map<string, number>;
+}
+
+/**
+ * Create a standard Gantt dependency object
+ */
+function createGanttDependency(
+  flowId: string,
+  sourceId: string,
+  targetId: string,
+  flow: BPMNSequenceFlow,
+  mode: string,
+  index: number,
+  isGhost = false,
+  sourceInstanceId?: string,
+  targetInstanceId?: string,
+): GanttDependency {
+  const dependency: GanttDependency = {
+    id: `${flowId}_${mode}_${index}`,
+    sourceId,
+    targetId,
+    type: DependencyType.FINISH_TO_START,
+    name: flow.name,
+    flowType: getFlowType(flow),
+  };
+
+  if (isGhost) {
+    dependency.isGhost = true;
+    if (sourceInstanceId) dependency.sourceInstanceId = sourceInstanceId;
+    if (targetInstanceId) dependency.targetInstanceId = targetInstanceId;
+  }
+
+  return dependency;
+}
+
+/**
+ * Transfer loop cut status from hidden gateway instances to previous non-gateway elements
+ */
+function transferLoopCutFromGateways(
+  pathTimings: Map<string, any[]>,
+  supportedElements: BPMNFlowElement[],
+  renderGateways: boolean,
+): void {
+  if (renderGateways) return; // No need to transfer if gateways are visible
+
+  pathTimings.forEach((timingInstances, elementId) => {
+    const element = supportedElements.find((el) => el.id === elementId);
+    if (element && element.$type !== 'bpmn:SequenceFlow' && isGatewayElement(element)) {
+      // This is a gateway - check if any instances have loop cut
+      timingInstances.forEach((gatewayTiming) => {
+        if (gatewayTiming.isLoopCut) {
+          // Find the previous non-gateway element in the path that should show the loop cut
+          // Look through all elements to find the one with the highest instance number that's not a gateway
+          let previousElement = null;
+          let previousTiming = null;
+          let maxInstanceNumber = 0;
+
+          pathTimings.forEach((otherTimingInstances, otherElementId) => {
+            const otherElement = supportedElements.find((el) => el.id === otherElementId);
+            if (
+              otherElement &&
+              otherElement.$type !== 'bpmn:SequenceFlow' &&
+              !isGatewayElement(otherElement)
+            ) {
+              otherTimingInstances.forEach((otherTiming) => {
+                // Extract instance numbers using utility function
+                const { instanceNumber } = parseInstanceId(otherTiming.instanceId);
+                const { instanceNumber: gatewayInstanceNumber } = parseInstanceId(
+                  gatewayTiming.instanceId,
+                );
+
+                if (instanceNumber > maxInstanceNumber && instanceNumber < gatewayInstanceNumber) {
+                  maxInstanceNumber = instanceNumber;
+                  previousElement = otherElement;
+                  previousTiming = otherTiming;
+                }
+              });
+            }
+          });
+
+          if (previousTiming) {
+            (previousTiming as any).isLoopCut = true;
+            (previousTiming as any).isLoop = false; // Prioritize loop cut over loop
+          }
+        }
+      });
+    }
+  });
 }
 
 /**
@@ -50,6 +139,9 @@ export function handleEveryOccurrenceMode(
   const ganttElements: GanttElementType[] = [];
   const ganttDependencies: GanttDependency[] = [];
 
+  // Transfer loop cut status from hidden gateways
+  transferLoopCutFromGateways(pathTimings, supportedElements, renderGateways);
+
   // Assign colors based on connected components
   const elementColors = assignFlowColors(supportedElements);
   const originalElementToComponent = findConnectedComponents(supportedElements);
@@ -64,57 +156,6 @@ export function handleEveryOccurrenceMode(
     element: BPMNFlowElement;
     color: string;
   }> = [];
-
-  // If gateways are hidden, transfer loop cut status from gateway instances to previous non-gateway elements
-  if (!renderGateways) {
-    pathTimings.forEach((timingInstances, elementId) => {
-      const element = supportedElements.find((el) => el.id === elementId);
-      if (element && element.$type !== 'bpmn:SequenceFlow' && isGatewayElement(element)) {
-        // This is a gateway - check if any instances have loop cut
-        timingInstances.forEach((gatewayTiming) => {
-          if (gatewayTiming.isLoopCut) {
-            // Find the previous non-gateway element in the path that should show the loop cut
-            // Look through all elements to find the one with the highest instance number that's not a gateway
-            let previousElement = null;
-            let previousTiming = null;
-            let maxInstanceNumber = 0;
-
-            pathTimings.forEach((otherTimingInstances, otherElementId) => {
-              const otherElement = supportedElements.find((el) => el.id === otherElementId);
-              if (
-                otherElement &&
-                otherElement.$type !== 'bpmn:SequenceFlow' &&
-                !isGatewayElement(otherElement)
-              ) {
-                otherTimingInstances.forEach((otherTiming) => {
-                  // Extract instance number from instanceId (e.g., "Activity_1qmrx7u_instance_30" -> 30)
-                  const instanceMatch = otherTiming.instanceId.match(/_instance_(\d+)$/);
-                  const instanceNumber = instanceMatch ? parseInt(instanceMatch[1], 10) : 0;
-                  const gatewayInstanceMatch = gatewayTiming.instanceId.match(/_instance_(\d+)$/);
-                  const gatewayInstanceNumber = gatewayInstanceMatch
-                    ? parseInt(gatewayInstanceMatch[1], 10)
-                    : 0;
-                  if (
-                    instanceNumber > maxInstanceNumber &&
-                    instanceNumber < gatewayInstanceNumber
-                  ) {
-                    maxInstanceNumber = instanceNumber;
-                    previousElement = otherElement;
-                    previousTiming = otherTiming;
-                  }
-                });
-              }
-            });
-
-            if (previousTiming) {
-              (previousTiming as any).isLoopCut = true;
-              (previousTiming as any).isLoop = false; // Prioritize loop cut over loop
-            }
-          }
-        });
-      }
-    });
-  }
 
   pathTimings.forEach((timingInstances, elementId) => {
     const element = supportedElements.find((el) => el.id === elementId);
@@ -166,16 +207,16 @@ export function handleEveryOccurrenceMode(
   pathDependencies.forEach((dep, index) => {
     const flow = supportedElements.find((el) => el.id === dep.flowId) as BPMNSequenceFlow;
     if (flow) {
-      const dependencyId = `${dep.flowId}_${index}`;
-
-      ganttDependencies.push({
-        id: dependencyId,
-        sourceId: dep.sourceInstanceId,
-        targetId: dep.targetInstanceId,
-        type: DependencyType.FINISH_TO_START,
-        name: flow.name,
-        flowType: getFlowType(flow),
-      });
+      ganttDependencies.push(
+        createGanttDependency(
+          dep.flowId,
+          dep.sourceInstanceId,
+          dep.targetInstanceId,
+          flow,
+          'every',
+          index,
+        ),
+      );
     }
   });
 
@@ -200,6 +241,9 @@ export function handleLatestOccurrenceMode(
   const ganttElements: GanttElementType[] = [];
   const ganttDependencies: GanttDependency[] = [];
 
+  // Transfer loop cut status from hidden gateways
+  transferLoopCutFromGateways(pathTimings, supportedElements, renderGateways);
+
   // Assign colors based on connected components
   const elementColors = assignFlowColors(supportedElements);
   const originalElementToComponent = findConnectedComponents(supportedElements);
@@ -207,12 +251,16 @@ export function handleLatestOccurrenceMode(
   // Create a map to find the latest instance of each element
   const elementToLatestTiming = new Map<string, any>();
 
-  // Find the latest occurrence of each element
+  // Find the latest occurrence of each element and merge loop status from all instances
   pathTimings.forEach((timingInstances, elementId) => {
     if (timingInstances.length > 0) {
       const latestTiming = timingInstances.reduce((latest, current) =>
         current.startTime > latest.startTime ? current : latest,
       );
+
+      // Apply merged loop status from all instances
+      applyLoopStatus(latestTiming, timingInstances);
+
       elementToLatestTiming.set(elementId, latestTiming);
     }
   });
@@ -370,6 +418,9 @@ export function handleEarliestOccurrenceMode(
   const ganttElements: GanttElementType[] = [];
   const ganttDependencies: GanttDependency[] = [];
 
+  // Transfer loop cut status from hidden gateways
+  transferLoopCutFromGateways(pathTimings, supportedElements, renderGateways);
+
   // Assign colors based on connected components
   const elementColors = assignFlowColors(supportedElements);
   const originalElementToComponent = findConnectedComponents(supportedElements);
@@ -377,12 +428,16 @@ export function handleEarliestOccurrenceMode(
   // Create a map to find the earliest instance of each element
   const elementToEarliestTiming = new Map<string, any>();
 
-  // Find the earliest occurrence of each element
+  // Find the earliest occurrence of each element and merge loop status from all instances
   pathTimings.forEach((timingInstances, elementId) => {
     if (timingInstances.length > 0) {
       const earliestTiming = timingInstances.reduce((earliest, current) =>
         current.startTime < earliest.startTime ? current : earliest,
       );
+
+      // Apply merged loop status from all instances
+      applyLoopStatus(earliestTiming, timingInstances);
+
       elementToEarliestTiming.set(elementId, earliestTiming);
     }
   });

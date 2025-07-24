@@ -281,19 +281,7 @@ export function getUnsupportedElementReason(elementType: string): string {
 // Color Assignment and Flow Analysis
 // ============================================================================
 
-/**
- * Predefined color palette for connected components
- */
-const COLOR_PALETTE = [
-  '#3b82f6', // blue
-  '#10b981', // green
-  '#8b5cf6', // purple
-  '#f97316', // orange
-  '#ef4444', // red
-  '#06b6d4', // cyan
-  '#eab308', // yellow
-  '#ec4899', // pink
-];
+import { FLOW_COLOR_PALETTE } from '../constants';
 
 /**
  * Find connected components in the BPMN flow using depth-first search
@@ -375,8 +363,8 @@ export function assignFlowColors(
 
   // Assign colors based on component ID
   elementToComponent.forEach((componentId, elementId) => {
-    const colorIndex = componentId % COLOR_PALETTE.length;
-    elementToColor.set(elementId, COLOR_PALETTE[colorIndex]);
+    const colorIndex = componentId % FLOW_COLOR_PALETTE.length;
+    elementToColor.set(elementId, FLOW_COLOR_PALETTE[colorIndex]);
   });
 
   return elementToColor;

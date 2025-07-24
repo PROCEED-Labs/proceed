@@ -13,7 +13,7 @@ import UserAvatar from '@/components/user-avatar';
 import { CloseOutlined } from '@ant-design/icons';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { z } from 'zod';
-import { requestEmailChange as serverRequestEmailChange } from '@/lib/change-email/server-actions';
+import { requestEmailChange as serverRequestEmailChange } from '@/lib/email-verification-tokens/server-actions';
 import Link from 'next/link';
 import { EnvVarsContext } from '@/components/env-vars-context';
 

@@ -2,7 +2,7 @@
 
 import { Space, Button, App, Card, Typography } from 'antd';
 import { useState } from 'react';
-import { changeEmail as serverChangeEmail } from '@/lib/change-email/server-actions';
+import { changeEmail as serverChangeEmail } from '@/lib/email-verification-tokens/server-actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRightOutlined } from '@ant-design/icons';
 import { useSession } from '@/components/auth-can';

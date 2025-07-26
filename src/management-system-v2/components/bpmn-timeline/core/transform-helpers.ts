@@ -188,6 +188,7 @@ export function calculateTimingsForMode(
 ): {
   timingsMap: Map<string, any[]>;
   dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>;
+  flattenedElements: BPMNFlowElement[];
   issues: Array<{
     elementId: string;
     elementType: string;

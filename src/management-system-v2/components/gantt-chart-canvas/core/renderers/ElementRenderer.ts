@@ -179,7 +179,10 @@ export class ElementRenderer {
   ): void {
     const startX = timeMatrix.transformPoint(milestone.start);
     const endX = milestone.end ? timeMatrix.transformPoint(milestone.end) : startX;
-    const hasRange = milestone.end && milestone.end !== milestone.start;
+    // For boundary events, always treat as point milestone (no range display)
+    const hasRange = milestone.isBoundaryEvent
+      ? false
+      : milestone.end && milestone.end !== milestone.start;
 
     // Calculate milestone position - centered if there's a range, otherwise at start
     const milestoneX = hasRange ? (startX + endX) / 2 : startX;
@@ -322,7 +325,7 @@ export class ElementRenderer {
     }
 
     // Use absolute row position
-    const y = rowIndex * ROW_HEIGHT + 2;
+    const y = rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2; // Center vertically
     const height = ROW_HEIGHT - 4;
 
     const color = group.color || GROUP_DEFAULT_COLOR;
@@ -330,57 +333,126 @@ export class ElementRenderer {
     context.lineWidth = 2 * this.pixelRatio;
     context.globalAlpha = isHovered ? HOVER_OPACITY : 1;
 
-    // Draw group bracket at actual positions
-    context.beginPath();
+    // Check if this is a sub-process (based on element properties)
+    const isSubProcess = (group as any).isSubProcess;
 
-    // Left bracket
-    const leftBracketX = startX;
-    const rightBracketX = startX + width;
+    if (isSubProcess) {
+      // Render sub-process as triangles with dashed line
+      const triangleSize = 8;
+      context.fillStyle = isHovered ? darken(color, 10) : color;
 
-    // Only draw visible parts of brackets
-    if (leftBracketX >= -5 && leftBracketX <= context.canvas.width / this.pixelRatio) {
-      context.moveTo(leftBracketX + 5, y);
-      context.lineTo(leftBracketX, y);
-      context.lineTo(leftBracketX, y + height);
-      context.lineTo(leftBracketX + 5, y + height);
-    }
-
-    // Right bracket
-    if (rightBracketX >= 0 && rightBracketX <= context.canvas.width / this.pixelRatio + 5) {
-      context.moveTo(rightBracketX - 5, y);
-      context.lineTo(rightBracketX, y);
-      context.lineTo(rightBracketX, y + height);
-      context.lineTo(rightBracketX - 5, y + height);
-    }
-
-    context.stroke();
-
-    // Draw group label - use original width, not clipped
-    if (width > 30 && group.name) {
-      // Create label with instance number if applicable
-      let label = group.name;
-      if (group.instanceNumber && group.totalInstances && group.totalInstances > 1) {
-        label += ` #${group.instanceNumber}`;
+      // Left triangle (downward pointing)
+      if (startX >= -triangleSize && startX <= context.canvas.width / this.pixelRatio) {
+        context.beginPath();
+        context.moveTo(startX, y + triangleSize / 2); // Bottom point
+        context.lineTo(startX - triangleSize / 2, y - triangleSize / 2); // Top left
+        context.lineTo(startX + triangleSize / 2, y - triangleSize / 2); // Top right
+        context.closePath();
+        context.fill();
       }
-      if (this.showLoopIcons) {
-        if (group.isLoopCut) {
-          label += ' ✕';
-        } else if (group.isLoop) {
-          label += ' ↻';
+
+      // Right triangle (downward pointing)
+      if (endX >= 0 && endX <= context.canvas.width / this.pixelRatio + triangleSize) {
+        context.beginPath();
+        context.moveTo(endX, y + triangleSize / 2); // Bottom point
+        context.lineTo(endX - triangleSize / 2, y - triangleSize / 2); // Top left
+        context.lineTo(endX + triangleSize / 2, y - triangleSize / 2); // Top right
+        context.closePath();
+        context.fill();
+      }
+
+      // Dashed line connecting the triangles
+      if (width > triangleSize * 2) {
+        context.setLineDash([5, 5]); // 5px dash, 5px gap
+        context.beginPath();
+        context.moveTo(startX + triangleSize / 2, y);
+        context.lineTo(endX - triangleSize / 2, y);
+        context.stroke();
+        context.setLineDash([]); // Reset line dash
+      }
+
+      // Draw sub-process label
+      if (width > 50 && group.name) {
+        // Create label with instance number if applicable
+        let label = group.name;
+        if (group.instanceNumber && group.totalInstances && group.totalInstances > 1) {
+          label += ` #${group.instanceNumber}`;
         }
+        if (this.showLoopIcons) {
+          if (group.isLoopCut) {
+            label += ' ✕';
+          } else if (group.isLoop) {
+            label += ' ↻';
+          }
+        }
+
+        this.drawLabelWithBackground(
+          context,
+          label,
+          startX + width / 2,
+          y - triangleSize,
+          width - 20,
+          '#333333',
+          'center',
+          'bottom',
+          true, // bold
+        );
+      }
+    } else {
+      // Regular group rendering with brackets (for non-sub-processes)
+      context.beginPath();
+
+      // Left bracket
+      const leftBracketX = startX;
+      const rightBracketX = startX + width;
+      const bracketY = y - height / 2 + 2;
+      const bracketHeight = height - 4;
+
+      // Only draw visible parts of brackets
+      if (leftBracketX >= -5 && leftBracketX <= context.canvas.width / this.pixelRatio) {
+        context.moveTo(leftBracketX + 5, bracketY);
+        context.lineTo(leftBracketX, bracketY);
+        context.lineTo(leftBracketX, bracketY + bracketHeight);
+        context.lineTo(leftBracketX + 5, bracketY + bracketHeight);
       }
 
-      this.drawLabel(
-        context,
-        label,
-        startX + width / 2, // Use original startX and width, not clipped
-        y + 2,
-        width - 10, // Use original width, not clippedWidth
-        color,
-        'center',
-        'top',
-        true, // bold
-      );
+      // Right bracket
+      if (rightBracketX >= 0 && rightBracketX <= context.canvas.width / this.pixelRatio + 5) {
+        context.moveTo(rightBracketX - 5, bracketY);
+        context.lineTo(rightBracketX, bracketY);
+        context.lineTo(rightBracketX, bracketY + bracketHeight);
+        context.lineTo(rightBracketX - 5, bracketY + bracketHeight);
+      }
+
+      context.stroke();
+
+      // Draw group label - use original width, not clipped
+      if (width > 30 && group.name) {
+        // Create label with instance number if applicable
+        let label = group.name;
+        if (group.instanceNumber && group.totalInstances && group.totalInstances > 1) {
+          label += ` #${group.instanceNumber}`;
+        }
+        if (this.showLoopIcons) {
+          if (group.isLoopCut) {
+            label += ' ✕';
+          } else if (group.isLoop) {
+            label += ' ↻';
+          }
+        }
+
+        this.drawLabel(
+          context,
+          label,
+          startX + width / 2, // Use original startX and width, not clipped
+          bracketY + 2,
+          width - 10, // Use original width, not clippedWidth
+          color,
+          'center',
+          'top',
+          true, // bold
+        );
+      }
     }
 
     context.globalAlpha = 1;
@@ -410,6 +482,11 @@ export class ElementRenderer {
 
       // Add to visible elements list
       visibleElements.push(element);
+
+      // Render boundary event row background pattern if this is a boundary event
+      if ((element as any).isBoundaryEvent) {
+        this.renderBoundaryEventRowBackground(context, rowIndex, timeMatrix, elements, element);
+      }
 
       // Render based on element type
       switch (element.type) {
@@ -893,6 +970,118 @@ export class ElementRenderer {
       context.closePath();
       context.fill();
     });
+
+    context.restore();
+  }
+
+  /**
+   * Render subtle gray slash pattern for boundary event rows
+   * with cutout for the attached task timespan
+   */
+  private renderBoundaryEventRowBackground(
+    context: CanvasRenderingContext2D,
+    rowIndex: number,
+    timeMatrix: TimeMatrix,
+    elements: GanttElementType[],
+    boundaryEvent: GanttElementType,
+  ): void {
+    const y = rowIndex * ROW_HEIGHT;
+    const rowY = y + TASK_PADDING;
+    const rowHeight = ROW_HEIGHT - 2 * TASK_PADDING;
+
+    // Find the attached task to create a cutout
+    const attachedToId = (boundaryEvent as any).attachedToId;
+    let attachedTask: GanttElementType | undefined;
+
+    if (attachedToId) {
+      // Find the specific task instance that this boundary event is attached to
+      // Rather than just finding any task with the base ID, we need to find the task instance
+      // whose timespan contains this boundary event
+      const candidateTasks = elements.filter(
+        (el) => el.id === attachedToId || el.id.startsWith(attachedToId + '_instance_'),
+      );
+
+      // If there's only one candidate, use it (single instance case)
+      if (candidateTasks.length === 1) {
+        attachedTask = candidateTasks[0];
+      } else if (candidateTasks.length > 1) {
+        // Multiple task instances - find the one whose timespan contains this boundary event
+        // Boundary events should be positioned within their attached task's time range
+        attachedTask = candidateTasks.find((task) => {
+          if (!task.end) return false; // Skip if task has no end time
+
+          const taskStart = task.start;
+          const taskEnd = task.end;
+          const boundaryStart = boundaryEvent.start;
+
+          // Boundary event should be positioned within or at the task's timespan
+          return boundaryStart >= taskStart && boundaryStart <= taskEnd;
+        });
+
+        // Fallback to first candidate if no timing match found
+        if (!attachedTask) {
+          attachedTask = candidateTasks[0];
+        }
+      }
+    }
+
+    // Get viewport boundaries
+    const canvasWidth = context.canvas.width / this.pixelRatio;
+    const visibleTimeRange = timeMatrix.getVisibleTimeRange(canvasWidth);
+    const startX = timeMatrix.transformPoint(visibleTimeRange[0]);
+    const endX = timeMatrix.transformPoint(visibleTimeRange[1]);
+
+    context.save();
+
+    // Create the slash pattern
+    context.strokeStyle = 'rgba(120, 120, 120, 0.3)'; // More visible gray
+    context.lineWidth = 1;
+
+    // Create slash pattern across the entire row
+    const slashSpacing = 12; // Distance between slashes
+    const slashLength = 8; // Length of each slash
+
+    if (
+      attachedTask &&
+      attachedTask.type === 'task' &&
+      'start' in attachedTask &&
+      'end' in attachedTask
+    ) {
+      // Calculate task boundaries in screen coordinates
+      const taskStartX = timeMatrix.transformPoint(attachedTask.start);
+      const taskEndX = timeMatrix.transformPoint(attachedTask.end);
+
+      // Render slashes before the task
+      for (let x = startX; x < taskStartX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, taskStartX);
+        if (slashEndX > startX) {
+          context.beginPath();
+          context.moveTo(x, rowY);
+          context.lineTo(slashEndX, rowY + rowHeight);
+          context.stroke();
+        }
+      }
+
+      // Render slashes after the task
+      for (let x = taskEndX; x < endX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, endX);
+        if (x >= taskEndX) {
+          context.beginPath();
+          context.moveTo(x, rowY);
+          context.lineTo(slashEndX, rowY + rowHeight);
+          context.stroke();
+        }
+      }
+    } else {
+      // No attached task found, render slashes across entire row
+      for (let x = startX; x < endX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, endX);
+        context.beginPath();
+        context.moveTo(x, rowY);
+        context.lineTo(slashEndX, rowY + rowHeight);
+        context.stroke();
+      }
+    }
 
     context.restore();
   }

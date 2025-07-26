@@ -257,12 +257,13 @@ maxLoopIterations: number = 3; // Allow up to 3 loop iterations (initial + 3 rep
 
 ### Events → Gantt Milestones
 
-**Supported Types**: All except BoundaryEvents
+**Supported Types**: All event types including BoundaryEvents
 
 - `bpmn:StartEvent`
 - `bpmn:EndEvent`
 - `bpmn:IntermediateThrowEvent`
 - `bpmn:IntermediateCatchEvent`
+- `bpmn:BoundaryEvent`
 
 **Transformation**:
 
@@ -270,6 +271,68 @@ maxLoopIterations: number = 3; // Allow up to 3 loop iterations (initial + 3 rep
 - **Duration**: ISO 8601 from extensionElements or 0ms default
 - **Positioning**: Milestone appears at `startTime + duration`
 - **Type Column**: Shows event definition and position (e.g., "Message (Start)", "Timer (Intermediate)", "End")
+
+#### Boundary Events
+
+**Special Handling**: Boundary events have unique positioning, visual display, dependency behavior, and outgoing flow processing
+
+**Visual Display**:
+
+- **Milestone Type**: Always displayed as simple diamond milestones (no duration range visualization)
+- **Duration Handling**: Even boundary events with duration are shown as point milestones, not duration ranges
+- **Position**: Milestone appears at the calculated event time based on duration
+
+**Positioning Logic**:
+
+- **Vertical**: Positioned directly beneath their attached task using `groupAndSortElements` algorithm
+- **Horizontal (No Duration)**: Centered horizontally within the attached task's timespan
+- **Horizontal (With Duration)**: Positioned at task start time + event duration
+- **Instance Handling**: Correctly handles task instance IDs (e.g., `Task_A_instance_1`) for proper positioning
+
+**Dependencies**:
+
+- **Attachment Dependencies**: Visual connection from attached task to boundary event
+
+  - **Routing Strategy**:
+    - **Normal**: Vertical line positioned 25px before the boundary event, then horizontal to event
+    - **Constrained Space**: If insufficient space between task start and event, routes straight down from task to event
+    - **Boundaries**: Never starts before task start time, never starts after event position
+  - **Arrow Tips**: No arrow tips on boundary event dependencies (clean line ending)
+  - **Line Style**: Solid lines for interrupting events, dashed lines for non-interrupting events
+  - **Behavior**: Starts when attached task starts (`START_TO_START` dependency type)
+
+- **Outgoing Dependencies**: Dependencies from boundary events to subsequent elements
+  - **Start Position**: Always starts from the boundary event milestone position (not after duration)
+  - **Standard Routing**: Uses normal dependency routing (no special visual treatment)
+  - **Arrow Tips**: Standard arrow tips for outgoing dependencies
+
+**Outgoing Flow Processing**:
+
+- **Flow Inclusion**: Elements reachable through boundary event outgoing flows are automatically included
+- **Multiple Instances**: In "every-occurrence" mode, handles loop instances intelligently:
+  - **Loop Instance Integration**: When boundary events flow to elements already in loops, updates existing loop instances instead of creating duplicates
+  - **New Elements Only**: Creates new instances only for elements not already reached through normal flow traversal
+  - **Unique IDs**: For truly new elements, uses pattern `${targetId}_from_boundary_${boundaryEventId}_${flowId}`
+  - **Example**: `Task_B_from_boundary_Event_Timer_Flow_123` (only if Task_B wasn't already in a loop)
+- **Timing Calculation**: Target elements start at boundary event position + flow duration
+- **Mode Support**: Works across all traversal modes (earliest, every, latest occurrence)
+
+**Flow Types**:
+
+- **Interrupting Boundary Events**: `boundary` flow type with solid dependency lines
+- **Non-interrupting Boundary Events**: `boundary-non-interrupting` flow type with dashed dependency lines
+
+**Properties**:
+
+- `attachedToRef`: References the task this boundary event is attached to
+- `cancelActivity`: Boolean indicating if this is an interrupting boundary event (default: true)
+- `outgoing`: Array of outgoing sequence flows from the boundary event
+
+**Path Traversal Integration**:
+
+- **Exclusion**: Boundary events are excluded from normal path traversal to prevent duplicates
+- **Special Processing**: Handled separately through dedicated boundary event functions
+- **Component Assignment**: Assigned to same flow component as their attached task for proper coloring
 
 ### SequenceFlows → Gantt Dependencies
 
@@ -490,12 +553,24 @@ interface TokenBasedElement {
 - **Instance proliferation**: Same elements may appear multiple times in complex paths
 - **Validation warnings**: Detects but allows potentially invalid BPMN patterns
 
+### SubProcess Support
+
+**Expanded SubProcesses**: SubProcesses with child elements are fully supported
+
+- `bpmn:SubProcess` and `bpmn:AdHocSubProcess` with `flowElements`
+- **Visual Representation**: Triangles at start/end with dashed lines connecting them
+- **Hierarchy Display**: Child elements appear as indented rows below the sub-process
+- **Flattening**: Child elements are automatically included in the timeline with proper hierarchy levels
+- **Bounds Calculation**: Sub-process timing spans from earliest child start to latest child completion
+- **Instance Support**: Works across all traversal modes (earliest, every, latest occurrence)
+
+**Collapsed SubProcesses**: SubProcesses without child elements are treated as regular tasks
+
 ### Unsupported Elements
 
 **Current Limitations**: These elements are excluded and reported as errors
 
-- `bpmn:SubProcess` and `bpmn:AdHocSubProcess`
-- `bpmn:BoundaryEvent`
+- Currently, all major BPMN elements are supported
 
 ### Informational Artifacts
 
@@ -651,7 +726,7 @@ The component displays transformation results in the UI:
 
 **2. Element Support (Errors)**
 
-- **Unsupported element types**: Complex gateways, SubProcesses, BoundaryEvents
+- **Unsupported element types**: None currently - all major BPMN elements are supported
 - **Malformed data**: Missing required properties, invalid references
 - **Resource limits**: Path explosion, memory constraints
 

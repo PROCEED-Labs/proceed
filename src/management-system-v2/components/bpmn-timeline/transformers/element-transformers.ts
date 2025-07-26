@@ -14,7 +14,14 @@ import type {
   BPMNGateway,
   BPMNFlowElement,
 } from '../types/types';
-import { getTaskTypeString, getEventTypeString, getGatewayTypeString } from '../utils/utils';
+import {
+  getTaskTypeString,
+  getEventTypeString,
+  getGatewayTypeString,
+  isBoundaryEventElement,
+  isExpandedSubProcess,
+} from '../utils/utils';
+import { extractSourceId, extractTargetId } from '../utils/id-helpers';
 
 // ============================================================================
 // Element Transformation Functions
@@ -50,6 +57,11 @@ export function transformEvent(
   duration: number,
   color?: string,
 ): GanttElementType {
+  // Handle boundary events specially
+  if (isBoundaryEventElement(event)) {
+    return transformBoundaryEvent(event, startTime, duration, color);
+  }
+
   if (duration > 0) {
     // Event has duration - show the time range with milestone at completion time
     // Option A: milestone appears at event completion time but shows the full range
@@ -76,6 +88,36 @@ export function transformEvent(
 }
 
 /**
+ * Transform BPMN boundary event to Gantt milestone with boundary-specific properties
+ */
+export function transformBoundaryEvent(
+  event: BPMNEvent,
+  startTime: number,
+  duration: number,
+  color?: string,
+): GanttElementType {
+  const attachedToId = extractAttachedToId(event.attachedToRef);
+
+  const ganttElement: GanttElementType = {
+    id: event.id,
+    name: event.name,
+    type: 'milestone',
+    start: startTime,
+    elementType: getEventTypeString(event),
+    color,
+    // Boundary event specific properties
+    isBoundaryEvent: true,
+    attachedToId,
+    cancelActivity: event.cancelActivity !== false, // Default to true if not specified
+  };
+
+  // Boundary events should always display as simple milestones
+  // Duration only affects positioning, not visual representation
+
+  return ganttElement;
+}
+
+/**
  * Transform BPMN gateway to Gantt element
  * Gateways are always rendered as milestones (diamond shape)
  * If they have duration, the milestone will show the duration range
@@ -95,6 +137,36 @@ export function transformGateway(
     end: startTime + duration,
     elementType: getGatewayTypeString(gateway),
     color,
+  };
+}
+
+/**
+ * Transform expanded sub-process to Gantt group element
+ * Renders as bracket/slash pattern without diamond milestone
+ */
+export function transformExpandedSubProcess(
+  subProcess: any,
+  startTime: number,
+  duration: number,
+  hierarchyLevel: number = 0,
+  parentSubProcessId?: string,
+  hasChildren: boolean = true,
+  color?: string,
+): GanttElementType {
+  return {
+    id: subProcess.id,
+    name: subProcess.name,
+    type: 'group',
+    start: startTime,
+    end: startTime + duration,
+    elementType: getTaskTypeString(subProcess),
+    color,
+    childIds: [], // Will be populated by the mode handlers
+    isExpanded: true,
+    isSubProcess: true,
+    hasChildren,
+    hierarchyLevel,
+    parentSubProcessId,
   };
 }
 
@@ -194,4 +266,38 @@ export function isComplexGateway(element: BPMNFlowElement): element is BPMNGatew
  */
 export function isEventBasedGateway(element: BPMNFlowElement): element is BPMNGateway {
   return element.$type === 'bpmn:EventBasedGateway';
+}
+
+// ============================================================================
+// Boundary Event Helper Functions
+// ============================================================================
+
+/**
+ * Extract the ID of the task that a boundary event is attached to
+ */
+export function extractAttachedToId(attachedToRef: string | any): string | undefined {
+  if (typeof attachedToRef === 'string') {
+    return attachedToRef;
+  }
+  return (attachedToRef as any)?.id || attachedToRef;
+}
+
+/**
+ * Create a boundary event dependency that visually connects the event to its attached task
+ */
+export function createBoundaryEventDependency(
+  boundaryEventId: string,
+  attachedTaskId: string,
+  isInterrupting: boolean,
+  boundaryEventName?: string,
+): GanttDependency {
+  return {
+    id: `${boundaryEventId}_boundary_attachment`,
+    sourceId: attachedTaskId,
+    targetId: boundaryEventId,
+    type: DependencyType.START_TO_START, // Boundary events are available when the task starts
+    name: boundaryEventName,
+    flowType: isInterrupting ? 'boundary' : 'boundary-non-interrupting',
+    isBoundaryEvent: true,
+  };
 }

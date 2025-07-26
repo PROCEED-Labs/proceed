@@ -93,6 +93,9 @@ export interface BPMNEvent extends BPMNBaseElement {
     | 'bpmn:BoundaryEvent';
   incoming?: string[];
   outgoing?: string[];
+  // Boundary event specific properties
+  attachedToRef?: string | any; // Reference to the activity this boundary event is attached to
+  cancelActivity?: boolean; // Whether this boundary event interrupts the attached activity
   eventDefinitions?: Array<{
     $type:
       | 'bpmn:MessageEventDefinition'
@@ -209,6 +212,10 @@ export interface ElementTiming {
   isPathCutoff?: boolean; // Indicates this element is where path traversal stopped due to loop depth
   isLoop?: boolean; // Indicates this element is part of a loop
   isLoopCut?: boolean; // Indicates this element is where loop was cut off
+  // Hierarchy properties for expanded sub-processes
+  hierarchyLevel?: number; // Indentation level (0 = root, 1 = first sub-process level, etc.)
+  parentSubProcessId?: string; // ID of the parent sub-process if nested
+  isExpandedSubProcess?: boolean; // True if this element is an expanded sub-process
 }
 
 export interface TransformationResult {

@@ -6,7 +6,9 @@
  * Merge loop status from multiple timing instances of the same element
  * Prioritizes loop cut over regular loop status
  */
-export function mergeLoopStatus(timingInstances: Array<{ isLoop?: boolean; isLoopCut?: boolean }>): {
+export function mergeLoopStatus(
+  timingInstances: Array<{ isLoop?: boolean; isLoopCut?: boolean }>,
+): {
   isLoop: boolean;
   isLoopCut: boolean;
 } {
@@ -24,7 +26,7 @@ export function mergeLoopStatus(timingInstances: Array<{ isLoop?: boolean; isLoo
  */
 export function applyLoopStatus(
   timing: any,
-  timingInstances: Array<{ isLoop?: boolean; isLoopCut?: boolean }>
+  timingInstances: Array<{ isLoop?: boolean; isLoopCut?: boolean }>,
 ): void {
   const { isLoop, isLoopCut } = mergeLoopStatus(timingInstances);
   timing.isLoop = isLoop;

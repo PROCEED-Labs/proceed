@@ -44,7 +44,7 @@ export function parseInstanceId(instanceId: string): {
     const instanceNumber = parseInt(match[1], 10);
     return { baseElementId, instanceNumber };
   }
-  
+
   // Fallback for non-instance IDs
   return { baseElementId: instanceId, instanceNumber: 0 };
 }

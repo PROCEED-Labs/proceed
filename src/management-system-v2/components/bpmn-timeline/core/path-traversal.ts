@@ -8,7 +8,14 @@ import type {
   ElementTiming,
   DefaultDurationInfo,
 } from '../types/types';
-import { extractDuration, isTaskElement, isSupportedEventElement } from '../utils/utils';
+import {
+  extractDuration,
+  isTaskElement,
+  isSupportedEventElement,
+  isBoundaryEventElement,
+  isExpandedSubProcess,
+  flattenExpandedSubProcesses,
+} from '../utils/utils';
 import { isGatewayElement } from '../transformers/element-transformers';
 import {
   buildSynchronizationRequirements,
@@ -31,6 +38,9 @@ export interface PathElement {
   isPathCutoff?: boolean;
   isLoop?: boolean;
   isLoopCut?: boolean;
+  hierarchyLevel?: number;
+  parentSubProcessId?: string;
+  isExpandedSubProcess?: boolean;
 }
 
 export interface ProcessGraph {
@@ -45,25 +55,40 @@ const MAX_PATHS = 100;
 /**
  * Build process graph from BPMN elements
  */
-export function buildProcessGraph(elements: BPMNFlowElement[]): ProcessGraph {
+export function buildProcessGraph(flattenedElements: BPMNFlowElement[]): ProcessGraph {
+  // Collect all sequence flows from flattened elements
+  const allSequenceFlows = flattenedElements.filter(
+    (el) => el.$type === 'bpmn:SequenceFlow',
+  ) as BPMNSequenceFlow[];
+
+  // Debug removed - keeping only essential logging
+
   const nodes = new Map<string, BPMNFlowElement>();
   const edges = new Map<string, BPMNSequenceFlow[]>();
   const incomingCount = new Map<string, number>();
 
   // Separate nodes and edges
-  const nonFlowElements = elements.filter((el) => el.$type !== 'bpmn:SequenceFlow');
-  const sequenceFlows = elements.filter(
-    (el) => el.$type === 'bpmn:SequenceFlow',
-  ) as BPMNSequenceFlow[];
+  const nonFlowElements = flattenedElements.filter((el) => el.$type !== 'bpmn:SequenceFlow');
 
-  // Build node map
+  // Build node map - include all elements including boundary events
+  const boundaryEvents: any[] = [];
   nonFlowElements.forEach((element) => {
     nodes.set(element.id, element);
     incomingCount.set(element.id, 0);
+    if (isBoundaryEventElement(element)) {
+      boundaryEvents.push({
+        id: element.id,
+        type: element.$type,
+        attachedToRef: (element as any).attachedToRef,
+        allProps: Object.keys(element),
+      });
+    }
   });
 
-  // Build edge map and count incoming flows (excluding self-loops)
-  sequenceFlows.forEach((flow) => {
+  // Debug removed - keeping only essential logging
+
+  // Build edge map and count incoming flows (excluding self-loops) - use the preserved sequence flows
+  allSequenceFlows.forEach((flow) => {
     const sourceId =
       typeof flow.sourceRef === 'string'
         ? flow.sourceRef
@@ -79,14 +104,27 @@ export function buildProcessGraph(elements: BPMNFlowElement[]): ProcessGraph {
     edges.get(sourceId)!.push(flow);
 
     // Only count non-self-loop flows as incoming connections for start node detection
-    if (sourceId !== targetId) {
-      incomingCount.set(targetId, (incomingCount.get(targetId) || 0) + 1);
+    // Don't count flows TO boundary events (they're not reached by normal flows)
+    if (sourceId !== targetId && incomingCount.has(targetId)) {
+      const oldCount = incomingCount.get(targetId) || 0;
+      incomingCount.set(targetId, oldCount + 1);
     }
   });
 
-  // Find start and end nodes
-  const startNodes = nonFlowElements.filter((el) => (incomingCount.get(el.id) || 0) === 0);
+  // Find start and end nodes - boundary events are not start nodes (they're attached to tasks)
+  // but they can be end nodes if they have no outgoing flows
+  const startNodes = nonFlowElements.filter(
+    (el) => !isBoundaryEventElement(el) && (incomingCount.get(el.id) || 0) === 0,
+  );
   const endNodes = nonFlowElements.filter((el) => (edges.get(el.id) || []).length === 0);
+
+  // Handle pure loop processes (no start nodes) - pick the first non-boundary element as start
+  if (startNodes.length === 0) {
+    const nonBoundaryElements = nonFlowElements.filter((el) => !isBoundaryEventElement(el));
+    if (nonBoundaryElements.length > 0) {
+      startNodes.push(nonBoundaryElements[0]);
+    }
+  }
 
   return { nodes, edges, startNodes, endNodes };
 }
@@ -102,6 +140,7 @@ export function calculatePathBasedTimings(
 ): {
   timingsMap: Map<string, ElementTiming[]>;
   dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>;
+  flattenedElements: BPMNFlowElement[];
   issues: Array<{
     elementId: string;
     elementType: string;
@@ -110,13 +149,18 @@ export function calculatePathBasedTimings(
     severity: 'warning' | 'error';
   }>;
 } {
-  const graph = buildProcessGraph(elements);
+  // Flatten elements once to include sub-process children
+  const flattenedElements = flattenExpandedSubProcesses(elements);
+
+  // Build graph with flattened elements to include sub-process children
+  const graph = buildProcessGraph(flattenedElements);
+
   const { pathElements, dependencies, issues } = traverseAllPaths(
     graph,
     startTime,
     defaultDurations,
     maxLoopIterations,
-    elements,
+    flattenedElements,
   );
 
   // Group path elements by original element ID
@@ -138,6 +182,9 @@ export function calculatePathBasedTimings(
       isPathCutoff: pathElement.isPathCutoff,
       isLoop: pathElement.isLoop,
       isLoopCut: pathElement.isLoopCut,
+      hierarchyLevel: pathElement.hierarchyLevel,
+      parentSubProcessId: pathElement.parentSubProcessId,
+      isExpandedSubProcess: pathElement.isExpandedSubProcess,
     } as ElementTiming & {
       pathId: string;
       instanceId: string;
@@ -145,10 +192,159 @@ export function calculatePathBasedTimings(
       isPathCutoff?: boolean;
       isLoop?: boolean;
       isLoopCut?: boolean;
+      hierarchyLevel?: number;
+      parentSubProcessId?: string;
+      isExpandedSubProcess?: boolean;
     });
   });
 
-  return { timingsMap, dependencies, issues };
+  // Calculate sub-process bounds based on their child elements
+  calculateSubProcessBounds(timingsMap, elements);
+
+  // Fix dependent element timings after sub-process bounds are calculated
+  fixDependentElementTimings(timingsMap, dependencies, flattenedElements);
+
+  return { timingsMap, dependencies, flattenedElements, issues };
+}
+
+/**
+ * Fix timings of elements that depend on sub-processes after sub-process bounds are calculated
+ */
+function fixDependentElementTimings(
+  timingsMap: Map<string, ElementTiming[]>,
+  dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
+  allElements: BPMNFlowElement[],
+): void {
+  // Create a map from instance ID to timing for quick lookup
+  const instanceToTiming = new Map<string, ElementTiming>();
+  timingsMap.forEach((timings) => {
+    timings.forEach((timing) => {
+      if (timing.instanceId) {
+        instanceToTiming.set(timing.instanceId, timing);
+      }
+    });
+  });
+
+  // Create a map of sequence flows for flow duration lookup
+  const sequenceFlows = new Map<string, BPMNFlowElement>();
+  allElements
+    .filter((el) => el.$type === 'bpmn:SequenceFlow')
+    .forEach((flow) => {
+      sequenceFlows.set(flow.id, flow);
+    });
+
+  // Process dependencies to find elements that need timing adjustment
+  const adjustments = new Map<string, number>(); // instanceId -> new start time
+
+  dependencies.forEach((dep) => {
+    const sourceTiming = instanceToTiming.get(dep.sourceInstanceId);
+    const targetTiming = instanceToTiming.get(dep.targetInstanceId);
+    const flow = sequenceFlows.get(dep.flowId);
+
+    if (sourceTiming && targetTiming && flow) {
+      // Check if source is an expanded sub-process that had its timing corrected
+      const sourceElement = allElements.find((el) => el.id === sourceTiming.elementId);
+
+      if (sourceElement && isExpandedSubProcess(sourceElement)) {
+        // Calculate what the target's start time should be based on corrected sub-process end time
+        const flowDuration = extractDuration(flow) || 0;
+        const expectedTargetStartTime = sourceTiming.endTime + flowDuration;
+
+        // If target starts before it should, record an adjustment
+        if (targetTiming.startTime < expectedTargetStartTime) {
+          const currentAdjustment = adjustments.get(dep.targetInstanceId) || targetTiming.startTime;
+          adjustments.set(
+            dep.targetInstanceId,
+            Math.max(currentAdjustment, expectedTargetStartTime),
+          );
+        }
+      }
+    }
+  });
+
+  // Apply adjustments
+  adjustments.forEach((newStartTime, instanceId) => {
+    const timing = instanceToTiming.get(instanceId);
+    if (timing) {
+      const duration = timing.endTime - timing.startTime;
+      timing.startTime = newStartTime;
+      timing.endTime = newStartTime + duration;
+    }
+  });
+
+  // Propagate adjustments through the dependency chain
+  // This ensures that if element B depends on adjusted element A, B is also adjusted
+  let hasChanges = true;
+  let iterationCount = 0;
+  const maxIterations = 10; // Safety limit
+
+  while (hasChanges && iterationCount < maxIterations) {
+    hasChanges = false;
+    iterationCount++;
+
+    dependencies.forEach((dep) => {
+      const sourceTiming = instanceToTiming.get(dep.sourceInstanceId);
+      const targetTiming = instanceToTiming.get(dep.targetInstanceId);
+      const flow = sequenceFlows.get(dep.flowId);
+
+      if (sourceTiming && targetTiming && flow) {
+        const flowDuration = extractDuration(flow) || 0;
+        const expectedTargetStartTime = sourceTiming.endTime + flowDuration;
+
+        if (targetTiming.startTime < expectedTargetStartTime) {
+          const duration = targetTiming.endTime - targetTiming.startTime;
+          targetTiming.startTime = expectedTargetStartTime;
+          targetTiming.endTime = expectedTargetStartTime + duration;
+          hasChanges = true;
+        }
+      }
+    });
+  }
+}
+
+/**
+ * Calculate start and end times for expanded sub-processes based on their child elements
+ */
+function calculateSubProcessBounds(
+  timingsMap: Map<string, ElementTiming[]>,
+  originalElements: BPMNFlowElement[],
+): void {
+  // Find all expanded sub-processes
+  const expandedSubProcesses = Array.from(timingsMap.keys()).filter((elementId) => {
+    const timings = timingsMap.get(elementId)!;
+    return timings.some((timing) => timing.isExpandedSubProcess);
+  });
+
+  expandedSubProcesses.forEach((subProcessId) => {
+    const subProcessTimings = timingsMap.get(subProcessId)!;
+
+    subProcessTimings.forEach((subProcessTiming) => {
+      if (!subProcessTiming.isExpandedSubProcess) return;
+
+      // Find all child elements for this sub-process
+      const childTimings: ElementTiming[] = [];
+      timingsMap.forEach((timings, elementId) => {
+        if (elementId === subProcessId) return; // Skip the sub-process itself
+
+        timings.forEach((timing) => {
+          if (timing.parentSubProcessId === subProcessId) {
+            childTimings.push(timing);
+          }
+        });
+      });
+
+      if (childTimings.length > 0) {
+        // Calculate bounds: earliest start to latest end
+        const earliestStart = Math.min(...childTimings.map((t) => t.startTime));
+        const latestEnd = Math.max(...childTimings.map((t) => t.endTime));
+
+        // Update sub-process timing
+        subProcessTiming.startTime = earliestStart;
+        subProcessTiming.endTime = latestEnd;
+        subProcessTiming.duration = latestEnd - earliestStart;
+      }
+    });
+  });
 }
 
 /**
@@ -233,6 +429,9 @@ function traverseAllPaths(
         isLoopInstance,
         isLoop: isLoopInstance, // Mark as loop if it's a loop instance
         isLoopCut: false, // Will be set later if traversal is cut
+        hierarchyLevel: (element as any).hierarchyLevel,
+        parentSubProcessId: (element as any).parentSubProcessId,
+        isExpandedSubProcess: (element as any).isExpandedSubProcess,
       };
 
       pathElements.push(pathElement);
@@ -467,7 +666,13 @@ function traverseAllPaths(
 
       // Calculate duration
       let duration = extractDuration(element);
-      if (duration === 0 && (isTaskElement(element) || isSupportedEventElement(element))) {
+
+      // Special handling for expanded sub-processes: they need placeholder duration
+      // that will be corrected later based on child elements
+      if (isExpandedSubProcess(element)) {
+        // Use default duration for now, will be recalculated in calculateSubProcessBounds
+        duration = duration || 3600000; // 1 hour default if no explicit duration
+      } else if (duration === 0 && (isTaskElement(element) || isSupportedEventElement(element))) {
         if (isTaskElement(element)) {
           duration = 3600000; // 1 hour default
           defaultDurations.push({
@@ -541,8 +746,11 @@ function traverseAllPaths(
         // Get outgoing flows from gateway
         const outgoingFlows = graph.edges.get(elementId) || [];
 
+        // Note: Boundary events are not attached to gateways, only to tasks
+        const allOutgoingFlows = outgoingFlows;
+
         // For each outgoing flow, create paths that go directly to final targets
-        outgoingFlows.forEach((flow, flowIndex) => {
+        allOutgoingFlows.forEach((flow, flowIndex) => {
           const targetId =
             typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id;
           if (!graph.nodes.has(targetId)) return;
@@ -595,7 +803,92 @@ function traverseAllPaths(
         // Get outgoing flows
         const outgoingFlows = graph.edges.get(elementId) || [];
 
-        // For each outgoing flow, create a path that leads to the target
+        // Also check for boundary events attached to this element and include their outgoing flows
+        const boundaryEventFlows: BPMNSequenceFlow[] = [];
+
+        const allBoundaryEvents = Array.from(graph.nodes.values()).filter((el) =>
+          isBoundaryEventElement(el),
+        );
+        // Debug removed - keeping only essential logging
+
+        const attachedBoundaryEvents = allBoundaryEvents.filter(
+          (el) =>
+            (el as any).attachedToRef?.id === elementId || (el as any).attachedToRef === elementId,
+        );
+
+        attachedBoundaryEvents.forEach((boundaryEvent) => {
+          // Create boundary event instance with timing based on attached task
+          const boundaryDuration = extractDuration(boundaryEvent) || 0;
+
+          let boundaryStartTime: number;
+          if (boundaryDuration > 0) {
+            // If boundary event has duration, position at task start + event duration
+            boundaryStartTime = pathElement.startTime + boundaryDuration;
+          } else {
+            // If no duration, position at the horizontal center of the task
+            const taskDuration = pathElement.endTime - pathElement.startTime;
+            boundaryStartTime = pathElement.startTime + taskDuration / 2;
+          }
+
+          const boundaryEndTime = boundaryStartTime; // Boundary events are milestones
+
+          // Create a unique path key that includes the task instance to ensure
+          // boundary events are created per task instance, not globally
+          const boundaryPathKey = `${pathKey}_task_${pathElement.instanceId}_boundary_${boundaryEvent.id}`;
+
+          const boundaryPathElement = getOrCreateInstance(
+            boundaryEvent,
+            boundaryPathKey,
+            {
+              startTime: boundaryStartTime,
+              endTime: boundaryEndTime,
+              duration: boundaryDuration, // Store actual boundary duration
+            },
+            pathSpecificVisits,
+          );
+
+          // Debug removed - keeping only essential logging
+
+          // Create dependency from attached task to boundary event
+          if (pathElement.instanceId && boundaryEvent.id) {
+            const dependency = {
+              sourceInstanceId: pathElement.instanceId,
+              targetInstanceId: boundaryPathElement.instanceId,
+              flowId: `${pathElement.elementId}_to_${boundaryEvent.id}_attachment`,
+            };
+            dependencies.push(dependency);
+          }
+
+          const boundaryOutgoingFlows = graph.edges.get(boundaryEvent.id) || [];
+
+          // Process boundary event outgoing flows separately
+          boundaryOutgoingFlows.forEach((boundaryFlow, boundaryFlowIndex) => {
+            const targetId =
+              typeof boundaryFlow.targetRef === 'string'
+                ? boundaryFlow.targetRef
+                : (boundaryFlow.targetRef as any)?.id;
+            if (!graph.nodes.has(targetId)) return;
+
+            const flowDuration = extractDuration(boundaryFlow) || 0;
+            const nextTime = boundaryPathElement.endTime + flowDuration;
+
+            // Create unique path for boundary event flow that includes the task instance
+            const nextPathKey = `${pathKey}_task_${pathElement.instanceId}_boundary_${boundaryEvent.id}_${boundaryFlowIndex}`;
+
+            pathsToExplore.push({
+              elementId: targetId,
+              pathKey: nextPathKey,
+              currentTime: nextTime,
+              visitedElements: newVisitedElements,
+              pathSpecificVisits: newPathSpecificVisits,
+              sourceInstanceId: boundaryPathElement.instanceId, // Flow starts from boundary event
+              flowId: boundaryFlow.id,
+              sourceElementId: boundaryEvent.id,
+            });
+          });
+        });
+
+        // Process normal task outgoing flows (not mixed with boundary flows)
         outgoingFlows.forEach((flow, flowIndex) => {
           const targetId =
             typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id;
@@ -652,6 +945,8 @@ function traverseAllPaths(
       ) === index
     );
   });
+
+  // Debug removed - keeping only essential logging
 
   return { pathElements, dependencies, issues: deduplicatedIssues };
 }

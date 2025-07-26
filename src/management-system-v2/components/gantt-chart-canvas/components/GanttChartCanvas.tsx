@@ -1077,6 +1077,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                             style={{
                               fontWeight: element.type === 'group' ? 'bold' : 'normal',
                               fontStyle: element.name ? 'normal' : 'italic',
+                              marginLeft: `${((element as any).hierarchyLevel || 0) * 20}px`, // 20px indentation per level
                             }}
                           >
                             {element.name || `<${element.id}>`}

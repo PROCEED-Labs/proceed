@@ -170,6 +170,7 @@ interface GanttMilestone extends GanttElement {
 
 - **Point milestone**: Diamond shape at start time (when only start provided)
 - **Ranged milestone**: Diamond centered between start/end with range visualization
+- **Boundary events**: Always displayed as point milestones regardless of duration
 - **Features**: Ghost occurrences, dependency connection points
 
 ### Group Elements
@@ -208,10 +209,16 @@ interface GanttDependency {
   targetId: string; // Target element ID
   type: DependencyType; // Dependency relationship type
   name?: string; // Optional dependency name
-  flowType?: 'conditional' | 'default' | 'normal'; // BPMN flow types
+  flowType?:
+    | 'conditional'
+    | 'default'
+    | 'normal'
+    | 'boundary'
+    | 'boundary-non-interrupting'; // BPMN flow types
   isGhost?: boolean; // Ghost dependency flag
   sourceInstanceId?: string; // Specific source instance for ghost deps
   targetInstanceId?: string; // Specific target instance for ghost deps
+  isBoundaryEvent?: boolean; // Special handling for boundary event dependencies
 }
 ```
 
@@ -230,6 +237,56 @@ const ghostDep = {
   targetInstanceId: 'task_b_instance_1',
 };
 ```
+
+### Boundary Event Dependencies
+
+Boundary event dependencies have special visual rendering with adaptive routing strategies. Two types of dependencies are supported:
+
+#### 1. Attachment Dependencies (Task → Boundary Event)
+
+Visual connection from attached task to boundary event:
+
+```typescript
+const attachmentDep = {
+  id: 'boundary_attachment_1',
+  sourceId: 'task_a',
+  targetId: 'boundary_event_1',
+  type: 'start-to-start',
+  flowType: 'boundary', // or 'boundary-non-interrupting'
+  isBoundaryEvent: true,
+};
+```
+
+**Visual Features**:
+
+- **No Arrow Tips**: Clean line endings without directional arrows
+- **Adaptive Routing**:
+  - **Normal**: Vertical line 25px before event, then horizontal to boundary event
+  - **Constrained**: Straight vertical line when insufficient horizontal space
+- **Line Styles**: Solid for interrupting events, dashed for non-interrupting events
+- **Positioning Constraints**: Never starts before task start or after event position
+
+#### 2. Outgoing Dependencies (Boundary Event → Target)
+
+Standard dependencies from boundary events to subsequent elements:
+
+```typescript
+const outgoingDep = {
+  id: 'flow_123',
+  sourceId: 'boundary_event_1',
+  targetId: 'task_b',
+  type: 'finish-to-start',
+  flowType: 'normal',
+  // Standard dependency - no special boundary event properties
+};
+```
+
+**Visual Features**:
+
+- **Standard Routing**: Uses normal dependency routing algorithms
+- **Arrow Tips**: Standard arrow tips at target end
+- **Source Position**: Always starts from boundary event milestone position (not after duration)
+- **Line Styles**: Standard solid/dashed based on flow type
 
 ## Configuration Options
 

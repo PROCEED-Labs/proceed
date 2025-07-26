@@ -43,6 +43,8 @@ interface RoutingContext {
   hasCollision: boolean;
   needsRouting: boolean;
   isVeryShort: boolean;
+  isBoundaryEvent: boolean;
+  taskStartPoint?: Point; // For boundary events, the task's start position
   constraints: RoutingConstraints;
 }
 
@@ -52,6 +54,7 @@ interface RenderStyle {
   color: string;
   width: number;
   opacity: number;
+  dashPattern?: number[]; // For dashed lines (e.g., [5, 5] for 5px dash, 5px gap)
 }
 
 // Routing strategy interface
@@ -326,8 +329,53 @@ export class DependencyRenderer {
     },
   };
 
+  private boundaryEventRoutingStrategy: RoutingStrategy = {
+    calculatePath: (from: Point, to: Point, context: RoutingContext): PathSegment[] => {
+      // For boundary events, we want a special vertical-then-horizontal routing:
+      // 1. Start vertically somewhere between task start and boundary event
+      // 2. Go down from the task row to the boundary event row
+      // 3. Then go horizontally to the boundary event
+      //
+      // Special case: if there's not enough horizontal space, route straight down
+
+      // Get the task's start position from the context
+      const taskStartX = context.taskStartPoint?.x || from.x;
+
+      // Define minimum distances
+      const minDistanceFromEvent = 25; // Preferred distance before the event
+      const minDistanceFromTaskStart = 10; // Minimum distance after task start
+
+      // Calculate the preferred vertical line position
+      const preferredVLineX = to.x - minDistanceFromEvent;
+      const minAllowedVLineX = taskStartX + minDistanceFromTaskStart;
+      const maxAllowedVLineX = to.x; // Don't go past the event position
+
+      // Check if we can maintain the minimum horizontal distance
+      const canUsePreferred =
+        preferredVLineX >= minAllowedVLineX && preferredVLineX <= maxAllowedVLineX;
+
+      if (canUsePreferred) {
+        // Normal case: vertical line with horizontal segment
+        const vLineX = preferredVLineX;
+        const startPoint = { x: vLineX, y: from.y };
+        return [
+          { from: startPoint, to: { x: vLineX, y: to.y }, type: 'vertical' },
+          { from: { x: vLineX, y: to.y }, to, type: 'horizontal' },
+        ];
+      } else {
+        // Special case: not enough horizontal space, route straight down from above the event
+        // Start from the task row directly above the boundary event
+        const startPoint = { x: to.x, y: from.y };
+
+        return [{ from: startPoint, to, type: 'vertical' }];
+      }
+    },
+  };
+
   private routeDependency(from: Point, to: Point, context: RoutingContext): PathSegment[] {
-    if (context.isSelfLoop) {
+    if (context.isBoundaryEvent) {
+      return this.boundaryEventRoutingStrategy.calculatePath(from, to, context);
+    } else if (context.isSelfLoop) {
       return this.selfLoopRoutingStrategy.calculatePath(from, to, context);
     } else if (context.needsRouting) {
       return this.complexRoutingStrategy.calculatePath(from, to, context);
@@ -347,7 +395,7 @@ export class DependencyRenderer {
     context.strokeStyle = style.color;
     context.lineWidth = style.width;
     context.globalAlpha = style.opacity;
-    context.setLineDash([]);
+    context.setLineDash(style.dashPattern || []);
 
     if (style.curved) {
       context.lineJoin = 'round';
@@ -529,8 +577,26 @@ export class DependencyRenderer {
     if (!fromVisible && !toVisible) return;
 
     // Calculate connection points
-    let fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex);
-    let toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'start', toIndex);
+    let fromPoint: Point;
+    let toPoint: Point;
+
+    // For boundary event dependencies, we need special handling
+    let taskStartPoint: Point | undefined;
+    if (dep.isBoundaryEvent) {
+      // For boundary events, we connect from task to the TOP of the boundary event
+      fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex);
+
+      // Get the boundary event's center position (top connection point)
+      const boundaryY = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+      const boundaryX = timeMatrix.transformPoint((toElement as any).start);
+      toPoint = { x: boundaryX, y: boundaryY };
+
+      // Also get the task's start position for routing
+      taskStartPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'start', fromIndex);
+    } else {
+      fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex);
+      toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'start', toIndex);
+    }
 
     // Adjust for ghost dependencies
     if (dep.isGhost && dep.sourceInstanceId && dep.targetInstanceId) {
@@ -601,17 +667,15 @@ export class DependencyRenderer {
       elements,
       elementsByIndex,
       timeMatrix,
+      taskStartPoint,
     );
 
     // Calculate path using new routing system
     const segments = this.routeDependency(fromPoint, toPoint, context_routing);
 
-    // Draw arrow head - hide for very short ghost dependencies on same row
-    const shouldShowArrowTip = !(
-      dep.isGhost &&
-      isSameRow &&
-      totalDistance < MIN_ARROW_TIP_DISTANCE
-    );
+    // Draw arrow head - hide for boundary events and very short ghost dependencies on same row
+    const shouldShowArrowTip =
+      !dep.isBoundaryEvent && !(dep.isGhost && isSameRow && totalDistance < MIN_ARROW_TIP_DISTANCE);
 
     // Create render style
     const style: RenderStyle = {
@@ -620,6 +684,7 @@ export class DependencyRenderer {
       color: isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR,
       width: isHighlighted ? 2.5 : 1.5,
       opacity: dep.isGhost ? 0.75 : 1.0,
+      dashPattern: dep.flowType === 'boundary-non-interrupting' ? [5, 5] : undefined,
     };
 
     // Save context state
@@ -641,12 +706,17 @@ export class DependencyRenderer {
     let fromIndex = -1;
     let toIndex = -1;
 
+    // Use instance-specific IDs for accurate row positioning
+    const sourceInstanceId = (dep as any).sourceInstanceId || dep.sourceId;
+    const targetInstanceId = (dep as any).targetInstanceId || dep.targetId;
+
     elements.forEach((el, index) => {
-      if (el.id === dep.sourceId && fromIndex === -1) {
+      // Match by instance ID first, then fall back to base ID
+      if ((el.id === sourceInstanceId || el.id === dep.sourceId) && fromIndex === -1) {
         fromElement = el;
         fromIndex = index;
       }
-      if (el.id === dep.targetId && toIndex === -1) {
+      if ((el.id === targetInstanceId || el.id === dep.targetId) && toIndex === -1) {
         toElement = el;
         toIndex = index;
       }
@@ -662,6 +732,7 @@ export class DependencyRenderer {
     elements: GanttElementType[],
     elementsByIndex: Map<number, GanttElementType>,
     timeMatrix: TimeMatrix,
+    taskStartPoint?: Point,
   ): RoutingContext {
     const totalDistance = Math.abs(toPoint.x - fromPoint.x);
     const isVeryShort = totalDistance < 30;
@@ -696,6 +767,8 @@ export class DependencyRenderer {
       hasCollision,
       needsRouting,
       isVeryShort,
+      isBoundaryEvent: dep.isBoundaryEvent || false,
+      taskStartPoint,
       constraints: {
         minSourceDistance: dep.isGhost && isSameRow ? 0 : this.MIN_SOURCE_DISTANCE,
         minTargetDistance: dep.isGhost && isSameRow ? 0 : this.MIN_TARGET_DISTANCE,

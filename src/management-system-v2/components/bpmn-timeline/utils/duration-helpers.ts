@@ -2,7 +2,11 @@
  * Utility functions for handling durations in BPMN elements
  */
 
-import { DEFAULT_TASK_DURATION_MS, DEFAULT_EVENT_DURATION_MS, DEFAULT_SEQUENCE_FLOW_DURATION_MS } from '../constants';
+import {
+  DEFAULT_TASK_DURATION_MS,
+  DEFAULT_EVENT_DURATION_MS,
+  DEFAULT_SEQUENCE_FLOW_DURATION_MS,
+} from '../constants';
 import { extractDuration } from './utils';
 import type { BPMNFlowElement, DefaultDurationInfo } from '../types/types';
 
@@ -11,7 +15,7 @@ import type { BPMNFlowElement, DefaultDurationInfo } from '../types/types';
  */
 export function applyDefaultDuration(
   element: BPMNFlowElement,
-  defaultDurations: DefaultDurationInfo[]
+  defaultDurations: DefaultDurationInfo[],
 ): number {
   let duration = extractDuration(element);
 
@@ -19,7 +23,7 @@ export function applyDefaultDuration(
     // Determine default based on element type
     if (element.$type.includes('Task') || element.$type === 'bpmn:CallActivity') {
       duration = DEFAULT_TASK_DURATION_MS;
-      
+
       // Track this for default duration reporting
       defaultDurations.push({
         elementId: element.id,
@@ -30,7 +34,7 @@ export function applyDefaultDuration(
       });
     } else if (element.$type.includes('Event')) {
       duration = DEFAULT_EVENT_DURATION_MS;
-      
+
       // Only track non-zero defaults (events are expected to be immediate)
       if (duration > 0) {
         defaultDurations.push({
@@ -43,7 +47,7 @@ export function applyDefaultDuration(
       }
     } else if (element.$type === 'bpmn:SequenceFlow') {
       duration = DEFAULT_SEQUENCE_FLOW_DURATION_MS;
-      
+
       // Only track non-zero defaults
       if (duration > 0) {
         defaultDurations.push({

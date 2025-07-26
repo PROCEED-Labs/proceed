@@ -27,6 +27,8 @@ import styles from './styles/BPMNTimeline.module.scss';
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
   const isUnmountingRef = useRef(false);
+  // Track the last transformation parameters to prevent duplicate processing in React strict mode
+  const lastTransformRef = useRef<string>('');
   const modeler = useModelerStateStore((state) => state.modeler);
   const changeCounter = useModelerStateStore((state) => state.changeCounter);
 
@@ -150,6 +152,24 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
             console.warn('Failed to get current XML from modeler, using process.bpmn:', error);
           }
         }
+
+        // Create a key to detect duplicate calls (React strict mode prevention)
+        const transformKey = JSON.stringify({
+          bpmnLength: bpmnXml.length,
+          positioningLogic: ganttSettings.positioningLogic,
+          loopDepth: ganttSettings.loopDepth,
+          chronologicalSorting: ganttSettings.chronologicalSorting,
+          renderGateways: ganttSettings.renderGateways,
+          showGhostElements: ganttSettings.showGhostElements,
+          showGhostDependencies: ganttSettings.showGhostDependencies,
+          changeCounter,
+        });
+
+        // Prevent duplicate processing in React strict mode
+        if (lastTransformRef.current === transformKey) {
+          return;
+        }
+        lastTransformRef.current = transformKey;
 
         // Parse BPMN XML using moddle
         const { rootElement: definitions } = await moddle.fromXML(bpmnXml);

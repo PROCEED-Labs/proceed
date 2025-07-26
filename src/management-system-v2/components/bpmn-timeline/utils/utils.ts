@@ -122,19 +122,105 @@ export function extractDuration(element: BPMNBaseElement): number {
  * Check if element is a supported task type
  */
 export function isTaskElement(element: { $type: string }): boolean {
-  return element.$type.includes('Task') || element.$type === 'bpmn:CallActivity';
+  return (
+    element.$type.includes('Task') ||
+    element.$type === 'bpmn:CallActivity' ||
+    element.$type === 'bpmn:SubProcess' ||
+    element.$type === 'bpmn:AdHocSubProcess'
+  );
 }
 
 /**
- * Check if element is a supported event type (excluding BoundaryEvents)
+ * Check if element is an expanded sub-process (has flowElements property)
+ */
+export function isExpandedSubProcess(element: any): boolean {
+  return (
+    (element.$type === 'bpmn:SubProcess' || element.$type === 'bpmn:AdHocSubProcess') &&
+    element.flowElements &&
+    Array.isArray(element.flowElements) &&
+    element.flowElements.length > 0
+  );
+}
+
+/**
+ * Check if element is a collapsed sub-process (does not have flowElements)
+ */
+export function isCollapsedSubProcess(element: any): boolean {
+  return (
+    (element.$type === 'bpmn:SubProcess' || element.$type === 'bpmn:AdHocSubProcess') &&
+    (!element.flowElements ||
+      !Array.isArray(element.flowElements) ||
+      element.flowElements.length === 0)
+  );
+}
+
+/**
+ * Flatten expanded sub-processes, adding hierarchy metadata to child elements
+ */
+export function flattenExpandedSubProcesses(
+  elements: any[],
+  parentId?: string,
+  hierarchyLevel: number = 0,
+): any[] {
+  const flattened: any[] = [];
+
+  elements.forEach((element) => {
+    if (isExpandedSubProcess(element)) {
+      // Add the sub-process itself with hierarchy info
+      const subProcessWithHierarchy = {
+        ...element,
+        hierarchyLevel,
+        parentSubProcessId: parentId,
+        isExpandedSubProcess: true,
+      };
+      flattened.push(subProcessWithHierarchy);
+
+      // Recursively flatten child elements with increased hierarchy level
+      const childElements = flattenExpandedSubProcesses(
+        element.flowElements,
+        element.id,
+        hierarchyLevel + 1,
+      );
+      flattened.push(...childElements);
+    } else {
+      // Regular element, add hierarchy info if it's inside a sub-process
+      // For boundary events, explicitly preserve the attachedToRef property
+      // For sequence flows, explicitly preserve the sourceRef and targetRef properties
+      const elementWithHierarchy = {
+        ...element,
+        hierarchyLevel,
+        parentSubProcessId: parentId,
+        // Explicitly preserve attachedToRef for boundary events
+        ...(element.attachedToRef && { attachedToRef: element.attachedToRef }),
+        // Explicitly preserve sourceRef and targetRef for sequence flows
+        ...(element.sourceRef && { sourceRef: element.sourceRef }),
+        ...(element.targetRef && { targetRef: element.targetRef }),
+      };
+      flattened.push(elementWithHierarchy);
+    }
+  });
+
+  return flattened;
+}
+
+/**
+ * Check if element is a supported event type (including BoundaryEvents)
  */
 export function isSupportedEventElement(element: { $type: string }): boolean {
   return (
     element.$type === 'bpmn:StartEvent' ||
     element.$type === 'bpmn:EndEvent' ||
     element.$type === 'bpmn:IntermediateThrowEvent' ||
-    element.$type === 'bpmn:IntermediateCatchEvent'
+    element.$type === 'bpmn:IntermediateCatchEvent' ||
+    element.$type === 'bpmn:BoundaryEvent'
   );
+}
+
+/**
+ * Check if element is a boundary event
+ */
+export function isBoundaryEventElement(element: { $type: string }): boolean {
+  return element.$type === 'bpmn:BoundaryEvent';
 }
 
 /**
@@ -172,6 +258,12 @@ export function getTaskTypeString(task: BPMNTask): string {
   const typeMatch = task.$type.match(/bpmn:(.+)/);
   const taskType = typeMatch ? typeMatch[1] : 'Task';
 
+  // Check for expanded sub-process
+  if ((taskType === 'SubProcess' || taskType === 'AdHocSubProcess') && isExpandedSubProcess(task)) {
+    const baseType = taskType === 'AdHocSubProcess' ? 'Ad-Hoc Subprocess' : 'Subprocess';
+    return `${baseType} (Expanded)`;
+  }
+
   // Make task types more readable
   const readableTypes: Record<string, string> = {
     Task: 'Task',
@@ -184,6 +276,7 @@ export function getTaskTypeString(task: BPMNTask): string {
     ManualTask: 'Manual Task',
     CallActivity: 'Call Activity',
     SubProcess: 'Subprocess',
+    AdHocSubProcess: 'Ad-Hoc Subprocess',
   };
 
   return readableTypes[taskType] || taskType;
@@ -193,6 +286,9 @@ export function getTaskTypeString(task: BPMNTask): string {
  * Get event type string for elementType display
  */
 export function getEventTypeString(event: BPMNEvent): string {
+  // Check if this is a boundary event
+  const isBoundary = (event as any).attachedToRef !== undefined;
+
   // Get readable event definition type
   const readableEventDefinitions: Record<string, string> = {
     Message: 'Message',
@@ -228,16 +324,24 @@ export function getEventTypeString(event: BPMNEvent): string {
     eventKind = 'Intermediate';
   }
 
-  // Build the result (only type and position, no duration)
+  // Build the result - include "boundary event" prefix for boundary events
+  let result = '';
   if (eventDefinition && eventKind) {
-    return `${eventDefinition} (${eventKind})`;
+    result = `${eventDefinition} (${eventKind})`;
   } else if (eventDefinition) {
-    return eventDefinition;
+    result = eventDefinition;
   } else if (eventKind) {
-    return eventKind;
+    result = eventKind;
   }
 
-  return '';
+  // Add boundary event prefix if this is a boundary event
+  if (isBoundary && result) {
+    result = `${result} Boundary Event`;
+  } else if (isBoundary) {
+    result = 'Boundary Event';
+  }
+
+  return result;
 }
 
 /**
@@ -268,9 +372,7 @@ export function getGatewayTypeString(gateway: BPMNGateway): string {
  * Get error reason for unsupported elements
  */
 export function getUnsupportedElementReason(elementType: string): string {
-  if (elementType === 'bpmn:BoundaryEvent') {
-    return 'BoundaryEvents not yet supported';
-  } else if (elementType.includes('Gateway')) {
+  if (elementType.includes('Gateway')) {
     return 'Gateways not yet supported';
   } else {
     return 'Unknown element type';
@@ -317,6 +419,21 @@ export function findConnectedComponents(
     if (sourceId && targetId && adjacencyList.has(sourceId) && adjacencyList.has(targetId)) {
       adjacencyList.get(sourceId)!.add(targetId);
       adjacencyList.get(targetId)!.add(sourceId); // Undirected graph for color grouping
+    }
+  });
+
+  // Add boundary event connections to their attached tasks
+  nonFlowElements.forEach((element) => {
+    if (isBoundaryEventElement(element) && (element as any).attachedToRef) {
+      const attachedToId =
+        typeof (element as any).attachedToRef === 'string'
+          ? (element as any).attachedToRef
+          : (element as any).attachedToRef?.id;
+
+      if (attachedToId && adjacencyList.has(element.id) && adjacencyList.has(attachedToId)) {
+        adjacencyList.get(element.id)!.add(attachedToId);
+        adjacencyList.get(attachedToId)!.add(element.id);
+      }
     }
   });
 
@@ -373,16 +490,29 @@ export function assignFlowColors(
 /**
  * Group and sort elements by connected components and start time
  * Start events appear first, end events appear last within each component
+ * Boundary events are positioned directly below their attached tasks
  */
-export function groupAndSortElements<T extends { id: string; start: number; elementType?: string }>(
+export function groupAndSortElements<
+  T extends {
+    id: string;
+    start: number;
+    elementType?: string;
+    isBoundaryEvent?: boolean;
+    attachedToId?: string;
+  },
+>(
   elements: T[],
   elementToComponent: Map<string, number>,
   chronologicalSorting: boolean = false,
 ): T[] {
-  // Group elements by component
+  // Separate boundary events from regular elements
+  const boundaryEvents = elements.filter((el) => (el as any).isBoundaryEvent);
+  const regularElements = elements.filter((el) => !(el as any).isBoundaryEvent);
+
+  // Group regular elements by component
   const componentGroups = new Map<number, T[]>();
 
-  elements.forEach((element, originalIndex) => {
+  regularElements.forEach((element, originalIndex) => {
     const componentId = elementToComponent.get(element.id) ?? -1;
     if (!componentGroups.has(componentId)) {
       componentGroups.set(componentId, []);
@@ -414,7 +544,94 @@ export function groupAndSortElements<T extends { id: string; start: number; elem
     .map(([, group]) => group);
 
   // Flatten the sorted groups and remove the temporary originalIndex property
-  return sortedGroups.flat().map(({ originalIndex, ...element }: any) => element as T);
+  const sortedRegularElements = sortedGroups
+    .flat()
+    .map(({ originalIndex, ...element }: any) => element as T);
+
+  // Insert boundary events directly after their attached tasks
+  return insertBoundaryEventsAfterTasks(sortedRegularElements, boundaryEvents);
+}
+
+/**
+ * Insert boundary events directly after their attached tasks in the element list
+ */
+function insertBoundaryEventsAfterTasks<
+  T extends { id: string; isBoundaryEvent?: boolean; attachedToId?: string },
+>(regularElements: T[], boundaryEvents: T[]): T[] {
+  const result: T[] = [];
+
+  // Create a map of task ID to its boundary events
+  const taskToBoundaryEvents = new Map<string, T[]>();
+  boundaryEvents.forEach((event) => {
+    const attachedToId = (event as any).attachedToId;
+    if (attachedToId) {
+      if (!taskToBoundaryEvents.has(attachedToId)) {
+        taskToBoundaryEvents.set(attachedToId, []);
+      }
+      taskToBoundaryEvents.get(attachedToId)!.push(event);
+    }
+  });
+
+  // Sort boundary events within each task by start time
+  taskToBoundaryEvents.forEach((events) => {
+    events.sort((a, b) => (a as any).start - (b as any).start);
+  });
+
+  // Insert elements with boundary events placed after their tasks
+  regularElements.forEach((element) => {
+    result.push(element);
+
+    // Add any boundary events attached to this element
+    // Check both the exact ID and the base ID (without instance suffix)
+    let attachedBoundaryEvents = taskToBoundaryEvents.get(element.id) || [];
+
+    // Also check for boundary events attached to the base element ID
+    // (in case the task has an instance suffix like "_instance_1")
+    if (attachedBoundaryEvents.length === 0 && element.id.includes('_instance_')) {
+      const baseId = element.id.split('_instance_')[0];
+      const allBaseBoundaryEvents = taskToBoundaryEvents.get(baseId) || [];
+
+      // Filter boundary events to only include those that belong to this specific task instance
+      // Match by timing: boundary events should be positioned within their attached task's time range
+      const taskElement = element as any;
+      const taskStart = taskElement.start;
+      const taskEnd = taskElement.end;
+
+      attachedBoundaryEvents = allBaseBoundaryEvents.filter((be) => {
+        const beElement = be as any;
+        const beStart = beElement.start;
+        // Boundary events should be positioned within their attached task's time range
+        // Allow some tolerance for boundary events positioned at task center or with slight offset
+        return beStart >= taskStart && beStart <= taskEnd;
+      });
+    }
+
+    // Add boundary events that match this task instance
+    attachedBoundaryEvents.forEach((boundaryEvent) => {
+      result.push(boundaryEvent);
+    });
+  });
+
+  // Add any orphaned boundary events at the end (boundary events without attached tasks)
+  // Since we're no longer tracking added boundary events, we need a different approach
+  // to avoid duplicates for orphaned events
+  const addedElementIds = new Set(result.map((el) => el.id));
+  const orphanedBoundaryEvents = boundaryEvents.filter((event) => {
+    // Only add if not already in result
+    if (addedElementIds.has(event.id)) {
+      return false;
+    }
+    const attachedToId = (event as any).attachedToId;
+    return (
+      !attachedToId ||
+      !regularElements.some(
+        (el) => el.id === attachedToId || el.id.split('_instance_')[0] === attachedToId,
+      )
+    );
+  });
+  result.push(...orphanedBoundaryEvents);
+
+  return result;
 }
 
 // ============================================================================

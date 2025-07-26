@@ -94,6 +94,9 @@ export function transformBPMNToGantt(
   );
   issues.push(...elementIssues);
 
+  // Store original elements for color assignment (before any sub-process flattening)
+  const originalElementsForColorAssignment = process.flowElements;
+
   // Extract informational artifacts (annotations, data objects, etc.)
   // Note: Some artifacts might be outside flowElements (e.g., in artifacts array)
   const allElementsForArtifacts = [
@@ -106,9 +109,11 @@ export function transformBPMNToGantt(
   const informationalArtifacts = extractInformationalArtifacts(allElementsForArtifacts);
 
   // Calculate timings using path-based traversal
+
   const {
     timingsMap: pathTimings,
     dependencies: pathDependencies,
+    flattenedElements,
     issues: pathIssues,
   } = calculateTimingsForMode(supportedElements, startTime, defaultDurations, loopDepth);
 
@@ -120,10 +125,12 @@ export function transformBPMNToGantt(
     traversalMode,
     pathTimings,
     pathDependencies,
-    supportedElements,
+    flattenedElements,
     renderGateways,
     showGhostElements,
     showGhostDependencies,
+    defaultDurations,
+    originalElementsForColorAssignment,
   );
 
   // Check for ghost dependencies through gateways (unsupported)
@@ -172,6 +179,8 @@ function handleTraversalMode(
   renderGateways: boolean,
   showGhostElements: boolean,
   showGhostDependencies: boolean,
+  defaultDurations: DefaultDurationInfo[],
+  originalElementsForColorAssignment: BPMNFlowElement[],
 ): ModeHandlerResult {
   switch (traversalMode) {
     case 'every-occurrence':
@@ -180,6 +189,8 @@ function handleTraversalMode(
         pathDependencies,
         supportedElements,
         renderGateways,
+        defaultDurations,
+        originalElementsForColorAssignment,
       );
     case 'latest-occurrence':
       return handleLatestOccurrenceMode(
@@ -189,6 +200,8 @@ function handleTraversalMode(
         renderGateways,
         showGhostElements,
         showGhostDependencies,
+        defaultDurations,
+        originalElementsForColorAssignment,
       );
     case 'earliest-occurrence':
     default:
@@ -199,6 +212,8 @@ function handleTraversalMode(
         renderGateways,
         showGhostElements,
         showGhostDependencies,
+        defaultDurations,
+        originalElementsForColorAssignment,
       );
   }
 }

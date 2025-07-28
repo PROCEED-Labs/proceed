@@ -2,11 +2,7 @@
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { UserErrorType, getErrorMessage, userError } from '../user-error';
-import {
-  AuthenticatedUser,
-  AuthenticatedUserData,
-  AuthenticatedUserDataSchema,
-} from './user-schema';
+import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
 import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
@@ -21,6 +17,7 @@ import { getEnvironmentById } from './db/iam/environments';
 import { hashPassword } from '../password-hashes';
 import { getAppliedRolesForUser } from '../authorization/organizationEnvironmentRolesHelper';
 import db from '@/lib/data/db/index';
+import { env } from '../ms-config/env-vars';
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
@@ -138,16 +135,18 @@ export async function queryUsers(organizationId: string, searchQuery: string) {
     return userError('Unauthorized', UserErrorType.PermissionError);
   }
 
+  let mailQuery = [{ email: { contains: searchQuery, mode: 'insensitive' } } as const];
+  if (!env.PROCEED_PUBLIC_MAILSERVER_ACTIVE) {
+    mailQuery = [];
+  }
+
   try {
     const users = await db.user.findMany({
       where: {
         AND: [
           { isGuest: false },
           {
-            OR: [
-              { email: { contains: searchQuery, mode: 'insensitive' } },
-              { username: { contains: searchQuery, mode: 'insensitive' } },
-            ],
+            OR: [{ username: { contains: searchQuery, mode: 'insensitive' } }, ...mailQuery],
           },
         ],
       },

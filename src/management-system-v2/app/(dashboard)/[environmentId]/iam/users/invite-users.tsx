@@ -61,6 +61,8 @@ const AddUsersModal: FC<{
   const router = useRouter();
   const environment = useEnvironment();
   const { spaceId } = useEnvironment();
+  const envVars = use(EnvVarsContext);
+  const proceedMailServerActive = !!envVars.PROCEED_PUBLIC_MAILSERVER_ACTIVE;
 
   /* -------------------------------------------------------------------------------------------------
    * Invited Users Management
@@ -84,6 +86,8 @@ const AddUsersModal: FC<{
   }
 
   function addUserByEmail() {
+    if (!proceedMailServerActive) return;
+
     const email = emailSchema.safeParse(search);
     if (!email.success) {
       setIsMailInvalid(true);
@@ -113,7 +117,7 @@ const AddUsersModal: FC<{
         }
 
         for (const user of response) {
-          if (user.email?.includes(debouncedSearch)) {
+          if (proceedMailServerActive && user.email?.includes(debouncedSearch)) {
             delete (user as any).username;
           } else {
             delete (user as any).email;
@@ -224,7 +228,9 @@ const AddUsersModal: FC<{
           >
             <Input
               ref={inputRef}
-              placeholder="Enter E-Mail or Username"
+              placeholder={
+                proceedMailServerActive ? 'Enter E-Mail or Username' : 'Enter a Username'
+              }
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -282,26 +288,23 @@ const AddUsersModal: FC<{
 };
 
 const InviteUserButton: FC = () => {
-  const env = use(EnvVarsContext);
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
   return (
     <>
       <AddUsersModal modalOpen={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
-      {/* TODO: for now we can only invite through email, we have to add username invites in the future */}
-      {env.PROCEED_PUBLIC_MAILSERVER_ACTIVE && (
-        <AuthCan create User>
-          {/* TODO: fix icon for float button in button group */}
-          <Button
-            type="primary"
-            onClick={() => setCreateUserModalOpen(true)}
-            style={{ marginRight: '10px' }}
-          >
-            {breakpoint.xl ? 'Invite User' : 'Invite'}
-          </Button>
-        </AuthCan>
-      )}
+
+      <AuthCan create User>
+        {/* TODO: fix icon for float button in button group */}
+        <Button
+          type="primary"
+          onClick={() => setCreateUserModalOpen(true)}
+          style={{ marginRight: '10px' }}
+        >
+          {breakpoint.xl ? 'Invite User' : 'Invite'}
+        </Button>
+      </AuthCan>
     </>
   );
 };

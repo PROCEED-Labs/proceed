@@ -144,32 +144,114 @@ async function getCorrectMilestoneState(bpmn, userTask, instance) {
  * @param {string} userTaskId the id of the user task element that created this user task instance
  * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
  * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
+ * @param {{ name: string; type: string; enum?: string; }[]} [variableDefinitions=[]] meta data about the variables expected in the instance
+ * containing the user task
  * @returns {string} the html with the placeholders replaced by the correct values
  */
-function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones) {
+function inlineUserTaskData(
+  html,
+  instanceId,
+  userTaskId,
+  variables,
+  milestones,
+  variableDefinitions = [],
+) {
+  const variableDefinitionsMap = Object.fromEntries(
+    variableDefinitions.map((def) => [def.name, def]),
+  );
   const script = `
     const instanceID = '${instanceId}';
     const userTaskID = '${userTaskId}';
 
+    const variableDefinitions = ${JSON.stringify(variableDefinitionsMap)};
+
+    function getValueFromCheckbox(checkbox) {
+      if (!checkbox.defaultValue) {
+        return !!checkbox.checked;
+      } else {
+        return checkbox.checked ? checkbox.defaultValue : undefined;
+      }
+    }
+
+    function getValueFromVariableElement(element) {
+      let value;
+      if (element.tagName === 'INPUT') {
+        if (element.type === 'number') {
+          value = element.value && parseFloat(element.value);
+          if (value && Number.isNaN(value)) throw new Error('The given value is not a valid number.');
+        } else {
+          value = element.value;
+        }
+      } else {
+        const classes = Array.from(element.classList.values());
+        if (classes.includes('user-task-form-input-group')) {
+          const checkboxes = Array.from(element.querySelectorAll("input[type='checkbox']"));
+          const radios = Array.from(element.querySelectorAll("input[type='radio']"));
+          if (checkboxes.length) {
+            if (checkboxes.length === 1) {
+              const [checkbox] = checkboxes;
+              value = getValueFromCheckbox(checkbox);
+            } else {
+              value = checkboxes.map(getValueFromCheckbox).filter(v => v !== undefined);
+            }
+          } else if (radios.length) {
+            const checked = radios.find(r => r.checked === true);
+            value = checked.value;
+          }
+        }
+      }
+
+      return value;
+    }
+
+    function validateValue(key, value) {
+      if (!value) return;
+
+      const definition = variableDefinitions[key];
+      if (!definition) return;
+
+      if (definition.enum) {
+        const allowedValues = definition.enum.split(';');
+        if (!allowedValues.includes((typeof value === 'string') ? value : JSON.stringify(value))) {
+          throw new Error(\`Invalid value. Expected one of \${allowedValues.join(', ')}\`);
+        }
+      }
+    }
+
+    function updateValidationErrorMessage(key, message) {
+      const elements = Array.from(document.getElementsByClassName(\`input-for-\${key}\`));
+      if (!elements.length) return;
+      const [element] = elements;
+      element.classList.remove('invalid');
+      const messageEl = element.getElementsByClassName('validation-error');
+      if (messageEl.length) messageEl[0].textContent = '';
+      if (message) {
+        element.classList.add('invalid');
+        if (messageEl.length) messageEl[0].textContent = message;
+      }
+    }
+
     window.addEventListener('submit', (event) => {
       event.preventDefault();
 
-      const data = new FormData(event.target);
+      const variableElements = Array.from(document.querySelectorAll('[class*=\"variable-\"]'));
+
       const variables = {};
-      const entries = data.entries();
-      let entry = entries.next();
-      while (!entry.done) {
-        const [key, value] = entry.value;
-        if (variables[key]) {
-          if (!Array.isArray(variables[key])) {
-            variables[key] = [variables[key]]; 
-          }
-          variables[key].push(value);
-        } else {
-          variables[key] = value; 
+      let validationErrors = 0;
+      variableElements.forEach(el => {
+        const key = Array.from(el.classList.values()).find(c => c.startsWith('variable-')).split('variable-')[1];
+        try {
+          const value = getValueFromVariableElement(el);
+          validateValue(key, value);
+          updateValidationErrorMessage(key);
+          variables[key] = value;
+        } catch (err) {
+          ++validationErrors;
+          updateValidationErrorMessage(key, err.message);
         }
-        entry = entries.next();
-      }
+      });
+
+      if (validationErrors) return;
 
       window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
           instanceID,
@@ -212,7 +294,7 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
       const variableInputs = document.querySelectorAll(
         'input[class^="variable-"]'
       );
-      Array.from(variableInputs).forEach((variableInput) => {
+      Array.from(variableInputs).filter(input => input.tagName === 'INPUT').forEach((variableInput) => {
         let variableInputTimer;
 
         variableInput.addEventListener('input', (event) => {
@@ -225,15 +307,25 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
           clearTimeout(variableInputTimer);
 
           variableInputTimer = setTimeout(() => {
-            window.PROCEED_DATA.put(
-              '/tasklist/api/variable',
-              { [variableName]: event.target.value },
-              {
-                instanceID,
-                userTaskID,
-              }
-            );
-          }, 5000)
+            try {
+              console.log(event.target);
+              const value = getValueFromVariableElement(event.target);
+
+              validateValue(variableName, value);
+              updateValidationErrorMessage(variableName);
+
+              window.PROCEED_DATA.put(
+                '/tasklist/api/variable',
+                { [variableName]: value },
+                {
+                  instanceID,
+                  userTaskID,
+                }
+              );
+            } catch (err) {
+              updateValidationErrorMessage(variableName, err.message);
+            }
+          }, 2000)
         });
       });
     })

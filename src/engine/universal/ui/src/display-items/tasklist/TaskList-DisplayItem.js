@@ -8,6 +8,7 @@ const {
   getCorrectVariableState,
   getCorrectMilestoneState,
 } = require('@proceed/user-task-helper/index.js');
+const { getProcessIds, getVariablesFromElementById } = require('@proceed/bpmn-helper');
 
 class TaskListTab extends DisplayItem {
   constructor(management) {
@@ -127,8 +128,17 @@ class TaskListTab extends DisplayItem {
 
       const variables = getCorrectVariableState(userTask, userTaskInstance);
       const milestones = await getCorrectMilestoneState(bpmn, userTask, userTaskInstance);
+      const processIds = await getProcessIds(bpmn);
+      const variableDefinitions = await getVariablesFromElementById(bpmn, processIds[0]);
 
-      return await inlineUserTaskData(html, instanceId, userTask.id, variables, milestones);
+      return inlineUserTaskData(
+        html,
+        instanceId,
+        userTask.id,
+        variables,
+        milestones,
+        variableDefinitions,
+      );
     }
   }
 

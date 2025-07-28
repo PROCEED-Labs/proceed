@@ -32,7 +32,7 @@ export const ExportInput: UserComponent<InputProps> = ({
   return (
     <ContextMenu menu={[]}>
       <div
-        className="user-task-form-input"
+        className={`user-task-form-input input-for-${variable}`}
         style={{
           display: 'flex',
           flexDirection: labelPosition === 'top' ? 'column' : 'row',
@@ -61,6 +61,7 @@ export const ExportInput: UserComponent<InputProps> = ({
           defaultValue={value}
           name={variable}
         />
+        <div className="validation-error"></div>
       </div>
     </ContextMenu>
   );

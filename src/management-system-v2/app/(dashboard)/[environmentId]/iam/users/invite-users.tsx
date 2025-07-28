@@ -3,7 +3,6 @@
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { getRoles } from '@/lib/data/roles';
 import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -18,12 +17,41 @@ import {
   Divider,
   Select,
   Typography,
+  Spin,
+  InputRef,
+  Dropdown,
+  MenuProps,
 } from 'antd';
 import { DefaultOptionType } from 'antd/es/select';
 import { useRouter } from 'next/navigation';
-import { FC, use, useEffect, useState, useTransition } from 'react';
+import { FC, use, useRef, useState, useTransition } from 'react';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import useOrganizationRoles from './use-org-roles';
+import useDebounce from '@/lib/useDebounce';
+import { queryUsers } from '@/lib/data/users';
+import { isUserErrorResponse } from '@/lib/user-error';
+import UserAvatar from '@/components/user-avatar';
+import { z } from 'zod';
+
+const emailSchema = z.string().email();
+
+type UserIdentifierDiscriminator =
+  | {
+    email: string;
+  }
+  | {
+    username: string;
+  };
+type QueryInviteUser = {
+  id: string;
+  profileImage: string | null;
+  firstName: string | null;
+  lastName: string | null;
+} & UserIdentifierDiscriminator;
+
+type EmailUser = {
+  email: string;
+};
 
 const AddUsersModal: FC<{
   modalOpen: boolean;
@@ -32,24 +60,128 @@ const AddUsersModal: FC<{
   const app = App.useApp();
   const router = useRouter();
   const environment = useEnvironment();
-  const [form] = Form.useForm();
+  const { spaceId } = useEnvironment();
 
-  const [users, setUsers] = useState<string[]>([]);
+  /* -------------------------------------------------------------------------------------------------
+   * Invited Users Management
+   * -----------------------------------------------------------------------------------------------*/
+  const [users, setUsers] = useState<(QueryInviteUser | EmailUser)[]>([]);
+  function addUser(user: QueryInviteUser | EmailUser) {
+    let userExists = false;
+    if ('email' in user) {
+      if (users.some((u) => 'email' in u && u.email === user.email)) userExists = true;
+    } else {
+      if (users.some((u) => 'username' in u && u.username === user.username)) userExists = true;
+    }
+
+    if (!userExists) {
+      setUsers((prev) => prev.concat(user));
+    }
+
+    setIsMailInvalid(false);
+    setSearch('');
+    inputRef.current?.input?.focus();
+  }
+
+  function addUserByEmail() {
+    const email = emailSchema.safeParse(search);
+    if (!email.success) {
+      setIsMailInvalid(true);
+      return;
+    }
+    addUser({ email: email.data });
+  }
+
+  /* -------------------------------------------------------------------------------------------------
+   * User Search
+   * -----------------------------------------------------------------------------------------------*/
+  const inputRef = useRef<InputRef>(null);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 500, true);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const [isMailInvalid, setIsMailInvalid] = useState(false);
+
+  const { data, isLoading: usersSearchLoading } = useQuery({
+    queryFn: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate loading delay
+      if (debouncedSearch.length < 4) {
+        return [];
+      } else {
+        const response = await queryUsers(spaceId, debouncedSearch);
+        if (isUserErrorResponse(response)) {
+          throw response.error;
+        }
+
+        for (const user of response) {
+          if (user.email?.includes(debouncedSearch)) {
+            delete (user as any).username;
+          } else {
+            delete (user as any).email;
+          }
+        }
+
+        return response as QueryInviteUser[];
+      }
+    },
+    queryKey: ['user-search', debouncedSearch],
+  });
+
+  let autocompleteOptions: NonNullable<MenuProps>['items'] = [];
+  if (usersSearchLoading) {
+    autocompleteOptions = [
+      {
+        key: 'loading',
+        label: <Spin spinning />,
+        disabled: true,
+      },
+    ];
+  } else if (!data || data.length === 0) {
+    autocompleteOptions = [
+      {
+        key: 'not-found',
+        type: 'item',
+        label: 'No users found',
+        disabled: true,
+      },
+    ];
+  } else {
+    autocompleteOptions = data.map((user) => ({
+      key: user.id,
+      label: (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '.5rem',
+          }}
+        >
+          <UserAvatar user={user} style={{ flexShrink: 0 }} />
+          <span style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+            {'email' in user ? user.email : user.username}
+          </span>
+        </div>
+      ),
+      onClick: (_) => addUser(user),
+    }));
+  }
+
+  /* -------------------------------------------------------------------------------------------------
+   * Roles Management
+   * -----------------------------------------------------------------------------------------------*/
+  const { roles } = useOrganizationRoles(environment.spaceId);
   const [selectedRoles, setSelectedRoles] = useState<DefaultOptionType[]>([]);
 
-  const { roles } = useOrganizationRoles(environment.spaceId);
-
-  useEffect(() => {
-    form.resetFields();
-  }, [form, modalOpen]);
-
-  const closeModal = () => {
+  /* -------------------------------------------------------------------------------------------------
+   * Submit Data
+   * -----------------------------------------------------------------------------------------------*/
+  function closeModal() {
     close();
+    setIsMailInvalid(false);
+    setSearch('');
     setUsers([]);
-    form.resetFields();
-  };
+  }
 
-  const [isLoading, startTransition] = useTransition();
+  const [submittingUsers, startTransition] = useTransition();
   const submitData = () => {
     startTransition(async () => {
       try {
@@ -65,7 +197,7 @@ const AddUsersModal: FC<{
           app,
         });
         close();
-      } catch (_) {}
+      } catch (_) { }
     });
   };
 
@@ -77,41 +209,38 @@ const AddUsersModal: FC<{
       closeIcon={null}
       okText="Invite Users"
       onOk={submitData}
-      okButtonProps={{ loading: isLoading, disabled: users.length === 0 }}
+      okButtonProps={{ loading: submittingUsers, disabled: users.length === 0 }}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={({ email }) => {
-          setUsers((prev) => {
-            if (prev.includes(email)) return prev;
-            return prev.concat(email);
-          });
-          form.resetFields();
-
-          // This doesn't work without a timeout
-          setTimeout(() => form.getFieldInstance('email').input.focus(), 0);
-        }}
-        style={{
-          marginBottom: '0',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '.5rem' }}>
+      <div style={{ display: 'flex', gap: '.5rem' }}>
+        <Dropdown
+          menu={{ items: autocompleteOptions }}
+          open={searchDropdownOpen}
+          onOpenChange={(open) => setSearchDropdownOpen(open)}
+        >
           <Form.Item
-            name="email"
+            validateStatus={isMailInvalid ? 'error' : undefined}
+            help={isMailInvalid ? 'Invalid E-Mail' : undefined}
             style={{ flexGrow: 1 }}
-            rules={[{ type: 'email' }, { required: true }]}
           >
-            <Input />
+            <Input
+              ref={inputRef}
+              placeholder="Enter E-Mail or Username"
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onPressEnter={addUserByEmail}
+              onFocus={() => setSearchDropdownOpen(true)}
+              onBlur={(event) => {
+                event.target;
+              }}
+              autoComplete="off"
+            />
           </Form.Item>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              <PlusOutlined />
-            </Button>
-          </Form.Item>
-        </div>
-      </Form>
+        </Dropdown>
+        <Button type="primary" htmlType="submit">
+          <PlusOutlined />
+        </Button>
+      </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
         {users.map((user, idx) => (
@@ -124,10 +253,11 @@ const AddUsersModal: FC<{
               padding: '.2rem .7rem',
             }}
           >
-            {user}
+            {'email' in user ? user.email : user.username}
           </Tag>
         ))}
       </div>
+
       {roles && roles.length > 0 && users.length > 0 && (
         <>
           <Divider />

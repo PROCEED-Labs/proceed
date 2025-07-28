@@ -1,8 +1,12 @@
 'use server';
 
-import { getCurrentUser } from '@/components/auth';
-import { getErrorMessage, userError } from '../user-error';
-import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import {
+  AuthenticatedUser,
+  AuthenticatedUserData,
+  AuthenticatedUserDataSchema,
+} from './user-schema';
 import { ReactNode } from 'react';
 import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
@@ -15,6 +19,8 @@ import {
 } from '@/lib/data/db/iam/users';
 import { getEnvironmentById } from './db/iam/environments';
 import { hashPassword } from '../password-hashes';
+import { getAppliedRolesForUser } from '../authorization/organizationEnvironmentRolesHelper';
+import db from '@/lib/data/db/index';
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
@@ -104,6 +110,58 @@ export async function setUserPassword(newPassword: string) {
 
     const passwordHash = await hashPassword(newPassword);
     await _setUserPassword(userId, passwordHash);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+// To avoid this endpoint from being abused there's not much we can do, but we do the following:
+// - Encoforce the user to be an admin of an org
+// - Search query has to be at least 4 characters long
+// - We only return 10 users
+export async function queryUsers(organizationId: string, searchQuery: string) {
+  if (searchQuery.length < 4) {
+    return userError('Unauthorized', UserErrorType.PermissionError);
+  }
+
+  const { userId } = await getCurrentUser();
+  const { activeEnvironment } = await getCurrentEnvironment(organizationId);
+
+  if (!activeEnvironment.isOrganization) {
+    return userError('Unauthorized', UserErrorType.PermissionError);
+  }
+
+  const userRoles = await getAppliedRolesForUser(userId, organizationId);
+  const isAdmin = userRoles.some((role) => role.name === '@admin');
+  if (!isAdmin) {
+    return userError('Unauthorized', UserErrorType.PermissionError);
+  }
+
+  try {
+    const users = await db.user.findMany({
+      where: {
+        AND: [
+          { isGuest: false },
+          {
+            OR: [
+              { email: { contains: searchQuery, mode: 'insensitive' } },
+              { username: { contains: searchQuery, mode: 'insensitive' } },
+            ],
+          },
+        ],
+      },
+      take: 10,
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      profileImage: user.profileImage,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    }));
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

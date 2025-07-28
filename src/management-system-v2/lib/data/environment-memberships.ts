@@ -6,33 +6,39 @@ import { z } from 'zod';
 import { sendEmail } from '../email/mailer';
 import renderOrganizationInviteEmail from '../organization-invite-email';
 import { OrganizationEnvironment } from './environment-schema';
-import { generateInvitationToken } from '../invitation-tokens';
+import { Invitation, acceptInvitation, generateInvitationToken } from '../invitation-tokens';
 import { toCaslResource } from '../ability/caslAbility';
 import { getRoleById } from '@/lib/data/db/iam/roles';
 import { addRoleMappings, type RoleMapping } from '@/lib/data/db/iam/role-mappings';
-import { addUser, getUserByEmail, setUserPassword } from '@/lib/data/db/iam/users';
+import {
+  addUser,
+  getUserByEmail,
+  getUserByUsername,
+  setUserPassword,
+} from '@/lib/data/db/iam/users';
 import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { addMember, isMember, removeMember } from '@/lib/data/db/iam/memberships';
 import { env } from '../ms-config/env-vars';
-import { AuthenticatedUser, AuthenticatedUserSchema } from './user-schema';
+import { AuthenticatedUser, AuthenticatedUserSchema, User } from './user-schema';
 import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
 import { getRoles } from './roles';
 import { asyncMap } from '../helpers/javascriptHelpers';
-import { User } from '@prisma/client';
 
-const EmailListSchema = z.array(z.string().email());
+const EmailListSchema = z.array(
+  z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),
+);
 
 /** 30 days in ms */
 const invitationExpirationTime = 30 * 24 * 60 * 60 * 1000;
 
 export async function inviteUsersToEnvironment(
   environmentId: string,
-  invitedEmailsInput: string[],
+  invitedUsersIdentifiers: ({ email: string } | { username: string })[],
   roleIds?: string[],
 ) {
   try {
-    const invitedEmails = EmailListSchema.parse(invitedEmailsInput);
+    const invitedEmails = EmailListSchema.parse(invitedUsersIdentifiers);
 
     const { ability } = await getCurrentEnvironment(environmentId);
 
@@ -56,21 +62,44 @@ export async function inviteUsersToEnvironment(
       );
     });
 
-    for (const invitedEmail of invitedEmails) {
-      const invitedUser = await getUserByEmail(invitedEmail);
+    for (const invitedUserIdentifier of invitedEmails) {
+      let invitedUser: User | null = null;
+      let invitedUserEmail: string | null | undefined = null;
+
+      if ('email' in invitedUserIdentifier) {
+        invitedUser = await getUserByEmail(invitedUserIdentifier.email);
+      } else if ('username' in invitedUserIdentifier) {
+        invitedUser = await getUserByUsername(invitedUserIdentifier.username);
+        // If there is no user with the given username there is nothing we can do
+        if (!invitedUser) continue;
+      }
+
+      // NOTE: technically not possible as guests cannot have an email or username
+      if (invitedUser?.isGuest) continue;
+
       if (invitedUser && (await isMember(environmentId, invitedUser.id))) continue;
 
+      if (invitedUser) {
+        invitedUserEmail = invitedUser.email;
+      } else if ('email' in invitedUserIdentifier) {
+        invitedUserEmail = invitedUserIdentifier.email;
+      }
+
       const expirationDate = new Date(Date.now() + invitationExpirationTime);
+      const invite: Invitation = {
+        spaceId: environmentId,
+        roleIds: filteredRoles,
+        ...(invitedUser ? { userId: invitedUser.id } : { email: invitedUserEmail! }),
+      };
 
-      const invitationToken = generateInvitationToken(
-        {
-          spaceId: environmentId,
-          roleIds: filteredRoles,
-          ...(invitedUser ? { userId: invitedUser.id } : { email: invitedEmail }),
-        },
-        expirationDate,
-      );
+      // TODO: we need to implement a way for users that don't have an email to accept invitations,
+      // instead of just adding them to the org
+      if (!invitedUserEmail) {
+        acceptInvitation(invite);
+        continue;
+      }
 
+      const invitationToken = generateInvitationToken(invite, expirationDate);
       const invitationEmail = renderOrganizationInviteEmail({
         acceptInviteLink: `${env.NEXTAUTH_URL}/accept-invitation?token=${invitationToken}`,
         expires: expirationDate,
@@ -78,7 +107,7 @@ export async function inviteUsersToEnvironment(
       });
 
       sendEmail({
-        to: invitedEmail,
+        to: invitedUserEmail,
         html: invitationEmail.html,
         text: invitationEmail.text,
         subject: `PROCEED: you've been invited to ${organization.name}`,

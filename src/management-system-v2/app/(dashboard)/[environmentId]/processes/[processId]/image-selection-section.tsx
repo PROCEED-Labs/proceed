@@ -12,6 +12,7 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 type ImageSelectionSectionProperties = {
   imageFilePath?: string;
   onImageUpdate: (imageFilePath?: string) => void;
+  readOnly?: boolean;
 };
 
 export const fallbackImage =
@@ -20,6 +21,7 @@ export const fallbackImage =
 const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   imageFilePath: imageFileName,
   onImageUpdate,
+  readOnly = false,
 }) => {
   const { processId } = useParams();
   const { fileUrl: imageUrlfm, download: getImageURL } = useFileManager({
@@ -73,6 +75,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
               fileName: imageFileName,
             }}
             fileManagerErrorToasts={false}
+            readOnly={readOnly}
           />
         ),
       }}

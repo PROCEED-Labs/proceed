@@ -91,12 +91,14 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   /// Derived State
   const minimized = !decodeURIComponent(pathname).includes(process.id);
 
+  const isReadOnlyListView = decodeURIComponent(pathname).includes('/list/');
+
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
 
   const showMobileView = useMobileModeler();
 
-  const canEdit = !selectedVersionId && !showMobileView;
+  const canEdit = !selectedVersionId && !showMobileView && !isReadOnlyListView;
 
   const saveDebounced = useMemo(
     () =>
@@ -316,7 +318,9 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
                 versionName={versionName}
               />
             )}
-            {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
+            {selectedVersionId && !showMobileView && (
+              <VersionToolbar processId={process.id} readOnly={isReadOnlyListView} />
+            )}
             <ModelerZoombar></ModelerZoombar>
           </>
         )}

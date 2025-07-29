@@ -37,6 +37,7 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
   initialData?: T[];
   modalProps?: ModalProps;
   mode: ProcessModalMode;
+  readonly?: boolean;
 };
 
 const ProcessModal = <
@@ -58,6 +59,7 @@ const ProcessModal = <
   initialData,
   modalProps,
   mode = 'create',
+  readonly = false,
   children,
 }: React.PropsWithChildren<ProcessModalProps<T>>) => {
   const [form] = Form.useForm();
@@ -202,14 +204,14 @@ const ProcessModal = <
 
   const renderFormContent = () => {
     if (!initialData) {
-      return <ProcessInputs index={0} />;
+      return <ProcessInputs index={0} readonly={readonly} />;
     }
     if (initialData.length === 1 && mode === 'edit') {
-      return <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} />;
+      return <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} readonly={readonly} />;
     }
 
     if (initialData.length === 1 && mode === 'copy') {
-      return <ProcessInputs key={0} index={0} />;
+      return <ProcessInputs key={0} index={0} readonly={readonly} />;
     }
 
     if (initialData.length > 1 && mode === 'copy') {
@@ -217,7 +219,7 @@ const ProcessModal = <
         (initialData?.length ?? 0) > 1
           ? initialData?.map((data, index) => ({
               label: data.name,
-              children: <ProcessInputs index={index} />,
+              children: <ProcessInputs index={index} readonly={readonly} />,
             }))
           : undefined;
       return (
@@ -245,7 +247,7 @@ const ProcessModal = <
                   <Divider style={{ width: '100%', marginLeft: '-20%' }} />
                 </>
               )}
-              <ProcessInputsImport key={index} index={index} />
+              <ProcessInputsImport key={index} index={index} readonly={readonly} />
             </Card>
           ))}
         </Carousel>
@@ -272,7 +274,7 @@ const ProcessModal = <
         // IMPORTANT: This prevents a modal being stored for every row in the
         // table.
         destroyOnClose
-        okButtonProps={{ loading: submitting }}
+        okButtonProps={{ loading: submitting, style: readonly ? { display: 'none' } : {} }}
         okText={okText}
         wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}
         {...modalProps}
@@ -348,9 +350,10 @@ const ProcessModal = <
 type ProcessInputsProps = {
   index: number;
   initialName?: string;
+  readonly?: boolean;
 };
 
-const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
+const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsProps) => {
   const environment = useEnvironment();
   const session = useSession();
   const path = usePathname();
@@ -405,7 +408,7 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
           },
         ]}
       >
-        <Input />
+        <Input readOnly={readonly} />
       </Form.Item>
       <Form.Item
         name={[index, 'userDefinedId']}
@@ -418,7 +421,7 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
           },
         ]}
       >
-        <Input />
+        <Input readOnly={readonly} />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
@@ -428,16 +431,16 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
           { required: false, message: 'Please fill out the Process description' },
         ]}
       >
-        <Input.TextArea showCount rows={4} maxLength={1000} />
+        <Input.TextArea showCount rows={4} maxLength={1000} readOnly={readonly} />
       </Form.Item>
     </>
   );
 };
 
-const ProcessInputsImport = ({ index }: ProcessInputsProps) => {
+const ProcessInputsImport = ({ index, readonly = false }: ProcessInputsProps) => {
   return (
     <>
-      <ProcessInputs index={index} />
+      <ProcessInputs index={index} readonly={readonly} />
       <Form.Item name={[index, 'creator']} label="Original Creator" rules={[{ required: false }]}>
         <Input disabled />
       </Form.Item>

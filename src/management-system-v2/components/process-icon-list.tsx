@@ -24,9 +24,10 @@ type IconViewProps = {
     setSelectionElements: (action: SetStateAction<ProcessListProcess[]>) => void;
   };
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
+  isReadOnly?: boolean;
 };
 
-const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMetaData }) => {
+const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMetaData, isReadOnly = false }) => {
   const breakpoint = Grid.useBreakpoint();
   const router = useRouter();
   const space = useEnvironment();
@@ -56,8 +57,9 @@ const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMeta
       Wrapper: DraggableDiv,
       cardProps: {
         onDoubleClick: () => {
-          const url =
-            item.type === 'folder' ? `/processes/folder/${item.id}` : `/processes/${item.id}`;
+          const folderPath = isReadOnly ? `/processes/list/folder/${item.id}` : `/processes/editor/folder/${item.id}`;
+          const processPath = isReadOnly ? `/processes/list/${item.id}` : `/processes/editor/${item.id}`;
+          const url = item.type === 'folder' ? folderPath : processPath;
           router.push(spaceURL(space, url));
         },
         onContextMenu: () => {

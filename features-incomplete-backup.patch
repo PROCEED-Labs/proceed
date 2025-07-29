@@ -1,0 +1,1668 @@
+From 3bfe594ec2ba97a22f2793f5af9025c397bc3bab Mon Sep 17 00:00:00 2001
+From: Philipp S <philipp.schoenbach@smail.inf.h-brs.de>
+Date: Fri, 13 Jun 2025 00:07:23 +0200
+Subject: [PATCH] after buttons done but crashing in modeller still
+
+---
+ .vscode/extensions.json                       |   3 +
+ .../executions/deployments-modal.tsx          |   5 +
+ .../(dashboard)/[environmentId]/layout.tsx    |   6 +-
+ .../[processId]/custom-property-section.tsx   |   8 +-
+ .../[processId]/description-section.tsx       |  24 +++-
+ .../[processId]/image-selection-section.tsx   |   3 +
+ .../milestone-selection-section.tsx           |   9 +-
+ .../processes/[processId]/modeler-toolbar.tsx |  35 ++++--
+ .../processes/[processId]/modeler.tsx         |   8 +-
+ .../[processId]/planned-cost-input.tsx        |   3 +
+ .../[processId]/planned-duration-input.tsx    |   3 +
+ .../[processId]/properties-panel.tsx          |  32 ++++-
+ .../processes/[processId]/version-toolbar.tsx |   6 +-
+ .../processes/editor/[processId]/page.tsx     |   3 +
+ .../processes/editor/_loading.tsx             |  14 +++
+ .../[folderId]/not-logged-in-fallback.tsx     |  20 ++++
+ .../editor/folder/[folderId]/page.tsx         |  87 ++++++++++++++
+ .../[environmentId]/processes/editor/page.tsx |   3 +
+ .../processes/list/[processId]/page.tsx       |   3 +
+ .../processes/list/_loading.tsx               |  14 +++
+ .../[folderId]/not-logged-in-fallback.tsx     |  20 ++++
+ .../processes/list/folder/[folderId]/page.tsx |  90 ++++++++++++++
+ .../[environmentId]/processes/list/page.tsx   |   3 +
+ .../components/image-upload.tsx               |   6 +-
+ .../components/process-creation-button.tsx    |   2 +-
+ .../components/process-list.tsx               |  73 ++++++++----
+ .../components/processes/context-menu.tsx     | 110 ++++++++++++------
+ .../components/processes/index.tsx            | 103 +++++++++-------
+ .../components/processes/types.ts             |   9 +-
+ src/management-system-v2/next.config.js       |   1 +
+ 30 files changed, 571 insertions(+), 135 deletions(-)
+ create mode 100644 .vscode/extensions.json
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/[processId]/page.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/_loading.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/folder/[folderId]/not-logged-in-fallback.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/folder/[folderId]/page.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/page.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/[processId]/page.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/_loading.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/folder/[folderId]/not-logged-in-fallback.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/folder/[folderId]/page.tsx
+ create mode 100644 src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/page.tsx
+
+diff --git a/.vscode/extensions.json b/.vscode/extensions.json
+new file mode 100644
+index 00000000..1612a87f
+--- /dev/null
++++ b/.vscode/extensions.json
+@@ -0,0 +1,3 @@
++{
++  "recommendations": []
++}
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/(automation)/executions/deployments-modal.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/(automation)/executions/deployments-modal.tsx
+index e58bb4ea..9022cad6 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/(automation)/executions/deployments-modal.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/(automation)/executions/deployments-modal.tsx
+@@ -29,6 +29,7 @@ import { getAvailableSpaceEngines } from '@/lib/engines/server-actions';
+ import { SpaceEngine } from '@/lib/engines/machines';
+ import { MdOutlineComputer } from 'react-icons/md';
+ import { LeftOutlined } from '@ant-design/icons';
++import { usePathname } from 'next/navigation';
+ 
+ type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
+ export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
+@@ -263,6 +264,9 @@ const DeploymentsModal = ({
+     },
+   ];
+ 
++  const path = usePathname();
++  const processContextPath = decodeURIComponent(path);
++  const isReadOnlyListView = processContextPath.includes('/list');
+   return (
+     <Modal
+       open={open}
+@@ -361,6 +365,7 @@ const DeploymentsModal = ({
+                     process={process}
+                   />
+                 )}
++                isReadOnly={isReadOnlyListView}
+               />
+             </div>
+           )}
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/layout.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/layout.tsx
+index 8121bb7d..c2aebc56 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/layout.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/layout.tsx
+@@ -69,17 +69,17 @@ const DashboardLayout = async ({
+       let children: MenuProps['items'] = [
+         documentationSettings.list?.active !== false && {
+           key: 'processes-list',
+-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>List</Link>,
++          label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
+           icon: <CopyOutlined />,
+         },
+         documentationSettings.editor?.active !== false && {
+           key: 'processes-editor',
+-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
++          label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
+           icon: <EditOutlined />,
+         },
+         documentationSettings.templates?.active !== false && {
+           key: 'processes-templates',
+-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Templates</Link>,
++          label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
+           icon: <SnippetsOutlined />,
+         },
+       ].filter(truthyFilter);
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/custom-property-section.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/custom-property-section.tsx
+index 0e0461a6..7e292f1a 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/custom-property-section.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/custom-property-section.tsx
+@@ -11,12 +11,14 @@ type CustomPropertyFormProperties = {
+   customMetaData: { [key: string]: any };
+   initialValues: { name: string; value: string };
+   onChange: (name: string, value?: any, oldName?: string) => void;
++  readOnly?: boolean;
+ };
+ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
+   isCreationForm,
+   customMetaData,
+   onChange,
+   initialValues,
++  readOnly = false,
+ }) => {
+   const [form] = Form.useForm<{ name: string; value: any }>();
+ 
+@@ -73,6 +75,7 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
+         marginBottom: '1rem',
+         flexWrap: 'nowrap',
+       }}
++      disabled={readOnly}
+     >
+       <Space direction="vertical" size={0} style={{ flexGrow: 1 }}>
+         <Form.Item
+@@ -119,11 +122,13 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
+ type CustomPropertySectionProperties = {
+   metaData: { [key: string]: any };
+   onChange: (name: string, value: any, oldName?: string) => void;
++  readOnly?: boolean;
+ };
+ 
+ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
+   metaData,
+   onChange,
++  readOnly = false,
+ }) => {
+   const {
+     overviewImage,
+@@ -207,6 +212,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
+                 updateProperty(name, value, oldName);
+               }
+             }}
++            readOnly={readOnly}
+           ></CustomPropertyForm>
+         ))}
+       </div>
+@@ -215,7 +221,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
+           type="text"
+           size="small"
+           style={{ padding: 0, fontSize: '0.75rem' }}
+-          disabled={customProperties.length > Object.keys(customMetaData).length}
++          disabled={readOnly || customProperties.length > Object.keys(customMetaData).length}
+           icon={<PlusOutlined />}
+           onClick={() => {
+             setCustomProperties([...customProperties, { name: '', value: '' }]);
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/description-section.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/description-section.tsx
+index c8854122..cbf95d6d 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/description-section.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/description-section.tsx
+@@ -9,7 +9,10 @@ import ScrollBar from '@/components/scrollbar';
+ const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
+ const TextEditor = dynamic(() => import('@/components/text-editor'), { ssr: false });
+ 
+-const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
++const DescriptionSection: React.FC<{ selectedElement: any; readOnly?: boolean }> = ({
++  selectedElement,
++  readOnly = false,
++}) => {
+   const [description, setDescription] = useState('');
+ 
+   useEffect(() => {
+@@ -73,11 +76,19 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
+           }}
+         >
+           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+-            <EditOutlined
+-              onClick={() => {
+-                setShowPopupEditor(true);
+-              }}
+-            ></EditOutlined>
++            <Button
++              style={{ fontSize: '0.75rem' }}
++              type="text"
++              size="small"
++              icon={
++                <EditOutlined
++                  onClick={() => {
++                    setShowPopupEditor(true);
++                  }}
++                ></EditOutlined>
++              }
++              disabled={readOnly}
++            ></Button>
+           </div>
+           <ScrollBar>
+             <div
+@@ -102,6 +113,7 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
+             onClick={() => {
+               setShowPopupEditor(true);
+             }}
++            disabled={readOnly}
+           >
+             Add Description
+           </Button>
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/image-selection-section.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/image-selection-section.tsx
+index 689fb272..cdf9a3bf 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/image-selection-section.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/image-selection-section.tsx
+@@ -14,6 +14,7 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+ type ImageSelectionSectionProperties = {
+   imageFileName?: string;
+   onImageUpdate: (imageFileName?: string) => void;
++  readOnly?: boolean;
+ };
+ 
+ export const fallbackImage =
+@@ -22,6 +23,7 @@ export const fallbackImage =
+ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
+   imageFileName,
+   onImageUpdate,
++  readOnly = false,
+ }) => {
+   const { processId } = useParams();
+   const { fileUrl: imageUrlfm, download: getImageURL } = useFileManager({
+@@ -85,6 +87,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
+                 useDefaultRemoveFunction: true,
+                 fileName: imageFileName,
+               }}
++              readOnly={readOnly}
+             />
+           ),
+         }}
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/milestone-selection-section.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/milestone-selection-section.tsx
+index f6fe5b87..ce09eb4d 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/milestone-selection-section.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/milestone-selection-section.tsx
+@@ -136,9 +136,13 @@ const MilestoneDescriptionViewer: React.FC<MilestoneDescriptionViewerProperties>
+ 
+ type MilestoneSelectionProperties = {
+   selectedElement: ElementLike;
++  readOnly?: boolean;
+ };
+ 
+-const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedElement }) => {
++const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
++  selectedElement,
++  readOnly = false,
++}) => {
+   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
+   const [initialMilestoneValues, setInitialMilestoneValues] = useState<
+     | {
+@@ -239,11 +243,13 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
+                       onClick={() => {
+                         openMilestoneModal(record);
+                       }}
++                      disabled={readOnly}
+                     />
+                     <DeleteOutlined
+                       onClick={() => {
+                         removeMilestone(record.id);
+                       }}
++                      disabled={readOnly}
+                     />
+                   </Space>
+                 ),
+@@ -261,6 +267,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
+             size="small"
+             style={{ fontSize: '0.75rem' }}
+             icon={<PlusOutlined />}
++            disabled={readOnly}
+           >
+             <span>Add Milestone</span>
+           </Button>
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.tsx
+index 17cf0934..773ebbf4 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.tsx
+@@ -17,7 +17,7 @@ import { PiDownloadSimple } from 'react-icons/pi';
+ import { SvgXML } from '@/components/svg';
+ import PropertiesPanel from './properties-panel';
+ import useModelerStateStore from './use-modeler-state-store';
+-import { useRouter, useSearchParams } from 'next/navigation';
++import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+ import VersionCreationButton from '@/components/version-creation-button';
+ import useMobileModeler from '@/lib/useMobileModeler';
+ import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
+@@ -46,6 +46,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
+   const processId = process.id;
+ 
+   const router = useRouter();
++  const pathname = usePathname();
+   const environment = useEnvironment();
+   const app = App.useApp();
+   const message = app.message;
+@@ -63,6 +64,9 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
+   const query = useSearchParams();
+   const subprocessId = query.get('subprocess');
+ 
++  const processContextPath = pathname.split('/').slice(0, -1).join('/'); // Component can be used in /processes/list or /processes/editor route
++  const isReadOnlyListView = processContextPath.includes('/list');
++
+   const modeler = useModelerStateStore((state) => state.modeler);
+   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+   const selectedElement = modeler
+@@ -202,16 +206,18 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
+                 router.push(
+                   spaceURL(
+                     environment,
+-                    `/processes/${processId as string}${
++                    `${processContextPath}/${processId as string}${
+                       searchParams.size ? '?' + searchParams.toString() : ''
+                     }`,
+                   ),
+                 );
+               }}
+-              options={[LATEST_VERSION].concat(process.versions ?? []).map(({ id, name }) => ({
+-                value: id,
+-                label: name,
+-              }))}
++              options={(isReadOnlyListView ? [] : [LATEST_VERSION])
++                .concat(process.versions ?? [])
++                .map(({ id, name }) => ({
++                  value: id,
++                  label: name,
++                }))}
+             />
+             {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
+               <>
+@@ -219,6 +225,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
+                   <VersionCreationButton
+                     icon={<PlusOutlined />}
+                     createVersion={createProcessVersion}
++                    disabled={isReadOnlyListView}
+                   ></VersionCreationButton>
+                 </Tooltip>
+ 
+@@ -244,11 +251,13 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
+           <ToolbarGroup>
+             {selectedElementId &&
+               selectedElement &&
+-              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && bpmnIs(selectedElement, 'bpmn:UserTask') && (
+-                <Tooltip title="Edit User Task Form">
+-                  <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+-                </Tooltip>
+-              )) ||
++              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION &&
++                bpmnIs(selectedElement, 'bpmn:UserTask') &&
++                !isReadOnlyListView && (
++                  <Tooltip title="Edit User Task Form">
++                    <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
++                  </Tooltip>
++                )) ||
+                 (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
+                   <Tooltip title="Open Subprocess">
+                     <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
+@@ -257,7 +266,8 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
+                   </Tooltip>
+                 )) ||
+                 (env.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+-                  bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
++                  bpmnIs(selectedElement, 'bpmn:ScriptTask') &&
++                  !isReadOnlyListView && (
+                     <Tooltip title="Edit Script Task">
+                       <Button
+                         icon={<FormOutlined />}
+@@ -324,6 +334,7 @@ const ModelerToolbar = ({ process, onOpenXmlEditor, canUndo, canRedo }: ModelerT
+                 isOpen={showPropertiesPanel}
+                 close={handlePropertiesPanelToggle}
+                 selectedElement={selectedElement}
++                readOnly={isReadOnlyListView}
+               />
+             )}
+           </Space>
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/modeler.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/modeler.tsx
+index b7a59d79..9a549b7b 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/modeler.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/modeler.tsx
+@@ -92,12 +92,14 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
+   /// Derived State
+   const minimized = !decodeURIComponent(pathname).includes(process.id);
+ 
++  const isReadOnlyListView = decodeURIComponent(pathname).includes('/list/');
++
+   const selectedVersionId = query.get('version');
+   const subprocessId = query.get('subprocess');
+ 
+   const showMobileView = useMobileModeler();
+ 
+-  const canEdit = !selectedVersionId && !showMobileView;
++  const canEdit = !selectedVersionId && !showMobileView && !isReadOnlyListView;
+ 
+   const saveDebounced = useMemo(
+     () =>
+@@ -342,7 +344,9 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
+                 canUndo={canUndo}
+               />
+             )}
+-            {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
++            {selectedVersionId && !showMobileView && (
++              <VersionToolbar processId={process.id} readOnly={isReadOnlyListView} />
++            )}
+             <ModelerZoombar></ModelerZoombar>
+             {!!xmlEditorBpmn && (
+               <XmlEditor
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/planned-cost-input.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/planned-cost-input.tsx
+index 8f564dcc..f0dd8b48 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/planned-cost-input.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/planned-cost-input.tsx
+@@ -8,11 +8,13 @@ import worldCurrencies from '@/lib/worldCurrencies';
+ type PlannedCostInputProperties = {
+   costsPlanned: { value?: number; currency?: string };
+   onInput: (costsPlanned: { value?: number; currency: string }) => void;
++  readOnly?: boolean;
+ };
+ 
+ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
+   costsPlanned: { value, currency = 'EUR' },
+   onInput,
++  readOnly = false,
+ }) => {
+   const [costsPlanned, setCostsPlanned] = useState<{ value?: number; currency: string }>({
+     value,
+@@ -69,6 +71,7 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
+             }).format(costsPlanned.value)
+           : costsPlanned.value
+       }
++      disabled={readOnly}
+     />
+   );
+ };
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/planned-duration-input.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/planned-duration-input.tsx
+index 8553f84e..5c3e7d51 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/planned-duration-input.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/planned-duration-input.tsx
+@@ -112,11 +112,13 @@ export const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
+ type PlannedDurationInputProperties = {
+   timePlannedDuration: string;
+   onChange: (changedTimePlannedDuration: string) => void;
++  readOnly?: boolean;
+ };
+ 
+ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
+   timePlannedDuration,
+   onChange,
++  readOnly = false,
+ }) => {
+   const [isPlannedDurationModalOpen, setIsPlannedDurationModalOpen] = useState(false);
+ 
+@@ -160,6 +162,7 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
+         value={durationString}
+         placeholder="Planned Duration"
+         onClick={() => setIsPlannedDurationModalOpen(true)}
++        disabled={readOnly}
+       />
+       <PlannedDurationModal
+         durationValues={durationValues}
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/properties-panel.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/properties-panel.tsx
+index 78a83369..faa3ab75 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/properties-panel.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/properties-panel.tsx
+@@ -36,6 +36,7 @@ import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+ 
+ type PropertiesPanelContentProperties = {
+   selectedElement: ElementLike;
++  readOnly?: boolean;
+ };
+ 
+ export const updateMetaData = async (
+@@ -64,6 +65,7 @@ export const updateMetaData = async (
+ 
+ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+   selectedElement,
++  readOnly = false,
+ }) => {
+   const env = use(EnvVarsContext);
+   const environment = useEnvironment();
+@@ -228,6 +230,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+               value={name}
+               onChange={(e) => setName(e.target.value)}
+               onBlur={handleNameChange}
++              disabled={readOnly}
+             />
+ 
+             {selectedElement.type === 'bpmn:Process' && (
+@@ -258,13 +261,20 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+                 onImageUpdate={(imageFileName) => {
+                   updateMetaData(modeler!, selectedElement, 'overviewImage', imageFileName);
+                 }}
++                readOnly={readOnly}
+               ></ImageSelectionSection>
+             </div>
+           </Space>
+-          <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
++          <DescriptionSection
++            selectedElement={selectedElement}
++            readOnly={readOnly}
++          ></DescriptionSection>
+           {/* Responsibility */}
+           <ResponsibleParty selectedElement={selectedElement} modeler={modeler} />
+-          <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
++          <MilestoneSelectionSection
++            selectedElement={selectedElement}
++            readOnly={readOnly}
++          ></MilestoneSelectionSection>
+           <Space direction="vertical" style={{ width: '100%' }}>
+             <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
+             <PlannedCostInput
+@@ -278,6 +288,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+                   unit: currency,
+                 });
+               }}
++              readOnly={readOnly}
+             ></PlannedCostInput>
+             <PlannedDurationInput
+               onChange={(changedTimePlannedDuration) => {
+@@ -289,6 +300,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+                 );
+               }}
+               timePlannedDuration={timePlannedDuration || ''}
++              readOnly={readOnly}
+             ></PlannedDurationInput>
+           </Space>
+ 
+@@ -308,6 +320,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+                   : undefined,
+               );
+             }}
++            readOnly={readOnly}
+           ></CustomPropertySection>
+ 
+           {selectedElement.type !== 'bpmn:Process' &&
+@@ -321,6 +334,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+                     presets={colorPickerPresets}
+                     value={backgroundColor}
+                     onChange={(_, hex) => updateBackgroundColor(hex)}
++                    disabled={readOnly}
+                   />
+                   <span>Background Color</span>
+                 </Space>
+@@ -331,6 +345,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+                     presets={colorPickerPresets}
+                     value={borderColor}
+                     onChange={(_, hex) => updateBorderColor(hex)}
++                    disabled={readOnly}
+                   />
+                   <span>Border Color</span>
+                 </Space>
+@@ -343,6 +358,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+                       presets={colorPickerPresets}
+                       value={textColor}
+                       onChange={(_, hex) => updateTextColor(hex)}
++                      disabled={readOnly}
+                     />
+                     <span>Text Color</span>
+                   </Space>
+@@ -399,12 +415,14 @@ type PropertiesPanelProperties = {
+   selectedElement: ElementLike;
+   isOpen: boolean;
+   close: () => void;
++  readOnly?: boolean;
+ };
+ 
+ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
+   selectedElement,
+   isOpen,
+   close,
++  readOnly = false,
+ }) => {
+   const [showInfo, setShowInfo] = useState(true);
+ 
+@@ -439,7 +457,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
+         title="Properties"
+         collapsedWidth="40px"
+       >
+-        <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
++        <PropertiesPanelContent
++          selectedElement={selectedElement}
++          readOnly={readOnly}
++        ></PropertiesPanelContent>
+       </CollapsibleCard>
+     </ResizableElement>
+   ) : (
+@@ -462,7 +483,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
+         </div>
+       }
+     >
+-      <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
++      <PropertiesPanelContent
++        selectedElement={selectedElement}
++        readOnly={readOnly}
++      ></PropertiesPanelContent>
+     </Modal>
+   );
+ };
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/version-toolbar.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/version-toolbar.tsx
+index efc001c2..0cc04425 100644
+--- a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/version-toolbar.tsx
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/[processId]/version-toolbar.tsx
+@@ -10,9 +10,9 @@ import { copyProcesses, setVersionAsLatest } from '@/lib/data/processes';
+ import { spaceURL } from '@/lib/utils';
+ import { wrapServerCall } from '@/lib/wrap-server-call';
+ 
+-type VersionToolbarProps = { processId: string };
++type VersionToolbarProps = { processId: string; readOnly?: boolean };
+ 
+-const VersionToolbar = ({ processId }: VersionToolbarProps) => {
++const VersionToolbar = ({ processId, readOnly }: VersionToolbarProps) => {
+   const router = useRouter();
+   const query = useSearchParams();
+   const environment = useEnvironment();
+@@ -54,6 +54,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
+                   return result;
+                 }
+               }}
++              disabled={readOnly}
+             ></ProcessCreationButton>
+           </Tooltip>
+         </AuthCan>
+@@ -76,6 +77,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
+           }}
+           buttonProps={{
+             icon: <FormOutlined />,
++            disabled: readOnly,
+           }}
+         />
+       </Space.Compact>
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/[processId]/page.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/[processId]/page.tsx
+new file mode 100644
+index 00000000..8d64f6af
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/[processId]/page.tsx
+@@ -0,0 +1,3 @@
++import Page from '../../[processId]/page';
++
++export default Page;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/_loading.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/_loading.tsx
+new file mode 100644
+index 00000000..9417e4af
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/_loading.tsx
+@@ -0,0 +1,14 @@
++import Content from '@/components/content';
++import { Skeleton, Space } from 'antd';
++
++const ProcessesSkeleton = () => {
++  return (
++    <Content title="Processes">
++      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
++        <Skeleton active />
++      </Space>
++    </Content>
++  );
++};
++
++export default ProcessesSkeleton;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/folder/[folderId]/not-logged-in-fallback.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/folder/[folderId]/not-logged-in-fallback.tsx
+new file mode 100644
+index 00000000..bc81b1b5
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/folder/[folderId]/not-logged-in-fallback.tsx
+@@ -0,0 +1,20 @@
++'use client';
++
++import { Button, Result } from 'antd';
++import { signIn } from 'next-auth/react';
++import { LoginOutlined } from '@ant-design/icons';
++
++const NotLoggedInFallback = () => (
++  <Result
++    status="403"
++    title="You're not logged in"
++    subTitle="Sorry, you have to be logged in to use the app"
++    extra={
++      <Button type="primary" icon={<LoginOutlined />} onClick={() => signIn()}>
++        Login
++      </Button>
++    }
++  />
++);
++
++export default NotLoggedInFallback;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/folder/[folderId]/page.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/folder/[folderId]/page.tsx
+new file mode 100644
+index 00000000..9d09aefe
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/folder/[folderId]/page.tsx
+@@ -0,0 +1,87 @@
++import Processes from '@/components/processes';
++import Content from '@/components/content';
++import { Button, Space } from 'antd';
++import { getCurrentEnvironment } from '@/components/auth';
++// This is a workaround to enable the Server Actions in that file to return any
++// client components. This is not possible with the current nextjs compiler
++// otherwise. It might be possible in the future with turbopack without this
++// import.
++import '@/lib/data/processes';
++import { getUsersFavourites } from '@/lib/data/users';
++import { ProcessMetadata } from '@/lib/data/process-schema';
++import { Folder } from '@/lib/data/folder-schema';
++import Link from 'next/link';
++import { LeftOutlined } from '@ant-design/icons';
++import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
++import { ComponentProps } from 'react';
++import { spaceURL } from '@/lib/utils';
++import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
++export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
++
++const ProcessesPage = async ({
++  params,
++}: {
++  params: { environmentId: string; folderId?: string };
++}) => {
++  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
++
++  const favs = await getUsersFavourites();
++
++  const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
++
++  const folder = await getFolderById(
++    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
++  );
++
++  const folderContents = await getFolderContents(folder.id, ability);
++
++  const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
++  const wrappingFolderIds = [] as string[];
++  let currentFolder: Folder | null = folder;
++  do {
++    pathToFolder.push({
++      title: (
++        <Link href={spaceURL(activeEnvironment, `/processes/editor/folder/${currentFolder.id}`)}>
++          {currentFolder.parentId ? currentFolder.name : 'Processes'}
++        </Link>
++      ),
++    });
++    if (currentFolder) wrappingFolderIds.push(currentFolder.id);
++    currentFolder = currentFolder.parentId ? await getFolderById(currentFolder.parentId) : null;
++  } while (currentFolder);
++  pathToFolder.reverse();
++  wrappingFolderIds.reverse();
++
++  return (
++    <>
++      <Content
++        title={
++          <Space>
++            {folder.parentId && (
++              <Link
++                href={spaceURL(activeEnvironment, `/processes/editor/folder/${folder.parentId}`)}
++              >
++                <Button icon={<LeftOutlined />} type="text">
++                  Back
++                </Button>
++              </Link>
++            )}
++            <EllipsisBreadcrumb keepInBack={2} keepInFront={2} items={pathToFolder} />
++          </Space>
++        }
++      >
++        <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
++          <Processes
++            rootFolder={rootFolder}
++            processes={folderContents}
++            favourites={favs as string[]}
++            folder={folder}
++            pathToFolder={wrappingFolderIds}
++          />
++        </Space>
++      </Content>
++    </>
++  );
++};
++
++export default ProcessesPage;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/page.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/page.tsx
+new file mode 100644
+index 00000000..aff1475f
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/editor/page.tsx
+@@ -0,0 +1,3 @@
++import Page from './folder/[folderId]/page';
++
++export default Page;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/[processId]/page.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/[processId]/page.tsx
+new file mode 100644
+index 00000000..cac5c6fb
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/[processId]/page.tsx
+@@ -0,0 +1,3 @@
++import Page from '../../[processId]/page';
++
++export default Page;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/_loading.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/_loading.tsx
+new file mode 100644
+index 00000000..9417e4af
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/_loading.tsx
+@@ -0,0 +1,14 @@
++import Content from '@/components/content';
++import { Skeleton, Space } from 'antd';
++
++const ProcessesSkeleton = () => {
++  return (
++    <Content title="Processes">
++      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
++        <Skeleton active />
++      </Space>
++    </Content>
++  );
++};
++
++export default ProcessesSkeleton;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/folder/[folderId]/not-logged-in-fallback.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/folder/[folderId]/not-logged-in-fallback.tsx
+new file mode 100644
+index 00000000..c7a2e12a
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/folder/[folderId]/not-logged-in-fallback.tsx
+@@ -0,0 +1,20 @@
++'use client';
++
++import { Button, Result } from 'antd';
++import { signIn } from 'next-auth/react';
++import { LoginOutlined } from '@ant-design/icons';
++
++const NotLoggedInFallback = () => (
++  <Result
++    status="403"
++    title="You're not logged in"
++    subTitle="Sorry, you have to be logged in to use the app"
++    extra={
++      <Button type="primary" icon={<LoginOutlined />} onClick={() => signIn()}>
++        Login
++      </Button>
++    }
++  />
++);
++
++export default NotLoggedInFallback;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/folder/[folderId]/page.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/folder/[folderId]/page.tsx
+new file mode 100644
+index 00000000..fbdc14df
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/folder/[folderId]/page.tsx
+@@ -0,0 +1,90 @@
++import Processes from '@/components/processes';
++import Content from '@/components/content';
++import { Button, Space } from 'antd';
++import { getCurrentEnvironment } from '@/components/auth';
++// This is a workaround to enable the Server Actions in that file to return any
++// client components. This is not possible with the current nextjs compiler
++// otherwise. It might be possible in the future with turbopack without this
++// import.
++import '@/lib/data/processes';
++import { getUsersFavourites } from '@/lib/data/users';
++import { ProcessMetadata } from '@/lib/data/process-schema';
++import { Folder } from '@/lib/data/folder-schema';
++import Link from 'next/link';
++import { LeftOutlined } from '@ant-design/icons';
++import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
++import { ComponentProps } from 'react';
++import { spaceURL } from '@/lib/utils';
++import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
++export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
++
++const ProcessesPage = async ({
++  params,
++}: {
++  params: { environmentId: string; folderId?: string };
++}) => {
++  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
++
++  const favs = await getUsersFavourites();
++
++  const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
++
++  const folder = await getFolderById(
++    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
++  );
++
++  const folderContents = await getFolderContents(folder.id, ability);
++
++  const folderContentsWithoutVersionlessProcesses = folderContents.filter(
++    (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
++  );
++
++  const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
++  const wrappingFolderIds = [] as string[];
++  let currentFolder: Folder | null = folder;
++  do {
++    pathToFolder.push({
++      title: (
++        <Link href={spaceURL(activeEnvironment, `/processes/list/folder/${currentFolder.id}`)}>
++          {currentFolder.parentId ? currentFolder.name : 'Processes'}
++        </Link>
++      ),
++    });
++    if (currentFolder) wrappingFolderIds.push(currentFolder.id);
++    currentFolder = currentFolder.parentId ? await getFolderById(currentFolder.parentId) : null;
++  } while (currentFolder);
++  pathToFolder.reverse();
++  wrappingFolderIds.reverse();
++
++  return (
++    <>
++      <Content
++        title={
++          <Space>
++            {folder.parentId && (
++              <Link href={spaceURL(activeEnvironment, `/processes/list/folder/${folder.parentId}`)}>
++                <Button icon={<LeftOutlined />} type="text">
++                  Back
++                </Button>
++              </Link>
++            )}
++            <EllipsisBreadcrumb keepInBack={2} keepInFront={2} items={pathToFolder} />
++          </Space>
++        }
++      >
++        <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
++          <Processes
++            readOnly
++            rootFolder={rootFolder}
++            processes={folderContentsWithoutVersionlessProcesses}
++            favourites={favs as string[]}
++            folder={folder}
++            pathToFolder={wrappingFolderIds}
++          />
++        </Space>
++      </Content>
++    </>
++  );
++};
++
++export default ProcessesPage;
+diff --git a/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/page.tsx b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/page.tsx
+new file mode 100644
+index 00000000..aff1475f
+--- /dev/null
++++ b/src/management-system-v2/app/(dashboard)/[environmentId]/processes/list/page.tsx
+@@ -0,0 +1,3 @@
++import Page from './folder/[folderId]/page';
++
++export default Page;
+diff --git a/src/management-system-v2/components/image-upload.tsx b/src/management-system-v2/components/image-upload.tsx
+index 0c8f5792..5bb501e2 100644
+--- a/src/management-system-v2/components/image-upload.tsx
++++ b/src/management-system-v2/components/image-upload.tsx
+@@ -23,6 +23,7 @@ interface ImageUploadProps {
+     useDefaultRemoveFunction: boolean; //set true if delete should be automatically handled by file maanger
+     fileName?: string;
+   };
++  readOnly?: boolean;
+ }
+ 
+ const ImageUpload: React.FC<ImageUploadProps> = ({
+@@ -32,6 +33,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
+   onReload,
+   endpoints,
+   config,
++  readOnly = false,
+ }) => {
+   const { upload, remove, replace } = useFileManager({ entityType: config.entityType });
+ 
+@@ -119,8 +121,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
+             onUploadFail?.();
+           }
+         }}
++        disabled={readOnly}
+       >
+-        <Button type="default" ghost>
++        <Button type="default" ghost disabled={readOnly}>
+           {imageExists ? <EditOutlined /> : 'Add Image'}
+         </Button>
+       </Upload>
+@@ -146,6 +149,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
+           }}
+           type="default"
+           ghost
++          disabled={readOnly}
+         >
+           <DeleteOutlined />
+         </Button>
+diff --git a/src/management-system-v2/components/process-creation-button.tsx b/src/management-system-v2/components/process-creation-button.tsx
+index c0fb8276..ec0cbd22 100644
+--- a/src/management-system-v2/components/process-creation-button.tsx
++++ b/src/management-system-v2/components/process-creation-button.tsx
+@@ -40,7 +40,7 @@ export const ProcessCreationModal: React.FC<
+     setOpen(false);
+ 
+     if (process && 'id' in process) {
+-      router.push(spaceURL(environment, `/processes/${process.id}`));
++      router.push(spaceURL(environment, `/processes/editor/${process.id}`));
+     } else {
+       router.refresh();
+     }
+diff --git a/src/management-system-v2/components/process-list.tsx b/src/management-system-v2/components/process-list.tsx
+index bd89c54f..f780c760 100644
+--- a/src/management-system-v2/components/process-list.tsx
++++ b/src/management-system-v2/components/process-list.tsx
+@@ -29,9 +29,9 @@ import {
+   ShareAltOutlined,
+ } from '@ant-design/icons';
+ import styles from './item-list-view.module.scss';
+-import { generateDateString, generateTableDateString } from '@/lib/utils';
++import { generateDateString, generateTableDateString, spaceURL } from '@/lib/utils';
+ import { useUserPreferences } from '@/lib/user-preferences';
+-import { AuthCan } from '@/components/auth-can';
++import { AuthCan, useEnvironment } from '@/components/auth-can';
+ import { ProcessListProcess, RowActions } from './processes/types';
+ import { Folder } from '@/lib/data/folder-schema';
+ import ElementList from './item-list-view';
+@@ -47,6 +47,9 @@ import { PiNotePencil } from 'react-icons/pi';
+ import { LuNotebookPen } from 'react-icons/lu';
+ import { BsFileEarmarkCheck } from 'react-icons/bs';
+ import usePotentialOwnerStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-potentialOwner-store';
++import { usePathname } from 'next/navigation';
++import { useRouter } from 'next/navigation';
++import { isReadable } from 'stream';
+ 
+ /** respects sorting function, but always keeps folders at the beginning */
+ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
+@@ -113,6 +116,7 @@ type BaseProcessListProps = PropsWithChildren<{
+   columnCustomRenderer?: {
+     [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => JSX.Element;
+   };
++  isReadOnly: boolean;
+ }>;
+ 
+ const BaseProcessList: FC<BaseProcessListProps> = ({
+@@ -121,6 +125,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
+   elementSelection,
+   onExportProcess = () => {},
+   tableProps,
++  isReadOnly,
+   processActions: { viewDocumentation, openEditor, changeMetaData, releaseProcess, share } = {
+     viewDocumentation: () => {},
+     openEditor: () => {},
+@@ -212,25 +217,45 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
+                 icon={<GrDocumentUser />}
+                 view
+               />
+-              <ActionButton
+-                title={'Open Editor'}
+-                action={openEditor}
+-                icon={<PiNotePencil />}
+-                update
+-              />
+-              <ActionButton
+-                title={'Change Meta Data'}
+-                action={changeMetaData}
+-                icon={<LuNotebookPen />}
+-                update
+-              />
+-              <ActionButton
+-                title={'Release Process'}
+-                action={releaseProcess}
+-                icon={<BsFileEarmarkCheck />}
+-                update
+-              />
+-              <ActionButton title={'Share'} action={share} icon={<ShareAltOutlined />} update />
++              {isReadOnly ? (
++                <ActionButton
++                  title={'Open Viewer'}
++                  action={openEditor}
++                  icon={<PiNotePencil />}
++                  view
++                />
++              ) : (
++                <ActionButton
++                  title={'Open Editor'}
++                  action={openEditor}
++                  icon={<PiNotePencil />}
++                  update
++                />
++              )}
++              {isReadOnly ? (
++                <ActionButton
++                  title={'Show Meta Data'}
++                  action={changeMetaData}
++                  icon={<LuNotebookPen />}
++                  view
++                />
++              ) : (
++                <ActionButton
++                  title={'Change Meta Data'}
++                  action={changeMetaData}
++                  icon={<LuNotebookPen />}
++                  update
++                />
++              )}
++              {!isReadOnly && (
++                <ActionButton
++                  title={'Release Process'}
++                  action={releaseProcess}
++                  icon={<BsFileEarmarkCheck />}
++                  update
++                />
++              )}
++              <ActionButton title={'Share'} action={share} icon={<ShareAltOutlined />} view />
+             </>
+           )}
+         </>
+@@ -465,6 +490,7 @@ type ProcessManagementListProps = PropsWithChildren<{
+   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
+   onExportProcess: (process: ProcessListProcess) => void;
+   processActions: RowActions;
++  isReadOnly: boolean;
+ }>;
+ 
+ const ProcessManagementList: FC<ProcessManagementListProps> = ({
+@@ -476,6 +502,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
+   onExportProcess,
+   processActions,
+   setShowMobileMetaData,
++  isReadOnly,
+ }) => {
+   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
+ 
+@@ -515,6 +542,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
+           },
+         },
+       }}
++      isReadOnly={isReadOnly}
+     ></BaseProcessList>
+   );
+ };
+@@ -524,6 +552,7 @@ type ProcessDeploymentListProps = PropsWithChildren<{
+   folder: Folder;
+   openFolder: (id: string) => void;
+   deploymentButtons: (additionalProps: { process: ProcessListProcess }) => ReactElement;
++  isReadOnly: boolean;
+ }>;
+ 
+ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
+@@ -531,6 +560,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
+   folder,
+   openFolder,
+   deploymentButtons,
++  isReadOnly,
+ }) => {
+   const breakpoint = Grid.useBreakpoint();
+ 
+@@ -591,6 +621,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
+           return record.type !== 'folder' ? <>{deploymentButtons({ process: record })}</> : <></>;
+         },
+       }}
++      isReadOnly={isReadOnly}
+     ></BaseProcessList>
+   );
+ };
+diff --git a/src/management-system-v2/components/processes/context-menu.tsx b/src/management-system-v2/components/processes/context-menu.tsx
+index 692c1111..c65d2ebd 100644
+--- a/src/management-system-v2/components/processes/context-menu.tsx
++++ b/src/management-system-v2/components/processes/context-menu.tsx
+@@ -34,6 +34,7 @@ const ContextMenuArea: FC<
+   children,
+   processActions: {
+     viewDocumentation,
++    openViewer,
+     changeMetaData,
+     releaseProcess,
+     share,
+@@ -54,11 +55,10 @@ const ContextMenuArea: FC<
+   if (selectedContextMenuItems.length > 0) {
+     const children: MenuProps['items'] = [];
+ 
+-    // Options when right clicking a single process that can be edited
++    // Options when right clicking a single process
+     if (
+       selectedContextMenuItems.length === 1 &&
+-      selectedContextMenuItems[0].type == 'process' &&
+-      canDoActionOnResource(selectedContextMenuItems, 'update', ability)
++      selectedContextMenuItems[0].type == 'process'
+     ) {
+       children.push(
+         {
+@@ -67,41 +67,73 @@ const ContextMenuArea: FC<
+           label: <>View Process Documentation</>,
+           onClick: () => viewDocumentation(selectedContextMenuItems[0]),
+         },
+-        {
+-          key: 'open-selected',
+-          icon: <PiNotePencil />,
+-          label: (
+-            <SpaceLink href={`/processes/${selectedContextMenuItems[0].id}`}>Open Editor</SpaceLink>
+-          ),
+-        },
+-        {
+-          key: 'open-selected-new-tab',
+-          icon: <IoOpenOutline />,
+-          label: (
+-            <SpaceLink href={`/processes/${selectedContextMenuItems[0].id}`} target="_blank">
+-              Open Editor in new Tab
+-            </SpaceLink>
+-          ),
+-        },
++      );
++
++      // Add openViewer or openEditor based on read-only mode
++      if (openViewer) {
++        children.push(
++          {
++            key: 'open-selected',
++            icon: <PiNotePencil />,
++            label: 'Open Viewer',
++            onClick: () => openViewer(selectedContextMenuItems[0]),
++          },
++          {
++            key: 'open-selected-new-tab',
++            icon: <IoOpenOutline />,
++            label: (
++              <SpaceLink href={`/processes/list/${selectedContextMenuItems[0].id}`} target="_blank">
++                Open Viewer in new Tab
++              </SpaceLink>
++            ),
++          },
++        );
++      } else {
++        children.push(
++          {
++            key: 'open-selected',
++            icon: <PiNotePencil />,
++            label: (
++              <SpaceLink href={`/processes/editor/${selectedContextMenuItems[0].id}`}>Open Editor</SpaceLink>
++            ),
++          },
++          {
++            key: 'open-selected-new-tab',
++            icon: <IoOpenOutline />,
++            label: (
++              <SpaceLink href={`/processes/editor/${selectedContextMenuItems[0].id}`} target="_blank">
++                Open Editor in new Tab
++              </SpaceLink>
++            ),
++          },
++        );
++      }
++
++      children.push(
+         {
+           key: 'change-meta-data',
+           icon: <LuNotebookPen />,
+-          label: 'Change Meta Data',
++          label: openViewer ? 'Show Meta Data' : 'Change Meta Data',
+           onClick: () => changeMetaData(selectedContextMenuItems[0]),
+         },
+-        {
++      );
++
++      // Only show release process in edit mode
++      if (releaseProcess) {
++        children.push({
+           key: 'release-process',
+           icon: <BsFileEarmarkCheck />,
+           label: 'Release Process',
+           onClick: () => releaseProcess(selectedContextMenuItems[0]),
+-        },
+-        {
+-          key: 'share',
+-          icon: <ShareAltOutlined />,
+-          label: 'Share',
+-          onClick: () => share(selectedContextMenuItems[0]),
+-        },
+-      );
++        });
++      }
++
++      children.push({
++        key: 'share',
++        icon: <ShareAltOutlined />,
++        label: 'Share',
++        onClick: () => share(selectedContextMenuItems[0]),
++      });
+     }
+ 
+     // Options when right clicking a process when at least one non-folder item is selected and
+@@ -110,12 +142,14 @@ const ContextMenuArea: FC<
+       selectedContextMenuItems.find((item) => item.type !== 'folder') &&
+       ability.can('create', 'Process')
+     ) {
+-      children.push({
+-        key: 'copy-selected',
+-        label: 'Copy',
+-        icon: <IoMdCopy />,
+-        onClick: () => copyItem(selectedContextMenuItems),
+-      });
++      if (copyItem) {
++        children.push({
++          key: 'copy-selected',
++          label: 'Copy',
++          icon: <IoMdCopy />,
++          onClick: () => copyItem(selectedContextMenuItems),
++        });
++      }
+       children.push({
+         key: 'export-selected',
+         label: 'Download',
+@@ -125,20 +159,22 @@ const ContextMenuArea: FC<
+     }
+ 
+     // Options when the right clicked item(s) can be updated
+-    if (canDoActionOnResource(selectedContextMenuItems, 'update', ability))
++    if (canDoActionOnResource(selectedContextMenuItems, 'update', ability) && moveItems) {
+       children.push({
+         key: 'move-selected',
+         label: 'Move to Folder',
+         icon: <RiFolderTransferLine />,
+         onClick: () => moveItems(selectedContextMenuItems),
+       });
+-    if (canDoActionOnResource(selectedContextMenuItems, 'delete', ability))
++    }
++    if (canDoActionOnResource(selectedContextMenuItems, 'delete', ability) && deleteItems) {
+       children.push({
+         key: 'delete-selected',
+         label: 'Delete',
+         icon: <DeleteOutlined />,
+         onClick: () => deleteItems(selectedContextMenuItems),
+       });
++    }
+ 
+     // Options that should always be shown
+     contextMenuItems.push(
+diff --git a/src/management-system-v2/components/processes/index.tsx b/src/management-system-v2/components/processes/index.tsx
+index 0206a225..c53ab672 100644
+--- a/src/management-system-v2/components/processes/index.tsx
++++ b/src/management-system-v2/components/processes/index.tsx
+@@ -26,7 +26,7 @@ import {
+   Typography,
+ } from 'antd';
+ 
+-import { ComponentProps, useRef, useState, useTransition } from 'react';
++import { ComponentProps, ReactNode, useRef, useState, useTransition } from 'react';
+ import {
+   DeleteOutlined,
+   UnorderedListOutlined,
+@@ -158,15 +158,19 @@ const Processes = ({
+   useInitialiseFavourites(favs);
+   const { removeIfPresent: removeFromFavouriteProcesses } = useFavouritesStore();
+ 
++  const path = usePathname();
++  const processContextPath = decodeURIComponent(path); // Component can be used in /processes/list or /processes/editor route
++  const isReadOnlyListView = processContextPath.includes('/list');
++
+   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
+   const selectedRowKeys = selectedRowElements.map((element) => element.id);
+   const canDeleteSelected =
+     !!selectedRowElements.length &&
+     canDoActionOnResource(selectedRowElements, 'delete', ability) &&
+-    !readOnly;
+-  const canCreateProcess = ability.can('create', 'Process') && !readOnly;
++    !isReadOnlyListView;
++  const canCreateProcess = ability.can('create', 'Process') && !isReadOnlyListView;
+   const canEditSelected =
+-    canDoActionOnResource(selectedRowElements, 'update', ability) && !readOnly;
++    canDoActionOnResource(selectedRowElements, 'update', ability) && !isReadOnlyListView;
+ 
+   const addPreferences = useUserPreferences.use.addPreferences();
+   const iconView = useUserPreferences.use['icon-view-in-process-list']();
+@@ -209,7 +213,6 @@ const Processes = ({
+     transformData: (matches) => matches.map((match) => match.item),
+   });
+ 
+-  const path = usePathname();
+   const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
+ 
+   // Folders on top
+@@ -234,32 +237,32 @@ const Processes = ({
+     'process-list',
+     'del',
+     () => {
+-      if (canDeleteSelected) {
++      if (canDeleteSelected && !isReadOnlyListView) {
+         setOpenDeleteModal(true);
+         /* Clear copy selection */
+         setCopySelection([]);
+       }
+     },
+-    { dependencies: [canDeleteSelected] },
++    { dependencies: [canDeleteSelected, isReadOnlyListView] },
+   );
+   useAddControlCallback(
+     'process-list',
+     'copy',
+     () => {
+-      setCopySelection(selectedRowElements);
++      if (!isReadOnlyListView) setCopySelection(selectedRowElements);
+     },
+-    { dependencies: [selectedRowElements] },
++    { dependencies: [selectedRowElements, isReadOnlyListView] },
+   );
+ 
+   useAddControlCallback(
+     'process-list',
+     'paste',
+     () => {
+-      if (copySelection.length) {
++      if (copySelection.length && !isReadOnlyListView) {
+         setOpenCopyModal(true);
+       }
+     },
+-    { dependencies: [copySelection] },
++    { dependencies: [copySelection, isReadOnlyListView] },
+   );
+   useAddControlCallback(
+     'process-list',
+@@ -317,7 +320,7 @@ const Processes = ({
+     });
+ 
+   const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
+-    if (!values) return;
++    if (isReadOnlyListView || !values) return;
+ 
+     startUpdatingFolderTransition(async () => {
+       await wrapServerCall({
+@@ -371,17 +374,20 @@ const Processes = ({
+   }
+ 
+   function copyItem(items: ProcessListProcess[]) {
++    if (isReadOnlyListView) return;
+     setOpenCopyModal(true);
+     setCopySelection(items);
+   }
+ 
+   function closeCopyModal() {
++    if (isReadOnlyListView) return;
+     setOpenCopyModal(false);
+     setCopyTargetFolderId(folder.id);
+     setCopyExpandedTreeNodeIds(pathToFolder);
+   }
+ 
+   function editItem(item: ProcessListProcess) {
++    if (isReadOnlyListView) return;
+     if (item.type === 'folder') {
+       const folder = processes.find((process) => process.id === item.id) as Folder;
+       setUpdateFolderModal(folder);
+@@ -392,6 +398,7 @@ const Processes = ({
+   }
+ 
+   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
++    if (isReadOnlyListView) return;
+     startMovingItemTransition(async () => {
+       await wrapServerCall({
+         fn: async () => {
+@@ -430,7 +437,8 @@ const Processes = ({
+   };
+ 
+   const openEditor = (item: ProcessListProcess) => {
+-    const url = spaceURL(space, `/processes/${item.id}`);
++    const urlPath = isReadOnlyListView ? `/processes/list/${item.id}` : `/processes/editor/${item.id}`;
++    const url = spaceURL(space, urlPath);
+     router.push(url);
+   };
+ 
+@@ -439,6 +447,7 @@ const Processes = ({
+   };
+ 
+   const releaseProcess = (item: ProcessListProcess) => {
++    if (isReadOnlyListView) return;
+     setRowClickedProcess(item.id);
+     setOpenVersionModal(true);
+   };
+@@ -448,6 +457,7 @@ const Processes = ({
+     versionDescription: string;
+     processId?: string;
+   }) => {
++    if (isReadOnlyListView) return;
+     await createVersion(
+       values.versionName,
+       values.versionDescription,
+@@ -463,12 +473,14 @@ const Processes = ({
+   };
+ 
+   const openMoveModal = (items: ProcessListProcess[]) => {
++    if (isReadOnlyListView) return;
+     setElementsToMove(items);
+     setMoveTargetFolderId(rootFolder?.id);
+     setOpenFolderMoveModal(true);
+   };
+ 
+   const closeFolderMoveModal = () => {
++    if (isReadOnlyListView) return;
+     setMoveTargetFolderId(undefined);
+     setOpenFolderMoveModal(false);
+   };
+@@ -483,20 +495,23 @@ const Processes = ({
+ 
+   const contextActions: ContextActions = {
+     viewDocumentation,
++    openViewer: openEditor,
+     changeMetaData,
+-    releaseProcess,
++    releaseProcess: isReadOnlyListView ? undefined : releaseProcess,
+     share,
+     exportProcess: (items) => {
+       setSelectedRowElements(items);
+       setExportModalTab('bpmn');
+       setOpenExportModal(true);
+     },
+-    moveItems: openMoveModal,
+-    copyItems: copyItem,
+-    deleteItems: (items) => {
+-      setSelectedRowElements(items);
+-      setOpenDeleteModal(true);
+-    },
++    moveItems: isReadOnlyListView ? undefined : openMoveModal,
++    copyItems: isReadOnlyListView ? undefined : copyItem,
++    deleteItems: isReadOnlyListView
++      ? undefined
++      : (items) => {
++          setSelectedRowElements(items);
++          setOpenDeleteModal(true);
++        },
+   };
+ 
+   // Here all the loading states should be ORed together
+@@ -519,7 +534,7 @@ const Processes = ({
+               leftNode={
+                 <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+-                    {!breakpoint.xs && !readOnly && (
++                    {!breakpoint.xs && !isReadOnlyListView && (
+                       <Space>
+                         <Dropdown.Button
+                           menu={{
+@@ -560,38 +575,41 @@ const Processes = ({
+                                   }}
+                                 />
+                               </Tooltip>
+-                              <Tooltip placement="top" title={'Open Editor'}>
++                              <Tooltip placement="top" title={isReadOnlyListView ? 'Open Viewer' : 'Open Editor'}>
+                                 <Button
+                                   type="text"
+                                   icon={<PiNotePencil className={styles.Icon} />}
+                                   onClick={() => {
+-                                    const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
+-                                    router.push(url);
++                                    openEditor(selectedRowElements[0]);
+                                   }}
+                                 />
+                               </Tooltip>
+-                              <Tooltip placement="top" title={'Open Editor in new Tab'}>
++                              <Tooltip placement="top" title={isReadOnlyListView ? 'Open Viewer in new Tab' : 'Open Editor in new Tab'}>
+                                 <Button
+                                   type="text"
+                                   icon={<IoOpenOutline className={styles.Icon} />}
+                                   onClick={() => {
+-                                    const url = spaceURL(space, `/processes/${selectedRowKeys[0]}`);
++                                    const urlPath = isReadOnlyListView
++                                      ? `/processes/list/${selectedRowKeys[0]}`
++                                      : `/processes/editor/${selectedRowKeys[0]}`;
++                                    const url = spaceURL(space, urlPath);
+                                     window.open(url, '_blank');
+                                   }}
+                                 />
+                               </Tooltip>
+-                              {canEditSelected && (
+-                                <Tooltip placement="top" title={'Change Meta Data'}>
+-                                  <Button
+-                                    type="text"
+-                                    icon={<LuNotebookPen className={styles.Icon} />}
+-                                    onClick={() => {
+-                                      editItem(selectedRowElements[0]);
+-                                    }}
+-                                  />
+-                                </Tooltip>
+-                              )}
+-                              {canCreateProcess && (
++                              <Tooltip
++                                placement="top"
++                                title={isReadOnlyListView ? 'Show Meta Data' : 'Change Meta Data'}
++                              >
++                                <Button
++                                  type="text"
++                                  icon={<LuNotebookPen className={styles.Icon} />}
++                                  onClick={() => {
++                                    editItem(selectedRowElements[0]);
++                                  }}
++                                />
++                              </Tooltip>
++                              {!isReadOnlyListView && canCreateProcess && (
+                                 <Tooltip placement="top" title={'Release Process'}>
+                                   <VersionCreationButton
+                                     type="text"
+@@ -603,7 +621,7 @@ const Processes = ({
+                             </div>
+                           )}
+ 
+-                        {!readOnly && (
++                        {!isReadOnlyListView && (
+                           <div>
+                             {canEditSelected && (
+                               <Tooltip placement="top" title={'Move to Folder'}>
+@@ -775,6 +793,7 @@ const Processes = ({
+                     }}
+                   >
+                     <ProcessList
++                      isReadOnly={isReadOnlyListView}
+                       data={filteredData}
+                       folder={folder}
+                       selection={selectedRowKeys}
+@@ -876,7 +895,11 @@ const Processes = ({
+       <ProcessModal
+         open={openEditModal}
+         mode="edit"
+-        title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
++        title={
++          isReadOnlyListView
++            ? 'View Process Meta Data'
++            : `Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`
++        }
+         onCancel={() => setOpenEditModal(false)}
+         initialData={filteredData
+           .filter((process) => selectedRowKeys.includes(process.id))
+diff --git a/src/management-system-v2/components/processes/types.ts b/src/management-system-v2/components/processes/types.ts
+index 678fa6e1..f1327e94 100644
+--- a/src/management-system-v2/components/processes/types.ts
++++ b/src/management-system-v2/components/processes/types.ts
+@@ -18,14 +18,15 @@ export type ProcessActions = {
+ 
+ export type ContextActions = {
+   viewDocumentation: (item: ProcessListProcess) => void;
++  openViewer?: (item: ProcessListProcess) => void;
+   changeMetaData: (item: ProcessListProcess) => void;
+-  releaseProcess: (item: ProcessListProcess) => void;
++  releaseProcess?: (item: ProcessListProcess) => void;
+   share: (item: ProcessListProcess) => void;
+   // Download,
+   exportProcess: (items: ProcessListProcess[]) => void;
+-  moveItems: (items: ProcessListProcess[]) => void;
+-  copyItems: (items: ProcessListProcess[]) => void;
+-  deleteItems: (items: ProcessListProcess[]) => void;
++  moveItems?: (items: ProcessListProcess[]) => void;
++  copyItems?: (items: ProcessListProcess[]) => void;
++  deleteItems?: (items: ProcessListProcess[]) => void;
+ };
+ 
+ export type RowActions = {
+diff --git a/src/management-system-v2/next.config.js b/src/management-system-v2/next.config.js
+index 0c3dbe48..4ae4c851 100644
+--- a/src/management-system-v2/next.config.js
++++ b/src/management-system-v2/next.config.js
+@@ -52,6 +52,7 @@ const nextConfig = {
+   rewrites: async () => {
+     return [
+       'processes',
++      'templates',
+       'spaces',
+       'executions',
+       'engines',
+-- 
+2.34.1
+

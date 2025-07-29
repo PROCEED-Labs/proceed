@@ -10,20 +10,41 @@ import { getProcessBPMN } from '@/lib/data/processes';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { RoleType, UserType } from './use-potentialOwner-store';
 import type { Process } from '@/lib/data/process-schema';
+import { redirect } from 'next/navigation';
+import { spaceURL } from '@/lib/utils';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
   searchParams: { version?: string };
+  isListView?: boolean;
 };
 
-const Process = async ({ params: { processId, environmentId }, searchParams }: ProcessProps) => {
+const Process = async ({
+  params: { processId, environmentId },
+  searchParams,
+  isListView,
+}: ProcessProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   //console.log('processId', processId);
   //console.log('query', searchParams);
-  const selectedVersionId = searchParams.version ? searchParams.version : undefined;
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-  // Only load bpmn if no version selected.
+
+  // For list view: load metadata first to check for redirect
+  if (isListView) {
+    const processMetadata = await getProcess(processId, false);
+
+    // If no version specified but released versions exist, redirect to last released version
+    if (!searchParams.version && processMetadata.versions.length > 0) {
+      const lastVersionId = processMetadata.versions[processMetadata.versions.length - 1].id;
+      const currentPath = `/processes/list/${processId}`;
+      const redirectUrl = spaceURL(activeEnvironment, `${currentPath}?version=${lastVersionId}`);
+      redirect(redirectUrl);
+    }
+  }
+
+  const selectedVersionId = searchParams.version;
+  // Only load BPMN if no version selected (for latest version)
   const process = await getProcess(processId, !selectedVersionId);
   const processes = await getProcesses(activeEnvironment.spaceId, ability, false);
 

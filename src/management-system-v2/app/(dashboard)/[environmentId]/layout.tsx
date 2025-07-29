@@ -71,6 +71,7 @@ const DashboardLayout = async ({
   );
   const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks || [];
   const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
+  const middleCustomNavLinks = customNavLinks.filter((link) => link.position === 'middle');
   const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');
 
   const userPassword = await getUserPassword(user!.id);
@@ -273,14 +274,14 @@ const DashboardLayout = async ({
     });
   }
 
-  if (bottomCustomNavLinks.length > 0) {
+  if (middleCustomNavLinks.length > 0) {
     layoutMenuItems.push({
       key: 'bottom-custom-links-divider',
       type: 'divider',
     });
 
     layoutMenuItems.push(
-      ...bottomCustomNavLinks.map((link, idx) => ({
+      ...middleCustomNavLinks.map((link, idx) => ({
         key: idx,
         label: <CustomLink link={link} />,
         icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
@@ -305,6 +306,13 @@ const DashboardLayout = async ({
           activeSpace={activeEnvironment}
           customLogo={logo}
           userNeedsToChangePassword={userNeedsToChangePassword}
+          bottomMenuItems={bottomCustomNavLinks.map((link, idx) => ({
+            key: idx,
+            label: <CustomLink link={link} />,
+            icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || (
+              <LinkOutlined />
+            ),
+          }))}
         >
           {children}
         </Layout>

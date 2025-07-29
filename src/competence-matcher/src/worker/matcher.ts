@@ -3,7 +3,7 @@ import Embedding from '../tasks/embedding';
 import { withJobUpdates } from '../utils/worker';
 import { addReason } from '../tasks/reason';
 import { Match, MatchingJob } from '../utils/types';
-import ZeroShot from '../tasks/semantic-opposites';
+import ZeroShot from '../tasks/semantic-zeroshot';
 
 parentPort!.once('message', async (job: MatchingJob) => {
   // For workaround:
@@ -44,15 +44,56 @@ parentPort!.once('message', async (job: MatchingJob) => {
         for (const match of matches) {
           // Check for semantic opposites
           const zeroshotText = `Task description: ${description}\nSkill/Capability description: ${match.text}`;
-          const classification = await ZeroShot.classify(zeroshotText);
+          // From unsuitable to suitable
+          const contraLabels = ['contradicting', 'aligning'];
+          const contraHypothesis = 'Task description and Skill/Capability descriptions are {}.';
+          const scalingLabls = ['perfect', 'mediocre'];
+          const scalingHypothesis =
+            'Task description and Skill/Capability descriptions are a {} match.';
+          const labelScalar = [
+            0.25, // Contradicting matches should be penalised
+            0.5, // Scale it down a bit to avoid too high scores for irrelevant matches
+            1, // keep the best matches as is
+          ];
+          const contraClassification = await ZeroShot.classify(
+            zeroshotText,
+            contraLabels,
+            contraHypothesis,
+          );
+          let flag: 'contradicting' | 'neutral' | 'aligning' = 'neutral';
+          // console.log(contraClassification);
+
           // @ts-ignore
-          switch (classification.labels[0]) {
-            case 'contradicting':
-              // Invert the match distance (since it's normalised to [0,1]: 1 - distance)
-              match.distance = 1 - match.distance;
-              break;
-            // switch instead of if, as we may want to have additional label-based checks in the future
+          if (contraClassification.labels[0] === contraLabels[0]) {
+            // Invert the match distance (since it's normalised to [0,1]: 1 - distance)
+            match.distance = (1 - match.distance) * labelScalar[0];
+            flag = 'contradicting';
+          } else {
+            const scalingClassification = await ZeroShot.classify(
+              zeroshotText,
+              scalingLabls,
+              scalingHypothesis,
+            );
+
+            // console.log(scalingClassification);
+            if (
+              // @ts-ignore
+              scalingClassification.labels[0] === scalingLabls[0] &&
+              // @ts-ignore
+              scalingClassification.scores[0] > 0.65
+            ) {
+              // Keep the match as is
+              match.distance *= labelScalar[2];
+              flag = 'aligning';
+            }
+            // @ts-ignore
+            else if (scalingClassification.labels[0] === scalingLabls[1]) {
+              // Scale it down a bit
+              match.distance *= labelScalar[1];
+              flag = 'neutral';
+            }
           }
+
           //   db.addMatchResult({
           //     jobId,
           //     taskId,
@@ -73,6 +114,7 @@ parentPort!.once('message', async (job: MatchingJob) => {
             resourceId: match.resourceId,
             text: match.text,
             type: match.type as 'name' | 'description' | 'proficiencyLevel',
+            alignment: flag,
             distance: match.distance,
             reason: match.reason,
           });

@@ -72,6 +72,7 @@ class VectorDataBase {
         distance      REAL   NOT NULL,         -- similarity score
         text          TEXT   NOT NULL,         -- the matched snippet
         type          TEXT   NOT NULL,         -- 'name' | 'description' | 'proficiencyLevel'
+        alignment     TEXT   NOT NULL,         -- 'contradicting' | 'neutral' | 'aligning'
         reason        TEXT                     -- llm based reason for the match
       );
     `);
@@ -228,7 +229,8 @@ class VectorDataBase {
     resourceId: string;
     distance: number;
     text: string;
-    type: 'name' | 'description' | 'proficiencyLevel';
+    type: string; // 'name' | 'description' | 'proficiencyLevel'
+    alignment: string; // 'contradicting' | 'neutral' | 'aligning'
     reason?: string; // optional reason for the match
   }): void {
     const id = uuid();
@@ -236,8 +238,8 @@ class VectorDataBase {
       .prepare(
         `
           INSERT INTO match_results
-            (id, job_id, task_id, task_text, competence_id, resource_id, distance, text, type, reason)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, job_id, task_id, task_text, competence_id, resource_id, distance, text, type, alignment, reason)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
       )
       .run(
@@ -250,6 +252,7 @@ class VectorDataBase {
         opts.distance,
         opts.text,
         opts.type,
+        opts.alignment,
         opts.reason ?? null,
       );
   }
@@ -266,12 +269,13 @@ class VectorDataBase {
     distance: number;
     text: string;
     type: string;
+    alignment: string; // 'contradicting' | 'neutral' | 'aligning'
     reason?: string;
   }> {
     return this.db
       .prepare(
         `
-    SELECT task_id, task_text, competence_id, resource_id, distance, text, type, reason
+    SELECT task_id, task_text, competence_id, resource_id, distance, text, type, alignment, reason
       FROM match_results
      WHERE job_id = ?
      ORDER BY task_id, distance
@@ -286,6 +290,7 @@ class VectorDataBase {
         distance: r.distance,
         text: r.text,
         type: r.type,
+        alignment: r.alignment,
         reason: r.reason ?? undefined,
       }));
   }

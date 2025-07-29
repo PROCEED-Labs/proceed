@@ -345,6 +345,19 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "rankBy",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "avgFit",
+                                "bestFit"
+                            ]
+                        },
+                        "description": "Optional ranking method: 'avgFit' or 'bestFit'"
                     }
                 ],
                 "responses": {
@@ -559,6 +572,39 @@
                 }
             },
             "GroupedMatchResults": {
+                "type": "object",
+                "required": [
+                    "taskOverview",
+                    "resourceRanking"
+                ],
+                "properties": {
+                    "tasks": {
+                        "$ref": "#/components/schemas/TaskOverview"
+                    },
+                    "resourceRanking": {
+                        "$ref": "#/components/schemas/ResourceRanking"
+                    }
+                }
+            },
+            "TaskOverview": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": [
+                        "taskId",
+                        "taskText"
+                    ],
+                    "properties": {
+                        "taskId": {
+                            "type": "string"
+                        },
+                        "taskText": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "ResourceRanking": {
                 "type": "array",
                 "items": {
                     "type": "object",
@@ -585,9 +631,6 @@
                                     "taskId": {
                                         "type": "string"
                                     },
-                                    "taskText": {
-                                        "type": "string"
-                                    },
                                     "competenceMatchings": {
                                         "type": "array",
                                         "items": {
@@ -609,11 +652,17 @@
                                                 },
                                                 "avgMatchProbability": {
                                                     "type": "number"
+                                                },
+                                                "avgBestFitTaskMatchProbability": {
+                                                    "type": "number"
                                                 }
                                             }
                                         }
                                     },
                                     "maxMatchProbability": {
+                                        "type": "number"
+                                    },
+                                    "maxBestFitMatchProbability": {
                                         "type": "number"
                                     }
                                 }
@@ -621,6 +670,12 @@
                         },
                         "avgTaskMatchProbability": {
                             "type": "number"
+                        },
+                        "avgBestFitTaskMatchProbability": {
+                            "type": "number"
+                        },
+                        "contradicting": {
+                            "type": "boolean"
                         }
                     }
                 }
@@ -646,6 +701,14 @@
                     },
                     "matchProbability": {
                         "type": "number"
+                    },
+                    "alignment": {
+                        "type": "string",
+                        "enum": [
+                            "aligning",
+                            "neutral",
+                            "contradicting"
+                        ]
                     },
                     "reason": {
                         "type": "string"

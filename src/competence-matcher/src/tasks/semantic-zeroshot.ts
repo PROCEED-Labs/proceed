@@ -30,7 +30,11 @@ export default class ZeroShot extends TransformerPipeline<ZeroShotClassification
    * @param hypothesisTemplate Optional hypothesis template for classification - should include '{}' as placeholder for label.
    */
   public static async classify(text: string, labels?: string[], hypothesisTemplate?: string) {
-    const _labels = labels || ['contradicting', 'aligning'];
+    const _labels = labels || [
+      'contradicting',
+      'aligning, thus a good match',
+      'neither aligning nor contradicting',
+    ];
     const hypothesis_template =
       hypothesisTemplate || 'Task description and Skill/Capability descriptions are {}.';
     const pipe = await this.getInstance<ZeroShotClassificationPipeline>();

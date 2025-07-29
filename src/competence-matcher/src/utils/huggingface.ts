@@ -1,5 +1,5 @@
 import Embedding from '../tasks/embedding';
-import ZeroShotSemanticOpposites from '../tasks/semantic-opposites';
+import ZeroShotSemanticOpposites from '../tasks/semantic-zeroshot';
 
 export async function ensureAllHuggingfaceModelsAreAvailable() {
   try {

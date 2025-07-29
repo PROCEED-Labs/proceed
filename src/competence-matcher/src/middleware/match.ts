@@ -8,6 +8,8 @@ import {
   MatchingJob,
   MatchingTask,
   ResourceListInput,
+  ResourceRanking,
+  TaskOverview,
 } from '../utils/types';
 import { handleCreateResourceList } from './resource';
 
@@ -192,7 +194,11 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
 }
 
 export function getMatchJobResults(req: Request, res: Response, next: NextFunction): void {
+  // Get jobId from path
   const { jobId } = req.params;
+  // Get sorter from query params
+  const requestedSorter = req.query.rankBy as string | undefined;
+  const sorter = requestedSorter == 'bestFit' ? 'bestFit' : 'avgFit'; // Default to avgFit
   const db = getDB(req.dbName!);
 
   // Check if job exists
@@ -231,14 +237,29 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
   // Return match results
   const results = db.getMatchResults(jobId);
 
+  const tasks: TaskOverview = results.reduce((acc, result) => {
+    const { taskId, taskText } = result;
+    // Check if task already exists in the overview
+    if (!acc.some((task) => task.taskId === taskId)) {
+      acc.push({ taskId, taskText });
+    }
+    return acc;
+  }, [] as TaskOverview);
+
   // Get the structure of the results
-  let groupedResults: GroupedMatchResults = results.reduce((acc, result) => {
-    const { taskId, taskText, competenceId, resourceId, distance, text, type, reason } = result;
+  let groupedResults: ResourceRanking = results.reduce((acc, result) => {
+    const { taskId, competenceId, resourceId, distance, text, type, alignment, reason } = result;
 
     // resourceId
     let resourceGroup = acc.find((group) => group.resourceId === resourceId);
     if (!resourceGroup) {
-      resourceGroup = { resourceId, taskMatchings: [], avgTaskMatchProbability: 0 };
+      resourceGroup = {
+        resourceId,
+        taskMatchings: [],
+        avgTaskMatchProbability: 0,
+        avgBestFitTaskMatchProbability: 0,
+        contradicting: false,
+      };
       acc.push(resourceGroup);
     }
     // taskMatchings
@@ -246,9 +267,9 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
     if (!taskMatches) {
       taskMatches = {
         taskId,
-        taskText,
         competenceMatchings: [],
         maxMatchProbability: 0,
+        maxBestFitMatchProbability: 0,
       };
       resourceGroup.taskMatchings.push(taskMatches);
     }
@@ -262,6 +283,7 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
         competenceId,
         matchings: [],
         avgMatchProbability: 0,
+        avgBestFitMatchProbability: 0,
       };
       taskMatches.competenceMatchings.push(competenceMatches);
     }
@@ -271,22 +293,26 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
       text,
       type: type as 'name' | 'description' | 'proficiencyLevel',
       matchProbability: distance,
+      alignment: alignment as 'contradicting' | 'neutral' | 'aligning',
       reason: reason || undefined,
     });
 
     return acc;
-  }, [] as GroupedMatchResults);
+  }, [] as ResourceRanking);
 
   // Aggregate and sort
   groupedResults = groupedResults
     .map((resourceGroup) => {
-      const { resourceId, taskMatchings, avgTaskMatchProbability } = resourceGroup;
+      const { resourceId, taskMatchings, avgTaskMatchProbability, avgBestFitTaskMatchProbability } =
+        resourceGroup;
 
       const newTaskMatchings = taskMatchings.map((taskGroup) => {
-        const { taskId, taskText, competenceMatchings, maxMatchProbability } = taskGroup;
+        const { taskId, competenceMatchings, maxMatchProbability, maxBestFitMatchProbability } =
+          taskGroup;
 
         const newCompetenceMatchings = competenceMatchings.map((competenceGroup) => {
-          const { competenceId, matchings, avgMatchProbability } = competenceGroup;
+          const { competenceId, matchings, avgMatchProbability, avgBestFitMatchProbability } =
+            competenceGroup;
 
           // Calculate average match probability for this competence (i.e. avg over all parts of this competence)
           const totalMatchProbability = matchings.reduce(
@@ -294,23 +320,37 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
             0,
           );
 
+          let numberOfBestFits = 0;
+          const totalBestFitMatchProbability = matchings.reduce((sum, match) => {
+            if (match.alignment === 'aligning') {
+              numberOfBestFits++;
+              return sum + match.matchProbability;
+            }
+            return sum;
+          }, 0);
+
           // Return sorted
           return {
             competenceId,
             matchings: matchings.sort((a, b) => b.matchProbability - a.matchProbability),
             avgMatchProbability: totalMatchProbability / matchings.length,
+            avgBestFitMatchProbability:
+              numberOfBestFits > 0 ? totalBestFitMatchProbability / numberOfBestFits : 0, // If no best fit, set to 0
           };
         });
 
         // Return sorted
         return {
           taskId,
-          taskText,
-          competenceMatchings: newCompetenceMatchings.sort(
-            (a, b) => b.avgMatchProbability - a.avgMatchProbability,
-          ),
+          competenceMatchings: newCompetenceMatchings.sort((a, b) => {
+            const key = sorter === 'bestFit' ? 'avgBestFitMatchProbability' : 'avgMatchProbability';
+            return b[key] - a[key];
+          }),
           maxMatchProbability: Math.max(
             ...newCompetenceMatchings.map((c) => c.avgMatchProbability),
+          ),
+          maxBestFitMatchProbability: Math.max(
+            ...newCompetenceMatchings.map((c) => c.avgBestFitMatchProbability),
           ),
         };
       });
@@ -320,17 +360,47 @@ export function getMatchJobResults(req: Request, res: Response, next: NextFuncti
         (sum, task) => sum + task.maxMatchProbability,
         0,
       );
+      const totalBestFitTaskMatchProbability = newTaskMatchings.reduce(
+        (sum, task) => sum + task.maxBestFitMatchProbability,
+        0,
+      );
 
       // Return sorted
       return {
         resourceId,
-        taskMatchings: newTaskMatchings.sort(
-          (a, b) => b.maxMatchProbability - a.maxMatchProbability,
-        ),
+        taskMatchings: newTaskMatchings.sort((a, b) => {
+          const key = sorter === 'bestFit' ? 'maxBestFitMatchProbability' : 'maxMatchProbability';
+          return b[key] - a[key];
+        }),
         avgTaskMatchProbability: totalTaskMatchProbability / newTaskMatchings.length,
+        avgBestFitTaskMatchProbability:
+          totalBestFitTaskMatchProbability / newTaskMatchings.length || 0, // If no best fit, set to 0
+        contradicting: newTaskMatchings.some((task) =>
+          task.competenceMatchings.some((competence) =>
+            competence.matchings.some((match) => match.alignment === 'contradicting'),
+          ),
+        ),
       };
     })
-    .sort((a, b) => b.avgTaskMatchProbability - a.avgTaskMatchProbability);
+    .sort((a, b) => {
+      const key =
+        sorter === 'bestFit' ? 'avgBestFitTaskMatchProbability' : 'avgTaskMatchProbability';
 
-  res.status(200).json(groupedResults);
+      // Sort in two levels: Contradicting, key
+      // First not contradicting resources, then contradicting ones
+      // Case one is contradicting, the other is not
+      if (a.contradicting !== b.contradicting) {
+        return a.contradicting ? 1 : -1; // Non-contradicting first
+      }
+      // Both are contradicting or both are not
+      // Sort by the key
+      return b[key] - a[key];
+    });
+
+  const load: GroupedMatchResults = {
+    tasks,
+    resourceRanking: groupedResults,
+  };
+
+  res.status(200).json(load);
 }

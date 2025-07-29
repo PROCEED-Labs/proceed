@@ -100,12 +100,14 @@ async function handleReasoning(job: any, message: any) {
         taskId: string;
         taskText: string;
         type: 'name' | 'description' | 'proficiencyLevel';
+        alignment: 'contradicting' | 'neutral' | 'aligning';
       }
     >(
       matches as (Match & {
         taskId: string;
         taskText: string;
         type: 'name' | 'description' | 'proficiencyLevel';
+        alignment: 'contradicting' | 'neutral' | 'aligning';
       })[],
       task,
     );
@@ -126,6 +128,7 @@ async function handleReasoning(job: any, message: any) {
       text: match.text,
       type: match.type,
       reason: match.reason,
+      alignment: match.alignment,
     });
   }
 

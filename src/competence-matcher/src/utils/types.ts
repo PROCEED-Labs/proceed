@@ -87,29 +87,44 @@ export interface MatchingJob extends Job {
   tasks: MatchingTask[]; // Tasks to match
 }
 
-export type GroupedMatchResults = {
+export type ResourceRanking = {
   resourceId: string;
   taskMatchings: {
-    taskId: string;
-    taskText: string;
+    taskId: string; // Which of the tasks this matching is referring to
     competenceMatchings: {
       competenceId: string;
       matchings: {
         text: string;
         type: 'name' | 'description' | 'proficiencyLevel';
-        // Sorted by DESC
+        // Sorted DESC by
         matchProbability: number; // Normalised inverted distance (, where distance refers to the cosine similarity)
+        alignment: 'contradicting' | 'neutral' | 'aligning'; // Semantic opposite classification
         reason?: string; // Reason for the match
       }[]; // Array: Competence-Parts matched to task
-      // Sorted by DESC
+      // Sorted DESC by either:
       avgMatchProbability: number; // Average matchProbability of all parts of this competence
+      avgBestFitMatchProbability: number; // Average of the parts that align well with the task, 0 means there is none
     }[]; // Array: Competences matched to task
-    // Sorted by DESC
+    // Sorted DESC by either:
     maxMatchProbability: number; // Best avgMatchingProbability of all competences for this task
+    maxBestFitMatchProbability: number; // Best avgBestFitMatchProbability of all competences for this task, 0 means there is none
   }[]; // Array: Matching of the resource to each task, respectively
-  // Sorted by DESC
+  // Sorted DESC first by [not contradicting , contradicting] then by either:
   avgTaskMatchProbability: number; // Average maxMatchProbability of all tasks for this resource
-}[]; // Array: All available resources with their matchings
+  avgBestFitTaskMatchProbability: number; // Average maxBestFitMatchProbability of all tasks for this resource, 0 means there is none
+
+  contradicting: boolean; // Whether there is a part in a competence of this resource that contradicts the task
+}[];
+
+export type TaskOverview = {
+  taskId: string; // UUIDString
+  taskText: string; // Text of the task
+}[];
+
+export type GroupedMatchResults = {
+  tasks: TaskOverview;
+  resourceRanking: ResourceRanking;
+};
 
 export type workerTypes = 'embedder' | 'matcher';
 

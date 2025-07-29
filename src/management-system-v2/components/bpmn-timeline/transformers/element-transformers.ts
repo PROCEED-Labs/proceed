@@ -21,7 +21,11 @@ import {
   isBoundaryEventElement,
   isExpandedSubProcess,
 } from '../utils/utils';
-import { extractSourceId, extractTargetId } from '../utils/id-helpers';
+import {
+  extractSourceId,
+  extractTargetId,
+  extractAttachedToId,
+} from '../utils/reference-extractor';
 
 // ============================================================================
 // Element Transformation Functions
@@ -59,6 +63,9 @@ export function transformEvent(
 ): GanttElementType {
   // Handle boundary events specially
   if (isBoundaryEventElement(event)) {
+    console.log(
+      `EVENT TRANSFORMER DEBUG: Processing boundary event ${event.id} at time ${startTime}`,
+    );
     return transformBoundaryEvent(event, startTime, duration, color);
   }
 
@@ -97,6 +104,10 @@ export function transformBoundaryEvent(
   color?: string,
 ): GanttElementType {
   const attachedToId = extractAttachedToId(event.attachedToRef);
+
+  console.log(
+    `BOUNDARY TRANSFORMER DEBUG: Creating Gantt element for boundary event ${event.id} attached to ${attachedToId}`,
+  );
 
   const ganttElement: GanttElementType = {
     id: event.id,
@@ -271,16 +282,6 @@ export function isEventBasedGateway(element: BPMNFlowElement): element is BPMNGa
 // ============================================================================
 // Boundary Event Helper Functions
 // ============================================================================
-
-/**
- * Extract the ID of the task that a boundary event is attached to
- */
-export function extractAttachedToId(attachedToRef: string | any): string | undefined {
-  if (typeof attachedToRef === 'string') {
-    return attachedToRef;
-  }
-  return (attachedToRef as any)?.id || attachedToRef;
-}
 
 /**
  * Create a boundary event dependency that visually connects the event to its attached task

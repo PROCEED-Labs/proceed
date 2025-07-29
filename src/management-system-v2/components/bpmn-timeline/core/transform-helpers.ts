@@ -24,7 +24,6 @@ import {
   getUnsupportedElementReason,
   detectGatewayMismatches,
 } from '../utils/utils';
-import { calculatePathBasedTimings } from './path-traversal';
 
 export interface ProcessValidationResult {
   supportedElements: BPMNFlowElement[];
@@ -178,29 +177,6 @@ export function extractInformationalArtifacts(
 }
 
 /**
- * Calculate timings using path-based traversal
- */
-export function calculateTimingsForMode(
-  supportedElements: BPMNFlowElement[],
-  startTime: number,
-  defaultDurations: DefaultDurationInfo[],
-  loopDepth: number,
-): {
-  timingsMap: Map<string, any[]>;
-  dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>;
-  flattenedElements: BPMNFlowElement[];
-  issues: Array<{
-    elementId: string;
-    elementType: string;
-    elementName?: string;
-    reason: string;
-    severity: 'warning' | 'error';
-  }>;
-} {
-  return calculatePathBasedTimings(supportedElements, startTime, defaultDurations, loopDepth);
-}
-
-/**
  * Filter dependencies to only include visible elements
  *
  * When gateways are hidden (renderGateways=false), this function creates "bypass dependencies"
@@ -234,12 +210,17 @@ export function filterDependenciesForVisibleElements(
     function getBaseElementId(id: string): string {
       // Instance IDs have format: "ElementId_instance_N"
       // Base IDs are just: "ElementId"
-      return id.split('_instance_')[0];
+      const instanceParts = id.split('_instance_');
+      return instanceParts.length > 0 ? instanceParts[0] : id;
     }
 
     // Helper function to check if an element is visible
     function isElementVisible(id: string): boolean {
       const baseId = getBaseElementId(id);
+      // Check if it's a gateway - gateways are NOT visible when renderGateways=false
+      if (baseId.includes('Gateway') || id.includes('Gateway')) {
+        return false;
+      }
       return visibleIds.has(baseId) || visibleIds.has(id);
     }
 
@@ -361,11 +342,15 @@ export function filterDependenciesForVisibleElements(
 
 /**
  * Detect ghost dependencies that would go through gateways (unsupported)
+ *
+ * When gateways are hidden (renderGateways=false) and ghost dependencies exist,
+ * they become unsupported because the bypass dependencies skip gateway logic.
  */
 export function detectGhostDependenciesThroughGateways(
   ganttElements: any[],
   pathDependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
   supportedElements: BPMNFlowElement[],
+  renderGateways: boolean = true,
 ): TransformationIssue[] {
   const issues: TransformationIssue[] = [];
   const elementsWithGhosts = ganttElements.filter(
@@ -376,21 +361,123 @@ export function detectGhostDependenciesThroughGateways(
     return issues; // No ghost elements, no need to check
   }
 
-  // Check if any paths between ghost occurrences go through gateways
-  const affectedElements = new Set<string>();
+  // Check if there are gateways in the process
+  const hasGateways = supportedElements.some((el) => isGatewayElement(el));
 
-  // For each element with ghosts, check if any path between instances goes through a gateway
+  if (!hasGateways) {
+    return issues; // No gateways, no potential for gateway-related ghost dependency issues
+  }
+
+  // If gateways are hidden and there are ghost elements, this is problematic
+  if (!renderGateways) {
+    // When gateways are hidden, identify which gateways cause ghost dependency issues
+    // and warn only about those gateways, not the elements with ghosts
+    const affectedGateways = new Set<string>();
+    const gatewayConnections = new Map<
+      string,
+      { previousElements: Set<string>; nextElements: Set<string> }
+    >();
+
+    // Find which gateways would be involved in ghost dependencies
+    elementsWithGhosts.forEach((element) => {
+      const elementId = element.id;
+
+      // Check path dependencies to find gateways this element connects through
+      pathDependencies.forEach((dep) => {
+        const dep1SourceParts = dep.sourceInstanceId.split('_instance_');
+        const dep1TargetParts = dep.targetInstanceId.split('_instance_');
+        const dep1SourceId = dep1SourceParts.length > 0 ? dep1SourceParts[0] : dep.sourceInstanceId;
+        const dep1TargetId = dep1TargetParts.length > 0 ? dep1TargetParts[0] : dep.targetInstanceId;
+
+        // If this dependency involves our element and passes through a gateway
+        if (dep1SourceId === elementId || dep1TargetId === elementId) {
+          // Check if any element in the dependency chain is a gateway
+          const sourceElement = supportedElements.find((el) => el.id === dep1SourceId);
+          const targetElement = supportedElements.find((el) => el.id === dep1TargetId);
+
+          if (sourceElement && isGatewayElement(sourceElement)) {
+            affectedGateways.add(dep1SourceId);
+            if (!gatewayConnections.has(dep1SourceId)) {
+              gatewayConnections.set(dep1SourceId, {
+                previousElements: new Set(),
+                nextElements: new Set(),
+              });
+            }
+            gatewayConnections.get(dep1SourceId)!.nextElements.add(dep1TargetId);
+          }
+
+          if (targetElement && isGatewayElement(targetElement)) {
+            affectedGateways.add(dep1TargetId);
+            if (!gatewayConnections.has(dep1TargetId)) {
+              gatewayConnections.set(dep1TargetId, {
+                previousElements: new Set(),
+                nextElements: new Set(),
+              });
+            }
+            gatewayConnections.get(dep1TargetId)!.previousElements.add(dep1SourceId);
+          }
+        }
+      });
+    });
+
+    // Create warnings only for the affected gateways
+    affectedGateways.forEach((gatewayId) => {
+      const gateway = supportedElements.find((el) => el.id === gatewayId);
+      const connections = gatewayConnections.get(gatewayId);
+
+      let reason = `Ghost dependencies through gateway "${gateway?.name || gatewayId}" are not supported when gateways are hidden. Enable "Show Gateways" or disable ghost dependencies.`;
+
+      if (connections) {
+        const prevElementNames = Array.from(connections.previousElements)
+          .map((id) => supportedElements.find((el) => el.id === id)?.name || id)
+          .filter((name) => name !== gatewayId) // Don't include self-references
+          .join(', ');
+        const nextElementNames = Array.from(connections.nextElements)
+          .map((id) => supportedElements.find((el) => el.id === id)?.name || id)
+          .filter((name) => name !== gatewayId) // Don't include self-references
+          .join(', ');
+
+        if (prevElementNames || nextElementNames) {
+          const fromPart = prevElementNames ? `from: ${prevElementNames}` : '';
+          const toPart = nextElementNames ? `to: ${nextElementNames}` : '';
+          const connectionPart = [fromPart, toPart].filter(Boolean).join(' → ');
+
+          if (connectionPart) {
+            reason = `Ghost dependencies through gateway "${gateway?.name || gatewayId}" (${connectionPart}) are not supported when gateways are hidden. Enable "Show Gateways" or disable ghost dependencies.`;
+          }
+        }
+      }
+
+      issues.push({
+        elementId: gatewayId,
+        elementType: gateway?.$type || 'unknown',
+        elementName: gateway?.name,
+        reason,
+        severity: 'warning' as const,
+      });
+    });
+
+    return issues;
+  }
+
+  // If gateways are visible, check if any paths between ghost occurrences go through gateways
+  const affectedGateways = new Map<
+    string,
+    { previousElements: Set<string>; nextElements: Set<string> }
+  >();
+
   elementsWithGhosts.forEach((element) => {
     const elementId = element.id;
-    let hasGatewayPath = false;
 
     // Check all dependencies to see if there's a path through a gateway
     for (let i = 0; i < pathDependencies.length; i++) {
       const dep1 = pathDependencies[i];
 
       // Skip if not related to our element
-      const dep1SourceId = dep1.sourceInstanceId.split('_instance_')[0];
-      const dep1TargetId = dep1.targetInstanceId.split('_instance_')[0];
+      const dep1SourceParts = dep1.sourceInstanceId.split('_instance_');
+      const dep1TargetParts = dep1.targetInstanceId.split('_instance_');
+      const dep1SourceId = dep1SourceParts.length > 0 ? dep1SourceParts[0] : dep1.sourceInstanceId;
+      const dep1TargetId = dep1TargetParts.length > 0 ? dep1TargetParts[0] : dep1.targetInstanceId;
 
       if (dep1SourceId !== elementId && dep1TargetId !== elementId) {
         continue;
@@ -402,8 +489,12 @@ export function detectGhostDependenciesThroughGateways(
 
         // Check if dep1.target connects to dep2.source (potential gateway in between)
         if (dep1.targetInstanceId === dep2.sourceInstanceId) {
-          const intermediateId = dep1.targetInstanceId.split('_instance_')[0];
-          const finalTargetId = dep2.targetInstanceId.split('_instance_')[0];
+          const intermediateParts = dep1.targetInstanceId.split('_instance_');
+          const finalTargetParts = dep2.targetInstanceId.split('_instance_');
+          const intermediateId =
+            intermediateParts.length > 0 ? intermediateParts[0] : dep1.targetInstanceId;
+          const finalTargetId =
+            finalTargetParts.length > 0 ? finalTargetParts[0] : dep2.targetInstanceId;
 
           // Check if the intermediate element is a gateway
           const intermediateElement = supportedElements.find((el) => el.id === intermediateId);
@@ -420,31 +511,39 @@ export function detectGhostDependenciesThroughGateways(
               );
 
               if ((dep1IsFromMain && dep2IsToGhost) || (!dep1IsFromMain && !dep2IsToGhost)) {
-                hasGatewayPath = true;
-                break;
+                // Track this gateway and its connected elements
+                if (!affectedGateways.has(intermediateId)) {
+                  affectedGateways.set(intermediateId, {
+                    previousElements: new Set(),
+                    nextElements: new Set(),
+                  });
+                }
+                const gatewayInfo = affectedGateways.get(intermediateId)!;
+                gatewayInfo.previousElements.add(dep1SourceId);
+                gatewayInfo.nextElements.add(finalTargetId);
               }
             }
           }
         }
       }
-
-      if (hasGatewayPath) break;
-    }
-
-    if (hasGatewayPath) {
-      affectedElements.add(elementId);
     }
   });
 
-  // Create warnings for affected elements
-  affectedElements.forEach((elementId) => {
-    const element = supportedElements.find((el) => el.id === elementId);
+  // Create warnings for affected gateways
+  affectedGateways.forEach((info, gatewayId) => {
+    const gateway = supportedElements.find((el) => el.id === gatewayId);
+    const prevElementNames = Array.from(info.previousElements)
+      .map((id) => supportedElements.find((el) => el.id === id)?.name || id)
+      .join(', ');
+    const nextElementNames = Array.from(info.nextElements)
+      .map((id) => supportedElements.find((el) => el.id === id)?.name || id)
+      .join(', ');
+
     issues.push({
-      elementId: elementId,
-      elementType: element?.$type || 'unknown',
-      elementName: element?.name,
-      reason:
-        'Ghost dependencies through gateways are not supported. Enable "Show Gateways" or disable ghost dependencies for this element.',
+      elementId: gatewayId,
+      elementType: gateway?.$type || 'unknown',
+      elementName: gateway?.name,
+      reason: `Ghost dependencies through gateway "${gateway?.name || gatewayId}" (from: ${prevElementNames} → to: ${nextElementNames}) are not supported. Enable "Show Gateways" or disable ghost dependencies.`,
       severity: 'warning' as const,
     });
   });

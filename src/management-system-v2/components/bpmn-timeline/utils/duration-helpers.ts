@@ -21,7 +21,11 @@ export function applyDefaultDuration(
 
   if (duration === 0) {
     // Determine default based on element type
-    if (element.$type.includes('Task') || element.$type === 'bpmn:CallActivity') {
+    // Sub-processes don't get default durations - their duration is calculated from children
+    if (
+      (element.$type.includes('Task') || element.$type === 'bpmn:CallActivity') &&
+      element.$type !== 'bpmn:SubProcess'
+    ) {
       duration = DEFAULT_TASK_DURATION_MS;
 
       // Track this for default duration reporting

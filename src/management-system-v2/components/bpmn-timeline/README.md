@@ -8,27 +8,37 @@ This component converts BPMN process data into timeline representations using so
 
 ## Transform Rules and Algorithms
 
+**Core Architecture**: All traversal modes use unified **scoped path-based traversal** with hierarchical sub-process support and mode-specific result processing.
+
+**Primary Implementation**: `scoped-traversal.ts` → `calculateScopedTimings()` → Mode-specific handlers
+
+### Scoped Traversal Architecture
+
+**Hierarchical Scope System**:
+
+- **ProcessScope structure**: Organizes elements into scopes (main process + nested sub-processes)
+- **Independent traversal**: Each scope traversed with own path exploration and visit tracking
+- **Shared instance counter**: Ensures unique instance IDs across all scopes and modes
+- **Parent-child relationships**: Maintained through `parentInstanceId` and `scopeInstanceId`
+
+**Technical Implementation**:
+
+- **ProcessScope**: Hierarchical scope organization with child scope mapping
+- **TraversalContext**: Maintains scope state, timing, visit tracking, and instance management
+- **Recursion protection**: Maximum 10 levels depth to prevent stack overflow
+- **Gateway-semantic processing**: Gateways processed during traversal, not post-processed
+
 ### 1. Earliest Occurrence Mode (Default)
 
-**Algorithm**: First Possible Occurrence
-**Implementation**: `transform.ts` → `calculateElementTimings()`
+**Algorithm**: Scoped path-based traversal with earliest occurrence selection
+**Implementation**: `transform.ts` → `calculateScopedTimings()` → `handleEarliestOccurrenceMode()`
 
 #### Core Principles
 
 - Each element appears exactly **once** in the timeline
-- Elements start as soon as **any** incoming flow completes (earliest possible time)
-- Uses iterative propagation through the process graph
-- Supports early occurrence updates when later flows enable earlier start times
-
-#### Algorithm Steps
-
-```
-1. Initialize elements without incoming flows at startTime
-2. Iteratively process elements:
-   - Calculate earliest start = min(all incoming flow completion times)
-   - Update if earlier than existing timing
-3. Handle unprocessed elements (cycles/missing deps) at startTime
-```
+- Path-based exploration finds all possible execution routes
+- Mode handler selects **earliest timing** from all discovered instances
+- Supports hierarchical sub-processes with proper parent-child relationships
 
 #### Use Cases
 
@@ -53,31 +63,31 @@ Timeline Result:
 - EndEvent: milestone at 02:30 (earliest completion)
 ```
 
-### 2. Every Occurrence Mode (Path-Based)
+### 2. Every Occurrence Mode
 
-**Algorithm**: Path-based traversal with instance generation
-**Implementation**: `path-traversal.ts` → `calculatePathBasedTimings()`
+**Algorithm**: Scoped path-based traversal with all instances preserved
+**Implementation**: `transform.ts` → `calculateScopedTimings()` → `handleEveryOccurrenceMode()`
 
 #### Core Principles
 
-- Elements can appear **multiple times** (once per execution path)
-- Explores **all possible execution paths** through the process
-- Creates **unique instances** for each occurrence with instance IDs
-- Supports **configurable loop iterations**
-- Handles **branching** (parallel/exclusive paths)
-- Prevents path explosion with MAX_PATHS constraint (100)
+- Elements can appear **multiple times** (once per execution path within each scope)
+- Scoped exploration of **all possible execution paths** through hierarchical process structure
+- Creates **unique instances** for each occurrence with hierarchical instance IDs
+- Supports **configurable loop iterations** per scope
+- Handles **branching** (parallel/exclusive paths) with gateway-semantic processing
+- Prevents path explosion with traversal limits (MAX_PATHS constraint)
 
-#### Algorithm Steps
+#### Scoped Algorithm Process
 
 ```
-1. Build process graph (nodes and edges)
-2. Start paths from all start nodes
-3. For each path:
-   - Traverse elements sequentially
-   - Track loop iterations (configurable depth)
-   - Branch at decision points (create new paths)
-   - Generate unique instance IDs
-4. Group instances by original element ID
+1. Build hierarchical scope structure (main process + sub-processes)
+2. For each scope:
+   - Initialize path traversal with scope-specific context
+   - Track loop iterations and visit counts per scope
+   - Branch at decision points within scope boundaries
+   - Generate hierarchical instance IDs with parent-child relationships
+3. Flatten and organize all instances preserving scope hierarchy
+4. Create dependencies respecting scope boundaries
 ```
 
 #### Path Explosion Prevention
@@ -172,24 +182,27 @@ Path 3 - Loop twice:
 
 ### 3. Latest Occurrence Mode (Worst-Case Scenario)
 
-**Algorithm**: Path-based traversal with latest occurrence selection
-**Implementation**: `transform.ts` → `calculateLatestOccurrenceTimings()`
+**Algorithm**: Scoped path-based traversal with latest occurrence selection
+**Implementation**: `transform.ts` → `calculateScopedTimings()` → `handleLatestOccurrenceMode()`
 
 #### Core Principles
 
 - Each element appears exactly **once** in the timeline (like Earliest Occurrence)
-- Elements show their **latest possible start time** across all execution paths
-- Uses path-based exploration (like Every Occurrence) but selects latest timing
-- Supports configurable loop iterations
-- Shows **worst-case scenario** for process completion
+- Elements show their **latest possible start time** across all execution paths and scopes
+- Uses same scoped exploration as Every Occurrence but mode handler selects latest timing
+- Supports hierarchical sub-processes with complex parent-child alignment logic
+- Shows **worst-case scenario** for process completion across all scopes
 
-#### Algorithm Steps
+#### Scoped Algorithm Process
 
 ```
-1. Execute path-based traversal (same as Every Occurrence mode)
-2. For each element ID, collect all instances across all paths
-3. Select the instance with the latest start time
-4. Create single Gantt element using latest timing
+1. Execute scoped path-based traversal (same core process as Every Occurrence)
+2. For each element ID across all scopes:
+   - Collect all instances from all paths and scope contexts
+   - Apply complex parent-child alignment logic for sub-processes
+   - Select the instance with the latest start time
+3. Create single Gantt element using latest timing with proper hierarchy
+4. Fix parent-child relationships for sub-process instance alignment
 ```
 
 #### Use Cases
@@ -555,16 +568,108 @@ interface TokenBasedElement {
 
 ### SubProcess Support
 
-**Expanded SubProcesses**: SubProcesses with child elements are fully supported
+**Comprehensive sub-process implementation** with hierarchical traversal, proper parent-child relationships, and multi-level nesting support across all traversal modes.
 
-- `bpmn:SubProcess` and `bpmn:AdHocSubProcess` with `flowElements`
-- **Visual Representation**: Triangles at start/end with dashed lines connecting them
-- **Hierarchy Display**: Child elements appear as indented rows below the sub-process
-- **Flattening**: Child elements are automatically included in the timeline with proper hierarchy levels
-- **Bounds Calculation**: Sub-process timing spans from earliest child start to latest child completion
-- **Instance Support**: Works across all traversal modes (earliest, every, latest occurrence)
+#### **Supported Types**
 
-**Collapsed SubProcesses**: SubProcesses without child elements are treated as regular tasks
+- **Expanded SubProcesses**: `bpmn:SubProcess` and `bpmn:AdHocSubProcess` with `flowElements` - fully supported
+- **Collapsed SubProcesses**: SubProcesses without child elements - treated as regular tasks
+- **Nested SubProcesses**: Multi-level sub-process hierarchies with recursion depth protection (10 levels max)
+
+#### **Core Architecture**
+
+**Hierarchical Scope System**:
+
+- **ProcessScope structure**: Organizes elements into scopes (main process + sub-processes)
+- **Scoped traversal**: Each sub-process traversed independently with own visit tracking
+- **Instance management**: Shared counter ensures unique instance IDs across all scopes
+- **Parent-child relationships**: Maintained through `parentInstanceId` and `scopeInstanceId`
+
+**Visual Representation**:
+
+- **Group elements**: Sub-processes rendered as `type: 'group'` with triangular start/end markers
+- **Dashed connecting lines**: Visual connection between sub-process start and end triangles
+- **Hierarchy indentation**: Child elements appear indented below parent sub-process
+- **Slash pattern constraints**: Child elements show diagonal slashes outside parent duration
+
+#### **Technical Implementation**
+
+**Timing & Bounds Calculation**:
+
+- **Child-driven timing**: Sub-process start = earliest child start, end = latest child completion
+- **Dynamic bounds**: `recalculateSubProcessBounds()` updates timing based on child execution
+- **Downstream propagation**: Sub-process timing changes automatically adjust downstream elements
+- **Inheritance patterns**: Children start when parent starts (`currentTime: pathTime`)
+
+**Instance ID Structure**:
+
+```typescript
+// Main sub-process instances
+'Activity_1c6bl41_instance_10';
+
+// Child elements of sub-process
+'Event_1hx5yna_instance_2_subprocess_Activity_1c6bl41_instance_10';
+
+// Nested sub-process children (multi-level)
+'Task_ABC_instance_4_subprocess_Activity_04vzwbt_instance_3_subprocess_Activity_1c6bl41_instance_10';
+```
+
+**Parent-Child Relationship Management**:
+
+- **Instance alignment**: Complex fixing logic ensures proper parent-child instance pairing
+- **Orphaned children validation**: Automatic detection and relationship repair
+- **Hierarchy levels**: Multi-level indentation based on nesting depth
+- **Selection behavior**: Recursive selection of all child instances when parent selected
+
+#### **Boundary Event Integration**
+
+**Complete boundary event support** for sub-processes with proper timing, positioning, and dependency handling:
+
+- **Attachment positioning**: Boundary events positioned based on attached sub-process timing
+- **Timing calculation**: With duration: `subProcessStart + eventDuration`, without: `subProcessStart + subProcessDuration/2`
+- **Loop status inheritance**: Boundary events inherit loop/loop-cut status from attached sub-process
+- **Dependency creation**: Automatic task→boundary event dependencies with proper flow types
+- **Outgoing flow processing**: Elements reachable through boundary event flows included with proper timing
+
+#### **Mode-Specific Behavior**
+
+**Every Occurrence Mode**:
+
+- **Instance duplication**: Sub-process instances created for each loop iteration with full child duplication
+- **Independent timing**: Each child instance calculated relative to its parent sub-process timing
+- **Dependency creation**: Full dependency networks between child instances and targets
+- **Path integration**: Sub-processes integrated into path-based traversal with proper scoping
+
+**Earliest/Latest Occurrence Modes**:
+
+- **Single instances**: Sub-processes appear once with bounds calculated from child timings
+- **Parent-child alignment**: Complex instance selection ensures proper parent-child pairing
+- **Timing selection**: Latest/earliest timing selected across all sub-process instances
+- **Relationship preservation**: Parent-child relationships maintained for selection and visualization
+
+**Ghost Elements Support**:
+
+- **Limitation**: Ghost elements disabled for sub-processes due to parent-child relationship complexity
+- **Alternative**: Use every-occurrence mode for complete sub-process instance visualization
+- **Warning display**: User notification when ghost elements requested with sub-processes present
+
+#### **Current Implementation Status**
+
+**✅ Fully Working Features**:
+
+- Hierarchical scope traversal with recursion depth protection (10 levels max)
+- Complete boundary event support on sub-processes with proper timing
+- Parent-child relationship management with instance alignment fixing
+- Multi-level nesting with proper ID chain preservation
+- Loop detection and cutoff handling per scope
+- Visual constraints (slash patterns) and recursive selection behavior
+- All traversal modes (earliest/latest/every occurrence) with mode-specific optimizations
+
+**⚠️ Known Limitations**:
+
+- Ghost elements not supported due to parent-child relationship conflicts
+- Complex relationship fixing required for instance ID alignment across modes
+- Performance considerations for deeply nested structures (>5 levels)
 
 ### Unsupported Elements
 
@@ -998,8 +1103,7 @@ components/bpmn-timeline/
 ├── core/                              # Core transformation logic
 │   ├── transform.ts                   # Transformation orchestration
 │   ├── transform-helpers.ts           # Validation and utility functions
-│   ├── path-traversal.ts              # Path-based traversal algorithm
-│   └── synchronization.ts             # Gateway synchronization logic
+│   ├── scoped-traversal.ts            # Hierarchical scoped traversal algorithm
 ├── transformers/                      # Element-specific transformers
 │   ├── element-transformers.ts        # Element transformation functions
 │   └── mode-handlers.ts               # Mode-specific result processing
@@ -1013,19 +1117,20 @@ components/bpmn-timeline/
 
 ### Key Implementation Details
 
-**Unified Path-Based Architecture**:
+**Unified Scoped Path-Based Architecture**:
 
-- All modes (earliest/every/latest) use path-based traversal with gateway-semantic processing
-- Gateway semantics applied during traversal, not in post-processing
-- Optional gateway visibility controlled by `renderGateways` parameter
-- Dependency filtering creates bypass connections when gateways are hidden
+- All modes (earliest/every/latest) use hierarchical scoped traversal via `calculateScopedTimings()`
+- **Core traversal**: `scoped-traversal.ts` handles path exploration within hierarchical scope structure
+- **Mode processing**: `mode-handlers.ts` processes traversal results differently per mode
+- Gateway semantics applied during traversal with scope-aware processing
+- Sub-processes handled as independent scopes with parent-child relationship preservation
 
-**Gateway Processing**:
+**Hierarchical Scope Processing**:
 
-- Gateways processed semantically during path traversal
-- Direct source→target dependencies created, skipping gateway instances
-- Parallel gateway synchronization uses queueing mechanism
-- Gateway timing and flow durations combined in single operation
+- **ProcessScope structure**: Organizes elements into main process + nested sub-process scopes
+- **Independent traversal**: Each scope explored with own path context and visit tracking
+- **Shared instance management**: Global counter ensures unique IDs across all scopes
+- **Parent-child preservation**: Complex relationship fixing in mode handlers for proper hierarchy
 
 **Performance Safeguards**:
 
@@ -1036,12 +1141,13 @@ components/bpmn-timeline/
 
 ### Current Implementation Status
 
-- **Gateway-semantic traversal**: Fully implemented
-- **Parallel/exclusive gateway support**: Complete
-- **All traversal modes**: Working (earliest/every/latest occurrence)
-- **Gateway visibility control**: Implemented via `renderGateways`
-- **Dependency filtering**: Bypass logic for hidden gateways
-- **Synchronization logic**: Queueing mechanism for parallel joins
-- **Issue detection**: Gateway mismatch warnings, unsupported element errors
-- **Ghost elements and dependencies**: Fully implemented with replacement logic
-- **Settings dependency system**: Complete with shared utility functions
+- **Scoped path-based traversal**: Fully implemented via `calculateScopedTimings()`
+- **Hierarchical sub-process support**: Complete with proper parent-child relationships
+- **All traversal modes**: Working (earliest/every/latest occurrence) with unified core architecture
+- **Gateway-semantic processing**: Complete with scope-aware gateway handling
+- **Multi-level nesting**: Supported with recursion depth protection (10 levels max)
+- **Complex parent-child alignment**: Implemented in mode handlers for proper instance relationships
+- **Boundary event integration**: Complete support on sub-processes with proper timing
+- **Gateway visibility control**: Implemented via `renderGateways` parameter
+- **Issue detection**: Comprehensive validation with gateway mismatch warnings
+- **Ghost elements and dependencies**: Fully implemented (disabled for sub-processes due to complexity)

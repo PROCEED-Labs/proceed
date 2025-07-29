@@ -307,8 +307,8 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     // Track scroll position to trigger re-renders for virtualization
     const [scrollTop, setScrollTop] = useState(0);
 
-    // Track selected element for highlighting dependencies
-    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    // Track selected elements for highlighting dependencies (support multiple selection for sub-process children)
+    const [selectedElementIds, setSelectedElementIds] = useState<Set<string>>(new Set());
 
     // Track info modal state
     const [infoModalVisible, setInfoModalVisible] = useState(false);
@@ -322,15 +322,67 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       [dependencies],
     );
 
-    // Handle element selection
-    const handleElementClick = useCallback((elementId: string) => {
-      setSelectedElementId((prev) => (prev === elementId ? null : elementId));
-    }, []);
+    // Handle element selection with sub-process child support
+    const handleElementClick = useCallback(
+      (elementId: string) => {
+        const clickedElement = elements.find((el) => el.id === elementId);
+
+        setSelectedElementIds((prev) => {
+          const newSelection = new Set<string>();
+
+          // If clicking the same element that's already selected, deselect all
+          if (prev.has(elementId)) {
+            return newSelection; // Empty set - deselect everything
+          }
+
+          // Select the clicked element
+          newSelection.add(elementId);
+
+          // If the clicked element is a sub-process, also select all its children
+          if (
+            clickedElement &&
+            clickedElement.type === 'group' &&
+            (clickedElement as any).isSubProcess
+          ) {
+            // Find child elements that belong to this specific sub-process instance
+            const childElements = elements.filter((el) => {
+              const parentId = (el as any).parentSubProcessId;
+              return parentId === elementId;
+            });
+
+            // Also recursively select children of sub-process children (nested sub-processes)
+            const getAllDescendants = (parentId: string): string[] => {
+              const directChildren = elements.filter((el) => {
+                const elParentId = (el as any).parentSubProcessId;
+                return elParentId === parentId;
+              });
+
+              let allDescendants: string[] = [];
+              directChildren.forEach((child) => {
+                allDescendants.push(child.id);
+                // If this child is also a sub-process, get its children too
+                if (child.type === 'group' && (child as any).isSubProcess) {
+                  allDescendants = allDescendants.concat(getAllDescendants(child.id));
+                }
+              });
+
+              return allDescendants;
+            };
+
+            const allDescendantIds = getAllDescendants(elementId);
+            allDescendantIds.forEach((descendantId) => newSelection.add(descendantId));
+          }
+
+          return newSelection;
+        });
+      },
+      [elements],
+    );
 
     // Handle info button click
     const handleInfoClick = useCallback((element: GanttElementType, event: React.MouseEvent) => {
       event.stopPropagation(); // Prevent bubbling to avoid double selection
-      setSelectedElementId(element.id); // Select the row
+      setSelectedElementIds(new Set([element.id])); // Select only this element
       setInfoModalElement(element);
       setInfoModalVisible(true);
     }, []);
@@ -439,9 +491,10 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         }
 
         // Get highlighted dependencies for the selected element
-        const highlightedDependencies = selectedElementId
-          ? getOutgoingDependencies(selectedElementId)
-          : [];
+        const highlightedDependencies =
+          selectedElementIds.size > 0
+            ? Array.from(selectedElementIds).flatMap((id) => getOutgoingDependencies(id))
+            : [];
 
         // Always pass ALL elements to the renderer
         // The renderer will handle visibility filtering internally
@@ -454,7 +507,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           dependencies, // Pass dependency arrows
           scrollTop, // Pass exact scroll position
           highlightedDependencies, // Pass highlighted dependencies
-          selectedElementId, // Pass selected element ID for row highlighting
+          selectedElementIds.size > 0 ? Array.from(selectedElementIds)[0] : null, // Pass first selected element ID for row highlighting
           options?.curvedDependencies, // Pass curved dependencies setting
         );
 
@@ -469,7 +522,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       gantt.taskListRef,
       currentDateMarkerTime,
       dependencies,
-      selectedElementId,
+      selectedElementIds,
       getOutgoingDependencies,
     ]);
 
@@ -492,22 +545,19 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         // Update scroll state to trigger re-render for task list virtualization
         setScrollTop(newScrollTop);
 
-        // Don't sync scroll to chart container - we handle it via canvas translation
-        // Only update if this is the task list scrolling
+        // Only update if this is the task list scrolling and throttle with requestAnimationFrame
         if (e.currentTarget === gantt.taskListRef.current) {
-          // Just trigger a re-render with the new scroll position
-          renderChart();
-        }
+          // Cancel any pending animation frame to avoid double rendering
+          if (animationFrameIdRef.current) {
+            cancelAnimationFrame(animationFrameIdRef.current);
+          }
 
-        // Throttle rendering
-        if (animationFrameIdRef.current) {
-          cancelAnimationFrame(animationFrameIdRef.current);
+          // Throttle rendering with requestAnimationFrame for smooth scrolling
+          animationFrameIdRef.current = requestAnimationFrame(() => {
+            renderChart();
+            animationFrameIdRef.current = null;
+          });
         }
-
-        animationFrameIdRef.current = requestAnimationFrame(() => {
-          renderChart();
-          animationFrameIdRef.current = null;
-        });
       },
       [renderChart, gantt.taskListRef],
     );
@@ -1039,7 +1089,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   const element = elements[i];
                   if (!element) continue;
 
-                  const isSelected = selectedElementId === element.id;
+                  const isSelected = selectedElementIds.has(element.id);
 
                   visibleElements.push(
                     <div
@@ -1204,7 +1254,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                 const element = elements.find((el) => el.id === elementId);
                 if (element) {
                   setInfoModalElement(element);
-                  setSelectedElementId(elementId);
+                  setSelectedElementIds(new Set([elementId]));
                 }
               }}
             />

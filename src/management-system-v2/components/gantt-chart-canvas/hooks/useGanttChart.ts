@@ -225,26 +225,55 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
     lastRenderOffset: 0,
   });
 
-  // Handle pan operation with optimized throttling for better responsiveness
+  // Throttle state updates during panning to prevent excessive re-renders
+  const panUpdateThrottleRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Handle pan operation with proper state management and throttling
   const handlePan = useCallback(
     (deltaX: number, isTemporary: boolean = true) => {
       const matrix = timeMatrixRef.current;
       const chartWidth = getChartWidth();
 
       if (isTemporary) {
-        // During dragging, update state with pan offset for CSS transform
-        // This should NOT trigger re-renders since panOffset is not in dependencies
+        // During dragging, update pan offset in state for smooth rendering
         // Calculate offset relative to the last render position
         const relativePanOffset = deltaX - bufferStateRef.current.lastRenderOffset;
-        setState((prev) => ({
-          ...prev,
-          panOffset: relativePanOffset,
-        }));
 
-        // With 5x canvas buffer (2x on each side), no re-renders needed during normal panning
+        // Clear any pending throttled updates
+        if (panUpdateThrottleRef.current) {
+          clearTimeout(panUpdateThrottleRef.current);
+        }
+
+        // Throttle state updates to prevent excessive re-renders
+        // Update immediately for significant changes, throttle small changes
+        const offsetChange = Math.abs(relativePanOffset - (state.panOffset || 0));
+
+        if (offsetChange > 5) {
+          // Large changes: update immediately for responsiveness
+          setState((prev) => ({
+            ...prev,
+            panOffset: relativePanOffset,
+          }));
+        } else if (offsetChange > 1) {
+          // Small changes: throttle to reduce render frequency
+          panUpdateThrottleRef.current = setTimeout(() => {
+            setState((prev) => ({
+              ...prev,
+              panOffset: relativePanOffset,
+            }));
+          }, 16); // ~60fps max
+        }
+
+        // With 5x canvas buffer (2x on each side), minimal re-renders needed during normal panning
         // Buffer covers 200% viewport width in each direction - more than enough for typical usage
       } else {
-        // When pan ends, update the time matrix and reset transform
+        // When pan ends, clear any pending throttled updates
+        if (panUpdateThrottleRef.current) {
+          clearTimeout(panUpdateThrottleRef.current);
+          panUpdateThrottleRef.current = null;
+        }
+
+        // Update the time matrix and reset pan offset
         matrix.translate += deltaX - bufferStateRef.current.lastRenderOffset;
         bufferStateRef.current.lastRenderOffset = 0;
 
@@ -262,7 +291,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
         onViewChange?.(visibleRange);
       }
     },
-    [getChartWidth, onViewChange],
+    [getChartWidth, onViewChange], // Removed state.panOffset from dependencies to prevent infinite loops
   );
 
   // Resize the task list
@@ -445,6 +474,15 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
       clearTimeout(timer);
     };
   }, [initializeTimeMatrix, elements]); // Keep the same dependencies, but we'll optimize inside
+
+  // Clean up throttle timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (panUpdateThrottleRef.current) {
+        clearTimeout(panUpdateThrottleRef.current);
+      }
+    };
+  }, []);
 
   // Return the public API
   return {

@@ -39,6 +39,13 @@ export class ElementRenderer {
   }
 
   /**
+   * Set the hovered element ID (compatibility method)
+   */
+  setHoveredElement(elementId: string | null): void {
+    // Not implemented in this renderer version
+  }
+
+  /**
    * Render a task bar element
    */
   renderTask(
@@ -338,7 +345,7 @@ export class ElementRenderer {
 
     if (isSubProcess) {
       // Render sub-process as triangles with dashed line
-      const triangleSize = 8;
+      const triangleSize = 12;
       context.fillStyle = isHovered ? darken(color, 10) : color;
 
       // Left triangle (downward pointing)
@@ -370,6 +377,33 @@ export class ElementRenderer {
         context.stroke();
         context.setLineDash([]); // Reset line dash
       }
+
+      // Add dashed vertical lines at the edges for better visual definition
+      const verticalLineHeight = height * 0.6; // 60% of row height
+      const verticalLineTop = y - verticalLineHeight / 2;
+      const verticalLineBottom = y + verticalLineHeight / 2;
+
+      context.setLineDash([3, 3]); // Shorter dashes for vertical lines
+      context.strokeStyle = isHovered ? darken(color, 10) : color;
+      context.lineWidth = 1 * this.pixelRatio;
+
+      // Left vertical line
+      if (startX >= 0 && startX <= context.canvas.width / this.pixelRatio) {
+        context.beginPath();
+        context.moveTo(startX, verticalLineTop);
+        context.lineTo(startX, verticalLineBottom);
+        context.stroke();
+      }
+
+      // Right vertical line
+      if (endX >= 0 && endX <= context.canvas.width / this.pixelRatio) {
+        context.beginPath();
+        context.moveTo(endX, verticalLineTop);
+        context.lineTo(endX, verticalLineBottom);
+        context.stroke();
+      }
+
+      context.setLineDash([]); // Reset line dash
 
       // Draw sub-process label
       if (width > 50 && group.name) {
@@ -483,9 +517,27 @@ export class ElementRenderer {
       // Add to visible elements list
       visibleElements.push(element);
 
-      // Render boundary event row background pattern if this is a boundary event
-      if ((element as any).isBoundaryEvent) {
+      // Render row background pattern for constrained elements
+      const isBoundaryEvent = (element as any).isBoundaryEvent;
+      const isSubProcessChild = (element as any).parentSubProcessId;
+
+      if (isBoundaryEvent && isSubProcessChild) {
+        // Element is both boundary event AND sub-process child - render unified pattern
+        this.renderConstrainedElementRowBackground(
+          context,
+          rowIndex,
+          timeMatrix,
+          elements,
+          element,
+          true,
+          true,
+        );
+      } else if (isBoundaryEvent) {
+        // Only boundary event
         this.renderBoundaryEventRowBackground(context, rowIndex, timeMatrix, elements, element);
+      } else if (isSubProcessChild) {
+        // Only sub-process child
+        this.renderSubProcessChildRowBackground(context, rowIndex, timeMatrix, elements, element);
       }
 
       // Render based on element type
@@ -1033,9 +1085,14 @@ export class ElementRenderer {
 
     context.save();
 
+    // Set up clipping rectangle for clean row boundaries
+    context.beginPath();
+    context.rect(startX, rowY, endX - startX, rowHeight);
+    context.clip();
+
     // Create the slash pattern
-    context.strokeStyle = 'rgba(120, 120, 120, 0.3)'; // More visible gray
-    context.lineWidth = 1;
+    context.strokeStyle = 'rgba(120, 120, 120, 0.4)'; // More visible gray
+    context.lineWidth = 1.5;
 
     // Create slash pattern across the entire row
     const slashSpacing = 12; // Distance between slashes
@@ -1043,46 +1100,543 @@ export class ElementRenderer {
 
     if (
       attachedTask &&
-      attachedTask.type === 'task' &&
+      (attachedTask.type === 'task' || attachedTask.type === 'group') &&
       'start' in attachedTask &&
       'end' in attachedTask
     ) {
-      // Calculate task boundaries in screen coordinates
-      const taskStartX = timeMatrix.transformPoint(attachedTask.start);
-      const taskEndX = timeMatrix.transformPoint(attachedTask.end);
+      // Calculate attached element boundaries in screen coordinates (task or sub-process)
+      const elementStartX = timeMatrix.transformPoint(attachedTask.start);
+      const elementEndX = timeMatrix.transformPoint(attachedTask.end);
 
-      // Render slashes before the task
-      for (let x = startX; x < taskStartX; x += slashSpacing) {
-        const slashEndX = Math.min(x + slashLength, taskStartX);
-        if (slashEndX > startX) {
+      // Render slashes before the attached element - clip slashes that would cross boundary
+      for (let x = startX; x < elementStartX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, elementStartX); // Clip at boundary
+        if (slashEndX > x) {
+          // Only draw if there's something to draw
+          // Calculate proportional Y coordinate to maintain angle
+          const actualLength = slashEndX - x;
+          const slashProgress = actualLength / slashLength;
+          const slashEndY = rowY + rowHeight * slashProgress;
+
           context.beginPath();
           context.moveTo(x, rowY);
-          context.lineTo(slashEndX, rowY + rowHeight);
+          context.lineTo(slashEndX, slashEndY);
           context.stroke();
         }
       }
 
-      // Render slashes after the task
-      for (let x = taskEndX; x < endX; x += slashSpacing) {
-        const slashEndX = Math.min(x + slashLength, endX);
-        if (x >= taskEndX) {
+      // Render slashes after the attached element - clip slashes that would extend past viewport
+      for (let x = elementEndX; x < endX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, endX); // Clip at viewport boundary
+        if (slashEndX > x) {
+          // Only draw if there's something to draw
+          // Calculate proportional Y coordinate to maintain angle
+          const actualLength = slashEndX - x;
+          const slashProgress = actualLength / slashLength;
+          const slashEndY = rowY + rowHeight * slashProgress;
+
           context.beginPath();
           context.moveTo(x, rowY);
-          context.lineTo(slashEndX, rowY + rowHeight);
+          context.lineTo(slashEndX, slashEndY);
           context.stroke();
         }
       }
-    } else {
-      // No attached task found, render slashes across entire row
-      for (let x = startX; x < endX; x += slashSpacing) {
-        const slashEndX = Math.min(x + slashLength, endX);
+
+      // Add dashed vertical lines at the edges of the slashed areas
+      context.setLineDash([3, 2]); // Short dashes for vertical boundary lines
+      context.strokeStyle = 'rgba(80, 80, 80, 0.6)'; // Slightly darker than slashes
+      context.lineWidth = 1;
+
+      // Left vertical line (start of attached element, edge of slashed area)
+      if (elementStartX >= startX && elementStartX <= endX) {
         context.beginPath();
-        context.moveTo(x, rowY);
-        context.lineTo(slashEndX, rowY + rowHeight);
+        context.moveTo(elementStartX, rowY);
+        context.lineTo(elementStartX, rowY + rowHeight);
         context.stroke();
+      }
+
+      // Right vertical line (end of attached element, edge of slashed area)
+      if (elementEndX >= startX && elementEndX <= endX) {
+        context.beginPath();
+        context.moveTo(elementEndX, rowY);
+        context.lineTo(elementEndX, rowY + rowHeight);
+        context.stroke();
+      }
+
+      context.setLineDash([]); // Reset line dash
+    } else {
+      // No attached task found, render slashes across entire row - clip at viewport boundary
+      for (let x = startX; x < endX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, endX); // Clip at viewport boundary
+        if (slashEndX > x) {
+          // Only draw if there's something to draw
+          // Calculate proportional Y coordinate to maintain angle
+          const actualLength = slashEndX - x;
+          const slashProgress = actualLength / slashLength;
+          const slashEndY = rowY + rowHeight * slashProgress;
+
+          context.beginPath();
+          context.moveTo(x, rowY);
+          context.lineTo(slashEndX, slashEndY);
+          context.stroke();
+        }
       }
     }
 
     context.restore();
+  }
+
+  /**
+   * Render subtle gray slash pattern for sub-process child element rows
+   * with cutout for the parent sub-process timespan
+   */
+  private renderSubProcessChildRowBackground(
+    context: CanvasRenderingContext2D,
+    rowIndex: number,
+    timeMatrix: TimeMatrix,
+    elements: GanttElementType[],
+    childElement: GanttElementType,
+  ): void {
+    const y = rowIndex * ROW_HEIGHT;
+    const rowY = y + TASK_PADDING;
+    const rowHeight = ROW_HEIGHT - 2 * TASK_PADDING;
+
+    // Find the parent sub-process to create a cutout
+    const parentSubProcessId = (childElement as any).parentSubProcessId;
+    let parentSubProcess: GanttElementType | undefined;
+
+    if (parentSubProcessId) {
+      // Find the specific sub-process instance that this child belongs to
+      const candidateSubProcesses = elements.filter(
+        (el) =>
+          (el.id === parentSubProcessId || el.id.startsWith(parentSubProcessId + '_instance_')) &&
+          el.type === 'group',
+      );
+
+      // If there's only one candidate, use it (single instance case)
+      if (candidateSubProcesses.length === 1) {
+        parentSubProcess = candidateSubProcesses[0];
+      } else if (candidateSubProcesses.length === 0) {
+        // No direct match found - try special handling for nested sub-processes
+        if (parentSubProcessId.includes('_subprocess_')) {
+          // For nested sub-processes, try to extract the base parent ID
+          // parentSubProcessId: Activity_04vzwbt_instance_3_subprocess_Activity_1c6bl41_instance_10
+          // should match element: Activity_04vzwbt_instance_3
+          const baseParentId = parentSubProcessId.split('_subprocess_')[0];
+          const baseMatches = elements.filter(
+            (el) => el.id === baseParentId && el.type === 'group',
+          );
+          if (baseMatches.length > 0) {
+            parentSubProcess = baseMatches[0];
+          }
+        }
+      } else if (candidateSubProcesses.length > 1) {
+        // Multiple sub-process instances - find the one whose timespan contains this child
+        const childStart = childElement.start;
+        const childEnd = 'end' in childElement ? childElement.end : childStart;
+
+        parentSubProcess = candidateSubProcesses.find((subProcess) => {
+          if (!('end' in subProcess) || !subProcess.end) return false;
+
+          const subProcessStart = subProcess.start;
+          const subProcessEnd = subProcess.end;
+
+          // Child should be positioned within the sub-process timespan
+          return (
+            (childStart >= subProcessStart && childStart <= subProcessEnd) ||
+            (childEnd !== undefined && childEnd >= subProcessStart && childEnd <= subProcessEnd) ||
+            (childStart <= subProcessStart && childEnd !== undefined && childEnd >= subProcessEnd)
+          );
+        });
+
+        // Fallback to first candidate if no timing match found
+        if (!parentSubProcess) {
+          parentSubProcess = candidateSubProcesses[0];
+        }
+      }
+    }
+
+    // Get viewport boundaries
+    const canvasWidth = context.canvas.width / this.pixelRatio;
+    const visibleTimeRange = timeMatrix.getVisibleTimeRange(canvasWidth);
+    const startX = timeMatrix.transformPoint(visibleTimeRange[0]);
+    const endX = timeMatrix.transformPoint(visibleTimeRange[1]);
+
+    context.save();
+
+    // Set up clipping rectangle for clean row boundaries
+    context.beginPath();
+    context.rect(startX, rowY, endX - startX, rowHeight);
+    context.clip();
+
+    // Create the slash pattern - aligned with boundary event styling
+    context.strokeStyle = 'rgba(120, 120, 120, 0.4)'; // Same as boundary events
+    context.lineWidth = 1.5;
+
+    // Create slash pattern across the entire row - aligned with boundary event spacing
+    const slashSpacing = 12; // Same as boundary events
+    const slashLength = 8; // Same as boundary events
+
+    if (
+      parentSubProcess &&
+      parentSubProcess.type === 'group' &&
+      'start' in parentSubProcess &&
+      'end' in parentSubProcess
+    ) {
+      // Calculate sub-process boundaries in screen coordinates
+      const subProcessStartX = timeMatrix.transformPoint(parentSubProcess.start);
+      const subProcessEndX = timeMatrix.transformPoint(parentSubProcess.end);
+
+      // Render slashes before the sub-process - clip slashes that would cross boundary
+      for (let x = startX; x < subProcessStartX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, subProcessStartX); // Clip at boundary
+        if (slashEndX > x) {
+          // Only draw if there's something to draw
+          // Calculate proportional Y coordinate to maintain angle
+          const actualLength = slashEndX - x;
+          const slashProgress = actualLength / slashLength;
+          const slashEndY = rowY + rowHeight * slashProgress;
+
+          context.beginPath();
+          context.moveTo(x, rowY);
+          context.lineTo(slashEndX, slashEndY);
+          context.stroke();
+        }
+      }
+
+      // Render slashes after the sub-process - clip slashes that would extend past viewport
+      for (let x = subProcessEndX; x < endX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, endX); // Clip at viewport boundary
+        if (slashEndX > x) {
+          // Only draw if there's something to draw
+          // Calculate proportional Y coordinate to maintain angle
+          const actualLength = slashEndX - x;
+          const slashProgress = actualLength / slashLength;
+          const slashEndY = rowY + rowHeight * slashProgress;
+
+          context.beginPath();
+          context.moveTo(x, rowY);
+          context.lineTo(slashEndX, slashEndY);
+          context.stroke();
+        }
+      }
+
+      // Add dashed vertical lines at the edges of the slashed areas
+      context.setLineDash([3, 2]); // Short dashes for vertical boundary lines
+      context.strokeStyle = 'rgba(80, 80, 80, 0.6)'; // Slightly darker than slashes
+      context.lineWidth = 1;
+
+      // Left vertical line (start of sub-process, edge of slashed area)
+      if (subProcessStartX >= startX && subProcessStartX <= endX) {
+        context.beginPath();
+        context.moveTo(subProcessStartX, rowY);
+        context.lineTo(subProcessStartX, rowY + rowHeight);
+        context.stroke();
+      }
+
+      // Right vertical line (end of sub-process, edge of slashed area)
+      if (subProcessEndX >= startX && subProcessEndX <= endX) {
+        context.beginPath();
+        context.moveTo(subProcessEndX, rowY);
+        context.lineTo(subProcessEndX, rowY + rowHeight);
+        context.stroke();
+      }
+
+      context.setLineDash([]); // Reset line dash
+    } else {
+      // No parent sub-process found, render slashes across entire row - clip at viewport boundary
+      for (let x = startX; x < endX; x += slashSpacing) {
+        const slashEndX = Math.min(x + slashLength, endX); // Clip at viewport boundary
+        if (slashEndX > x) {
+          // Only draw if there's something to draw
+          // Calculate proportional Y coordinate to maintain angle
+          const actualLength = slashEndX - x;
+          const slashProgress = actualLength / slashLength;
+          const slashEndY = rowY + rowHeight * slashProgress;
+
+          context.beginPath();
+          context.moveTo(x, rowY);
+          context.lineTo(slashEndX, slashEndY);
+          context.stroke();
+        }
+      }
+    }
+
+    context.restore();
+  }
+
+  /**
+   * Render row background pattern for elements with multiple constraints
+   * (e.g., boundary events that are also sub-process children)
+   */
+  private renderConstrainedElementRowBackground(
+    context: CanvasRenderingContext2D,
+    rowIndex: number,
+    timeMatrix: TimeMatrix,
+    elements: GanttElementType[],
+    element: GanttElementType,
+    isBoundaryEvent: boolean,
+    isSubProcessChild: boolean,
+  ): void {
+    const y = rowIndex * ROW_HEIGHT;
+    const rowY = y + TASK_PADDING;
+    const rowHeight = ROW_HEIGHT - 2 * TASK_PADDING;
+
+    // Collect all constraint regions (areas where slashes should NOT appear)
+    const constraintRegions: Array<{ start: number; end: number }> = [];
+
+    // Add boundary event constraint (attached task timespan)
+    if (isBoundaryEvent) {
+      const attachedToId = (element as any).attachedToId;
+      if (attachedToId) {
+        const attachedTask = this.findAttachedTask(elements, attachedToId, element);
+        if (
+          attachedTask &&
+          (attachedTask.type === 'task' || attachedTask.type === 'group') &&
+          'start' in attachedTask &&
+          'end' in attachedTask
+        ) {
+          constraintRegions.push({
+            start: attachedTask.start,
+            end: attachedTask.end,
+          });
+        }
+      }
+    }
+
+    // Add sub-process constraint (parent sub-process timespan)
+    if (isSubProcessChild) {
+      const parentSubProcessId = (element as any).parentSubProcessId;
+      if (parentSubProcessId) {
+        const parentSubProcess = this.findParentSubProcess(elements, parentSubProcessId, element);
+        if (
+          parentSubProcess &&
+          'start' in parentSubProcess &&
+          'end' in parentSubProcess &&
+          parentSubProcess.end !== undefined
+        ) {
+          constraintRegions.push({
+            start: parentSubProcess.start,
+            end: parentSubProcess.end,
+          });
+        }
+      }
+    }
+
+    // Merge overlapping regions
+    const mergedRegions = this.mergeConstraintRegions(constraintRegions);
+
+    // Get viewport boundaries
+    const canvasWidth = context.canvas.width / this.pixelRatio;
+    const visibleTimeRange = timeMatrix.getVisibleTimeRange(canvasWidth);
+    const startX = timeMatrix.transformPoint(visibleTimeRange[0]);
+    const endX = timeMatrix.transformPoint(visibleTimeRange[1]);
+
+    context.save();
+
+    // Set up clipping rectangle for clean row boundaries
+    context.beginPath();
+    context.rect(startX, rowY, endX - startX, rowHeight);
+    context.clip();
+
+    // Create the slash pattern - consistent styling
+    context.strokeStyle = 'rgba(120, 120, 120, 0.4)';
+    context.lineWidth = 1.5;
+
+    // Create slash pattern across the entire row, excluding constraint regions
+    const slashSpacing = 12; // Aligned with boundary events
+    const slashLength = 8;
+
+    // Render slashes with constraint regions as cutouts
+    this.renderSlashesWithConstraints(
+      context,
+      startX,
+      endX,
+      rowY,
+      rowHeight,
+      slashSpacing,
+      slashLength,
+      mergedRegions,
+      timeMatrix,
+    );
+
+    // Add dashed vertical lines at the edges of all constraint regions
+    context.setLineDash([3, 2]); // Short dashes for vertical boundary lines
+    context.strokeStyle = 'rgba(80, 80, 80, 0.6)'; // Slightly darker than slashes
+    context.lineWidth = 1;
+
+    mergedRegions.forEach((region) => {
+      const regionStartX = timeMatrix.transformPoint(region.start);
+      const regionEndX = timeMatrix.transformPoint(region.end);
+
+      // Left vertical line (start of constraint region, edge of slashed area)
+      if (regionStartX >= startX && regionStartX <= endX) {
+        context.beginPath();
+        context.moveTo(regionStartX, rowY);
+        context.lineTo(regionStartX, rowY + rowHeight);
+        context.stroke();
+      }
+
+      // Right vertical line (end of constraint region, edge of slashed area)
+      if (regionEndX >= startX && regionEndX <= endX) {
+        context.beginPath();
+        context.moveTo(regionEndX, rowY);
+        context.lineTo(regionEndX, rowY + rowHeight);
+        context.stroke();
+      }
+    });
+
+    context.setLineDash([]); // Reset line dash
+
+    context.restore();
+  }
+
+  /**
+   * Find the attached task for a boundary event
+   */
+  private findAttachedTask(
+    elements: GanttElementType[],
+    attachedToId: string,
+    boundaryEvent: GanttElementType,
+  ): GanttElementType | undefined {
+    const candidateTasks = elements.filter(
+      (el) => el.id === attachedToId || el.id.startsWith(attachedToId + '_instance_'),
+    );
+
+    if (candidateTasks.length === 1) {
+      return candidateTasks[0];
+    } else if (candidateTasks.length > 1) {
+      return (
+        candidateTasks.find((task) => {
+          if (!('end' in task) || !task.end) return false;
+          const taskStart = task.start;
+          const taskEnd = task.end;
+          const boundaryStart = boundaryEvent.start;
+          return boundaryStart >= taskStart && boundaryStart <= taskEnd;
+        }) || candidateTasks[0]
+      );
+    }
+    return undefined;
+  }
+
+  /**
+   * Find the parent sub-process for a child element
+   */
+  private findParentSubProcess(
+    elements: GanttElementType[],
+    parentSubProcessId: string,
+    childElement: GanttElementType,
+  ): GanttElementType | undefined {
+    const candidateSubProcesses = elements.filter(
+      (el) =>
+        (el.id === parentSubProcessId || el.id.startsWith(parentSubProcessId + '_instance_')) &&
+        el.type === 'group',
+    );
+
+    if (candidateSubProcesses.length === 1) {
+      return candidateSubProcesses[0];
+    } else if (candidateSubProcesses.length > 1) {
+      const childStart = childElement.start;
+      const childEnd = 'end' in childElement ? childElement.end : childStart;
+
+      return (
+        candidateSubProcesses.find((subProcess) => {
+          if (!('end' in subProcess) || !subProcess.end) return false;
+          const subProcessStart = subProcess.start;
+          const subProcessEnd = subProcess.end;
+          return (
+            (childStart >= subProcessStart && childStart <= subProcessEnd) ||
+            (childEnd !== undefined && childEnd >= subProcessStart && childEnd <= subProcessEnd) ||
+            (childStart <= subProcessStart && childEnd !== undefined && childEnd >= subProcessEnd)
+          );
+        }) || candidateSubProcesses[0]
+      );
+    }
+    return undefined;
+  }
+
+  /**
+   * Merge overlapping constraint regions
+   */
+  private mergeConstraintRegions(
+    regions: Array<{ start: number; end: number }>,
+  ): Array<{ start: number; end: number }> {
+    if (regions.length <= 1) return regions;
+
+    const sorted = [...regions].sort((a, b) => a.start - b.start);
+    const merged: Array<{ start: number; end: number }> = [sorted[0]];
+
+    for (let i = 1; i < sorted.length; i++) {
+      const current = sorted[i];
+      const previous = merged[merged.length - 1];
+
+      if (current.start <= previous.end) {
+        previous.end = Math.max(previous.end, current.end);
+      } else {
+        merged.push(current);
+      }
+    }
+
+    return merged;
+  }
+
+  /**
+   * Render slashes with constraint cutouts
+   */
+  private renderSlashesWithConstraints(
+    context: CanvasRenderingContext2D,
+    startX: number,
+    endX: number,
+    rowY: number,
+    rowHeight: number,
+    slashSpacing: number,
+    slashLength: number,
+    constraintRegions: Array<{ start: number; end: number }>,
+    timeMatrix: TimeMatrix,
+  ): void {
+    // Convert constraint regions to screen coordinates
+    const screenConstraints = constraintRegions.map((region) => ({
+      startX: timeMatrix.transformPoint(region.start),
+      endX: timeMatrix.transformPoint(region.end),
+    }));
+
+    // Render slashes across the entire visible area
+    for (let x = startX; x < endX; x += slashSpacing) {
+      // Check if this slash position is within any constraint region
+      const inConstraint = screenConstraints.some(
+        (constraint) => x >= constraint.startX && x < constraint.endX,
+      );
+
+      if (!inConstraint && x < endX) {
+        // Calculate the actual end point - let canvas clipping handle boundaries
+        const slashEndX = x + slashLength;
+
+        // Also check if the end point would be in a constraint
+        const endInConstraint = screenConstraints.some(
+          (constraint) => slashEndX > constraint.startX && slashEndX <= constraint.endX,
+        );
+
+        if (!endInConstraint) {
+          // Check if the slash would cross a constraint boundary
+          let finalEndX = slashEndX;
+          for (const constraint of screenConstraints) {
+            if (x < constraint.startX && slashEndX > constraint.startX) {
+              finalEndX = constraint.startX;
+              break;
+            }
+          }
+
+          if (finalEndX > x) {
+            const slashProgress = (finalEndX - x) / slashLength;
+            const slashEndY = rowY + rowHeight * slashProgress;
+
+            context.beginPath();
+            context.moveTo(x, rowY);
+            context.lineTo(finalEndX, slashEndY);
+            context.stroke();
+          }
+        }
+      }
+    }
   }
 }

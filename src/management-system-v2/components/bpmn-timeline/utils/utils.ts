@@ -8,6 +8,7 @@ import {
   isExclusiveGateway,
   isParallelGateway,
 } from '../transformers/element-transformers';
+import { MAX_RECURSION_DEPTH } from '../constants';
 
 // ============================================================================
 // Duration and Time Utilities
@@ -131,31 +132,15 @@ export function isTaskElement(element: { $type: string }): boolean {
 }
 
 /**
- * Check if element is an expanded sub-process (has flowElements property)
+ * Check if element is a sub-process (all sub-processes are treated as expanded)
  */
 export function isExpandedSubProcess(element: any): boolean {
-  return (
-    (element.$type === 'bpmn:SubProcess' || element.$type === 'bpmn:AdHocSubProcess') &&
-    element.flowElements &&
-    Array.isArray(element.flowElements) &&
-    element.flowElements.length > 0
-  );
+  return element.$type === 'bpmn:SubProcess' || element.$type === 'bpmn:AdHocSubProcess';
 }
 
 /**
- * Check if element is a collapsed sub-process (does not have flowElements)
- */
-export function isCollapsedSubProcess(element: any): boolean {
-  return (
-    (element.$type === 'bpmn:SubProcess' || element.$type === 'bpmn:AdHocSubProcess') &&
-    (!element.flowElements ||
-      !Array.isArray(element.flowElements) ||
-      element.flowElements.length === 0)
-  );
-}
-
-/**
- * Flatten expanded sub-processes, adding hierarchy metadata to child elements
+ * Flatten sub-processes, adding hierarchy metadata to child elements
+ * All sub-processes are treated as expanded in our BPMN structure
  */
 export function flattenExpandedSubProcesses(
   elements: any[],
@@ -176,12 +161,15 @@ export function flattenExpandedSubProcesses(
       flattened.push(subProcessWithHierarchy);
 
       // Recursively flatten child elements with increased hierarchy level
-      const childElements = flattenExpandedSubProcesses(
-        element.flowElements,
-        element.id,
-        hierarchyLevel + 1,
-      );
-      flattened.push(...childElements);
+      // If flowElements exists, use it; otherwise treat as atomic sub-process
+      if (element.flowElements && Array.isArray(element.flowElements)) {
+        const childElements = flattenExpandedSubProcesses(
+          element.flowElements,
+          element.id,
+          hierarchyLevel + 1,
+        );
+        flattened.push(...childElements);
+      }
     } else {
       // Regular element, add hierarchy info if it's inside a sub-process
       // For boundary events, explicitly preserve the attachedToRef property
@@ -258,11 +246,7 @@ export function getTaskTypeString(task: BPMNTask): string {
   const typeMatch = task.$type.match(/bpmn:(.+)/);
   const taskType = typeMatch ? typeMatch[1] : 'Task';
 
-  // Check for expanded sub-process
-  if ((taskType === 'SubProcess' || taskType === 'AdHocSubProcess') && isExpandedSubProcess(task)) {
-    const baseType = taskType === 'AdHocSubProcess' ? 'Ad-Hoc Subprocess' : 'Subprocess';
-    return `${baseType} (Expanded)`;
-  }
+  // All sub-processes are treated as expanded, no special suffix needed
 
   // Make task types more readable
   const readableTypes: Record<string, string> = {
@@ -437,6 +421,28 @@ export function findConnectedComponents(
     }
   });
 
+  // Add sub-process parent-child connections - BUT treat sub-process internal flows as separate components
+  nonFlowElements.forEach((element) => {
+    const parentSubProcessId = (element as any).parentSubProcessId;
+    if (parentSubProcessId) {
+      // Find the parent sub-process instance that matches this child
+      // Child has parentSubProcessId like "Activity_1c6bl41"
+      // Parent instance has id like "Activity_1c6bl41_instance_3"
+      const parentElement = nonFlowElements.find(
+        (el) =>
+          (el.id === parentSubProcessId || el.id.startsWith(parentSubProcessId + '_instance_')) &&
+          ((el as any).isSubProcess ||
+            el.$type === 'bpmn:SubProcess' ||
+            el.$type === 'bpmn:AdHocSubProcess'),
+      );
+
+      // DON'T connect sub-process children to their parent for color purposes
+      // This ensures sub-process internal flows get their own colors
+      // We only connect them for hierarchy ordering, not for color grouping
+      // (The hierarchy connection is handled separately in the sorting logic)
+    }
+  });
+
   // Perform DFS to find connected components
   let componentId = 0;
 
@@ -464,6 +470,7 @@ export function findConnectedComponents(
 
 /**
  * Assign colors to elements based on their connected components
+ * Sub-process flows get distinct colors from main process flows
  */
 export function assignFlowColors(
   elements: Array<{
@@ -478,13 +485,63 @@ export function assignFlowColors(
   const elementToComponent = findConnectedComponents(elements);
   const elementToColor = new Map<string, string>();
 
-  // Assign colors based on component ID
+  // Group elements by sub-process
+  const mainProcessElements = new Set<string>();
+  const subProcessGroups = new Map<string, Set<string>>();
+
+  elements.forEach((element) => {
+    const parentSubProcessId = (element as any).parentSubProcessId;
+    if (parentSubProcessId) {
+      // This element belongs to a sub-process
+      if (!subProcessGroups.has(parentSubProcessId)) {
+        subProcessGroups.set(parentSubProcessId, new Set());
+      }
+      subProcessGroups.get(parentSubProcessId)!.add(element.id);
+    } else {
+      // This element belongs to the main process
+      mainProcessElements.add(element.id);
+    }
+  });
+
+  // Assign colors with sub-process awareness
+
   elementToComponent.forEach((componentId, elementId) => {
-    const colorIndex = componentId % FLOW_COLOR_PALETTE.length;
-    elementToColor.set(elementId, FLOW_COLOR_PALETTE[colorIndex]);
+    const parentSubProcessId = (elements.find((el) => el.id === elementId) as any)
+      ?.parentSubProcessId;
+
+    if (parentSubProcessId) {
+      // Sub-process element - use offset color to distinguish from main process
+      // Each sub-process gets colors offset from the main palette
+      const subProcessIndex = Array.from(subProcessGroups.keys()).indexOf(parentSubProcessId);
+      const colorIndex = (componentId + (subProcessIndex + 1) * 2) % FLOW_COLOR_PALETTE.length;
+      elementToColor.set(elementId, FLOW_COLOR_PALETTE[colorIndex]);
+    } else {
+      // Main process element - use standard color assignment
+      const colorIndex = componentId % FLOW_COLOR_PALETTE.length;
+      elementToColor.set(elementId, FLOW_COLOR_PALETTE[colorIndex]);
+    }
   });
 
   return elementToColor;
+}
+
+/**
+ * Create a mapping from boundary event instance IDs to their attached task instance IDs
+ * using the dependencies created during traversal
+ */
+export function createBoundaryEventMapping(
+  dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId?: string }>,
+): Map<string, string> {
+  const boundaryEventToTaskInstance = new Map<string, string>();
+
+  dependencies.forEach((dep) => {
+    // Look for attachment dependencies (boundary event as target)
+    if (dep.flowId && dep.flowId.includes('_to_') && dep.flowId.includes('_attachment')) {
+      boundaryEventToTaskInstance.set(dep.targetInstanceId, dep.sourceInstanceId);
+    }
+  });
+
+  return boundaryEventToTaskInstance;
 }
 
 /**
@@ -504,52 +561,519 @@ export function groupAndSortElements<
   elements: T[],
   elementToComponent: Map<string, number>,
   chronologicalSorting: boolean = false,
+  dependencies?: Array<{
+    sourceId?: string;
+    targetId?: string;
+    sourceInstanceId?: string;
+    targetInstanceId?: string;
+    flowId?: string;
+  }>,
 ): T[] {
   // Separate boundary events from regular elements
   const boundaryEvents = elements.filter((el) => (el as any).isBoundaryEvent);
   const regularElements = elements.filter((el) => !(el as any).isBoundaryEvent);
 
-  // Group regular elements by component
-  const componentGroups = new Map<number, T[]>();
+  // Group and sort elements with hierarchy-aware ordering
+  const sortedRegularElements = sortElementsWithHierarchy(
+    regularElements,
+    elementToComponent,
+    chronologicalSorting,
+  );
 
-  regularElements.forEach((element, originalIndex) => {
+  // Insert boundary events directly after their attached tasks
+  const result = insertBoundaryEventsAfterTasks(
+    sortedRegularElements,
+    boundaryEvents,
+    chronologicalSorting,
+    dependencies,
+  );
+
+  return result;
+}
+
+/**
+ * Sort elements respecting sub-process hierarchy
+ * Sub-processes appear directly above their child elements
+ */
+/**
+ * Sort elements by process flow - follows paths from start to end
+ */
+function sortByProcessFlow<
+  T extends {
+    id: string;
+    start: number;
+    elementType?: string;
+  },
+>(elements: T[], elementToComponent: Map<string, number>): T[] {
+  const result: T[] = [];
+
+  // Helper to get base element ID (without instance suffix)
+  const getBaseId = (id: string): string => {
+    const parts = id.split('_instance_');
+    return parts[0];
+  };
+
+  // Build parent-child relationships for sub-processes
+  const parentToChildren = new Map<string, T[]>();
+  const childToParent = new Map<string, string>();
+
+  elements.forEach((element) => {
+    const parentId = (element as any).parentSubProcessId;
+    if (parentId) {
+      childToParent.set(element.id, parentId);
+      if (!parentToChildren.has(parentId)) {
+        parentToChildren.set(parentId, []);
+      }
+      parentToChildren.get(parentId)!.push(element);
+    }
+  });
+
+  // Only process root elements (not children of sub-processes)
+  const rootElements = elements.filter((el) => !childToParent.has(el.id));
+
+  // Group root elements by component first
+  const componentGroups = new Map<number, T[]>();
+  rootElements.forEach((element) => {
     const componentId = elementToComponent.get(element.id) ?? -1;
     if (!componentGroups.has(componentId)) {
       componentGroups.set(componentId, []);
     }
-    // Add original index to preserve traversal order
-    componentGroups
-      .get(componentId)!
-      .push({ ...element, originalIndex } as T & { originalIndex: number });
+    componentGroups.get(componentId)!.push(element);
   });
 
-  // Sort elements within each group
-  componentGroups.forEach((group) => {
-    if (chronologicalSorting) {
-      // Pure chronological sorting - sort only by start time
-      group.sort((a, b) => a.start - b.start);
-    } else {
-      // Preserve original traversal order - sort by original index
-      group.sort((a, b) => (a as any).originalIndex - (b as any).originalIndex);
+  // Helper function to add element with its children hierarchically
+  function addElementWithChildren(element: T) {
+    result.push(element);
+
+    // If this is a sub-process with children, add them immediately after
+    const children = parentToChildren.get(element.id) || [];
+    if (children.length > 0) {
+      // Group children by base element ID for consistency
+      const childBaseGroups = new Map<string, T[]>();
+      children.forEach((child) => {
+        const baseId = getBaseId(child.id);
+        if (!childBaseGroups.has(baseId)) {
+          childBaseGroups.set(baseId, []);
+        }
+        childBaseGroups.get(baseId)!.push(child);
+      });
+
+      // Sort child instances within each base element group by start time
+      childBaseGroups.forEach((group) => {
+        group.sort((a, b) => (a.start || 0) - (b.start || 0));
+      });
+
+      // Sort child base elements by earliest start time
+      const childBaseElementsWithTiming = Array.from(childBaseGroups.entries()).map(
+        ([baseId, instances]) => ({
+          baseId,
+          instances,
+          earliestStart: Math.min(...instances.map((i) => i.start)),
+        }),
+      );
+
+      childBaseElementsWithTiming.sort((a, b) => a.earliestStart - b.earliestStart);
+
+      // Add all child instances, recursively checking for nested sub-processes
+      childBaseElementsWithTiming.forEach(({ instances }) => {
+        instances.forEach((child) => {
+          addElementWithChildren(child);
+        });
+      });
+    }
+  }
+
+  // Process each component
+  componentGroups.forEach((componentElements, componentId) => {
+    // Within each component, group by base element ID
+    const baseElementGroups = new Map<string, T[]>();
+    componentElements.forEach((element) => {
+      const baseId = getBaseId(element.id);
+      if (!baseElementGroups.has(baseId)) {
+        baseElementGroups.set(baseId, []);
+      }
+      baseElementGroups.get(baseId)!.push(element);
+    });
+
+    // Sort instances within each base element group by start time
+    baseElementGroups.forEach((group) => {
+      group.sort((a, b) => (a.start || 0) - (b.start || 0));
+    });
+
+    // Get the earliest instance of each base element to determine flow order
+    const baseElementsWithTiming = Array.from(baseElementGroups.entries()).map(
+      ([baseId, instances]) => ({
+        baseId,
+        instances,
+        earliestStart: Math.min(...instances.map((i) => i.start)),
+        elementType: instances[0].elementType,
+      }),
+    );
+
+    // Sort by earliest start time to maintain some temporal coherence
+    baseElementsWithTiming.sort((a, b) => a.earliestStart - b.earliestStart);
+
+    // Add all instances of each base element in order, including their children
+    baseElementsWithTiming.forEach(({ baseId, instances }) => {
+      instances.forEach((instance) => {
+        addElementWithChildren(instance);
+      });
+    });
+  });
+
+  // Find all sequence flows (if any) and append at the end
+  const sequenceFlows = elements.filter((el) => (el as any).$type === 'bpmn:SequenceFlow');
+  result.push(...sequenceFlows);
+
+  return result;
+}
+
+/**
+ * Sort elements by their flow order (topological sort)
+ */
+function sortByFlowOrder<T extends { id: string; start?: number }>(
+  group: T[],
+  allElements: readonly any[],
+): void {
+  // Build adjacency list for this group
+  const adjacency = new Map<string, string[]>();
+  const inDegree = new Map<string, number>();
+  const groupIds = new Set(group.map((el) => el.id));
+
+  // Initialize
+  group.forEach((element) => {
+    adjacency.set(element.id, []);
+    inDegree.set(element.id, 0);
+  });
+
+  // Find sequence flows that connect elements in this group
+  const sequenceFlows = allElements.filter((el) => el.$type === 'bpmn:SequenceFlow');
+  sequenceFlows.forEach((flow) => {
+    const sourceId = typeof flow.sourceRef === 'string' ? flow.sourceRef : flow.sourceRef?.id;
+    const targetId = typeof flow.targetRef === 'string' ? flow.targetRef : flow.targetRef?.id;
+
+    if (sourceId && targetId && groupIds.has(sourceId) && groupIds.has(targetId)) {
+      adjacency.get(sourceId)!.push(targetId);
+      inDegree.set(targetId, (inDegree.get(targetId) || 0) + 1);
     }
   });
 
-  // Sort groups by earliest start time in each group
-  const sortedGroups = Array.from(componentGroups.entries())
-    .sort(([, groupA], [, groupB]) => {
-      const earliestA = Math.min(...groupA.map((el) => el.start));
-      const earliestB = Math.min(...groupB.map((el) => el.start));
-      return earliestA - earliestB;
-    })
-    .map(([, group]) => group);
+  // Topological sort using Kahn's algorithm
+  const queue: T[] = [];
+  const sorted: T[] = [];
 
-  // Flatten the sorted groups and remove the temporary originalIndex property
-  const sortedRegularElements = sortedGroups
-    .flat()
-    .map(({ originalIndex, ...element }: any) => element as T);
+  // Find all nodes with no incoming edges
+  group.forEach((element) => {
+    if (inDegree.get(element.id) === 0) {
+      queue.push(element);
+    }
+  });
 
-  // Insert boundary events directly after their attached tasks
-  return insertBoundaryEventsAfterTasks(sortedRegularElements, boundaryEvents);
+  // Sort initial nodes by start time for consistency
+  queue.sort((a, b) => (a.start || 0) - (b.start || 0));
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    sorted.push(current);
+
+    // Remove this node's edges and update in-degrees
+    const neighbors = adjacency.get(current.id) || [];
+    neighbors.forEach((neighborId) => {
+      const degree = inDegree.get(neighborId)! - 1;
+      inDegree.set(neighborId, degree);
+
+      if (degree === 0) {
+        const neighbor = group.find((el) => el.id === neighborId);
+        if (neighbor) {
+          queue.push(neighbor);
+        }
+      }
+    });
+
+    // Sort queue by start time for consistent ordering when there are multiple options
+    queue.sort((a, b) => (a.start || 0) - (b.start || 0));
+  }
+
+  // Handle any remaining elements (cycles or disconnected elements)
+  if (sorted.length < group.length) {
+    const remaining = group.filter((el) => !sorted.some((s) => s.id === el.id));
+    remaining.sort((a, b) => (a.start || 0) - (b.start || 0));
+    sorted.push(...remaining);
+  }
+
+  // Replace the group array contents with sorted order
+  group.splice(0, group.length, ...sorted);
+}
+
+function sortElementsWithHierarchy<
+  T extends {
+    id: string;
+    start: number;
+    elementType?: string;
+  },
+>(
+  elements: T[],
+  elementToComponent: Map<string, number>,
+  chronologicalSorting: boolean = false,
+): T[] {
+  // For flow-based sorting, use a completely different approach
+  if (!chronologicalSorting) {
+    return sortByProcessFlow(elements, elementToComponent);
+  }
+
+  // Add originalIndex to track pre-sort position
+  const elementsWithIndex = elements.map((element, originalIndex) => ({
+    ...element,
+    originalIndex,
+  }));
+
+  // Build global hierarchy map first
+  const parentToChildren = new Map<string, typeof elementsWithIndex>();
+  const childToParent = new Map<string, string>();
+
+  // Map child elements to their parent sub-processes globally
+  elementsWithIndex.forEach((element) => {
+    const parentId = (element as any).parentSubProcessId;
+    if (parentId) {
+      // Find the actual parent instance in all elements
+      const parentInstance = elementsWithIndex.find(
+        (el) => el.id === parentId || el.id.startsWith(parentId + '_instance_'),
+      );
+
+      if (parentInstance) {
+        const actualParentId = parentInstance.id;
+        childToParent.set(element.id, actualParentId);
+        if (!parentToChildren.has(actualParentId)) {
+          parentToChildren.set(actualParentId, []);
+        }
+        parentToChildren.get(actualParentId)!.push(element);
+      } else {
+        // Parent relationships resolved - no missing parents expected
+      }
+    }
+  });
+
+  // Find root elements (no parent or parent not in element list)
+  const rootElements = elementsWithIndex.filter((el) => {
+    const parentId = (el as any).parentSubProcessId;
+    if (!parentId) return true; // No parent = root element
+
+    // Check if parent exists in element list (handle both base ID and instance ID)
+    const parentExists = elementsWithIndex.some(
+      (g) => g.id === parentId || g.id.startsWith(parentId + '_instance_'),
+    );
+
+    return !parentExists;
+  });
+
+  // Sort root elements by component first, then by chronological or original order
+  const componentGroups = new Map<number, typeof rootElements>();
+
+  rootElements.forEach((element) => {
+    const componentId = elementToComponent.get(element.id) ?? -1;
+    if (!componentGroups.has(componentId)) {
+      componentGroups.set(componentId, []);
+    }
+    componentGroups.get(componentId)!.push(element);
+  });
+
+  // Sort each component group
+  componentGroups.forEach((group) => {
+    if (chronologicalSorting) {
+      group.sort((a, b) => (a.start || 0) - (b.start || 0));
+    } else {
+      // For flow-based sorting, perform a topological sort based on sequence flows
+      sortByFlowOrder(group, elements);
+    }
+  });
+
+  // Build the final ordered list with hierarchy
+  const result: typeof elementsWithIndex = [];
+
+  function collectElementWithChildren(
+    element: (typeof elementsWithIndex)[0],
+    depth: number = 0,
+  ): typeof elementsWithIndex {
+    // Prevent stack overflow from deeply nested sub-processes
+    if (depth > MAX_RECURSION_DEPTH) {
+      console.warn(
+        `Maximum element hierarchy depth exceeded (${MAX_RECURSION_DEPTH}) for element ${element.id}. Skipping deeper children to prevent stack overflow.`,
+      );
+      return [element]; // Return just this element, skip children
+    }
+
+    const elementBlock: typeof elementsWithIndex = [element];
+
+    // Add child elements if this is a sub-process
+    const children = parentToChildren.get(element.id) || [];
+    if (children.length > 0) {
+      // Sort children based on the global sorting preference
+      if (chronologicalSorting) {
+        children.sort((a, b) => (a.start || 0) - (b.start || 0));
+      } else {
+        // For flow-based sorting, use topological sort on children
+        sortByFlowOrder(children, elementsWithIndex);
+      }
+
+      // Recursively collect children (which may also be sub-processes)
+      children.forEach((child) => {
+        const childBlock = collectElementWithChildren(child, depth + 1);
+        elementBlock.push(...childBlock);
+      });
+    }
+
+    return elementBlock;
+  }
+
+  // Process components based on sorting preference
+  const sortedComponentIds = chronologicalSorting
+    ? Array.from(componentGroups.entries())
+        .sort(([, groupA], [, groupB]) => {
+          const earliestA = Math.min(...groupA.map((el) => el.start));
+          const earliestB = Math.min(...groupB.map((el) => el.start));
+          return earliestA - earliestB;
+        })
+        .map(([componentId]) => componentId)
+    : Array.from(componentGroups.keys()); // Keep original component order for flow-based sorting
+
+  sortedComponentIds.forEach((componentId) => {
+    const componentRoots = componentGroups.get(componentId)!;
+
+    // Collect all root elements and their complete hierarchy blocks for this component
+    componentRoots.forEach((root) => {
+      const block = collectElementWithChildren(root, 0);
+      result.push(...block);
+    });
+  });
+
+  // Remove the temporary originalIndex property
+  return result.map(({ originalIndex, ...element }: any) => element as T);
+}
+
+/**
+ * Sort a group of elements with hierarchy awareness
+ * Sub-processes appear directly above their child elements
+ */
+function sortGroupWithHierarchy<T extends { id: string; start: number }>(
+  group: (T & { originalIndex: number })[],
+  chronologicalSorting: boolean,
+): void {
+  // Check if sub-processes exist in this group
+  const subProcesses = group.filter((el) => (el as any).isSubProcess);
+
+  // If no sub-processes, use standard sorting
+  if (subProcesses.length === 0) {
+    if (chronologicalSorting) {
+      group.sort((a, b) => (a.start || 0) - (b.start || 0));
+    } else {
+      group.sort((a, b) => a.originalIndex - b.originalIndex);
+    }
+    return;
+  }
+
+  // Build hierarchy map
+  const parentToChildren = new Map<string, typeof group>();
+  const childToParent = new Map<string, string>();
+
+  // Map child elements to their parent sub-processes
+  group.forEach((element) => {
+    const parentId = (element as any).parentSubProcessId;
+    if (parentId) {
+      // Find the actual parent instance in the group
+      const parentInstance = group.find(
+        (g) => g.id === parentId || g.id.startsWith(parentId + '_instance_'),
+      );
+
+      if (parentInstance) {
+        const actualParentId = parentInstance.id;
+        childToParent.set(element.id, actualParentId);
+        if (!parentToChildren.has(actualParentId)) {
+          parentToChildren.set(actualParentId, []);
+        }
+        parentToChildren.get(actualParentId)!.push(element);
+      }
+    }
+  });
+
+  // Find root elements (no parent or parent not in this group)
+  const rootElements = group.filter((el) => {
+    const parentId = (el as any).parentSubProcessId;
+    if (!parentId) return true; // No parent = root element
+
+    // Check if parent exists in group (handle both base ID and instance ID)
+    const parentExists = group.some(
+      (g) => g.id === parentId || g.id.startsWith(parentId + '_instance_'),
+    );
+
+    return !parentExists;
+  });
+
+  // Sort root elements
+  if (chronologicalSorting) {
+    rootElements.sort((a, b) => (a.start || 0) - (b.start || 0));
+  } else {
+    rootElements.sort((a, b) => a.originalIndex - b.originalIndex);
+  }
+
+  // Build the final ordered list with hierarchy
+  const result: typeof group = [];
+
+  function collectElementWithChildren(element: (typeof group)[0], depth: number = 0): typeof group {
+    // Prevent stack overflow from deeply nested sub-processes
+    if (depth > MAX_RECURSION_DEPTH) {
+      console.warn(
+        `Maximum element hierarchy depth exceeded (${MAX_RECURSION_DEPTH}) for element ${element.id}. Skipping deeper children to prevent stack overflow.`,
+      );
+      return [element]; // Return just this element, skip children
+    }
+
+    const elementBlock: typeof group = [element];
+
+    // Add child elements if this is a sub-process
+    const children = parentToChildren.get(element.id) || [];
+    if (children.length > 0) {
+      // Sort children based on the global sorting preference
+      if (chronologicalSorting) {
+        children.sort((a, b) => (a.start || 0) - (b.start || 0));
+      } else {
+        // For flow-based sorting, use topological sort on children
+        sortByFlowOrder(children, group);
+      }
+
+      // Recursively collect children (which may also be sub-processes)
+      children.forEach((child) => {
+        const childBlock = collectElementWithChildren(child, depth + 1);
+        elementBlock.push(...childBlock);
+      });
+    }
+
+    return elementBlock;
+  }
+
+  // Collect all root elements and their complete hierarchy blocks
+  const hierarchyBlocks: (typeof group)[] = [];
+  rootElements.forEach((root) => {
+    const block = collectElementWithChildren(root, 0);
+    hierarchyBlocks.push(block);
+  });
+
+  // Now sort the hierarchy blocks as complete units
+  if (chronologicalSorting) {
+    // Sort blocks by the start time of their root element
+    hierarchyBlocks.sort((blockA, blockB) => blockA[0].start - blockB[0].start);
+  } else {
+    // Sort blocks by the original index of their root element
+    hierarchyBlocks.sort((blockA, blockB) => blockA[0].originalIndex - blockB[0].originalIndex);
+  }
+
+  // Flatten all blocks into the final result
+  hierarchyBlocks.forEach((block) => {
+    result.push(...block);
+  });
+
+  // Replace the group contents with the hierarchically sorted result
+  group.length = 0;
+  group.push(...result);
 }
 
 /**
@@ -557,10 +1081,54 @@ export function groupAndSortElements<
  */
 function insertBoundaryEventsAfterTasks<
   T extends { id: string; isBoundaryEvent?: boolean; attachedToId?: string },
->(regularElements: T[], boundaryEvents: T[]): T[] {
+>(
+  regularElements: T[],
+  boundaryEvents: T[],
+  chronologicalSorting: boolean = true,
+  dependencies?: Array<{
+    sourceId?: string;
+    targetId?: string;
+    sourceInstanceId?: string;
+    targetInstanceId?: string;
+    flowId?: string;
+  }>,
+): T[] {
   const result: T[] = [];
 
-  // Create a map of task ID to its boundary events
+  // Track which boundary events have been added to avoid duplicates
+  const addedBoundaryEventIds = new Set<string>();
+
+  // Create instance-based mapping if dependencies are provided
+  const taskInstanceToBoundaryEvents = new Map<string, T[]>();
+  if (dependencies) {
+    // Build a map from boundary event ID to task instance ID using dependencies
+    const boundaryEventToTaskInstance = new Map<string, string>();
+    dependencies.forEach((dep) => {
+      // Look for attachment dependencies (boundary event as target)
+      if (
+        dep.flowId &&
+        dep.flowId.includes('_to_') &&
+        dep.flowId.includes('_attachment') &&
+        dep.targetInstanceId &&
+        dep.sourceInstanceId
+      ) {
+        boundaryEventToTaskInstance.set(dep.targetInstanceId, dep.sourceInstanceId);
+      }
+    });
+
+    // Now map boundary events to their task instances
+    boundaryEvents.forEach((event) => {
+      const taskInstanceId = boundaryEventToTaskInstance.get(event.id);
+      if (taskInstanceId) {
+        if (!taskInstanceToBoundaryEvents.has(taskInstanceId)) {
+          taskInstanceToBoundaryEvents.set(taskInstanceId, []);
+        }
+        taskInstanceToBoundaryEvents.get(taskInstanceId)!.push(event);
+      }
+    });
+  }
+
+  // Fallback: Create a map of task base ID to its boundary events (for backward compatibility)
   const taskToBoundaryEvents = new Map<string, T[]>();
   boundaryEvents.forEach((event) => {
     const attachedToId = (event as any).attachedToId;
@@ -577,56 +1145,231 @@ function insertBoundaryEventsAfterTasks<
     events.sort((a, b) => (a as any).start - (b as any).start);
   });
 
-  // Insert elements with boundary events placed after their tasks
-  regularElements.forEach((element) => {
-    result.push(element);
+  // For flow-based sorting, we need to handle hierarchies specially
+  if (!chronologicalSorting) {
+    // Build parent-child relationships
+    const parentToChildren = new Map<string, T[]>();
+    const childToParent = new Map<string, string>();
 
-    // Add any boundary events attached to this element
-    // Check both the exact ID and the base ID (without instance suffix)
-    let attachedBoundaryEvents = taskToBoundaryEvents.get(element.id) || [];
+    regularElements.forEach((element) => {
+      const parentId = (element as any).parentSubProcessId;
+      if (parentId) {
+        childToParent.set(element.id, parentId);
+        if (!parentToChildren.has(parentId)) {
+          parentToChildren.set(parentId, []);
+        }
+        parentToChildren.get(parentId)!.push(element);
+      }
+    });
+
+    // Process elements maintaining hierarchy
+    const processed = new Set<string>();
+
+    function addElementWithHierarchy(element: T) {
+      if (processed.has(element.id)) return;
+
+      processed.add(element.id);
+      result.push(element);
+
+      // If this is a sub-process, add all its children first
+      const children = parentToChildren.get(element.id) || [];
+      if (children.length > 0) {
+        // Add children in the order they appear in regularElements
+        children.forEach((child) => addElementWithHierarchy(child));
+      }
+
+      // Add boundary events attached to this element (after children for sub-processes)
+      // First try instance-based mapping if available
+      let attachedBoundaryEvents: T[] = [];
+
+      if (taskInstanceToBoundaryEvents.size > 0) {
+        // Use instance-based mapping
+        attachedBoundaryEvents = taskInstanceToBoundaryEvents.get(element.id) || [];
+      } else {
+        // Fallback to base ID mapping
+        attachedBoundaryEvents = taskToBoundaryEvents.get(element.id) || [];
+      }
+
+      // For task instances, also check for boundary events attached to the base element ID
+      if (
+        attachedBoundaryEvents.length === 0 &&
+        element.id.includes('_instance_') &&
+        taskToBoundaryEvents.size > 0
+      ) {
+        const baseParts = element.id.split('_instance_');
+        const baseId = baseParts[0];
+        const allBaseBoundaryEvents = taskToBoundaryEvents.get(baseId) || [];
+
+        // For self-loop scenarios, match boundary events to tasks based on timing
+        // Boundary events should fall within or be associated with their task's timeline
+        const taskElement = element as any;
+        const taskStart = taskElement.start;
+        const taskEnd = taskElement.end;
+
+        const matchingBoundaryEvents = allBaseBoundaryEvents.filter((be) => {
+          // Skip if already added
+          if (addedBoundaryEventIds.has(be.id)) {
+            return false;
+          }
+
+          const beElement = be as any;
+          const beStart = beElement.start;
+          // Boundary events should be positioned within the task's time range
+          // or immediately after (for events that trigger at task completion)
+          return beStart >= taskStart && beStart <= taskEnd + 1; // +1ms tolerance for end events
+        });
+
+        // Add matching boundary events and mark them as added
+        matchingBoundaryEvents.forEach((be) => {
+          result.push(be);
+          addedBoundaryEventIds.add(be.id);
+        });
+      } else {
+        // Add direct boundary events and mark them as added
+        attachedBoundaryEvents.forEach((be) => {
+          if (!addedBoundaryEventIds.has(be.id)) {
+            result.push(be);
+            addedBoundaryEventIds.add(be.id);
+          }
+        });
+      }
+    }
+
+    // Process root elements (elements without parents) in order
+    regularElements.forEach((element) => {
+      if (!childToParent.has(element.id)) {
+        addElementWithHierarchy(element);
+      }
+    });
+
+    // Add orphaned boundary events (should not exist if everything is properly attached)
+    const orphanedBoundaryEvents = boundaryEvents.filter(
+      (event) => !addedBoundaryEventIds.has(event.id),
+    );
+    if (orphanedBoundaryEvents.length > 0) {
+      console.warn(
+        'Orphaned boundary events found:',
+        orphanedBoundaryEvents.map((e) => e.id),
+      );
+    }
+    result.push(...orphanedBoundaryEvents);
+
+    return result;
+  }
+
+  // Original logic for chronological sorting
+  // Build a map of elements by ID for quick lookup
+  const elementById = new Map<string, T>();
+  regularElements.forEach((el) => elementById.set(el.id, el));
+
+  // Track which elements have been added to avoid duplicates
+  const addedElements = new Set<string>();
+
+  // Helper function to add element and its boundary events
+  const addElementWithBoundaryEvents = (element: T) => {
+    if (addedElements.has(element.id)) return;
+
+    result.push(element);
+    addedElements.add(element.id);
+
+    // Check if this is a sub-process with children
+    const isSubProcess = (element as any).type === 'group' && (element as any).isSubProcess;
+
+    if (isSubProcess) {
+      // For sub-processes, first add all children recursively
+      const children = regularElements.filter(
+        (el) => (el as any).parentSubProcessId === element.id && el.id !== element.id,
+      );
+
+      // Sort children based on sorting preference
+      if (chronologicalSorting) {
+        children.sort((a, b) => (a as any).start - (b as any).start);
+      } else {
+        // For flow-based sorting, perform topological sort
+        sortByFlowOrder(children, regularElements);
+      }
+
+      // Add each child (which might also be a sub-process)
+      children.forEach((child) => addElementWithBoundaryEvents(child));
+    }
+
+    // Now add boundary events attached to this element
+    // First try instance-based mapping if available
+    let attachedBoundaryEvents: T[] = [];
+
+    if (taskInstanceToBoundaryEvents.size > 0) {
+      // Use instance-based mapping
+      attachedBoundaryEvents = taskInstanceToBoundaryEvents.get(element.id) || [];
+    } else {
+      // Fallback to base ID mapping
+      attachedBoundaryEvents = taskToBoundaryEvents.get(element.id) || [];
+    }
 
     // Also check for boundary events attached to the base element ID
     // (in case the task has an instance suffix like "_instance_1")
-    if (attachedBoundaryEvents.length === 0 && element.id.includes('_instance_')) {
-      const baseId = element.id.split('_instance_')[0];
+    if (
+      attachedBoundaryEvents.length === 0 &&
+      element.id.includes('_instance_') &&
+      taskToBoundaryEvents.size > 0
+    ) {
+      const baseParts = element.id.split('_instance_');
+      const baseId = baseParts.length > 0 ? baseParts[0] : element.id;
       const allBaseBoundaryEvents = taskToBoundaryEvents.get(baseId) || [];
 
-      // Filter boundary events to only include those that belong to this specific task instance
-      // Match by timing: boundary events should be positioned within their attached task's time range
-      const taskElement = element as any;
-      const taskStart = taskElement.start;
-      const taskEnd = taskElement.end;
-
+      // Use ID-based matching and recalculate boundary event positioning
+      // based on the actual task timing in the final gantt chart
       attachedBoundaryEvents = allBaseBoundaryEvents.filter((be) => {
-        const beElement = be as any;
-        const beStart = beElement.start;
-        // Boundary events should be positioned within their attached task's time range
-        // Allow some tolerance for boundary events positioned at task center or with slight offset
-        return beStart >= taskStart && beStart <= taskEnd;
+        // Skip if already added
+        if (addedBoundaryEventIds.has(be.id)) {
+          return false;
+        }
+        return (be as any).attachedToId === baseId;
       });
+    } else {
+      // Filter out already added boundary events from direct attachments
+      attachedBoundaryEvents = attachedBoundaryEvents.filter(
+        (be) => !addedBoundaryEventIds.has(be.id),
+      );
     }
 
-    // Add boundary events that match this task instance
+    // Add boundary events that match this element instance
     attachedBoundaryEvents.forEach((boundaryEvent) => {
-      result.push(boundaryEvent);
+      if (!addedBoundaryEventIds.has(boundaryEvent.id)) {
+        result.push(boundaryEvent);
+        addedElements.add(boundaryEvent.id);
+        addedBoundaryEventIds.add(boundaryEvent.id);
+      }
     });
-  });
+  };
+
+  // Process root elements (elements without parents)
+  const rootElements = regularElements.filter(
+    (el) => !(el as any).parentSubProcessId || !elementById.has((el as any).parentSubProcessId),
+  );
+
+  // Sort root elements based on sorting preference
+  if (chronologicalSorting) {
+    rootElements.sort((a, b) => (a as any).start - (b as any).start);
+  }
+  // For flow-based sorting, maintain the order from sortedRegularElements
+
+  // Add each root element and its entire hierarchy
+  rootElements.forEach((root) => addElementWithBoundaryEvents(root));
 
   // Add any orphaned boundary events at the end (boundary events without attached tasks)
-  // Since we're no longer tracking added boundary events, we need a different approach
-  // to avoid duplicates for orphaned events
-  const addedElementIds = new Set(result.map((el) => el.id));
   const orphanedBoundaryEvents = boundaryEvents.filter((event) => {
-    // Only add if not already in result
-    if (addedElementIds.has(event.id)) {
+    // Only add if not already added
+    if (addedElements.has(event.id)) {
       return false;
     }
     const attachedToId = (event as any).attachedToId;
     return (
       !attachedToId ||
-      !regularElements.some(
-        (el) => el.id === attachedToId || el.id.split('_instance_')[0] === attachedToId,
-      )
+      !regularElements.some((el) => {
+        if (el.id === attachedToId) return true;
+        const instanceParts = el.id.split('_instance_');
+        return instanceParts.length > 0 && instanceParts[0] === attachedToId;
+      })
     );
   });
   result.push(...orphanedBoundaryEvents);

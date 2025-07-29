@@ -5,26 +5,6 @@
 import { INSTANCE_ID_SEPARATOR, INSTANCE_ID_REGEX } from '../constants';
 
 /**
- * Extract ID from BPMN source reference (handles both string and object refs)
- */
-export function extractSourceId(sourceRef: string | any): string | undefined {
-  if (typeof sourceRef === 'string') {
-    return sourceRef;
-  }
-  return (sourceRef as any)?.id || sourceRef;
-}
-
-/**
- * Extract ID from BPMN target reference (handles both string and object refs)
- */
-export function extractTargetId(targetRef: string | any): string | undefined {
-  if (typeof targetRef === 'string') {
-    return targetRef;
-  }
-  return (targetRef as any)?.id || targetRef;
-}
-
-/**
  * Create a unique instance ID for path traversal
  */
 export function createInstanceId(elementId: string, instanceCounter: number): string {

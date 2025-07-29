@@ -212,10 +212,10 @@ export interface ElementTiming {
   isPathCutoff?: boolean; // Indicates this element is where path traversal stopped due to loop depth
   isLoop?: boolean; // Indicates this element is part of a loop
   isLoopCut?: boolean; // Indicates this element is where loop was cut off
-  // Hierarchy properties for expanded sub-processes
+  // Hierarchy properties for sub-processes (all sub-processes are treated as expanded)
   hierarchyLevel?: number; // Indentation level (0 = root, 1 = first sub-process level, etc.)
   parentSubProcessId?: string; // ID of the parent sub-process if nested
-  isExpandedSubProcess?: boolean; // True if this element is an expanded sub-process
+  isExpandedSubProcess?: boolean; // True if this element is a sub-process (all sub-processes are treated as expanded)
 }
 
 export interface TransformationResult {

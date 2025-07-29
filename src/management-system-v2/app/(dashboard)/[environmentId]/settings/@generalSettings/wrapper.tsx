@@ -14,7 +14,7 @@ import ImageUpload from '@/components/image-upload';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import CustomNavigationLinks from './custom-navigation-links';
-import { debouncedSettingsUpdate } from '../utils';
+import { useDebouncedSettingsUpdate } from '../utils';
 
 type WrapperProps = {
   group: SettingGroup;
@@ -22,9 +22,11 @@ type WrapperProps = {
 
 const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const router = useRouter();
-  const { message } = App.useApp();
+  const app = App.useApp();
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
+
+  const debouncedUpdate = useDebouncedSettingsUpdate();
 
   const { download: getLogoUrl } = useFileManager({
     entityType: EntityType.ORGANIZATION,
@@ -55,7 +57,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     <SettingsGroup
       group={upToDateGroup}
       onUpdate={setUpToDateGroup}
-      onNestedSettingUpdate={(key, value) => debouncedSettingsUpdate(spaceId, key, value)}
+      onNestedSettingUpdate={(key, value) => debouncedUpdate(spaceId, key, value)}
       renderNestedSettingInput={(id, setting, _key, onUpdate) => {
         if (setting.key === 'spaceLogo') {
           return {
@@ -85,12 +87,12 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                             setLogoFilePath(filePath);
                           }
 
-                          if (deleted) message.success('Logo deleted');
-                          else message.success('Logo uploaded');
+                          if (deleted) app.message.success('Logo deleted');
+                          else app.message.success('Logo uploaded');
 
                           router.refresh(); // To refresh other places in the page
                         }}
-                        onUploadFail={() => message.error('Error uploading image')}
+                        onUploadFail={() => app.message.error('Error uploading image')}
                         config={{
                           entityType: EntityType.ORGANIZATION,
                           entityId: spaceId,

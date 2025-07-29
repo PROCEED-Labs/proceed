@@ -60,3 +60,8 @@ gha-creds-*.json
 
 # Ignore custom claude project files
 CLAUDE.md
+
+# Matching models & DB
+./src/competence-matcher/dist/
+./src/competence-matcher/src/db/dbs/
+./src/competence-matcher/src/models/

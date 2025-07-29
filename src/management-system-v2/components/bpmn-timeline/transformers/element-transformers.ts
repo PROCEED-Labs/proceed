@@ -63,9 +63,6 @@ export function transformEvent(
 ): GanttElementType {
   // Handle boundary events specially
   if (isBoundaryEventElement(event)) {
-    console.log(
-      `EVENT TRANSFORMER DEBUG: Processing boundary event ${event.id} at time ${startTime}`,
-    );
     return transformBoundaryEvent(event, startTime, duration, color);
   }
 
@@ -104,10 +101,6 @@ export function transformBoundaryEvent(
   color?: string,
 ): GanttElementType {
   const attachedToId = extractAttachedToId(event.attachedToRef);
-
-  console.log(
-    `BOUNDARY TRANSFORMER DEBUG: Creating Gantt element for boundary event ${event.id} attached to ${attachedToId}`,
-  );
 
   const ganttElement: GanttElementType = {
     id: event.id,

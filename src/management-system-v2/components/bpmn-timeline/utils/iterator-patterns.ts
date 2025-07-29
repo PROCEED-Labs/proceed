@@ -295,18 +295,9 @@ export function createEveryOccurrenceDependencies(
           }
         });
 
-        console.log(
-          `EVERY SYNC DEBUG - Boundary events grouped by task:`,
-          Array.from(boundaryByTask.keys()),
-        );
-
         // For each task instance with multiple boundary events, they should synchronize
         boundaryByTask.forEach((taskBoundaryDeps, taskInstanceId) => {
           if (taskBoundaryDeps.length > 1) {
-            console.log(
-              `EVERY SYNC DEBUG - Task ${taskInstanceId} has ${taskBoundaryDeps.length} boundary events that should synchronize`,
-            );
-
             // Find the gateway instance that these should connect to
             // All boundary events from the same task should connect to the same gateway instance
             const representativeDep = taskBoundaryDeps[0];

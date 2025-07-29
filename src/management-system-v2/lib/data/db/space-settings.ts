@@ -1,5 +1,6 @@
 import { Setting, SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import prisma from '@/lib/data/db';
 import db from '@/lib/data/db';
 import { Record } from '@prisma/client/runtime/library';
 
@@ -73,24 +74,26 @@ export async function updateSpaceSettings(
 ) {
   if (ability && !ability.can('update', 'Setting')) throw new UnauthorizedError();
 
-  const existingSettings = await db.spaceSettings.findUnique({
-    where: { environmentId: spaceId },
-  });
-
-  if (!existingSettings) {
-    await db.spaceSettings.create({
-      data: { environmentId: spaceId, settings: data },
+  prisma.$transaction(async (tx) => {
+    const existingSettings = await tx.spaceSettings.findUnique({
+      where: { environmentId: spaceId },
     });
 
-    return;
-  }
+    if (!existingSettings) {
+      await tx.spaceSettings.create({
+        data: { environmentId: spaceId, settings: data },
+      });
 
-  await db.spaceSettings.update({
-    where: {
-      environmentId: spaceId,
-    },
-    data: {
-      settings: { ...(existingSettings.settings as Record<string, any>), ...data },
-    },
+      return;
+    }
+
+    await tx.spaceSettings.update({
+      where: {
+        environmentId: spaceId,
+      },
+      data: {
+        settings: { ...(existingSettings.settings as Record<string, any>), ...data },
+      },
+    });
   });
 }

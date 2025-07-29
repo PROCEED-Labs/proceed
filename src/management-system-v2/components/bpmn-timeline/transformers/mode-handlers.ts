@@ -205,34 +205,7 @@ export function handleEveryOccurrenceMode(
   }
 
   // Create dependencies from path traversal results using consolidated utility
-  console.log(
-    'EVERY OCCURRENCE BOUNDARY DEBUG - Path dependencies:',
-    JSON.stringify(
-      pathDependencies.filter(
-        (dep) =>
-          dep.flowId.includes('boundary') ||
-          dep.sourceInstanceId.includes('boundary') ||
-          dep.targetInstanceId.includes('boundary'),
-      ),
-      null,
-      2,
-    ),
-  );
-
   const everyDependencies = createEveryOccurrenceDependencies(pathDependencies, elementMap);
-  console.log(
-    'EVERY OCCURRENCE BOUNDARY DEBUG - Created dependencies:',
-    JSON.stringify(
-      everyDependencies.filter(
-        (dep) =>
-          dep.id.includes('boundary') ||
-          dep.sourceId.includes('boundary') ||
-          dep.targetId.includes('boundary'),
-      ),
-      null,
-      2,
-    ),
-  );
 
   ganttDependencies.push(...everyDependencies);
 

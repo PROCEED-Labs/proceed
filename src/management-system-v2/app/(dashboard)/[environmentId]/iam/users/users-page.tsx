@@ -14,6 +14,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { Role } from '@/lib/data/role-schema';
 import { CreateUsersModal } from './create-users';
+import ResetUserPasswordButton from '@/components/reset-user-password-button';
 
 const UsersPage: FC<{ users: (AuthenticatedUser & { roles?: Role[] })[] }> = ({ users }) => {
   const app = App.useApp();
@@ -74,21 +75,32 @@ const UsersPage: FC<{ users: (AuthenticatedUser & { roles?: Role[] })[] }> = ({ 
                 key: 'tooltip',
                 title: '',
                 width: 100,
-                render: (id: string) => (
-                  <Tooltip placement="top" title="Remove From Environment">
-                    <ConfirmationButton
-                      title="Remove User"
-                      description="Are you sure you want to remove this user?"
-                      onConfirm={() => removeUsers([id], clearSelected)}
-                      buttonProps={{
-                        icon: <DeleteOutlined />,
-                        type: 'text',
-                        style: {
-                          opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
-                        },
+                render: (id: string, user) => (
+                  <Space>
+                    <Tooltip placement="top" title="Remove From Environment">
+                      <ConfirmationButton
+                        title="Remove User"
+                        description="Are you sure you want to remove this user?"
+                        onConfirm={() => removeUsers([id], clearSelected)}
+                        buttonProps={{
+                          icon: <DeleteOutlined />,
+                          type: 'text',
+                          style: {
+                            opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
+                          },
+                        }}
+                      />
+                    </Tooltip>
+                    <ResetUserPasswordButton
+                      user={{ id: user.id, username: user.username.value }}
+                      style={{
+                        opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
                       }}
-                    />
-                  </Tooltip>
+                      type="default"
+                    >
+                      Reset Password
+                    </ResetUserPasswordButton>
+                  </Space>
                 ),
               },
               {

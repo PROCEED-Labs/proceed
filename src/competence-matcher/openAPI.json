@@ -1,0 +1,720 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Matching Server API",
+        "version": "0.1.0",
+        "description": "API for managing resource competence lists and matching tasks to resources."
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8501"
+        }
+    ],
+    "paths": {
+        "/": {
+            "get": {
+                "tags": [
+                    "Default"
+                ],
+                "summary": "Welcome endpoint",
+                "responses": {
+                    "200": {
+                        "description": "Hello World!",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/resource-competence-list": {
+            "get": {
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Get all resource lists (only if multipleDBs=true)",
+                "responses": {
+                    "200": {
+                        "description": "Array of resource list IDs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/resource-competence-list/jobs": {
+            "post": {
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Create a resource competence list job",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ResourceInput"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Job accepted",
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/resource-competence-list/jobs/{jobId}": {
+            "get": {
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Get status of a resource creation job",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Job pending/preprocessing/running",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Completed with competenceListId",
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "description": "Complete Path to created Competence-List"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/JobResponse"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "competenceListId": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "competenceListId"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Job failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/resource-competence-list/{competenceListId}": {
+            "get": {
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Get a specific resource competence list",
+                "parameters": [
+                    {
+                        "name": "competenceListId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resource list details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceList"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing resourceListId"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            }
+        },
+        "/matching-task-to-resource/jobs": {
+            "post": {
+                "tags": [
+                    "Matching"
+                ],
+                "summary": "Create a matching job",
+                "description": "Start a matching job by providing either an existing competenceListId or an inline competenceList.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/MatchByListIdRequest"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/MatchByListRequest"
+                                    }
+                                ]
+                            },
+                            "examples": {
+                                "Match existing list": {
+                                    "summary": "Use an existing list ID",
+                                    "value": {
+                                        "competenceListId": "123e4567-e89b-12d3-a456-426614174000",
+                                        "tasks": [
+                                            {
+                                                "taskId": "task1",
+                                                "name": "Task 1",
+                                                "description": "This is what we currently use for matching",
+                                                "executionInstructions": "Some execution instructions",
+                                                "requiredCompetencies": [
+                                                    {
+                                                        "competenceId": "comp1",
+                                                        "name": "Competence 1",
+                                                        "description": "Description of competence 1",
+                                                        "externalQualificationNeeded": false,
+                                                        "renewTime": 30,
+                                                        "proficiencyLevel": "advanced",
+                                                        "qualificationDates": [
+                                                            "2025-07-01"
+                                                        ],
+                                                        "lastUsages": [
+                                                            "2025-07-10T14:30:00Z"
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                },
+                                "Match inline list": {
+                                    "summary": "Pass a full competenceList inline",
+                                    "value": {
+                                        "competenceList": [
+                                            {
+                                                "resourceId": "string",
+                                                "competencies": [
+                                                    {
+                                                        "competenceId": "string",
+                                                        "name": "string",
+                                                        "description": "string",
+                                                        "externalQualificationNeeded": true,
+                                                        "renewTime": 0,
+                                                        "proficiencyLevel": "string",
+                                                        "qualificationDates": [
+                                                            "2025-07-15"
+                                                        ],
+                                                        "lastUsages": [
+                                                            "2025-07-15T10:37:09.695Z"
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "tasks": [
+                                            {
+                                                "taskId": "task1",
+                                                "name": "Task 1",
+                                                "description": "This is what we currently use for matching",
+                                                "executionInstructions": "Some execution instructions",
+                                                "requiredCompetencies": [
+                                                    {
+                                                        "competenceId": "comp1",
+                                                        "name": "Competence 1",
+                                                        "description": "Description of competence 1",
+                                                        "externalQualificationNeeded": false,
+                                                        "renewTime": 30,
+                                                        "proficiencyLevel": "advanced",
+                                                        "qualificationDates": [
+                                                            "2025-07-01"
+                                                        ],
+                                                        "lastUsages": [
+                                                            "2025-07-10T14:30:00Z"
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Match job accepted",
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "description": "Complete Path to created Competence-List"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/matching-task-to-resource/jobs/{jobId}": {
+            "get": {
+                "tags": [
+                    "Matching"
+                ],
+                "summary": "Get match job results",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "rankBy",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "avgFit",
+                                "bestFit"
+                            ]
+                        },
+                        "description": "Optional ranking method: 'avgFit' or 'bestFit'"
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Job pending/running",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Match results",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GroupedMatchResults"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Job not found"
+                    },
+                    "500": {
+                        "description": "Job failed"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ResourceInput": {
+                "type": "object",
+                "required": [
+                    "resourceId",
+                    "competencies"
+                ],
+                "properties": {
+                    "resourceId": {
+                        "type": "string"
+                    },
+                    "competencies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CompetenceInput"
+                        }
+                    }
+                }
+            },
+            "CompetenceInput": {
+                "type": "object",
+                "required": [
+                    "competenceId"
+                ],
+                "properties": {
+                    "competenceId": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "externalQualificationNeeded": {
+                        "type": "boolean"
+                    },
+                    "renewTime": {
+                        "type": "number"
+                    },
+                    "proficiencyLevel": {
+                        "type": "string"
+                    },
+                    "qualificationDates": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    "lastUsages": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                }
+            },
+            "ResourceList": {
+                "type": "object",
+                "required": [
+                    "competenceListId",
+                    "resources"
+                ],
+                "properties": {
+                    "competenceListId": {
+                        "type": "string"
+                    },
+                    "resources": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "resourceId",
+                                "competencies"
+                            ],
+                            "properties": {
+                                "resourceId": {
+                                    "type": "string"
+                                },
+                                "competencies": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CompetenceInput"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "JobResponse": {
+                "type": "object",
+                "required": [
+                    "jobId",
+                    "status"
+                ],
+                "properties": {
+                    "jobId": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    }
+                }
+            },
+            "MatchByListIdRequest": {
+                "type": "object",
+                "required": [
+                    "competenceListId",
+                    "tasks"
+                ],
+                "properties": {
+                    "competenceListId": {
+                        "type": "string"
+                    },
+                    "tasks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MatchingTask"
+                        }
+                    }
+                }
+            },
+            "MatchByListRequest": {
+                "type": "object",
+                "required": [
+                    "competenceList",
+                    "tasks"
+                ],
+                "properties": {
+                    "competenceList": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ResourceInput"
+                        }
+                    },
+                    "tasks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MatchingTask"
+                        }
+                    }
+                }
+            },
+            "MatchingTask": {
+                "type": "object",
+                "required": [
+                    "taskId"
+                ],
+                "properties": {
+                    "taskId": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "executionInstructions": {
+                        "type": "string"
+                    },
+                    "requiredCompetencies": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CompetenceInput"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "GroupedMatchResults": {
+                "type": "object",
+                "required": [
+                    "taskOverview",
+                    "resourceRanking"
+                ],
+                "properties": {
+                    "tasks": {
+                        "$ref": "#/components/schemas/TaskOverview"
+                    },
+                    "resourceRanking": {
+                        "$ref": "#/components/schemas/ResourceRanking"
+                    }
+                }
+            },
+            "TaskOverview": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": [
+                        "taskId",
+                        "taskText"
+                    ],
+                    "properties": {
+                        "taskId": {
+                            "type": "string"
+                        },
+                        "taskText": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "ResourceRanking": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": [
+                        "resourceId",
+                        "taskMatchings",
+                        "avgTaskMatchProbability"
+                    ],
+                    "properties": {
+                        "resourceId": {
+                            "type": "string"
+                        },
+                        "taskMatchings": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "taskId",
+                                    "taskText",
+                                    "competenceMatchings",
+                                    "maxMatchProbability"
+                                ],
+                                "properties": {
+                                    "taskId": {
+                                        "type": "string"
+                                    },
+                                    "competenceMatchings": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": [
+                                                "competenceId",
+                                                "matchings",
+                                                "avgMatchProbability"
+                                            ],
+                                            "properties": {
+                                                "competenceId": {
+                                                    "type": "string"
+                                                },
+                                                "matchings": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/MatchDetail"
+                                                    }
+                                                },
+                                                "avgMatchProbability": {
+                                                    "type": "number"
+                                                },
+                                                "avgBestFitTaskMatchProbability": {
+                                                    "type": "number"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "maxMatchProbability": {
+                                        "type": "number"
+                                    },
+                                    "maxBestFitMatchProbability": {
+                                        "type": "number"
+                                    }
+                                }
+                            }
+                        },
+                        "avgTaskMatchProbability": {
+                            "type": "number"
+                        },
+                        "avgBestFitTaskMatchProbability": {
+                            "type": "number"
+                        },
+                        "contradicting": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            },
+            "MatchDetail": {
+                "type": "object",
+                "required": [
+                    "text",
+                    "type",
+                    "matchProbability"
+                ],
+                "properties": {
+                    "text": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "name",
+                            "description",
+                            "proficiencyLevel"
+                        ]
+                    },
+                    "matchProbability": {
+                        "type": "number"
+                    },
+                    "alignment": {
+                        "type": "string",
+                        "enum": [
+                            "aligning",
+                            "neutral",
+                            "contradicting"
+                        ]
+                    },
+                    "reason": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -62,6 +62,6 @@ gha-creds-*.json
 CLAUDE.md
 
 # Matching models & DB
-./src/competence-matcher/dist/
-./src/competence-matcher/src/db/dbs/
-./src/competence-matcher/src/models/
+src/competence-matcher/dist
+src/competence-matcher/src/db/dbs
+src/competence-matcher/src/models

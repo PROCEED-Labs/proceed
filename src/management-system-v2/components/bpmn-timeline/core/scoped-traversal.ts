@@ -13,10 +13,8 @@ import {
   isTaskElement,
   isSupportedEventElement,
   isBoundaryEventElement,
-  isExpandedSubProcess,
   flattenExpandedSubProcesses,
 } from '../utils/utils';
-import { isGatewayElement } from '../transformers/element-transformers';
 import {
   buildSynchronizationRequirements,
   incomingFlowsCountForGateway,
@@ -27,13 +25,13 @@ import {
   recordSourceArrival,
 } from './synchronization';
 import { DEFAULT_TASK_DURATION_MS, MAX_RECURSION_DEPTH } from '../constants';
+
 import {
   ProcessScope,
   TraversalContext,
   ProcessInstance,
   buildScopes,
   flattenInstances,
-  buildInstanceTree,
   isSubProcessExpanded,
 } from './process-model';
 
@@ -301,7 +299,8 @@ function traverseScope(
       if (
         isTaskElement(element) &&
         element.$type !== 'bpmn:SubProcess' &&
-        element.$type !== 'bpmn:AdHocSubProcess'
+        element.$type !== 'bpmn:AdHocSubProcess' &&
+        element.$type !== 'bpmn:Transaction'
       ) {
         duration = DEFAULT_TASK_DURATION_MS;
         defaultDurations.push({
@@ -333,6 +332,9 @@ function traverseScope(
 
     // Add hierarchy level from the original element
     (instance as any).hierarchyLevel = (element as any).hierarchyLevel || 0;
+
+    // Add subprocess flag from the original element
+    (instance as any).isExpandedSubProcess = (element as any).isExpandedSubProcess || false;
 
     // Add loop information to the instance
     (instance as any).isLoop = isLoopInstance;
@@ -368,8 +370,21 @@ function traverseScope(
 
     // If this is a sub-process, traverse its children
     if (isSubProcessExpanded(element)) {
-      const childScope = scope.childScopes.get(elementId);
-      if (childScope) {
+      // Each subprocess instance needs its own isolated child scope
+      // We can't reuse the same child scope for different instances
+      const baseChildScope = scope.childScopes.get(elementId);
+      if (baseChildScope) {
+        // Create a new isolated child scope for this specific instance
+        const instanceChildScope: ProcessScope = {
+          id: `${elementId}_${instanceId}`, // Make scope ID unique per instance
+          type: 'subProcess',
+          elements: new Map(baseChildScope.elements), // Copy elements from base scope
+          childScopes: new Map(baseChildScope.childScopes), // Shallow copy is sufficient for single-level nesting
+          parent: scope,
+          bpmnElement: baseChildScope.bpmnElement,
+        };
+
+        const childScope = instanceChildScope;
         const childContext: TraversalContext = {
           scope: childScope,
           currentTime: pathTime, // Children start when sub-process starts
@@ -595,7 +610,9 @@ function handleBoundaryEvents(
       dependencies: [],
     };
 
-    // Boundary events inherit loop status from their attached task
+    // Boundary events inherit properties from their attached task
+    (boundaryInstance as any).hierarchyLevel = (taskInstance as any).hierarchyLevel || 0;
+    (boundaryInstance as any).isExpandedSubProcess = false; // Boundary events are never subprocesses
     (boundaryInstance as any).isLoop = (taskInstance as any).isLoop || false;
     (boundaryInstance as any).isLoopCut = false;
 
@@ -648,6 +665,10 @@ function convertToTimingsMap(instances: ProcessInstance[]): Map<string, ElementT
       timingsMap.set(instance.elementId, []);
     }
 
+    // Check if the original element is a subprocess by looking it up
+    const isExpandedSubProcess =
+      (instance as any).isExpandedSubProcess || instance.children.length > 0;
+
     const timing: ElementTiming = {
       elementId: instance.elementId,
       startTime: instance.startTime,
@@ -655,10 +676,10 @@ function convertToTimingsMap(instances: ProcessInstance[]): Map<string, ElementT
       duration: instance.duration,
       instanceId: instance.instanceId,
       parentSubProcessId: instance.parentInstanceId,
-      isExpandedSubProcess: instance.children.length > 0,
+      isExpandedSubProcess,
       // Add additional properties for sub-process detection
-      type: instance.children.length > 0 ? 'group' : undefined,
-      isSubProcess: instance.children.length > 0,
+      type: isExpandedSubProcess ? 'group' : undefined,
+      isSubProcess: isExpandedSubProcess,
       // Add loop detection flags
       isLoop: (instance as any).isLoop || false,
       isLoopCut: (instance as any).isLoopCut || false,
@@ -679,13 +700,13 @@ function convertToTimingsMap(instances: ProcessInstance[]): Map<string, ElementT
  * Calculate sub-process bounds from children
  */
 function calculateSubProcessBounds(timingsMap: Map<string, ElementTiming[]>): void {
-  timingsMap.forEach((timings, elementId) => {
+  timingsMap.forEach((timings, _elementId) => {
     timings.forEach((timing) => {
       if (timing.isExpandedSubProcess) {
         // Find all children of this sub-process instance
         const children: ElementTiming[] = [];
 
-        timingsMap.forEach((childTimings) => {
+        timingsMap.forEach((childTimings, _childElementId) => {
           childTimings.forEach((childTiming) => {
             if (childTiming.parentSubProcessId === timing.instanceId) {
               children.push(childTiming);

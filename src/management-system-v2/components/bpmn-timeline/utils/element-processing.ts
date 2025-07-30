@@ -151,17 +151,16 @@ function processEveryOccurrenceElements(
   allTimings.sort((a, b) => a.timing.startTime - b.timing.startTime);
 
   // Transform elements in execution order and assign sequential component numbers
+  const elementInstanceCount = new Map<string, number>();
+
   allTimings.forEach((item, executionOrder) => {
     const { elementId, timing, element, color } = item;
 
-    // Count instances per element for numbering
-    const elementInstanceCount = new Map<string, number>();
-    for (let i = 0; i <= executionOrder; i++) {
-      const prevElementId = allTimings[i].elementId;
-      elementInstanceCount.set(prevElementId, (elementInstanceCount.get(prevElementId) || 0) + 1);
-    }
+    // Increment instance count for this base element ID
+    const currentCount = (elementInstanceCount.get(elementId) || 0) + 1;
+    elementInstanceCount.set(elementId, currentCount);
 
-    const instanceNumber = elementInstanceCount.get(elementId)!;
+    const instanceNumber = currentCount;
     const totalInstances = pathTimings.get(elementId)!.length;
 
     const ganttElement = createGanttElement(element, timing, color, options.renderGateways);
@@ -244,12 +243,7 @@ function processLatestEarliestElements(
       }
       assignCommonElementProperties(ganttElement, timing);
 
-      // Convert parent instance ID to base element ID to match gantt element IDs
-      if (timing.parentSubProcessId) {
-        const parentParts = timing.parentSubProcessId.split('_instance_');
-        ganttElement.parentSubProcessId =
-          parentParts.length > 0 ? parentParts[0] : timing.parentSubProcessId;
-      }
+      // Keep exact parent instance ID - this is handled correctly later in assignCommonElementProperties
 
       // Add ghost occurrences if enabled and there are multiple occurrences
       if (options.showGhostElements && timingInstances.length > 1) {

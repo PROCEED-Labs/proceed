@@ -439,8 +439,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       setInfoModalElement(null);
     }, []);
 
-    // Calculate total height for virtualization
-    // This is the full scrollable height based on the number of visible elements
+    // Calculate total content height for scrolling
     const totalContentHeight = filteredElements.length * ROW_HEIGHT;
 
     // Use the Gantt chart hook with visible elements
@@ -555,6 +554,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           highlightedDependencies, // Pass highlighted dependencies
           selectedElementIds.size > 0 ? Array.from(selectedElementIds)[0] : null, // Pass first selected element ID for row highlighting
           options?.curvedDependencies, // Pass curved dependencies setting
+          collapsedSubProcesses, // Pass collapsed sub-processes for visual indicators
         );
 
         // Update current time unit from renderer (moved to separate effect to avoid infinite loop)
@@ -1217,7 +1217,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                         <div className={styles.extraInfoColumn}>{element.elementType || ''}</div>
                         {showInstanceColumn && (
                           <div className={styles.instanceColumn}>
-                            {element.instanceNumber || ''}
+                            {element.instanceNumber ? element.instanceNumber : ''}
                           </div>
                         )}
                         {showLoopColumn && (
@@ -1237,6 +1237,29 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                       </div>
                     </div>,
                   );
+
+                  // Add collapsed indicator in task list (without v symbols)
+                  if (
+                    element.type === 'group' &&
+                    (element as any).isSubProcess &&
+                    collapsedSubProcesses.has(element.id)
+                  ) {
+                    visibleElements.push(
+                      <div
+                        key={`${element.id}-collapsed-indicator-tasklist`}
+                        style={{
+                          position: 'absolute',
+                          top: `${i * ROW_HEIGHT + ROW_HEIGHT - 2.5}px`,
+                          left: '0',
+                          right: '0',
+                          height: '5px',
+                          backgroundColor: '#e8e8e8',
+                          borderTop: '1px solid #d0d0d0',
+                          borderBottom: '1px solid #d0d0d0',
+                        }}
+                      />,
+                    );
+                  }
                 }
 
                 return visibleElements;

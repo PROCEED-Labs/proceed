@@ -345,9 +345,9 @@ export class ElementRenderer {
 
     if (isSubProcess) {
       // Render sub-process as filled horizontal bar with downward tabs
-      const barHeight = 2 * this.pixelRatio; // 2px for main horizontal bar
-      const tabHeight = 4 * this.pixelRatio; // 4px for downward pointed tabs (steeper)
-      const tabWidth = 3 * this.pixelRatio; // 3px width of the tab base (narrower for steeper angle)
+      const barHeight = Math.max(4, 2 * this.pixelRatio); // Minimum 3px for visibility on low DPI, scaled for high DPI
+      const tabHeight = Math.max(8, 4 * this.pixelRatio); // Minimum 5px for tabs, scaled for high DPI
+      const tabWidth = Math.max(6, 3 * this.pixelRatio); // Minimum 4px width for tabs, scaled for high DPI
 
       // Position slightly above center
       const offsetFromCenter = -1 * this.pixelRatio; // Move up 6px from center
@@ -478,6 +478,7 @@ export class ElementRenderer {
     visibleRowStart: number,
     visibleRowEnd: number,
     hoveredElementId?: string,
+    collapsedSubProcesses?: Set<string>,
   ): { visibleElements: GanttElementType[] } {
     // Track which elements are actually visible
     const visibleElements: GanttElementType[] = [];
@@ -549,6 +550,8 @@ export class ElementRenderer {
           break;
       }
     });
+
+    // Note: Collapsed indicators are now rendered in CanvasRenderer before dependencies
 
     return { visibleElements };
   }

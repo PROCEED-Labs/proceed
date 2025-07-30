@@ -73,8 +73,7 @@ export class TaskTransformationStrategy
       element.$type === 'bpmn:ManualTask' ||
       element.$type === 'bpmn:BusinessRuleTask' ||
       element.$type === 'bpmn:ScriptTask' ||
-      element.$type === 'bpmn:CallActivity' ||
-      element.$type === 'bpmn:SubProcess'
+      element.$type === 'bpmn:CallActivity'
     );
   }
 

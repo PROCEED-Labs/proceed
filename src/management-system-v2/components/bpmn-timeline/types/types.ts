@@ -123,9 +123,9 @@ export interface BPMNGateway extends BPMNBaseElement {
   outgoing?: string[];
 }
 
-// SubProcess (for future implementation)
+// SubProcess (including Transaction support)
 export interface BPMNSubProcess extends BPMNBaseElement {
-  $type: 'bpmn:SubProcess' | 'bpmn:AdHocSubProcess';
+  $type: 'bpmn:SubProcess' | 'bpmn:AdHocSubProcess' | 'bpmn:Transaction';
   incoming?: string[];
   outgoing?: string[];
   flowElements: BPMNFlowElement[];

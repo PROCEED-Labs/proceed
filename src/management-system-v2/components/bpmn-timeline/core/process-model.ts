@@ -3,6 +3,7 @@
  */
 
 import type { BPMNFlowElement } from '../types/types';
+import { isExpandedSubProcess } from '../utils/utils';
 
 /**
  * Represents a process scope (main process or sub-process)
@@ -92,6 +93,7 @@ export function buildScopes(elements: BPMNFlowElement[]): ProcessScope {
 
     // Add elements to this scope
     const scopeElements = elementsByScope.get(scopeId) || [];
+
     scopeElements.forEach((element) => {
       scope.elements.set(element.id, element);
 
@@ -114,8 +116,8 @@ export function buildScopes(elements: BPMNFlowElement[]): ProcessScope {
     if (!(element as any).parentSubProcessId) {
       mainScope.elements.set(element.id, element);
 
-      // If it's a sub-process, ensure child scope exists
-      if (element.$type === 'bpmn:SubProcess' && isExpandedSubProcess(element)) {
+      // If it's a sub-process (including transactions), ensure child scope exists
+      if (isExpandedSubProcess(element)) {
         if (!mainScope.childScopes.has(element.id)) {
           const childScope = createScope(element.id, 'subProcess', mainScope);
           childScope.bpmnElement = element;
@@ -126,13 +128,6 @@ export function buildScopes(elements: BPMNFlowElement[]): ProcessScope {
   });
 
   return mainScope;
-}
-
-/**
- * Check if element is a sub-process (all sub-processes are treated as expanded)
- */
-function isExpandedSubProcess(element: BPMNFlowElement): boolean {
-  return element.$type === 'bpmn:SubProcess';
 }
 
 /**

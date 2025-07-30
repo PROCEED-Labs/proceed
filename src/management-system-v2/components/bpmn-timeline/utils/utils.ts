@@ -127,7 +127,8 @@ export function isTaskElement(element: { $type: string }): boolean {
     element.$type.includes('Task') ||
     element.$type === 'bpmn:CallActivity' ||
     element.$type === 'bpmn:SubProcess' ||
-    element.$type === 'bpmn:AdHocSubProcess'
+    element.$type === 'bpmn:AdHocSubProcess' ||
+    element.$type === 'bpmn:Transaction'
   );
 }
 
@@ -135,7 +136,11 @@ export function isTaskElement(element: { $type: string }): boolean {
  * Check if element is a sub-process (all sub-processes are treated as expanded)
  */
 export function isExpandedSubProcess(element: any): boolean {
-  return element.$type === 'bpmn:SubProcess' || element.$type === 'bpmn:AdHocSubProcess';
+  return (
+    element.$type === 'bpmn:SubProcess' ||
+    element.$type === 'bpmn:AdHocSubProcess' ||
+    element.$type === 'bpmn:Transaction'
+  );
 }
 
 /**
@@ -261,6 +266,8 @@ export function getTaskTypeString(task: BPMNTask): string {
     CallActivity: 'Call Activity',
     SubProcess: 'Subprocess',
     AdHocSubProcess: 'Ad-Hoc Subprocess',
+    Transaction: 'Transaction',
+    transaction: 'Transaction', // Handle lowercase
   };
 
   return readableTypes[taskType] || taskType;

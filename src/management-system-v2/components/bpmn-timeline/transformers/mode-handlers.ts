@@ -213,7 +213,11 @@ export function handleEveryOccurrenceMode(
   addBoundaryEventDependencies(ganttDependencies, ganttElements, supportedElements);
 
   // Fix parent-child relationships: ensure children point to correct parent instances
-  fixSubProcessParentChildRelationships(ganttElements);
+  // DISABLED: This function corrupts the correct parent-child relationships that were already
+  // established during scoped traversal. The scoped traversal sets the correct parentSubProcessId
+  // based on the actual process flow, but this function tries to "fix" them using timing overlap,
+  // which breaks the correct assignments by falling back to the first candidate when timing fails.
+  // fixSubProcessParentChildRelationships(ganttElements);
 
   // Validate relationships for debugging
   validateSubProcessRelationships(ganttElements);

@@ -28,6 +28,10 @@ export function createElementMaps(supportedElements: BPMNFlowElement[]): {
  * Consolidates the repeated split pattern across mode handlers
  */
 export function extractBaseElementId(elementId: string): string {
-  const baseIdParts = elementId.split('_');
-  return baseIdParts.length > 0 ? baseIdParts[0] : elementId;
+  // Handle instance IDs like "Activity_1hp3t0r_instance_1"
+  if (elementId.includes('_instance_')) {
+    return elementId.split('_instance_')[0];
+  }
+  // Return the original ID if no instance pattern found
+  return elementId;
 }

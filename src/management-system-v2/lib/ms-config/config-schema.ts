@@ -96,7 +96,17 @@ export const msConfigSchema = {
     MAILSERVER_MS_DEFAULT_MAIL_ADDRESS: z.string().default(''),
     MAILSERVER_MS_DEFAULT_MAIL_PASSWORD: z.string().default(''),
 
-    PROCEED_PUBLIC_IAM_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_IAM_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine((value) => {
+        if (!value) return true;
+        return (
+          boolParser(process.env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) ||
+          boolParser(process.env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE)
+        );
+      }, 'You enabled IAM without enabling a login method, please enable at least one of the following two: PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE or PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE'),
     PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE: z.string().default('FALSE').transform(boolParser),
     PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE: z.string().default('TRUE').transform(boolParser),
     PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE: z.string().default('TRUE').transform(boolParser),

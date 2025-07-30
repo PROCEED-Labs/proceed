@@ -37,11 +37,11 @@ const emailSchema = z.string().email();
 
 type UserIdentifierDiscriminator =
   | {
-    email: string;
-  }
+      email: string;
+    }
   | {
-    username: string;
-  };
+      username: string;
+    };
 type QueryInviteUser = {
   id: string;
   profileImage: string | null;
@@ -201,7 +201,7 @@ const AddUsersModal: FC<{
           app,
         });
         close();
-      } catch (_) { }
+      } catch (_) {}
     });
   };
 

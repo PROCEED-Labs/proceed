@@ -11,6 +11,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import { leaveOrganization } from '@/lib/data/environments';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useRouter } from 'next/navigation';
+import { SettingOutlined } from '@ant-design/icons';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -74,6 +75,13 @@ const EnvironmentsPage: FC<{
                   >
                     Leave
                   </ConfirmationButton>
+                )}
+                {!environment.isOrganization && (
+                  <Link href="/settings" passHref legacyBehavior>
+                    <Button>
+                      <SettingOutlined />
+                    </Button>
+                  </Link>
                 )}
               </Space>
             ),

@@ -1,6 +1,11 @@
 'use client';
 
-import { UserOutlined, WarningOutlined, AppstoreOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  WarningOutlined,
+  AppstoreOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import {
   Alert,
   Avatar,
@@ -86,12 +91,20 @@ const HeaderActions: FC = () => {
       icon: <FaSignOutAlt />,
     });
   } else if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
-    avatarDropdownItems.push({
-      key: 'profile',
-      title: 'Profile Settings',
-      label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-      icon: <TbUserEdit />,
-    });
+    avatarDropdownItems.push(
+      {
+        key: 'profile',
+        title: 'Profile Settings',
+        label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
+        icon: <TbUserEdit />,
+      },
+      {
+        key: 'personal-space-settings',
+        title: 'Personal Space Settings',
+        label: <Link href="/settings">Personal Space Settings</Link>,
+        icon: <SettingOutlined />,
+      },
+    );
 
     // userSpaces is null when the component is outside of the UserSpaces provider
     if (userSpaces) {

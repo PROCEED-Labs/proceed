@@ -41,6 +41,7 @@ import { CustomLinkStateProvider } from '@/lib/custom-links/client-state';
 import { CustomLink } from '@/lib/custom-links/state';
 import { customLinkIcons } from '@/lib/custom-links/icons';
 import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
+import { getUserPassword } from '@/lib/data/db/iam/users';
 
 const DashboardLayout = async ({
   children,
@@ -72,6 +73,9 @@ const DashboardLayout = async ({
   const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
   const middleCustomNavLinks = customNavLinks.filter((link) => link.position === 'middle');
   const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');
+
+  const userPassword = await getUserPassword(user!.id);
+  const userNeedsToChangePassword = userPassword ? userPassword.isTemporaryPassword : false;
 
   let layoutMenuItems: MenuProps['items'] = [];
 
@@ -301,6 +305,7 @@ const DashboardLayout = async ({
           layoutMenuItems={layoutMenuItems}
           activeSpace={activeEnvironment}
           customLogo={logo}
+          userNeedsToChangePassword={userNeedsToChangePassword}
           bottomMenuItems={bottomCustomNavLinks.map((link, idx) => ({
             key: idx,
             label: <CustomLink link={link} />,

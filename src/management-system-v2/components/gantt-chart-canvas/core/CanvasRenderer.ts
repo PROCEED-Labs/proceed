@@ -118,7 +118,7 @@ export class CanvasRenderer {
   private lastSubgridLines?: TimeAxisGridLine[];
   private currentTimeUnit?: TimeUnit;
   private currentTimeLevel?: TimeLevel;
-  private currentPixelsPerDay: number = 0; // Store actual pixels per day for debugging
+  private currentPixelsPerDay: number = 0; // Store current pixels per day
 
   // Current date for "now" line
   private currentDate: Date = new Date();
@@ -276,10 +276,10 @@ export class CanvasRenderer {
     const { unit: timeUnit, level: timeLevel } =
       TimeAxisRenderer.getTimeUnitAndLevelFromScale(msPerPixel);
 
-    // Save the exact pixels per day value for consistent debug display
+    // Save the exact pixels per day value for consistent rendering
     this.currentPixelsPerDay = pixelsPerDay;
 
-    // Store the current time unit and level for debugging
+    // Store the current time unit and level
     this.currentTimeUnit = timeUnit;
     this.currentTimeLevel = timeLevel;
 
@@ -455,7 +455,7 @@ export class CanvasRenderer {
       collapsedSubProcesses, // Pass collapsed sub-processes
     );
 
-    // Update visible elements for debugging
+    // Update visible elements cache
     this.visibleElements = renderResult.visibleElements;
 
     // Restore the context state

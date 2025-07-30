@@ -35,7 +35,6 @@ import {
   isSubProcessExpanded,
 } from './process-model';
 
-// Removed global state - now managed through TraversalContext
 
 /**
  * Calculate element timings using scoped hierarchical traversal

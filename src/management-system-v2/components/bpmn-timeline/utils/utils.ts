@@ -1000,7 +1000,7 @@ function insertBoundaryEventsAfterTasks<
     if (orphanedBoundaryEvents.length > 0) {
       console.warn(
         'Orphaned boundary events found:',
-        orphanedBoundaryEvents.map((e) => e.id),
+        JSON.stringify(orphanedBoundaryEvents.map((e) => e.id)),
       );
     }
     result.push(...orphanedBoundaryEvents);

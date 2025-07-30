@@ -69,10 +69,7 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
 
   // Get BPMN loop characteristics (actual BPMN attributes)
   const getBPMNLoopCharacteristics = () => {
-    // This would come from the original BPMN element data if available
-    // For now, we don't have access to the original BPMN element here
-    // This should be passed from the BPMN transformation if needed
-    return null;
+    return null; // BPMN element data not available in this context
   };
 
   // Get flow traversal status for inline display
@@ -476,8 +473,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       // Calculate the current scale based on zoom level
       const currentScale = zoomCurveCalculator.calculateScale(gantt.state.zoom);
 
-      // IMPORTANT: Use the matrix from gantt hook directly instead of creating our own
-      // This ensures we use all the baseTime optimizations and other precision fixes
+      // Use matrix from gantt hook for consistency
       if (gantt.timeMatrixRef && gantt.timeMatrixRef.current) {
         // Use the matrix directly from the hook
         timeMatrixRef.current = gantt.timeMatrixRef.current;
@@ -685,14 +681,10 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       // Initial render
       renderChart();
 
-      // Force a second render after a brief delay to ensure all grid lines are visible
-      // This helps with the horizontal lines rendering issue
+      // Ensure grid lines render correctly after initialization
       setTimeout(() => {
-        // Forces the horizontal line rendering even when scrolled to the top
         if (rendererRef.current) {
-          // Reset rendering state to force horizontal line redraw
           rendererRef.current.updateConfig({
-            // Reset row references to force redraw but keep all other settings
             _forceGridLineRedraw: true,
           });
         }
@@ -1361,5 +1353,4 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
   },
 );
 
-// Set display name for debugging
 GanttChartCanvas.displayName = 'GanttChartCanvas';

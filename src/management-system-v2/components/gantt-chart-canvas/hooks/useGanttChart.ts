@@ -34,9 +34,9 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
   const hasInitializedRef = useRef(false);
 
   // State for the chart
-  // Initialize state with a placeholder zoom value - this will be updated by initializeTimeMatrix
+  // State will be properly initialized by initializeTimeMatrix
   const [state, setState] = useState<GanttChartState>({
-    zoom: 0, // Don't use initialZoom here, we'll set this during initialization
+    zoom: 0, // Will be set during initialization
     visibleTimeStart: 0,
     visibleTimeEnd: 0,
     taskListWidth,
@@ -161,7 +161,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
       ...prev,
       visibleTimeStart: visibleRange[0],
       visibleTimeEnd: visibleRange[1],
-      zoom: calculatedZoom, // Don't round - preserve exact zoom for accurate scaling
+      zoom: calculatedZoom,
     }));
   }, [
     calculateDataRange,
@@ -208,7 +208,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
 
       setState((prev) => ({
         ...prev,
-        zoom: newZoom, // Don't round - preserve exact zoom for accurate scaling
+        zoom: newZoom,
         visibleTimeStart: visibleRange[0],
         visibleTimeEnd: visibleRange[1],
       }));
@@ -291,7 +291,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
         onViewChange?.(visibleRange);
       }
     },
-    [getChartWidth, onViewChange], // Removed state.panOffset from dependencies to prevent infinite loops
+    [getChartWidth, onViewChange], // Exclude state.panOffset to prevent infinite loops
   );
 
   // Resize the task list
@@ -363,7 +363,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
       const zoomDelta = -Math.sign(e.deltaY) * 2 * sensitivityFactor; // Balanced for smooth but controlled zooming
 
       // Calculate new zoom level with min/max boundaries
-      const newZoom = Math.round(Math.max(0, Math.min(100, state.zoom + zoomDelta))); // Round for manual operations
+      const newZoom = Math.round(Math.max(0, Math.min(100, state.zoom + zoomDelta)));
 
       // Apply zoom centered on mouse position
       handleZoomChange(newZoom, mouseX);
@@ -385,7 +385,7 @@ export function useGanttChart(elements: GanttElementType[], options: GanttChartO
         const totalDelta = e.clientX - startX;
         accumulatedDelta = totalDelta;
 
-        // Pan the view with CSS transform (temporary)
+        // Apply temporary pan during drag
         handlePan(totalDelta, true);
       };
 

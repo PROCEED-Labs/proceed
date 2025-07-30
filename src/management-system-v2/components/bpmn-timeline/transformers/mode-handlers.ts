@@ -213,13 +213,10 @@ export function handleEveryOccurrenceMode(
   addBoundaryEventDependencies(ganttDependencies, ganttElements, supportedElements);
 
   // Fix parent-child relationships: ensure children point to correct parent instances
-  // DISABLED: This function corrupts the correct parent-child relationships that were already
-  // established during scoped traversal. The scoped traversal sets the correct parentSubProcessId
-  // based on the actual process flow, but this function tries to "fix" them using timing overlap,
-  // which breaks the correct assignments by falling back to the first candidate when timing fails.
-  // fixSubProcessParentChildRelationships(ganttElements);
+  // Parent-child relationships are established during scoped traversal
+  // fixSubProcessParentChildRelationships(ganttElements); // Not needed with scoped traversal
 
-  // Validate relationships for debugging
+  // Set child relationship properties for subprocess elements
   validateSubProcessRelationships(ganttElements);
 
   // Child relationships already populated in validateSubProcessRelationships
@@ -462,7 +459,7 @@ export function handleLatestOccurrenceMode(
   }
 
   // Process boundary events and add them to gantt elements
-  // Boundary events handled by path traversal - skipping duplicate processing
+  // Boundary events are processed during path traversal
 
   // Process elements reachable through boundary event outgoing flows
   // Boundary event reachable elements handled by path traversal - skipping duplicate processing
@@ -557,7 +554,7 @@ export function handleLatestOccurrenceMode(
   // Fix parent-child relationships: ensure children point to correct parent instances
   fixSubProcessParentChildRelationships(ganttElements);
 
-  // Validate relationships for debugging
+  // Set child relationship properties for subprocess elements
   validateSubProcessRelationships(ganttElements);
 
   // Child relationships already populated in validateSubProcessRelationships
@@ -901,7 +898,7 @@ export function handleEarliestOccurrenceMode(
   // Fix parent-child relationships: ensure children point to correct parent instances
   fixSubProcessParentChildRelationships(ganttElements);
 
-  // Validate relationships for debugging
+  // Set child relationship properties for subprocess elements
   validateSubProcessRelationships(ganttElements);
 
   // Child relationships already populated in validateSubProcessRelationships
@@ -991,7 +988,7 @@ function fixSubProcessParentChildRelationships(ganttElements: GanttElementType[]
 }
 
 /**
- * Validate parent-child relationships for debugging
+ * Set child relationship properties for subprocess elements
  */
 function validateSubProcessRelationships(ganttElements: GanttElementType[]): void {
   const subProcesses = ganttElements.filter(
@@ -1076,6 +1073,7 @@ function createLatestDependencies(
     const latestTargetInstanceId = latestInstanceIdMap.get(targetOriginalId);
 
     if (!latestSourceInstanceId || !latestTargetInstanceId) {
+      return null; // Skip dependencies with missing instance mappings
     }
 
     return {
@@ -1085,7 +1083,7 @@ function createLatestDependencies(
     };
   });
 
-  return mapped.filter((dep) => dep.sourceInstanceId && dep.targetInstanceId);
+  return mapped.filter((dep): dep is NonNullable<typeof dep> => dep !== null);
 }
 
 /**

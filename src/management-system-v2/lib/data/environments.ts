@@ -13,10 +13,17 @@ import {
   getEnvironmentById,
   updateOrganization as _updateOrganization,
 } from '@/lib/data/db/iam/environments';
+import { env } from '../ms-config/env-vars';
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
 ) {
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE)
+    return userError(
+      'Not allowed under the current configuration of the MS',
+      UserErrorType.PermissionError,
+    );
+
   const { userId } = await getCurrentUser();
 
   try {
@@ -35,6 +42,13 @@ export async function addOrganizationEnvironment(
 }
 
 export async function deleteOrganizationEnvironments(environmentIds: string[]) {
+  // NOTE: maybe this should be removed
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE)
+    return userError(
+      'Not allowed under the current configuration of the MS',
+      UserErrorType.PermissionError,
+    );
+
   try {
     for (const environmentId of environmentIds) {
       const { ability } = await getCurrentEnvironment(environmentId);

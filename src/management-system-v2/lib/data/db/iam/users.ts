@@ -317,6 +317,7 @@ export async function setUserPassword(
   userId: string,
   passwordHash: string,
   tx?: Prisma.TransactionClient,
+  isTemporaryPassword: boolean = false,
 ) {
   const dbMutator = tx || db;
 
@@ -329,11 +330,12 @@ export async function setUserPassword(
   if (user.passwordAccount) {
     await dbMutator.passwordAccount.update({
       where: { userId },
-      data: { password: passwordHash },
+      data: { password: passwordHash, isTemporaryPassword },
     });
   } else {
     await dbMutator.passwordAccount.create({
-      data: { userId, password: passwordHash },
+      data: { userId, password: passwordHash, isTemporaryPassword },
+
     });
   }
 }

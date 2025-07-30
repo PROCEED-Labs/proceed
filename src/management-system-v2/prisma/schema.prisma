@@ -65,6 +65,7 @@ model OauthAccount {
 model PasswordAccount {
   userId   String @id
   password String
+  isTemporaryPassword Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -6,7 +6,6 @@ import { getDbEngines } from '@/lib/data/db/engines';
 import { getCurrentEnvironment } from '@/components/auth';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { enableUseDB } from 'FeatureFlags';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 import { Engine as DBEngine } from '@prisma/client';

@@ -169,6 +169,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
 if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
     GoogleProvider({
+      id: 'google',
       clientId: env.IAM_LOGIN_OAUTH_GOOGLE_CLIENT_ID,
       clientSecret: env.IAM_LOGIN_OAUTH_GOOGLE_CLIENT_SECRET,
       profile(profile) {
@@ -183,6 +184,7 @@ if (env.NODE_ENV === 'production') {
       },
     }),
     DiscordProvider({
+      id: 'discord',
       clientId: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID,
       clientSecret: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET,
       profile(profile) {
@@ -194,6 +196,7 @@ if (env.NODE_ENV === 'production') {
       },
     }),
     TwitterProvider({
+      id: 'twitter',
       clientId: env.IAM_LOGIN_OAUTH_X_CLIENT_ID,
       clientSecret: env.IAM_LOGIN_OAUTH_X_CLIENT_SECRET,
       profile({ data, email }) {

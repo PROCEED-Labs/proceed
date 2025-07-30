@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
+import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
 import {
   Alert,
   Layout as AntLayout,
@@ -13,7 +13,6 @@ import {
   Modal,
   Tooltip,
 } from 'antd';
-import { AppstoreOutlined, SettingOutlined, HomeOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
@@ -25,11 +24,10 @@ import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
-import { TbUser, TbUserEdit } from 'react-icons/tb';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { EnvVarsContext } from '@/components/env-vars-context';
 import { useSession } from '@/components/auth-can';
+import ChangeUserPasswordModal from './profile/change-password-modal';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -57,6 +55,8 @@ const Layout: FC<
     hideSider?: boolean;
     customLogo?: string;
     disableUserDataModal?: boolean;
+    userNeedsToChangePassword?: boolean;
+    bottomMenuItems?: NonNullable<MenuProps['items']>;
   }>
 > = ({
   loggedIn,
@@ -67,6 +67,8 @@ const Layout: FC<
   hideSider,
   customLogo,
   disableUserDataModal = false,
+  userNeedsToChangePassword: _userNeedsToChangePassword,
+  bottomMenuItems,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -75,13 +77,16 @@ const Layout: FC<
   });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
-  const envVars = use(EnvVarsContext);
 
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
   const [showLoginRequest, setShowLoginRequest] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
+
+  const [userNeedsToChangePassword, setUserNeedsToChangePassword] = useState(
+    _userNeedsToChangePassword ?? false,
+  );
 
   let layoutMenuItems = _layoutMenuItems;
 
@@ -106,6 +111,18 @@ const Layout: FC<
       onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
     />
   );
+
+  let bottomMenu;
+  if (bottomMenuItems && bottomMenuItems.length > 0) {
+    bottomMenu = (
+      <Menu
+        style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
+        mode="inline"
+        items={bottomMenuItems}
+        onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
+      />
+    );
+  }
 
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
@@ -139,6 +156,22 @@ const Layout: FC<
             modalProps={{ closeIcon: null, destroyOnClose: true }}
           />
         ) : null}
+
+        {userNeedsToChangePassword && (
+          <ChangeUserPasswordModal
+            open={true}
+            close={(passwordChanged) => {
+              if (passwordChanged) {
+                setUserNeedsToChangePassword(false);
+              }
+            }}
+            title="You need to set your password"
+            hint={
+              <Alert message="Your account still has a temporary password, in order to use PROCEED you need to set a new password" />
+            }
+            modalProps={{ closable: false }}
+          />
+        )}
 
         <AntLayout style={{ height: '100vh' }}>
           <AntLayout hasSider>
@@ -194,12 +227,15 @@ const Layout: FC<
                     </div>
                     {loggedIn ? menu : null}
                   </div>
-                  <AntLayout.Footer
-                    style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
-                    className={cn(styles.Footer)}
-                  >
-                    PROCEED Labs GmbH
-                  </AntLayout.Footer>
+                  <div>
+                    {bottomMenu}
+                    <AntLayout.Footer
+                      style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+                      className={cn(styles.Footer)}
+                    >
+                      PROCEED Labs GmbH
+                    </AntLayout.Footer>
+                  </div>
                 </div>
               </AntLayout.Sider>
             )}
@@ -224,7 +260,17 @@ const Layout: FC<
           onClose={() => setMobileDrawerOpen(false)}
           open={mobileDrawerOpen}
         >
-          {menu}
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            {menu}
+            {bottomMenu}
+          </div>
         </Drawer>
 
         <Modal

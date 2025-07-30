@@ -6,5 +6,5 @@ export type CustomNavigationLink = {
   topic?: string;
   showStatus: boolean;
   clickable: boolean;
-  position: 'top' | 'bottom';
+  position: 'top' | 'middle' | 'bottom';
 };

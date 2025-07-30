@@ -1,7 +1,7 @@
-import 'server-only';
+'use server';
 
 import { Engine } from './machines';
-import { engineRequest } from './endpoints';
+import { engineRequest } from './endpoints/index';
 
 export async function startInstanceOnMachine(
   definitionId: string,

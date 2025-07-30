@@ -21,11 +21,11 @@ export const mSConfigEnvironmentOnlyKeys = [
   'MQTT_PASSWORD',
   'MQTT_BASETOPIC',
 
-  // TODO: remove from this list
+  // TODO: remove this from environment only list
   'STORAGE_CLOUD_BUCKET_NAME',
-
-  // Variables that aren't implemented yet
-  // 'PRISMA_???',
+  'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
+  'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
+  'PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE',
 
   'PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE',
   'PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE',
@@ -34,6 +34,7 @@ export const mSConfigEnvironmentOnlyKeys = [
   'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE',
 
   'PROCEED_PUBLIC_IAM_ACTIVE',
+  'PROCEED_PUBLIC_TIMELINE_VIEW',
 
   'IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET',
   'IAM_GUEST_CONVERSION_REFERENCE_SECRET',
@@ -47,6 +48,9 @@ export const mSConfigEnvironmentOnlyKeys = [
   'IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID',
   'IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET',
   'PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV',
+
+  // Variables that aren't implemented yet
+  // 'PRISMA_???',
 ] satisfies (keyof MergedSchemas)[];
 
 export const msConfigSchema = {
@@ -82,11 +86,8 @@ export const msConfigSchema = {
       .default('local')
       .refine((value) => {
         if (value === 'local') return true;
-        return (
-          process.env.STORAGE_CLOUD_BUCKET_NAME &&
-          process.env.STORAGE_CLOUD_BUCKET_CREDENTIALS_FILE_PATH
-        );
-      }, 'To use PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV, you need to set STORAGE_CLOUD_BUCKET_NAME and STORAGE_CLOUD_BUCKET_CREDENTIALS_FILE_PATH'),
+        return !!process.env.STORAGE_CLOUD_BUCKET_NAME;
+      }, 'To use PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV, you need to set STORAGE_CLOUD_BUCKET_NAME'),
     STORAGE_CLOUD_BUCKET_NAME: z.string().default(''),
     STORAGE_CLOUD_BUCKET_CREDENTIALS_FILE_PATH: z.string().default(''),
 
@@ -143,6 +144,7 @@ export const msConfigSchema = {
     SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
 
     PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
+    PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
     MS_ENABLED_RESOURCES: z
       .string()
       .transform((str, ctx) => {
@@ -181,6 +183,7 @@ export const msConfigSchema = {
       ),
   },
   development: {
+    NEXTAUTH_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z
       .string()

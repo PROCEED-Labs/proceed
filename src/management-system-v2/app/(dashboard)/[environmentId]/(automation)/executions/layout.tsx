@@ -13,12 +13,11 @@ const ExecutionsLayout: React.FC<ExecutionLayoutProps> = async ({ params, childr
 
   if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
 
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   const exeuctionsSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-automation.executions',
-    ability,
   );
 
   if (exeuctionsSettings.active === false) {

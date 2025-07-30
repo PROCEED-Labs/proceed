@@ -4,14 +4,15 @@ import { App, Button } from 'antd';
 import { useState } from 'react';
 import EnginesModal from './engines-modal';
 import EnginesList, { ActionType, SavedEngine } from './engines-list';
-import { updateSpaceEngine, addSpaceEngines, deleteSpaceEngine } from '@/lib/data/space-engines';
+import { updateDbEngine, addDbEngines, deleteSpaceEngine } from '@/lib/data/engines';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useRouter } from 'next/navigation';
 
 const SavedEnginesList = ({ savedEngines }: { savedEngines: SavedEngine[] }) => {
   const router = useRouter();
-  const space = useEnvironment();
+  const _spaceId = useEnvironment().spaceId;
+  const spaceId = _spaceId === '' ? null : _spaceId;
   const app = App.useApp();
 
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ const SavedEnginesList = ({ savedEngines }: { savedEngines: SavedEngine[] }) => 
   async function deleteEngine(id: string) {
     setLoading(true);
     await wrapServerCall({
-      fn: () => deleteSpaceEngine(space.spaceId, id),
+      fn: () => deleteSpaceEngine(id, spaceId),
       onSuccess: () => {
         app.message.success({ content: 'Engine deleted' });
         router.refresh();
@@ -37,8 +38,8 @@ const SavedEnginesList = ({ savedEngines }: { savedEngines: SavedEngine[] }) => 
     setLoading(true);
     await wrapServerCall({
       fn: (): Promise<any> => {
-        if (editData) return updateSpaceEngine(space.spaceId, editData.id, data);
-        else return addSpaceEngines(space.spaceId, [data]);
+        if (editData) return updateDbEngine(editData.id, data, spaceId);
+        else return addDbEngines([data], spaceId);
       },
       onSuccess: () => {
         app.message.success({ content: editData ? 'Engine updated' : 'Engine added' });

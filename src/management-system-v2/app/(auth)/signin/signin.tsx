@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, Fragment, ReactNode, useEffect, useState } from 'react';
+import { FC, Fragment, use, useEffect, useState } from 'react';
 import {
   Typography,
   Alert,
@@ -8,9 +8,6 @@ import {
   Input,
   Button as AntDesignButton,
   Divider,
-  Modal,
-  Space,
-  Tooltip,
   ButtonProps,
   ConfigProvider,
   TabsProps,
@@ -25,12 +22,13 @@ import { BsFillPersonPlusFill } from 'react-icons/bs';
 import { MdEmail } from 'react-icons/md';
 import { FaCircleArrowUp } from 'react-icons/fa6';
 
-import styles from './login.module.scss';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/lib/auth';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import AuthModal from '../auth-modal';
 
 const verticalGap = '1rem';
 
@@ -99,6 +97,7 @@ const SignIn: FC<{
   userType: 'guest' | 'user' | 'none';
   guestReferenceToken?: string;
 }> = ({ providers, userType, guestReferenceToken }) => {
+  const env = use(EnvVarsContext);
   const breakpoint = Grid.useBreakpoint();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? undefined;
@@ -107,7 +106,7 @@ const SignIn: FC<{
     : callbackUrl;
   const authError = searchParams.get('error');
 
-  const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
+  const oauthProviders = providers.filter((provider) => ['oauth', 'oidc'].includes(provider.type));
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
 
   const emailProvider = providers.find((provider) => provider.type === 'email');
@@ -230,19 +229,13 @@ const SignIn: FC<{
     });
   }
 
-  // TODO: disable this when only one organization is enabled
-  if (true) {
+  if (!env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
     tabs.push({
       icon: <GoOrganization size={26} />,
       label: 'Create Organization',
       key: 'create-organization',
       href: '/create-organization',
-      children: (
-        <CredentialsSignIn
-          provider={passwordSignupProvider as any}
-          callbackUrl={callbackUrlWithGuestRef}
-        />
-      ),
+      children: null,
     });
   }
 
@@ -254,7 +247,7 @@ const SignIn: FC<{
       icon: (
         // eslint-disable-next-line
         <img
-          src={`https://authjs.dev/img/providers${(provider as any).style?.logo}`}
+          src={`https://authjs.dev/img/providers/${provider.id}.svg`}
           alt={provider.name}
           style={{ width: '1.5rem', height: 'auto' }}
         />
@@ -274,7 +267,7 @@ const SignIn: FC<{
         },
       }}
     >
-      <Modal
+      <AuthModal
         title={
           <Image
             src="/proceed.svg"
@@ -285,19 +278,9 @@ const SignIn: FC<{
             style={{ marginBottom: '1rem', display: 'block', margin: 'auto' }}
           />
         }
-        open={open}
-        closeIcon={null}
-        footer={null}
-        style={{
-          maxWidth: '60ch',
-          width: '90%',
-          top: 0,
-        }}
         styles={{
-          mask: { backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },
           header: { paddingBottom: verticalGap },
         }}
-        className={styles.Card}
       >
         {authError && (
           <Alert description={authError} type="error" style={{ marginBottom: verticalGap }} />
@@ -424,7 +407,7 @@ const SignIn: FC<{
           <Link href="/terms">Terms of Service</Link> and the storage of functionally essential
           cookies on your device.
         </Typography.Paragraph>
-      </Modal>
+      </AuthModal>
     </ConfigProvider>
   );
 };

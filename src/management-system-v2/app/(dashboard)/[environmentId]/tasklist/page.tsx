@@ -15,10 +15,9 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
 
   const {
     activeEnvironment: { spaceId },
-    ability,
   } = await getCurrentEnvironment(params.environmentId);
 
-  const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation', ability);
+  const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation');
 
   if (automationSettings.active === false || automationSettings.tasklist?.active === false) {
     return notFound();

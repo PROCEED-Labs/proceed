@@ -35,6 +35,7 @@ const CreateOrganizationPage = ({
   const [form] = Form.useForm();
   const [formErrors, parseInput] = useParseZodErrors(UserOrganizationEnvironmentInputSchema);
   const [isDataValid, setIsDataValid] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   function checkEnvironmentData(dataInput?: any) {
     dataInput = dataInput || form.getFieldsValue();
 
@@ -62,17 +63,19 @@ const CreateOrganizationPage = ({
 
   async function createOrganization() {
     const data = checkEnvironmentData();
+    if (!data) return;
+
+    setSubmitting(true);
 
     try {
       if (!needsToAuthenticate) {
-        if (!data) return;
         const response = await addOrganizationEnvironment(data);
         if ('error' in response) throw new Error();
 
         router.push(`/${response.id}/processes`);
       } else {
         // NOTE: the only way to get here is if the data is valid
-        const response = await createInactiveEnvironment(data!);
+        const response = await createInactiveEnvironment(data);
         if ('error' in response) throw new Error();
 
         return `/api/activateenvironment?activationId=${response.id}`;
@@ -87,6 +90,8 @@ const CreateOrganizationPage = ({
         // To stop the callbackUrl function so that the user isn't redirected to the signin page
         throw e;
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -185,7 +190,7 @@ const CreateOrganizationPage = ({
                 <PhoneInput />
               </Form.Item>
               <Form.Item>
-                <Button type="primary" htmlType="submit">
+                <Button type="primary" htmlType="submit" loading={submitting}>
                   {needsToAuthenticate ? 'Create organization' : 'Next step'}
                 </Button>
               </Form.Item>

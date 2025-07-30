@@ -28,7 +28,6 @@ import SpaceLink from '@/components/space-link';
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { enableUseFileManager } from 'FeatureFlags';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { useSession } from '@/components/auth-can';
 
@@ -57,6 +56,8 @@ const Layout: FC<
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;
     customLogo?: string;
+    disableUserDataModal?: boolean;
+    bottomMenuItems?: NonNullable<MenuProps['items']>;
   }>
 > = ({
   loggedIn,
@@ -66,6 +67,8 @@ const Layout: FC<
   children,
   hideSider,
   customLogo,
+  disableUserDataModal = false,
+  bottomMenuItems,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -144,11 +147,11 @@ const Layout: FC<
   }
 
   useEffect(() => {
-    if (enableUseFileManager && customLogo) getLogo(activeSpace.spaceId, '');
+    if (customLogo) getLogo({ entityId: activeSpace.spaceId, filePath: customLogo });
   }, [activeSpace, customLogo]);
 
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (customLogo) imageSource = logoUrl ?? customLogo;
+  if (logoUrl) imageSource = logoUrl;
 
   const menu = (
     <Menu
@@ -159,10 +162,22 @@ const Layout: FC<
     />
   );
 
+  let bottomMenu;
+  if (bottomMenuItems && bottomMenuItems.length > 0) {
+    bottomMenu = (
+      <Menu
+        style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
+        mode="inline"
+        items={bottomMenuItems}
+        onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
+      />
+    );
+  }
+
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
       <SpaceContext.Provider value={activeSpace}>
-        {userData && !userData.isGuest ? (
+        {!disableUserDataModal && userData && !userData.isGuest ? (
           <AuthenticatedUserDataModal
             modalOpen={!userData.username || !userData.lastName || !userData.firstName}
             userData={userData}
@@ -246,12 +261,15 @@ const Layout: FC<
                     </div>
                     {loggedIn ? menu : null}
                   </div>
-                  <AntLayout.Footer
-                    style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
-                    className={cn(styles.Footer)}
-                  >
-                    PROCEED Labs GmbH
-                  </AntLayout.Footer>
+                  <div>
+                    {bottomMenu}
+                    <AntLayout.Footer
+                      style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+                      className={cn(styles.Footer)}
+                    >
+                      PROCEED Labs GmbH
+                    </AntLayout.Footer>
+                  </div>
                 </div>
               </AntLayout.Sider>
             )}
@@ -276,7 +294,17 @@ const Layout: FC<
           onClose={() => setMobileDrawerOpen(false)}
           open={mobileDrawerOpen}
         >
-          {menu}
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            {menu}
+            {bottomMenu}
+          </div>
         </Drawer>
 
         <Modal

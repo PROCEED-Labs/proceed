@@ -116,7 +116,21 @@ async function _getMSConfig() {
   const config = await getMSConfigDBValuesAndEnsureDefaults();
   // NOTE: this could cause problems if the schema is changed, so that the db values are no longer
   // valid
-  const filteredConfig = onBuild ? {} : configurableMSConfigSchema.parse(config);
+  const filteredConfigParseResult = configurableMSConfigSchema.safeParse(config);
+  if (!filteredConfigParseResult.success && !onBuild) {
+    let msg = '';
+    for (const [variable, error] of Object.entries(
+      filteredConfigParseResult.error.flatten().fieldErrors,
+    ))
+      msg += `${variable}: ${JSON.stringify(error)}\n`;
+
+    console.error(`❌ Error parsing environment variables\n${msg}`);
+    process.exit(1);
+  }
+
+  const filteredConfig = (
+    filteredConfigParseResult as Extract<typeof filteredConfigParseResult, { success: true }>
+  ).data;
 
   const msConfig: Record<string, any> = { _overwrittenByEnv: [] };
   for (const key of Object.keys(mergedMSConfigSchemaKeys)) {

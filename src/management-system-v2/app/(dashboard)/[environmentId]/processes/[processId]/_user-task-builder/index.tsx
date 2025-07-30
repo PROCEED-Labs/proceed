@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
-import { Modal, Grid, Row as AntRow, Col } from 'antd';
+import { Modal, Grid, Row as AntRow, Col, App } from 'antd';
 
 import { Editor, Frame, useEditor, EditorStore } from '@craftjs/core';
 
@@ -18,10 +18,14 @@ import { iframeDocument, defaultForm, toHtml } from './utils';
 import CustomEventhandlers from './CustomCommandhandlers';
 import useBoundingClientRect from '@/lib/useBoundingClientRect';
 
-import { saveProcessUserTask, getProcessUserTaskData } from '@/lib/data/processes';
+import { getProcessHtmlFormData, saveProcessHtmlForm } from '@/lib/data/processes';
 import useModelerStateStore from '../use-modeler-state-store';
 
-import { generateUserTaskFileName, getUserTaskImplementationString } from '@proceed/bpmn-helper';
+import {
+  generateUserTaskFileName,
+  getUserTaskImplementationString,
+  generateStartFormFileName,
+} from '@proceed/bpmn-helper';
 import { useEnvironment } from '@/components/auth-can';
 
 import EditorDnDHandler from './DragAndDropHandler';
@@ -29,8 +33,11 @@ import { DiffResult, deepEquals } from '@/lib/helpers/javascriptHelpers';
 import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/file-manager-facade';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+import { Element as BpmnElement } from 'bpmn-js/lib/model/Types';
 
 import { useCanEdit } from '../modeler';
+import { Element } from 'diagram-js/lib/model/Types';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type BuilderProps = {
   processId: string;
@@ -43,6 +50,16 @@ type BuilderModalProps = BuilderProps & {
   hasUnsavedChanges: boolean;
   onInit: () => void;
 };
+
+export function canHaveForm(element?: Element) {
+  if (!element) return false;
+  if (bpmnIs(element, 'bpmn:UserTask')) return true;
+
+  // allow setting the start form of a process when a start element is selected that is not typed
+  // (no timer, signal, etc)
+  if (!bpmnIs(element, 'bpmn:StartEvent')) return false;
+  return !element.businessObject.eventDefinitions?.length;
+}
 
 const EditorModal: React.FC<BuilderModalProps> = ({
   processId,
@@ -57,6 +74,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
   const editingEnabled = useCanEdit();
 
   const environment = useEnvironment();
+
+  const app = App.useApp();
 
   const [iframeMounted, setIframeMounted] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -76,22 +95,40 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
   const selectedElement = modeler && selectedElementId && modeler.getElement(selectedElementId);
 
-  const filename = useMemo(() => {
-    if (modeler && selectedElement && bpmnIs(selectedElement, 'bpmn:UserTask')) {
-      if (selectedElement && selectedElement.type === 'bpmn:UserTask') {
-        return (
-          (selectedElement.businessObject.fileName as string | undefined) ||
-          generateUserTaskFileName()
-        );
+  const affectedElement = useMemo(() => {
+    if (modeler && selectedElement && canHaveForm(selectedElement)) {
+      if (bpmnIs(selectedElement, 'bpmn:UserTask')) {
+        return selectedElement;
+      } else if (bpmnIs(selectedElement, 'bpmn:StartEvent')) {
+        let element: Element | undefined = selectedElement;
+        while (element) {
+          if (bpmnIs(element, 'bpmn:Process')) return element;
+          element = element.parent;
+        }
       }
     }
 
     return undefined;
   }, [modeler, selectedElement]);
 
+  const filename = useMemo(() => {
+    if (affectedElement) {
+      if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
+        return affectedElement.businessObject.fileName || generateUserTaskFileName();
+      } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
+        return (
+          affectedElement.businessObject.uiForNontypedStartEventsFileName ||
+          generateStartFormFileName()
+        );
+      }
+    }
+
+    return undefined;
+  }, [affectedElement]);
+
   useEffect(() => {
     if (filename && open) {
-      getProcessUserTaskData(processId, filename, environment.spaceId).then((data) => {
+      getProcessHtmlFormData(processId, filename, environment.spaceId).then((data) => {
         let importData = defaultForm;
         if (typeof data === 'string') importData = data;
 
@@ -107,25 +144,60 @@ const EditorModal: React.FC<BuilderModalProps> = ({
     else setIframeLayout('computer');
   }, [iframeMaxWidth]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const json = query.serialize();
-    if (modeler && selectedElementId) {
-      const selectedElement = modeler.getElement(selectedElementId);
-      if (selectedElement) {
-        if (filename !== selectedElement.businessObject.fileName) {
-          modeler.getModeling().updateProperties(selectedElement, {
-            fileName: filename,
-            implementation: getUserTaskImplementationString(),
+    if (modeler && affectedElement) {
+      const html = toHtml(json);
+
+      let fileNameAttribute = '';
+      let additionalChanges = {};
+
+      if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
+        fileNameAttribute = 'fileName';
+        additionalChanges = { implementation: getUserTaskImplementationString() };
+      } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
+        fileNameAttribute = 'uiForNontypedStartEventsFileName';
+      }
+
+      if (fileNameAttribute) {
+        if (filename !== affectedElement.businessObject[fileNameAttribute]) {
+          modeler.getModeling().updateProperties(affectedElement as BpmnElement, {
+            [fileNameAttribute]: filename,
+            ...additionalChanges,
           });
         }
-        const html = toHtml(json);
-        saveProcessUserTask(processId, filename!, json, html, environment.spaceId).then(
-          (res) => res && console.error(res.error),
-        );
-        onSave();
+
+        await wrapServerCall({
+          fn: async () => {
+            const html = toHtml(json);
+            const res = await saveProcessHtmlForm(
+              processId,
+              filename!,
+              json,
+              html,
+              environment.spaceId,
+            );
+            return res;
+          },
+          onSuccess: () => {
+            app.message.success('Form saved');
+            onSave();
+          },
+          app,
+        });
       }
+
+      onSave();
     }
   };
+
+  let title = 'Edit Form';
+
+  if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
+    title = 'Edit User Task Form';
+  } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
+    title = 'Edit Process Start Form';
+  }
 
   return (
     <Modal
@@ -134,7 +206,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
       width={isMobile ? '100vw' : '90vw'}
       styles={{ body: { height: '85vh' } }}
       open={open}
-      title="Edit User Task"
+      title={title}
       okText="Save"
       cancelText={hasUnsavedChanges ? 'Cancel' : 'Close'}
       onCancel={onClose}
@@ -298,7 +370,10 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
           onInit={() => {
             setHasUnsavedChanges(false);
           }}
-          onSave={() => setHasUnsavedChanges(false)}
+          onSave={() => {
+            setHasUnsavedChanges(false);
+            onClose();
+          }}
         />
       </Editor>
 

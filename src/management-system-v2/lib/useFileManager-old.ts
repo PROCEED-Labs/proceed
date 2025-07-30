@@ -87,7 +87,7 @@ export function useFileManager(entityType: EntityType): UseFileManagerReturn {
         return { success: false, error: 'Failed to get presignedUrl' };
       }
       await uploadToCloud(file, response.presignedUrl);
-      return { success: true, fileName: response.fileName };
+      return { success: true, fileName: response.filePath };
     } else {
       return handleLocalOperation('PUT', entityId, fileName, file);
     }

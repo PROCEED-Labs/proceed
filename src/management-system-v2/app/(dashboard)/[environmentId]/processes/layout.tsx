@@ -20,7 +20,6 @@ const DocumentationLayout: React.FC<DocumentationLayoutProps> = async ({ params,
   const documentationSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-documentation',
-    ability,
   );
 
   if (documentationSettings.active === false || documentationSettings.editor?.active === false) {

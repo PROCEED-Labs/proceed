@@ -37,15 +37,21 @@ async function callToExecutor(endpoint, body) {
       },
     );
 
-    if (!response.ok) throw new Error(`${endpoint}: Response not ok`);
+    if (!response.ok)
+      return {
+        error: `Failed to contact engine universal part: ${response.status} ${response.statusText}`,
+      };
 
     const contentType = response.headers.get('content-type');
 
     if (!contentType) {
       return;
     } else if (contentType.includes('application/json')) {
-      const json = await response.json();
-      return 'result' in json ? json.result : json;
+      const result = await response.json();
+      if (!('result' in result) && !('error' in result)) {
+        return { result: undefined };
+      }
+      return result;
     } else {
       return await response.text();
     }
@@ -53,6 +59,10 @@ async function callToExecutor(endpoint, body) {
     console.error(e);
 
     if (endpoint === 'result') process.exit(1);
+
+    return {
+      error: 'Unknown error',
+    };
   }
 }
 
@@ -86,7 +96,19 @@ for (const objName of Object.keys(structure)) {
   for (const functionName of functionNames) {
     context.evalClosureSync(
       `globalThis["${objName}"]["${functionName}"] = function (...args) {
-        return $0.applySyncPromise(null, [JSON.stringify(args)], {});
+        const result = $0.applySyncPromise(null, [JSON.stringify(args)], {});
+
+        if (result && 'result' in result) {
+          return result.result;
+        } else {
+          if (!result) {
+            throw new Error('Unknown error');
+          } else if (typeof result.error === 'string') {
+            throw new Error(result.error);
+          } else {
+            throw result.error;
+          }
+        }
       }`,
       [
         new ivm.Reference(async function (args) {
@@ -102,12 +124,24 @@ for (const objName of Object.keys(structure)) {
   }
 }
 
-function _callToService(serviceName, method, args) {
+async function _callToService(serviceName, method, args) {
   /**@type {import('isolated-vm').Reference} */
   const call = $0;
-  return call.apply(null, [serviceName, method, JSON.stringify(args)], {
+  const result = await call.apply(null, [serviceName, method, JSON.stringify(args)], {
     result: { promise: true, copy: true },
   });
+
+  if (result && 'result' in result) {
+    return result.result;
+  } else {
+    if (!result) {
+      throw new Error('Unknown error');
+    } else if (typeof result.error === 'string') {
+      throw new Error(result.error);
+    } else {
+      throw result.error;
+    }
+  }
 }
 function _getService(serviceName) {
   return new Proxy(
@@ -192,9 +226,17 @@ context
   })
   .catch((err) => {
     let result = err;
-    try {
-      result = JSON.parse(err);
-    } catch (_) {}
+    if (typeof err === 'string') {
+      try {
+        result = JSON.parse(err);
+      } catch (_) {}
+    } else if (err instanceof Error) {
+      result = {
+        errorClass: '_javascript_error',
+        name: err.name,
+        message: err.message,
+      };
+    }
 
     console.error(result);
 

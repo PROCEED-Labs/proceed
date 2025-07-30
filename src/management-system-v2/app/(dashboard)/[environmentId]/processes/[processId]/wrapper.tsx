@@ -23,6 +23,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
@@ -30,7 +31,11 @@ import { isPlane } from 'bpmn-js/lib/util/DrilldownUtil';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { spaceURL } from '@/lib/utils';
 import { updateProcess } from '@/lib/data/processes';
-import usePotentialOwnerStore, { UserType, RoleType } from './use-potentialOwner-store';
+import usePotentialOwnerStore, {
+  UserType,
+  RoleType,
+  useInitialisePotentialOwnerStore,
+} from './use-potentialOwner-store';
 
 type SubprocessInfo = {
   id?: string;
@@ -40,14 +45,18 @@ type SubprocessInfo = {
 type WrapperProps = PropsWithChildren<{
   processName: string;
   processes: { id: string; name: string }[];
-  potentialOwner: { user: UserType; roles: RoleType };
+  modelerComponent: React.ReactNode;
+  timelineComponent: React.ReactNode;
+  // potentialOwner: { user: UserType; roles: RoleType };
 }>;
 
 const Wrapper = ({
   children,
   processName,
   processes,
-  potentialOwner: { user, roles },
+  modelerComponent,
+  timelineComponent,
+  // potentialOwner: { user, roles },
 }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
@@ -55,19 +64,17 @@ const Wrapper = ({
   const { spaceId } = useEnvironment();
   const pathname = usePathname();
   const environment = useEnvironment();
-  const setUser = usePotentialOwnerStore((state) => state.setUser);
-  const setRoles = usePotentialOwnerStore((state) => state.setRoles);
 
-  useEffect(() => {
-    setUser(user);
-    setRoles(roles);
-  }, []);
+  useInitialisePotentialOwnerStore();
 
   const [closed, setClosed] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
   const rootElement = useModelerStateStore((state) => state.rootElement);
   const [editingName, setEditingName] = useState<null | string>(null);
+  const timelineViewActive = useTimelineViewStore((state) => state.timelineViewActive);
+  const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
+  const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
 
   const {
     token: { fontSizeHeading1 },
@@ -107,6 +114,28 @@ const Wrapper = ({
       setClosed(false);
     }
   }, [minimized]);
+
+  // Check for #gantt-view hash and automatically activate/deactivate timeline view
+  useEffect(() => {
+    const checkHashAndToggleTimeline = () => {
+      const hash = window.location.hash;
+      if (hash === '#gantt-view' && !timelineViewActive) {
+        enableTimelineView();
+      } else if (hash !== '#gantt-view' && timelineViewActive) {
+        disableTimelineView();
+      }
+    };
+
+    // Check on mount
+    checkHashAndToggleTimeline();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', checkHashAndToggleTimeline);
+
+    return () => {
+      window.removeEventListener('hashchange', checkHashAndToggleTimeline);
+    };
+  }, [enableTimelineView, disableTimelineView, timelineViewActive]);
 
   const showMobileView = useMobileModeler();
 
@@ -304,7 +333,26 @@ const Wrapper = ({
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      {children}
+      <div
+        style={{
+          visibility: timelineViewActive ? 'hidden' : 'visible',
+          position: timelineViewActive ? 'absolute' : 'relative',
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        {modelerComponent}
+      </div>
+      <div
+        style={{
+          visibility: timelineViewActive ? 'visible' : 'hidden',
+          position: timelineViewActive ? 'relative' : 'absolute',
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        {timelineViewActive && timelineComponent}
+      </div>
       {minimized ? (
         <Overlay processId={processId as string} onClose={() => setClosed(true)} />
       ) : null}

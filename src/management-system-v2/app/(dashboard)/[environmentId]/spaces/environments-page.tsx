@@ -18,9 +18,9 @@ export type FilteredEnvironment = ReplaceKeysWithHighlighted<
   (typeof highlightedKeys)[number]
 >;
 
-const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[] }> = ({
-  organizationEnvironments,
-}) => {
+const EnvironmentsPage: FC<{
+  spaces: { id: string; name: string; description: string; isOrganization: boolean }[];
+}> = ({ spaces: organizationEnvironments }) => {
   const app = App.useApp();
   const router = useRouter();
   const { searchQuery, filteredData, setSearchQuery } = useFuzySearch({
@@ -51,28 +51,30 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
             key: 'tooltip',
             title: '',
             width: 100,
-            render: (id: string, environment) => (
+            render: (id, environment) => (
               <Space>
                 <Link href={`/${id}/processes`}>
                   <Button>Enter</Button>
                 </Link>
-                <ConfirmationButton
-                  title={`Leave ${environment.name.value}`}
-                  description="You are about to leave this Organization. This cannot be undone, except if someone within this Organization adds you again."
-                  onConfirm={async () => {
-                    await wrapServerCall({
-                      fn: () => leaveOrganization(id),
-                      onSuccess: () => {
-                        app.message.success('Success');
-                        router.refresh();
-                      },
-                      errorDisplay: 'notification',
-                      app,
-                    });
-                  }}
-                >
-                  Leave
-                </ConfirmationButton>
+                {environment.isOrganization && (
+                  <ConfirmationButton
+                    title={`Leave ${environment.name.value}`}
+                    description="You are about to leave this Organization. This cannot be undone, except if someone within this Organization adds you again."
+                    onConfirm={async () => {
+                      await wrapServerCall({
+                        fn: () => leaveOrganization(id),
+                        onSuccess: () => {
+                          app.message.success('Success');
+                          router.refresh();
+                        },
+                        errorDisplay: 'notification',
+                        app,
+                      });
+                    }}
+                  >
+                    Leave
+                  </ConfirmationButton>
+                )}
               </Space>
             ),
           },

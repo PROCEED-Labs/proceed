@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
-import { isMember } from '@/lib/data/db/iam/memberships';
+import { getUserOrganizationEnvironments, isMember } from '@/lib/data/db/iam/memberships';
 import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import Ability from '@/lib/ability/abilityHelper';
 import {
@@ -68,8 +68,14 @@ export const getCurrentEnvironment = cache(
       spaceIdParam === 'my' || // Use hardcoded environment /my/processes for personal spaces.
       !msConfig.PROCEED_PUBLIC_IAM_ACTIVE // when iam isn't active we hardcode the space to be the no-iam user's personal space
     ) {
-      // Note: will be undefined for not logged in users
-      spaceIdParam = userId;
+      if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+        // Note: will be undefined for not logged in users
+        spaceIdParam = userId;
+      } else {
+        const userOrgs = await getUserOrganizationEnvironments(userId);
+        if (userOrgs.length === 0) return redirect(`/create-organization`);
+        spaceIdParam = userOrgs[0];
+      }
     }
 
     const activeSpace = decodeURIComponent(spaceIdParam);

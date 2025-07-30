@@ -217,6 +217,21 @@ if (env.NODE_ENV === 'production') {
   );
 }
 
+// Guest users can only have a personal space, so it doesn't make sense to have guests when
+// personal spaces are deactivated
+if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      name: 'Continue as Guest',
+      id: 'guest-signin',
+      credentials: {},
+      async authorize() {
+        return addUser({ isGuest: true });
+      },
+    }),
+  );
+}
+
 if (env.NODE_ENV === 'development') {
   const developmentUsers = [
     {

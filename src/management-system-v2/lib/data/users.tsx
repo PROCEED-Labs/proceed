@@ -1,7 +1,7 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import { getErrorMessage, userError } from '../user-error';
+import { UserErrorType, UserFacingError, getErrorMessage, userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
 import { OrganizationEnvironment } from './environment-schema';
@@ -10,9 +10,12 @@ import {
   UserHasToDeleteOrganizationsError,
   deleteUser as _deleteUser,
   updateUser as _updateUser,
+  setUserPassword as _setUserPassword,
   getUserById,
 } from '@/lib/data/db/iam/users';
 import { getEnvironmentById } from './db/iam/environments';
+import { hashPassword } from '../password-hashes';
+import db from './db';
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
@@ -87,9 +90,71 @@ export async function getUsersFavourites(): Promise<String[]> {
   return user?.favourites ?? [];
 }
 
-export async function isUserGuest() {
-  const { userId } = await getCurrentUser();
-  const user = await getUserById(userId);
+export async function setUserPassword(newPassword: string) {
+  try {
+    const { userId } = await getCurrentUser();
+    const user = await getUserById(userId);
 
-  return user?.isGuest;
+    if (!user) {
+      return userError('Invalid session, please sign in again');
+    }
+
+    if (user?.isGuest) {
+      return userError('Guest users cannot change their password');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await _setUserPassword(userId, passwordHash);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function setUserTemporaryPassword(
+  affectedUserId: string,
+  temporaryPassword: string,
+  spaceId?: string,
+) {
+  try {
+    const { user, systemAdmin } = await getCurrentUser();
+
+    let allowed = false;
+    if (systemAdmin) {
+      allowed = true;
+    }
+    if (!allowed && spaceId && user) {
+      const role = await db.role.findFirst({
+        where: {
+          name: '@admin',
+          environmentId: spaceId,
+        },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (role?.members.some((member) => member.id === user.id)) {
+        allowed = true;
+      }
+    }
+
+    if (!allowed) {
+      return userError('Not authorized', UserErrorType.PermissionError);
+    }
+
+    const passwordHash = await hashPassword(temporaryPassword);
+    await _setUserPassword(affectedUserId, passwordHash, undefined, true);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 }

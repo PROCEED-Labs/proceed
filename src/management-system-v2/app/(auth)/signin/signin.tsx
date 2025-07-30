@@ -14,6 +14,7 @@ import {
   Tabs,
   Grid,
   Select,
+  AlertProps,
 } from 'antd';
 
 import { GoOrganization } from 'react-icons/go';
@@ -104,9 +105,16 @@ const SignIn: FC<{
   const callbackUrlWithGuestRef = guestReferenceToken
     ? `/transfer-processes?referenceToken=${guestReferenceToken}&callbackUrl=${callbackUrl}`
     : callbackUrl;
-  const authError = searchParams.get('error');
 
-  const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
+  let authError = searchParams.get('error');
+  let authErrorType = 'error';
+  const errorTypeMatch = authError?.match(/^\$(?<type>\w+)\s+(?<message>.+)/);
+  if (errorTypeMatch?.groups) {
+    authError = errorTypeMatch.groups.message;
+    authErrorType = errorTypeMatch.groups.type;
+  }
+
+  const oauthProviders = providers.filter((provider) => ['oauth', 'oidc'].includes(provider.type));
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
 
   const emailProvider = providers.find((provider) => provider.type === 'email');
@@ -114,7 +122,7 @@ const SignIn: FC<{
     (provider) => provider.id === 'username-password-signin',
   );
   const passwordSignupProvider = providers.find(
-    (provider) => provider.id === 'username-password-signup',
+    (provider) => provider.id === 'register-as-new-user',
   );
   const developmentUsersProvider = providers.find(
     (provider) => provider.id === 'development-users',
@@ -247,7 +255,7 @@ const SignIn: FC<{
       icon: (
         // eslint-disable-next-line
         <img
-          src={`https://authjs.dev/img/providers${(provider as any).style?.logo}`}
+          src={`https://authjs.dev/img/providers/${provider.id}.svg`}
           alt={provider.name}
           style={{ width: '1.5rem', height: 'auto' }}
         />
@@ -283,7 +291,11 @@ const SignIn: FC<{
         }}
       >
         {authError && (
-          <Alert description={authError} type="error" style={{ marginBottom: verticalGap }} />
+          <Alert
+            description={authError}
+            type={authErrorType as AlertProps['type']}
+            style={{ marginBottom: verticalGap }}
+          />
         )}
 
         {userType === 'none' ? (

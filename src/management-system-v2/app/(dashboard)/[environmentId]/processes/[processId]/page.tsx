@@ -7,6 +7,7 @@ import AddUserControls from '@/components/add-user-controls';
 import { getProcess, getProcesses } from '@/lib/data/db/process';
 import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
 import { getProcessBPMN } from '@/lib/data/processes';
+import BPMNTimeline from '@/components/bpmn-timeline';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { RoleType, UserType } from './use-potentialOwner-store';
 import type { Process } from '@/lib/data/process-schema';
@@ -65,13 +66,20 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
         //   roles,
         //   user,
         // }}
-      >
-        <Modeler
-          className={styles.Modeler}
-          process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
-          versionName={selectedVersion?.name}
-        />
-      </Wrapper>
+        modelerComponent={
+          <Modeler
+            className={styles.Modeler}
+            process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
+            versionName={selectedVersion?.name}
+          />
+        }
+        timelineComponent={
+          <BPMNTimeline
+            className={styles.Modeler}
+            process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
+          />
+        }
+      />
       <AddUserControls name={'modeler'} />
     </>
   );

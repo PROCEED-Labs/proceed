@@ -1,7 +1,20 @@
 'use client';
 
 import { DetailedHTMLProps, FC, HTMLAttributes, ReactNode, use, useEffect, useState } from 'react';
-import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input, theme, Image } from 'antd';
+import {
+  Space,
+  Card,
+  Typography,
+  App,
+  Table,
+  Alert,
+  Modal,
+  Form,
+  Input,
+  theme,
+  Button,
+  Image,
+} from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut, useSession } from 'next-auth/react';
@@ -13,15 +26,19 @@ import UserAvatar from '@/components/user-avatar';
 import { CloseOutlined } from '@ant-design/icons';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { z } from 'zod';
-import { requestEmailChange as serverRequestEmailChange } from '@/lib/change-email/server-actions';
+import { requestEmailChange as serverRequestEmailChange } from '@/lib/email-verification-tokens/server-actions';
 import Link from 'next/link';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import ImageUpload from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { fallbackImage } from '../processes/[processId]/image-selection-section';
+import ChangeUserPasswordModal from './change-password-modal';
 
-const UserProfile: FC<{ userData: User }> = ({ userData }) => {
+const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
+  userData,
+  userHasPassword: _userHasPassword,
+}) => {
   const env = use(EnvVarsContext);
 
   const { message: messageApi, notification } = App.useApp();
@@ -53,6 +70,9 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
   const [errors, parseEmail] = useParseZodErrors(z.object({ email: z.string().email() }));
   const [changeEmailForm] = Form.useForm();
+
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [userHasPassword, setUserHasPassword] = useState(_userHasPassword);
 
   async function deleteUser() {
     try {
@@ -93,6 +113,18 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
 
   return (
     <>
+      <ChangeUserPasswordModal
+        open={changePasswordModalOpen}
+        close={(passwordChanged) => {
+          if (passwordChanged) {
+            setUserHasPassword(true);
+          }
+
+          setChangePasswordModalOpen(false);
+        }}
+        title={userHasPassword ? 'Change Password' : 'Set Password'}
+      />
+
       <UserDataModal
         userData={userData}
         modalOpen={changeNameModalOpen}
@@ -320,6 +352,9 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           </div>
 
           <Space direction="vertical">
+            <Button onClick={() => setChangePasswordModalOpen(true)}>
+              {userHasPassword ? 'Change Password' : 'Set Password'}
+            </Button>
             <ConfirmationButton
               title="Delete Account"
               description="Are you sure you want to delete your account?"

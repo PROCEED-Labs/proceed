@@ -41,6 +41,8 @@ import { CustomLinkStateProvider } from '@/lib/custom-links/client-state';
 import { CustomLink } from '@/lib/custom-links/state';
 import { customLinkIcons } from '@/lib/custom-links/icons';
 import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
+import { env } from '@/lib/ms-config/env-vars';
+import { getUserPassword } from '@/lib/data/db/iam/users';
 
 const DashboardLayout = async ({
   children,
@@ -50,7 +52,11 @@ const DashboardLayout = async ({
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
-  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
+
+  const userEnvironments: Environment[] = [];
+  if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
+    userEnvironments.push(await getEnvironmentById(userId))!;
+
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
   const orgEnvironments = await asyncMap(
     userOrgEnvs,
@@ -70,7 +76,11 @@ const DashboardLayout = async ({
   );
   const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks || [];
   const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
+  const middleCustomNavLinks = customNavLinks.filter((link) => link.position === 'middle');
   const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');
+
+  const userPassword = await getUserPassword(user!.id);
+  const userNeedsToChangePassword = userPassword ? userPassword.isTemporaryPassword : false;
 
   let layoutMenuItems: MenuProps['items'] = [];
 
@@ -105,7 +115,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (can('view', 'Process')) {
+  if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && can('view', 'Process')) {
     const documentationSettings = await getSpaceSettingsValues(
       activeEnvironment.spaceId,
       'process-documentation',
@@ -269,14 +279,14 @@ const DashboardLayout = async ({
     });
   }
 
-  if (bottomCustomNavLinks.length > 0) {
+  if (middleCustomNavLinks.length > 0) {
     layoutMenuItems.push({
       key: 'bottom-custom-links-divider',
       type: 'divider',
     });
 
     layoutMenuItems.push(
-      ...bottomCustomNavLinks.map((link, idx) => ({
+      ...middleCustomNavLinks.map((link, idx) => ({
         key: idx,
         label: <CustomLink link={link} />,
         icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
@@ -300,6 +310,14 @@ const DashboardLayout = async ({
           layoutMenuItems={layoutMenuItems}
           activeSpace={activeEnvironment}
           customLogo={logo}
+          userNeedsToChangePassword={userNeedsToChangePassword}
+          bottomMenuItems={bottomCustomNavLinks.map((link, idx) => ({
+            key: idx,
+            label: <CustomLink link={link} />,
+            icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || (
+              <LinkOutlined />
+            ),
+          }))}
         >
           {children}
         </Layout>

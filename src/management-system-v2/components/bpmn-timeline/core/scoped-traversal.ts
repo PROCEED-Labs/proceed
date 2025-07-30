@@ -331,6 +331,9 @@ function traverseScope(
       dependencies: [],
     };
 
+    // Add hierarchy level from the original element
+    (instance as any).hierarchyLevel = (element as any).hierarchyLevel || 0;
+
     // Add loop information to the instance
     (instance as any).isLoop = isLoopInstance;
     (instance as any).isLoopCut = false; // Will be set to true if cut off
@@ -659,6 +662,8 @@ function convertToTimingsMap(instances: ProcessInstance[]): Map<string, ElementT
       // Add loop detection flags
       isLoop: (instance as any).isLoop || false,
       isLoopCut: (instance as any).isLoopCut || false,
+      // Add hierarchy level from the original element
+      hierarchyLevel: (instance as any).hierarchyLevel || 0,
     } as any;
 
     const timingsList = timingsMap.get(instance.elementId);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Button, Modal } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useGanttChart } from '../hooks/useGanttChart';
@@ -307,6 +307,52 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     // Track scroll position to trigger re-renders for virtualization
     const [scrollTop, setScrollTop] = useState(0);
 
+    // Track collapsed sub-processes
+    const [collapsedSubProcesses, setCollapsedSubProcesses] = useState<Set<string>>(new Set());
+
+    // Toggle collapse state for a sub-process
+    const toggleSubProcessCollapse = useCallback((subProcessId: string) => {
+      setCollapsedSubProcesses((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(subProcessId)) {
+          newSet.delete(subProcessId);
+        } else {
+          newSet.add(subProcessId);
+        }
+        return newSet;
+      });
+    }, []);
+
+    // Filter elements based on collapsed sub-processes
+    const filteredElements = useMemo(() => {
+      if (collapsedSubProcesses.size === 0) {
+        return elements;
+      }
+
+      // Create a set of all elements that should be hidden
+      const hiddenElements = new Set<string>();
+
+      // For each collapsed sub-process, find all its children
+      collapsedSubProcesses.forEach((subProcessId) => {
+        const addChildrenToHidden = (parentId: string) => {
+          elements.forEach((el) => {
+            const elementParentId = (el as any).parentSubProcessId;
+            if (elementParentId === parentId) {
+              hiddenElements.add(el.id);
+              // Recursively hide children of sub-processes
+              if ((el as any).isSubProcess || el.type === 'group') {
+                addChildrenToHidden(el.id);
+              }
+            }
+          });
+        };
+        addChildrenToHidden(subProcessId);
+      });
+
+      // Return only elements that are not hidden
+      return elements.filter((el) => !hiddenElements.has(el.id));
+    }, [elements, collapsedSubProcesses]);
+
     // Track selected elements for highlighting dependencies (support multiple selection for sub-process children)
     const [selectedElementIds, setSelectedElementIds] = useState<Set<string>>(new Set());
 
@@ -325,7 +371,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     // Handle element selection with sub-process child support
     const handleElementClick = useCallback(
       (elementId: string) => {
-        const clickedElement = elements.find((el) => el.id === elementId);
+        const clickedElement = filteredElements.find((el) => el.id === elementId);
 
         setSelectedElementIds((prev) => {
           const newSelection = new Set<string>();
@@ -345,14 +391,14 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
             (clickedElement as any).isSubProcess
           ) {
             // Find child elements that belong to this specific sub-process instance
-            const childElements = elements.filter((el) => {
+            const childElements = filteredElements.filter((el) => {
               const parentId = (el as any).parentSubProcessId;
               return parentId === elementId;
             });
 
             // Also recursively select children of sub-process children (nested sub-processes)
             const getAllDescendants = (parentId: string): string[] => {
-              const directChildren = elements.filter((el) => {
+              const directChildren = filteredElements.filter((el) => {
                 const elParentId = (el as any).parentSubProcessId;
                 return elParentId === parentId;
               });
@@ -376,7 +422,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           return newSelection;
         });
       },
-      [elements],
+      [filteredElements],
     );
 
     // Handle info button click
@@ -394,11 +440,11 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     }, []);
 
     // Calculate total height for virtualization
-    // This is the full scrollable height based on the number of elements
-    const totalContentHeight = elements.length * ROW_HEIGHT;
+    // This is the full scrollable height based on the number of visible elements
+    const totalContentHeight = filteredElements.length * ROW_HEIGHT;
 
-    // Use the Gantt chart hook
-    const gantt = useGanttChart(elements, options);
+    // Use the Gantt chart hook with visible elements
+    const gantt = useGanttChart(filteredElements, options);
 
     // Cache the time matrix to avoid recreating it on every render
     const timeMatrixRef = useRef<TimeMatrix>();
@@ -487,7 +533,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
 
         // Always use element manager for consistency
         if (elementManagerRef.current) {
-          elementManagerRef.current.setElements(elements);
+          elementManagerRef.current.setElements(filteredElements);
         }
 
         // Get highlighted dependencies for the selected element
@@ -496,11 +542,11 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
             ? Array.from(selectedElementIds).flatMap((id) => getOutgoingDependencies(id))
             : [];
 
-        // Always pass ALL elements to the renderer
+        // Pass filtered elements to the renderer
         // The renderer will handle visibility filtering internally
         rendererRef.current.renderChartContent(
           timeMatrix,
-          elements,
+          filteredElements,
           visibleRowStart,
           visibleRowEnd,
           currentDateMarkerTime, // Pass the optional custom date marker time
@@ -514,7 +560,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         // Update current time unit from renderer (moved to separate effect to avoid infinite loop)
       }
     }, [
-      elements,
+      filteredElements,
       gantt.state.zoom,
       gantt.state.visibleTimeStart,
       gantt.state.visibleTimeEnd,
@@ -1066,12 +1112,12 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   Math.floor((scrollTop - ROW_HEIGHT * 5) / ROW_HEIGHT),
                 );
                 const endIndex = Math.min(
-                  elements.length - 1,
+                  filteredElements.length - 1,
                   Math.ceil((scrollTop + clientHeight + ROW_HEIGHT * 5) / ROW_HEIGHT),
                 );
 
                 // For large datasets, consider more aggressive virtualization
-                const isLargeDataset = elements.length > 1000;
+                const isLargeDataset = filteredElements.length > 1000;
                 const buffer = isLargeDataset ? 10 : 20;
 
                 const visibleStartIndex = Math.max(
@@ -1079,14 +1125,14 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   Math.floor((scrollTop - ROW_HEIGHT * buffer) / ROW_HEIGHT),
                 );
                 const visibleEndIndex = Math.min(
-                  elements.length - 1,
+                  filteredElements.length - 1,
                   Math.ceil((scrollTop + clientHeight + ROW_HEIGHT * buffer) / ROW_HEIGHT),
                 );
 
                 // Create array of visible elements only
                 const visibleElements = [];
                 for (let i = visibleStartIndex; i <= visibleEndIndex; i++) {
-                  const element = elements[i];
+                  const element = filteredElements[i];
                   if (!element) continue;
 
                   const isSelected = selectedElementIds.has(element.id);
@@ -1128,8 +1174,35 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                               fontWeight: element.type === 'group' ? 'bold' : 'normal',
                               fontStyle: element.name ? 'normal' : 'italic',
                               marginLeft: `${((element as any).hierarchyLevel || 0) * 20}px`, // 20px indentation per level
+                              display: 'flex',
+                              alignItems: 'center',
                             }}
                           >
+                            {/* Collapse/expand button for sub-processes */}
+                            {element.type === 'group' && (element as any).isSubProcess && (
+                              <Button
+                                type="text"
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleSubProcessCollapse(element.id);
+                                }}
+                                style={{
+                                  padding: '0',
+                                  width: '12px',
+                                  height: '12px',
+                                  minWidth: '12px',
+                                  marginRight: '6px',
+                                  fontSize: '8px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  lineHeight: '1',
+                                }}
+                              >
+                                {collapsedSubProcesses.has(element.id) ? '▶' : '▼'}
+                              </Button>
+                            )}
                             {element.name || `<${element.id}>`}
                           </span>
                           {element.type === 'group' &&

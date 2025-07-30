@@ -18,6 +18,34 @@ import { defaultElementTransformerFactory } from './element-transformer-factory'
 import { transformExpandedSubProcess } from '../transformers/element-transformers';
 
 /**
+ * Get the hierarchy level of the element that a boundary event is attached to
+ */
+function getAttachedElementHierarchyLevel(
+  attachedToId: string,
+  pathTimings: Map<string, any[]>,
+  elementMap: Map<string, BPMNFlowElement>,
+): number {
+  // Remove instance suffix if present (e.g., "task_instance_1" -> "task")
+  const baseElementId = attachedToId.split('_instance_')[0];
+
+  // Look up the timing for the attached element
+  const attachedTimings = pathTimings.get(baseElementId);
+  if (attachedTimings && attachedTimings.length > 0) {
+    // Use the hierarchy level from the first timing (all instances should have the same hierarchy level)
+    return attachedTimings[0].hierarchyLevel || 0;
+  }
+
+  // Fallback: look up the element in the element map and check if it has hierarchy level
+  const attachedElement = elementMap.get(baseElementId);
+  if (attachedElement && (attachedElement as any).hierarchyLevel !== undefined) {
+    return (attachedElement as any).hierarchyLevel;
+  }
+
+  // Default to hierarchy level 0 if not found
+  return 0;
+}
+
+/**
  * Element processing strategy for different traversal modes
  */
 export type ElementProcessingStrategy = 'every' | 'latest' | 'earliest';
@@ -145,6 +173,14 @@ function processEveryOccurrenceElements(
       ganttElement.totalInstances = totalInstances;
 
       // Common properties
+      // Special handling for boundary events: look up attached element's hierarchy level
+      if (ganttElement.isBoundaryEvent && ganttElement.attachedToId) {
+        timing.attachedElementHierarchyLevel = getAttachedElementHierarchyLevel(
+          ganttElement.attachedToId,
+          pathTimings,
+          elementMap,
+        );
+      }
       assignCommonElementProperties(ganttElement, timing);
 
       ganttElements.push(ganttElement);
@@ -198,6 +234,14 @@ function processLatestEarliestElements(
       }
 
       // Common properties
+      // Special handling for boundary events: look up attached element's hierarchy level
+      if (ganttElement.isBoundaryEvent && ganttElement.attachedToId) {
+        timing.attachedElementHierarchyLevel = getAttachedElementHierarchyLevel(
+          ganttElement.attachedToId,
+          pathTimings,
+          elementMap,
+        );
+      }
       assignCommonElementProperties(ganttElement, timing);
 
       // Convert parent instance ID to base element ID to match gantt element IDs
@@ -241,6 +285,15 @@ function assignCommonElementProperties(ganttElement: GanttElementType, timing: a
   // The path traversal already determined the correct parent-child relationships
   if (timing.parentSubProcessId) {
     ganttElement.parentSubProcessId = timing.parentSubProcessId;
+  }
+
+  // Special handling for boundary events: they should inherit hierarchy level from their attached element
+  if (
+    ganttElement.isBoundaryEvent &&
+    ganttElement.attachedToId &&
+    timing.attachedElementHierarchyLevel !== undefined
+  ) {
+    ganttElement.hierarchyLevel = timing.attachedElementHierarchyLevel;
   }
 }
 

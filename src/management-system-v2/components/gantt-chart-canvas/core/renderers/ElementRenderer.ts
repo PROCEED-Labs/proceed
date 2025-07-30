@@ -344,66 +344,42 @@ export class ElementRenderer {
     const isSubProcess = (group as any).isSubProcess;
 
     if (isSubProcess) {
-      // Render sub-process as triangles with dashed line
-      const triangleSize = 12;
+      // Render sub-process as filled horizontal bar with downward tabs
+      const barHeight = 2 * this.pixelRatio; // 2px for main horizontal bar
+      const tabHeight = 4 * this.pixelRatio; // 4px for downward pointed tabs (steeper)
+      const tabWidth = 3 * this.pixelRatio; // 3px width of the tab base (narrower for steeper angle)
+
+      // Position slightly above center
+      const offsetFromCenter = -1 * this.pixelRatio; // Move up 6px from center
+      const barTop = y + offsetFromCenter;
+      const barBottom = barTop + barHeight;
+      const tabTipY = barBottom + tabHeight; // Point of the tab
+
       context.fillStyle = isHovered ? darken(color, 10) : color;
 
-      // Left triangle (downward pointing)
-      if (startX >= -triangleSize && startX <= context.canvas.width / this.pixelRatio) {
-        context.beginPath();
-        context.moveTo(startX, y + triangleSize / 2); // Bottom point
-        context.lineTo(startX - triangleSize / 2, y - triangleSize / 2); // Top left
-        context.lineTo(startX + triangleSize / 2, y - triangleSize / 2); // Top right
-        context.closePath();
-        context.fill();
-      }
+      // Draw the filled shape as one continuous path
+      context.beginPath();
 
-      // Right triangle (downward pointing)
-      if (endX >= 0 && endX <= context.canvas.width / this.pixelRatio + triangleSize) {
-        context.beginPath();
-        context.moveTo(endX, y + triangleSize / 2); // Bottom point
-        context.lineTo(endX - triangleSize / 2, y - triangleSize / 2); // Top left
-        context.lineTo(endX + triangleSize / 2, y - triangleSize / 2); // Top right
-        context.closePath();
-        context.fill();
-      }
+      // Start from top-left
+      context.moveTo(startX, barTop);
+      // Top edge of main bar
+      context.lineTo(endX, barTop);
+      // Right edge down to bar bottom
+      context.lineTo(endX, barBottom);
+      // Right tab - straight outside edge down
+      context.lineTo(endX, tabTipY);
+      // Right tab - angled inside edge back up
+      context.lineTo(endX - tabWidth, barBottom);
+      // Bottom edge of main bar (right to left)
+      context.lineTo(startX + tabWidth, barBottom);
+      // Left tab - angled inside edge down
+      context.lineTo(startX, tabTipY);
+      // Left tab - straight outside edge back up
+      context.lineTo(startX, barBottom);
+      // Left edge back to start
+      context.lineTo(startX, barTop);
 
-      // Dashed line connecting the triangles
-      if (width > triangleSize * 2) {
-        context.setLineDash([5, 5]); // 5px dash, 5px gap
-        context.beginPath();
-        context.moveTo(startX + triangleSize / 2, y);
-        context.lineTo(endX - triangleSize / 2, y);
-        context.stroke();
-        context.setLineDash([]); // Reset line dash
-      }
-
-      // Add dashed vertical lines at the edges for better visual definition
-      const verticalLineHeight = height * 0.6; // 60% of row height
-      const verticalLineTop = y - verticalLineHeight / 2;
-      const verticalLineBottom = y + verticalLineHeight / 2;
-
-      context.setLineDash([3, 3]); // Shorter dashes for vertical lines
-      context.strokeStyle = isHovered ? darken(color, 10) : color;
-      context.lineWidth = 1 * this.pixelRatio;
-
-      // Left vertical line
-      if (startX >= 0 && startX <= context.canvas.width / this.pixelRatio) {
-        context.beginPath();
-        context.moveTo(startX, verticalLineTop);
-        context.lineTo(startX, verticalLineBottom);
-        context.stroke();
-      }
-
-      // Right vertical line
-      if (endX >= 0 && endX <= context.canvas.width / this.pixelRatio) {
-        context.beginPath();
-        context.moveTo(endX, verticalLineTop);
-        context.lineTo(endX, verticalLineBottom);
-        context.stroke();
-      }
-
-      context.setLineDash([]); // Reset line dash
+      context.fill();
 
       // Draw sub-process label
       if (width > 50 && group.name) {
@@ -424,7 +400,7 @@ export class ElementRenderer {
           context,
           label,
           startX + width / 2,
-          y - triangleSize,
+          barTop - 4, // Position above the bar
           width - 20,
           '#333333',
           'center',

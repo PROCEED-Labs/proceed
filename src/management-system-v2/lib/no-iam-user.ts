@@ -1,6 +1,6 @@
-import type { User as UserDB, SystemAdmin } from '@prisma/client';
 import type { addUser } from '@/lib/data/db/iam/users';
 import { Session } from 'next-auth';
+import { AuthenticatedUser } from './data/user-schema';
 
 export const userId = 'proceed-default-no-iam-user';
 
@@ -15,7 +15,7 @@ export const user = {
   emailVerifiedOn: null,
   profileImage: null,
   favourites: [],
-} satisfies UserDB;
+} as AuthenticatedUser;
 
 export const createUserArgs = {
   id: userId,

@@ -95,6 +95,7 @@ export async function addUser(
   try {
     const userExists = await tx.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
+
     await tx.user.create({
       data: {
         ...user,
@@ -316,8 +317,9 @@ export async function deleteInactiveGuestUsers(
 /** Note: make sure to save a salted hash of the password */
 export async function setUserPassword(
   userId: string,
-  password: string,
+  passwordHash: string,
   tx?: Prisma.TransactionClient,
+  isTemporaryPassword: boolean = false,
 ) {
   const dbMutator = tx || db;
 
@@ -330,11 +332,12 @@ export async function setUserPassword(
   if (user.passwordAccount) {
     await dbMutator.passwordAccount.update({
       where: { userId },
-      data: { password: password },
+      data: { password: passwordHash, isTemporaryPassword },
     });
   } else {
     await dbMutator.passwordAccount.create({
-      data: { userId, password: password },
+      data: { userId, password: passwordHash, isTemporaryPassword },
+
     });
   }
 }

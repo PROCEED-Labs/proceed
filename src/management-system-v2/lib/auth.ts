@@ -25,6 +25,8 @@ import { env } from '@/lib/ms-config/env-vars';
 import { getUserAndPasswordByUsername, updateGuestUserLastSigninTime } from './data/db/iam/users';
 import { comparePassword, hashPassword } from './password-hashes';
 import db from './data/db';
+import { createUserRegistrationToken } from './email-verification-tokens/utils';
+import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -74,7 +76,12 @@ const nextAuthOptions: NextAuthConfig = {
 
       return session;
     },
-    signIn: async ({ account, user: _user, email }) => {
+    signIn: async (params) => {
+      const { account, user: _user, email } = params;
+      if (account?.provider === 'register-as-new-user' && (_user as any).notARealUser === true) {
+        return `/signin?error=${encodeURIComponent('$success Check your email: we sent you a link to sign in with your new user.')}`;
+      }
+
       const session = await auth();
       const sessionUser = session?.user;
 
@@ -306,36 +313,103 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
         return userAndPassword as User;
       },
     }),
+  );
+}
+
+if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+  //Vorname, Nachname und Username input feldern,
+  const credentials: Record<string, CredentialInput> = {
+    firstName: {
+      type: 'string',
+      label: 'First Name',
+    },
+    lastName: {
+      type: 'string',
+      label: 'Last Name',
+    },
+    username: {
+      type: 'string',
+      label: 'Username',
+    },
+  };
+
+  if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+    credentials['email'] = {
+      type: 'email',
+      label: 'E-Mail',
+    };
+  }
+
+  if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
+    credentials['password'] = {
+      type: 'password',
+      label: 'Password',
+    };
+  }
+
+  nextAuthOptions.providers.push(
     CredentialsProvider({
-      name: 'Sign Up',
+      name: 'Register as New User',
       type: 'credentials',
-      id: 'username-password-signup',
-      credentials: {
-        username: {
-          type: 'string',
-          label: 'Username',
-        },
-        password: {
-          type: 'password',
-          label: 'Password',
-        },
-      },
-      authorize: async (credentials) => {
+      id: 'register-as-new-user',
+      credentials,
+      authorize: async (
+        credentials: Partial<
+          Record<'firstName' | 'lastName' | 'username' | 'email' | 'password', string>
+        >,
+      ) => {
         let user: User | null = null;
 
-        await db.$transaction(async (tx) => {
-          user = await addUser(
-            {
-              username: credentials.username as string,
-              isGuest: false,
-              emailVerifiedOn: null,
-            },
-            tx,
-          );
+        // Whenever the email is active, we create the user after he verifies his email
+        if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+          const tokenParams: any = {
+            identifier: credentials.email,
+            username: credentials.username,
+            firstName: credentials.firstName,
+            lastName: credentials.lastName,
+          };
 
-          const hashedPassword = await hashPassword(credentials.password as string);
-          await setUserPassword(user.id, hashedPassword, tx);
-        });
+          if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE)
+            tokenParams['passwordHash'] = await hashPassword(credentials.password as string);
+
+          const userRegistrationToken = await createUserRegistrationToken(tokenParams);
+
+          await saveEmailVerificationToken(userRegistrationToken.verificationToken);
+
+          const signinMail = renderSigninLinkEmail({
+            signInLink: userRegistrationToken.redirectUrl,
+            expires: userRegistrationToken.verificationToken.expiresAt,
+          });
+
+          await sendEmail({
+            to: credentials.email as string,
+            subject: 'Sign in to PROCEED',
+            html: signinMail.html,
+            text: signinMail.text,
+          });
+
+          // This allows nextauth to proceed in the signin flow.
+          // This dummy user will be caught by the signin callback and will redirect the user back
+          // to the signin page with a success message.
+          return { id: '', notARealUser: true };
+        } else {
+          // Only password is enabled -> immediately create user
+          await db.$transaction(async (tx) => {
+            user = await addUser(
+              {
+                username: credentials.username,
+                firstName: credentials.firstName,
+                lastName: credentials.lastName,
+                isGuest: false,
+                emailVerifiedOn: null,
+              },
+              tx,
+            );
+
+            const hashedPassword = await hashPassword(credentials.password as string);
+            await setUserPassword(user.id, hashedPassword, tx);
+          });
+        }
 
         return user;
       },

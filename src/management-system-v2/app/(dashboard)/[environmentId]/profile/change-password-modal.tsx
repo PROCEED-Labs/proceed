@@ -1,9 +1,9 @@
 import { ReactNode, useTransition } from 'react';
-import { Button, Form, Modal, App, ModalProps } from 'antd';
+import PasswordInputFields from '@/components/password-input-fields';
+import { Button, Form, Input, Modal, App, ModalProps, Space } from 'antd';
 import { setUserPassword } from '@/lib/data/users';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useSession } from '@/components/auth-can';
-import PasswordInputFields from '@/components/password-input-fields';
 
 export default function ChangeUserPasswordModal({
   open,

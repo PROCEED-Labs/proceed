@@ -41,6 +41,7 @@ import { CustomLinkStateProvider } from '@/lib/custom-links/client-state';
 import { CustomLink } from '@/lib/custom-links/state';
 import { customLinkIcons } from '@/lib/custom-links/icons';
 import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
+import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
 
 const DashboardLayout = async ({
@@ -51,7 +52,11 @@ const DashboardLayout = async ({
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
-  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
+
+  const userEnvironments: Environment[] = [];
+  if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
+    userEnvironments.push(await getEnvironmentById(userId))!;
+
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
   const orgEnvironments = await asyncMap(
     userOrgEnvs,

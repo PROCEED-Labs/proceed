@@ -1,5 +1,4 @@
 import z, { type ZodType } from 'zod';
-import { resources } from '@/lib/ability/caslAbility';
 
 // --------------------------------------------
 // Add MS Configs here
@@ -15,7 +14,6 @@ export const mSConfigEnvironmentOnlyKeys = [
   'SHARING_ENCRYPTION_SECRET',
   'DATABASE_URL',
   'NODE_ENV',
-  'MS_ENABLED_RESOURCES',
   'MQTT_SERVER_ADDRESS',
   'MQTT_USERNAME',
   'MQTT_PASSWORD',
@@ -145,19 +143,6 @@ export const msConfigSchema = {
 
     PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
     PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
-    MS_ENABLED_RESOURCES: z
-      .string()
-      .transform((str, ctx) => {
-        try {
-          const json = JSON.parse(str);
-          z.array(z.enum(resources)).parse(json);
-          return str;
-        } catch (e) {
-          ctx.addIssue({ code: 'custom', message: 'Invalid JSON' });
-          return z.NEVER;
-        }
-      })
-      .optional(),
 
     MQTT_SERVER_ADDRESS: z.string().url().optional(),
     MQTT_USERNAME: z.string().optional(),

@@ -1,6 +1,7 @@
 import type { addUser } from '@/lib/data/db/iam/users';
 import { Session } from 'next-auth';
 import { AuthenticatedUser } from './data/user-schema';
+import { SystemAdmin } from '@prisma/client';
 
 export const userId = 'proceed-default-no-iam-user';
 

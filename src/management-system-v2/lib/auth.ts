@@ -21,16 +21,10 @@ import Adapter from './auth-database-adapter';
 import { User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
-<<<<<<< HEAD
-import { updateGuestUserLastSigninTime } from './data/db/iam/users';
-import * as noIamUser from '@/lib/no-iam-user';
-import { env } from '@/lib/ms-config/env-vars';
-=======
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserAndPasswordByUsername, updateGuestUserLastSigninTime } from './data/db/iam/users';
 import { comparePassword, hashPassword } from './password-hashes';
 import db from './data/db';
->>>>>>> origin/main
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -51,26 +45,6 @@ const nextAuthOptions: NextAuthConfig = {
   },
   trustHost: true,
   providers: [
-<<<<<<< HEAD
-    EmailProvider({
-      id: 'email',
-      name: 'Sign in with E-mail',
-      server: {},
-      sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail({
-          signInLink: params.url,
-          expires: params.expires,
-        });
-
-        sendEmail({
-          to: params.identifier,
-          subject: 'Sign in to PROCEED',
-          html: signinMail.html,
-          text: signinMail.text,
-        });
-      },
-      maxAge: 24 * 60 * 60, // one day
-=======
     CredentialsProvider({
       name: 'Continue as Guest',
       id: 'guest-signin',
@@ -78,7 +52,6 @@ const nextAuthOptions: NextAuthConfig = {
       async authorize() {
         return addUser({ isGuest: true });
       },
->>>>>>> origin/main
     }),
   ],
   callbacks: {
@@ -189,10 +162,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
 if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
     GoogleProvider({
-<<<<<<< HEAD
-=======
       id: 'google',
->>>>>>> origin/main
       clientId: env.IAM_LOGIN_OAUTH_GOOGLE_CLIENT_ID,
       clientSecret: env.IAM_LOGIN_OAUTH_GOOGLE_CLIENT_SECRET,
       profile(profile) {
@@ -207,10 +177,7 @@ if (env.NODE_ENV === 'production') {
       },
     }),
     DiscordProvider({
-<<<<<<< HEAD
-=======
       id: 'discord',
->>>>>>> origin/main
       clientId: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID,
       clientSecret: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET,
       profile(profile) {
@@ -222,10 +189,7 @@ if (env.NODE_ENV === 'production') {
       },
     }),
     TwitterProvider({
-<<<<<<< HEAD
-=======
       id: 'twitter',
->>>>>>> origin/main
       clientId: env.IAM_LOGIN_OAUTH_X_CLIENT_ID,
       clientSecret: env.IAM_LOGIN_OAUTH_X_CLIENT_SECRET,
       profile({ data, email }) {

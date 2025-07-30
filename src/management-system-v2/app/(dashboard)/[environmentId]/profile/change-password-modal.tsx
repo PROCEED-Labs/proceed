@@ -1,4 +1,5 @@
 import { ReactNode, useTransition } from 'react';
+import PasswordInputFields from '@/components/password-input-fields';
 import { Button, Form, Input, Modal, App, ModalProps, Space } from 'antd';
 import { setUserPassword } from '@/lib/data/users';
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -58,36 +59,7 @@ export default function ChangeUserPasswordModal({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {hint}
         <Form form={form} layout="vertical" onFinish={submitData}>
-          <Form.Item
-            name="password"
-            label="Password"
-            rules={[{ required: true, message: 'Please input your password' }]}
-            required
-          >
-            <Input.Password />
-          </Form.Item>
-          <Form.Item
-            name="confirm-password"
-            label="Confirm Password"
-            rules={[
-              { required: true, message: 'Please input your password' },
-              ({ getFieldValue }) => ({
-                validator() {
-                  const password = getFieldValue('password');
-                  const confirmPassword = getFieldValue('confirm-password');
-                  if (password && confirmPassword && password !== confirmPassword) {
-                    return Promise.reject(new Error("Doesn't match password"));
-                  }
-
-                  return Promise.resolve();
-                },
-              }),
-            ]}
-            required
-          >
-            <Input.Password />
-          </Form.Item>
-
+          <PasswordInputFields />
           <Button type="primary" htmlType="submit" loading={loading}>
             Submit
           </Button>

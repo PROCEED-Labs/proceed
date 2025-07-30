@@ -337,7 +337,6 @@ export async function setUserPassword(
   } else {
     await dbMutator.passwordAccount.create({
       data: { userId, password: passwordHash, isTemporaryPassword },
-
     });
   }
 }

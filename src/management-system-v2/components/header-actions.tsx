@@ -99,7 +99,7 @@ const HeaderActions: FC = () => {
         <div style={{ padding: '1rem' }}>
           <Select
             options={userSpaces.map((space) => {
-              const name = space.isOrganization ? space.name : 'My Space';
+              const name = space.isOrganization ? space.name : 'My Personal Space';
               return {
                 label: (
                   <Tooltip title={name} placement="left">

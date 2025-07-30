@@ -22,8 +22,6 @@ import { env } from '../ms-config/env-vars';
 import { AuthenticatedUser, AuthenticatedUserSchema, User } from './user-schema';
 import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
-import { getRoles } from './roles';
-import { asyncMap } from '../helpers/javascriptHelpers';
 
 const EmailListSchema = z.array(
   z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),

@@ -166,3 +166,51 @@ export async function queryUsers(organizationId: string, searchQuery: string) {
     return userError(message);
   }
 }
+
+export async function setUserTemporaryPassword(
+  affectedUserId: string,
+  temporaryPassword: string,
+  spaceId?: string,
+) {
+  try {
+    const { user, systemAdmin } = await getCurrentUser();
+
+    let allowed = false;
+    if (systemAdmin) {
+      allowed = true;
+    }
+    if (!allowed && spaceId && user) {
+      const role = await db.role.findFirst({
+        where: {
+          name: '@admin',
+          environmentId: spaceId,
+        },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (role?.members.some((member) => member.id === user.id)) {
+        allowed = true;
+      }
+    }
+
+    if (!allowed) {
+      return userError('Not authorized', UserErrorType.PermissionError);
+    }
+
+    const passwordHash = await hashPassword(temporaryPassword);
+    await _setUserPassword(affectedUserId, passwordHash, undefined, true);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}

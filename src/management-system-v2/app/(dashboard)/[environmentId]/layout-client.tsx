@@ -56,6 +56,7 @@ const Layout: FC<
     customLogo?: string;
     disableUserDataModal?: boolean;
     userNeedsToChangePassword?: boolean;
+    bottomMenuItems?: NonNullable<MenuProps['items']>;
   }>
 > = ({
   loggedIn,
@@ -67,6 +68,7 @@ const Layout: FC<
   customLogo,
   disableUserDataModal = false,
   userNeedsToChangePassword: _userNeedsToChangePassword,
+  bottomMenuItems,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -109,6 +111,18 @@ const Layout: FC<
       onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
     />
   );
+
+  let bottomMenu;
+  if (bottomMenuItems && bottomMenuItems.length > 0) {
+    bottomMenu = (
+      <Menu
+        style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
+        mode="inline"
+        items={bottomMenuItems}
+        onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
+      />
+    );
+  }
 
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
@@ -213,12 +227,15 @@ const Layout: FC<
                     </div>
                     {loggedIn ? menu : null}
                   </div>
-                  <AntLayout.Footer
-                    style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
-                    className={cn(styles.Footer)}
-                  >
-                    PROCEED Labs GmbH
-                  </AntLayout.Footer>
+                  <div>
+                    {bottomMenu}
+                    <AntLayout.Footer
+                      style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+                      className={cn(styles.Footer)}
+                    >
+                      PROCEED Labs GmbH
+                    </AntLayout.Footer>
+                  </div>
                 </div>
               </AntLayout.Sider>
             )}
@@ -243,7 +260,17 @@ const Layout: FC<
           onClose={() => setMobileDrawerOpen(false)}
           open={mobileDrawerOpen}
         >
-          {menu}
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            {menu}
+            {bottomMenu}
+          </div>
         </Drawer>
 
         <Modal

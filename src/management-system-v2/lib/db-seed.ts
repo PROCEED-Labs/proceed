@@ -7,7 +7,7 @@ import {
   UserOrganizationEnvironmentInputSchema,
   environmentSchema,
 } from './data/environment-schema';
-import { addRole } from './data/db/iam/roles';
+import { addRole, getRoleById } from './data/db/iam/roles';
 import { addEnvironment, getEnvironmentById } from './data/db/iam/environments';
 import { addMember, isMember } from './data/db/iam/memberships';
 import { getRoleMappingByUserId } from './data/db/iam/role-mappings';
@@ -57,6 +57,7 @@ for (const resource of resources) {
 }
 
 const roleSchema = z.object({
+  id: z.string().uuid(),
   name: z.string(),
   description: z.string().nullish().optional(),
   note: z.string().nullish().optional(),
@@ -161,7 +162,7 @@ async function writeSeedToDb(seed: DBSeed) {
     for (const organization of seed.organizations) {
       // create org
       let org = await getEnvironmentById(organization.id);
-      if (!org)
+      if (!org) {
         org = (await addEnvironment(
           {
             id: organization.id,
@@ -176,19 +177,21 @@ async function writeSeedToDb(seed: DBSeed) {
           undefined,
           tx,
         )) as OrganizationEnvironment;
+      }
 
       // Add members + get their roles
       const userRoleMappings = new Map<string, string[]>();
       for (const member of organization.members) {
         const memberId = usernameToId.get(member)!;
-        if (!(await isMember(org.id, memberId, tx)))
+        if (!(await isMember(org.id, memberId, tx))) {
           await addMember(org.id, memberId, undefined, tx);
+        }
 
         // get members role mappings
         const userRoles = await getRoleMappingByUserId(memberId, org.id, undefined, undefined, tx);
         userRoleMappings.set(
           memberId,
-          userRoles.map((role) => role.roleName),
+          userRoles.map((role) => role.roleId),
         );
       }
 
@@ -199,12 +202,14 @@ async function writeSeedToDb(seed: DBSeed) {
           name: '@admin',
         },
       });
-      if (!adminRole)
+      if (!adminRole) {
         throw new Error(`Consistency error: Admin role for ${organization.name} not found`);
+      }
 
+      // Admin role is created by default when the org is created
       for (const admin of organization.admins) {
         const adminId = usernameToId.get(admin)!;
-        if (userRoleMappings.get(adminId)?.includes('@admin')) continue;
+        if (userRoleMappings.get(adminId)?.includes(adminRole.id)) continue;
 
         await addRoleMappings(
           [
@@ -222,33 +227,37 @@ async function writeSeedToDb(seed: DBSeed) {
       // Add roles
       // Here we go by the name of the role
       if (organization.roles) {
-        for (const role of organization.roles) {
-          const roleMembers = role.members;
-          delete (role as any)['members'];
+        for (const roleInput of organization.roles) {
+          const roleMembers = roleInput.members;
+          delete (roleInput as any)['members'];
 
-          const rolePermissions: Partial<Record<ResourceType, number>> = {};
-          for (const [action, permissions] of Object.entries(role.permissions))
-            rolePermissions[action as ResourceType] = permissionIdentifiersToNumber(permissions);
+          let role = await getRoleById(roleInput.id, undefined, tx);
+          if (!role) {
+            const rolePermissions: Partial<Record<ResourceType, number>> = {};
+            for (const [action, permissions] of Object.entries(roleInput.permissions)) {
+              rolePermissions[action as ResourceType] = permissionIdentifiersToNumber(permissions);
+            }
 
-          const newRole = await addRole(
-            {
-              ...role,
-              permissions: rolePermissions,
-              environmentId: org.id,
-            },
-            undefined,
-            tx,
-          );
+            role = await addRole(
+              {
+                ...roleInput,
+                permissions: rolePermissions,
+                environmentId: org.id,
+              },
+              undefined,
+              tx,
+            );
+          }
 
           for (const roleMember of roleMembers) {
             const roleMemberId = usernameToId.get(roleMember)!;
-            if (userRoleMappings.get(roleMemberId)?.includes(role.name)) continue;
+            if (userRoleMappings.get(roleMemberId)?.includes(role.id)) continue;
 
             await addRoleMappings(
               [
                 {
                   userId: roleMemberId,
-                  roleId: newRole.id,
+                  roleId: role.id,
                   environmentId: org.id,
                 },
               ],

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Variable as ProcessVariable } from './variable-definition/process-variable-form';
+type AllowedType = (typeof allowedTypes)[number];
 import {
   deepCopyElementById,
   getVariablesFromElement,
@@ -11,6 +11,30 @@ import { ElementLike } from 'diagram-js/lib/model/Types';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import useModelerStateStore from './use-modeler-state-store';
+import { Variable } from '@proceed/bpmn-helper/src/getters';
+
+const allowedTypes = ['string', 'number', 'boolean', 'object', 'array'] as const;
+
+// maps from the data types to what we want to display to the user
+export const typeLabelMap: Record<AllowedType, string> = {
+  string: 'Text',
+  number: 'Number',
+  boolean: 'On/Off - True/False',
+  object: 'Combined Structure',
+  array: 'List',
+} as const;
+
+const allowedFormats = ['email', 'url'] as const;
+type AllowedFormat = (typeof allowedFormats)[number];
+export const textFormatMap: Record<AllowedFormat, string> = {
+  email: 'E-Mail',
+  url: 'URL',
+} as const;
+
+export type ProcessVariable = Omit<Variable, 'dataType' | 'textFormat'> & {
+  dataType: AllowedType;
+  textFormat: AllowedFormat;
+};
 
 export default function useProcessVariables() {
   const [variables, setVariables] = useState<ProcessVariable[]>([]);

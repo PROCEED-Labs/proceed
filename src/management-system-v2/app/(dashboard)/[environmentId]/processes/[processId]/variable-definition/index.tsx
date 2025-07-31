@@ -9,9 +9,12 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 
-import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
-import useProcessVariables from '../use-process-variables';
-import ProcessVariableForm, { textFormatMap, typeLabelMap } from './process-variable-form';
+import useProcessVariables, {
+  ProcessVariable,
+  textFormatMap,
+  typeLabelMap,
+} from '../use-process-variables';
+import ProcessVariableForm from './process-variable-form';
 
 type VariableDefinitionProps = {};
 

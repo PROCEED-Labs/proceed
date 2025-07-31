@@ -15,12 +15,12 @@ import { useDndContext } from '@dnd-kit/core';
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
-import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
-import useProcessVariables from '../../use-process-variables';
-import ProcessVariableForm, {
+import useProcessVariables, {
+  ProcessVariable,
   textFormatMap,
   typeLabelMap,
-} from '../../variable-definition/process-variable-form';
+} from '../../use-process-variables';
+import ProcessVariableForm from '../../variable-definition/process-variable-form';
 
 export const Setting: React.FC<{
   label: string;
@@ -257,7 +257,7 @@ export function getVariableTooltip(variables: ProcessVariable[], name?: string) 
   const variable = variables.find((v) => v.name === name);
   if (!variable) return;
 
-  let tooltip = `Type: ${typeLabelMap[variable.dataType as keyof typeof typeLabelMap]}`;
+  let tooltip = `Type: ${typeLabelMap[variable.dataType]}`;
 
   if (variable.description) tooltip += `\nDescription: ${variable.description}`;
 

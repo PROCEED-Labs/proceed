@@ -39,6 +39,11 @@ const ProcessesPage = async ({
     (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
   );
 
+  // Check if folder has no processes with released versions (only folders remain)
+  const hasNoReleasedProcesses = folderContentsWithoutVersionlessProcesses.every(
+    (item) => item.type === 'folder',
+  );
+
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   const wrappingFolderIds = [] as string[];
   let currentFolder: Folder | null = folder;
@@ -46,7 +51,7 @@ const ProcessesPage = async ({
     pathToFolder.push({
       title: (
         <Link href={spaceURL(activeEnvironment, `/processes/list/folder/${currentFolder.id}`)}>
-          {currentFolder.parentId ? currentFolder.name : 'Processes'}
+          {currentFolder.parentId ? currentFolder.name : 'List'}
         </Link>
       ),
     });
@@ -80,6 +85,7 @@ const ProcessesPage = async ({
             favourites={favs as string[]}
             folder={folder}
             pathToFolder={wrappingFolderIds}
+            hasNoReleasedProcesses={hasNoReleasedProcesses}
           />
         </Space>
       </Content>

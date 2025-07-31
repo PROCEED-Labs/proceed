@@ -64,6 +64,15 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
 
+  /// Derived State
+  const minimized = !decodeURIComponent(pathname).includes(process.id);
+
+  const isReadOnlyListView = decodeURIComponent(pathname).includes('/list/');
+  const isEditorView = decodeURIComponent(pathname).includes('/editor/');
+  
+  // Determine the current context prefix for navigation
+  const contextPrefix = isReadOnlyListView ? '/list' : isEditorView ? '/editor' : '';
+
   /* Pressing ESC twice (in 500ms) lets user return to Process List */
   const escCounter = useRef(0);
   useAddControlCallback(
@@ -71,7 +80,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
     'esc',
     () => {
       if (escCounter.current == 1) {
-        router.push(spaceURL(environment, `/processes`));
+        router.push(spaceURL(environment, `/processes${contextPrefix}`));
       } else {
         escCounter.current++;
         const timer = setTimeout(() => {
@@ -85,13 +94,8 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
         };
       }
     },
-    { dependencies: [router] },
+    { dependencies: [router, contextPrefix] },
   );
-
-  /// Derived State
-  const minimized = !decodeURIComponent(pathname).includes(process.id);
-
-  const isReadOnlyListView = decodeURIComponent(pathname).includes('/list/');
 
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
@@ -196,13 +200,13 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
           router.push(
             spaceURL(
               environment,
-              `/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
+              `/processes${contextPrefix}/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
             ),
           );
         }
       }
     },
-    [process.id, router, setRootElement],
+    [process.id, router, setRootElement, contextPrefix, environment, pathname],
   );
 
   const onUnload = useCallback<Required<BPMNCanvasProps>['onUnload']>(

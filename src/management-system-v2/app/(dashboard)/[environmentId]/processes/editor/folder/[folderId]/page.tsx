@@ -42,7 +42,7 @@ const ProcessesPage = async ({
     pathToFolder.push({
       title: (
         <Link href={spaceURL(activeEnvironment, `/processes/editor/folder/${currentFolder.id}`)}>
-          {currentFolder.parentId ? currentFolder.name : 'Processes'}
+          {currentFolder.parentId ? currentFolder.name : 'Editor'}
         </Link>
       ),
     });

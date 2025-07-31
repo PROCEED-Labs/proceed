@@ -106,6 +106,7 @@ const Processes = ({
   readOnly = false,
   rootFolder,
   pathToFolder = [],
+  hasNoReleasedProcesses = false,
 }: {
   processes: InputItem[];
   favourites?: string[];
@@ -113,6 +114,7 @@ const Processes = ({
   readOnly?: boolean;
   rootFolder?: Folder;
   pathToFolder?: string[];
+  hasNoReleasedProcesses?: boolean;
 }) => {
   if (folder.parentId)
     processes = [
@@ -693,6 +695,14 @@ const Processes = ({
                         </div>
                       </Space>
                     </SelectionActions>
+                    {/* Show message in top action bar in List-view when folder has no released processes */}
+                    {isReadOnlyListView && hasNoReleasedProcesses && (
+                      <div style={{ display: 'flex', alignItems: 'center', marginLeft: '16px' }}>
+                        <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
+                          This folder does not contain any processes with released versions.
+                        </Typography.Text>
+                      </div>
+                    )}
                   </span>
 
                   <span>

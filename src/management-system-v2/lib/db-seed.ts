@@ -15,6 +15,7 @@ import { zodPhoneNumber } from './utils';
 import { permissionIdentifiersToNumber } from './authorization/permissionHelpers';
 import { ResourceType, resourceAction, resources } from './ability/caslAbility';
 import { hashPassword } from './password-hashes';
+import { env } from './ms-config/env-vars';
 
 /* -------------------------------------------------------------------------------------------------
  * Schema + Verification
@@ -90,6 +91,15 @@ const seedSchema = z.object({
 export type DBSeed = z.infer<typeof seedSchema>;
 
 function verifySeed(seed: DBSeed) {
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
+    if (seed?.organizations.length !== 1) {
+      console.error(
+        'When PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is active you have to define exactly one organization in the seed file.',
+      );
+      process.exit(1);
+    }
+  }
+
   // verify users
   const users = new Set<string>();
   const userNames = new Set<string>();
@@ -325,6 +335,8 @@ export async function importSeed() {
     verifySeed(parseResult.data);
 
     await writeSeedToDb(parseResult.data);
+
+    return parseResult.data;
   } catch (e) {
     console.error('Failed to import seed');
     console.error(e);

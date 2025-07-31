@@ -13,30 +13,19 @@ import {
 
 import { FaRegQuestionCircle } from 'react-icons/fa';
 
-import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
-
-// maps from the data types to what we want to display to the user
-export const typeLabelMap = {
-  string: 'Text',
-  number: 'Number',
-  boolean: 'On/Off - True/False',
-  object: 'Combined Structure',
-  array: 'List',
-};
-
-export type Variable = Omit<ProcessVariable, 'dataType'> & { dataType: keyof typeof typeLabelMap };
+import { ProcessVariable, typeLabelMap } from '../use-process-variables';
 
 type ProcessVariableFormProps = {
   open?: boolean;
-  originalVariable?: Variable;
-  allowedTypes?: Variable['dataType'][];
-  variables: Variable[];
-  onSubmit: (variable: Variable) => void;
+  originalVariable?: ProcessVariable;
+  allowedTypes?: ProcessVariable['dataType'][];
+  variables: ProcessVariable[];
+  onSubmit: (variable: ProcessVariable) => void;
   onCancel: () => void;
 };
 
 type DefaultValueInputProps = {
-  variable?: Partial<Variable>;
+  variable?: Partial<ProcessVariable>;
   onChange: (newValue: any) => void;
 };
 
@@ -91,7 +80,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
-  const [editVariable, setEditVariable] = useState<Partial<Variable> | undefined>();
+  const [editVariable, setEditVariable] = useState<Partial<ProcessVariable> | undefined>();
 
   const [form] = Form.useForm();
 
@@ -110,7 +99,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
     try {
       await form.validateFields();
 
-      onSubmit(editVariable as Variable);
+      onSubmit(editVariable as ProcessVariable);
     } catch (err) {}
   };
 

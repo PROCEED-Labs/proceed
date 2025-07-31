@@ -6,11 +6,11 @@ import { EditOutlined } from '@ant-design/icons';
 import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { App, Button, Form, Input, InputNumber, Modal, Switch, Table } from 'antd';
-import { typeLabelMap } from '../../../processes/[processId]/variable-definition/process-variable-form';
 import { updateVariables } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import TextArea from 'antd/es/input/TextArea';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { typeLabelMap } from '../../../processes/[processId]/use-process-variables';
 
 type InstanceVariableProps = {
   info: RelevantInstanceInfo;

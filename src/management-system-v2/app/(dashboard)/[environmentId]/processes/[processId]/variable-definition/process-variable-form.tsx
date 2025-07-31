@@ -24,7 +24,15 @@ export const typeLabelMap = {
   array: 'List',
 };
 
-export type Variable = Omit<ProcessVariable, 'dataType'> & { dataType: keyof typeof typeLabelMap };
+export const textFormatMap = {
+  email: 'E-Mail',
+  url: 'URL',
+};
+
+export type Variable = Omit<ProcessVariable, 'dataType' | 'textFormat'> & {
+  dataType: keyof typeof typeLabelMap;
+  textFormat: keyof typeof textFormatMap;
+};
 
 type ProcessVariableFormProps = {
   open?: boolean;
@@ -48,6 +56,7 @@ const DefaultValueInput: React.FC<DefaultValueInputProps> = ({ variable, onChang
       return (
         <Input
           value={variable.defaultValue}
+          type={variable.textFormat}
           onChange={(e) => onChange(e.target.value || undefined)}
         />
       );
@@ -191,6 +200,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
               setEditVariable({
                 ...editVariable,
                 dataType: value,
+                textFormat: undefined,
                 defaultValue: undefined,
                 enum: undefined,
               });
@@ -198,6 +208,21 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
             }}
           />
         </Form.Item>
+        {editVariable.dataType === 'string' && (
+          <Form.Item name="format" label="Format" initialValue={editVariable.textFormat}>
+            <Select
+              options={[{ value: '', label: 'None' }].concat(
+                Object.entries(textFormatMap).map(([value, label]) => ({ value, label })),
+              )}
+              onChange={(value) => {
+                setEditVariable({
+                  ...editVariable,
+                  textFormat: value ? value : undefined,
+                });
+              }}
+            />
+          </Form.Item>
+        )}
         <Form.Item name="description" label="Description" initialValue={editVariable.description}>
           <Input onChange={getChangeHandler('description')} />
         </Form.Item>

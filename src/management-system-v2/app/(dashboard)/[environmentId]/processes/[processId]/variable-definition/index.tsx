@@ -11,7 +11,7 @@ import {
 
 import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 import useProcessVariables from '../use-process-variables';
-import ProcessVariableForm, { typeLabelMap } from './process-variable-form';
+import ProcessVariableForm, { textFormatMap, typeLabelMap } from './process-variable-form';
 
 type VariableDefinitionProps = {};
 
@@ -61,9 +61,13 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
               title: 'Data Type',
               dataIndex: 'dataType',
               key: 'type',
-              render: (_, record) => (
-                <Space>{typeLabelMap[record.dataType as keyof typeof typeLabelMap]}</Space>
-              ),
+              render: (_, record) => {
+                let label = typeLabelMap[record.dataType as keyof typeof typeLabelMap];
+                if (record.textFormat) {
+                  label += ` (${textFormatMap[record.textFormat as keyof typeof textFormatMap]})`;
+                }
+                return <Space>{label}</Space>;
+              },
             },
             {
               title: 'Default Value',

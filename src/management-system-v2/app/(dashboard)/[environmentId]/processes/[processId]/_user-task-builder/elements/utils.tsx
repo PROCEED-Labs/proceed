@@ -17,7 +17,10 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
 import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 import useProcessVariables from '../../use-process-variables';
-import ProcessVariableForm, { typeLabelMap } from '../../variable-definition/process-variable-form';
+import ProcessVariableForm, {
+  textFormatMap,
+  typeLabelMap,
+} from '../../variable-definition/process-variable-form';
 
 export const Setting: React.FC<{
   label: string;
@@ -265,7 +268,11 @@ type AllowedTypes = React.ComponentProps<typeof ProcessVariableForm>['allowedTyp
 type VariableSettingProps = {
   variable?: string;
   allowedTypes?: AllowedTypes;
-  onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
+  onChange: (
+    newVariableName?: string,
+    newVariableType?: NonNullable<AllowedTypes>[number],
+    newVariableFormat?: keyof typeof textFormatMap,
+  ) => void;
 };
 
 export const VariableSetting: React.FC<VariableSettingProps> = ({
@@ -278,7 +285,8 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
   const { variables, addVariable } = useProcessVariables();
 
   const validVariables = variables.filter(
-    (variable) => !allowedTypes || allowedTypes.includes(variable.dataType),
+    (variable) =>
+      !allowedTypes || allowedTypes.includes(variable.dataType as (typeof allowedTypes)[number]),
   );
 
   return (
@@ -296,8 +304,8 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
               value: v.name,
             }))}
             onChange={(val) => {
-              const variableType = variables.find((v) => v.name === val)?.dataType;
-              onChange(val, variableType);
+              const variable = variables.find((v) => v.name === val);
+              onChange(val, variable?.dataType, variable?.textFormat);
             }}
             dropdownRender={(menu) => (
               <>
@@ -317,7 +325,7 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
             onSubmit={(newVar) => {
               addVariable(newVar);
               setShowVariableForm(false);
-              onChange(newVar.name, newVar.dataType);
+              onChange(newVar.name, newVar.dataType, newVar.textFormat);
             }}
             onCancel={() => setShowVariableForm(false)}
           />

@@ -73,8 +73,8 @@ export const getCurrentEnvironment = cache(
       spaceIdParam = userId;
     }
 
-    const activeSpace = decodeURIComponent(spaceIdParam);
-    const isOrganization = activeSpace !== userId;
+    let activeSpace = decodeURIComponent(spaceIdParam);
+    let isOrganization = activeSpace !== userId;
 
     // When trying to access a personal space
     if (userId && !isOrganization && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
@@ -89,7 +89,8 @@ export const getCurrentEnvironment = cache(
         }
       }
 
-      spaceIdParam = userOrgs[0];
+      activeSpace = userOrgs[0];
+      isOrganization = true;
     }
 
     // TODO: account for bought resources

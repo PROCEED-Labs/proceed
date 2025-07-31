@@ -61,3 +61,18 @@ export async function stopInstanceOnMachine(
     body: { instanceState: 'stopped' },
   });
 }
+
+export async function updateVariablesOnMachine(
+  definitionId: string,
+  instanceId: string,
+  machine: Engine,
+  variables: Record<string, any>,
+) {
+  await engineRequest({
+    method: 'post',
+    endpoint: '/process/:definitionId/instance/:instanceId/variables',
+    engine: machine,
+    pathParams: { definitionId, instanceId },
+    body: variables,
+  });
+}

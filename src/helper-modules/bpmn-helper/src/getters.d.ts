@@ -377,9 +377,12 @@ export function getVariablesFromElement(element: object): Variable[];
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId the id of the element
- * @returns {Variable[]} array with all variables
+ * @returns {Promise<Variable[]>} array with all variables
  */
-export function getVariablesFromElementById(bpmn: string | object, elementId: string): Variable[];
+export function getVariablesFromElementById(
+  bpmn: string | object,
+  elementId: string,
+): Promise<Variable[]>;
 /**
  * Get the file names for the start forms of all processes,
  * (The attribute 'uiForNontypedStartEventsFileName' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)

@@ -266,6 +266,9 @@ async function writeSeedToDb(seed: DBSeed) {
  * Import Seed + Verification + Write to DB
  * -----------------------------------------------------------------------------------------------*/
 
+/**
+ * @note This function will terminate the process if the import fails.
+ */
 export async function importSeed() {
   let seedDbConfig: unknown | undefined;
   try {
@@ -290,5 +293,6 @@ export async function importSeed() {
   } catch (e) {
     console.error('Failed to import seed');
     console.error(e);
+    process.exit(1);
   }
 }

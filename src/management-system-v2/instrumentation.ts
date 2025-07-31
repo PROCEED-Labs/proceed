@@ -46,7 +46,7 @@ export async function register() {
         );
         process.exit(1);
       }
-      if (organizations[0].id !== seed.organizations[0].id) {
+      if (organizations[0].id !== seed!.organizations[0].id) {
         console.error(
           "Consistency error: PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is active and the only organization in the database doesn't match the one in the seed file.",
         );

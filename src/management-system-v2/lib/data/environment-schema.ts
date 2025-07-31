@@ -44,4 +44,6 @@ export type PersonalEnvironment = z.infer<typeof PersonalEnvironmentSchema> & {
 export type OrganizationEnvironment = z.infer<typeof OrganizationEnvironmentSchema> & {
   id: string;
 };
+export type ActiveOrganizationEnvironment = Extract<OrganizationEnvironment, { isActive: true }>;
+export type InactiveOrganizationEnvironment = Extract<OrganizationEnvironment, { isActive: false }>;
 export type Environment = EnvironmentInput & { id: string };

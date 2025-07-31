@@ -5,7 +5,7 @@ import {
   UserOrganizationEnvironmentInput,
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
 import { UnauthorizedError } from '../ability/abilityHelper';
 import {
   addEnvironment,
@@ -14,6 +14,8 @@ import {
   updateOrganization as _updateOrganization,
 } from '@/lib/data/db/iam/environments';
 import { env } from '../ms-config/env-vars';
+import { isMember, removeMember } from './db/iam/memberships';
+import { UserHasToDeleteOrganizationsError } from './db/iam/users';
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
@@ -85,5 +87,36 @@ export async function updateOrganization(
       return userError("You're not allowed to update this organization");
 
     return userError('Error updating organization');
+  }
+}
+
+export async function leaveOrganization(spaceId: string) {
+  try {
+    const { user } = await getCurrentUser();
+
+    if (!user || user.isGuest) {
+      return userError('You need to be signed in');
+    }
+
+    if (user.id === spaceId) {
+      return userError('You cannot leave your personal spcae');
+    }
+
+    if (!(await isMember(spaceId, user.id))) {
+      // I don't think we should return a specific error, as it allows to check environment ID's
+      throw new Error();
+    }
+
+    await removeMember(spaceId, user.id);
+  } catch (e) {
+    console.error(e);
+    let message;
+    if (e instanceof UserHasToDeleteOrganizationsError) {
+      message =
+        "You're the only admin of this organization, you have to either add a new admin or delete it.";
+    } else {
+      message = getErrorMessage(e);
+    }
+    return userError(message);
   }
 }

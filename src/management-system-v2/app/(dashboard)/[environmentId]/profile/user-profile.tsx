@@ -237,8 +237,8 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
               onRow={(row) =>
                 row.action
                   ? {
-                    onClick: row.action,
-                  }
+                      onClick: row.action,
+                    }
                   : {}
               }
               showHeader={false}

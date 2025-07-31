@@ -3,8 +3,8 @@ import ZeroShotSemanticOpposites from '../tasks/semantic-zeroshot';
 
 export async function ensureAllHuggingfaceModelsAreAvailable() {
   try {
-    Embedding.getInstance();
-    ZeroShotSemanticOpposites.getInstance();
+    await Embedding.getInstance();
+    await ZeroShotSemanticOpposites.getInstance();
   } catch (error) {
     throw error;
   }

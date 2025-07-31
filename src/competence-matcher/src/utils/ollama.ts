@@ -1,11 +1,12 @@
 import { Ollama } from 'ollama';
 import { config } from '../config';
 
-const { ollamaPath, splittingModel, reasonModel } = config;
+const { ollamaPath, splittingModel, reasonModel, ollamaBearerToken } = config;
 
 export const ollama = new Ollama({
   host: ollamaPath,
   headers: {
+    Authorization: `Bearer ${ollamaBearerToken}`, // https://github.com/ollama/ollama-js?tab=readme-ov-file#user-content-custom-headers
     'User-Agent': 'PROCEED Competence Matcher',
   },
 });

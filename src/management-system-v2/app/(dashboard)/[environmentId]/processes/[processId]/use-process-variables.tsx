@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 
-import type { Variable } from './variable-definition/process-variable-form';
 import {
   deepCopyElementById,
   getVariablesFromElement,
@@ -11,6 +10,7 @@ import { ElementLike } from 'diagram-js/lib/model/Types';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import useModelerStateStore from './use-modeler-state-store';
+import { Variable } from '@proceed/bpmn-helper/src/getters';
 
 const allowedTypes = ['string', 'number', 'boolean', 'object', 'array'] as const;
 type AllowedType = (typeof allowedTypes)[number];

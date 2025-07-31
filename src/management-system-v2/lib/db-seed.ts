@@ -83,6 +83,7 @@ const organizationSchema = UserOrganizationEnvironmentInputSchema.extend({
 });
 
 const seedSchema = z.object({
+  version: z.string().datetime(),
   users: z.array(userSchema),
   organizations: z.array(organizationSchema),
 });
@@ -141,6 +142,31 @@ function verifySeed(seed: DBSeed) {
 
 async function writeSeedToDb(seed: DBSeed) {
   await db.$transaction(async (tx) => {
+    const seedVersion = new Date(seed.version);
+    const seedVersionDb = await tx.seedVersion.findUnique({
+      where: {
+        id: 0,
+      },
+    });
+
+    if (seedVersionDb && seedVersionDb.version >= seedVersion) {
+      return;
+    }
+
+    if (!seedVersionDb) {
+      await tx.seedVersion.create({
+        data: {
+          id: 0,
+          version: seedVersion,
+        },
+      });
+    } else {
+      await tx.seedVersion.update({
+        where: { id: 0 },
+        data: { version: seedVersion },
+      });
+    }
+
     // create users
     // TODO: passwords
     const usernameToId = new Map<string, string>();

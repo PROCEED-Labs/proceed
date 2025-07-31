@@ -27,7 +27,8 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "ollama": "^0.5.16",
-    "sqlite-vec": "^0.1.7-alpha.2"
+    "sqlite-vec": "^0.1.7-alpha.2",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.2",

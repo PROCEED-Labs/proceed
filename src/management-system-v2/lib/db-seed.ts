@@ -190,7 +190,7 @@ async function writeSeedToDb(seed: DBSeed) {
 
       const newUser = await addUser({ ...user, isGuest: false, emailVerifiedOn: null }, tx);
       const hashedPassword = await hashPassword(user.initialPassword);
-      await setUserPassword(user.id, hashedPassword, tx);
+      await setUserPassword(user.id, hashedPassword, tx, true);
       usernameToId.set(user.username, newUser.id);
     }
 

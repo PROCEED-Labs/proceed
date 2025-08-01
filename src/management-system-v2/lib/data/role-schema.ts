@@ -8,6 +8,7 @@ for (const resource of resources) {
   perms[resource] = z.number();
 }
 export const RoleInputSchema = z.object({
+  id: z.string().optional(),
   environmentId: z.string(),
   name: z.string(),
   description: z.string().nullish().optional(),

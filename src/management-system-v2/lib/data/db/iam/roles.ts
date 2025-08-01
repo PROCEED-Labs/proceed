@@ -177,7 +177,7 @@ export async function addRole(
 
   const createdOn = new Date().toISOString();
   const lastEditedOn = createdOn;
-  const id = v4();
+  const id = roleRepresentationInput.id ?? v4();
 
   const createdRole = await dbMutator.role.create({
     data: {

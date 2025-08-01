@@ -218,7 +218,7 @@ function processLatestEarliestElements(
 
     if (ganttElement) {
       // Latest/Earliest specific properties
-      ganttElement.id = elementId; // Use original element ID, not instance ID
+      ganttElement.id = timing.instanceId || elementId; // Use selected instance ID, fallback to element ID
       ganttElement.name = ganttElement.name || element.id;
       ganttElement.instanceNumber = undefined;
       ganttElement.totalInstances = undefined;

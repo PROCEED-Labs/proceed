@@ -312,6 +312,8 @@ export function handleLatestOccurrenceMode(
     const parentBaseId = subProcessHierarchy.get(elementId)!;
     const selectedParent = subProcessLatestTimings.get(parentBaseId);
 
+    // Process nested sub-process instances that align with selected parent
+
     if (selectedParent) {
       // Find the nested sub-process instance that belongs to the selected parent instance
       const alignedInstance = timingInstances.find(
@@ -327,6 +329,8 @@ export function handleLatestOccurrenceMode(
       applyLoopStatus(selectedTiming, timingInstances);
       subProcessLatestTimings.set(elementId, selectedTiming);
       elementToLatestTiming.set(elementId, selectedTiming);
+
+      // Selected timing for nested sub-process is now set
     }
   });
 
@@ -335,7 +339,11 @@ export function handleLatestOccurrenceMode(
   subProcessLatestTimings.forEach((subProcessTiming, subProcessId) => {
     // Find all children of this sub-process
     pathTimings.forEach((timingInstances, elementId) => {
-      if (timingInstances.length > 0 && !subProcessLatestTimings.has(elementId)) {
+      if (
+        timingInstances.length > 0 &&
+        !subProcessLatestTimings.has(elementId) &&
+        !selectedChildTimings.has(elementId)
+      ) {
         // Check if any instance of this element belongs to this sub-process
         const childInstancesOfThisSubProcess = timingInstances.filter((timing) => {
           const parentId = timing.parentSubProcessId;
@@ -381,6 +389,7 @@ export function handleLatestOccurrenceMode(
           if (matchingChildTiming) {
             applyLoopStatus(matchingChildTiming, timingInstances);
             selectedChildTimings.set(elementId, matchingChildTiming);
+            elementToLatestTiming.set(elementId, matchingChildTiming);
           }
         }
       }
@@ -427,8 +436,13 @@ export function handleLatestOccurrenceMode(
   });
 
   // Transform dependencies to use latest instances
-
   const latestDependencies = createLatestDependencies(pathDependencies, latestInstanceIdMap);
+
+  // Handle loop dependencies when ghost elements are disabled
+  if (!showGhostElements) {
+    const loopDependencies = createLoopDependencies(pathDependencies, latestInstanceIdMap);
+    latestDependencies.push(...loopDependencies);
+  }
 
   // Use consolidated element processing pipeline
   const processingOptions: ElementProcessingOptions = {
@@ -465,23 +479,27 @@ export function handleLatestOccurrenceMode(
   // Boundary event reachable elements handled by path traversal - skipping duplicate processing
 
   // Create dependencies from the filtered latest dependencies
-
   latestDependencies.forEach((dep, index) => {
     const flow = sequenceFlowMap.get(dep.flowId);
     if (flow) {
-      const { sourceOriginalId, targetOriginalId } = extractOriginalElementIds(
-        dep.sourceInstanceId!,
-        dep.targetInstanceId!,
-      );
+      // CRITICAL FIX: Use instance IDs to match gantt element IDs
+      const sourceInstanceId = latestInstanceIdMap.get(dep.sourceOriginalId);
+      const targetInstanceId = latestInstanceIdMap.get(dep.targetOriginalId);
 
       const regularDep = {
         id: `${dep.flowId}_latest_${index}`,
-        sourceId: sourceOriginalId,
-        targetId: targetOriginalId,
+        sourceId: sourceInstanceId || dep.sourceOriginalId, // Use instance ID, fallback to base
+        targetId: targetInstanceId || dep.targetOriginalId, // Use instance ID, fallback to base
         type: DependencyType.FINISH_TO_START,
         name: (flow as BPMNSequenceFlow).name,
         flowType: getFlowType(flow as BPMNSequenceFlow),
       };
+
+      // Mark loop dependencies
+      if ((dep as any).isLoop) {
+        (regularDep as any).isLoop = true;
+      }
+
       ganttDependencies.push(regularDep);
     }
   });
@@ -596,12 +614,65 @@ export function handleEarliestOccurrenceMode(
   const elementToEarliestTiming = new Map<string, any>();
 
   // Find the earliest occurrence of each element, with special handling for sub-process children
+  // Build hierarchy map for nested sub-processes (same logic as latest-occurrence mode)
+  const subProcessHierarchy = new Map<string, string>(); // child -> parent mapping
+  pathTimings.forEach((timingInstances, elementId) => {
+    if (timingInstances.length > 0 && timingInstances[0].isExpandedSubProcess) {
+      const parentSubProcessId = timingInstances[0].parentSubProcessId;
+      if (parentSubProcessId) {
+        const parentParts = parentSubProcessId.split('_instance_');
+        const parentBaseId = parentParts.length > 0 ? parentParts[0] : parentSubProcessId;
+        subProcessHierarchy.set(elementId, parentBaseId);
+      }
+    }
+  });
+
+  // Process root sub-processes first, then nested ones
+  const rootSubProcesses = new Set<string>();
+  const nestedSubProcesses = new Set<string>();
+
+  pathTimings.forEach((timingInstances, elementId) => {
+    if (timingInstances.length > 0 && timingInstances[0].isExpandedSubProcess) {
+      if (subProcessHierarchy.has(elementId)) {
+        nestedSubProcesses.add(elementId);
+      } else {
+        rootSubProcesses.add(elementId);
+      }
+    }
+  });
+
   // First, identify all sub-process elements and their earliest occurrences
   const subProcessEarliestTimings = new Map<string, any>();
-  pathTimings.forEach((timingInstances, elementId) => {
-    if (timingInstances.length > 0) {
-      const firstTiming = timingInstances[0];
-      if (firstTiming.isExpandedSubProcess) {
+
+  // Process root sub-processes first
+  rootSubProcesses.forEach((elementId) => {
+    const timingInstances = pathTimings.get(elementId)!;
+    const earliestTiming = timingInstances.reduce((earliest, current) =>
+      current.startTime < earliest.startTime ? current : earliest,
+    );
+    applyLoopStatus(earliestTiming, timingInstances);
+    subProcessEarliestTimings.set(elementId, earliestTiming);
+    elementToEarliestTiming.set(elementId, earliestTiming);
+  });
+
+  // Process nested sub-processes, selecting instances that align with selected parent
+  nestedSubProcesses.forEach((elementId) => {
+    const timingInstances = pathTimings.get(elementId)!;
+    const parentBaseId = subProcessHierarchy.get(elementId)!;
+    const selectedParent = subProcessEarliestTimings.get(parentBaseId);
+
+    if (selectedParent) {
+      // Find the nested sub-process instance that belongs to the selected parent instance
+      const matchingTiming = timingInstances.find(
+        (timing) => timing.parentSubProcessId === selectedParent.instanceId,
+      );
+
+      if (matchingTiming) {
+        applyLoopStatus(matchingTiming, timingInstances);
+        subProcessEarliestTimings.set(elementId, matchingTiming);
+        elementToEarliestTiming.set(elementId, matchingTiming);
+      } else {
+        // Fallback: select earliest timing for this nested sub-process
         const earliestTiming = timingInstances.reduce((earliest, current) =>
           current.startTime < earliest.startTime ? current : earliest,
         );
@@ -617,7 +688,11 @@ export function handleEarliestOccurrenceMode(
   subProcessEarliestTimings.forEach((subProcessTiming, subProcessId) => {
     // Find all children of this sub-process
     pathTimings.forEach((timingInstances, elementId) => {
-      if (timingInstances.length > 0 && !subProcessEarliestTimings.has(elementId)) {
+      if (
+        timingInstances.length > 0 &&
+        !subProcessEarliestTimings.has(elementId) &&
+        !selectedChildTimings.has(elementId)
+      ) {
         // Check if any instance of this element belongs to this sub-process
         const childInstancesOfThisSubProcess = timingInstances.filter((timing) => {
           const parentId = timing.parentSubProcessId;
@@ -657,6 +732,7 @@ export function handleEarliestOccurrenceMode(
           if (matchingChildTiming) {
             applyLoopStatus(matchingChildTiming, timingInstances);
             selectedChildTimings.set(elementId, matchingChildTiming);
+            elementToEarliestTiming.set(elementId, matchingChildTiming);
           }
         }
       }
@@ -763,7 +839,17 @@ export function handleEarliestOccurrenceMode(
     earliestInstanceIdMap.set(elementId, timing.instanceId);
   });
 
-  const earliestDependencies = createEarliestDependencies(pathDependencies, showGhostDependencies);
+  const earliestDependencies = createEarliestDependencies(
+    pathDependencies,
+    earliestInstanceIdMap,
+    showGhostDependencies,
+  );
+
+  // Handle loop dependencies when ghost elements are disabled
+  if (!showGhostElements) {
+    const loopDependencies = createLoopDependencies(pathDependencies, earliestInstanceIdMap);
+    earliestDependencies.push(...loopDependencies);
+  }
 
   // Use consolidated element processing pipeline
   const processingOptions: ElementProcessingOptions = {
@@ -795,18 +881,29 @@ export function handleEarliestOccurrenceMode(
 
   // Boundary events are now handled by path traversal - no separate processing needed
 
-  // Create dependencies from ALL unique flows, pointing to earliest instances
+  // Create dependencies from selected flows, pointing to earliest instances
   earliestDependencies.forEach((dep, index) => {
     const flow = sequenceFlowMap.get(dep.flowId);
     if (flow) {
-      ganttDependencies.push({
+      // CRITICAL FIX: Use instance IDs to match gantt element IDs
+      const sourceInstanceId = earliestInstanceIdMap.get(dep.sourceOriginalId);
+      const targetInstanceId = earliestInstanceIdMap.get(dep.targetOriginalId);
+
+      const dependency = {
         id: `${dep.flowId}_earliest_${index}`,
-        sourceId: dep.sourceOriginalId,
-        targetId: dep.targetOriginalId,
+        sourceId: sourceInstanceId || dep.sourceOriginalId, // Use instance ID, fallback to base
+        targetId: targetInstanceId || dep.targetOriginalId, // Use instance ID, fallback to base
         type: DependencyType.FINISH_TO_START,
         name: (flow as BPMNSequenceFlow).name,
         flowType: getFlowType(flow as BPMNSequenceFlow),
-      });
+      };
+
+      // Mark loop dependencies
+      if ((dep as any).isLoop) {
+        (dependency as any).isLoop = true;
+      }
+
+      ganttDependencies.push(dependency);
     }
   });
 
@@ -1058,53 +1155,98 @@ function validateSubProcessRelationships(ganttElements: GanttElementType[]): voi
 
 /**
  * Create latest dependencies with deduplication
+ * Fixed to handle loop scenarios where only selected instances should have dependencies
  */
 function createLatestDependencies(
   pathDependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
   latestInstanceIdMap: Map<string, string>,
 ) {
-  const mapped = pathDependencies.map((dep) => {
-    const { sourceOriginalId, targetOriginalId } = extractOriginalElementIds(
-      dep.sourceInstanceId,
-      dep.targetInstanceId,
-    );
-
-    const latestSourceInstanceId = latestInstanceIdMap.get(sourceOriginalId);
-    const latestTargetInstanceId = latestInstanceIdMap.get(targetOriginalId);
-
-    if (!latestSourceInstanceId || !latestTargetInstanceId) {
-      return null; // Skip dependencies with missing instance mappings
-    }
-
-    return {
-      sourceInstanceId: latestSourceInstanceId,
-      targetInstanceId: latestTargetInstanceId,
-      flowId: dep.flowId,
-    };
+  // Create a reverse map: instanceId -> baseElementId for selected instances only
+  const selectedInstances = new Set<string>();
+  latestInstanceIdMap.forEach((instanceId) => {
+    selectedInstances.add(instanceId);
   });
 
-  return mapped.filter((dep): dep is NonNullable<typeof dep> => dep !== null);
+  // FIXED: Map path dependencies to selected instances instead of filtering by exact instance match
+  const mapped = pathDependencies
+    .map((dep) => {
+      const { sourceOriginalId, targetOriginalId } = extractOriginalElementIds(
+        dep.sourceInstanceId,
+        dep.targetInstanceId,
+      );
+
+      // Map to selected instances for source and target
+      const selectedSourceInstanceId = latestInstanceIdMap.get(sourceOriginalId);
+      const selectedTargetInstanceId = latestInstanceIdMap.get(targetOriginalId);
+
+      // Only include if both source and target elements have selected instances
+      if (!selectedSourceInstanceId || !selectedTargetInstanceId) {
+        return null;
+      }
+
+      return {
+        sourceInstanceId: selectedSourceInstanceId, // Use selected instance ID
+        targetInstanceId: selectedTargetInstanceId, // Use selected instance ID
+        flowId: dep.flowId,
+        sourceOriginalId,
+        targetOriginalId,
+      };
+    })
+    .filter((dep): dep is NonNullable<typeof dep> => dep !== null);
+
+  // Deduplicate by flow and endpoints to handle multiple paths through same elements
+  const seen = new Set<string>();
+  return mapped.filter((dep) => {
+    const key = `${dep.sourceOriginalId}->${dep.targetOriginalId}-${dep.flowId}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
  * Create earliest dependencies with deduplication
+ * Fixed to handle loop scenarios where only selected instances should have dependencies
  */
 function createEarliestDependencies(
   pathDependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
+  earliestInstanceIdMap: Map<string, string>,
   showGhostDependencies: boolean,
 ) {
-  const mappedDependencies = pathDependencies.map((dep) => {
-    const { sourceOriginalId, targetOriginalId } = extractOriginalElementIds(
-      dep.sourceInstanceId,
-      dep.targetInstanceId,
-    );
-
-    return {
-      sourceOriginalId,
-      targetOriginalId,
-      flowId: dep.flowId,
-    };
+  // Create a reverse map: instanceId -> baseElementId for selected instances only
+  const selectedInstances = new Set<string>();
+  earliestInstanceIdMap.forEach((instanceId) => {
+    selectedInstances.add(instanceId);
   });
+
+  // FIXED: Map path dependencies to selected instances instead of filtering by exact instance match
+  const mappedDependencies = pathDependencies
+    .map((dep) => {
+      const { sourceOriginalId, targetOriginalId } = extractOriginalElementIds(
+        dep.sourceInstanceId,
+        dep.targetInstanceId,
+      );
+
+      // Map to selected instances for source and target
+      const selectedSourceInstanceId = earliestInstanceIdMap.get(sourceOriginalId);
+      const selectedTargetInstanceId = earliestInstanceIdMap.get(targetOriginalId);
+
+      // Only include if both source and target elements have selected instances
+      if (!selectedSourceInstanceId || !selectedTargetInstanceId) {
+        return null;
+      }
+
+      return {
+        sourceOriginalId,
+        targetOriginalId,
+        flowId: dep.flowId,
+        sourceInstanceId: selectedSourceInstanceId, // Use selected instance ID for ghost dependencies
+        targetInstanceId: selectedTargetInstanceId, // Use selected instance ID for ghost dependencies
+      };
+    })
+    .filter((dep): dep is NonNullable<typeof dep> => dep !== null);
 
   // Only deduplicate when ghost dependencies are disabled
   // When ghost dependencies are enabled, we need all path dependencies to be available
@@ -1114,13 +1256,63 @@ function createEarliestDependencies(
   }
 
   // Deduplicate when ghost dependencies are disabled
-  return mappedDependencies.filter((dep, index, arr) => {
+  const seen = new Set<string>();
+  return mappedDependencies.filter((dep) => {
     const key = `${dep.sourceOriginalId}->${dep.targetOriginalId}-${dep.flowId}`;
-    const firstIndex = arr.findIndex(
-      (d) => `${d.sourceOriginalId}->${d.targetOriginalId}-${d.flowId}` === key,
-    );
-    return firstIndex === index;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
   });
+}
+
+/**
+ * Create loop dependencies when ghost elements are disabled
+ * Identifies loop patterns and creates self-loop dependencies to maintain connectivity
+ */
+function createLoopDependencies(
+  pathDependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
+  selectedInstanceIdMap: Map<string, string>,
+) {
+  const loopDependencies: any[] = [];
+
+  // Find loop patterns: dependencies where source and target have the same base element ID
+  // but different instance IDs (indicating a loop back to the same element)
+  pathDependencies.forEach((dep) => {
+    const { sourceOriginalId, targetOriginalId } = extractOriginalElementIds(
+      dep.sourceInstanceId,
+      dep.targetInstanceId,
+    );
+
+    // Check if this is a loop (same base element, different instances)
+    if (sourceOriginalId === targetOriginalId && dep.sourceInstanceId !== dep.targetInstanceId) {
+      const selectedInstanceId = selectedInstanceIdMap.get(sourceOriginalId);
+
+      // Only create loop dependency if we have a selected instance for this element
+      if (selectedInstanceId) {
+        // Check if we already have a dependency from this element to itself
+        const existingLoop = loopDependencies.find(
+          (loop) =>
+            loop.sourceOriginalId === sourceOriginalId &&
+            loop.targetOriginalId === targetOriginalId,
+        );
+
+        if (!existingLoop) {
+          loopDependencies.push({
+            sourceInstanceId: selectedInstanceId,
+            targetInstanceId: selectedInstanceId, // Self-loop
+            flowId: dep.flowId,
+            sourceOriginalId,
+            targetOriginalId,
+            isLoop: true, // Mark as loop dependency
+          } as any);
+        }
+      }
+    }
+  });
+
+  return loopDependencies;
 }
 
 /**

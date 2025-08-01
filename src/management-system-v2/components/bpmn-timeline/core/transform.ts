@@ -160,17 +160,26 @@ export function transformBPMNToGantt(
   // Add path traversal issues (loop limits, path explosion)
   issues.push(...pathIssues);
 
-  // Check for sub-processes and disable ghost elements completely if present
+  // Check for sub-processes and override ghost element settings if present
+  // Ghost elements are incompatible with sub-processes in earliest and latest modes
   const hasSubProcesses = supportedElements.some(
-    (element) => element.$type === 'bpmn:SubProcess' || element.$type === 'bpmn:AdHocSubProcess',
+    (element) =>
+      element.$type === 'bpmn:SubProcess' ||
+      element.$type === 'bpmn:AdHocSubProcess' ||
+      element.$type === 'bpmn:Transaction',
   );
 
   let effectiveShowGhostElements = showGhostElements;
   let effectiveShowGhostDependencies = showGhostDependencies;
 
-  if (hasSubProcesses && showGhostElements && traversalMode !== 'every-occurrence') {
-    // Disable ghost elements when sub-processes are present in earliest/latest modes
-    // Every-occurrence mode doesn't use ghost elements anyway
+  if (
+    hasSubProcesses &&
+    showGhostElements &&
+    (traversalMode === 'earliest-occurrence' || traversalMode === 'latest-occurrence')
+  ) {
+    // Override ghost element settings when sub-processes are present in earliest/latest modes
+    // The original settings are preserved (not modified) so the settings modal remains accurate
+    // Every-occurrence mode doesn't use ghost elements, so no override needed
     effectiveShowGhostElements = false;
     effectiveShowGhostDependencies = false;
 

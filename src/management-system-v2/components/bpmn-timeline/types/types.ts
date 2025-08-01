@@ -30,11 +30,34 @@ export interface BPMNExtensionElements {
 }
 
 // Main structure
+export interface BPMNCollaboration {
+  $type: 'bpmn:Collaboration';
+  id: string;
+  name?: string;
+  participants?: BPMNParticipant[];
+  messageFlows?: BPMNMessageFlow[];
+}
+
+export interface BPMNMessageFlow {
+  $type: 'bpmn:MessageFlow';
+  id: string;
+  name?: string;
+  sourceRef: string | { id: string }; // Can reference element or participant
+  targetRef: string | { id: string }; // Can reference element or participant
+}
+
+export interface BPMNParticipant {
+  $type: 'bpmn:Participant';
+  id: string;
+  name?: string;
+  processRef?: string | BPMNProcess; // Can be string reference or actual process object
+}
+
 export interface BPMNDefinitions {
   $type: 'bpmn:Definitions';
   id: string;
   name?: string;
-  rootElements: BPMNProcess[];
+  rootElements: (BPMNProcess | BPMNCollaboration)[];
   diagrams?: any[];
 }
 
@@ -44,6 +67,7 @@ export interface BPMNProcess {
   name?: string;
   isExecutable?: boolean;
   flowElements: BPMNFlowElement[];
+  laneSets?: BPMNLaneSet[]; // bpmn-js moddle uses this (plural)
   extensionElements?: BPMNExtensionElements;
 }
 
@@ -227,6 +251,39 @@ export interface TransformationResult {
   // Legacy properties for backward compatibility
   errors: TransformationIssue[];
   warnings: TransformationIssue[];
+}
+
+// ============================================================================
+// Lane Support Types
+// ============================================================================
+
+export interface BPMNLane extends BPMNBaseElement {
+  $type: 'bpmn:Lane';
+  flowNodeRef: string[]; // References to elements in this lane
+  childLaneSet?: BPMNLaneSet; // For nested lanes
+  partitionElement?: any; // Role/participant reference
+}
+
+export interface BPMNLaneSet extends BPMNBaseElement {
+  $type: 'bpmn:LaneSet';
+  lanes: BPMNLane[];
+}
+
+export interface LaneMetadata {
+  laneId: string;
+  laneName?: string;
+  level: number; // 0 = top level, 1 = nested, etc.
+  elementIds: string[]; // Element IDs in this lane
+  childLanes: LaneMetadata[];
+}
+
+export interface ParticipantMetadata {
+  participantId: string;
+  participantName?: string;
+  processId: string;
+  processName?: string;
+  elementIds: string[];
+  laneHierarchy: LaneMetadata[];
 }
 
 // ============================================================================

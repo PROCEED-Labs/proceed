@@ -19,6 +19,26 @@ import {
 import { extractSourceId } from '../utils/reference-extractor';
 
 /**
+ * Add lane and participant metadata to a gantt element if present in the BPMN element
+ */
+function addLaneMetadata(ganttElement: GanttElementType, bpmnElement: BPMNFlowElement): void {
+  // Add lane metadata
+  const laneMetadata = (bpmnElement as any)._laneMetadata;
+  if (laneMetadata) {
+    ganttElement.laneId = laneMetadata.laneId;
+    ganttElement.laneName = laneMetadata.laneName;
+    ganttElement.laneLevel = laneMetadata.laneLevel;
+  }
+
+  // Add participant metadata
+  const participantMetadata = (bpmnElement as any)._participantMetadata;
+  if (participantMetadata) {
+    (ganttElement as any).participantId = participantMetadata.participantId;
+    (ganttElement as any).participantName = participantMetadata.participantName;
+  }
+}
+
+/**
  * Base transformation context shared by all element types
  */
 export interface TransformationContext {
@@ -45,6 +65,11 @@ export interface ElementTransformationStrategy<
    * Transform the element using type-specific logic
    */
   transform(context: TransformationContext & { element: T }): R;
+
+  /**
+   * Add lane and participant metadata to the transformed element
+   */
+  addLaneMetadata?(ganttElement: GanttElementType, bpmnElement: BPMNFlowElement): void;
 
   /**
    * Get the element type string for this element
@@ -80,7 +105,7 @@ export class TaskTransformationStrategy
   transform(context: TransformationContext & { element: BPMNTask }): GanttElementType {
     const { element, startTime, duration, color } = context;
 
-    return {
+    const ganttElement: GanttElementType = {
       id: element.id,
       name: element.name,
       type: 'task',
@@ -89,6 +114,11 @@ export class TaskTransformationStrategy
       elementType: this.getElementTypeString(element),
       color,
     };
+
+    // Add lane metadata if present
+    addLaneMetadata(ganttElement, element);
+
+    return ganttElement;
   }
 
   getElementTypeString(element: BPMNTask): string {
@@ -140,14 +170,22 @@ export class EventTransformationStrategy
       const attachedToId =
         (timing as any)?.attachedToId || extractSourceId((element as any).attachedToRef);
 
-      return {
+      const boundaryElement = {
         ...baseElement,
         // Boundary event specific properties
         isBoundaryEvent: true,
         attachedToId,
         cancelActivity: (element as any).cancelActivity !== false, // Default to true if not specified
       };
+
+      // Add lane metadata if present
+      addLaneMetadata(boundaryElement, element);
+
+      return boundaryElement;
     }
+
+    // Add lane metadata if present
+    addLaneMetadata(baseElement, element);
 
     return baseElement;
   }
@@ -180,7 +218,7 @@ export class GatewayTransformationStrategy
   transform(context: TransformationContext & { element: BPMNGateway }): GanttElementType {
     const { element, startTime, duration, color } = context;
 
-    return {
+    const ganttElement: GanttElementType = {
       id: element.id,
       name: element.name,
       type: 'milestone', // Always render as milestone
@@ -189,6 +227,11 @@ export class GatewayTransformationStrategy
       elementType: this.getElementTypeString(element),
       color,
     };
+
+    // Add lane metadata if present
+    addLaneMetadata(ganttElement, element);
+
+    return ganttElement;
   }
 
   getElementTypeString(element: BPMNGateway): string {
@@ -215,7 +258,7 @@ export class SubProcessTransformationStrategy
   transform(context: TransformationContext & { element: any }): GanttElementType {
     const { element, startTime, duration, color } = context;
 
-    return {
+    const ganttElement: GanttElementType = {
       id: element.id,
       name: element.name,
       type: 'group',
@@ -229,6 +272,11 @@ export class SubProcessTransformationStrategy
       isSubProcess: true,
       hasChildren: (context as any).hasChildren || true,
     };
+
+    // Add lane metadata if present
+    addLaneMetadata(ganttElement, element);
+
+    return ganttElement;
   }
 
   getElementTypeString(element: any): string {

@@ -35,7 +35,6 @@ import {
   isSubProcessExpanded,
 } from './process-model';
 
-
 /**
  * Calculate element timings using scoped hierarchical traversal
  */
@@ -56,11 +55,20 @@ export function calculateScopedTimings(
     severity: 'warning' | 'error';
   }>;
 } {
-  // Step 1: Flatten elements to include sub-process children
-  const flattenedElements = flattenExpandedSubProcesses(elements);
+  // Step 1: Check if elements are already flattened (have hierarchyLevel property)
+  // If collaborative processing already flattened sub-processes, skip this step
+  const alreadyFlattened = elements.some((el) => (el as any).hierarchyLevel !== undefined);
+  const flattenedElements = alreadyFlattened
+    ? elements // Use elements as-is if already processed by collaboration helpers
+    : flattenExpandedSubProcesses(elements); // Otherwise flatten them now
 
   // Step 2: Build hierarchical scopes
   const rootScope = buildScopes(flattenedElements);
+
+  // Get sequence flows from the root scope elements
+  const sequenceFlowsInScope = Array.from(rootScope.elements.values()).filter(
+    (el) => el.$type === 'bpmn:SequenceFlow',
+  );
 
   // Step 3: Create shared instance counter to eliminate global state
   const instanceCounter = { value: 0 };
@@ -94,6 +102,7 @@ export function calculateScopedTimings(
 
   // Collect dependencies from all instances (including nested ones)
   const flatInstances = flattenInstances(rootInstances);
+
   flatInstances.forEach((instance) => {
     allDependencies.push(...instance.dependencies);
   });

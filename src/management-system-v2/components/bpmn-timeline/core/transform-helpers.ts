@@ -29,16 +29,68 @@ export interface ProcessValidationResult {
   supportedElements: BPMNFlowElement[];
   issues: TransformationIssue[];
   process: any;
+  participants: import('../types/types').ParticipantMetadata[];
+  hasCollaboration: boolean;
+  allElements: import('../types/types').BPMNFlowElement[];
+  messageFlows: import('../types/types').BPMNMessageFlow[];
 }
 
 /**
  * Validate and extract process from BPMN definitions
+ * Now handles collaborations with multiple participants/processes
  */
 export function validateAndExtractProcess(definitions: BPMNDefinitions): ProcessValidationResult {
   const issues: TransformationIssue[] = [];
 
-  // Get the first process (main process)
-  const process = definitions.rootElements?.[0];
+  // Import collaboration helper
+  const { parseCollaboration } = require('../utils/collaboration-helpers');
+
+  // Parse collaboration structure
+  const collaborationResult = parseCollaboration(definitions);
+
+  if (collaborationResult.hasCollaboration) {
+    // Multi-process collaboration
+    return {
+      supportedElements: [],
+      issues,
+      process: null, // No single process in collaboration
+      participants: collaborationResult.participants,
+      hasCollaboration: true,
+      allElements: collaborationResult.allElements,
+      messageFlows: collaborationResult.messageFlows,
+    };
+  }
+
+  // Single process fallback (existing logic)
+  let process = null;
+
+  // First try: definitions.rootElements array (standard structure)
+  if (definitions.rootElements && Array.isArray(definitions.rootElements)) {
+    process = definitions.rootElements.find((element: any) => element.$type === 'bpmn:Process');
+  }
+
+  // Second try: definitions.rootElement (single root)
+  if (!process && (definitions as any).rootElement) {
+    const rootElement = (definitions as any).rootElement;
+    if (rootElement.$type === 'bpmn:Process') {
+      process = rootElement;
+    } else if (rootElement.rootElements && Array.isArray(rootElement.rootElements)) {
+      process = rootElement.rootElements.find((element: any) => element.$type === 'bpmn:Process');
+    }
+  }
+
+  // Third try: direct process check (definitions might be the process itself)
+  if (!process && (definitions as any).$type === 'bpmn:Process') {
+    process = definitions as any;
+  }
+
+  // Fourth try: definitions might be Definitions type with rootElements
+  if (!process && definitions.$type === 'bpmn:Definitions' && (definitions as any).rootElements) {
+    process = (definitions as any).rootElements.find(
+      (element: any) => element.$type === 'bpmn:Process',
+    );
+  }
+
   if (!process || process.$type !== 'bpmn:Process') {
     issues.push({
       elementId: 'root',
@@ -46,10 +98,26 @@ export function validateAndExtractProcess(definitions: BPMNDefinitions): Process
       reason: 'No valid process found in definitions',
       severity: 'error',
     });
-    return { supportedElements: [], issues, process: null };
+    return {
+      supportedElements: [],
+      issues,
+      process: null,
+      participants: [],
+      hasCollaboration: false,
+      allElements: [],
+      messageFlows: [],
+    };
   }
 
-  return { supportedElements: [], issues, process };
+  return {
+    supportedElements: [],
+    issues,
+    process,
+    participants: collaborationResult.participants,
+    hasCollaboration: false,
+    allElements: collaborationResult.allElements,
+    messageFlows: collaborationResult.messageFlows,
+  };
 }
 
 /**
@@ -331,7 +399,9 @@ export function filterDependenciesForVisibleElements(
     const directDependencies = ganttDependencies.filter((dep) => {
       const bothVisible = isElementVisible(dep.sourceId) && isElementVisible(dep.targetId);
       const isGhost = dep.isGhost;
-      return bothVisible || isGhost; // Keep if both visible OR if it's a ghost dependency
+      const keep = bothVisible || isGhost; // Keep if both visible OR if it's a ghost dependency
+
+      return keep;
     });
 
     return [...directDependencies, ...bypassDependencies];

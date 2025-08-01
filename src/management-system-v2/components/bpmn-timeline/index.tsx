@@ -180,7 +180,14 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         }
 
         // Check for special gateways in the process
-        const bpmnProcess = (definitions as BPMNDefinitions).rootElements?.[0];
+        // Handle different BPMN definition structures
+        let bpmnProcess = null;
+        if (definitions.$type === 'bpmn:Definitions' && definitions.rootElements) {
+          bpmnProcess = definitions.rootElements.find((el: any) => el.$type === 'bpmn:Process');
+        } else if (definitions.$type === 'bpmn:Process') {
+          bpmnProcess = definitions;
+        }
+
         const hasInclusive =
           bpmnProcess?.flowElements?.some(
             (element: any) => element.$type === 'bpmn:InclusiveGateway',

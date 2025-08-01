@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { Button, Modal } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useGanttChart } from '../hooks/useGanttChart';
-import { GanttChartOptions, GanttDependency, GanttElementType } from '../types';
+import { GanttChartOptions, GanttDependency, GanttElementType, GanttGroup } from '../types';
 import {
   CanvasRenderer,
   CanvasLayerType,
@@ -17,6 +17,24 @@ import { ROW_HEIGHT } from '../core/constants';
 
 // Import CSS module
 import styles from './GanttChartCanvas.module.scss';
+
+// Helper function to format dependency type for display
+const formatDependencyType = (dep: GanttDependency): string => {
+  // For message flows, show "Message Flow" instead of the technical type
+  if (dep.flowType === 'message') {
+    return 'Message Flow';
+  }
+
+  // For other dependency types, format them nicely
+  switch (dep.type) {
+    case 'start-to-start':
+      return 'Start to Start';
+    case 'finish-to-start':
+      return 'Finish to Start';
+    default:
+      return dep.type || 'Unknown';
+  }
+};
 
 interface GanttChartCanvasProps {
   elements: GanttElementType[];
@@ -108,7 +126,26 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
       }
       return 'Milestone';
     } else if (baseType === 'group') {
-      return 'Group/Summary Task';
+      // Check for specific group types
+      if ((element as any).isParticipantHeader) {
+        return 'Participant';
+      } else if ((element as any).isLaneHeader) {
+        return 'Lane';
+      } else if ((element as any).isSubProcess) {
+        // Check specific sub-process types
+        if (elementType === 'AdHocSubProcess') {
+          return 'Ad Hoc Sub-Process';
+        } else if (elementType === 'SubProcess') {
+          return 'Sub-Process';
+        } else if (elementType === 'Transaction') {
+          return 'Transaction';
+        } else if (elementType && elementType.includes('SubProcess')) {
+          return elementType.replace(/([A-Z])/g, ' $1').trim();
+        }
+        return 'Sub-Process';
+      }
+      // Default group fallback
+      return elementType || 'Group';
     }
 
     // Fallback
@@ -209,12 +246,9 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
                     <div>{displayName}</div>
                     <div style={{ color: '#666', fontSize: '12px' }}>
                       <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
-                      {dep.flowType && dep.flowType !== 'normal' && (
-                        <span style={{ marginLeft: '4px', color: '#1890ff' }}>
-                          [{dep.flowType}]
-                        </span>
-                      )}
-                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
+                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>
+                        ({formatDependencyType(dep)})
+                      </span>
                     </div>
                   </div>
                 );
@@ -251,12 +285,9 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
                     <div>{displayName}</div>
                     <div style={{ color: '#666', fontSize: '12px' }}>
                       <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
-                      {dep.flowType && dep.flowType !== 'normal' && (
-                        <span style={{ marginLeft: '4px', color: '#1890ff' }}>
-                          [{dep.flowType}]
-                        </span>
-                      )}
-                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
+                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>
+                        ({formatDependencyType(dep)})
+                      </span>
                     </div>
                   </div>
                 );
@@ -329,21 +360,54 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       // Create a set of all elements that should be hidden
       const hiddenElements = new Set<string>();
 
-      // For each collapsed sub-process, find all its children
-      collapsedSubProcesses.forEach((subProcessId) => {
-        const addChildrenToHidden = (parentId: string) => {
-          elements.forEach((el) => {
-            const elementParentId = (el as any).parentSubProcessId;
-            if (elementParentId === parentId) {
-              hiddenElements.add(el.id);
-              // Recursively hide children of sub-processes
-              if ((el as any).isSubProcess || el.type === 'group') {
-                addChildrenToHidden(el.id);
+      // For each collapsed sub-process or lane, find all its children
+      collapsedSubProcesses.forEach((collapsedId) => {
+        const collapsedElement = elements.find((el) => el.id === collapsedId);
+
+        // Handle lane headers and participant headers - they use childIds
+        if (
+          collapsedElement &&
+          ((collapsedElement as any).isLaneHeader ||
+            (collapsedElement as any).isParticipantHeader) &&
+          collapsedElement.type === 'group'
+        ) {
+          const group = collapsedElement as GanttGroup;
+
+          // Recursively hide all descendants
+          const hideAllDescendants = (groupElement: GanttElementType) => {
+            if (groupElement.type === 'group') {
+              const groupData = groupElement as GanttGroup;
+              if (groupData.childIds) {
+                groupData.childIds.forEach((childId: string) => {
+                  hiddenElements.add(childId);
+
+                  // Find the child element and recursively hide its descendants
+                  const childElement = elements.find((el) => el.id === childId);
+                  if (childElement && childElement.type === 'group') {
+                    hideAllDescendants(childElement);
+                  }
+                });
               }
             }
-          });
-        };
-        addChildrenToHidden(subProcessId);
+          };
+
+          hideAllDescendants(group);
+        } else {
+          // Regular sub-process handling
+          const addChildrenToHidden = (parentId: string) => {
+            elements.forEach((el) => {
+              const elementParentId = (el as any).parentSubProcessId;
+              if (elementParentId === parentId) {
+                hiddenElements.add(el.id);
+                // Recursively hide children of sub-processes
+                if ((el as any).isSubProcess || el.type === 'group') {
+                  addChildrenToHidden(el.id);
+                }
+              }
+            });
+          };
+          addChildrenToHidden(collapsedId);
+        }
       });
 
       // Return only elements that are not hidden
@@ -381,39 +445,78 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
           // Select the clicked element
           newSelection.add(elementId);
 
-          // If the clicked element is a sub-process, also select all its children
+          // If the clicked element is a sub-process, lane header, or participant header, also select all its children
           if (
             clickedElement &&
             clickedElement.type === 'group' &&
-            (clickedElement as any).isSubProcess
+            ((clickedElement as any).isSubProcess ||
+              (clickedElement as any).isLaneHeader ||
+              (clickedElement as any).isParticipantHeader)
           ) {
-            // Find child elements that belong to this specific sub-process instance
-            const childElements = filteredElements.filter((el) => {
-              const parentId = (el as any).parentSubProcessId;
-              return parentId === elementId;
-            });
+            // Handle lane headers and participant headers - they use childIds but need recursive selection
+            if (
+              (clickedElement as any).isLaneHeader ||
+              (clickedElement as any).isParticipantHeader
+            ) {
+              const group = clickedElement as GanttGroup;
 
-            // Also recursively select children of sub-process children (nested sub-processes)
-            const getAllDescendants = (parentId: string): string[] => {
-              const directChildren = filteredElements.filter((el) => {
-                const elParentId = (el as any).parentSubProcessId;
-                return elParentId === parentId;
-              });
+              // Recursively select all descendants for proper hierarchical selection
+              const getAllDescendantsFromGroup = (groupElement: GanttElementType): string[] => {
+                const descendants: string[] = [];
 
-              let allDescendants: string[] = [];
-              directChildren.forEach((child) => {
-                allDescendants.push(child.id);
-                // If this child is also a sub-process, get its children too
-                if (child.type === 'group' && (child as any).isSubProcess) {
-                  allDescendants = allDescendants.concat(getAllDescendants(child.id));
+                if (groupElement.type === 'group') {
+                  const groupData = groupElement as GanttGroup;
+                  if (groupData.childIds) {
+                    groupData.childIds.forEach((childId: string) => {
+                      descendants.push(childId);
+
+                      // Find the child element and recursively get its descendants
+                      const childElement = filteredElements.find((el) => el.id === childId);
+                      if (childElement && childElement.type === 'group') {
+                        // For child groups (lane headers), add them AND their descendants
+                        const childDescendants = getAllDescendantsFromGroup(childElement);
+                        descendants.push(...childDescendants);
+                      }
+                    });
+                  }
                 }
+
+                return descendants;
+              };
+
+              const allDescendants = getAllDescendantsFromGroup(group);
+              allDescendants.forEach((descendantId) => {
+                newSelection.add(descendantId);
+              });
+            } else {
+              // Find child elements that belong to this specific sub-process instance
+              const childElements = filteredElements.filter((el) => {
+                const parentId = (el as any).parentSubProcessId;
+                return parentId === elementId;
               });
 
-              return allDescendants;
-            };
+              // Also recursively select children of sub-process children (nested sub-processes)
+              const getAllDescendants = (parentId: string): string[] => {
+                const directChildren = filteredElements.filter((el) => {
+                  const elParentId = (el as any).parentSubProcessId;
+                  return elParentId === parentId;
+                });
 
-            const allDescendantIds = getAllDescendants(elementId);
-            allDescendantIds.forEach((descendantId) => newSelection.add(descendantId));
+                let allDescendants: string[] = [];
+                directChildren.forEach((child) => {
+                  allDescendants.push(child.id);
+                  // If this child is also a sub-process, get its children too
+                  if (child.type === 'group' && (child as any).isSubProcess) {
+                    allDescendants = allDescendants.concat(getAllDescendants(child.id));
+                  }
+                });
+
+                return allDescendants;
+              };
+
+              const allDescendantIds = getAllDescendants(elementId);
+              allDescendantIds.forEach((descendantId) => newSelection.add(descendantId));
+            }
           }
 
           return newSelection;
@@ -1138,9 +1241,11 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                         top: `${i * ROW_HEIGHT}px`,
                         backgroundColor: isSelected
                           ? 'rgba(24, 144, 255, 0.1)'
-                          : element.type === 'group'
-                            ? 'rgba(114, 46, 209, 0.1)'
-                            : undefined,
+                          : (element as any).isLaneHeader
+                            ? 'rgba(230, 247, 255, 0.6)'
+                            : element.type === 'group'
+                              ? 'rgba(50, 205, 50, 0.1)'
+                              : undefined,
                         cursor: 'pointer',
                       }}
                       onClick={() => handleElementClick(element.id)}
@@ -1170,31 +1275,32 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                               alignItems: 'center',
                             }}
                           >
-                            {/* Collapse/expand button for sub-processes */}
-                            {element.type === 'group' && (element as any).isSubProcess && (
-                              <Button
-                                type="text"
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleSubProcessCollapse(element.id);
-                                }}
-                                style={{
-                                  padding: '0',
-                                  width: '12px',
-                                  height: '12px',
-                                  minWidth: '12px',
-                                  marginRight: '6px',
-                                  fontSize: '8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  lineHeight: '1',
-                                }}
-                              >
-                                {collapsedSubProcesses.has(element.id) ? '▶' : '▼'}
-                              </Button>
-                            )}
+                            {/* Collapse/expand button for sub-processes and lane headers */}
+                            {element.type === 'group' &&
+                              ((element as any).isSubProcess || (element as any).isLaneHeader) && (
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleSubProcessCollapse(element.id);
+                                  }}
+                                  style={{
+                                    padding: '0',
+                                    width: '12px',
+                                    height: '12px',
+                                    minWidth: '12px',
+                                    marginRight: '6px',
+                                    fontSize: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    lineHeight: '1',
+                                  }}
+                                >
+                                  {collapsedSubProcesses.has(element.id) ? '▶' : '▼'}
+                                </Button>
+                              )}
                             {element.name || `<${element.id}>`}
                           </span>
                           {element.type === 'group' &&

@@ -40,7 +40,9 @@ import {
   detectGhostDependenciesThroughGateways,
 } from './transform-helpers';
 import { calculateScopedTimings } from './scoped-traversal';
-import { createBoundaryEventMapping } from '../utils/utils';
+import { createBoundaryEventMapping, flattenExpandedSubProcesses } from '../utils/utils';
+import { parseLaneHierarchy, annotateElementsWithLanes } from '../utils/lane-helpers';
+import { transformMessageFlows } from '../utils/collaboration-helpers';
 
 /**
  * Transform BPMN process to Gantt chart data
@@ -73,39 +75,67 @@ export function transformBPMNToGantt(
   const issues: TransformationIssue[] = [];
   const defaultDurations: DefaultDurationInfo[] = [];
 
-  // Validate and extract process
-  const { process } = validateAndExtractProcess(definitions);
-  if (!process) {
-    issues.push({
-      elementId: 'root',
-      elementType: 'Process',
-      reason: 'No valid process found in definitions',
-      severity: 'error',
-    });
-    return createEmptyResult(issues, defaultDurations);
+  // Validate and extract process or collaboration
+  const { process, participants, hasCollaboration, allElements, messageFlows } =
+    validateAndExtractProcess(definitions);
+
+  let elementsWithLanes: BPMNFlowElement[];
+  let laneHierarchy: any[] = [];
+
+  if (hasCollaboration) {
+    // Use elements from collaboration (already includes participant and lane metadata)
+    elementsWithLanes = allElements;
+    // Extract lane hierarchy from all participants
+    laneHierarchy = participants.flatMap((p) => p.laneHierarchy);
+  } else {
+    if (!process) {
+      issues.push({
+        elementId: 'root',
+        elementType: 'Process',
+        reason: 'No valid process found in definitions',
+        severity: 'error',
+      });
+      return createEmptyResult(issues, defaultDurations);
+    }
+
+    // Parse lane metadata if present in single process
+    laneHierarchy =
+      process.laneSets && Array.isArray(process.laneSets)
+        ? parseLaneHierarchy(process.laneSets)
+        : [];
+
+    // CRITICAL FIX: Flatten sub-processes BEFORE adding lane metadata (same as collaboration path)
+    // This ensures sub-process children are included in the supported elements for path traversal
+    const flattenedElements = flattenExpandedSubProcesses(process.flowElements);
+
+    // Annotate flattened elements with lane information (pure metadata, no execution impact)
+    elementsWithLanes = annotateElementsWithLanes(flattenedElements, laneHierarchy);
   }
 
   // Detect and report gateway issues
-  const gatewayIssues = detectAndReportGatewayIssues(process.flowElements, renderGateways);
+  const gatewayIssues = detectAndReportGatewayIssues(elementsWithLanes, renderGateways);
   issues.push(...gatewayIssues);
 
   // Separate supported and unsupported elements
-  const { supportedElements, issues: elementIssues } = separateSupportedElements(
-    process.flowElements,
-  );
+  const { supportedElements, issues: elementIssues } = separateSupportedElements(elementsWithLanes);
   issues.push(...elementIssues);
 
   // Store original elements for color assignment (before any sub-process flattening)
-  const originalElementsForColorAssignment = process.flowElements;
+  const originalElementsForColorAssignment = elementsWithLanes;
 
   // Extract informational artifacts (annotations, data objects, etc.)
   // Note: Some artifacts might be outside flowElements (e.g., in artifacts array)
-  const allElementsForArtifacts = [
-    ...(process.flowElements || []),
-    ...(process.artifacts || []),
-    ...(process.ioSpecification?.dataInputs || []),
-    ...(process.ioSpecification?.dataOutputs || []),
-  ];
+  const allElementsForArtifacts = hasCollaboration
+    ? [
+        // For collaborations, we already have all elements in elementsWithLanes
+        ...elementsWithLanes,
+      ]
+    : [
+        ...(process?.flowElements || []),
+        ...(process?.artifacts || []),
+        ...(process?.ioSpecification?.dataInputs || []),
+        ...(process?.ioSpecification?.dataOutputs || []),
+      ];
 
   const informationalArtifacts = extractInformationalArtifacts(allElementsForArtifacts);
 
@@ -160,6 +190,22 @@ export function transformBPMNToGantt(
     boundaryEventMapping,
   );
 
+  // CRITICAL FIX: Inherit lane metadata for instance elements
+  // This must happen after mode handling but before grouping
+  modeResult.ganttElements.forEach((ganttElement) => {
+    if (ganttElement.id.includes('_instance_')) {
+      const baseElementId = ganttElement.id.split('_instance_')[0];
+      const baseElement = elementsWithLanes.find((el) => el.id === baseElementId);
+      if (baseElement && (baseElement as any)._laneMetadata) {
+        (ganttElement as any)._laneMetadata = {
+          laneId: (baseElement as any)._laneMetadata.laneId,
+          laneName: (baseElement as any)._laneMetadata.laneName,
+          laneLevel: (baseElement as any)._laneMetadata.laneLevel,
+        };
+      }
+    }
+  });
+
   // Check for ghost dependencies through gateways (unsupported)
   // This check should run regardless of renderGateways setting, as the warning is about the data model
   if (effectiveShowGhostDependencies) {
@@ -172,18 +218,33 @@ export function transformBPMNToGantt(
     issues.push(...ghostGatewayIssues);
   }
 
-  // Group and sort elements by connected components and start time
+  // Group and sort elements first - this creates participant headers
+  const hasLanes = laneHierarchy.length > 0;
+
   const sortedElements = groupAndSortElements(
     modeResult.ganttElements,
     modeResult.elementToComponent,
     chronologicalSorting,
-    modeResult.ganttDependencies,
+    hasLanes,
+    modeResult.ganttDependencies, // Use regular dependencies for initial sorting
+    hasCollaboration ? participants : undefined,
+    laneHierarchy,
   );
 
-  // Filter dependencies to only include visible elements
+  // Transform message flows into dependencies (only if collaboration exists)
+  // This must happen AFTER groupAndSortElements so participant headers exist
+  const messageDependencies =
+    hasCollaboration && messageFlows.length > 0
+      ? transformMessageFlows(messageFlows, sortedElements, participants)
+      : [];
+
+  // Combine regular dependencies with message flow dependencies
+  const allDependencies = [...modeResult.ganttDependencies, ...messageDependencies];
+
+  // Filter dependencies to only include visible elements (including lane headers)
   const finalDependencies = filterDependenciesForVisibleElements(
-    modeResult.ganttDependencies,
-    modeResult.ganttElements,
+    allDependencies,
+    sortedElements, // Use sortedElements which includes lane headers
     renderGateways,
   );
 

@@ -157,12 +157,11 @@ export function flattenExpandedSubProcesses(
   elements.forEach((element) => {
     if (isExpandedSubProcess(element)) {
       // Add the sub-process itself with hierarchy info
-      const subProcessWithHierarchy = {
-        ...element,
-        hierarchyLevel,
-        parentSubProcessId: parentId,
-        isExpandedSubProcess: true,
-      };
+      // CRITICAL FIX: Preserve all existing metadata (participant, lane) while adding hierarchy
+      const subProcessWithHierarchy = element; // Don't use spread to avoid losing metadata
+      (subProcessWithHierarchy as any).hierarchyLevel = hierarchyLevel;
+      (subProcessWithHierarchy as any).parentSubProcessId = parentId;
+      (subProcessWithHierarchy as any).isExpandedSubProcess = true;
       flattened.push(subProcessWithHierarchy);
 
       // Recursively flatten child elements with increased hierarchy level
@@ -177,18 +176,22 @@ export function flattenExpandedSubProcesses(
       }
     } else {
       // Regular element, add hierarchy info if it's inside a sub-process
-      // For boundary events, explicitly preserve the attachedToRef property
-      // For sequence flows, explicitly preserve the sourceRef and targetRef properties
-      const elementWithHierarchy = {
-        ...element,
-        hierarchyLevel,
-        parentSubProcessId: parentId,
-        // Explicitly preserve attachedToRef for boundary events
-        ...(element.attachedToRef && { attachedToRef: element.attachedToRef }),
-        // Explicitly preserve sourceRef and targetRef for sequence flows
-        ...(element.sourceRef && { sourceRef: element.sourceRef }),
-        ...(element.targetRef && { targetRef: element.targetRef }),
-      };
+      // CRITICAL FIX: Preserve all existing metadata (participant, lane) while adding hierarchy
+      const elementWithHierarchy = element; // Don't use spread to avoid losing metadata
+      (elementWithHierarchy as any).hierarchyLevel = hierarchyLevel;
+      (elementWithHierarchy as any).parentSubProcessId = parentId;
+
+      // Explicitly preserve critical BPMN properties that might get lost
+      if (element.attachedToRef) {
+        (elementWithHierarchy as any).attachedToRef = element.attachedToRef;
+      }
+      if (element.sourceRef) {
+        (elementWithHierarchy as any).sourceRef = element.sourceRef;
+      }
+      if (element.targetRef) {
+        (elementWithHierarchy as any).targetRef = element.targetRef;
+      }
+
       flattened.push(elementWithHierarchy);
     }
   });
@@ -545,11 +548,17 @@ export function groupAndSortElements<
     elementType?: string;
     isBoundaryEvent?: boolean;
     attachedToId?: string;
+    laneId?: string;
+    laneName?: string;
+    laneLevel?: number;
+    participantId?: string;
+    participantName?: string;
   },
 >(
   elements: T[],
   elementToComponent: Map<string, number>,
   chronologicalSorting: boolean = false,
+  groupByLanes: boolean = false,
   dependencies?: Array<{
     sourceId?: string;
     targetId?: string;
@@ -557,17 +566,45 @@ export function groupAndSortElements<
     targetInstanceId?: string;
     flowId?: string;
   }>,
+  participants?: Array<{
+    participantId: string;
+    participantName?: string;
+    elementIds: string[];
+    laneHierarchy: any[];
+  }>,
+  laneHierarchy?: any[],
 ): T[] {
   // Separate boundary events from regular elements
   const boundaryEvents = elements.filter((el) => (el as any).isBoundaryEvent);
   const regularElements = elements.filter((el) => !(el as any).isBoundaryEvent);
 
-  // Group and sort elements with hierarchy-aware ordering
-  const sortedRegularElements = sortElementsWithHierarchy(
-    regularElements,
-    elementToComponent,
-    chronologicalSorting,
-  );
+  let sortedRegularElements: T[];
+
+  if (participants && participants.length > 0) {
+    // Group by participants first (highest level)
+    sortedRegularElements = groupElementsByParticipants(
+      regularElements,
+      elementToComponent,
+      chronologicalSorting,
+      participants,
+      groupByLanes,
+    );
+  } else if (groupByLanes) {
+    // Group by lanes first, then sort within each lane
+    sortedRegularElements = groupElementsByLanes(
+      regularElements,
+      elementToComponent,
+      chronologicalSorting,
+      laneHierarchy,
+    );
+  } else {
+    // Use existing logic - group by connected components
+    sortedRegularElements = sortElementsWithHierarchy(
+      regularElements,
+      elementToComponent,
+      chronologicalSorting,
+    );
+  }
 
   // Insert boundary events directly after their attached tasks
   const result = insertBoundaryEventsAfterTasks(
@@ -1345,4 +1382,557 @@ export function detectGatewayMismatches(
   });
 
   return mismatches;
+}
+
+// ============================================================================
+// Lane-Based Grouping Functions
+// ============================================================================
+
+/**
+ * Helper function to recursively calculate lane bounds from all its children
+ */
+function calculateLaneBounds<T extends { id: string; start: number }>(
+  lane: any,
+  laneGroups: Map<string, T[]>,
+): { start: number; end: number } {
+  let start = Infinity;
+  let end = -Infinity;
+
+  // Include bounds from direct lane elements
+  const laneElements = laneGroups.get(lane.laneId) || [];
+  if (laneElements.length > 0) {
+    start = Math.min(start, ...laneElements.map((el) => el.start));
+    end = Math.max(end, ...laneElements.map((el) => (el as any).end || el.start));
+  }
+
+  // Include bounds from child lanes recursively
+  if (lane.childLanes && lane.childLanes.length > 0) {
+    for (const childLane of lane.childLanes) {
+      const childBounds = calculateLaneBounds(childLane, laneGroups);
+      if (childBounds.start !== Infinity && childBounds.end !== -Infinity) {
+        start = Math.min(start, childBounds.start);
+        end = Math.max(end, childBounds.end);
+      }
+    }
+  }
+
+  return { start, end };
+}
+
+/**
+ * Group elements by their lane assignment, maintaining hierarchy within lanes
+ */
+function groupElementsByLanes<
+  T extends {
+    id: string;
+    start: number;
+    elementType?: string;
+    laneId?: string;
+    laneName?: string;
+    laneLevel?: number;
+  },
+>(
+  elements: T[],
+  elementToComponent: Map<string, number>,
+  chronologicalSorting: boolean = false,
+  laneHierarchy?: any[],
+  participantBounds?: { start: number; end: number },
+): T[] {
+  const result: T[] = [];
+
+  // Group elements by lane
+  const laneGroups = new Map<string, T[]>();
+  const unlanedElements: T[] = [];
+
+  elements.forEach((element) => {
+    // Check for lane metadata in the new format (_laneMetadata) or old format (laneId)
+    const laneId = (element as any)._laneMetadata?.laneId || element.laneId;
+    if (laneId) {
+      if (!laneGroups.has(laneId)) {
+        laneGroups.set(laneId, []);
+      }
+      laneGroups.get(laneId)!.push(element);
+    } else {
+      unlanedElements.push(element);
+    }
+  });
+
+  // Sort lane groups by level (top-level lanes first, then nested)
+  const sortedLaneIds = Array.from(laneGroups.keys()).sort((a, b) => {
+    const elementsA = laneGroups.get(a)!;
+    const elementsB = laneGroups.get(b)!;
+    const levelA = (elementsA[0] as any)?._laneMetadata?.laneLevel || elementsA[0]?.laneLevel || 0;
+    const levelB = (elementsB[0] as any)?._laneMetadata?.laneLevel || elementsB[0]?.laneLevel || 0;
+
+    // Primary sort: lane level (0 = top level first)
+    if (levelA !== levelB) {
+      return levelA - levelB;
+    }
+
+    // Secondary sort: lane name alphabetically
+    const nameA = elementsA[0]?.laneName || elementsA[0]?.laneId || '';
+    const nameB = elementsB[0]?.laneName || elementsB[0]?.laneId || '';
+    return nameA.localeCompare(nameB);
+  });
+
+  // Add unlaned elements first if any
+  if (unlanedElements.length > 0) {
+    const sortedUnlaned = sortElementsWithHierarchy(
+      unlanedElements,
+      elementToComponent,
+      chronologicalSorting,
+    );
+    result.push(...sortedUnlaned);
+  }
+
+  // Generate hierarchical colors for lane levels
+  const generateLaneColor = (level: number): string => {
+    const colors = [
+      '#91d5ff', // Level 0: Medium blue (was very light)
+      '#69c0ff', // Level 1: Darker blue (was light)
+      '#40a9ff', // Level 2: Even darker blue (was medium)
+      '#1890ff', // Level 3: Primary blue (was darker)
+      '#096dd9', // Level 4: Deep blue (was even darker)
+      '#0050b3', // Level 5+: Very deep blue (was primary)
+    ];
+    return colors[Math.min(level, colors.length - 1)];
+  };
+
+  // If we have lane hierarchy, create headers for ALL lanes (including parent-only lanes)
+  if (laneHierarchy && laneHierarchy.length > 0) {
+    // Process a single lane with proper parent-child relationships
+    function processLaneHierarchically(lane: any, level: number, parentLaneId?: string): T[] {
+      const laneResult: T[] = [];
+
+      const laneElements = laneGroups.get(lane.laneId) || [];
+
+      // Calculate time bounds for this lane
+      let laneStart: number;
+      let laneEnd: number;
+
+      // If participant bounds are provided, lanes should span the full participant duration
+      if (participantBounds) {
+        laneStart = participantBounds.start;
+        laneEnd = participantBounds.end;
+      } else {
+        // Calculate bounds based on own children (standalone lane scenario)
+        laneStart = Infinity;
+        laneEnd = -Infinity;
+
+        // Include bounds from direct lane elements
+        if (laneElements.length > 0) {
+          laneStart = Math.min(laneStart, ...laneElements.map((el) => el.start));
+          laneEnd = Math.max(laneEnd, ...laneElements.map((el) => (el as any).end || el.start));
+        }
+
+        // Include bounds from child lanes recursively
+        if (lane.childLanes && lane.childLanes.length > 0) {
+          for (const childLane of lane.childLanes) {
+            const childBounds = calculateLaneBounds(childLane, laneGroups);
+            if (childBounds.start !== Infinity && childBounds.end !== -Infinity) {
+              laneStart = Math.min(laneStart, childBounds.start);
+              laneEnd = Math.max(laneEnd, childBounds.end);
+            }
+          }
+        }
+
+        // Fallback to all process elements only if this lane has no content at all
+        if (laneStart === Infinity || laneEnd === -Infinity) {
+          const allProcessElements = elements.filter(
+            (el) => !(el as any).isLaneHeader && !(el as any).isParticipantHeader,
+          );
+          if (allProcessElements.length > 0) {
+            laneStart = Math.min(...allProcessElements.map((el) => el.start));
+            laneEnd = Math.max(...allProcessElements.map((el) => (el as any).end || el.start));
+          } else {
+            laneStart = 0;
+            laneEnd = 0;
+          }
+        }
+      }
+
+      // Collect all child IDs for this lane
+      const allChildIds = [...laneElements.map((el) => el.id)];
+
+      // Add child lane headers to the child IDs
+      if (lane.childLanes && lane.childLanes.length > 0) {
+        lane.childLanes.forEach((childLane: any) => {
+          allChildIds.push(`lane-header-${childLane.laneId}`);
+          const childLaneElements = laneGroups.get(childLane.laneId) || [];
+          allChildIds.push(...childLaneElements.map((el) => el.id));
+        });
+      }
+
+      // CRITICAL FIX: Filter out sub-process children from lane childIds (hierarchical path)
+      // This prevents sub-process children from appearing at lane level
+      const filteredChildIds = allChildIds.filter((childId) => {
+        const childElement = elements.find((el) => el.id === childId);
+        if (childElement) {
+          const parentSubProcessId = (childElement as any).parentSubProcessId;
+          // Keep element if it has no parent sub-process or if its parent is this lane header
+          return !parentSubProcessId || parentSubProcessId === `lane-header-${lane.laneId}`;
+        }
+        return true;
+      });
+
+      // Create lane header with hierarchical color
+      const laneHeader = {
+        id: `lane-header-${lane.laneId}`,
+        name: lane.laneName || lane.laneId,
+        type: 'group' as const,
+        elementType: 'Lane',
+        start: laneStart,
+        end: laneEnd,
+        color: generateLaneColor(level), // Hierarchical color based on level
+        isLaneHeader: true,
+        laneId: lane.laneId,
+        laneName: lane.laneName,
+        laneLevel: level,
+        childIds: filteredChildIds,
+        isSubProcess: true,
+        hasChildren: filteredChildIds.length > 0,
+        hierarchyLevel: level,
+        isExpanded: true,
+        parentSubProcessId: parentLaneId, // Set parent relationship
+      } as unknown as T & { type: 'group'; isLaneHeader: boolean };
+
+      laneResult.push(laneHeader);
+
+      // Add direct elements for this lane
+      if (laneElements.length > 0) {
+        const sortedLaneElements = sortElementsWithHierarchy(
+          laneElements,
+          elementToComponent,
+          chronologicalSorting,
+        );
+
+        // Set parent-child relationship and hierarchy level for elements
+        sortedLaneElements.forEach((element) => {
+          // CRITICAL FIX: Only set lane header as parent if element doesn't already have a sub-process parent
+          // This preserves sub-process hierarchy within lanes
+          const existingParent = (element as any).parentSubProcessId;
+          if (!existingParent || existingParent.startsWith('lane-header-')) {
+            (element as any).parentSubProcessId = `lane-header-${lane.laneId}`;
+            (element as any).hierarchyLevel = level + 1; // Children are one level deeper than the lane
+          } else {
+            // Keep existing hierarchy level for sub-process children
+            // They maintain their original parent-child relationships within the lane
+          }
+        });
+
+        laneResult.push(...sortedLaneElements);
+      }
+
+      // Process child lanes recursively
+      if (lane.childLanes && lane.childLanes.length > 0) {
+        lane.childLanes.forEach((childLane: any) => {
+          const childResults = processLaneHierarchically(
+            childLane,
+            level + 1,
+            `lane-header-${lane.laneId}`,
+          );
+          laneResult.push(...childResults);
+        });
+      }
+
+      return laneResult;
+    }
+
+    // Process all top-level lanes with proper hierarchy
+    laneHierarchy.forEach((lane: any) => {
+      const laneResults = processLaneHierarchically(lane, 0);
+      result.push(...laneResults);
+    });
+  } else {
+    // Fallback to original logic if no hierarchy provided
+    sortedLaneIds.forEach((laneId) => {
+      const laneElements = laneGroups.get(laneId)!;
+      const firstElement = laneElements[0];
+
+      // Get lane metadata from first element (new format or old format)
+      const laneMetadata = (firstElement as any)?._laneMetadata;
+      const effectiveLaneId = laneMetadata?.laneId || firstElement?.laneId;
+      const effectiveLaneName = laneMetadata?.laneName || firstElement?.laneName;
+      const effectiveLaneLevel = laneMetadata?.laneLevel || firstElement?.laneLevel || 0;
+
+      if (effectiveLaneId) {
+        const laneHeader = {
+          id: `lane-header-${laneId}`,
+          name: effectiveLaneName || laneId,
+          type: 'group' as const,
+          elementType: 'Lane',
+          start: Math.min(...laneElements.map((el) => el.start)),
+          end: Math.max(...laneElements.map((el) => (el as any).end || el.start)),
+          color: generateLaneColor(effectiveLaneLevel), // Hierarchical color based on level
+          isLaneHeader: true,
+          laneId: effectiveLaneId,
+          laneName: effectiveLaneName,
+          laneLevel: effectiveLaneLevel,
+          childIds: (() => {
+            // DEBUG: Log lane elements before filtering
+            console.log(
+              'LANE ELEMENTS DEBUG:',
+              JSON.stringify({
+                laneId: effectiveLaneId,
+                totalElements: laneElements.length,
+                elements: laneElements.map((el) => ({
+                  id: el.id,
+                  name: (el as any).name,
+                  isExpandedSubProcess: (el as any).isExpandedSubProcess,
+                  parentSubProcessId: (el as any).parentSubProcessId,
+                  elementType: el.elementType,
+                  hasLaneMetadata: !!(el as any)._laneMetadata,
+                })),
+              }),
+            );
+
+            const filtered = laneElements.filter((el) => {
+              // Only include elements that are NOT children of sub-processes within this lane
+              // This prevents double-counting in participant line rendering
+              const hasSubProcessParent = laneElements.some(
+                (parentEl) =>
+                  parentEl.id !== el.id &&
+                  (parentEl as any).isExpandedSubProcess &&
+                  (el as any).parentSubProcessId === parentEl.id,
+              );
+
+              return !hasSubProcessParent;
+            });
+
+            return filtered.map((el) => el.id);
+          })(),
+          isSubProcess: false,
+          hasChildren: true,
+        } as unknown as T & { type: 'group'; isLaneHeader: boolean };
+
+        result.push(laneHeader);
+      }
+
+      const sortedLaneElements = sortElementsWithHierarchy(
+        laneElements,
+        elementToComponent,
+        chronologicalSorting,
+      );
+
+      // Set hierarchy level for lane child elements in fallback mode
+      const laneLevel = firstElement?.laneLevel || 0;
+      sortedLaneElements.forEach((element) => {
+        (element as any).hierarchyLevel = laneLevel + 1; // Children are one level deeper than the lane
+      });
+
+      result.push(...sortedLaneElements);
+    });
+  }
+
+  return result;
+}
+
+// ============================================================================
+// Participant-Based Grouping Functions
+// ============================================================================
+
+/**
+ * Group elements by their participant assignment, with optional lane grouping within participants
+ */
+function groupElementsByParticipants<
+  T extends {
+    id: string;
+    start: number;
+    elementType?: string;
+    laneId?: string;
+    laneName?: string;
+    laneLevel?: number;
+    participantId?: string;
+    participantName?: string;
+  },
+>(
+  elements: T[],
+  elementToComponent: Map<string, number>,
+  chronologicalSorting: boolean = false,
+  participants: Array<{
+    participantId: string;
+    participantName?: string;
+    elementIds: string[];
+    laneHierarchy: any[];
+  }>,
+  groupByLanes: boolean = false,
+): T[] {
+  const result: T[] = [];
+
+  // Group elements by participant
+  const participantGroups = new Map<string, T[]>();
+  const unparticipantedElements: T[] = [];
+
+  // Create lane groups for calculating lane bounds (needed for lane hierarchy bounds calculation)
+  const laneGroups = new Map<string, T[]>();
+
+  elements.forEach((element) => {
+    // Check if element has participant metadata
+    const participantMetadata = (element as any)._participantMetadata;
+    const participantId = participantMetadata?.participantId || element.participantId;
+
+    // Also populate lane groups for lane bounds calculation
+    if (element.laneId) {
+      if (!laneGroups.has(element.laneId)) {
+        laneGroups.set(element.laneId, []);
+      }
+      laneGroups.get(element.laneId)!.push(element);
+    }
+
+    if (participantId) {
+      if (!participantGroups.has(participantId)) {
+        participantGroups.set(participantId, []);
+      }
+      participantGroups.get(participantId)!.push(element);
+    } else {
+      // For elements without participant info, try to match by element ID
+      const baseElementId = element.id.split('_instance_')[0];
+      let foundParticipant = false;
+
+      for (const participant of participants) {
+        if (participant.elementIds.includes(baseElementId)) {
+          if (!participantGroups.has(participant.participantId)) {
+            participantGroups.set(participant.participantId, []);
+          }
+          participantGroups.get(participant.participantId)!.push(element);
+          foundParticipant = true;
+          break;
+        }
+      }
+
+      if (!foundParticipant) {
+        unparticipantedElements.push(element);
+      }
+    }
+  });
+
+  // Add unparticipanted elements first if any
+  if (unparticipantedElements.length > 0) {
+    const sortedUnparticipanted = groupByLanes
+      ? groupElementsByLanes(unparticipantedElements, elementToComponent, chronologicalSorting)
+      : sortElementsWithHierarchy(
+          unparticipantedElements,
+          elementToComponent,
+          chronologicalSorting,
+        );
+    result.push(...sortedUnparticipanted);
+  }
+
+  // Sort participants by name
+  const sortedParticipantIds = Array.from(participantGroups.keys()).sort((a, b) => {
+    const participantA = participants.find((p) => p.participantId === a);
+    const participantB = participants.find((p) => p.participantId === b);
+    const nameA = participantA?.participantName || participantA?.participantId || '';
+    const nameB = participantB?.participantName || participantB?.participantId || '';
+    return nameA.localeCompare(nameB);
+  });
+
+  // Add each participant group
+  sortedParticipantIds.forEach((participantId) => {
+    const participantElements = participantGroups.get(participantId)!;
+    const participant = participants.find((p) => p.participantId === participantId);
+
+    // Calculate participant duration based on all its lanes and elements (needed for lane bounds)
+    let participantStart = Infinity;
+    let participantEnd = -Infinity;
+
+    let participantHeader: (T & { type: 'group'; isParticipantHeader: boolean }) | null = null;
+
+    if (participant) {
+      // Include bounds from all participant elements (including lane headers)
+      if (participantElements.length > 0) {
+        participantStart = Math.min(...participantElements.map((el) => el.start));
+        participantEnd = Math.max(...participantElements.map((el) => (el as any).end || el.start));
+      }
+
+      // If we have lane hierarchy, also consider all nested lane bounds
+      if (groupByLanes && participant.laneHierarchy.length > 0) {
+        for (const topLevelLane of participant.laneHierarchy) {
+          const laneBounds = calculateLaneBounds(topLevelLane, laneGroups);
+          if (laneBounds.start !== Infinity && laneBounds.end !== -Infinity) {
+            participantStart = Math.min(participantStart, laneBounds.start);
+            participantEnd = Math.max(participantEnd, laneBounds.end);
+          }
+        }
+      }
+
+      // Fallback if no bounds found
+      if (participantStart === Infinity || participantEnd === -Infinity) {
+        const allProcessElements = elements.filter(
+          (el) => !(el as any).isLaneHeader && !(el as any).isParticipantHeader,
+        );
+        if (allProcessElements.length > 0) {
+          participantStart = Math.min(...allProcessElements.map((el) => el.start));
+          participantEnd = Math.max(...allProcessElements.map((el) => (el as any).end || el.start));
+        } else {
+          participantStart = 0;
+          participantEnd = 0;
+        }
+      }
+
+      // Create a participant header element (structured like a sub-process for proper name display)
+      participantHeader = {
+        id: `participant-header-${participantId}`,
+        name: `${participant.participantName || participantId}`,
+        type: 'group' as const,
+        elementType: 'Participant',
+        start: participantStart,
+        end: participantEnd,
+        color: '#32cd32', // Lime green for participants
+        isParticipantHeader: true,
+        participantId: participant.participantId,
+        participantName: participant.participantName,
+        childIds: participantElements.map((el) => el.id),
+        isSubProcess: true, // Mark as sub-process so gantt chart handles it the same way
+        hasChildren: true,
+        hierarchyLevel: -1, // Above lanes (which are level 0+)
+        isExpanded: true,
+      } as unknown as T & { type: 'group'; isParticipantHeader: boolean };
+
+      result.push(participantHeader);
+    }
+
+    // Fallback: if participant bounds weren't calculated, use participant elements
+    if (participantStart === Infinity || participantEnd === -Infinity) {
+      if (participantElements.length > 0) {
+        participantStart = Math.min(...participantElements.map((el) => el.start));
+        participantEnd = Math.max(...participantElements.map((el) => (el as any).end || el.start));
+      } else {
+        // Final fallback
+        participantStart = 0;
+        participantEnd = 0;
+      }
+    }
+
+    // Sort elements within this participant
+    const sortedParticipantElements =
+      groupByLanes && participant && participant.laneHierarchy.length > 0
+        ? (() => {
+            return groupElementsByLanes(
+              participantElements,
+              elementToComponent,
+              chronologicalSorting,
+              participant.laneHierarchy,
+              { start: participantStart, end: participantEnd }, // Pass participant bounds to lanes
+            );
+          })()
+        : sortElementsWithHierarchy(participantElements, elementToComponent, chronologicalSorting);
+
+    // Update participant header's childIds to include lane headers (if lane grouping was used)
+    if (groupByLanes && participant && participant.laneHierarchy.length > 0 && participantHeader) {
+      // Find all top-level lane headers (level 0) for this participant
+      const topLevelLaneHeaders = sortedParticipantElements.filter(
+        (el) => (el as any).isLaneHeader && (el as any).laneLevel === 0,
+      );
+
+      // Update the participant header's childIds to include top-level lane headers instead of elements
+      if (topLevelLaneHeaders.length > 0) {
+        (participantHeader as any).childIds = topLevelLaneHeaders.map((el) => el.id);
+      }
+    }
+
+    result.push(...sortedParticipantElements);
+  });
+
+  return result;
 }

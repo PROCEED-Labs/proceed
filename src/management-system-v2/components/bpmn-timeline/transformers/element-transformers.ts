@@ -28,6 +28,48 @@ import {
 } from '../utils/reference-extractor';
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+// ============================================================================
+// Lane Metadata Helper Functions
+// ============================================================================
+
+/**
+ * Add lane metadata from BPMN element to Gantt element
+ * Transfers lane information from BPMN elements to their Gantt representations
+ */
+function addLaneMetadata(ganttElement: GanttElementType, bpmnElement: any): void {
+  if (bpmnElement._laneMetadata) {
+    (ganttElement as any)._laneMetadata = {
+      laneId: bpmnElement._laneMetadata.laneId,
+      laneName: bpmnElement._laneMetadata.laneName,
+      laneLevel: bpmnElement._laneMetadata.laneLevel,
+    };
+  }
+}
+
+/**
+ * Inherit lane metadata from base element to instance element
+ * Used when creating instance elements that need lane metadata from their base BPMN element
+ */
+export function inheritLaneMetadata(
+  ganttElement: GanttElementType,
+  baseElementId: string,
+  bpmnElements: BPMNFlowElement[],
+): void {
+  // Find the base BPMN element (without instance suffix)
+  const baseElement = bpmnElements.find((el) => el.id === baseElementId);
+  if (baseElement && (baseElement as any)._laneMetadata) {
+    (ganttElement as any)._laneMetadata = {
+      laneId: (baseElement as any)._laneMetadata.laneId,
+      laneName: (baseElement as any)._laneMetadata.laneName,
+      laneLevel: (baseElement as any)._laneMetadata.laneLevel,
+    };
+  }
+}
+
+// ============================================================================
 // Element Transformation Functions
 // ============================================================================
 
@@ -40,7 +82,7 @@ export function transformTask(
   duration: number,
   color?: string,
 ): GanttElementType {
-  return {
+  const ganttTask: GanttElementType = {
     id: task.id,
     name: task.name,
     type: 'task',
@@ -49,6 +91,11 @@ export function transformTask(
     elementType: getTaskTypeString(task),
     color,
   };
+
+  // Add lane metadata if present
+  addLaneMetadata(ganttTask, task);
+
+  return ganttTask;
 }
 
 /**
@@ -66,10 +113,12 @@ export function transformEvent(
     return transformBoundaryEvent(event, startTime, duration, color);
   }
 
+  let ganttEvent: GanttElementType;
+
   if (duration > 0) {
     // Event has duration - show the time range with milestone at completion time
     // Option A: milestone appears at event completion time but shows the full range
-    return {
+    ganttEvent = {
       id: event.id,
       name: event.name,
       type: 'milestone',
@@ -80,7 +129,7 @@ export function transformEvent(
     };
   } else {
     // Event has no duration - point milestone at start time
-    return {
+    ganttEvent = {
       id: event.id,
       name: event.name,
       type: 'milestone',
@@ -89,6 +138,11 @@ export function transformEvent(
       color,
     };
   }
+
+  // Add lane metadata if present
+  addLaneMetadata(ganttEvent, event);
+
+  return ganttEvent;
 }
 
 /**
@@ -118,6 +172,9 @@ export function transformBoundaryEvent(
   // Boundary events should always display as simple milestones
   // Duration only affects positioning, not visual representation
 
+  // Add lane metadata if present
+  addLaneMetadata(ganttElement, event);
+
   return ganttElement;
 }
 
@@ -133,7 +190,7 @@ export function transformGateway(
   color?: string,
   isVisible: boolean = false,
 ): GanttElementType {
-  return {
+  const ganttElement: GanttElementType = {
     id: gateway.id,
     name: gateway.name,
     type: 'milestone', // Always render as milestone
@@ -142,6 +199,11 @@ export function transformGateway(
     elementType: getGatewayTypeString(gateway),
     color,
   };
+
+  // Add lane metadata if present
+  addLaneMetadata(ganttElement, gateway);
+
+  return ganttElement;
 }
 
 /**
@@ -157,7 +219,7 @@ export function transformExpandedSubProcess(
   hasChildren: boolean = true,
   color?: string,
 ): GanttElementType {
-  return {
+  const ganttElement: GanttElementType = {
     id: subProcess.id,
     name: subProcess.name,
     type: 'group',
@@ -172,6 +234,11 @@ export function transformExpandedSubProcess(
     hierarchyLevel,
     parentSubProcessId,
   };
+
+  // Add lane metadata if present
+  addLaneMetadata(ganttElement, subProcess);
+
+  return ganttElement;
 }
 
 /**

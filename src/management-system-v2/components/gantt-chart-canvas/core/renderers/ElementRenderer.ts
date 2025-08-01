@@ -340,10 +340,11 @@ export class ElementRenderer {
     context.lineWidth = 2 * this.pixelRatio;
     context.globalAlpha = isHovered ? HOVER_OPACITY : 1;
 
-    // Check if this is a sub-process (based on element properties)
+    // Check if this is a sub-process or lane header (based on element properties)
     const isSubProcess = (group as any).isSubProcess;
+    const isLaneHeader = (group as any).isLaneHeader;
 
-    if (isSubProcess) {
+    if (isLaneHeader || isSubProcess) {
       // Render sub-process as filled horizontal bar with downward tabs
       const barHeight = Math.max(4, 2 * this.pixelRatio); // Minimum 3px for visibility on low DPI, scaled for high DPI
       const tabHeight = Math.max(8, 4 * this.pixelRatio); // Minimum 5px for tabs, scaled for high DPI
@@ -497,8 +498,13 @@ export class ElementRenderer {
       // Render row background pattern for constrained elements
       const isBoundaryEvent = (element as any).isBoundaryEvent;
       const isSubProcessChild = (element as any).parentSubProcessId;
+      const isParticipantHeader = (element as any).isParticipantHeader;
+      const isLaneChild = (element as any).laneId; // Check if element belongs to a lane
 
-      if (isBoundaryEvent && isSubProcessChild) {
+      // Skip ALL slashing for anything related to lanes (lane children, nested lanes, etc.)
+      if (isLaneChild || (element as any).isLaneHeader) {
+        // Skip - no slashing for lanes or lane children, participant edge lines show boundaries
+      } else if (isBoundaryEvent && isSubProcessChild) {
         // Element is both boundary event AND sub-process child - render unified pattern
         this.renderConstrainedElementRowBackground(
           context,
@@ -515,6 +521,16 @@ export class ElementRenderer {
       } else if (isSubProcessChild) {
         // Only sub-process child
         this.renderSubProcessChildRowBackground(context, rowIndex, timeMatrix, elements, element);
+      } else if (isParticipantHeader) {
+        // Only participants get vertical edge lines - no slashing for lanes or sub-processes
+        this.renderGroupWithChildrenRowBackground(
+          context,
+          rowIndex,
+          timeMatrix,
+          elements,
+          element,
+          collapsedSubProcesses,
+        );
       }
 
       // Render based on element type
@@ -1583,7 +1599,7 @@ export class ElementRenderer {
     for (let x = startX; x < endX; x += slashSpacing) {
       // Check if this slash position is within any constraint region
       const inConstraint = screenConstraints.some(
-        (constraint) => x >= constraint.startX && x < constraint.endX,
+        (constraint) => x >= constraint.startX && x <= constraint.endX,
       );
 
       if (!inConstraint && x < endX) {
@@ -1592,7 +1608,7 @@ export class ElementRenderer {
 
         // Also check if the end point would be in a constraint
         const endInConstraint = screenConstraints.some(
-          (constraint) => slashEndX > constraint.startX && slashEndX <= constraint.endX,
+          (constraint) => slashEndX >= constraint.startX && slashEndX <= constraint.endX,
         );
 
         if (!endInConstraint) {
@@ -1617,5 +1633,158 @@ export class ElementRenderer {
         }
       }
     }
+  }
+
+  /**
+   * Render slashed row background for groups (participants/lanes/sub-processes) with children
+   * Slashes areas not covered by child elements
+   */
+  private renderGroupWithChildrenRowBackground(
+    context: CanvasRenderingContext2D,
+    rowIndex: number,
+    timeMatrix: TimeMatrix,
+    allElements: GanttElementType[],
+    groupElement: GanttElementType,
+    collapsedSubProcesses?: Set<string>,
+  ): void {
+    const isParticipantHeader = (groupElement as any).isParticipantHeader;
+
+    // PARTICIPANTS: Draw vertical dashed lines at participant edges spanning all child rows
+    if (isParticipantHeader) {
+      this.renderParticipantEdgeLines(
+        context,
+        rowIndex,
+        timeMatrix,
+        allElements,
+        groupElement,
+        collapsedSubProcesses,
+      );
+    }
+  }
+
+  /**
+   * Render vertical dashed lines at participant edges spanning all child rows
+   * Respects collapsed sub-processes and only spans visible rows
+   */
+  private renderParticipantEdgeLines(
+    context: CanvasRenderingContext2D,
+    rowIndex: number,
+    timeMatrix: TimeMatrix,
+    allElements: GanttElementType[],
+    participantElement: GanttElementType,
+    collapsedSubProcesses?: Set<string>,
+  ): void {
+    // Get participant time bounds
+    const participantStart = participantElement.start;
+    const participantEnd =
+      'end' in participantElement && participantElement.end !== undefined
+        ? participantElement.end
+        : participantElement.start;
+
+    // Convert to screen coordinates
+    const participantStartX = timeMatrix.transformPoint(participantStart);
+    const participantEndX = timeMatrix.transformPoint(participantEnd);
+
+    // Count only visible child rows respecting collapsed sub-processes
+    const childIds = (participantElement as any).childIds || [];
+    let totalChildRows = 0;
+
+    // Helper function to count visible children recursively
+    const countVisibleChildren = (elementId: string): number => {
+      const element = allElements.find((el) => el.id === elementId);
+      if (!element) {
+        return 0; // If element not found in rendered elements, don't count it
+      }
+
+      // CRITICAL FIX: Don't count empty lane headers as visible rows
+      // Empty lane headers shouldn't contribute to participant line length
+      if ((element as any).isLaneHeader && ((element as any).childIds || []).length === 0) {
+        return 0;
+      }
+
+      let count = 1; // Count the element itself
+
+      // If this is a collapsed sub-process, don't count its children
+      if (
+        element.type === 'group' &&
+        (element as any).isSubProcess &&
+        collapsedSubProcesses?.has(elementId)
+      ) {
+        return count; // Only count the sub-process header, not its children
+      }
+
+      // Count visible children recursively - only those that exist in allElements
+      const elementChildIds = (element as any).childIds || [];
+      elementChildIds.forEach((childId: string) => {
+        const childElement = allElements.find((el) => el.id === childId);
+        if (childElement) {
+          count += countVisibleChildren(childId);
+        }
+      });
+
+      return count;
+    };
+
+    // Count all visible children - but only count each element once
+    // Build a set of all nested child IDs to avoid double counting
+    const allNestedChildIds = new Set<string>();
+
+    childIds.forEach((childId: string) => {
+      const element = allElements.find((el) => el.id === childId);
+      if (element && element.type === 'group' && (element as any).childIds) {
+        // Collect all nested children of this group
+        const collectNestedChildren = (groupElement: any) => {
+          const groupChildIds = groupElement.childIds || [];
+          groupChildIds.forEach((nestedChildId: string) => {
+            allNestedChildIds.add(nestedChildId);
+            const nestedElement = allElements.find((el) => el.id === nestedChildId);
+            if (
+              nestedElement &&
+              nestedElement.type === 'group' &&
+              (nestedElement as any).childIds
+            ) {
+              collectNestedChildren(nestedElement);
+            }
+          });
+        };
+        collectNestedChildren(element);
+      }
+    });
+
+    // Only count direct children that are not nested within other children
+    childIds.forEach((childId: string) => {
+      if (!allNestedChildIds.has(childId)) {
+        totalChildRows += countVisibleChildren(childId);
+      }
+    });
+
+    // If no children found, just draw for one row
+    if (totalChildRows === 0) {
+      totalChildRows = 1;
+    }
+
+    context.save();
+
+    // Set up dashed line style - lime green
+    context.strokeStyle = '#32CD32';
+    context.lineWidth = 2;
+    context.setLineDash([4, 3]);
+
+    const lineStartY = (rowIndex + 1) * ROW_HEIGHT; // Start after participant header
+    const lineEndY = lineStartY + totalChildRows * ROW_HEIGHT; // Span all child rows
+
+    // Draw vertical line at participant START
+    context.beginPath();
+    context.moveTo(participantStartX, lineStartY);
+    context.lineTo(participantStartX, lineEndY);
+    context.stroke();
+
+    // Draw vertical line at participant END
+    context.beginPath();
+    context.moveTo(participantEndX, lineStartY);
+    context.lineTo(participantEndX, lineEndY);
+    context.stroke();
+
+    context.restore();
   }
 }

@@ -44,6 +44,7 @@ interface RoutingContext {
   needsRouting: boolean;
   isVeryShort: boolean;
   isBoundaryEvent: boolean;
+  isMessageFlow: boolean;
   taskStartPoint?: Point; // For boundary events, the task's start position
   constraints: RoutingConstraints;
 }
@@ -69,6 +70,7 @@ export class DependencyRenderer {
   private readonly VERTICAL_GRID_SPACING = 20; // Snap vertical lines to 20px grid
   private readonly MIN_SOURCE_DISTANCE = 20; // Minimum distance from source element
   private readonly MIN_TARGET_DISTANCE = 10; // Minimum distance before target element
+  private lastElementsArray: GanttElementType[] = []; // Cache for elements array
 
   constructor(pixelRatio: number = 1) {
     this.pixelRatio = pixelRatio;
@@ -329,6 +331,179 @@ export class DependencyRenderer {
     },
   };
 
+  private messageFlowRoutingStrategy = {
+    calculatePath: (from: Point, to: Point, context: RoutingContext): PathSegment[] => {
+      const segments: PathSegment[] = [];
+      const dep = (context as any).currentDep;
+
+      // Check if we're dealing with participant connections
+      const isSourceParticipant =
+        dep && dep.sourceId && dep.sourceId.includes('participant-header-');
+      const isTargetParticipant =
+        dep && dep.targetId && dep.targetId.includes('participant-header-');
+
+      // If same Y level, just draw horizontal line
+      if (Math.abs(to.y - from.y) <= 5) {
+        segments.push({
+          from: { x: from.x, y: from.y },
+          to: { x: to.x, y: to.y },
+          type: 'horizontal',
+        });
+        return segments;
+      }
+
+      if (isSourceParticipant || isTargetParticipant) {
+        // Mixed participant/element connections need special routing
+        const midY = (from.y + to.y) / 2;
+        const horizontalSpacing = 20; // 20px spacing from participant edges
+
+        if (isSourceParticipant && isTargetParticipant) {
+          // Participant-to-Participant: Both sides get horizontal spacing
+          const sourceOffsetX = from.x + horizontalSpacing;
+          const targetOffsetX = to.x + horizontalSpacing;
+
+          segments.push(
+            {
+              from: { x: from.x, y: from.y },
+              to: { x: sourceOffsetX, y: from.y },
+              type: 'horizontal',
+            },
+            {
+              from: { x: sourceOffsetX, y: from.y },
+              to: { x: sourceOffsetX, y: midY },
+              type: 'vertical',
+            },
+            {
+              from: { x: sourceOffsetX, y: midY },
+              to: { x: targetOffsetX, y: midY },
+              type: 'horizontal',
+            },
+            {
+              from: { x: targetOffsetX, y: midY },
+              to: { x: targetOffsetX, y: to.y },
+              type: 'vertical',
+            },
+            { from: { x: targetOffsetX, y: to.y }, to: { x: to.x, y: to.y }, type: 'horizontal' },
+          );
+        } else if (isSourceParticipant && !isTargetParticipant) {
+          // Participant-to-Element: Only source gets horizontal spacing, target connects directly
+          const sourceOffsetX = from.x + horizontalSpacing;
+
+          segments.push(
+            {
+              from: { x: from.x, y: from.y },
+              to: { x: sourceOffsetX, y: from.y },
+              type: 'horizontal',
+            },
+            {
+              from: { x: sourceOffsetX, y: from.y },
+              to: { x: sourceOffsetX, y: midY },
+              type: 'vertical',
+            },
+            { from: { x: sourceOffsetX, y: midY }, to: { x: to.x, y: midY }, type: 'horizontal' },
+            { from: { x: to.x, y: midY }, to: { x: to.x, y: to.y }, type: 'vertical' },
+          );
+        } else if (!isSourceParticipant && isTargetParticipant) {
+          // Element-to-Participant: Only target gets horizontal spacing, source connects directly
+          const targetOffsetX = to.x + horizontalSpacing;
+
+          segments.push(
+            { from: { x: from.x, y: from.y }, to: { x: from.x, y: midY }, type: 'vertical' },
+            { from: { x: from.x, y: midY }, to: { x: targetOffsetX, y: midY }, type: 'horizontal' },
+            {
+              from: { x: targetOffsetX, y: midY },
+              to: { x: targetOffsetX, y: to.y },
+              type: 'vertical',
+            },
+            { from: { x: targetOffsetX, y: to.y }, to: { x: to.x, y: to.y }, type: 'horizontal' },
+          );
+        }
+
+        return segments;
+      } else {
+        // For element-to-element flows, use the original center-based routing
+        const { elements, timeMatrix } = context.constraints;
+
+        // Find center points for routing calculation
+        let sourceCenterX = from.x;
+        let targetCenterX = to.x;
+
+        elements.forEach((el, index) => {
+          if (index * ROW_HEIGHT + ROW_HEIGHT / 2 === from.y) {
+            if (el.type === 'task' || el.type === 'group') {
+              const startX = timeMatrix.transformPoint(el.start);
+              const endX = timeMatrix.transformPoint(el.end || el.start);
+              const width = Math.max(endX - startX, 30);
+              sourceCenterX = startX + width / 2;
+            } else if (el.type === 'milestone') {
+              sourceCenterX = timeMatrix.transformPoint(el.start);
+            }
+          }
+
+          if (index * ROW_HEIGHT + ROW_HEIGHT / 2 === to.y) {
+            if (el.type === 'task' || el.type === 'group') {
+              const startX = timeMatrix.transformPoint(el.start);
+              const endX = timeMatrix.transformPoint(el.end || el.start);
+              const width = Math.max(endX - startX, 30);
+              targetCenterX = startX + width / 2;
+            } else if (el.type === 'milestone') {
+              targetCenterX = timeMatrix.transformPoint(el.start);
+            }
+          }
+        });
+
+        // Apply spacing offsets
+        const spacingOffsets = (context as any).messageFlowSpacing;
+        let sourceOffsetX = 0;
+        let targetOffsetX = 0;
+
+        if (spacingOffsets && dep) {
+          const sourceSpacing = spacingOffsets.get(dep.sourceId);
+          const targetSpacing = spacingOffsets.get(dep.targetId);
+          sourceOffsetX = sourceSpacing?.outgoingOffset || 0;
+          targetOffsetX = targetSpacing?.incomingOffset || 0;
+        }
+
+        const offsetSourceCenterX = sourceCenterX + sourceOffsetX;
+        const offsetTargetCenterX = targetCenterX + targetOffsetX;
+        const midY = (from.y + to.y) / 2;
+
+        // Element routing with center points and offsets
+        segments.push({
+          from: { x: from.x, y: from.y },
+          to: { x: offsetSourceCenterX, y: from.y },
+          type: 'horizontal',
+        });
+
+        segments.push({
+          from: { x: offsetSourceCenterX, y: from.y },
+          to: { x: offsetSourceCenterX, y: midY },
+          type: 'vertical',
+        });
+
+        segments.push({
+          from: { x: offsetSourceCenterX, y: midY },
+          to: { x: offsetTargetCenterX, y: midY },
+          type: 'horizontal',
+        });
+
+        segments.push({
+          from: { x: offsetTargetCenterX, y: midY },
+          to: { x: offsetTargetCenterX, y: to.y },
+          type: 'vertical',
+        });
+
+        segments.push({
+          from: { x: offsetTargetCenterX, y: to.y },
+          to: { x: to.x, y: to.y },
+          type: 'horizontal',
+        });
+
+        return segments;
+      }
+    },
+  };
+
   private boundaryEventRoutingStrategy: RoutingStrategy = {
     calculatePath: (from: Point, to: Point, context: RoutingContext): PathSegment[] => {
       // For boundary events, we want a special vertical-then-horizontal routing:
@@ -373,7 +548,9 @@ export class DependencyRenderer {
   };
 
   private routeDependency(from: Point, to: Point, context: RoutingContext): PathSegment[] {
-    if (context.isBoundaryEvent) {
+    if (context.isMessageFlow) {
+      return this.messageFlowRoutingStrategy.calculatePath(from, to, context);
+    } else if (context.isBoundaryEvent) {
       return this.boundaryEventRoutingStrategy.calculatePath(from, to, context);
     } else if (context.isSelfLoop) {
       return this.selfLoopRoutingStrategy.calculatePath(from, to, context);
@@ -513,6 +690,13 @@ export class DependencyRenderer {
     highlightedDependencies?: GanttDependency[],
     curvedDependencies: boolean = false,
   ): void {
+    // Cache elements array for participant connection calculations
+    this.lastElementsArray = elements;
+
+    const messageFlowDeps = dependencies.filter((dep) => dep.flowType === 'message');
+
+    // Calculate message flow spacing for elements with multiple flows
+    const messageFlowSpacing = this.calculateMessageFlowSpacing(messageFlowDeps, elements);
     // Create element lookup maps
     const elementsByIndex = new Map<number, GanttElementType>();
     elements.forEach((el, index) => elementsByIndex.set(index, el));
@@ -546,6 +730,7 @@ export class DependencyRenderer {
         visibleRowEnd,
         curvedDependencies,
         isHighlighted,
+        messageFlowSpacing,
       );
     });
   }
@@ -563,6 +748,7 @@ export class DependencyRenderer {
     visibleRowEnd: number,
     curvedDependencies: boolean,
     isHighlighted: boolean,
+    messageFlowSpacing?: Map<string, { outgoingOffset: number; incomingOffset: number }>,
   ): void {
     // Find elements by ID
     const { fromElement, toElement, fromIndex, toIndex } = this.findDependencyElements(
@@ -593,6 +779,42 @@ export class DependencyRenderer {
 
       // Also get the task's start position for routing
       taskStartPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'start', fromIndex);
+    } else if (dep.flowType === 'message') {
+      // Message flows use different connection logic:
+      // - For participants: connect to vertical edges (right/left)
+      // - For elements: connect to horizontal edges (top/bottom)
+      const isSourceParticipant = (fromElement as any).isParticipantHeader;
+      const isTargetParticipant = (toElement as any).isParticipantHeader;
+
+      // Get basic connection points
+      if (isSourceParticipant) {
+        fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex); // Right edge of participant
+      } else {
+        fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'center', fromIndex); // Center for vertical edge calculation
+      }
+
+      if (isTargetParticipant) {
+        toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'end', toIndex); // Right edge of participant (not left!)
+      } else {
+        toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'center', toIndex); // Center for vertical edge calculation
+      }
+
+      // Apply spacing offsets for participant connections
+      const sourceSpacing = messageFlowSpacing?.get(dep.sourceId) || {
+        outgoingOffset: 0,
+        incomingOffset: 0,
+      };
+      const targetSpacing = messageFlowSpacing?.get(dep.targetId) || {
+        outgoingOffset: 0,
+        incomingOffset: 0,
+      };
+
+      if (isSourceParticipant) {
+        fromPoint.y += sourceSpacing.outgoingOffset; // Apply vertical spacing to participant
+      }
+      if (isTargetParticipant) {
+        toPoint.y += targetSpacing.incomingOffset; // Apply vertical spacing to participant
+      }
     } else {
       fromPoint = this.getElementConnectionPoint(fromElement, timeMatrix, 'end', fromIndex);
       toPoint = this.getElementConnectionPoint(toElement, timeMatrix, 'start', toIndex);
@@ -634,9 +856,13 @@ export class DependencyRenderer {
       return;
     }
 
-    // Use absolute row positions
-    fromPoint.y = fromIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
-    toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    // Use absolute row positions, but preserve participant header connection points
+    if (!(fromElement as any).isParticipantHeader) {
+      fromPoint.y = fromIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    }
+    if (!(toElement as any).isParticipantHeader) {
+      toPoint.y = toIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    }
 
     // Calculate distance for arrow tip logic
     const totalDistance = Math.abs(toPoint.x - fromPoint.x);
@@ -668,14 +894,17 @@ export class DependencyRenderer {
       elementsByIndex,
       timeMatrix,
       taskStartPoint,
+      messageFlowSpacing,
     );
 
     // Calculate path using new routing system
     const segments = this.routeDependency(fromPoint, toPoint, context_routing);
 
-    // Draw arrow head - hide for boundary events and very short ghost dependencies on same row
+    // Draw arrow head - hide for boundary events, message flows (drawn separately), and very short ghost dependencies on same row
     const shouldShowArrowTip =
-      !dep.isBoundaryEvent && !(dep.isGhost && isSameRow && totalDistance < MIN_ARROW_TIP_DISTANCE);
+      !dep.isBoundaryEvent &&
+      dep.flowType !== 'message' &&
+      !(dep.isGhost && isSameRow && totalDistance < MIN_ARROW_TIP_DISTANCE);
 
     // Create render style
     const style: RenderStyle = {
@@ -683,8 +912,13 @@ export class DependencyRenderer {
       radius: 5,
       color: isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR,
       width: isHighlighted ? 2.5 : 1.5,
-      opacity: dep.isGhost ? 0.75 : 1.0,
-      dashPattern: dep.flowType === 'boundary-non-interrupting' ? [5, 5] : undefined,
+      opacity: dep.isGhost ? 0.75 : dep.flowType === 'message' ? 0.8 : 1.0,
+      dashPattern:
+        dep.flowType === 'boundary-non-interrupting'
+          ? [5, 5]
+          : dep.flowType === 'message'
+            ? [8, 4]
+            : undefined,
     };
 
     // Save context state
@@ -692,8 +926,136 @@ export class DependencyRenderer {
 
     // Render the path
     this.renderPath(context, segments, style, toPoint, shouldShowArrowTip);
-    if (shouldShowArrowTip) {
-      this.drawArrowHead(context, toPoint, isHighlighted);
+
+    // For message flows, always show arrow tip and add empty circle at start
+    if (dep.flowType === 'message') {
+      // Check if either source or target is a participant header
+      const isSourceParticipant = (fromElement as any).isParticipantHeader;
+      const isTargetParticipant = (toElement as any).isParticipantHeader;
+
+      if (isSourceParticipant || isTargetParticipant) {
+        // Mixed participant/element message flows
+        let circlePosition: Point;
+        let arrowPosition: Point;
+        let arrowDirection: 'horizontal' | 'vertical' = 'horizontal';
+        let arrowGoingDown = false;
+
+        let pointingLeft = true; // Default for horizontal arrows
+
+        if (isSourceParticipant && isTargetParticipant) {
+          // Participant to participant - both connect to right edges (spacing already applied to fromPoint/toPoint)
+          circlePosition = fromPoint; // Right edge of source participant with spacing
+          arrowPosition = toPoint; // Right edge of target participant with spacing
+          arrowDirection = 'horizontal';
+          pointingLeft = true; // Arrow points left toward target participant
+        } else if (isSourceParticipant && !isTargetParticipant) {
+          // Participant to element - connect from participant right edge to element top/bottom (spacing already applied)
+          circlePosition = fromPoint; // Right edge of participant with spacing
+          const elementCenter = this.getElementConnectionPoint(
+            toElement,
+            timeMatrix,
+            'center',
+            toIndex,
+          );
+          arrowGoingDown = fromPoint.y < elementCenter.y;
+          arrowPosition = {
+            x: elementCenter.x,
+            y: arrowGoingDown
+              ? elementCenter.y - ROW_HEIGHT / 2 + 10
+              : elementCenter.y + ROW_HEIGHT / 2 - 10,
+          };
+          arrowDirection = 'vertical';
+        } else if (!isSourceParticipant && isTargetParticipant) {
+          // Element to participant - connect from element top/bottom to participant right edge (spacing already applied)
+          const elementCenter = this.getElementConnectionPoint(
+            fromElement,
+            timeMatrix,
+            'center',
+            fromIndex,
+          );
+          arrowGoingDown = elementCenter.y < toPoint.y;
+          circlePosition = {
+            x: elementCenter.x,
+            y: arrowGoingDown
+              ? elementCenter.y + ROW_HEIGHT / 2 - 10
+              : elementCenter.y - ROW_HEIGHT / 2 + 10,
+          };
+          // For participant targets, position arrow tip at the participant edge (spacing already applied)
+          arrowPosition = toPoint;
+          arrowDirection = 'horizontal';
+          pointingLeft = true; // Arrow tip at edge, body extends leftward (but we need it rightward)
+        } else {
+          // Fallback (shouldn't happen in this branch)
+          circlePosition = fromPoint;
+          arrowPosition = toPoint;
+          arrowDirection = 'horizontal';
+        }
+
+        this.drawArrowHead(
+          context,
+          arrowPosition,
+          isHighlighted,
+          true,
+          arrowDirection,
+          arrowGoingDown,
+          arrowDirection === 'horizontal' ? pointingLeft : true,
+        );
+        this.drawMessageFlowStartCircle(context, circlePosition, isHighlighted);
+      } else {
+        // Regular task-to-task message flows use vertical routing
+        const sourceCenter = this.getElementConnectionPoint(
+          fromElement,
+          timeMatrix,
+          'center',
+          fromIndex,
+        );
+        const targetCenter = this.getElementConnectionPoint(
+          toElement,
+          timeMatrix,
+          'center',
+          toIndex,
+        );
+
+        // Determine if message flow goes up or down to calculate vertical edge positions
+        const isGoingDown = targetCenter.y > sourceCenter.y;
+
+        // Get spacing offsets if available
+        const sourceSpacing = messageFlowSpacing?.get(dep.sourceId) || {
+          outgoingOffset: 0,
+          incomingOffset: 0,
+        };
+        const targetSpacing = messageFlowSpacing?.get(dep.targetId) || {
+          outgoingOffset: 0,
+          incomingOffset: 0,
+        };
+
+        // Apply spacing to the outgoing flow (source) and incoming flow (target)
+        const sourceOffsetX = sourceSpacing.outgoingOffset;
+        const targetOffsetX = targetSpacing.incomingOffset;
+
+        // Circle should be positioned exactly at the element edge
+        // ROW_HEIGHT = 30px, so element spans from center ± 15px
+        // Position circle center at same vertical position as arrow tip
+        const circlePosition = {
+          x: sourceCenter.x + sourceOffsetX,
+          y: isGoingDown
+            ? sourceCenter.y + ROW_HEIGHT / 2 // Bottom edge: center + 15px (same as arrow)
+            : sourceCenter.y - ROW_HEIGHT / 2, // Top edge: center - 15px (same as arrow)
+        };
+
+        // Arrow should be positioned exactly at the target element edge
+        const arrowPosition = {
+          x: targetCenter.x + targetOffsetX,
+          y: isGoingDown
+            ? targetCenter.y - ROW_HEIGHT / 2 // Top edge when arriving from above: center - 15px
+            : targetCenter.y + ROW_HEIGHT / 2, // Bottom edge when arriving from below: center + 15px
+        };
+
+        this.drawArrowHead(context, arrowPosition, isHighlighted, true, 'vertical', isGoingDown); // Draw vertical arrow
+        this.drawMessageFlowStartCircle(context, circlePosition, isHighlighted); // Draw circle at vertical edge
+      }
+    } else if (shouldShowArrowTip) {
+      this.drawArrowHead(context, toPoint, isHighlighted, false); // Pass false for isMessageFlow
     }
 
     // Restore context state
@@ -733,6 +1095,7 @@ export class DependencyRenderer {
     elementsByIndex: Map<number, GanttElementType>,
     timeMatrix: TimeMatrix,
     taskStartPoint?: Point,
+    messageFlowSpacing?: Map<string, { outgoingOffset: number; incomingOffset: number }>,
   ): RoutingContext {
     const totalDistance = Math.abs(toPoint.x - fromPoint.x);
     const isVeryShort = totalDistance < 30;
@@ -768,6 +1131,7 @@ export class DependencyRenderer {
       needsRouting,
       isVeryShort,
       isBoundaryEvent: dep.isBoundaryEvent || false,
+      isMessageFlow: dep.flowType === 'message',
       taskStartPoint,
       constraints: {
         minSourceDistance: dep.isGhost && isSameRow ? 0 : this.MIN_SOURCE_DISTANCE,
@@ -777,7 +1141,10 @@ export class DependencyRenderer {
         elementsByIndex,
         timeMatrix,
       },
-    };
+      // Add spacing information for message flows
+      messageFlowSpacing,
+      currentDep: dep,
+    } as any;
   }
 
   /**
@@ -786,16 +1153,33 @@ export class DependencyRenderer {
   private getElementConnectionPoint(
     element: GanttElementType,
     timeMatrix: TimeMatrix,
-    side: 'start' | 'end',
+    side: 'start' | 'end' | 'center',
     elementIndex: number,
   ): { x: number; y: number } {
     const y = elementIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+
+    // Special handling for participant headers - connect to edges, vertically centered
+    if ((element as any).isParticipantHeader) {
+      return this.getParticipantHeaderConnectionPoint(
+        element,
+        timeMatrix,
+        side,
+        elementIndex,
+        this.lastElementsArray,
+      );
+    }
 
     switch (element.type) {
       case 'task': {
         const task = element as GanttElementType & { type: 'task'; start: number; end: number };
         if (side === 'start') {
           return { x: timeMatrix.transformPoint(task.start), y };
+        } else if (side === 'center') {
+          // Center connection point for message flows
+          const startX = timeMatrix.transformPoint(task.start);
+          const endX = timeMatrix.transformPoint(task.end);
+          const width = Math.max(endX - startX, ELEMENT_MIN_WIDTH);
+          return { x: startX + width / 2, y };
         } else {
           // For end position, account for minimum width adjustment
           const startX = timeMatrix.transformPoint(task.start);
@@ -822,6 +1206,9 @@ export class DependencyRenderer {
           if (side === 'start') {
             // Incoming arrows should point to the start of the duration
             return { x: startX, y };
+          } else if (side === 'center') {
+            // Center connection point for message flows
+            return { x: (startX + endX) / 2, y };
           } else {
             // Outgoing arrows originate from the end of the range
             return { x: endX, y };
@@ -829,6 +1216,10 @@ export class DependencyRenderer {
         } else {
           // For point milestones (no range)
           const milestoneX = timeMatrix.transformPoint(milestone.start);
+          if (side === 'center') {
+            // Center connection point for message flows
+            return { x: milestoneX, y };
+          }
           return {
             x: side === 'start' ? milestoneX - MILESTONE_SIZE / 2 : milestoneX + MILESTONE_SIZE / 2,
             y,
@@ -840,6 +1231,12 @@ export class DependencyRenderer {
         const group = element as GanttElementType & { type: 'group'; start: number; end: number };
         if (side === 'start') {
           return { x: timeMatrix.transformPoint(group.start), y };
+        } else if (side === 'center') {
+          // Center connection point for message flows
+          const startX = timeMatrix.transformPoint(group.start);
+          const endX = timeMatrix.transformPoint(group.end);
+          const width = Math.max(endX - startX, ELEMENT_MIN_WIDTH);
+          return { x: startX + width / 2, y };
         } else {
           // For end position, account for minimum width adjustment
           const startX = timeMatrix.transformPoint(group.start);
@@ -930,15 +1327,222 @@ export class DependencyRenderer {
     context: CanvasRenderingContext2D,
     point: { x: number; y: number },
     isHighlighted: boolean = false,
+    isMessageFlow: boolean = false,
+    direction: 'horizontal' | 'vertical' = 'horizontal',
+    isGoingDown?: boolean,
+    pointingLeft: boolean = true,
   ): void {
-    context.fillStyle = isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR;
+    // Save context to prevent interference
+    context.save();
+
+    if (isMessageFlow) {
+      context.fillStyle = isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR;
+      context.globalAlpha = 1.0; // Ensure full opacity
+    } else {
+      context.fillStyle = isHighlighted ? '#000000' : DEPENDENCY_LINE_COLOR;
+    }
+
     context.beginPath();
 
-    // Arrow pointing left (into the element)
-    context.moveTo(point.x, point.y);
-    context.lineTo(point.x - DEPENDENCY_ARROW_SIZE, point.y - DEPENDENCY_ARROW_SIZE / 2);
-    context.lineTo(point.x - DEPENDENCY_ARROW_SIZE, point.y + DEPENDENCY_ARROW_SIZE / 2);
+    if (direction === 'vertical' && isMessageFlow) {
+      // Vertical arrow for message flows
+      if (isGoingDown) {
+        // Arrow pointing down (into the element from above)
+        context.moveTo(point.x, point.y);
+        context.lineTo(point.x - DEPENDENCY_ARROW_SIZE / 2, point.y - DEPENDENCY_ARROW_SIZE);
+        context.lineTo(point.x + DEPENDENCY_ARROW_SIZE / 2, point.y - DEPENDENCY_ARROW_SIZE);
+      } else {
+        // Arrow pointing up (into the element from below)
+        context.moveTo(point.x, point.y);
+        context.lineTo(point.x - DEPENDENCY_ARROW_SIZE / 2, point.y + DEPENDENCY_ARROW_SIZE);
+        context.lineTo(point.x + DEPENDENCY_ARROW_SIZE / 2, point.y + DEPENDENCY_ARROW_SIZE);
+      }
+    } else {
+      // Horizontal arrow (default for regular dependencies)
+      if (pointingLeft) {
+        // Arrow pointing left - tip at point, body extends right (reversed for participant targets)
+        if (isMessageFlow) {
+          // For message flows to participants, we want tip at edge and body extending right
+          context.moveTo(point.x, point.y); // Tip at participant edge
+          context.lineTo(point.x + DEPENDENCY_ARROW_SIZE, point.y - DEPENDENCY_ARROW_SIZE / 2); // Body extends right
+          context.lineTo(point.x + DEPENDENCY_ARROW_SIZE, point.y + DEPENDENCY_ARROW_SIZE / 2);
+        } else {
+          // Regular left-pointing arrow
+          context.moveTo(point.x, point.y);
+          context.lineTo(point.x - DEPENDENCY_ARROW_SIZE, point.y - DEPENDENCY_ARROW_SIZE / 2);
+          context.lineTo(point.x - DEPENDENCY_ARROW_SIZE, point.y + DEPENDENCY_ARROW_SIZE / 2);
+        }
+      } else {
+        // Arrow pointing right
+        context.moveTo(point.x, point.y);
+        context.lineTo(point.x + DEPENDENCY_ARROW_SIZE, point.y - DEPENDENCY_ARROW_SIZE / 2);
+        context.lineTo(point.x + DEPENDENCY_ARROW_SIZE, point.y + DEPENDENCY_ARROW_SIZE / 2);
+      }
+    }
+
     context.closePath();
     context.fill();
+
+    // Restore context
+    context.restore();
+  }
+
+  /**
+   * Draw small empty circle at the start point of message flows
+   */
+  private drawMessageFlowStartCircle(
+    context: CanvasRenderingContext2D,
+    point: { x: number; y: number },
+    isHighlighted: boolean = false,
+  ): void {
+    // Save context to prevent interference
+    context.save();
+
+    const radius = 3; // Small circle for message flow start
+    context.strokeStyle = isHighlighted ? '#ff6b6b' : '#888888'; // Match dependency line color
+    context.fillStyle = 'white'; // Empty circle with white fill
+    context.lineWidth = 1;
+    context.globalAlpha = 1.0;
+    context.setLineDash([]); // No dashes for the circle
+
+    context.beginPath();
+    context.arc(point.x, point.y, radius, 0, 2 * Math.PI);
+    context.fill();
+    context.stroke();
+
+    // Restore context
+    context.restore();
+  }
+
+  /**
+   * Calculate spacing for message flows on elements with multiple flows
+   */
+  private calculateMessageFlowSpacing(
+    messageFlowDeps: GanttDependency[],
+    elements: GanttElementType[],
+  ): Map<string, { outgoingOffset: number; incomingOffset: number }> {
+    const spacingMap = new Map<string, { outgoingOffset: number; incomingOffset: number }>();
+    const FLOW_SPACING = 15; // 15px spacing between flows
+
+    // Group message flows by element
+    const elementFlows = new Map<
+      string,
+      { outgoing: GanttDependency[]; incoming: GanttDependency[] }
+    >();
+
+    messageFlowDeps.forEach((dep) => {
+      // Count outgoing flows from source element
+      const sourceKey = dep.sourceId;
+      if (!elementFlows.has(sourceKey)) {
+        elementFlows.set(sourceKey, { outgoing: [], incoming: [] });
+      }
+      elementFlows.get(sourceKey)!.outgoing.push(dep);
+
+      // Count incoming flows to target element
+      const targetKey = dep.targetId;
+      if (!elementFlows.has(targetKey)) {
+        elementFlows.set(targetKey, { outgoing: [], incoming: [] });
+      }
+      elementFlows.get(targetKey)!.incoming.push(dep);
+    });
+
+    // Calculate offsets for each element
+    elementFlows.forEach((flows, elementId) => {
+      const outgoingCount = flows.outgoing.length;
+      const incomingCount = flows.incoming.length;
+
+      // Calculate offsets to center multiple flows
+      let outgoingOffset = 0;
+      let incomingOffset = 0;
+
+      // For participants and elements with both incoming and outgoing flows,
+      // separate them vertically even if there's only one of each type
+      const hasBothTypes = outgoingCount > 0 && incomingCount > 0;
+
+      if (outgoingCount > 1) {
+        // Multiple outgoing flows - center them
+        outgoingOffset = -((outgoingCount - 1) * FLOW_SPACING) / 2;
+      } else if (hasBothTypes) {
+        // Single outgoing flow but also has incoming - offset it upward
+        outgoingOffset = -FLOW_SPACING / 2;
+      }
+
+      if (incomingCount > 1) {
+        // Multiple incoming flows - center them
+        incomingOffset = -((incomingCount - 1) * FLOW_SPACING) / 2;
+      } else if (hasBothTypes) {
+        // Single incoming flow but also has outgoing - offset it downward
+        incomingOffset = FLOW_SPACING / 2;
+      }
+
+      spacingMap.set(elementId, { outgoingOffset, incomingOffset });
+    });
+
+    return spacingMap;
+  }
+
+  /**
+   * Get connection point for participant headers
+   * Connects to the right/left edges and is vertically centered across the participant and all its children
+   */
+  private getParticipantHeaderConnectionPoint(
+    element: GanttElementType,
+    timeMatrix: TimeMatrix,
+    side: 'start' | 'end' | 'center',
+    elementIndex: number,
+    elements?: GanttElementType[],
+  ): { x: number; y: number } {
+    // For participant headers, we want to connect to the edges of the participant bar
+    const startX = timeMatrix.transformPoint(element.start);
+    const endX = timeMatrix.transformPoint(element.end || element.start);
+    const width = Math.max(endX - startX, 30); // Minimum width
+
+    // Calculate the vertical center of the participant and all its children
+    const childIds = (element as any).childIds || [];
+
+    let participantCenterY: number;
+    if (childIds.length > 0 && elements) {
+      // Find the indices of all child elements
+      const childIndices: number[] = [];
+      childIds.forEach((childId: string) => {
+        const childIndex = elements.findIndex((el: GanttElementType) => el.id === childId);
+        if (childIndex !== -1) {
+          childIndices.push(childIndex);
+        }
+      });
+
+      if (childIndices.length > 0) {
+        // Calculate the span from participant header to the last child
+        const minRow = elementIndex; // Participant header row
+        const maxRow = Math.max(...childIndices);
+
+        // Center vertically across the entire span
+        const topY = minRow * ROW_HEIGHT + ROW_HEIGHT / 2;
+        const bottomY = maxRow * ROW_HEIGHT + ROW_HEIGHT / 2;
+        participantCenterY = (topY + bottomY) / 2;
+      } else {
+        // Fallback: use participant header row
+        participantCenterY = elementIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+      }
+    } else {
+      // No children or no elements array, use participant header row
+      participantCenterY = elementIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    }
+
+    let connectionX: number;
+    switch (side) {
+      case 'start':
+        connectionX = startX; // Left edge
+        break;
+      case 'end':
+        connectionX = startX + width; // Right edge
+        break;
+      case 'center':
+      default:
+        connectionX = startX + width / 2; // Center
+        break;
+    }
+
+    return { x: connectionX, y: participantCenterY };
   }
 }

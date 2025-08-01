@@ -405,6 +405,210 @@ Result: Dependencies TaskA→TaskB, TaskA→TaskC (direct, gateway hidden)
 
 See table above for specific fork/join behavior per gateway type.
 
+## Collaboration Support: Participants, Lanes & Message Flows
+
+The BPMN Timeline component provides comprehensive support for BPMN collaboration diagrams, including participants (pools), lanes, and message flows between processes.
+
+### Architecture Overview
+
+**Core Implementation**: `collaboration-helpers.ts` + multi-process support throughout the transformation pipeline
+
+**Key Features**:
+
+- Multi-participant process visualization
+- Hierarchical lane organization within participants
+- Message flow visualization with proper routing and spacing
+- Automatic participant header generation and vertical centering
+
+### Participants (Pools)
+
+**Definition**: Top-level organizational containers representing different processes or organizations in a collaboration.
+
+#### Implementation Details
+
+**Detection & Processing**:
+
+```typescript
+// In parseCollaboration()
+const collaboration = definitions.rootElements?.find(
+  (element) => element.$type === 'bpmn:Collaboration',
+);
+```
+
+**Participant Header Generation**:
+
+- **ID Pattern**: `participant-header-${participantId}`
+- **Positioning**: Spans entire duration of contained elements
+- **Visual**: Light gray background (`#f0f0f0`) with participant name
+- **Hierarchy**: Level -1 (above all other elements)
+
+**Child Element Association**:
+
+- All elements from participant's process are annotated with `_participantMetadata`
+- Participant headers generated in `createParticipantGroups()`
+- Vertical centering calculated across participant and all child elements
+
+### Lanes
+
+**Definition**: Organizational subdivisions within participants representing roles, departments, or responsibilities.
+
+#### Implementation Details
+
+**Parsing & Hierarchy**:
+
+```typescript
+// Lane hierarchy extracted from laneSets
+const laneHierarchy = parseLaneHierarchy(process.laneSets);
+```
+
+**Lane Header Generation**:
+
+- **ID Pattern**: `lane-header-${laneId}`
+- **Properties**: `isLaneHeader: true`, `hierarchyLevel` based on nesting
+- **Visual**: Indented based on nesting level
+- **Scope**: Contains all elements assigned to the lane
+
+**Technical Features**:
+
+- **Nested lanes**: Support for multi-level lane hierarchies
+- **Element annotation**: `laneId`, `laneName`, `laneLevel` added to elements
+- **Metadata preservation**: Pure metadata - no execution impact
+
+### Message Flows
+
+**Definition**: Communication between participants that doesn't affect process timing but shows information exchange.
+
+#### Transformation Pipeline
+
+**1. Detection & Parsing**:
+
+```typescript
+// In parseCollaboration()
+const messageFlows = collaboration.messageFlows || [];
+```
+
+**2. Dependency Creation**:
+
+```typescript
+// In transformMessageFlows()
+const messageDependencies = transformMessageFlows(
+  messageFlows,
+  sortedElements,
+  participants,
+);
+```
+
+**3. Visual Rendering**:
+
+- **Type**: `DependencyType.START_TO_START` with `flowType: 'message'`
+- **Visual Style**: Dashed lines (`[8, 4]` pattern) with 80% opacity
+- **Direction**: Always points toward target (left-pointing arrows for participant targets)
+
+#### Connection Rules
+
+**Element-to-Element**:
+
+- **Source**: Vertical edge (top/bottom of element)
+- **Target**: Vertical edge (top/bottom of element)
+- **Spacing**: 15px vertical separation for multiple flows
+- **Visual**: Small empty circle at origin, arrow at destination
+
+**Participant Connections**:
+
+- **Participant edges**: Always connect to right edge
+- **Approach direction**: Participant targets approached from right side
+- **Vertical centering**: Connection point at center of participant + all children
+- **Spacing**: 15px vertical separation for mixed incoming/outgoing flows
+
+#### Routing & Spacing Algorithm
+
+**Multi-Flow Spacing**:
+
+```typescript
+// Applied when element has both incoming/outgoing message flows
+const hasBothTypes = outgoingCount > 0 && incomingCount > 0;
+if (hasBothTypes) {
+  outgoingOffset = -FLOW_SPACING / 2; // -7.5px (upward)
+  incomingOffset = FLOW_SPACING / 2; // +7.5px (downward)
+}
+```
+
+**Routing Strategy**:
+
+- **Participant-to-Participant**: Direct horizontal routing with vertical spacing
+- **Element-to-Participant**: Vertical-then-horizontal with 20px approach spacing
+- **Participant-to-Element**: Horizontal-then-vertical with proper edge connections
+
+#### Visual Elements
+
+**Start Indicators**: 3px empty circles (`#ffffff` fill, colored stroke)
+**End Indicators**: Arrowheads pointing toward target
+**Line Style**: Dashed pattern (`[8, 4]`) with `DEPENDENCY_LINE_COLOR`
+**Opacity**: 80% to distinguish from sequence flows
+
+### Technical Implementation
+
+#### Key Files & Functions
+
+**Core Processing**:
+
+- `collaboration-helpers.ts`: Main collaboration parsing and message flow transformation
+- `transform.ts`: Integration point - calls collaboration helpers after element grouping
+- `utils.ts`: Enhanced `groupAndSortElements()` with participant header support
+
+**Rendering**:
+
+- `DependencyRenderer.ts`: Message flow routing, spacing, and visual rendering
+- `GanttChartCanvas.tsx`: Enhanced dependency type display ("Message Flow")
+
+#### Processing Order
+
+**Critical Sequence**:
+
+```typescript
+// 1. Group elements first (creates participant headers)
+const sortedElements = groupAndSortElements(/*...*/);
+
+// 2. Transform message flows (requires participant headers to exist)
+const messageDependencies = transformMessageFlows(/*...*/);
+
+// 3. Combine with regular dependencies
+const allDependencies = [...regularDeps, ...messageDependencies];
+```
+
+#### Integration Points
+
+**Data Flow**:
+
+1. **BPMN Parsing**: Extract collaboration, participants, lanes, message flows
+2. **Element Processing**: Annotate elements with participant/lane metadata
+3. **Header Generation**: Create participant/lane headers with proper timing
+4. **Message Flow Transformation**: Convert to visual dependencies
+5. **Rendering**: Apply spacing, routing, and visual styling
+
+**Error Handling**:
+
+- **Missing participants**: Graceful fallback to element-level connections
+- **Invalid message flows**: Filtered out during transformation
+- **Header generation failures**: Process continues without headers
+
+### Configuration & Display
+
+**User Controls**:
+
+- Message flows automatically detected and displayed
+- No separate toggle - part of collaboration support
+- Proper type display in dependency popups ("Message Flow")
+
+**Visual Indicators**:
+
+- **Participant headers**: Gray background, spans full duration
+- **Lane headers**: Indented by hierarchy level
+- **Message flows**: Dashed lines with circles and arrows
+- **Spacing**: Automatic 15px separation for multiple flows
+
+This implementation provides complete BPMN collaboration support while maintaining clean visual organization and accurate semantic representation.
+
 ## Structural Path Interpretation and Validation
 
 ### **Current Approach: Structural Path Analysis**

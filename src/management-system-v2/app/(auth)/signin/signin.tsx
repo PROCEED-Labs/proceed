@@ -14,6 +14,7 @@ import {
   Tabs,
   Grid,
   Select,
+  AlertProps,
 } from 'antd';
 
 import { GoOrganization } from 'react-icons/go';
@@ -96,7 +97,8 @@ const SignIn: FC<{
   providers: ExtractedProvider[];
   userType: 'guest' | 'user' | 'none';
   guestReferenceToken?: string;
-}> = ({ providers, userType, guestReferenceToken }) => {
+  logoUrl?: string;
+}> = ({ providers, userType, guestReferenceToken, logoUrl }) => {
   const env = use(EnvVarsContext);
   const breakpoint = Grid.useBreakpoint();
   const searchParams = useSearchParams();
@@ -104,7 +106,14 @@ const SignIn: FC<{
   const callbackUrlWithGuestRef = guestReferenceToken
     ? `/transfer-processes?referenceToken=${guestReferenceToken}&callbackUrl=${callbackUrl}`
     : callbackUrl;
-  const authError = searchParams.get('error');
+
+  let authError = searchParams.get('error');
+  let authErrorType = 'error';
+  const errorTypeMatch = authError?.match(/^\$(?<type>\w+)\s+(?<message>.+)/);
+  if (errorTypeMatch?.groups) {
+    authError = errorTypeMatch.groups.message;
+    authErrorType = errorTypeMatch.groups.type;
+  }
 
   const oauthProviders = providers.filter((provider) => ['oauth', 'oidc'].includes(provider.type));
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
@@ -114,7 +123,7 @@ const SignIn: FC<{
     (provider) => provider.id === 'username-password-signin',
   );
   const passwordSignupProvider = providers.find(
-    (provider) => provider.id === 'username-password-signup',
+    (provider) => provider.id === 'register-as-new-user',
   );
   const developmentUsersProvider = providers.find(
     (provider) => provider.id === 'development-users',
@@ -215,7 +224,7 @@ const SignIn: FC<{
     });
   }
 
-  if (passwordSignupProvider) {
+  if (passwordSignupProvider && env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
     tabs.push({
       icon: <BsFillPersonPlusFill size={26} />,
       label: 'Register as New User',
@@ -270,7 +279,7 @@ const SignIn: FC<{
       <AuthModal
         title={
           <Image
-            src="/proceed.svg"
+            src={logoUrl ?? '/proceed.svg'}
             alt="PROCEED Logo"
             width={160}
             height={63}
@@ -283,19 +292,18 @@ const SignIn: FC<{
         }}
       >
         {authError && (
-          <Alert description={authError} type="error" style={{ marginBottom: verticalGap }} />
+          <Alert
+            description={authError}
+            type={authErrorType as AlertProps['type']}
+            style={{ marginBottom: verticalGap }}
+          />
         )}
 
-        {userType === 'none' ? (
-          <Typography.Title level={4} style={{ textAlign: 'center' }}>
-            TRY PROCEED
-          </Typography.Title>
-        ) : (
-          signInTitle
-        )}
-
-        {userType === 'none' && guestProvider && (
+        {userType === 'none' && guestProvider && env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE && (
           <>
+            <Typography.Title level={4} style={{ textAlign: 'center' }}>
+              TRY PROCEED
+            </Typography.Title>
             <Form
               onFinish={(values) =>
                 signIn(guestProvider.id, {
@@ -315,7 +323,7 @@ const SignIn: FC<{
         )}
 
         {/* If the user isn't none, we already show the signIn title at the top of the modal */}
-        {userType === 'none' && signInTitle}
+        {signInTitle}
 
         <Tabs
           items={tabs}
@@ -387,7 +395,7 @@ const SignIn: FC<{
             </Button>
 
             <Alert
-              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              message='Note: if you select "Continue as Guest", the this Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
               type="info"
             />
           </>
@@ -403,9 +411,8 @@ const SignIn: FC<{
             color: '#434343',
           }}
         >
-          By using the PROCEED Platform, you agree to the{' '}
-          <Link href="/terms">Terms of Service</Link> and the storage of functionally essential
-          cookies on your device.
+          By using the this Platform, you agree to the <Link href="/terms">Terms of Service</Link>{' '}
+          and the storage of functionally essential cookies on your device.
         </Typography.Paragraph>
       </AuthModal>
     </ConfigProvider>

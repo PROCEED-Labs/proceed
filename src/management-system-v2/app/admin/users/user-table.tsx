@@ -6,10 +6,11 @@ import { deleteUsers } from './page';
 import styles from '@/components/item-list-view.module.scss';
 import ConfirmationButton from '@/components/confirmation-button';
 import React from 'react';
-import { App, Tooltip } from 'antd';
+import { App, Space, Tooltip } from 'antd';
 import { useRouter } from 'next/navigation';
 import { DeleteOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import ResetUserPasswordButton from '@/components/reset-user-password-button';
 
 export default function UserTable({
   users,
@@ -82,17 +83,26 @@ export default function UserTable({
         {
           title: '',
           render: (_, user) => (
-            <ConfirmationButton
-              title="Remove user"
-              tooltip="Remove user"
-              description="Are you sure you want to remove this user?"
-              onConfirm={() => removeUsers([user.id])}
-              buttonProps={{
-                type: 'text',
-                icon: <DeleteOutlined />,
-                className: styles.HoverableTableCell,
-              }}
-            />
+            <Space>
+              <ConfirmationButton
+                title="Remove user"
+                tooltip="Remove user"
+                description="Are you sure you want to remove this user?"
+                onConfirm={() => removeUsers([user.id])}
+                buttonProps={{
+                  type: 'default',
+                  icon: <DeleteOutlined />,
+                  className: styles.HoverableTableCell,
+                }}
+              />
+              <ResetUserPasswordButton
+                user={{ id: user.id, username: user.username.value }}
+                className={styles.HoverableTableCell}
+                type="default"
+              >
+                Reset Password
+              </ResetUserPasswordButton>
+            </Space>
           ),
         },
       ]}

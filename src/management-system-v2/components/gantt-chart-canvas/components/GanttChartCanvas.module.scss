@@ -1,0 +1,340 @@
+/* Gantt Chart Canvas styles */
+
+/* Base classes for common patterns */
+%column-base {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--gantt-border-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: 100%; /* Take full height of parent row */
+}
+
+%fixed-width-column {
+  @extend %column-base;
+  flex-shrink: 0;
+}
+
+%text-column {
+  font-size: 12px;
+  color: var(--gantt-text-color);
+  text-align: center;
+}
+
+.ganttContainer {
+  --gantt-border-color: #e0e0e0;
+  --gantt-border-light: #f0f0f0;
+  --gantt-background: #fff;
+  --gantt-background-alt: #fafafa;
+  --gantt-hover-background: #f9f9f9;
+  --gantt-selection-color: rgba(24, 144, 255, 0.1);
+  --gantt-primary-color: #1890ff;
+  --gantt-primary-hover: #40a9ff;
+  --gantt-text-color: #666;
+  --gantt-header-height: 50px;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.ganttControls {
+  display: flex;
+  padding: 8px;
+  border-bottom: 1px solid var(--gantt-border-color);
+  background-color: var(--gantt-background-alt);
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+}
+
+.headerRow {
+  display: flex;
+  height: var(--gantt-header-height);
+  width: 100%;
+  border-bottom: 1px solid var(--gantt-border-color);
+}
+
+.taskListHeader {
+  position: relative;
+  flex: 0 0 auto; /* Do not grow, do not shrink, size based on width */
+  background-color: var(--gantt-background-alt);
+  border-right: 1px solid var(--gantt-border-color);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  height: var(--gantt-header-height);
+}
+
+.taskListHeaderColumns {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+}
+
+.contentRow {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+.taskList {
+  border-right: 1px solid var(--gantt-border-color);
+  background-color: var(--gantt-background);
+  overflow: auto;
+  position: relative;
+  flex: 0 0 auto; /* Do not grow or shrink */
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 5px;
+  cursor: col-resize;
+  background-color: var(--gantt-border-light);
+  z-index: 1;
+
+  &:hover {
+    background-color: var(--gantt-border-color);
+  }
+
+  &:active {
+    background-color: var(--gantt-text-color);
+  }
+}
+
+.chartArea {
+  position: relative;
+  flex: 1;
+  min-width: 0; /* Allows flex item to shrink below content size */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Timeline header - fixed height, full width */
+.timelineHeader {
+  height: var(--gantt-header-height);
+  position: relative;
+  overflow: hidden;
+  background-color: var(--gantt-background-alt);
+  width: 100%;
+}
+
+/* Chart content container - no scrolling, canvas handles it */
+.chartContentContainer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.virtualScrollContent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.timelineCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.chartCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%; /* Height is also set inline to match totalContentHeight */
+  cursor: grab; /* Indicate that this is pannable */
+
+  &:active {
+    cursor: grabbing; /* Indicate that it's being panned */
+  }
+}
+
+/* Add a container class for the canvas elements */
+.canvasContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  /* Height is set inline to match totalContentHeight */
+}
+
+.taskItem {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--gantt-border-light);
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  transition: background-color 0.1s ease;
+  box-sizing: border-box;
+
+  &:hover {
+    background-color: var(--gantt-hover-background);
+  }
+}
+
+.selectedItem {
+  background-color: var(--gantt-selection-color) !important;
+  border-left: 3px solid var(--gantt-primary-color);
+
+  &:hover {
+    background-color: rgba(
+      24,
+      144,
+      255,
+      0.15
+    ) !important; /* Slightly darker than selection */
+  }
+
+  .infoButtonColumn {
+    margin-left: -3px; // Compensate for the 3px left border
+  }
+}
+
+.taskItemColumns {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+
+  // Extra styles specific to content items
+  .extraInfoColumn {
+    font-size: 0.9em;
+    color: var(--gantt-text-color);
+    font-weight: normal;
+  }
+}
+
+/* Shared column styles for header and content */
+.taskNameColumn {
+  width: 120px;
+  padding: 0 8px;
+  @extend %column-base;
+}
+
+.infoButtonColumn {
+  width: 32px;
+  @extend %fixed-width-column;
+}
+
+.instanceColumn {
+  width: 30px;
+  @extend %fixed-width-column;
+  @extend %text-column;
+}
+
+.loopStatusColumn {
+  width: 40px;
+  @extend %fixed-width-column;
+  @extend %text-column;
+
+  /* Make loop icons larger in task items */
+  .taskItemColumns & {
+    font-size: 16px;
+  }
+}
+
+.extraInfoColumn {
+  flex: 1;
+  padding: 0 8px;
+  @extend %column-base;
+  @extend %text-column;
+}
+
+.controlButton {
+  padding: 4px 8px;
+  height: 30px;
+  background-color: var(--gantt-background);
+  border: 1px solid var(--gantt-border-color);
+  border-radius: 2px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--gantt-hover-background);
+    border-color: var(--gantt-primary-hover);
+  }
+
+  &:active {
+    background-color: rgba(24, 144, 255, 0.08);
+  }
+}
+
+.zoomSliderContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoomSlider {
+  width: 120px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--gantt-border-color);
+  border-radius: 2px;
+  outline: none;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--gantt-primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--gantt-primary-hover);
+    }
+  }
+
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--gantt-primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+
+    &:hover {
+      background: var(--gantt-primary-hover);
+    }
+  }
+}
+
+.zoomValue {
+  font-size: 12px;
+  color: var(--gantt-text-color);
+  margin-right: 3px;
+}
+
+.timeUnitDisplay {
+  font-size: 12px;
+}
+
+.timeUnitValue {
+  font-weight: 600;
+  color: var(--gantt-primary-color);
+}

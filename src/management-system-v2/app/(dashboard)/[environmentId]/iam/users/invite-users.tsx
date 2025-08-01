@@ -23,6 +23,7 @@ import { DefaultOptionType } from 'antd/es/select';
 import { useRouter } from 'next/navigation';
 import { FC, use, useEffect, useState, useTransition } from 'react';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import useOrganizationRoles from './use-org-roles';
 
 const AddUsersModal: FC<{
   modalOpen: boolean;
@@ -36,15 +37,7 @@ const AddUsersModal: FC<{
   const [users, setUsers] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<DefaultOptionType[]>([]);
 
-  const { data } = useQuery({
-    queryFn: async () => {
-      const roles = await getRoles(environment.spaceId);
-      if ('error' in roles) throw new Error();
-      return roles;
-    },
-    queryKey: ['roles', environment.spaceId],
-  });
-  const roles = data?.filter((role) => !['@guest', '@everyone'].includes(role.name));
+  const { roles } = useOrganizationRoles(environment.spaceId);
 
   useEffect(() => {
     form.resetFields();
@@ -158,7 +151,7 @@ const AddUsersModal: FC<{
   );
 };
 
-const HeaderActions: FC = () => {
+const InviteUserButton: FC = () => {
   const env = use(EnvVarsContext);
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
   const breakpoint = Grid.useBreakpoint();
@@ -175,7 +168,7 @@ const HeaderActions: FC = () => {
             onClick={() => setCreateUserModalOpen(true)}
             style={{ marginRight: '10px' }}
           >
-            {breakpoint.xl ? 'New User' : 'New'}
+            {breakpoint.xl ? 'Invite User' : 'Invite'}
           </Button>
         </AuthCan>
       )}
@@ -202,4 +195,4 @@ export const FloatButtonActions: FC = () => {
   );
 };
 
-export default HeaderActions;
+export default InviteUserButton;

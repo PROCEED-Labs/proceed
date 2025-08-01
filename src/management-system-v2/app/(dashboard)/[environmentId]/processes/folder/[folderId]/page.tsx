@@ -16,6 +16,8 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { notFound } from 'next/navigation';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async ({
@@ -23,6 +25,9 @@ const ProcessesPage = async ({
 }: {
   params: { environmentId: string; folderId?: string };
 }) => {
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE) return notFound();
+
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   const favs = await getUsersFavourites();

@@ -224,7 +224,7 @@ const SignIn: FC<{
     });
   }
 
-  if (passwordSignupProvider) {
+  if (passwordSignupProvider && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
     tabs.push({
       icon: <BsFillPersonPlusFill size={26} />,
       label: 'Register as New User',
@@ -299,7 +299,7 @@ const SignIn: FC<{
           />
         )}
 
-        {userType === 'none' ? (
+        {userType === 'none' && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE ? (
           <Typography.Title level={4} style={{ textAlign: 'center' }}>
             TRY PROCEED
           </Typography.Title>
@@ -307,7 +307,7 @@ const SignIn: FC<{
           signInTitle
         )}
 
-        {userType === 'none' && guestProvider && (
+        {userType === 'none' && guestProvider && env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE && (
           <>
             <Form
               onFinish={(values) =>

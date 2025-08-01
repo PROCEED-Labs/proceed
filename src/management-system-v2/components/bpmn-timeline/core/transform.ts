@@ -36,6 +36,7 @@ import {
   detectAndReportGatewayIssues,
   separateSupportedElements,
   extractInformationalArtifacts,
+  processAssociations,
   filterDependenciesForVisibleElements,
   detectGhostDependenciesThroughGateways,
 } from './transform-helpers';
@@ -133,11 +134,19 @@ export function transformBPMNToGantt(
     : [
         ...(process?.flowElements || []),
         ...(process?.artifacts || []),
+        ...(process?.associations || []),
         ...(process?.ioSpecification?.dataInputs || []),
         ...(process?.ioSpecification?.dataOutputs || []),
       ];
 
-  const informationalArtifacts = extractInformationalArtifacts(allElementsForArtifacts);
+  const rawInformationalArtifacts = extractInformationalArtifacts(allElementsForArtifacts);
+
+  // Process associations to enrich artifacts with connection information
+  const informationalArtifacts = processAssociations(
+    allElementsForArtifacts,
+    rawInformationalArtifacts,
+    supportedElements,
+  );
 
   // Calculate timings using path-based traversal
 

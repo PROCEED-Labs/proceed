@@ -245,6 +245,77 @@ export function extractInformationalArtifacts(
 }
 
 /**
+ * Process associations and enrich artifacts with association information
+ */
+export function processAssociations(
+  allElements: any[],
+  informationalArtifacts: import('../types/types').BPMNInformationalArtifact[],
+  supportedElements: BPMNFlowElement[],
+): import('../types/types').BPMNInformationalArtifactWithAssociations[] {
+  const { isAssociationElement } = require('../utils/utils');
+
+  const associations = allElements.filter((element) => isAssociationElement(element));
+
+  if (associations.length === 0) {
+    // No associations found, return artifacts as-is
+    return informationalArtifacts.map((artifact) => ({ ...artifact }));
+  }
+
+  // Create a map of associations
+  const associationMap = new Map<string, string[]>();
+
+  associations.forEach((assoc: any) => {
+    // Handle both source and target references
+    if (assoc.sourceRef && assoc.targetRef) {
+      const sourceRefId =
+        typeof assoc.sourceRef === 'string' ? assoc.sourceRef : assoc.sourceRef.id;
+      const targetRefId =
+        typeof assoc.targetRef === 'string' ? assoc.targetRef : assoc.targetRef.id;
+
+      if (!associationMap.has(sourceRefId)) {
+        associationMap.set(sourceRefId, []);
+      }
+      associationMap.get(sourceRefId)!.push(targetRefId);
+
+      if (!associationMap.has(targetRefId)) {
+        associationMap.set(targetRefId, []);
+      }
+      associationMap.get(targetRefId)!.push(sourceRefId);
+    }
+  });
+
+  // Create a map of all elements (artifacts + flow elements) for name/type lookup
+  const allElementsMap = new Map<string, any>();
+
+  [...informationalArtifacts, ...supportedElements].forEach((element) => {
+    allElementsMap.set(element.id, element);
+  });
+
+  // Enrich artifacts with association information
+  return informationalArtifacts.map((artifact) => {
+    const associatedElementIds = associationMap.get(artifact.id) || [];
+    const associatedElements = associatedElementIds
+      .map((elementId) => {
+        const element = allElementsMap.get(elementId);
+        if (element) {
+          return {
+            elementId: element.id,
+            elementName: element.name,
+            elementType: element.$type,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean) as Array<{ elementId: string; elementName?: string; elementType: string }>;
+
+    return {
+      ...artifact,
+      _associatedElements: associatedElements.length > 0 ? associatedElements : undefined,
+    };
+  });
+}
+
+/**
  * Filter dependencies to only include visible elements
  *
  * When gateways are hidden (renderGateways=false), this function creates "bypass dependencies"

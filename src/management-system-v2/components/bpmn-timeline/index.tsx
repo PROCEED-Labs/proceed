@@ -41,7 +41,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [warnings, setWarnings] = useState<TransformationIssue[]>([]);
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
   const [informationalArtifacts, setInformationalArtifacts] = useState<
-    import('./types/types').BPMNInformationalArtifact[]
+    import('./types/types').BPMNInformationalArtifactWithAssociations[]
   >([]);
   const [hasInclusiveGateways, setHasInclusiveGateways] = useState<boolean>(false);
   const [hasComplexGateways, setHasComplexGateways] = useState<boolean>(false);
@@ -549,6 +549,25 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                                 {artifact.$type === 'bpmn:DataStoreReference' &&
                                   (artifact as any).dataStoreRef &&
                                   ` → ${typeof (artifact as any).dataStoreRef === 'string' ? (artifact as any).dataStoreRef : (artifact as any).dataStoreRef?.id || ''}`}
+                                {artifact._associatedElements &&
+                                  artifact._associatedElements.length > 0 && (
+                                    <div
+                                      style={{ fontSize: '0.9em', color: '#666', marginTop: '4px' }}
+                                    >
+                                      Associated with:{' '}
+                                      {artifact._associatedElements.map(
+                                        (assocElement, assocIndex) => (
+                                          <span key={assocIndex}>
+                                            {assocIndex > 0 && ', '}
+                                            <strong>
+                                              {assocElement.elementName || assocElement.elementId}
+                                            </strong>{' '}
+                                            ({assocElement.elementType.replace('bpmn:', '')})
+                                          </span>
+                                        ),
+                                      )}
+                                    </div>
+                                  )}
                               </li>
                             ))}
                           </ul>

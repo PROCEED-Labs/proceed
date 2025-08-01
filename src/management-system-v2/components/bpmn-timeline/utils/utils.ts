@@ -242,6 +242,13 @@ export function isInformationalArtifact(element: { $type: string }): boolean {
   );
 }
 
+/**
+ * Check if element is an association
+ */
+export function isAssociationElement(element: { $type: string }): boolean {
+  return element.$type === 'bpmn:Association';
+}
+
 // ============================================================================
 // Element Type Generation
 // ============================================================================

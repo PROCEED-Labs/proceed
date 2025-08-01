@@ -69,6 +69,8 @@ export interface BPMNProcess {
   flowElements: BPMNFlowElement[];
   laneSets?: BPMNLaneSet[]; // bpmn-js moddle uses this (plural)
   extensionElements?: BPMNExtensionElements;
+  artifacts?: BPMNInformationalArtifact[];
+  associations?: BPMNAssociation[];
 }
 
 // Flow elements union type
@@ -193,6 +195,13 @@ export interface BPMNGenericResource extends BPMNBaseElement {
   resourceType?: string;
 }
 
+export interface BPMNAssociation extends BPMNBaseElement {
+  $type: 'bpmn:Association';
+  sourceRef: string;
+  targetRef: string;
+  associationDirection?: 'None' | 'One' | 'Both';
+}
+
 // Union type for all informational artifacts
 export type BPMNInformationalArtifact =
   | BPMNTextAnnotation
@@ -200,6 +209,15 @@ export type BPMNInformationalArtifact =
   | BPMNDataStore
   | BPMNGroup
   | BPMNGenericResource;
+
+// Extended artifact type with association information
+export type BPMNInformationalArtifactWithAssociations = BPMNInformationalArtifact & {
+  _associatedElements?: Array<{
+    elementId: string;
+    elementName?: string;
+    elementType: string;
+  }>;
+};
 
 // ============================================================================
 // Transformation State Interfaces
@@ -247,7 +265,7 @@ export interface TransformationResult {
   dependencies: GanttDependency[];
   issues: TransformationIssue[];
   defaultDurations: DefaultDurationInfo[];
-  informationalArtifacts: BPMNInformationalArtifact[];
+  informationalArtifacts: BPMNInformationalArtifactWithAssociations[];
   // Legacy properties for backward compatibility
   errors: TransformationIssue[];
   warnings: TransformationIssue[];

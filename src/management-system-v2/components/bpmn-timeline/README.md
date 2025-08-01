@@ -8,7 +8,7 @@ This component converts BPMN process data into timeline representations using so
 
 **Core Architecture**: All traversal modes use unified **scoped path-based traversal** with hierarchical sub-process support and mode-specific result processing.
 
-**Primary Implementation**: `scoped-traversal.ts` → `calculateScopedTimings()` → Mode-specific handlers
+**Primary Implementation**: `transform.ts` → `calculateScopedTimings()` → Mode-specific handlers
 
 ## Traversal Modes
 
@@ -286,6 +286,13 @@ Timeline Result (Latest Occurrence):
 - **Special Processing**: Handled separately through dedicated boundary event functions
 - **Component Assignment**: Assigned to same flow component as their attached task for proper coloring
 
+**Visual Constraints**:
+
+- **Slash Pattern Background**: Boundary event rows show subtle diagonal slash patterns in areas outside their attached task's duration
+- **Constraint Visualization**: Slashes indicate time periods where the boundary event is constrained by its attachment timing
+- **Pattern Details**: 45-degree diagonal lines with 12px spacing, clipped at task boundaries with dashed vertical edge lines
+- **Purpose**: Provides visual feedback about timing relationships and execution constraints
+
 ### SequenceFlows → Gantt Dependencies
 
 **Supported Types**: All sequence flows
@@ -350,9 +357,9 @@ See table above for specific fork/join behavior per gateway type.
 
 #### Supported Types
 
-- **Expanded SubProcesses**: `bpmn:SubProcess` and `bpmn:AdHocSubProcess` with `flowElements` - fully supported
+- **Expanded SubProcesses**: `bpmn:SubProcess`, `bpmn:AdHocSubProcess`, and `bpmn:Transaction` with `flowElements` - fully supported
 - **Collapsed SubProcesses**: SubProcesses without child elements - treated as regular tasks
-- **Nested SubProcesses**: Multi-level sub-process hierarchies with recursion depth protection (10 levels max)
+- **Nested SubProcesses**: Multi-level sub-process hierarchies with recursion depth protection (50 levels max)
 
 #### Core Architecture
 
@@ -382,14 +389,20 @@ See table above for specific fork/join behavior per gateway type.
 **Instance ID Structure**:
 
 ```typescript
-// Main sub-process instances
+// Simple instance pattern for all elements
 'Activity_1c6bl41_instance_10';
+'Event_1hx5yna_instance_15';
+'Task_ABC_instance_23';
 
-// Child elements of sub-process
-'Event_1hx5yna_instance_2_subprocess_Activity_1c6bl41_instance_10';
-
-// Nested sub-process children (multi-level)
-'Task_ABC_instance_4_subprocess_Activity_04vzwbt_instance_3_subprocess_Activity_1c6bl41_instance_10';
+// Parent-child relationships stored in ProcessInstance structure
+interface ProcessInstance {
+  elementId: string;
+  instanceId: string; // Simple: elementId_instance_N
+  scopeId: string; // Scope this instance belongs to
+  parentInstanceId?: string; // Direct parent instance ID
+  children: ProcessInstance[]; // Child instances array
+  // ... other properties
+}
 ```
 
 **Parent-Child Relationship Management**:
@@ -431,189 +444,70 @@ See table above for specific fork/join behavior per gateway type.
 - **Alternative**: Use every-occurrence mode for complete sub-process instance visualization
 - **Warning display**: User notification when ghost elements requested with sub-processes present
 
-## Visual Constraint System: Diagonal Slash Patterns
+**Visual Constraints**:
 
-The BPMN Timeline implements a sophisticated visual constraint system using diagonal slash patterns to show timing relationships and boundaries between elements and their organizational or hierarchical constraints.
+- **Slash Pattern Background**: Sub-process child element rows show subtle diagonal slash patterns in areas outside their parent sub-process duration
+- **Hierarchical Constraints**: Slashes indicate time periods where child elements are constrained by their parent sub-process timing
+- **Pattern Details**: 45-degree diagonal lines with 12px spacing, clipped at sub-process boundaries with dashed vertical edge lines
+- **Multi-level Support**: Nested sub-processes create cascading constraint visualizations for clear hierarchy understanding
 
-### Overview
+### Informational Artifacts → Process Information Display
 
-**Purpose**: Diagonal slashes visually indicate areas where elements are constrained or bounded by parent elements, providing immediate visual feedback about timing relationships and organizational boundaries.
+**Comprehensive artifact processing** with association support to connect artifacts to flow elements, providing rich process documentation.
 
-**Core Principle**: Slash patterns appear in row backgrounds **outside** the duration of constraining elements, creating clear visual boundaries between constrained and unconstrained time periods.
+#### Supported Types
 
-### Constraint Types
+- `bpmn:TextAnnotation` - Text notes and comments
+- `bpmn:DataObject` - Data objects
+- `bpmn:DataObjectReference` - References to data objects
+- `bpmn:DataStore` - Data stores
+- `bpmn:DataStoreReference` - References to data stores
+- `bpmn:Group` - Element groupings
+- `proceed:genericResource` / `proceed:GenericResource` - Generic resources
 
-#### 1. Boundary Event Constraints
+#### Association Support
 
-**Definition**: Elements attached to boundary events show slashes everywhere except during the attached task's duration.
+**BPMN Association Processing**: The component processes `bpmn:Association` elements to connect artifacts with flow elements, providing context about which tasks, events, or gateways an artifact relates to.
 
-**Visual Behavior**:
+**Association Structure**:
 
-- **Slash Pattern**: Diagonal lines at 45° angle with 12px spacing and 8px length
-- **Cutout Area**: Clean area during attached task timespan (no slashes)
-- **Edge Markers**: Dashed vertical lines at the start/end of attached task duration
-- **Color**: Subtle gray (`rgba(100, 100, 100, 0.3)`) for non-intrusive background indication
-
-**Example**:
-
-```
-Boundary Event Row: /////// [Task Duration] ///////
-                    ^slashes^    ^cutout^    ^slashes^
-                            |            |
-                    dashed edge    dashed edge
-```
-
-#### 2. Sub-Process Child Constraints
-
-**Definition**: Child elements of sub-processes show slashes everywhere except during their parent sub-process duration.
-
-**Visual Behavior**:
-
-- **Same Styling**: Identical to boundary event patterns (12px/8px spacing)
-- **Parent Cutout**: Clean area spans the complete parent sub-process duration
-- **Multi-level Support**: Nested sub-processes create nested cutout areas
-- **Edge Markers**: Dashed vertical lines mark parent sub-process boundaries
-
-**Example**:
-
-```
-Sub-process Child: /////// [Parent Sub-Process Duration] ///////
-                   ^slashes^         ^cutout^             ^slashes^
+```xml
+<textAnnotation id="TextAnnotation_15mcpxa">
+  <text>test</text>
+</textAnnotation>
+<association id="Association_0901qoj"
+             associationDirection="None"
+             sourceRef="Activity_184c7hr"
+             targetRef="TextAnnotation_15mcpxa" />
 ```
 
-#### 3. Multi-Constraint Elements
+**Visual Display**: Artifacts appear in the Process Information section with association details:
 
-**Definition**: Elements with both boundary event AND sub-process constraints show complex merged patterns.
+- **Artifact Name/ID**: Primary identification
+- **Artifact Type**: Human-readable type (e.g., "Text Annotation", "Data Object")
+- **Content**: Text content for annotations, references for data objects/stores
+- **Associated Elements**: Lists connected flow elements with names and types
 
-**Advanced Features**:
-
-- **Constraint Merging**: Overlapping constraint regions are automatically merged
-- **Multiple Cutouts**: Can have multiple clean areas for different constraint types
-- **Optimized Rendering**: Efficient algorithms prevent redundant slash drawing
-- **Boundary Consolidation**: Shared edges between constraints get single dashed lines
-
-**Example**:
+**Example Display**:
 
 ```
-Multi-Constraint: /// [Task] /// [Sub-Process] ///
-                   ^slash^ ^cut^ ^slash^ ^cut^  ^slash^
-                           |     |       |
-                    boundary   overlap   sub-process
-                    constraint  region   constraint
+Process Artifacts (2)
+The following informational artifacts were found in the process and are not displayed in the timeline:
+
+• Documentation Note (Text Annotation): "Process validation requirements"
+  Associated with: Task A (Task), Quality Gate (ExclusiveGateway)
+
+• Customer Data (Data Store Reference) → CustomerDatabase
+  Associated with: Retrieve Customer Info (ServiceTask)
 ```
 
-### Technical Implementation
+#### Processing Algorithm
 
-#### Rendering Algorithm
-
-**Three-Stage Process**:
-
-1. **Constraint Detection**:
-
-   ```typescript
-   // Identify all constraint sources for this element
-   const constraintRegions = [];
-
-   // Add boundary event constraint (attached task timespan)
-   if (element.attachedToId) {
-     constraintRegions.push({
-       start: attachedTask.startTime,
-       end: attachedTask.endTime,
-       type: 'boundary',
-     });
-   }
-
-   // Add sub-process constraint (parent sub-process timespan)
-   if (element.parentSubProcessId) {
-     constraintRegions.push({
-       start: parentSubProcess.startTime,
-       end: parentSubProcess.endTime,
-       type: 'subprocess',
-     });
-   }
-   ```
-
-2. **Region Merging**:
-
-   ```typescript
-   // Merge overlapping constraint regions
-   const mergedRegions = mergeConstraintRegions(constraintRegions);
-   // Result: Non-overlapping cutout areas where no slashes appear
-   ```
-
-3. **Pattern Rendering**:
-
-   ```typescript
-   // Render slashes across entire row, excluding constraint regions
-   for (let x = startX; x < endX; x += SLASH_SPACING) {
-     if (!isInConstraintRegion(x, mergedRegions)) {
-       drawSlash(x, y, SLASH_LENGTH);
-     }
-   }
-
-   // Add dashed edge markers at constraint boundaries
-   mergedRegions.forEach((region) => {
-     drawDashedVerticalLine(region.start, rowY);
-     drawDashedVerticalLine(region.end, rowY);
-   });
-   ```
-
-#### Performance Optimizations
-
-**Efficient Rendering**:
-
-- **Viewport Clipping**: Only draws slashes within visible screen area
-- **Boundary Clipping**: Slashes are clipped at constraint edges to prevent overlap
-- **Shared Calculations**: Constraint regions calculated once per element, reused for rendering
-- **Canvas State Management**: Proper save/restore prevents style bleeding
-
-**Memory Management**:
-
-- **Region Pooling**: Reuses constraint region objects to minimize garbage collection
-- **Batch Processing**: Groups similar elements for efficient batch rendering
-- **Lazy Evaluation**: Only calculates patterns for visible rows
-
-### Visual Design Principles
-
-#### Subtle & Non-Intrusive
-
-**Color Choice**: Light gray with low opacity ensures patterns don't interfere with primary content
-**Pattern Density**: 12px spacing provides clear indication without overwhelming the interface
-**Edge Definition**: Dashed vertical lines clearly mark constraint boundaries without dominating the layout
-
-#### Consistent Styling
-
-**Unified Appearance**: All constraint types use identical slash styling for visual consistency
-**Scalable Design**: Patterns work at different zoom levels and screen densities
-**Accessibility**: High contrast ratios maintained for visibility while preserving subtlety
-
-#### Semantic Clarity
-
-**Immediate Recognition**: Diagonal patterns universally understood as "restricted" or "bounded" areas
-**Boundary Emphasis**: Dashed edges clearly indicate where constraints begin and end
-**Multi-constraint Logic**: Complex scenarios handled gracefully with merged regions
-
-### Integration with Other Features
-
-#### Lane Compatibility
-
-**No Lane Slashing**: Lane elements and lane children are excluded from slash patterns
-**Participant Edge Lines**: Participants use vertical dashed lines instead of slash patterns
-**Organizational Clarity**: Slash patterns focus on timing constraints, not organizational boundaries
-
-#### Mode Support
-
-**All Traversal Modes**: Constraint visualization works in earliest, every, and latest occurrence modes
-**Instance Awareness**: Patterns correctly handle element instances (`_instance_` suffixes)
-**Ghost Element Integration**: Slash patterns respect ghost element opacity and timing
-
-#### Performance Impact
-
-**Minimal Overhead**: Efficient algorithms ensure slash rendering doesn't impact timeline performance
-**Canvas Optimization**: Uses optimized canvas drawing techniques for smooth interaction
-**Selective Rendering**: Only elements with constraints get pattern processing
-
-This visual constraint system provides powerful insights into BPMN process timing relationships while maintaining clean, professional visual design that enhances rather than clutters the timeline interface.
+1. **Artifact Extraction**: Collect artifacts from `process.artifacts` array
+2. **Association Discovery**: Process `process.associations` array to find connections
+3. **Bidirectional Mapping**: Create artifact ↔ flow element relationships
+4. **Enrichment**: Add association metadata to artifact objects
+5. **UI Display**: Show artifacts with associated element information
 
 ## Collaboration Support: Participants, Lanes & Message Flows
 
@@ -1477,12 +1371,17 @@ components/bpmn-timeline/
 ├── index.tsx                          # Main component and UI
 ├── GanttSettingsModal.tsx             # Settings modal component
 ├── gantt-settings-definition.ts       # Settings configuration
+├── gantt-settings-utils.tsx           # Settings rendering utilities
 ├── README.md                          # This documentation
 ├── test-cases.md                      # Comprehensive test cases
+├── constants/                         # Shared constants
+│   └── index.ts                       # Constants (durations, limits, colors)
 ├── core/                              # Core transformation logic
 │   ├── transform.ts                   # Transformation orchestration
 │   ├── transform-helpers.ts           # Validation and utility functions
 │   ├── scoped-traversal.ts            # Hierarchical scoped traversal algorithm
+│   ├── synchronization.ts             # Gateway synchronization logic
+│   └── process-model.ts               # Hierarchical process scope model
 ├── transformers/                      # Element-specific transformers
 │   ├── element-transformers.ts        # Element transformation functions
 │   └── mode-handlers.ts               # Mode-specific result processing
@@ -1491,7 +1390,17 @@ components/bpmn-timeline/
 ├── utils/                             # Utilities and helpers
 │   ├── utils.ts                       # Helper functions and utilities
 │   ├── collaboration-helpers.ts       # Participant, lane, message flow support
-│   └── lane-helpers.ts                # Lane metadata annotation system
+│   ├── lane-helpers.ts                # Lane metadata annotation system
+│   ├── boundary-dependencies.ts       # Boundary event dependency creation
+│   ├── duration-helpers.ts            # Duration parsing and extraction
+│   ├── element-maps.ts                # Element mapping utilities
+│   ├── element-processing.ts          # Element processing pipeline
+│   ├── element-transformer-factory.ts # Element transformer factory
+│   ├── id-helpers.ts                  # Instance ID parsing utilities
+│   ├── iterator-patterns.ts           # Sub-process iteration patterns
+│   ├── loop-helpers.ts                # Loop status management
+│   ├── mode-initialization.ts         # Mode handler initialization
+│   └── reference-extractor.ts         # BPMN reference extraction
 └── styles/                            # Component styling
     └── BPMNTimeline.module.scss       # CSS modules for styling
 ```

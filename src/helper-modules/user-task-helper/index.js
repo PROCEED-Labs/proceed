@@ -155,6 +155,8 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
       event.preventDefault();
 
       const data = new FormData(event.target);
+
+
       const variables = {};
       const entries = data.entries();
       let entry = entries.next();
@@ -162,11 +164,11 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
         const [key, value] = entry.value;
         if (variables[key]) {
           if (!Array.isArray(variables[key])) {
-            variables[key] = [variables[key]]; 
+            variables[key] = [variables[key]];
           }
           variables[key].push(value);
         } else {
-          variables[key] = value; 
+          variables[key] = value;
         }
         entry = entries.next();
       }
@@ -181,6 +183,30 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
         });
       });
     })
+
+    function updateUploadInfo(input) {
+      const parent = input.parentElement.parentElement;
+      const selectedFileElements = parent.getElementsByClassName("selected-files");
+      if (selectedFileElements.length) {
+        const [selectedFileElement] = selectedFileElements;
+        for (const child of selectedFileElement.childNodes) {
+          selectedFileElement.removeChild(child);
+        }
+        for (const file of input.files) {
+          const div = document.createElement('div');
+
+          if (file.type.startsWith('image')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.alt = file.name;
+            div.appendChild(img);
+          } else {
+            div.textContent = file.name;
+          }
+          selectedFileElement.appendChild(div);
+        }
+      }
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
       const milestoneInputs = document.querySelectorAll(
@@ -223,6 +249,11 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
           .join('');
 
           clearTimeout(variableInputTimer);
+
+          if (event.target.type === 'file') {
+            updateUploadInfo(event.target);
+            return;
+          }
 
           variableInputTimer = setTimeout(() => {
             window.PROCEED_DATA.put(

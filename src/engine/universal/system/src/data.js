@@ -197,6 +197,14 @@ class Data extends System {
     return this.read(`${definitionId}/images/${fileName}`, options);
   }
 
+  async writeInstanceFile(definitionId, instanceId, fileName, file, options) {
+    return this.write(`${definitionId}/${instanceId}/files/${fileName}`, file, options);
+  }
+
+  async readInstanceFile(definitionId, instanceId, fileName, options) {
+    return this.read(`${definitionId}/${instanceId}/files/${fileName}`, options);
+  }
+
   /**
    * Delete the value for the given key.
    * @async

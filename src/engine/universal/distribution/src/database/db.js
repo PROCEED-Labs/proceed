@@ -370,6 +370,28 @@ module.exports = {
     return images;
   },
 
+  async saveInstanceFile(definitionId, instanceId, fileName, file) {
+    if (!(await this.isProcessExisting(definitionId))) {
+      throw new Error('Process with given ID does not exist!');
+    }
+
+    if (!file) {
+      throw new Error('File must not be empty!');
+    }
+
+    await data.writeInstanceFile(definitionId, instanceId, fileName, file);
+  },
+
+  async getInstanceFile(definitionId, instanceId, fileName) {
+    const file = await data.readInstanceFile(definitionId, instanceId, fileName);
+
+    if (!file) {
+      throw new Error("No file found. Either the process, the instance or the file does not seem to exist.");
+    }
+
+    return file;
+  }
+
   /**
    * Saves the HTML of a start form for a version of a specific process stored in the file with the given definitionId
    *

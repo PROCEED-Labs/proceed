@@ -41,4 +41,34 @@ module.exports = (path) => {
 
     return JSON.stringify(imageFileNames);
   });
+
+  network.get(
+    `${path}/process/:definitionId/instance/:instanceId/files/:fileName`,
+    { cors: true },
+    async (req) => {
+      const { definitionId, instanceId, fileName } = req.params;
+
+      const file = await db.getInstanceFile(definitionId, instanceId, fileName);
+
+      return {
+        statusCode: 200,
+        mimeType: 'image/png image/svg+xml image/jpeg',
+        response: file,
+      };
+    },
+  );
+
+  network.put(
+    `${path}/process/:definitionId/instance/:instanceId/files/:fileName`,
+    { cors: true },
+    async (req) => {
+      const { definitionId, instanceId, fileName } = req.params;
+      const { body } = req;
+
+      const file = Buffer.from(body.data);
+      await db.saveInstanceFile(definitionId, instanceId, fileName, file);
+
+      return '';
+    },
+  );
 };

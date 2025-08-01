@@ -299,16 +299,11 @@ const SignIn: FC<{
           />
         )}
 
-        {userType === 'none' && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE ? (
-          <Typography.Title level={4} style={{ textAlign: 'center' }}>
-            TRY PROCEED
-          </Typography.Title>
-        ) : (
-          signInTitle
-        )}
-
         {userType === 'none' && guestProvider && env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE && (
           <>
+            <Typography.Title level={4} style={{ textAlign: 'center' }}>
+              TRY PROCEED
+            </Typography.Title>
             <Form
               onFinish={(values) =>
                 signIn(guestProvider.id, {
@@ -328,7 +323,7 @@ const SignIn: FC<{
         )}
 
         {/* If the user isn't none, we already show the signIn title at the top of the modal */}
-        {userType === 'none' && signInTitle}
+        {signInTitle}
 
         <Tabs
           items={tabs}

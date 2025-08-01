@@ -46,16 +46,7 @@ const nextAuthOptions: NextAuthConfig = {
     },
   },
   trustHost: true,
-  providers: [
-    CredentialsProvider({
-      name: 'Continue as Guest',
-      id: 'guest-signin',
-      credentials: {},
-      async authorize() {
-        return addUser({ isGuest: true });
-      },
-    }),
-  ],
+  providers: [],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
       if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
@@ -166,7 +157,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
   );
 }
 
-if (env.NODE_ENV === 'production') {
+if (env.PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE) {
   nextAuthOptions.providers.push(
     GoogleProvider({
       id: 'google',
@@ -183,18 +174,11 @@ if (env.NODE_ENV === 'production') {
         };
       },
     }),
-    DiscordProvider({
-      id: 'discord',
-      clientId: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID,
-      clientSecret: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET,
-      profile(profile) {
-        const image = profile.avatar
-          ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
-          : null;
+  );
+}
 
-        return { ...profile, image };
-      },
-    }),
+if (env.PROCEED_PUBLIC_IAM_LOGIN_OAUTH_X_ACTIVE) {
+  nextAuthOptions.providers.push(
     TwitterProvider({
       id: 'twitter',
       clientId: env.IAM_LOGIN_OAUTH_X_CLIENT_ID,
@@ -278,6 +262,23 @@ if (env.NODE_ENV === 'development') {
         if (!user) user = await addUser(userTemplate);
 
         return user;
+      },
+    }),
+  );
+}
+
+if (env.PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE) {
+  nextAuthOptions.providers.push(
+    DiscordProvider({
+      id: 'discord',
+      clientId: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID,
+      clientSecret: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET,
+      profile(profile) {
+        const image = profile.avatar
+          ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+          : null;
+
+        return { ...profile, image };
       },
     }),
   );

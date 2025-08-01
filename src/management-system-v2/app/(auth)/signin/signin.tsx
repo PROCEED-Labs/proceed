@@ -400,7 +400,7 @@ const SignIn: FC<{
             </Button>
 
             <Alert
-              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              message='Note: if you select "Continue as Guest", the this Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
               type="info"
             />
           </>
@@ -416,9 +416,8 @@ const SignIn: FC<{
             color: '#434343',
           }}
         >
-          By using the PROCEED Platform, you agree to the{' '}
-          <Link href="/terms">Terms of Service</Link> and the storage of functionally essential
-          cookies on your device.
+          By using the this Platform, you agree to the <Link href="/terms">Terms of Service</Link>{' '}
+          and the storage of functionally essential cookies on your device.
         </Typography.Paragraph>
       </AuthModal>
     </ConfigProvider>

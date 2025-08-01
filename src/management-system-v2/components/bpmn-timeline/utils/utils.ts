@@ -1669,23 +1669,6 @@ function groupElementsByLanes<
           laneName: effectiveLaneName,
           laneLevel: effectiveLaneLevel,
           childIds: (() => {
-            // DEBUG: Log lane elements before filtering
-            console.log(
-              'LANE ELEMENTS DEBUG:',
-              JSON.stringify({
-                laneId: effectiveLaneId,
-                totalElements: laneElements.length,
-                elements: laneElements.map((el) => ({
-                  id: el.id,
-                  name: (el as any).name,
-                  isExpandedSubProcess: (el as any).isExpandedSubProcess,
-                  parentSubProcessId: (el as any).parentSubProcessId,
-                  elementType: el.elementType,
-                  hasLaneMetadata: !!(el as any)._laneMetadata,
-                })),
-              }),
-            );
-
             const filtered = laneElements.filter((el) => {
               // Only include elements that are NOT children of sub-processes within this lane
               // This prevents double-counting in participant line rendering

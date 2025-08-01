@@ -529,12 +529,47 @@ function buildScopeGraph(elements: BPMNFlowElement[]) {
     (el) => !isBoundaryEventElement(el) && (incomingCount.get(el.id) || 0) === 0,
   );
 
-  // Handle processes with no start nodes
+  // Handle processes with no start nodes or ensure all disconnected components are reachable
+  // Handle processes with no start nodes or ensure all disconnected components are reachable
   if (startNodes.length === 0) {
     const nonBoundaryElements = nonFlowElements.filter((el) => !isBoundaryEventElement(el));
     if (nonBoundaryElements.length > 0) {
+      console.log(
+        'DISCONNECTED COMPONENTS DEBUG: No start nodes found, using fallback:',
+        nonBoundaryElements[0].id,
+      );
       startNodes.push(nonBoundaryElements[0]);
     }
+  } else {
+    // Even when we have start nodes, ensure all disconnected components are reachable
+    // Find elements that cannot be reached from existing start nodes
+    const reachableElements = new Set<string>();
+
+    // Perform DFS from each start node to find all reachable elements
+    const dfs = (elementId: string) => {
+      if (reachableElements.has(elementId)) return;
+      reachableElements.add(elementId);
+
+      const outgoingFlows = edges.get(elementId) || [];
+      outgoingFlows.forEach((flow) => {
+        const targetId =
+          typeof flow.targetRef === 'string' ? flow.targetRef : (flow.targetRef as any)?.id;
+        if (targetId && nodes.has(targetId)) {
+          dfs(targetId);
+        }
+      });
+    };
+
+    startNodes.forEach((startNode) => dfs(startNode.id));
+
+    // Find unreachable elements (disconnected components)
+    const nonBoundaryElements = nonFlowElements.filter((el) => !isBoundaryEventElement(el));
+    nonBoundaryElements.forEach((element) => {
+      if (!reachableElements.has(element.id)) {
+        // This element is in a disconnected component - add it as a start node
+        startNodes.push(element);
+      }
+    });
   }
 
   return { nodes, edges, startNodes };

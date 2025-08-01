@@ -1,36 +1,20 @@
 # BPMN Timeline Component
 
-The BPMN Timeline component transforms BPMN process definitions into Gantt chart visualizations, providing two distinct traversal modes for different analysis needs.
+The BPMN Timeline component transforms BPMN process definitions into Gantt chart visualizations, providing comprehensive support for complex process flows, loops, collaborative structures, and multiple analysis perspectives.
 
 ## Overview
 
 This component converts BPMN process data into timeline representations using sophisticated algorithms that handle complex process flows, loops, and branching structures. The component supports three primary modes: **Earliest Occurrence** (default), **Every Occurrence** (path-based), and **Latest Occurrence** (worst-case scenario).
 
-## Transform Rules and Algorithms
-
 **Core Architecture**: All traversal modes use unified **scoped path-based traversal** with hierarchical sub-process support and mode-specific result processing.
 
 **Primary Implementation**: `scoped-traversal.ts` → `calculateScopedTimings()` → Mode-specific handlers
 
-### Scoped Traversal Architecture
+## Traversal Modes
 
-**Hierarchical Scope System**:
+### Earliest Occurrence Mode (Default)
 
-- **ProcessScope structure**: Organizes elements into scopes (main process + nested sub-processes)
-- **Independent traversal**: Each scope traversed with own path exploration and visit tracking
-- **Shared instance counter**: Ensures unique instance IDs across all scopes and modes
-- **Parent-child relationships**: Maintained through `parentInstanceId` and `scopeInstanceId`
-
-**Technical Implementation**:
-
-- **ProcessScope**: Hierarchical scope organization with child scope mapping
-- **TraversalContext**: Maintains scope state, timing, visit tracking, and instance management
-- **Recursion protection**: Maximum 10 levels depth to prevent stack overflow
-- **Gateway-semantic processing**: Gateways processed during traversal, not post-processed
-
-### 1. Earliest Occurrence Mode (Default)
-
-**Algorithm**: Scoped path-based traversal with earliest occurrence selection
+**Algorithm**: Scoped path-based traversal with earliest occurrence selection  
 **Implementation**: `transform.ts` → `calculateScopedTimings()` → `handleEarliestOccurrenceMode()`
 
 #### Core Principles
@@ -63,9 +47,9 @@ Timeline Result:
 - EndEvent: milestone at 02:30 (earliest completion)
 ```
 
-### 2. Every Occurrence Mode
+### Every Occurrence Mode
 
-**Algorithm**: Scoped path-based traversal with all instances preserved
+**Algorithm**: Scoped path-based traversal with all instances preserved  
 **Implementation**: `transform.ts` → `calculateScopedTimings()` → `handleEveryOccurrenceMode()`
 
 #### Core Principles
@@ -119,23 +103,6 @@ instanceId = `${elementId}_instance_${globalCounter++}`;
 - **Loop Depth 1**: Allow 1 loop iteration (initial visit + 1 repetition)
 - **Loop Depth N**: Allow N loop iterations (initial visit + N repetitions)
 
-#### Branching Logic
-
-```typescript
-// When multiple outgoing flows exist:
-if (outgoingFlows.length > 1) {
-  // First flow continues current path
-  currentPath.continue(firstFlow.target);
-
-  // Additional flows create new paths
-  otherFlows.forEach((flow) => {
-    const newPath = currentPath.clone();
-    newPath.continue(flow.target);
-    branchedPaths.push(newPath);
-  });
-}
-```
-
 #### Use Cases
 
 - **Process simulation**: See all possible execution scenarios
@@ -180,9 +147,9 @@ Path 3 - Loop twice:
 - EndEvent: milestone at 08:00
 ```
 
-### 3. Latest Occurrence Mode (Worst-Case Scenario)
+### Latest Occurrence Mode (Worst-Case Scenario)
 
-**Algorithm**: Scoped path-based traversal with latest occurrence selection
+**Algorithm**: Scoped path-based traversal with latest occurrence selection  
 **Implementation**: `transform.ts` → `calculateScopedTimings()` → `handleLatestOccurrenceMode()`
 
 #### Core Principles
@@ -192,18 +159,6 @@ Path 3 - Loop twice:
 - Uses same scoped exploration as Every Occurrence but mode handler selects latest timing
 - Supports hierarchical sub-processes with complex parent-child alignment logic
 - Shows **worst-case scenario** for process completion across all scopes
-
-#### Scoped Algorithm Process
-
-```
-1. Execute scoped path-based traversal (same core process as Every Occurrence)
-2. For each element ID across all scopes:
-   - Collect all instances from all paths and scope contexts
-   - Apply complex parent-child alignment logic for sub-processes
-   - Select the instance with the latest start time
-3. Create single Gantt element using latest timing with proper hierarchy
-4. Fix parent-child relationships for sub-process instance alignment
-```
 
 #### Use Cases
 
@@ -224,22 +179,6 @@ Timeline Result (Latest Occurrence):
 - Task C: 04:30 - 05:00 (latest occurrence from Path 3)
 - Task B: 07:00 - 08:00 (latest occurrence from Path 3)
 - EndEvent: milestone at 08:00 (worst-case completion)
-```
-
-#### Configuration
-
-```typescript
-// Loop depth setting
-maxLoopIterations: number = 1; // Default: allow 1 loop iteration (initial + 1 repetition)
-maxLoopIterations: number = 0; // Stop at first repetition (initial + first repetition)
-maxLoopIterations: number = 3; // Allow up to 3 loop iterations (initial + 3 repetitions)
-
-// Available through space settings:
-// - 'positioning-logic': 'earliest-occurrence' | 'every-occurrence' | 'latest-occurrence'
-// - 'loop-depth': number (for path-based modes)
-// - 'chronological-sorting': boolean (default: false)
-// - 'show-loop-icons': boolean (default: true)
-// - 'curved-dependencies': boolean (default: false)
 ```
 
 ## Element Transformation Rules
@@ -405,6 +344,277 @@ Result: Dependencies TaskA→TaskB, TaskA→TaskC (direct, gateway hidden)
 
 See table above for specific fork/join behavior per gateway type.
 
+### Sub-Processes → Hierarchical Groups
+
+**Comprehensive sub-process implementation** with hierarchical traversal, proper parent-child relationships, and multi-level nesting support across all traversal modes.
+
+#### Supported Types
+
+- **Expanded SubProcesses**: `bpmn:SubProcess` and `bpmn:AdHocSubProcess` with `flowElements` - fully supported
+- **Collapsed SubProcesses**: SubProcesses without child elements - treated as regular tasks
+- **Nested SubProcesses**: Multi-level sub-process hierarchies with recursion depth protection (10 levels max)
+
+#### Core Architecture
+
+**Hierarchical Scope System**:
+
+- **ProcessScope structure**: Organizes elements into scopes (main process + sub-processes)
+- **Scoped traversal**: Each sub-process traversed independently with own visit tracking
+- **Instance management**: Shared counter ensures unique instance IDs across all scopes
+- **Parent-child relationships**: Maintained through `parentInstanceId` and `scopeInstanceId`
+
+**Visual Representation**:
+
+- **Group elements**: Sub-processes rendered as `type: 'group'` with triangular start/end markers
+- **Dashed connecting lines**: Visual connection between sub-process start and end triangles
+- **Hierarchy indentation**: Child elements appear indented below parent sub-process
+- **Constraint visualization**: Advanced diagonal slash pattern system shows timing relationships and constraints
+
+#### Technical Implementation
+
+**Timing & Bounds Calculation**:
+
+- **Child-driven timing**: Sub-process start = earliest child start, end = latest child completion
+- **Dynamic bounds**: `recalculateSubProcessBounds()` updates timing based on child execution
+- **Downstream propagation**: Sub-process timing changes automatically adjust downstream elements
+- **Inheritance patterns**: Children start when parent starts (`currentTime: pathTime`)
+
+**Instance ID Structure**:
+
+```typescript
+// Main sub-process instances
+'Activity_1c6bl41_instance_10';
+
+// Child elements of sub-process
+'Event_1hx5yna_instance_2_subprocess_Activity_1c6bl41_instance_10';
+
+// Nested sub-process children (multi-level)
+'Task_ABC_instance_4_subprocess_Activity_04vzwbt_instance_3_subprocess_Activity_1c6bl41_instance_10';
+```
+
+**Parent-Child Relationship Management**:
+
+- **Instance alignment**: Complex fixing logic ensures proper parent-child instance pairing
+- **Orphaned children validation**: Automatic detection and relationship repair
+- **Hierarchy levels**: Multi-level indentation based on nesting depth
+- **Selection behavior**: Recursive selection of all child instances when parent selected
+
+#### Boundary Event Integration
+
+**Complete boundary event support** for sub-processes with proper timing, positioning, and dependency handling:
+
+- **Attachment positioning**: Boundary events positioned based on attached sub-process timing
+- **Timing calculation**: With duration: `subProcessStart + eventDuration`, without: `subProcessStart + subProcessDuration/2`
+- **Loop status inheritance**: Boundary events inherit loop/loop-cut status from attached sub-process
+- **Dependency creation**: Automatic task→boundary event dependencies with proper flow types
+- **Outgoing flow processing**: Elements reachable through boundary event flows included with proper timing
+
+#### Mode-Specific Behavior
+
+**Every Occurrence Mode**:
+
+- **Instance duplication**: Sub-process instances created for each loop iteration with full child duplication
+- **Independent timing**: Each child instance calculated relative to its parent sub-process timing
+- **Dependency creation**: Full dependency networks between child instances and targets
+- **Path integration**: Sub-processes integrated into path-based traversal with proper scoping
+
+**Earliest/Latest Occurrence Modes**:
+
+- **Single instances**: Sub-processes appear once with bounds calculated from child timings
+- **Parent-child alignment**: Complex instance selection ensures proper parent-child pairing
+- **Timing selection**: Latest/earliest timing selected across all sub-process instances
+- **Relationship preservation**: Parent-child relationships maintained for selection and visualization
+
+**Ghost Elements Support**:
+
+- **Limitation**: Ghost elements disabled for sub-processes due to parent-child relationship complexity
+- **Alternative**: Use every-occurrence mode for complete sub-process instance visualization
+- **Warning display**: User notification when ghost elements requested with sub-processes present
+
+## Visual Constraint System: Diagonal Slash Patterns
+
+The BPMN Timeline implements a sophisticated visual constraint system using diagonal slash patterns to show timing relationships and boundaries between elements and their organizational or hierarchical constraints.
+
+### Overview
+
+**Purpose**: Diagonal slashes visually indicate areas where elements are constrained or bounded by parent elements, providing immediate visual feedback about timing relationships and organizational boundaries.
+
+**Core Principle**: Slash patterns appear in row backgrounds **outside** the duration of constraining elements, creating clear visual boundaries between constrained and unconstrained time periods.
+
+### Constraint Types
+
+#### 1. Boundary Event Constraints
+
+**Definition**: Elements attached to boundary events show slashes everywhere except during the attached task's duration.
+
+**Visual Behavior**:
+
+- **Slash Pattern**: Diagonal lines at 45° angle with 12px spacing and 8px length
+- **Cutout Area**: Clean area during attached task timespan (no slashes)
+- **Edge Markers**: Dashed vertical lines at the start/end of attached task duration
+- **Color**: Subtle gray (`rgba(100, 100, 100, 0.3)`) for non-intrusive background indication
+
+**Example**:
+
+```
+Boundary Event Row: /////// [Task Duration] ///////
+                    ^slashes^    ^cutout^    ^slashes^
+                            |            |
+                    dashed edge    dashed edge
+```
+
+#### 2. Sub-Process Child Constraints
+
+**Definition**: Child elements of sub-processes show slashes everywhere except during their parent sub-process duration.
+
+**Visual Behavior**:
+
+- **Same Styling**: Identical to boundary event patterns (12px/8px spacing)
+- **Parent Cutout**: Clean area spans the complete parent sub-process duration
+- **Multi-level Support**: Nested sub-processes create nested cutout areas
+- **Edge Markers**: Dashed vertical lines mark parent sub-process boundaries
+
+**Example**:
+
+```
+Sub-process Child: /////// [Parent Sub-Process Duration] ///////
+                   ^slashes^         ^cutout^             ^slashes^
+```
+
+#### 3. Multi-Constraint Elements
+
+**Definition**: Elements with both boundary event AND sub-process constraints show complex merged patterns.
+
+**Advanced Features**:
+
+- **Constraint Merging**: Overlapping constraint regions are automatically merged
+- **Multiple Cutouts**: Can have multiple clean areas for different constraint types
+- **Optimized Rendering**: Efficient algorithms prevent redundant slash drawing
+- **Boundary Consolidation**: Shared edges between constraints get single dashed lines
+
+**Example**:
+
+```
+Multi-Constraint: /// [Task] /// [Sub-Process] ///
+                   ^slash^ ^cut^ ^slash^ ^cut^  ^slash^
+                           |     |       |
+                    boundary   overlap   sub-process
+                    constraint  region   constraint
+```
+
+### Technical Implementation
+
+#### Rendering Algorithm
+
+**Three-Stage Process**:
+
+1. **Constraint Detection**:
+
+   ```typescript
+   // Identify all constraint sources for this element
+   const constraintRegions = [];
+
+   // Add boundary event constraint (attached task timespan)
+   if (element.attachedToId) {
+     constraintRegions.push({
+       start: attachedTask.startTime,
+       end: attachedTask.endTime,
+       type: 'boundary',
+     });
+   }
+
+   // Add sub-process constraint (parent sub-process timespan)
+   if (element.parentSubProcessId) {
+     constraintRegions.push({
+       start: parentSubProcess.startTime,
+       end: parentSubProcess.endTime,
+       type: 'subprocess',
+     });
+   }
+   ```
+
+2. **Region Merging**:
+
+   ```typescript
+   // Merge overlapping constraint regions
+   const mergedRegions = mergeConstraintRegions(constraintRegions);
+   // Result: Non-overlapping cutout areas where no slashes appear
+   ```
+
+3. **Pattern Rendering**:
+
+   ```typescript
+   // Render slashes across entire row, excluding constraint regions
+   for (let x = startX; x < endX; x += SLASH_SPACING) {
+     if (!isInConstraintRegion(x, mergedRegions)) {
+       drawSlash(x, y, SLASH_LENGTH);
+     }
+   }
+
+   // Add dashed edge markers at constraint boundaries
+   mergedRegions.forEach((region) => {
+     drawDashedVerticalLine(region.start, rowY);
+     drawDashedVerticalLine(region.end, rowY);
+   });
+   ```
+
+#### Performance Optimizations
+
+**Efficient Rendering**:
+
+- **Viewport Clipping**: Only draws slashes within visible screen area
+- **Boundary Clipping**: Slashes are clipped at constraint edges to prevent overlap
+- **Shared Calculations**: Constraint regions calculated once per element, reused for rendering
+- **Canvas State Management**: Proper save/restore prevents style bleeding
+
+**Memory Management**:
+
+- **Region Pooling**: Reuses constraint region objects to minimize garbage collection
+- **Batch Processing**: Groups similar elements for efficient batch rendering
+- **Lazy Evaluation**: Only calculates patterns for visible rows
+
+### Visual Design Principles
+
+#### Subtle & Non-Intrusive
+
+**Color Choice**: Light gray with low opacity ensures patterns don't interfere with primary content
+**Pattern Density**: 12px spacing provides clear indication without overwhelming the interface
+**Edge Definition**: Dashed vertical lines clearly mark constraint boundaries without dominating the layout
+
+#### Consistent Styling
+
+**Unified Appearance**: All constraint types use identical slash styling for visual consistency
+**Scalable Design**: Patterns work at different zoom levels and screen densities
+**Accessibility**: High contrast ratios maintained for visibility while preserving subtlety
+
+#### Semantic Clarity
+
+**Immediate Recognition**: Diagonal patterns universally understood as "restricted" or "bounded" areas
+**Boundary Emphasis**: Dashed edges clearly indicate where constraints begin and end
+**Multi-constraint Logic**: Complex scenarios handled gracefully with merged regions
+
+### Integration with Other Features
+
+#### Lane Compatibility
+
+**No Lane Slashing**: Lane elements and lane children are excluded from slash patterns
+**Participant Edge Lines**: Participants use vertical dashed lines instead of slash patterns
+**Organizational Clarity**: Slash patterns focus on timing constraints, not organizational boundaries
+
+#### Mode Support
+
+**All Traversal Modes**: Constraint visualization works in earliest, every, and latest occurrence modes
+**Instance Awareness**: Patterns correctly handle element instances (`_instance_` suffixes)
+**Ghost Element Integration**: Slash patterns respect ghost element opacity and timing
+
+#### Performance Impact
+
+**Minimal Overhead**: Efficient algorithms ensure slash rendering doesn't impact timeline performance
+**Canvas Optimization**: Uses optimized canvas drawing techniques for smooth interaction
+**Selective Rendering**: Only elements with constraints get pattern processing
+
+This visual constraint system provides powerful insights into BPMN process timing relationships while maintaining clean, professional visual design that enhances rather than clutters the timeline interface.
+
 ## Collaboration Support: Participants, Lanes & Message Flows
 
 The BPMN Timeline component provides comprehensive support for BPMN collaboration diagrams, including participants (pools), lanes, and message flows between processes.
@@ -415,10 +625,11 @@ The BPMN Timeline component provides comprehensive support for BPMN collaboratio
 
 **Key Features**:
 
-- Multi-participant process visualization
-- Hierarchical lane organization within participants
-- Message flow visualization with proper routing and spacing
-- Automatic participant header generation and vertical centering
+- Multi-participant process visualization with automatic header generation
+- Hierarchical lane organization within participants (unlimited nesting depth)
+- Message flow visualization with intelligent routing and spacing
+- Sub-process support within lanes and participants
+- Automatic participant line length calculation respecting content visibility
 
 ### Participants (Pools)
 
@@ -441,12 +652,29 @@ const collaboration = definitions.rootElements?.find(
 - **Positioning**: Spans entire duration of contained elements
 - **Visual**: Light gray background (`#f0f0f0`) with participant name
 - **Hierarchy**: Level -1 (above all other elements)
+- **Dashed Lines**: Vertical lines spanning only visible content rows
 
 **Child Element Association**:
 
 - All elements from participant's process are annotated with `_participantMetadata`
 - Participant headers generated in `createParticipantGroups()`
 - Vertical centering calculated across participant and all child elements
+
+#### Participant Line Calculation
+
+**Intelligent Row Counting**:
+
+- **Empty lane headers skipped**: Lane headers with no visible content don't contribute to line length
+- **Collapsed sub-process respect**: Only counts visible rows when sub-processes are collapsed
+- **Nested hierarchy support**: Properly handles multi-level lane structures
+- **Accurate visual representation**: Dashed lines match actual content height
+
+```typescript
+// Empty lane headers are automatically excluded
+if (isLaneHeader && childIds.length === 0) {
+  return 0; // Don't count empty lanes
+}
+```
 
 ### Lanes
 
@@ -457,7 +685,7 @@ const collaboration = definitions.rootElements?.find(
 **Parsing & Hierarchy**:
 
 ```typescript
-// Lane hierarchy extracted from laneSets
+// Lane hierarchy extracted from laneSets with unlimited nesting depth
 const laneHierarchy = parseLaneHierarchy(process.laneSets);
 ```
 
@@ -465,14 +693,64 @@ const laneHierarchy = parseLaneHierarchy(process.laneSets);
 
 - **ID Pattern**: `lane-header-${laneId}`
 - **Properties**: `isLaneHeader: true`, `hierarchyLevel` based on nesting
-- **Visual**: Indented based on nesting level
+- **Visual**: Indented based on nesting level with hierarchical colors
 - **Scope**: Contains all elements assigned to the lane
+- **Empty lane handling**: Headers created for structural lanes even without direct elements
+
+**Lane Duration & Timing Behavior**:
+
+- **No Duration Bars**: Lane headers are organizational containers, not process elements with execution time
+- **Dynamic Span**: Lane header spans the complete duration of all contained elements (earliest start to latest end)
+- **Auto-calculation**: Lane timing automatically adjusts when contained elements change
+- **Visual Representation**: Appears as colored header row without traditional Gantt bar visualization
+- **Timing Impact**: Lanes provide organizational structure only - they don't affect process execution timing or dependencies
 
 **Technical Features**:
 
-- **Nested lanes**: Support for multi-level lane hierarchies
-- **Element annotation**: `laneId`, `laneName`, `laneLevel` added to elements
-- **Metadata preservation**: Pure metadata - no execution impact
+- **Multi-level nesting**: Support for unlimited lane hierarchy depth
+- **Hierarchical colors**: Different colors per nesting level for visual clarity
+- **Element annotation**: `_laneMetadata` object with `laneId`, `laneName`, `laneLevel`
+- **Metadata preservation**: Pure metadata approach - no execution timing impact
+- **Sub-process integration**: Lane elements properly nested within sub-process hierarchies
+
+#### Lane Metadata System
+
+**Metadata Structure**:
+
+```typescript
+// Lane metadata attached to elements
+element._laneMetadata = {
+  laneId: string,
+  laneName: string,
+  laneLevel: number,
+};
+```
+
+**Instance Element Inheritance**:
+
+- **Automatic inheritance**: Instance elements (`_instance_` suffix) inherit lane metadata from base elements
+- **Proper grouping**: Lane grouping recognizes both new `_laneMetadata` format and legacy `laneId` property
+- **Hierarchy preservation**: Sub-process children maintain original parent-child relationships within lanes
+
+### Sub-Process Integration
+
+**Lane + Sub-Process Support**:
+
+- **Flattening process**: Sub-processes flattened before lane metadata annotation (both collaboration and non-collaboration scenarios)
+- **Hierarchy preservation**: Sub-process parent-child relationships preserved within lane contexts
+- **Metadata inheritance**: Sub-process children inherit lane metadata from parent sub-processes
+- **Filtering logic**: Lane headers exclude sub-process children from direct childIds to maintain proper nesting
+
+**Technical Implementation**:
+
+```typescript
+// Critical processing order for lane + sub-process integration
+const flattenedElements = flattenExpandedSubProcesses(process.flowElements);
+const elementsWithLanes = annotateElementsWithLanes(
+  flattenedElements,
+  laneHierarchy,
+);
+```
 
 ### Message Flows
 
@@ -508,17 +786,18 @@ const messageDependencies = transformMessageFlows(
 
 **Element-to-Element**:
 
-- **Source**: Vertical edge (top/bottom of element)
-- **Target**: Vertical edge (top/bottom of element)
-- **Spacing**: 15px vertical separation for multiple flows
-- **Visual**: Small empty circle at origin, arrow at destination
+- **Source**: Vertical edge (top/bottom of element based on direction)
+- **Target**: Vertical edge (top/bottom of element based on direction)
+- **Spacing**: 15px vertical separation for multiple flows on same element
+- **Visual**: Small empty circle (3px) at origin, arrow at destination
+- **Direct routing**: Vertical connection without horizontal spacing
 
 **Participant Connections**:
 
-- **Participant edges**: Always connect to right edge
-- **Approach direction**: Participant targets approached from right side
-- **Vertical centering**: Connection point at center of participant + all children
-- **Spacing**: 15px vertical separation for mixed incoming/outgoing flows
+- **Participant edges**: Always connect to right edge of participant header
+- **Approach direction**: Participant targets approached from right side with 20px spacing
+- **Vertical centering**: Connection point at vertical center of participant + all children
+- **Clean routing**: Horizontal approach with vertical segments for clean visual flow
 
 #### Routing & Spacing Algorithm
 
@@ -535,15 +814,22 @@ if (hasBothTypes) {
 
 **Routing Strategy**:
 
-- **Participant-to-Participant**: Direct horizontal routing with vertical spacing
-- **Element-to-Participant**: Vertical-then-horizontal with 20px approach spacing
+- **Element-to-Element**: Direct vertical connections at element edges
+- **Element-to-Participant**: Vertical-then-horizontal with 20px approach spacing from right
 - **Participant-to-Element**: Horizontal-then-vertical with proper edge connections
+- **Participant-to-Participant**: Direct horizontal routing with vertical spacing
+
+**Connection Point Calculation**:
+
+- **Element edges**: Uses `getElementConnectionPoint()` for precise edge positioning
+- **Participant centering**: Calculates vertical center across participant and all visible children
+- **Direction-aware**: Circles appear at source edge, arrows at target edge with correct orientation
 
 #### Visual Elements
 
-**Start Indicators**: 3px empty circles (`#ffffff` fill, colored stroke)
-**End Indicators**: Arrowheads pointing toward target
-**Line Style**: Dashed pattern (`[8, 4]`) with `DEPENDENCY_LINE_COLOR`
+**Start Indicators**: 3px empty circles (`#ffffff` fill, colored stroke) positioned at element edges
+**End Indicators**: Directional arrowheads pointing toward target
+**Line Style**: Dashed pattern (`[8, 4]`) with dependency line color
 **Opacity**: 80% to distinguish from sequence flows
 
 ### Technical Implementation
@@ -552,13 +838,15 @@ if (hasBothTypes) {
 
 **Core Processing**:
 
-- `collaboration-helpers.ts`: Main collaboration parsing and message flow transformation
-- `transform.ts`: Integration point - calls collaboration helpers after element grouping
-- `utils.ts`: Enhanced `groupAndSortElements()` with participant header support
+- `collaboration-helpers.ts`: Main collaboration parsing, message flow transformation, and sub-process flattening
+- `transform.ts`: Integration point with proper execution order for lane + sub-process support
+- `utils.ts`: Enhanced `groupAndSortElements()` with hierarchical lane processing and filtering logic
+- `lane-helpers.ts`: Lane metadata annotation with sub-process parent inheritance
 
 **Rendering**:
 
-- `DependencyRenderer.ts`: Message flow routing, spacing, and visual rendering
+- `DependencyRenderer.ts`: Message flow routing, spacing, visual rendering, and connection point calculation
+- `ElementRenderer.ts`: Participant dashed lines with intelligent row counting
 - `GanttChartCanvas.tsx`: Enhanced dependency type display ("Message Flow")
 
 #### Processing Order
@@ -566,13 +854,27 @@ if (hasBothTypes) {
 **Critical Sequence**:
 
 ```typescript
-// 1. Group elements first (creates participant headers)
+// 1. Flatten sub-processes BEFORE lane annotation (both collaboration and single process)
+const flattenedElements = flattenExpandedSubProcesses(process.flowElements);
+const elementsWithLanes = annotateElementsWithLanes(
+  flattenedElements,
+  laneHierarchy,
+);
+
+// 2. Mode handling with lane metadata inheritance for instance elements
+modeResult.ganttElements.forEach((ganttElement) => {
+  if (ganttElement.id.includes('_instance_')) {
+    // Inherit lane metadata from base element
+  }
+});
+
+// 3. Group elements (creates participant/lane headers with proper filtering)
 const sortedElements = groupAndSortElements(/*...*/);
 
-// 2. Transform message flows (requires participant headers to exist)
+// 4. Transform message flows (requires headers to exist)
 const messageDependencies = transformMessageFlows(/*...*/);
 
-// 3. Combine with regular dependencies
+// 5. Combine dependencies
 const allDependencies = [...regularDeps, ...messageDependencies];
 ```
 
@@ -581,57 +883,43 @@ const allDependencies = [...regularDeps, ...messageDependencies];
 **Data Flow**:
 
 1. **BPMN Parsing**: Extract collaboration, participants, lanes, message flows
-2. **Element Processing**: Annotate elements with participant/lane metadata
-3. **Header Generation**: Create participant/lane headers with proper timing
-4. **Message Flow Transformation**: Convert to visual dependencies
-5. **Rendering**: Apply spacing, routing, and visual styling
+2. **Sub-Process Flattening**: Flatten sub-processes before metadata annotation
+3. **Lane Annotation**: Add lane metadata to all elements including sub-process children
+4. **Instance Inheritance**: Instance elements inherit lane metadata from base elements
+5. **Header Generation**: Create participant/lane headers with intelligent child filtering
+6. **Message Flow Transformation**: Convert to visual dependencies with proper routing
+7. **Rendering**: Apply spacing, routing, visual styling, and participant line calculation
 
 **Error Handling**:
 
 - **Missing participants**: Graceful fallback to element-level connections
 - **Invalid message flows**: Filtered out during transformation
-- **Header generation failures**: Process continues without headers
-
-### Configuration & Display
-
-**User Controls**:
-
-- Message flows automatically detected and displayed
-- No separate toggle - part of collaboration support
-- Proper type display in dependency popups ("Message Flow")
-
-**Visual Indicators**:
-
-- **Participant headers**: Gray background, spans full duration
-- **Lane headers**: Indented by hierarchy level
-- **Message flows**: Dashed lines with circles and arrows
-- **Spacing**: Automatic 15px separation for multiple flows
-
-This implementation provides complete BPMN collaboration support while maintaining clean visual organization and accurate semantic representation.
+- **Empty lanes**: Handled gracefully without affecting participant line calculations
+- **Sub-process conflicts**: Proper hierarchy preservation prevents conflicts
 
 ## Structural Path Interpretation and Validation
 
-### **Current Approach: Structural Path Analysis**
+### Current Approach: Structural Path Analysis
 
 The BPMN timeline component implements **structural path analysis** rather than strict BPMN token flow semantics. This design choice provides valuable insights for process modeling and analysis while handling invalid or incomplete BPMN patterns gracefully.
 
-#### **Key Characteristics:**
+#### Key Characteristics
 
-**Path-Based Element Creation:**
+**Path-Based Element Creation**:
 
 - **Multiple instances**: Elements can appear multiple times if reached via different paths
 - **Structural exploration**: Shows all possible execution routes through the process
 - **Instance identification**: Each path-based occurrence gets a unique instance ID
 - **Timing calculation**: Based on path arrival times and element durations
 
-**Gateway Semantic Processing:**
+**Gateway Semantic Processing**:
 
 - **No gateway instances**: Gateways are processed semantically during traversal
 - **Direct dependencies**: Create source→target connections skipping gateway instances
 - **Timing integration**: Gateway and flow durations combined in path timing
 - **Synchronization logic**: Parallel joins queue paths until all required sources arrive
 
-#### **Example: Same Element, Multiple Paths**
+#### Example: Same Element, Multiple Paths
 
 ```
 BPMN Structure:
@@ -647,9 +935,9 @@ Structural Path Result:
 Dependencies: S→T1, S→T2(inst1), T1→T2(inst2), T2(inst1)→E(inst1), T2(inst2)→E(inst2)
 ```
 
-### **Comparison with BPMN Token Flow Semantics**
+### Comparison with BPMN Token Flow Semantics
 
-#### **BPMN Token Flow (Specification-Compliant):**
+#### BPMN Token Flow (Specification-Compliant)
 
 ```
 Token Behavior:
@@ -660,7 +948,7 @@ Token Behavior:
 - G2 waits for both tokens from T2 before creating single E token
 ```
 
-#### **Structural Path Analysis (Current Implementation):**
+#### Structural Path Analysis (Current Implementation)
 
 ```
 Path Behavior:
@@ -671,11 +959,11 @@ Path Behavior:
 - G2 doesn't synchronize T2 instances (same element, different paths)
 ```
 
-### **Validation and Structural Warnings**
+### Validation and Structural Warnings
 
 The component includes validation logic to detect potentially problematic BPMN patterns while still generating useful timeline visualizations.
 
-#### **Gateway Mismatch Detection:**
+#### Gateway Mismatch Detection
 
 Identifies patterns that would cause deadlocks in real BPMN execution:
 
@@ -689,16 +977,16 @@ from exclusive gateway 'G1'. In real BPMN execution, this could cause the parall
 join to wait indefinitely for flows that may never arrive."
 ```
 
-#### **Structural Issue Types:**
+#### Structural Issue Types
 
 - **Deadlock patterns**: Exclusive→parallel join combinations
 - **Gateway chains**: Complex gateway-to-gateway connections
 - **Asymmetric flows**: Parallel branches with different convergence points
 - **Loop complexities**: Gateway interactions within loop structures
 
-### **Why Structural Path Analysis is Sufficient**
+### Why Structural Path Analysis is Sufficient
 
-#### **Benefits for Process Modeling:**
+#### Benefits for Process Modeling
 
 1. **Design-Time Analysis**: Shows all possible process paths during modeling
 2. **Incomplete Pattern Handling**: Works with invalid or incomplete BPMN patterns
@@ -706,209 +994,13 @@ join to wait indefinitely for flows that may never arrive."
 4. **Structural Insight**: Reveals process complexity and flow patterns
 5. **Educational Value**: Shows the difference between structure and execution
 
-#### **Use Cases Where This Approach Excels:**
+#### Use Cases Where This Approach Excels
 
 - **Process design and review**: Understanding all possible execution scenarios
 - **Process optimization**: Identifying redundant or problematic paths
 - **Compliance analysis**: Verifying that all required paths are present
 - **Training and documentation**: Showing process structure and complexity
 - **Risk assessment**: Understanding worst-case execution scenarios
-
-#### **Limitations Compared to Token Flow:**
-
-- **Not execution-accurate**: Doesn't represent actual process engine behavior
-- **Instance proliferation**: Same elements may appear multiple times
-- **Synchronization differences**: May not match runtime synchronization behavior
-- **Resource modeling**: Doesn't account for resource constraints or conflicts
-
-### **Alternative: BPMN Token Flow Implementation**
-
-A token-based implementation would provide execution-accurate modeling:
-
-#### **Technical Approach:**
-
-```typescript
-interface TokenBasedElement {
-  elementId: string;
-  tokens: Array<{ sourceId: string; arrivalTime: number }>;
-  executions: Array<{ startTime: number; endTime: number }>;
-  overallDuration: number; // Extended for multiple token processing
-}
-```
-
-#### **Benefits of Token Flow:**
-
-- **BPMN Specification Compliance**: Matches actual process engine behavior
-- **Accurate Resource Modeling**: Single instances with extended durations
-- **Proper Synchronization**: Parallel joins wait for all required tokens
-- **Realistic Timing**: Accounts for sequential token processing
-
-#### **Why Current Approach is Preferred:**
-
-1. **Modeling Flexibility**: Handles invalid BPMN patterns gracefully
-2. **Design-Time Utility**: More useful during process design phase
-3. **Implementation Simplicity**: Less complex state management
-4. **Visual Clarity**: Easier to understand structural relationships
-5. **Performance**: More efficient for large, complex processes
-
-**The structural path analysis approach serves the component's primary purpose of process analysis and timeline visualization while remaining robust and user-friendly for process modeling scenarios.**
-
-### **Implementation Status**
-
-**Current Features:**
-
-- **Gateway-semantic traversal**: Implemented and tested
-- **Parallel gateway synchronization**: Working with queueing mechanism
-- **Exclusive gateway branching**: Path-based implementation
-- **Direct source→target dependencies**: No gateway instances in timeline
-- **Structural validation**: Deadlock pattern detection
-- **Complex gateway patterns**: Nested, chained, and mixed gateway types supported
-
-**Known Considerations:**
-
-- **BPMN vs. Structural semantics**: Shows structural paths, not token flow execution
-- **Instance proliferation**: Same elements may appear multiple times in complex paths
-- **Validation warnings**: Detects but allows potentially invalid BPMN patterns
-
-### SubProcess Support
-
-**Comprehensive sub-process implementation** with hierarchical traversal, proper parent-child relationships, and multi-level nesting support across all traversal modes.
-
-#### **Supported Types**
-
-- **Expanded SubProcesses**: `bpmn:SubProcess` and `bpmn:AdHocSubProcess` with `flowElements` - fully supported
-- **Collapsed SubProcesses**: SubProcesses without child elements - treated as regular tasks
-- **Nested SubProcesses**: Multi-level sub-process hierarchies with recursion depth protection (10 levels max)
-
-#### **Core Architecture**
-
-**Hierarchical Scope System**:
-
-- **ProcessScope structure**: Organizes elements into scopes (main process + sub-processes)
-- **Scoped traversal**: Each sub-process traversed independently with own visit tracking
-- **Instance management**: Shared counter ensures unique instance IDs across all scopes
-- **Parent-child relationships**: Maintained through `parentInstanceId` and `scopeInstanceId`
-
-**Visual Representation**:
-
-- **Group elements**: Sub-processes rendered as `type: 'group'` with triangular start/end markers
-- **Dashed connecting lines**: Visual connection between sub-process start and end triangles
-- **Hierarchy indentation**: Child elements appear indented below parent sub-process
-- **Slash pattern constraints**: Child elements show diagonal slashes outside parent duration
-
-#### **Technical Implementation**
-
-**Timing & Bounds Calculation**:
-
-- **Child-driven timing**: Sub-process start = earliest child start, end = latest child completion
-- **Dynamic bounds**: `recalculateSubProcessBounds()` updates timing based on child execution
-- **Downstream propagation**: Sub-process timing changes automatically adjust downstream elements
-- **Inheritance patterns**: Children start when parent starts (`currentTime: pathTime`)
-
-**Instance ID Structure**:
-
-```typescript
-// Main sub-process instances
-'Activity_1c6bl41_instance_10';
-
-// Child elements of sub-process
-'Event_1hx5yna_instance_2_subprocess_Activity_1c6bl41_instance_10';
-
-// Nested sub-process children (multi-level)
-'Task_ABC_instance_4_subprocess_Activity_04vzwbt_instance_3_subprocess_Activity_1c6bl41_instance_10';
-```
-
-**Parent-Child Relationship Management**:
-
-- **Instance alignment**: Complex fixing logic ensures proper parent-child instance pairing
-- **Orphaned children validation**: Automatic detection and relationship repair
-- **Hierarchy levels**: Multi-level indentation based on nesting depth
-- **Selection behavior**: Recursive selection of all child instances when parent selected
-
-#### **Boundary Event Integration**
-
-**Complete boundary event support** for sub-processes with proper timing, positioning, and dependency handling:
-
-- **Attachment positioning**: Boundary events positioned based on attached sub-process timing
-- **Timing calculation**: With duration: `subProcessStart + eventDuration`, without: `subProcessStart + subProcessDuration/2`
-- **Loop status inheritance**: Boundary events inherit loop/loop-cut status from attached sub-process
-- **Dependency creation**: Automatic task→boundary event dependencies with proper flow types
-- **Outgoing flow processing**: Elements reachable through boundary event flows included with proper timing
-
-#### **Mode-Specific Behavior**
-
-**Every Occurrence Mode**:
-
-- **Instance duplication**: Sub-process instances created for each loop iteration with full child duplication
-- **Independent timing**: Each child instance calculated relative to its parent sub-process timing
-- **Dependency creation**: Full dependency networks between child instances and targets
-- **Path integration**: Sub-processes integrated into path-based traversal with proper scoping
-
-**Earliest/Latest Occurrence Modes**:
-
-- **Single instances**: Sub-processes appear once with bounds calculated from child timings
-- **Parent-child alignment**: Complex instance selection ensures proper parent-child pairing
-- **Timing selection**: Latest/earliest timing selected across all sub-process instances
-- **Relationship preservation**: Parent-child relationships maintained for selection and visualization
-
-**Ghost Elements Support**:
-
-- **Limitation**: Ghost elements disabled for sub-processes due to parent-child relationship complexity
-- **Alternative**: Use every-occurrence mode for complete sub-process instance visualization
-- **Warning display**: User notification when ghost elements requested with sub-processes present
-
-#### **Current Implementation Status**
-
-**✅ Fully Working Features**:
-
-- Hierarchical scope traversal with recursion depth protection (10 levels max)
-- Complete boundary event support on sub-processes with proper timing
-- Parent-child relationship management with instance alignment fixing
-- Multi-level nesting with proper ID chain preservation
-- Loop detection and cutoff handling per scope
-- Visual constraints (slash patterns) and recursive selection behavior
-- All traversal modes (earliest/latest/every occurrence) with mode-specific optimizations
-
-**⚠️ Known Limitations**:
-
-- Ghost elements not supported due to parent-child relationship conflicts
-- Complex relationship fixing required for instance ID alignment across modes
-- Performance considerations for deeply nested structures (>5 levels)
-
-### Unsupported Elements
-
-**Current Limitations**: These elements are excluded and reported as errors
-
-- Currently, all major BPMN elements are supported
-
-### Informational Artifacts
-
-**Supported Artifacts**: These elements are displayed in the Process Information area but not included in the timeline
-
-- `bpmn:TextAnnotation` - Text annotations and documentation with quoted text content
-- `bpmn:DataObject` and `bpmn:DataObjectReference` - Data objects (only unreferenced DataObjects are shown separately)
-- `bpmn:DataStore` and `bpmn:DataStoreReference` - Data stores with reference relationships
-- `bpmn:Group` - Visual grouping containers
-- `proceed:genericResource` / `proceed:GenericResource` - Custom resource definitions with type information
-
-**Smart Filtering**:
-
-- DataObjects referenced by DataObjectReferences are automatically filtered out to avoid duplication
-- References show target relationships (e.g., "DataObjectRef → DataObject_123")
-- Generic Resources display their resource type (e.g., "Generic Resource - Laptop")
-
-**Display**: Informational artifacts appear in the "Process Artifacts" section with element counts and details
-
-**Artifact Locations**: Searches across multiple BPMN sections:
-
-- `process.flowElements` - Standard flow-level artifacts
-- `process.artifacts` - Dedicated artifacts array (Groups, Annotations)
-- `process.ioSpecification` - Data inputs/outputs
-
-**Issue Reporting**: Comprehensive reporting with element details and exclusion reasons
-
-- **Errors**: Block timeline generation (e.g., unsupported elements, malformed data)
-- **Warnings**: Allow timeline generation but flag potential issues (e.g., structural problems, gateway mismatches)
 
 ## Duration Parsing
 
@@ -941,6 +1033,7 @@ interface TokenBasedElement {
 
 - **Connected components**: Elements in same flow chain share colors
 - **Color palette**: 8 distinct, accessible colors that cycle
+- **Sub-process awareness**: Offset colors distinguish sub-process elements from main process
 - **Deterministic**: Same process always gets same colors
 
 ### Element Grouping
@@ -986,6 +1079,110 @@ Chronological Sorting Result:
 - **Instance labeling**: "Task A (instance 1 of 3)"
 - **Unique coloring**: Each instance gets consistent color
 - **Path identification**: Instances grouped by originating path
+
+### Interactive Collapsible Groups
+
+The timeline provides interactive collapse/expand functionality for hierarchical elements, allowing users to manage visual complexity and focus on relevant parts of the process.
+
+#### Supported Collapsible Elements
+
+**Sub-Processes**:
+
+- **Expanded Sub-Processes**: Can be collapsed to hide all child elements
+- **Visual Indicators**: Triangular markers (▼ expanded, ▶ collapsed) in task list
+- **Hierarchy Preservation**: Child elements maintain proper indentation and relationships when expanded
+
+**Lanes**:
+
+- **Lane Headers**: Can be collapsed to hide all lane contents
+- **Nested Lanes**: Support for multi-level lane hierarchy collapse/expand
+- **Organizational Focus**: Collapse unrelated lanes to focus on specific roles or departments
+
+**Participants**:
+
+- **Participant Headers**: Can be collapsed to hide entire participant content
+- **Cross-Participant Workflows**: Collapse individual participants while maintaining message flow visibility
+
+#### Interactive Controls
+
+**Task List Integration**:
+
+- **Clickable Icons**: Triangle icons (▼/▶) next to collapsible elements in the task list
+- **Immediate Response**: Click to toggle expand/collapse state instantly
+- **Visual Feedback**: Icons update immediately to reflect current state
+
+**Collapse Behavior**:
+
+- **Children Hiding**: All child elements become hidden when parent is collapsed
+- **Dependency Preservation**: Dependencies to/from collapsed elements remain visible as connection points
+- **Collapsed Indicators**: Subtle visual indicators show collapsed sections in the timeline area
+
+#### Technical Implementation
+
+**State Management**:
+
+```typescript
+// Collapsed sub-processes tracked via state
+const [collapsedSubProcesses, setCollapsedSubProcesses] = useState<Set<string>>(
+  new Set(),
+);
+
+// Toggle function for interactive control
+const toggleSubProcessCollapse = useCallback((subProcessId: string) => {
+  setCollapsedSubProcesses((prev) => {
+    const newSet = new Set(prev);
+    if (newSet.has(subProcessId)) {
+      newSet.delete(subProcessId);
+    } else {
+      newSet.add(subProcessId);
+    }
+    return newSet;
+  });
+}, []);
+```
+
+**Visual Rendering**:
+
+- **Element Filtering**: Collapsed elements are filtered from the visible element list
+- **Participant Line Adjustment**: Dashed participant lines automatically adjust to visible content only
+- **Dependency Routing**: Dependencies route to collapsed group boundaries when children are hidden
+- **Slash Pattern Respect**: Constraint visualization respects collapsed state boundaries
+
+#### Use Cases
+
+**Process Exploration**:
+
+- **Overview First**: Start with collapsed sub-processes to see high-level process flow
+- **Drill Down**: Expand specific sub-processes to examine detailed implementation
+- **Focus Mode**: Collapse unrelated sections to focus on problematic areas
+
+**Collaboration Review**:
+
+- **Role Focus**: Collapse other lanes to focus on specific role responsibilities
+- **Participant Analysis**: Collapse other participants to analyze single organization workflows
+- **Message Flow Tracing**: Collapse detailed implementation while keeping message flows visible
+
+**Performance Optimization**:
+
+- **Large Process Handling**: Collapse sections to improve rendering performance in complex processes
+- **Memory Efficiency**: Hidden elements consume less rendering resources
+- **Scroll Optimization**: Reduced visible elements improve scroll performance
+
+#### Visual Design
+
+**Collapse Indicators**:
+
+- **Standard Icons**: Universal ▼ (expanded) and ▶ (collapsed) triangular indicators
+- **Consistent Placement**: Always positioned to the left of element names in task list
+- **Interactive Feedback**: Icons respond to hover states for clear interactivity indication
+
+**Collapsed State Visualization**:
+
+- **Subtle Background**: Light gray background indicates collapsed sections in timeline area
+- **Boundary Markers**: Clear visual boundaries show where collapsed content would appear
+- **Connection Points**: Dependencies still connect to collapsed group boundaries
+
+This interactive collapse/expand system enables efficient navigation and analysis of complex BPMN processes while maintaining full process context and relationships.
 
 ## Issue Reporting and Validation
 
@@ -1047,7 +1244,7 @@ The component displays transformation results in the UI:
 
 ## Configuration
 
-### Space Settings Integration
+### Core Settings
 
 ```typescript
 // Timeline toggle
@@ -1169,26 +1366,6 @@ Timeline (Earliest + Ghosts + Ghost Dependencies):
   - Regular: Task A (primary) → End
 ```
 
-### Runtime Parameters
-
-```typescript
-// Transformation start time
-startTime: number = Date.now()
-
-// Default duration overrides
-defaultDurations: DefaultDurationInfo[] = []
-
-// Path limits (every-occurrence mode)
-maxLoopIterations: number = 1
-maxPaths: number = 100
-
-// Element sorting preference
-chronologicalSorting: boolean = false
-
-// Gateway visibility control
-renderGateways: boolean = false
-```
-
 ### Gateway Visibility and Filtering
 
 The `renderGateways` parameter controls whether gateway elements are visible in the final timeline:
@@ -1216,9 +1393,9 @@ The `renderGateways` parameter controls whether gateway elements are visible in 
 
 This approach allows the same gateway processing logic to serve both visualization modes without duplicating the transformation algorithms.
 
-## Integration Points
+## Data Integration
 
-### Data Access
+### BPMN Access
 
 ```typescript
 // Enhanced data source - includes unsaved changes
@@ -1281,8 +1458,6 @@ const result = transformBPMNToGantt(definitions, timestamp, settings.positioning
 - **Curved dependencies**: Optional rounded corners for dependency arrows
 - **Default duration panels**: Collapsible information about elements using defaults
 
----
-
 ## Implementation Architecture
 
 ### File Organization
@@ -1314,44 +1489,57 @@ components/bpmn-timeline/
 ├── types/                             # TypeScript definitions
 │   └── types.ts                       # All interface definitions
 ├── utils/                             # Utilities and helpers
-│   └── utils.ts                       # Helper functions and utilities
+│   ├── utils.ts                       # Helper functions and utilities
+│   ├── collaboration-helpers.ts       # Participant, lane, message flow support
+│   └── lane-helpers.ts                # Lane metadata annotation system
 └── styles/                            # Component styling
     └── BPMNTimeline.module.scss       # CSS modules for styling
 ```
 
-### Key Implementation Details
+### Core Processing Pipeline
 
-**Unified Scoped Path-Based Architecture**:
+```typescript
+// 1. Parse BPMN structure (collaboration-aware)
+const { process, participants, messageFlows } = validateAndExtractProcess(definitions);
 
-- All modes (earliest/every/latest) use hierarchical scoped traversal via `calculateScopedTimings()`
-- **Core traversal**: `scoped-traversal.ts` handles path exploration within hierarchical scope structure
-- **Mode processing**: `mode-handlers.ts` processes traversal results differently per mode
-- Gateway semantics applied during traversal with scope-aware processing
-- Sub-processes handled as independent scopes with parent-child relationship preservation
+// 2. Flatten sub-processes and annotate with lane metadata
+const flattenedElements = flattenExpandedSubProcesses(process.flowElements);
+const elementsWithLanes = annotateElementsWithLanes(flattenedElements, laneHierarchy);
 
-**Hierarchical Scope Processing**:
+// 3. Scoped path-based traversal
+const { timingsMap, dependencies, flattenedElements } =
+  calculateScopedTimings(supportedElements, startTime, defaultDurations, loopDepth);
 
-- **ProcessScope structure**: Organizes elements into main process + nested sub-process scopes
-- **Independent traversal**: Each scope explored with own path context and visit tracking
-- **Shared instance management**: Global counter ensures unique IDs across all scopes
-- **Parent-child preservation**: Complex relationship fixing in mode handlers for proper hierarchy
+// 4. Mode-specific processing
+const modeResult = handleTraversalMode(traversalMode, timingsMap, dependencies, ...);
 
-**Performance Safeguards**:
+// 5. Lane metadata inheritance for instance elements
+modeResult.ganttElements.forEach(ganttElement => {
+  if (ganttElement.id.includes('_instance_')) {
+    // Inherit lane metadata from base element
+  }
+});
 
-- Maximum 100 concurrent paths (path explosion prevention)
-- Maximum 1000 total path elements
-- Configurable loop iteration limits
-- Early termination when limits reached
+// 6. Element grouping and sorting (creates participant/lane headers)
+const sortedElements = groupAndSortElements(modeResult.ganttElements, ...);
 
-### Current Implementation Status
+// 7. Message flow transformation
+const messageDependencies = transformMessageFlows(messageFlows, sortedElements, participants);
 
-- **Scoped path-based traversal**: Fully implemented via `calculateScopedTimings()`
-- **Hierarchical sub-process support**: Complete with proper parent-child relationships
-- **All traversal modes**: Working (earliest/every/latest occurrence) with unified core architecture
-- **Gateway-semantic processing**: Complete with scope-aware gateway handling
-- **Multi-level nesting**: Supported with recursion depth protection (10 levels max)
-- **Complex parent-child alignment**: Implemented in mode handlers for proper instance relationships
-- **Boundary event integration**: Complete support on sub-processes with proper timing
-- **Gateway visibility control**: Implemented via `renderGateways` parameter
-- **Issue detection**: Comprehensive validation with gateway mismatch warnings
-- **Ghost elements and dependencies**: Fully implemented (disabled for sub-processes due to complexity)
+// 8. Final assembly
+return { elements: sortedElements, dependencies: [...regularDeps, ...messageDependencies] };
+```
+
+### Key Design Decisions
+
+**Unified Scoped Architecture**: All modes use same core traversal with different result processing for consistency and maintainability.
+
+**Structural Path Analysis**: Chosen over token flow semantics for design-time utility, invalid pattern handling, and visual clarity.
+
+**Metadata Preservation**: Pure metadata approach for lanes/participants ensures no execution timing impact while enabling organizational visualization.
+
+**Gateway Semantic Processing**: Processing during traversal rather than post-processing provides better performance and cleaner dependency creation.
+
+**Hierarchical Sub-Process Support**: Independent scope processing with shared instance management balances complexity with proper parent-child relationships.
+
+This implementation provides comprehensive BPMN timeline visualization with advanced collaboration support, maintaining clean architecture and robust error handling across all complexity levels.

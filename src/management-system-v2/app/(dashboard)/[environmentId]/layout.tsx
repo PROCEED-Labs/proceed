@@ -271,7 +271,14 @@ const DashboardLayout = async ({
     });
   }
 
-  if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
+  if (
+    systemAdmin &&
+    msConfig.PROCEED_PUBLIC_IAM_ACTIVE &&
+    !(
+      msConfig.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE &&
+      !msConfig.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE
+    )
+  ) {
     layoutMenuItems.push({
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,

@@ -93,8 +93,13 @@ const HeaderActions: FC = () => {
       icon: <TbUserEdit />,
     });
 
-    // userSpaces is null when the component is outside of the UserSpaces provider
-    if (userSpaces) {
+    if (
+      userSpaces &&
+      !(
+        envVars.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE &&
+        !envVars.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE
+      )
+    ) {
       actionButton = (
         <div style={{ padding: '1rem' }}>
           <Select

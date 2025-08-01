@@ -78,8 +78,11 @@ export const msConfigSchema = {
       .string()
       .default('')
       .refine((url) => {
-        if (url !== '') return;
+        if (url !== '') {
+          return true;
+        }
         if (boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE)) {
+          return false;
         }
       }),
     NEXTAUTH_URL_INTERNAL: z.string().default(''),

@@ -97,7 +97,8 @@ const SignIn: FC<{
   providers: ExtractedProvider[];
   userType: 'guest' | 'user' | 'none';
   guestReferenceToken?: string;
-}> = ({ providers, userType, guestReferenceToken }) => {
+  logoUrl?: string;
+}> = ({ providers, userType, guestReferenceToken, logoUrl }) => {
   const env = use(EnvVarsContext);
   const breakpoint = Grid.useBreakpoint();
   const searchParams = useSearchParams();
@@ -278,7 +279,7 @@ const SignIn: FC<{
       <AuthModal
         title={
           <Image
-            src="/proceed.svg"
+            src={logoUrl ?? '/proceed.svg'}
             alt="PROCEED Logo"
             width={160}
             height={63}

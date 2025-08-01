@@ -224,7 +224,7 @@ const SignIn: FC<{
     });
   }
 
-  if (passwordSignupProvider && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+  if (passwordSignupProvider && env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
     tabs.push({
       icon: <BsFillPersonPlusFill size={26} />,
       label: 'Register as New User',

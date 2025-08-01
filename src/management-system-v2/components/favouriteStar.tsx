@@ -2,8 +2,8 @@
 import { FC, useCallback } from 'react';
 import { StarOutlined } from '@ant-design/icons';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
-import { isUserGuest as ServerActionIsUserGuest } from '@/lib/data/users';
 import { App } from 'antd';
+import { useSession } from './auth-can';
 
 type StarType = {
   id: string;
@@ -14,10 +14,11 @@ type StarType = {
 const FavouriteStar: FC<StarType> = ({ id, className, viewOnly = false }) => {
   const { favourites: favs, updateFavouriteProcesses } = useFavouriteProcesses();
   const { message } = App.useApp();
+  const session = useSession();
 
   const updateFavs = useCallback(
     async (id: string) => {
-      if (await ServerActionIsUserGuest()) {
+      if (session.status !== 'authenticated' || session.data.user.isGuest) {
         message.info({
           content:
             'To save Processes / Folder as your favourites permanently, you need to Sign In.',

@@ -16,6 +16,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
+import { env } from '@/lib/ms-config/env-vars';
 
 export async function getEnvironments() {
   //TODO : Ability check
@@ -32,11 +33,14 @@ export async function getEnvironmentById(
   const dbMutator = tx || db;
 
   // TODO: check ability
-  const environment = await dbMutator.space.findUnique({
+  let environment = await dbMutator.space.findUnique({
     where: {
       id: id,
     },
   });
+
+  if (!env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE && !environment?.isOrganization)
+    environment = null;
 
   if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
 

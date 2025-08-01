@@ -74,9 +74,17 @@ export const msConfigSchema = {
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
-    NEXTAUTH_URL: z.string().default('http://localhost:3000'),
+    NEXTAUTH_URL: z
+      .string()
+      .default('')
+      .refine((url) => {
+        if (url !== '') return;
+        if (boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE)) {
+        }
+      }),
     NEXTAUTH_URL_INTERNAL: z.string().default(''),
     NEXTAUTH_SECRET: z.string().default(''),
+
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z.string().default(''),
     SHARING_ENCRYPTION_SECRET: z.string().default(''),
     IAM_GUEST_CONVERSION_REFERENCE_SECRET: z.string().default(''),
@@ -175,7 +183,6 @@ export const msConfigSchema = {
     MQTT_BASETOPIC: z.string().optional(),
   },
   production: {
-    NEXTAUTH_SECRET: z.string(),
     DATABASE_URL: z.string(),
     // NOTE: not quite sure if this should be required
     SCHEDULER_TOKEN: z.string().optional(),
@@ -193,6 +200,7 @@ export const msConfigSchema = {
       ),
   },
   development: {
+    NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     NEXTAUTH_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z

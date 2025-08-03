@@ -243,21 +243,47 @@ export function transformExpandedSubProcess(
 
 /**
  * Determine flow type based on BPMN properties
+ * This function needs access to the gateway context to properly detect default flows
  */
-export function getFlowType(flow: BPMNSequenceFlow): 'conditional' | 'default' | 'normal' {
+export function getFlowType(
+  flow: BPMNSequenceFlow,
+  supportedElements?: BPMNFlowElement[],
+): 'conditional' | 'default' | 'normal' {
   // Check if flow has a condition expression (conditional flow)
   if (flow.conditionExpression) {
     return 'conditional';
   }
 
-  // Check if flow is marked as default (from gateway default sequence flow)
-  // In BPMN, default flows are typically marked on the gateway's default property
-  // but we can also check for specific naming patterns or attributes
+  // Check if flow is marked as default through various methods:
+  // 1. Flow name contains default/else keywords
   if (
     flow.name &&
     (flow.name.toLowerCase().includes('default') || flow.name.toLowerCase().includes('else'))
   ) {
     return 'default';
+  }
+
+  // 2. Flow has explicit default marker (some BPMN tools set this)
+  if ((flow as any).isDefault || (flow as any).default) {
+    return 'default';
+  }
+
+  // 3. Check if this flow is referenced as default by its source element
+  if (supportedElements) {
+    const sourceId = typeof flow.sourceRef === 'string' ? flow.sourceRef : flow.sourceRef?.id;
+    if (sourceId) {
+      const sourceElement = supportedElements.find((el) => el.id === sourceId);
+      if (sourceElement) {
+        const elementDefault = (sourceElement as any).default;
+        if (elementDefault) {
+          const defaultFlowId =
+            typeof elementDefault === 'string' ? elementDefault : elementDefault?.id;
+          if (defaultFlowId === flow.id) {
+            return 'default';
+          }
+        }
+      }
+    }
   }
 
   return 'normal';
@@ -266,7 +292,10 @@ export function getFlowType(flow: BPMNSequenceFlow): 'conditional' | 'default' |
 /**
  * Transform BPMN sequence flow to Gantt dependency
  */
-export function transformSequenceFlow(flow: BPMNSequenceFlow): GanttDependency {
+export function transformSequenceFlow(
+  flow: BPMNSequenceFlow,
+  supportedElements?: BPMNFlowElement[],
+): GanttDependency {
   // Handle case where sourceRef/targetRef might be ModdleElement objects or strings
   const sourceId =
     typeof flow.sourceRef === 'string'
@@ -283,7 +312,7 @@ export function transformSequenceFlow(flow: BPMNSequenceFlow): GanttDependency {
     targetId: targetId,
     type: DependencyType.FINISH_TO_START, // BPMN sequence flows are finish-to-start dependencies
     name: flow.name,
-    flowType: getFlowType(flow),
+    flowType: getFlowType(flow, supportedElements),
   };
 }
 

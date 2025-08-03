@@ -20,20 +20,40 @@ import styles from './GanttChartCanvas.module.scss';
 
 // Helper function to format dependency type for display
 const formatDependencyType = (dep: GanttDependency): string => {
-  // For message flows, show "Message Flow" instead of the technical type
-  if (dep.flowType === 'message') {
-    return 'Message Flow';
-  }
-
-  // For other dependency types, format them nicely
+  // Get the base dependency type
+  let baseType: string;
   switch (dep.type) {
     case 'start-to-start':
-      return 'Start to Start';
+      baseType = 'Start to Start';
+      break;
     case 'finish-to-start':
-      return 'Finish to Start';
+      baseType = 'Finish to Start';
+      break;
     default:
-      return dep.type || 'Unknown';
+      baseType = dep.type || 'Unknown';
   }
+
+  // Add flow type information if available and relevant
+  if (dep.flowType) {
+    switch (dep.flowType) {
+      case 'message':
+        return 'Message Flow';
+      case 'conditional':
+        return `${baseType} - Conditional`;
+      case 'default':
+        return `${baseType} - Default`;
+      case 'boundary':
+        return `${baseType} - Boundary Event`;
+      case 'boundary-non-interrupting':
+        return `${baseType} - Non-Interrupting Boundary`;
+      case 'normal':
+        return baseType; // Just show the base type for normal flows
+      default:
+        return baseType; // Show base type for unknown flow types
+    }
+  }
+
+  return baseType;
 };
 
 interface GanttChartCanvasProps {
@@ -249,6 +269,11 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
                       <span style={{ marginLeft: '8px', color: '#52c41a' }}>
                         ({formatDependencyType(dep)})
                       </span>
+                      {dep.name && (
+                        <span style={{ marginLeft: '8px', color: '#1890ff' }}>
+                          "{dep.name}"
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -288,6 +313,11 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
                       <span style={{ marginLeft: '8px', color: '#52c41a' }}>
                         ({formatDependencyType(dep)})
                       </span>
+                      {dep.name && (
+                        <span style={{ marginLeft: '8px', color: '#1890ff' }}>
+                          "{dep.name}"
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

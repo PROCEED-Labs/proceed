@@ -522,6 +522,8 @@ export function detectGhostDependenciesThroughGateways(
     // Find which gateways would be involved in ghost dependencies
     elementsWithGhosts.forEach((element) => {
       const elementId = element.id;
+      // Extract base ID from element ID (remove _instance_X suffix)
+      const elementBaseId = elementId.includes('_instance_') ? elementId.split('_instance_')[0] : elementId;
 
       // Check path dependencies to find gateways this element connects through
       pathDependencies.forEach((dep) => {
@@ -531,7 +533,7 @@ export function detectGhostDependenciesThroughGateways(
         const dep1TargetId = dep1TargetParts.length > 0 ? dep1TargetParts[0] : dep.targetInstanceId;
 
         // If this dependency involves our element and passes through a gateway
-        if (dep1SourceId === elementId || dep1TargetId === elementId) {
+        if (dep1SourceId === elementBaseId || dep1TargetId === elementBaseId) {
           // Check if any element in the dependency chain is a gateway
           const sourceElement = supportedElements.find((el) => el.id === dep1SourceId);
           const targetElement = supportedElements.find((el) => el.id === dep1TargetId);

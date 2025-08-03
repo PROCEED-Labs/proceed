@@ -105,13 +105,14 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           showGhostDependencies:
             showGhostElements && (ganttViewSettings?.['show-ghost-dependencies'] ?? false),
         };
+
         setGanttSettings(newSettings);
       } catch (error) {
         console.warn('Failed to fetch gantt view settings, using defaults:', error);
         const defaultShowGhostElements = false;
-        setGanttSettings({
+        const defaultSettings = {
           enabled: true,
-          positioningLogic: 'earliest-occurrence',
+          positioningLogic: 'earliest-occurrence' as const,
           loopDepth: 1,
           chronologicalSorting: false,
           showLoopIcons: true,
@@ -120,7 +121,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           showGhostElements: defaultShowGhostElements,
           // Ghost dependencies can only be enabled if ghost elements are enabled
           showGhostDependencies: defaultShowGhostElements && false,
-        });
+        };
+
+        setGanttSettings(defaultSettings);
       }
     };
 
@@ -204,8 +207,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         setHasComplexGateways(hasComplex);
         setHasEventBasedGateways(hasEventBased);
 
-        // Use a single timestamp for both transformation and red line marker
-        const transformationTimestamp = Date.now();
+        // Use a fixed debug timestamp for both transformation and red line marker
+        // 25.07.2025 12:00 UTC for debugging purposes
+        const transformationTimestamp = new Date('2025-07-25T12:00:00.000Z').getTime();
         setNowTimestamp(transformationTimestamp);
 
         const transformationResult = transformBPMNToGantt(

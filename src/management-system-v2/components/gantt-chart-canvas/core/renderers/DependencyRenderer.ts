@@ -690,6 +690,7 @@ export class DependencyRenderer {
     highlightedDependencies?: GanttDependency[],
     curvedDependencies: boolean = false,
   ): void {
+    
     // Cache elements array for participant connection calculations
     this.lastElementsArray = elements;
 
@@ -755,7 +756,9 @@ export class DependencyRenderer {
       dep,
       elements,
     );
-    if (!fromElement || !toElement || fromIndex === -1 || toIndex === -1) return;
+    if (!fromElement || !toElement || fromIndex === -1 || toIndex === -1) {
+      return;
+    }
 
     // Check visibility
     const fromVisible = fromIndex >= visibleRowStart && fromIndex <= visibleRowEnd;
@@ -1072,17 +1075,34 @@ export class DependencyRenderer {
     const sourceInstanceId = (dep as any).sourceInstanceId || dep.sourceId;
     const targetInstanceId = (dep as any).targetInstanceId || dep.targetId;
 
+
     elements.forEach((el, index) => {
-      // Match by instance ID first, then fall back to base ID
-      if ((el.id === sourceInstanceId || el.id === dep.sourceId) && fromIndex === -1) {
-        fromElement = el;
-        fromIndex = index;
-      }
-      if ((el.id === targetInstanceId || el.id === dep.targetId) && toIndex === -1) {
-        toElement = el;
-        toIndex = index;
+      // For ghost dependencies, match by base ID since ghost deps use base IDs
+      if (dep.isGhost) {
+        // Extract base ID from element ID (remove _instance_X suffix)
+        const elementBaseId = el.id.includes('_instance_') ? el.id.split('_instance_')[0] : el.id;
+        
+        if (elementBaseId === dep.sourceId && fromIndex === -1) {
+          fromElement = el;
+          fromIndex = index;
+        }
+        if (elementBaseId === dep.targetId && toIndex === -1) {
+          toElement = el;
+          toIndex = index;
+        }
+      } else {
+        // For regular dependencies, match by instance ID first, then fall back to base ID
+        if ((el.id === sourceInstanceId || el.id === dep.sourceId) && fromIndex === -1) {
+          fromElement = el;
+          fromIndex = index;
+        }
+        if ((el.id === targetInstanceId || el.id === dep.targetId) && toIndex === -1) {
+          toElement = el;
+          toIndex = index;
+        }
       }
     });
+
 
     return { fromElement, toElement, fromIndex, toIndex };
   }

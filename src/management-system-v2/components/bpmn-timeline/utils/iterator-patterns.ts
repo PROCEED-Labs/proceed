@@ -222,6 +222,7 @@ export function createStandardDependencies(
   dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
   sequenceFlowMap: Map<string, BPMNFlowElement>,
   mode: 'latest' | 'earliest',
+  supportedElements?: BPMNFlowElement[],
 ): GanttDependency[] {
   const results: GanttDependency[] = [];
 
@@ -239,7 +240,7 @@ export function createStandardDependencies(
         targetId: targetOriginalId,
         type: DependencyType.FINISH_TO_START,
         name: (flow as any).name,
-        flowType: getFlowType(flow as BPMNSequenceFlow),
+        flowType: getFlowType(flow as BPMNSequenceFlow, supportedElements),
       };
       results.push(dependency);
     }
@@ -255,6 +256,7 @@ export function createStandardDependencies(
 export function createEveryOccurrenceDependencies(
   dependencies: Array<{ sourceInstanceId: string; targetInstanceId: string; flowId: string }>,
   sequenceFlowMap: Map<string, BPMNFlowElement>,
+  supportedElements?: BPMNFlowElement[],
 ): GanttDependency[] {
   const results: GanttDependency[] = [];
 
@@ -312,7 +314,7 @@ export function createEveryOccurrenceDependencies(
                   targetId: representativeDep.targetInstanceId, // Use same target for all
                   type: DependencyType.FINISH_TO_START,
                   name: (flow as any).name,
-                  flowType: getFlowType(flow as BPMNSequenceFlow),
+                  flowType: getFlowType(flow as BPMNSequenceFlow, supportedElements),
                 };
                 results.push(dependency);
               }
@@ -328,7 +330,7 @@ export function createEveryOccurrenceDependencies(
                 targetId: dep.targetInstanceId,
                 type: DependencyType.FINISH_TO_START,
                 name: (flow as any).name,
-                flowType: getFlowType(flow as BPMNSequenceFlow),
+                flowType: getFlowType(flow as BPMNSequenceFlow, supportedElements),
               };
               results.push(dependency);
             }
@@ -345,7 +347,7 @@ export function createEveryOccurrenceDependencies(
               targetId: dep.targetInstanceId,
               type: DependencyType.FINISH_TO_START,
               name: (flow as any).name,
-              flowType: getFlowType(flow as BPMNSequenceFlow),
+              flowType: getFlowType(flow as BPMNSequenceFlow, supportedElements),
             };
             results.push(dependency);
           }
@@ -365,7 +367,7 @@ export function createEveryOccurrenceDependencies(
           targetId: dep.targetInstanceId,
           type: DependencyType.FINISH_TO_START,
           name: (flow as any).name,
-          flowType: getFlowType(flow as BPMNSequenceFlow),
+          flowType: getFlowType(flow as BPMNSequenceFlow, supportedElements),
         };
         results.push(dependency);
       }
@@ -480,6 +482,7 @@ export function processGhostDependencies(
   ganttElements: GanttElementType[],
   existingDependencies: GanttDependency[],
   mode: 'latest' | 'earliest',
+  supportedElements?: BPMNFlowElement[],
 ): GanttDependency[] {
   const ghostDependencies: GanttDependency[] = [];
 
@@ -511,7 +514,7 @@ export function processGhostDependencies(
           targetId: targetOriginalId,
           type: DependencyType.FINISH_TO_START,
           name: flow ? (flow as any).name : undefined,
-          flowType: flow ? getFlowType(flow as BPMNSequenceFlow) : 'normal',
+          flowType: flow ? getFlowType(flow as BPMNSequenceFlow, supportedElements) : 'normal',
           isGhost: true,
           sourceInstanceId: hasGhostSource ? dep.sourceInstanceId : undefined,
           targetInstanceId: hasGhostTarget ? dep.targetInstanceId : undefined,

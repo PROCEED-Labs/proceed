@@ -386,11 +386,13 @@ module.exports = {
     const file = await data.readInstanceFile(definitionId, instanceId, fileName);
 
     if (!file) {
-      throw new Error("No file found. Either the process, the instance or the file does not seem to exist.");
+      throw new Error(
+        'No file found. Either the process, the instance or the file does not seem to exist.',
+      );
     }
 
     return file;
-  }
+  },
 
   /**
    * Saves the HTML of a start form for a version of a specific process stored in the file with the given definitionId

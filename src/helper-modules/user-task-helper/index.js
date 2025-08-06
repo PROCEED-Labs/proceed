@@ -173,6 +173,14 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
         entry = entries.next();
       }
 
+      for (const [key, value] of Object.entries(variables)) {
+        if (value instanceof File) {
+// TODO: submit the file to a new endpoint and transform the variable to the link to the
+// new file that should be returned by the endpoint call
+          console.log('File:', key);
+        }
+      }
+
       window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
           instanceID,
           userTaskID,
@@ -250,7 +258,9 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
 
           clearTimeout(variableInputTimer);
 
+console.log(event.target);
           if (event.target.type === 'file') {
+console.log('Test');
             updateUploadInfo(event.target);
             return;
           }

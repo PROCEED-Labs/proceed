@@ -65,6 +65,12 @@ module.exports = (path) => {
       const { definitionId, instanceId, fileName } = req.params;
       const { body } = req;
 
+      console.log('Submitting File');
+
+      const filename = `${fileName}-${instanceId}`;
+
+      console.log(fileName, instanceId, filename);
+
       const file = Buffer.from(body.data);
       await db.saveInstanceFile(definitionId, instanceId, fileName, file);
 

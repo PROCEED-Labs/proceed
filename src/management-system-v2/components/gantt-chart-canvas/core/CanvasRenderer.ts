@@ -444,7 +444,18 @@ export class CanvasRenderer {
       );
     }
 
-    // Delegate element rendering to ElementRenderer with modified matrix
+    // FIRST: Render constraint backgrounds BEFORE elements so they appear behind
+    // This ensures slashes don't cover element content or dependencies
+    this.elementRenderer.renderConstraintBackgrounds(
+      context,
+      elements,
+      modifiedMatrix, // Use modified matrix
+      visibleRowStart,
+      visibleRowEnd,
+      collapsedSubProcesses,
+    );
+
+    // THEN: Delegate element rendering to ElementRenderer with modified matrix
     const renderResult = this.elementRenderer.renderElements(
       context,
       elements,

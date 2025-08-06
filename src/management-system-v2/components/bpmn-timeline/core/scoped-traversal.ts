@@ -55,11 +55,6 @@ export function calculateScopedTimings(
     severity: 'warning' | 'error';
   }>;
 } {
-  const scopedTimingStart = performance.now();
-  // TODO performance debug
-  // console.log(
-  //   `PERF: calculateScopedTimings starting with ${elements.length} elements, maxLoopIterations=${maxLoopIterations}`,
-  // );
   // Step 1: Check if elements are already flattened (have hierarchyLevel property)
   // If collaborative processing already flattened sub-processes, skip this step
   const alreadyFlattened = elements.some((el) => (el as any).hierarchyLevel !== undefined);
@@ -68,12 +63,7 @@ export function calculateScopedTimings(
     : flattenExpandedSubProcesses(elements); // Otherwise flatten them now
 
   // Step 2: Build hierarchical scopes
-  const buildScopesStart = performance.now();
   const rootScope = buildScopes(flattenedElements);
-  // TODO performance debug
-  // console.log(
-  //   `PERF: buildScopes took ${(performance.now() - buildScopesStart).toFixed(2)}ms, flattened ${flattenedElements.length} elements`,
-  // );
 
   // Get sequence flows from the root scope elements
   const sequenceFlowsInScope = Array.from(rootScope.elements.values()).filter(
@@ -99,7 +89,6 @@ export function calculateScopedTimings(
   }> = [];
 
   // Traverse root scope
-  const traverseStart = performance.now();
   const rootContext: TraversalContext = {
     scope: rootScope,
     currentTime: startTime,
@@ -110,10 +99,6 @@ export function calculateScopedTimings(
 
   const rootInstances = traverseScope(rootContext, maxLoopIterations, defaultDurations, issues, 0);
   allInstances.push(...rootInstances);
-  // TODO performance debug
-  // console.log(
-  //   `PERF: traverseScope took ${(performance.now() - traverseStart).toFixed(2)}ms, generated ${rootInstances.length} root instances`,
-  // );
 
   // Collect dependencies from all instances (including nested ones)
   const flatInstances = flattenInstances(rootInstances);
@@ -127,12 +112,6 @@ export function calculateScopedTimings(
 
   // Step 4: Calculate sub-process bounds
   calculateSubProcessBounds(timingsMap);
-
-  const totalScopedTime = (performance.now() - scopedTimingStart).toFixed(2);
-  // TODO performance debug
-  // console.log(
-  //   `PERF: calculateScopedTimings completed in ${totalScopedTime}ms, generated ${allDependencies.length} dependencies from ${allInstances.length} instances`,
-  // );
 
   return {
     timingsMap,
@@ -227,18 +206,11 @@ function traverseScope(
   // Process paths
   let pathIterations = 0;
   const maxIterationsWarning = 10000; // Warn if we exceed this many iterations
-  const pathsStart = performance.now();
 
   while (pathsToExplore.length > 0) {
     pathIterations++;
 
-    // TODO performance debug
     // Performance monitoring for excessive path exploration
-    // if (pathIterations % 1000 === 0) {
-    //   console.log(
-    //     `PERF: Path exploration iteration ${pathIterations}, queue size: ${pathsToExplore.length}, time elapsed: ${(performance.now() - pathsStart).toFixed(2)}ms`,
-    //   );
-    // }
 
     if (pathIterations > maxIterationsWarning) {
       console.warn(
@@ -520,12 +492,6 @@ function traverseScope(
       });
     });
   }
-
-  const pathsTime = (performance.now() - pathsStart).toFixed(2);
-  // TODO performance debug
-  // console.log(
-  //   `PERF: Path exploration completed in ${pathsTime}ms after ${pathIterations} iterations, generated ${instances.length} instances`,
-  // );
 
   return instances;
 }

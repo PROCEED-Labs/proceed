@@ -73,24 +73,12 @@ export function transformBPMNToGantt(
   showGhostElements: boolean = false,
   showGhostDependencies: boolean = false,
 ): TransformationResult {
-  const transformStart = performance.now();
-  // TODO performance debug
-  // console.log('PERF: Starting BPMN transformation', {
-  //   traversalMode,
-  //   loopDepth,
-  //   renderGateways,
-  //   showGhostElements,
-  // });
-
   const issues: TransformationIssue[] = [];
   const defaultDurations: DefaultDurationInfo[] = [];
 
   // Validate and extract process or collaboration
-  const validateStart = performance.now();
   const { process, participants, hasCollaboration, allElements, messageFlows } =
     validateAndExtractProcess(definitions);
-  // TODO performance debug
-  // console.log(`PERF: Process validation took ${(performance.now() - validateStart).toFixed(2)}ms`);
 
   let elementsWithLanes: BPMNFlowElement[];
   let laneHierarchy: any[] = [];
@@ -161,11 +149,6 @@ export function transformBPMNToGantt(
   );
 
   // Calculate timings using path-based traversal
-  const scopedStart = performance.now();
-  // TODO performance debug
-  // console.log(
-  //   `PERF: Starting scoped timing calculation with ${supportedElements.length} elements, loopDepth=${loopDepth}`,
-  // );
 
   const {
     timingsMap: pathTimings,
@@ -173,11 +156,6 @@ export function transformBPMNToGantt(
     flattenedElements,
     issues: pathIssues,
   } = calculateScopedTimings(supportedElements, startTime, defaultDurations, loopDepth);
-
-  // TODO performance debug
-  // console.log(
-  //   `PERF: Scoped timing calculation took ${(performance.now() - scopedStart).toFixed(2)}ms, generated ${pathDependencies.length} dependencies`,
-  // );
 
   // Add path traversal issues (loop limits, path explosion)
   issues.push(...pathIssues);
@@ -217,11 +195,6 @@ export function transformBPMNToGantt(
   const boundaryEventMapping = createBoundaryEventMapping(pathDependencies);
 
   // Handle mode-specific transformations
-  const modeStart = performance.now();
-  // TODO performance debug
-  // console.log(
-  //   `PERF: Starting mode-specific transformation (${traversalMode}) with ${pathTimings.size} timing entries`,
-  // );
 
   const modeResult = handleTraversalMode(
     traversalMode,
@@ -235,11 +208,6 @@ export function transformBPMNToGantt(
     originalElementsForColorAssignment,
     boundaryEventMapping,
   );
-
-  // TODO performance debug
-  // console.log(
-  //   `PERF: Mode-specific transformation took ${(performance.now() - modeStart).toFixed(2)}ms, generated ${modeResult.ganttElements.length} elements and ${modeResult.ganttDependencies.length} dependencies`,
-  // );
 
   // CRITICAL FIX: Inherit lane metadata for instance elements
   // This must happen after mode handling but before grouping
@@ -303,12 +271,6 @@ export function transformBPMNToGantt(
   const visibleElements = renderGateways
     ? sortedElements
     : sortedElements.filter((el) => !el.type?.includes('gateway') && !el.id?.includes('Gateway'));
-
-  const totalTime = (performance.now() - transformStart).toFixed(2);
-  // TODO performance debug
-  // console.log(
-  //   `PERF: Total BPMN transformation took ${totalTime}ms, final result: ${visibleElements.length} elements, ${finalDependencies.length} dependencies`,
-  // );
 
   return {
     elements: visibleElements,

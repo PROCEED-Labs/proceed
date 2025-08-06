@@ -6,8 +6,6 @@
  * for using pure functions for mathematical operations.
  */
 
-import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../core/constants';
-
 /**
  * Convert time (milliseconds) to pixel position using scale and translate
  * Pure function implementation of coordinate transformation

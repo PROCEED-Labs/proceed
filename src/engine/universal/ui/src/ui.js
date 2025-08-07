@@ -16,11 +16,11 @@ function escapeScriptTags(s) {
 function generateUI(displayItems) {
   const nav = `<ul id="nav">
   ${displayItems
-    .map(
-      (dI) =>
-        `<li class="item" data-key="${dI.key}"><span>${dI.title}</span><span class="badge">${dI.badge}</span></li>`,
-    )
-    .join('\n')}
+      .map(
+        (dI) =>
+          `<li class="item" data-key="${dI.key}"><span>${dI.title}</span><span class="badge">${dI.badge}</span></li>`,
+      )
+      .join('\n')}
   </ul>`;
 
   return uiHTML.header + nav + uiHTML.content;
@@ -165,9 +165,10 @@ const ui = {
           }
 
           if (typeof endpoint.put === 'function') {
-            network.put(`/${key + path}`, { cors: true }, (req) =>
-              endpoint.put(req.body, req.query).then(JSON.stringify),
-            );
+            network.put(`/${key + path}`, { cors: true }, (req) => {
+              console.log('AAAAA', req);
+              endpoint.put(req.body, req.query).then(JSON.stringify);
+            });
           }
         });
       });
@@ -221,6 +222,18 @@ const ui = {
                   xhr.setRequestHeader('Content-Type', 'application/json');
                   xhr.send(JSON.stringify(body));
                 });
+              },
+              submit: async (path, body, query, bodyType) => {
+                ${validateEndpointArgs.name}('submit', path, body, query);
+console.log(path, body, query, bodyType);
+                return new Promise((resolve, reject) => {
+                  const xhr = new XMLHttpRequest();
+                  xhr.addEventListener('loadend', (req) => { console.log(req.target.responseText); resolve(JSON.parse(req.target.responseText)); });
+                  const url = query ? path + '?' + Object.entries(query).map(([key, value]) => key + '=' + encodeURIComponent(value)).join('&') : path;
+                  xhr.open('PUT', url, true);
+                  xhr.setRequestHeader('Content-Type', bodyType);
+                  xhr.send(body);
+                });
               }
             };
           </script>
@@ -230,7 +243,7 @@ const ui = {
           ${html}
           <script type="text/javascript">(${
             /* Make the script an IIFE */ script.toString()
-          })()</script>
+        })()</script>
         </body>
       </html>`;
 

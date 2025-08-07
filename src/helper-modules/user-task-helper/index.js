@@ -177,7 +177,45 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
         if (value instanceof File) {
 // TODO: submit the file to a new endpoint and transform the variable to the link to the
 // new file that should be returned by the endpoint call
+
+
+console.log(value);
+
+
+// const reader = new FileReader();
+// reader.onload = () => {
+//   console.log(reader.result);
+//   window.PROCEED_DATA.submit(
+//     '/tasklist/api/variable-file',
+//     reader.result,
+//     {
+//       instanceID,
+//       userTaskID,
+//     },
+//     value.type
+//   );
+// };
+// reader.onerror = () => {
+//   console.log("Error reading the file. Please try again.");
+// };
+// reader.readAsArrayBuffer(value);
+
+
+const fileData = new FormData();
+fileData.append("file", value);
+
+window.PROCEED_DATA.submit(
+  '/tasklist/api/variable-file',
+  fileData,
+  {
+    instanceID,
+    userTaskID,
+  },
+  value.type
+);
+
           console.log('File:', key);
+return;
         }
       }
 

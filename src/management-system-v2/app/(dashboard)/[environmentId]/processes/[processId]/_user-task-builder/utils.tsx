@@ -208,7 +208,6 @@ export function toHtml(json: string) {
       >
         <Frame data={json} />
       </Editor>
-      ,
     </CanEditContext.Provider>,
   );
 

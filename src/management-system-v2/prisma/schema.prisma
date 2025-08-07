@@ -45,7 +45,7 @@ model User {
   roleMembers     RoleMember[]
   systemAdmin     SystemAdmin?   @relation("systemAdmin")
   guestSignin     GuestSignin?
-  verificationTokens VerificationToken[]   @relation("verificationToken")
+  emailVerificationTokens EmailVerificationToken[]   @relation("verificationToken")
 
   @@map("user")
 }
@@ -65,6 +65,7 @@ model OauthAccount {
 model PasswordAccount {
   userId   String @id
   password String
+  isTemporaryPassword Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -247,6 +248,31 @@ model Engine {
   @@map("engine")
 }
 
+model GuestSignin {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastSigninAt DateTime @default(now())
+
+  @@map("guest_signin")
+}
+
+// Tokens related to email actions
+// Signing in with email
+// Change email
+// Register new user (data is temporarily stored here)
+model EmailVerificationToken {
+  token        String   @id /// Hashed UUID + Salt (the Auth secret is used as salt)
+  type         String
+  identifier   String /// Stores an email (it's named this way because of NextAuth)
+  expiresAt      DateTime 
+  user         User?     @relation(name: "verificationToken", fields: [userId], references: [id])
+  userId       String? /// If this is set, then the token is for an email change: userId is the user who wants to change his email and the idenrtifier is the new email
+  username     String?
+  firstName    String?
+  lastName     String?
+  passwordHash String?
+}
+
 model SpaceSettings {
   environmentId String     @id @unique
   space         Space      @relation(name: "spaceSettings", fields: [environmentId], references: [id], onDelete: Cascade)
@@ -275,25 +301,15 @@ model UserTask {
 
  @@map("userTask")
 }
-
-model VerificationToken {
-  token      String   @id
-  identifier String
-  expires    DateTime
-  user       User?     @relation(name: "verificationToken", fields: [userId], references: [id])
-  userId     String? /// If this is set, then the token is for an email change and the idenrtifier is the new email
-}
   
-model GuestSignin {
-  userId      String   @id
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lastSigninAt DateTime @default(now())
-
-  @@map("guest_signin")
-}
-
 // Global config for the MS, this table should only have one entry
 model MSConfig { 
   id      Int   @id @default(0) 
   config  Json
+}
+
+// Last seed version written to db, this table should only have one entry
+model SeedVersion { 
+  id      Int   @id @default(0) 
+  version DateTime
 }

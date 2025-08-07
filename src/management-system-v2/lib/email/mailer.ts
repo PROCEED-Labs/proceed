@@ -25,7 +25,7 @@ export async function sendEmail({
     return;
   }
 
-  if (msConfig.NODE_ENV === 'production' && !transport)
+  if (!transport)
     transport = nodemailer.createTransport({
       host: msConfig.MAILSERVER_URL,
       secure: true,

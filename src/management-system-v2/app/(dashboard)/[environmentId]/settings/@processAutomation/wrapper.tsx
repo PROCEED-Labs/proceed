@@ -5,7 +5,7 @@ import React from 'react';
 import { useState } from 'react';
 import { Setting, SettingGroup } from '../type-util';
 import { SettingDescription, SettingsGroup } from '../components';
-import { debouncedSettingsUpdate } from '../utils';
+import { useDebouncedSettingsUpdate } from '../utils';
 import { useEnvironment } from '@/components/auth-can';
 import { Checkbox } from 'antd';
 
@@ -18,11 +18,13 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
 
   const { spaceId } = useEnvironment();
 
+  const debouncedUpdate = useDebouncedSettingsUpdate();
+
   return (
     <SettingsGroup
       group={upToDateGroup}
       onUpdate={setUpToDateGroup}
-      onNestedSettingUpdate={(key, value) => debouncedSettingsUpdate(spaceId, key, value)}
+      onNestedSettingUpdate={(key, value) => debouncedUpdate(spaceId, key, value)}
       renderNestedSettingInput={(id, setting, key, onUpdate) => {
         if (setting.type === 'boolean' && key !== 'process-automation.active') {
           const sectionActiveSetting = upToDateGroup.children.find(

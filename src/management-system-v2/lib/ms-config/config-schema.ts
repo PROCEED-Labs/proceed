@@ -1,5 +1,4 @@
 import z, { type ZodType } from 'zod';
-import { resources } from '@/lib/ability/caslAbility';
 
 // --------------------------------------------
 // Add MS Configs here
@@ -15,7 +14,6 @@ export const mSConfigEnvironmentOnlyKeys = [
   'SHARING_ENCRYPTION_SECRET',
   'DATABASE_URL',
   'NODE_ENV',
-  'MS_ENABLED_RESOURCES',
   'MQTT_SERVER_ADDRESS',
   'MQTT_USERNAME',
   'MQTT_PASSWORD',
@@ -34,6 +32,7 @@ export const mSConfigEnvironmentOnlyKeys = [
   'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE',
 
   'PROCEED_PUBLIC_IAM_ACTIVE',
+  'PROCEED_PUBLIC_TIMELINE_VIEW',
 
   'IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET',
   'IAM_GUEST_CONVERSION_REFERENCE_SECRET',
@@ -73,9 +72,20 @@ export const msConfigSchema = {
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
-    NEXTAUTH_URL: z.string().default('http://localhost:3000'),
+    NEXTAUTH_URL: z
+      .string()
+      .default('')
+      .refine((url) => {
+        if (url !== '') {
+          return true;
+        }
+        if (boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE)) {
+          return false;
+        }
+      }),
     NEXTAUTH_URL_INTERNAL: z.string().default(''),
     NEXTAUTH_SECRET: z.string().default(''),
+
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z.string().default(''),
     SHARING_ENCRYPTION_SECRET: z.string().default(''),
     IAM_GUEST_CONVERSION_REFERENCE_SECRET: z.string().default(''),
@@ -95,7 +105,17 @@ export const msConfigSchema = {
     MAILSERVER_MS_DEFAULT_MAIL_ADDRESS: z.string().default(''),
     MAILSERVER_MS_DEFAULT_MAIL_PASSWORD: z.string().default(''),
 
-    PROCEED_PUBLIC_IAM_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_IAM_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine((value) => {
+        if (!value) return true;
+        return (
+          boolParser(process.env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) ||
+          boolParser(process.env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE)
+        );
+      }, 'You enabled IAM without enabling a login method, please enable at least one of the following two: PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE or PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE'),
     PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE: z.string().default('FALSE').transform(boolParser),
     PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE: z.string().default('TRUE').transform(boolParser),
     PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE: z.string().default('TRUE').transform(boolParser),
@@ -143,19 +163,7 @@ export const msConfigSchema = {
     SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
 
     PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
-    MS_ENABLED_RESOURCES: z
-      .string()
-      .transform((str, ctx) => {
-        try {
-          const json = JSON.parse(str);
-          z.array(z.enum(resources)).parse(json);
-          return str;
-        } catch (e) {
-          ctx.addIssue({ code: 'custom', message: 'Invalid JSON' });
-          return z.NEVER;
-        }
-      })
-      .optional(),
+    PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
 
     MQTT_SERVER_ADDRESS: z.string().url().optional(),
     MQTT_USERNAME: z.string().optional(),
@@ -163,7 +171,6 @@ export const msConfigSchema = {
     MQTT_BASETOPIC: z.string().optional(),
   },
   production: {
-    NEXTAUTH_SECRET: z.string(),
     DATABASE_URL: z.string(),
     // NOTE: not quite sure if this should be required
     SCHEDULER_TOKEN: z.string().optional(),
@@ -181,6 +188,7 @@ export const msConfigSchema = {
       ),
   },
   development: {
+    NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     NEXTAUTH_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z

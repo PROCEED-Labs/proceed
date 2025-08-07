@@ -211,7 +211,7 @@ export function toHtml(json: string) {
       ${styles}
     </style>
     <script>
-      {script}
+      {{script}}
     </script>
   </head>
   <body>

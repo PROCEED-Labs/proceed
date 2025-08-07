@@ -1,4 +1,4 @@
-const whiskers = require('whiskers');
+const { render } = require('./src/render.js');
 
 const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/getters');
 /**
@@ -136,34 +136,11 @@ async function getCorrectMilestoneState(bpmn, userTask, instance) {
   }));
 }
 
-/**
- * Function that replaces placeholders in html with the correct data
- *
- * @param {string} html the html that contains placeholders to replace with some data
- * @param {string} instanceId the id of the instance the user task was triggered in
- * @param {string} userTaskId the id of the user task element that created this user task instance
- * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
- * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
- * @param {{ name: string; type: string; enum?: string; }[]} [variableDefinitions=[]] meta data about the variables expected in the instance
- * containing the user task
- * @returns {string} the html with the placeholders replaced by the correct values
- */
-function inlineUserTaskData(
-  html,
-  instanceId,
-  userTaskId,
-  variables,
-  milestones,
-  variableDefinitions = [],
-) {
-  const variableDefinitionsMap = Object.fromEntries(
-    variableDefinitions.map((def) => [def.name, def]),
-  );
-  const script = `
-    const instanceID = '${instanceId}';
-    const userTaskID = '${userTaskId}';
+const script = `
+    const instanceID = '{{instanceId}}';
+    const userTaskID = '{{userTaskId}}';
 
-    const variableDefinitions = ${JSON.stringify(variableDefinitionsMap)};
+    const variableDefinitions = {{variableDefinitions}};
 
     function getValueFromCheckbox(checkbox) {
       if (!checkbox.defaultValue) {
@@ -331,10 +308,48 @@ function inlineUserTaskData(
     })
     `;
 
-  const finalHtml = whiskers.render(html, {
+/**
+ * Function that replaces the {{script}} placeholder in the html with the default script
+ *
+ * @param {string | Buffer} html the html that contains placeholders to replace with some data
+ * @param {string} instanceId the id of the instance the user task was triggered in
+ * @param {string} userTaskId the id of the user task element that created this user task instance
+ * @param {{ name: string; dataType: string; enum?: string; }[]} [variableDefinitions=[]] meta data about the variables expected in the instance
+ * containing the user task
+ * @returns {string} the html with the placeholders replaced by the correct values
+ */
+function inlineScript(html, instanceId, userTaskId, variableDefinitions = []) {
+  const variableDefinitionsMap = Object.fromEntries(
+    variableDefinitions.map((def) => [def.name, def]),
+  );
+
+  if (Buffer.isBuffer(html)) html = html.toString();
+
+  const finalScript = render(script, {
+    instanceId,
+    userTaskId,
+    variableDefinitions: JSON.stringify(variableDefinitionsMap),
+  });
+
+  html = render(html, { script: finalScript }, true);
+
+  return html;
+}
+
+/**
+ * Function that replaces placeholders in html with the correct data
+ *
+ * @param {string | Buffer} html the html that contains placeholders to replace with some data
+ * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
+ * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
+ * @returns {string} the html with the placeholders replaced by the correct values
+ */
+function inlineUserTaskData(html, variables, milestones) {
+  if (Buffer.isBuffer(html)) html = html.toString();
+
+  const finalHtml = render(html, {
     ...variables,
     milestones,
-    script,
   });
 
   return finalHtml;
@@ -343,5 +358,6 @@ function inlineUserTaskData(
 module.exports = {
   getCorrectVariableState,
   getCorrectMilestoneState,
+  inlineScript,
   inlineUserTaskData,
 };

@@ -7,6 +7,7 @@ const {
   inlineUserTaskData,
   getCorrectVariableState,
   getCorrectMilestoneState,
+  inlineScript,
 } = require('@proceed/user-task-helper/index.js');
 const { getProcessIds, getVariablesFromElementById } = require('@proceed/bpmn-helper');
 
@@ -124,21 +125,15 @@ class TaskListTab extends DisplayItem {
       const { 'proceed:fileName': userTaskFileName } = attrs;
 
       const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
-      const html = await distribution.db.getHTML(definitionId, userTaskFileName);
+      let html = await distribution.db.getHTML(definitionId, userTaskFileName);
 
       const variables = getCorrectVariableState(userTask, userTaskInstance);
       const milestones = await getCorrectMilestoneState(bpmn, userTask, userTaskInstance);
       const processIds = await getProcessIds(bpmn);
       const variableDefinitions = await getVariablesFromElementById(bpmn, processIds[0]);
 
-      return inlineUserTaskData(
-        html,
-        instanceId,
-        userTask.id,
-        variables,
-        milestones,
-        variableDefinitions,
-      );
+      html = inlineScript(html, instanceId, userTask.id, variableDefinitions);
+      return inlineUserTaskData(html, variables, milestones);
     }
   }
 

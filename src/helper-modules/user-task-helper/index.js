@@ -285,7 +285,6 @@ const script = `
 
           variableInputTimer = setTimeout(() => {
             try {
-              console.log(event.target);
               const value = getValueFromVariableElement(event.target);
 
               validateValue(variableName, value);

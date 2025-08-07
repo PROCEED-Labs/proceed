@@ -230,6 +230,15 @@ const script = `
 
       if (validationErrors) return;
 
+      const data = new FormData(event.target);
+      const entries = data.entries();
+      let entry = entries.next();
+      while (!entry.done) {
+        const [key, value] = entry.value;
+        if (!variables[key]) variables[key] = value;
+        entry = entries.next();
+      }
+
       window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
           instanceID,
           userTaskID,

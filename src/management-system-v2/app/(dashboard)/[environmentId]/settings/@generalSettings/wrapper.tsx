@@ -14,9 +14,7 @@ import ImageUpload from '@/components/image-upload';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import CustomNavigationLinks from './custom-navigation-links';
-import { debouncedSettingsUpdate } from '../utils';
-import { updateSpaceSettings } from '@/lib/data/space-settings';
-import { wrapServerCall } from '@/lib/wrap-server-call';
+import { useDebouncedSettingsUpdate } from '../utils';
 
 type WrapperProps = {
   group: SettingGroup;
@@ -28,6 +26,8 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
 
+  const debouncedUpdate = useDebouncedSettingsUpdate();
+
   const { download: getLogoUrl } = useFileManager({
     entityType: EntityType.ORGANIZATION,
   });
@@ -38,11 +38,18 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const [spaceLogoFilePath, setLogoFilePath] = useState<string | undefined>(
     initialLogoFilePath || undefined,
   );
-  const [spaceLogoUrl, setSpaceLogoUrl] = useState<undefined | string>();
+  const [spaceLogoUrl, setSpaceLogoUrl] = useState<undefined | string>(() => {
+    if (initialLogoFilePath && initialLogoFilePath.startsWith('public/')) {
+      return initialLogoFilePath.replace('public/', '/');
+    }
+  });
 
   useEffect(() => {
     async function getLogo() {
-      if (!spaceLogoFilePath) return;
+      if (!spaceLogoFilePath || spaceLogoFilePath?.startsWith('public/')) {
+        return;
+      }
+
       try {
         const response = await getLogoUrl({ entityId: spaceId, filePath: spaceLogoFilePath });
         if (response.fileUrl) {
@@ -57,21 +64,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     <SettingsGroup
       group={upToDateGroup}
       onUpdate={setUpToDateGroup}
-      onNestedSettingUpdate={async (key, value) => {
-        if (key.includes('customNavigationLinks')) {
-          updateSpaceSettings;
-          wrapServerCall({
-            fn: () => updateSpaceSettings(spaceId, { [key]: value }),
-            onSuccess: () => {
-              app.message.success('Custom navigation links updated');
-              router.refresh(); // to refresh the page's layout
-            },
-            app,
-          });
-        } else {
-          debouncedSettingsUpdate(spaceId, key, value);
-        }
-      }}
+      onNestedSettingUpdate={(key, value) => debouncedUpdate(spaceId, key, value)}
       renderNestedSettingInput={(id, setting, _key, onUpdate) => {
         if (setting.key === 'spaceLogo') {
           return {
@@ -90,7 +83,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                     visible: false,
                     mask: (
                       <ImageUpload
-                        imageExists={!!spaceLogoUrl}
+                        imageExists={!!spaceLogoUrl && !spaceLogoFilePath!.startsWith('public/')}
                         onImageUpdate={(filePath) => {
                           const deleted = typeof filePath === 'undefined';
 

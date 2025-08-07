@@ -1,7 +1,7 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
 import { z } from 'zod';
 import { sendEmail } from '../email/mailer';
 import renderOrganizationInviteEmail from '../organization-invite-email';
@@ -9,11 +9,17 @@ import { OrganizationEnvironment } from './environment-schema';
 import { generateInvitationToken } from '../invitation-tokens';
 import { toCaslResource } from '../ability/caslAbility';
 import { getRoleById } from '@/lib/data/db/iam/roles';
-import { type RoleMapping } from '@/lib/data/db/iam/role-mappings';
-import { getUserByEmail } from '@/lib/data/db/iam/users';
+import { addRoleMappings, type RoleMapping } from '@/lib/data/db/iam/role-mappings';
+import { addUser, getUserByEmail, setUserPassword } from '@/lib/data/db/iam/users';
 import { getEnvironmentById } from '@/lib/data/db/iam/environments';
-import { isMember, removeMember } from '@/lib/data/db/iam/memberships';
+import { addMember, isMember, removeMember } from '@/lib/data/db/iam/memberships';
 import { env } from '../ms-config/env-vars';
+import { AuthenticatedUser, AuthenticatedUserSchema } from './user-schema';
+import { hashPassword } from '../password-hashes';
+import db from '@/lib/data/db';
+import { getRoles } from './roles';
+import { asyncMap } from '../helpers/javascriptHelpers';
+import { User } from '@prisma/client';
 
 const EmailListSchema = z.array(z.string().email());
 
@@ -105,5 +111,61 @@ export async function removeUsersFromEnvironment(environmentId: string, userIdsI
     }
   } catch (_) {
     return userError('Error removing users from environment');
+  }
+}
+
+const createUserDataSchema = AuthenticatedUserSchema.pick({
+  firstName: true,
+  lastName: true,
+  username: true,
+});
+export async function createUserAndAddToOrganization(
+  organizationId: string,
+  {
+    password,
+    roles,
+    ...userDataInput
+  }: z.infer<typeof createUserDataSchema> & { password: string; roles: string[] },
+) {
+  try {
+    const { ability } = await getCurrentEnvironment(organizationId);
+
+    // Check if the user is an admin
+    if (!ability.can('admin', 'All')) {
+      return userError(
+        'You do not have permission to create users in this organization',
+        UserErrorType.PermissionError,
+      );
+    }
+
+    const userDataParsed = createUserDataSchema.parse(userDataInput);
+
+    let user: AuthenticatedUser;
+    await db.$transaction(async (tx) => {
+      // no need to check the if the user has permissions to create the role mappings since it's
+      // he's an admin
+      user = (await addUser(
+        { ...userDataParsed, isGuest: false, emailVerifiedOn: null },
+        tx,
+      )) as AuthenticatedUser;
+      const passwordHash = await hashPassword(password);
+      await setUserPassword(user.id, passwordHash, tx, true);
+
+      await addMember(organizationId, user.id, ability, tx);
+      await addRoleMappings(
+        roles.map((roleId) => ({
+          roleId,
+          environmentId: organizationId,
+          userId: user.id,
+        })),
+        ability,
+        tx,
+      );
+    });
+
+    return user!;
+  } catch (error) {
+    const message = getErrorMessage(error);
+    return userError(message);
   }
 }

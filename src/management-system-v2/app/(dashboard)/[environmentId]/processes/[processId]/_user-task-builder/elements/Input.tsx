@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 
-import { Select } from 'antd';
+import { Select, Input as AntInput } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
@@ -9,10 +9,13 @@ import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useBuilderStateStore from '../use-builder-state-store';
 import { useCanEdit } from '../../modeler';
+import useProcessVariables from '../../use-process-variables';
+
+import { textFormatMap, typeLabelMap } from '../../use-process-variables';
 
 type InputProps = {
   label?: string;
-  type?: 'text' | 'number' | 'email' | 'file';
+  type?: 'text' | 'number' | 'email' | 'url' | 'file';
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
@@ -55,11 +58,11 @@ export const ExportInput: UserComponent<InputProps> = ({
               style={{ whiteSpace: 'nowrap' }}
               value={label}
               active={false}
-              onStopEditing={() => { }}
+              onStopEditing={() => {}}
               tagName="label"
               htmlFor={inputId}
-              onClick={() => { }}
-              onChange={() => { }}
+              onClick={() => {}}
+              onChange={() => {}}
             />
           </div>
         )}
@@ -194,7 +197,6 @@ const Input: UserComponent<InputProps> = ({
 export const InputSettings = () => {
   const {
     actions: { setProp },
-    type,
     labelPosition,
     variable,
   } = useNode((node) => ({
@@ -202,6 +204,10 @@ export const InputSettings = () => {
     labelPosition: node.data.props.labelPosition,
     variable: node.data.props.variable,
   }));
+
+  const { variables } = useProcessVariables();
+
+  const selectedVariable = variables.find((v) => v.name === variable);
 
   return (
     <>
@@ -228,10 +234,15 @@ export const InputSettings = () => {
       <VariableSetting
         variable={variable}
         allowedTypes={['string', 'number', 'file']}
-        onChange={(newVariable, newVariableType) => {
-          console.log(newVariableType);
+        onChange={(newVariable, newVariableType, newVariableFormat) => {
           setProp((props: InputProps) => {
             props.variable = newVariable;
+
+            if (newVariableFormat) {
+              props.type = newVariableFormat;
+              return;
+            }
+
             switch (newVariableType) {
               case 'string':
                 props.type = 'text';
@@ -248,6 +259,22 @@ export const InputSettings = () => {
           });
         }}
       />
+      {selectedVariable ? (
+        <>
+          <Setting
+            label="Type"
+            disabled
+            control={<AntInput value={typeLabelMap[selectedVariable.dataType]} />}
+          />
+          {!!selectedVariable.textFormat && (
+            <Setting
+              label="Format"
+              disabled
+              control={<AntInput value={textFormatMap[selectedVariable.textFormat]} />}
+            />
+          )}
+        </>
+      ) : null}
     </>
   );
 };

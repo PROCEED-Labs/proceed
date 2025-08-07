@@ -133,11 +133,6 @@ class TaskListTab extends DisplayItem {
   }
 
   async postUserTask(variables, query) {
-    console.log(variables);
-
-    Object.entries(variables).forEach(([key, value]) => console.log(key, value, typeof value));
-
-    return;
     const engine = this.getTaskEngine(query);
 
     engine.completeUserTask(query.instanceID, query.userTaskID, {});
@@ -158,12 +153,6 @@ class TaskListTab extends DisplayItem {
   }
 
   async putVariable(body, query) {
-    console.log(body);
-
-    Object.entries(body).forEach(([key, value]) => {
-      if (typeof value === 'object') console.log(key, Object.keys(value));
-    });
-    return;
     const engine = this.getTaskEngine(query);
     engine.updateIntermediateVariablesState(query.instanceID, query.userTaskID, body);
 

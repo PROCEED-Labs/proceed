@@ -25,7 +25,15 @@ export const typeLabelMap: Record<AllowedType, string> = {
   file: 'File',
 } as const;
 
-export type ProcessVariable = Omit<Variable, 'dataType'> & { dataType: AllowedType };
+export const textFormatMap = {
+  email: 'E-Mail',
+  url: 'URL',
+};
+
+export type ProcessVariable = Omit<Variable, 'dataType' | 'textFormat'> & {
+  dataType: AllowedType;
+  textFormat?: keyof typeof textFormatMap;
+};
 
 export default function useProcessVariables() {
   const [variables, setVariables] = useState<ProcessVariable[]>([]);

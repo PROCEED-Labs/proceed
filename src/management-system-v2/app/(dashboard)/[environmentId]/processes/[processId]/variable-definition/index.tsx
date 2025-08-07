@@ -9,7 +9,11 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 
-import useProcessVariables, { ProcessVariable, typeLabelMap } from '../use-process-variables';
+import useProcessVariables, {
+  ProcessVariable,
+  typeLabelMap,
+  textFormatMap,
+} from '../use-process-variables';
 import ProcessVariableForm from './process-variable-form';
 
 type VariableDefinitionProps = {};
@@ -60,7 +64,13 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
               title: 'Data Type',
               dataIndex: 'dataType',
               key: 'type',
-              render: (_, record) => <Space>{typeLabelMap[record.dataType]}</Space>,
+              render: (_, record) => {
+                let label = typeLabelMap[record.dataType];
+                if (record.textFormat) {
+                  label += ` (${textFormatMap[record.textFormat]})`;
+                }
+                return <Space>{label}</Space>;
+              },
             },
             {
               title: 'Default Value',

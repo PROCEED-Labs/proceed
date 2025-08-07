@@ -15,19 +15,24 @@ import { useDndContext } from '@dnd-kit/core';
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
-import useProcessVariables, { ProcessVariable, typeLabelMap } from '../../use-process-variables';
+import useProcessVariables, {
+  ProcessVariable,
+  typeLabelMap,
+  textFormatMap,
+} from '../../use-process-variables';
 import ProcessVariableForm from '../../variable-definition/process-variable-form';
 
 export const Setting: React.FC<{
   label: string;
   control: ReactElement;
+  disabled?: boolean;
   style?: React.CSSProperties;
-}> = ({ label, control, style = {} }) => {
+}> = ({ label, control, disabled, style = {} }) => {
   const id = useId();
 
   const editingEnabled = useCanEdit();
 
-  const clonedControl = React.cloneElement(control, { id, disabled: !editingEnabled });
+  const clonedControl = React.cloneElement(control, { id, disabled: disabled || !editingEnabled });
 
   return (
     <div style={{ margin: '5px', ...style }}>
@@ -248,23 +253,15 @@ export function MenuItemFactoryFactory<T extends string>(options: Record<T, Opti
     MenuItemFactory<T>(options, ...args);
 }
 
-export function getVariableTooltip(variables: ProcessVariable[], name?: string) {
-  if (!name) return;
-  const variable = variables.find((v) => v.name === name);
-  if (!variable) return;
-
-  let tooltip = `Type: ${typeLabelMap[variable.dataType]}`;
-
-  if (variable.description) tooltip += `\nDescription: ${variable.description}`;
-
-  return tooltip;
-}
-
 type AllowedTypes = React.ComponentProps<typeof ProcessVariableForm>['allowedTypes'];
 type VariableSettingProps = {
   variable?: string;
   allowedTypes?: AllowedTypes;
-  onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
+  onChange: (
+    newVariableName?: string,
+    newVariableType?: NonNullable<AllowedTypes>[number],
+    newVariableTextFormat?: keyof typeof textFormatMap,
+  ) => void;
 };
 
 export const VariableSetting: React.FC<VariableSettingProps> = ({
@@ -288,15 +285,13 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
           <Select
             value={variable}
             style={{ display: 'block' }}
-            title={getVariableTooltip(variables, variable)}
             options={validVariables.map((v) => ({
               label: v.name,
-              title: getVariableTooltip(variables, v.name),
               value: v.name,
             }))}
             onChange={(val) => {
-              const variableType = variables.find((v) => v.name === val)?.dataType;
-              onChange(val, variableType);
+              const variable = variables.find((v) => v.name === val);
+              onChange(val, variable?.dataType, variable?.textFormat);
             }}
             dropdownRender={(menu) => (
               <>
@@ -316,7 +311,7 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
             onSubmit={(newVar) => {
               addVariable(newVar);
               setShowVariableForm(false);
-              onChange(newVar.name, newVar.dataType);
+              onChange(newVar.name, newVar.dataType, newVar.textFormat);
             }}
             onCancel={() => setShowVariableForm(false)}
           />

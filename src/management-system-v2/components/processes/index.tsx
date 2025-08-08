@@ -25,6 +25,7 @@ import {
   MenuProps,
   Typography,
 } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 
 import { ComponentProps, useRef, useState, useTransition } from 'react';
 import {
@@ -698,7 +699,8 @@ const Processes = ({
                     {/* Show message in top action bar in List-view when folder has no released processes */}
                     {isReadOnlyListView && hasNoReleasedProcesses && (
                       <div style={{ display: 'flex', alignItems: 'center', marginLeft: '16px' }}>
-                        <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
+                        <InfoCircleOutlined style={{ color: '#3e93de', marginRight: '8px' }} />
+                        <Typography.Text type="secondary" style={{ fontSize: '14px', color: '#3e93de' }}>
                           This folder does not contain any processes with released versions.
                         </Typography.Text>
                       </div>

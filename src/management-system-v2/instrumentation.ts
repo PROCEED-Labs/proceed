@@ -31,6 +31,27 @@ export async function register() {
 
     // Import db seed
     const { importSeed } = await import('./lib/db-seed');
-    await importSeed();
+    const seed = await importSeed();
+
+    // Verify that there is only one org in the db if that's needed
+    if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
+      const organizations = await db.default.space.findMany({
+        where: {
+          isOrganization: true,
+        },
+      });
+      if (organizations.length !== 1) {
+        console.error(
+          `When PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE there can only be one organization in the database. Found ${organizations.length}.`,
+        );
+        process.exit(1);
+      }
+      if (organizations[0].id !== seed!.organizations[0].id) {
+        console.error(
+          "Consistency error: PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is active and the only organization in the database doesn't match the one in the seed file.",
+        );
+        process.exit(1);
+      }
+    }
   }
 }

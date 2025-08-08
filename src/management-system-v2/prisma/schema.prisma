@@ -307,3 +307,9 @@ model MSConfig {
   id      Int   @id @default(0) 
   config  Json
 }
+
+// Last seed version written to db, this table should only have one entry
+model SeedVersion { 
+  id      Int   @id @default(0) 
+  version DateTime
+}

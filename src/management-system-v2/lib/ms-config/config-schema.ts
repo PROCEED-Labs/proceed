@@ -72,9 +72,20 @@ export const msConfigSchema = {
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
-    NEXTAUTH_URL: z.string().default('http://localhost:3000'),
+    NEXTAUTH_URL: z
+      .string()
+      .default('')
+      .refine((url) => {
+        if (url !== '') {
+          return true;
+        }
+        if (boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE)) {
+          return false;
+        }
+      }),
     NEXTAUTH_URL_INTERNAL: z.string().default(''),
     NEXTAUTH_SECRET: z.string().default(''),
+
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z.string().default(''),
     SHARING_ENCRYPTION_SECRET: z.string().default(''),
     IAM_GUEST_CONVERSION_REFERENCE_SECRET: z.string().default(''),
@@ -94,7 +105,17 @@ export const msConfigSchema = {
     MAILSERVER_MS_DEFAULT_MAIL_ADDRESS: z.string().default(''),
     MAILSERVER_MS_DEFAULT_MAIL_PASSWORD: z.string().default(''),
 
-    PROCEED_PUBLIC_IAM_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_IAM_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine((value) => {
+        if (!value) return true;
+        return (
+          boolParser(process.env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) ||
+          boolParser(process.env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE)
+        );
+      }, 'You enabled IAM without enabling a login method, please enable at least one of the following two: PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE or PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE'),
     PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE: z.string().default('FALSE').transform(boolParser),
     PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE: z.string().default('TRUE').transform(boolParser),
     PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE: z.string().default('TRUE').transform(boolParser),
@@ -150,7 +171,6 @@ export const msConfigSchema = {
     MQTT_BASETOPIC: z.string().optional(),
   },
   production: {
-    NEXTAUTH_SECRET: z.string(),
     DATABASE_URL: z.string(),
     // NOTE: not quite sure if this should be required
     SCHEDULER_TOKEN: z.string().optional(),
@@ -168,6 +188,7 @@ export const msConfigSchema = {
       ),
   },
   development: {
+    NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     NEXTAUTH_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z

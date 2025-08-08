@@ -8,7 +8,7 @@ export const UserOrganizationEnvironmentInputSchema = z.object({
   description: z.string().min(4, { message: 'Description must be at least 4 characters long' }),
   contactPhoneNumber: zodPhoneNumber().optional(),
   contactEmail: z.string().email('Invalid E-Mail address').optional(),
-  spaceLogo: z.string().url().optional(),
+  spaceLogo: z.string().optional(),
 });
 
 export const OrganizationEnvironmentSchema = z.union([

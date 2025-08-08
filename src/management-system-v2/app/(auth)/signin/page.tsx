@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';
 import SignIn from './signin';
 import { generateGuestReferenceToken } from '@/lib/reference-guest-user-token';
+import { env } from '@/lib/ms-config/env-vars';
+import db from '@/lib/data/db';
 
 const dayInMS = 1000 * 60 * 60 * 24;
 
@@ -45,8 +47,26 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
   if (!session) userType = 'none' as const;
   else userType = isGuest ? ('guest' as const) : ('user' as const);
 
+  let logoUrl;
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
+    const org = await db.space.findFirst({
+      where: {
+        isOrganization: true,
+      },
+    });
+    // TODO: show url if it's not in the public directory
+    if (org?.spaceLogo?.startsWith('public/')) {
+      logoUrl = org.spaceLogo.replace('public/', '/');
+    }
+  }
+
   return (
-    <SignIn providers={providers} userType={userType} guestReferenceToken={guestReferenceToken} />
+    <SignIn
+      providers={providers}
+      userType={userType}
+      guestReferenceToken={guestReferenceToken}
+      logoUrl={logoUrl}
+    />
   );
 };
 

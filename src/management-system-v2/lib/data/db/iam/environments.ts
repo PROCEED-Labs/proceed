@@ -158,6 +158,12 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
   const environment = await getEnvironmentById(environmentId);
   if (!environment) throw new Error('Environment not found');
 
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE && environment.isOrganization) {
+    throw new Error(
+      'Organizations cannot be deleted when PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is true',
+    );
+  }
+
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
   await db.space.delete({
     where: { id: environmentId },

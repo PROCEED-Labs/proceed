@@ -47,17 +47,12 @@
           "required": false,
           "schema": {
             "type": "string",
-            "enum": [
-              "personal",
-              "organizational"
-            ]
+            "enum": ["personal", "organizational"]
           }
         }
       ],
       "get": {
-        "tags": [
-          "Spaces"
-        ],
+        "tags": ["Spaces"],
         "summary": "List all Spaces",
         "description": "List of all Spaces. Spaces are the environments containing user and data.",
         "responses": {
@@ -87,9 +82,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Spaces"
-        ],
+        "tags": ["Spaces"],
         "summary": "Show meta data about a space",
         "responses": {
           "200": {
@@ -121,9 +114,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "List all Configurations",
         "description": "",
         "parameters": [
@@ -154,9 +145,7 @@
         }
       },
       "post": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Create a new Configuration Container",
         "description": "Create a new Configuration Container with the same format as import.",
         "requestBody": {
@@ -218,9 +207,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "List all versions of a Configuration Container",
         "description": "List all versions of a _Configuration Container_ by its `id`",
         "responses": {
@@ -240,9 +227,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Delete a Configuration Container with all Versions",
         "description": "Delete a _Configuration Container_ with all Versions by its `id`",
         "responses": {
@@ -286,9 +271,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Read one specific Version of a Configuration Container",
         "description": "Read one specific Version of a _Configuration Container_ by its `id` and `version-id`",
 
@@ -302,9 +285,7 @@
         }
       },
       "put": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Modify/Override an existing Configuration Container",
         "description": "Modify/Override an existing Configuration Container with the same format as import.",
         "parameters": [
@@ -316,7 +297,7 @@
             "schema": {
               "type": "string",
               "default": "latest",
-              "enum": [ "latest" ]
+              "enum": ["latest"]
             }
           }
         ],
@@ -382,9 +363,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Read one specific Parameter inside a Configuration Container",
         "description": "Read one specific Parameter of a _Version_ of a _Configuration Container_ by its `id`",
         "responses": {
@@ -404,9 +383,7 @@
         }
       },
       "put": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Modify/Override an existing Parameter",
         "description": "It will override a parameters existing content and not add values. so, if there are already multiple content entries in different languages existing for a parameter, they all must be given in the Array or else they are lost after the update.",
         "parameters": [
@@ -418,7 +395,7 @@
             "schema": {
               "type": "string",
               "default": "latest",
-              "enum": [ "latest" ]
+              "enum": ["latest"]
             }
           }
         ],
@@ -474,9 +451,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Read the Target Data Set of a Configuration Container",
 
         "responses": {
@@ -489,9 +464,7 @@
         }
       },
       "put": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Add/Modify/Override a Target Data Set in the latest version",
         "description": "Add/Modify/Override a Target Data Set in the _latest_ version of a Configuration Container.",
         "parameters": [
@@ -503,7 +476,7 @@
             "schema": {
               "type": "string",
               "default": "latest",
-              "enum": [ "latest" ]
+              "enum": ["latest"]
             }
           }
         ],
@@ -562,9 +535,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Read the Reference Data Set of a Configuration Container",
         "responses": {
           "200": {
@@ -576,9 +547,7 @@
         }
       },
       "put": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Add/Modify/Override a Reference Data Set in the latest version",
         "description": "Add/Modify/Override a Reference Data Set in the _latest_ version of a Configuration Container.",
         "parameters": [
@@ -590,7 +559,7 @@
             "schema": {
               "type": "string",
               "default": "latest",
-              "enum": [ "latest" ]
+              "enum": ["latest"]
             }
           }
         ],
@@ -649,9 +618,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "List all Machine Data Sets of a Configuration Container",
 
         "responses": {
@@ -711,9 +678,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Read one specific Machine Data Set of a Configuration Container",
         "responses": {
           "200": {
@@ -725,9 +690,7 @@
         }
       },
       "put": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Add/Modify/Override a Machine Data Set in the latest version",
         "description": "Add/Modify/Override a Machine Data Set in the _latest_ version of a Configuration Container.",
         "parameters": [
@@ -739,7 +702,7 @@
             "schema": {
               "type": "string",
               "default": "latest",
-              "enum": [ "latest" ]
+              "enum": ["latest"]
             }
           }
         ],
@@ -807,9 +770,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "List all Feedback to one Machine Data Set of a Configuration Container",
         "description": "For every Machine Data Set, feedback with improved values can be sent from the production machine. This lists all given Feedback for a specific Version of a Configuration Container.",
         "responses": {
@@ -878,9 +839,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Get a specific Feedback to one Machine Data Set of a Configuration Container",
         "description": "For every Machine Data Set, feedback with improved values can be sent from the production machine. This reads one Feedback for a specific Version of a Configuration Container.",
         "responses": {
@@ -893,9 +852,7 @@
         }
       },
       "put": {
-        "tags": [
-          "Configurations"
-        ],
+        "tags": ["Configurations"],
         "summary": "Add Feedback for a specific Version of a Machine Data Set",
         "description": "Add Feedback for a specific Version of a Machine Data Set of a Configuration Container.",
         "parameters": [
@@ -954,20 +911,14 @@
       },
       "Space": {
         "type": "object",
-        "required": [
-          "id",
-          "type"
-        ],
+        "required": ["id", "type"],
         "properties": {
           "id": {
             "type": "string"
           },
           "type": {
             "type": "string",
-            "enum": [
-              "personal",
-              "organizational"
-            ]
+            "enum": ["personal", "organizational"]
           },
           "name": {
             "type": "string"
@@ -982,9 +933,7 @@
         "type": "array",
         "items": {
           "type": "object",
-          "required": [
-            "id"
-          ],
+          "required": ["id"],
           "properties": {
             "id": {
               "$ref": "#/components/schemas/ConfigurationContainerId"
@@ -1044,10 +993,7 @@
         "type": "array",
         "items": {
           "type": "object",
-          "required": [
-            "id",
-            "createdOn"
-          ],
+          "required": ["id", "createdOn"],
           "properties": {
             "id": {
               "$ref": "#/components/schemas/ConfigurationVersionId"
@@ -1076,11 +1022,7 @@
       },
       "Parameter": {
         "type": "object",
-        "required": [
-          "id",
-          "key",
-          "content"
-        ],
+        "required": ["id", "key", "content"],
         "properties": {
           "id": {
             "$ref": "#/components/schemas/ParameterId"
@@ -1092,9 +1034,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": [
-                "value"
-              ],
+              "required": ["value"],
               "properties": {
                 "displayName": {
                   "type": "string"
@@ -1132,9 +1072,7 @@
         "type": "array",
         "items": {
           "type": "object",
-          "required": [
-            "id"
-          ],
+          "required": ["id"],
           "properties": {
             "id": {
               "$ref": "#/components/schemas/MachineConfigurationId"
@@ -1157,12 +1095,8 @@
         "format": "date-time"
       }
     },
-    "responses": {
-
-    },
-    "requestBodies": {
-    },
-    "securitySchemes": {
-    }
+    "responses": {},
+    "requestBodies": {},
+    "securitySchemes": {}
   }
 }

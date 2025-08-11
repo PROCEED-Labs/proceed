@@ -109,7 +109,11 @@ function updateResource(
 const filter = (inputValue: string, path: DefaultOptionType[]) =>
   path.some((option) => `${option?.value}`.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
 
-export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler, readOnly = false }) => {
+export const PotentialOwner: FC<PotentialOwnerProps> = ({
+  selectedElement,
+  modeler,
+  readOnly = false,
+}) => {
   const { user, roles } = usePotentialOwnerStore();
 
   const { user: selectedUser, roles: selectedRoles } = useBPMNResources(
@@ -181,7 +185,11 @@ type ResponsibilityProps = {
   readOnly?: boolean;
 };
 
-export const ResponsibleParty: FC<ResponsibilityProps> = ({ selectedElement, modeler, readOnly = false }) => {
+export const ResponsibleParty: FC<ResponsibilityProps> = ({
+  selectedElement,
+  modeler,
+  readOnly = false,
+}) => {
   const { user, roles } = usePotentialOwnerStore();
 
   const { user: selectedUser, roles: selectedRoles } = useBPMNResources(

@@ -89,7 +89,7 @@ const DescriptionSection: React.FC<{ selectedElement: any; readOnly?: boolean }>
           </div>
           <ScrollBar>
             <div
-              style={{ 
+              style={{
                 maxHeight: '40vh',
                 opacity: readOnly ? 0.25 : 1,
                 pointerEvents: readOnly ? 'none' : 'auto',

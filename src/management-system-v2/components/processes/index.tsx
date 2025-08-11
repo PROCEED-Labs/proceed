@@ -700,7 +700,10 @@ const Processes = ({
                     {isReadOnlyListView && hasNoReleasedProcesses && (
                       <div style={{ display: 'flex', alignItems: 'center', marginLeft: '16px' }}>
                         <InfoCircleOutlined style={{ color: '#3e93de', marginRight: '8px' }} />
-                        <Typography.Text type="secondary" style={{ fontSize: '14px', color: '#3e93de' }}>
+                        <Typography.Text
+                          type="secondary"
+                          style={{ fontSize: '14px', color: '#3e93de' }}
+                        >
                           This folder does not contain any processes with released versions.
                         </Typography.Text>
                       </div>

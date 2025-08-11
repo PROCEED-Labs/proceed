@@ -207,7 +207,9 @@ const ProcessModal = <
       return <ProcessInputs index={0} readonly={readonly} />;
     }
     if (initialData.length === 1 && mode === 'edit') {
-      return <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} readonly={readonly} />;
+      return (
+        <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} readonly={readonly} />
+      );
     }
 
     if (initialData.length === 1 && mode === 'copy') {

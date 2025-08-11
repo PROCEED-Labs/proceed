@@ -69,7 +69,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
 
   const isReadOnlyListView = decodeURIComponent(pathname).includes('/list/');
   const isEditorView = decodeURIComponent(pathname).includes('/editor/');
-  
+
   // Determine the current context prefix for navigation
   const contextPrefix = isReadOnlyListView ? '/list' : isEditorView ? '/editor' : '';
 

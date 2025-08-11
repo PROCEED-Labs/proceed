@@ -85,9 +85,11 @@ const ListEntryLink: React.FC<
     isReadOnly?: boolean;
   }>
 > = ({ children, data, style, className, isReadOnly = false }) => {
-  const folderPath = isReadOnly ? `/processes/list/folder/${data.id}` : `/processes/editor/folder/${data.id}`;
+  const folderPath = isReadOnly
+    ? `/processes/list/folder/${data.id}`
+    : `/processes/editor/folder/${data.id}`;
   const processPath = isReadOnly ? `/processes/list/${data.id}` : `/processes/editor/${data.id}`;
-  
+
   return (
     <SpaceLink
       href={data.type === 'folder' ? folderPath : processPath}
@@ -278,7 +280,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         key: 'Favorites',
         width: '40px',
         render: (id, _, index) =>
-          id !== folder.parentId && <FavouriteStar id={id} viewOnly={isReadOnly} className={styles.HoverableTableCell} />,
+          id !== folder.parentId && (
+            <FavouriteStar id={id} viewOnly={isReadOnly} className={styles.HoverableTableCell} />
+          ),
         sorter: folderAwareSort((a, b) =>
           favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
             ? 0
@@ -296,7 +300,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           (a, b) => (a.userDefinedId ?? '').localeCompare(b.userDefinedId ?? ''),
         ),
         render: (id, record) => (
-          <ListEntryLink data={record} isReadOnly={isReadOnly} /* className={styles.HoverableTableCell} */>
+          <ListEntryLink
+            data={record}
+            isReadOnly={isReadOnly} /* className={styles.HoverableTableCell} */
+          >
             {record.type === 'folder' ? '' : id}
           </ListEntryLink>
         ),
@@ -381,7 +388,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               : mapIdToUsername(item.creatorId);
           return (
             <>
-              <ListEntryLink data={item} isReadOnly={isReadOnly}>{name}</ListEntryLink>
+              <ListEntryLink data={item} isReadOnly={isReadOnly}>
+                {name}
+              </ListEntryLink>
             </>
           );
         },
@@ -401,7 +410,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
 
           return (
             <>
-              <ListEntryLink data={item} isReadOnly={isReadOnly}>{name}</ListEntryLink>
+              <ListEntryLink data={item} isReadOnly={isReadOnly}>
+                {name}
+              </ListEntryLink>
             </>
           );
         },

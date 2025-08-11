@@ -97,11 +97,17 @@ const Layout: FC<
   }
 
   useEffect(() => {
-    if (customLogo) getLogo({ entityId: activeSpace.spaceId, filePath: customLogo });
+    if (customLogo && !customLogo.startsWith('public/')) {
+      getLogo({ entityId: activeSpace.spaceId, filePath: customLogo });
+    }
   }, [activeSpace, customLogo]);
 
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (logoUrl) imageSource = logoUrl;
+  if (customLogo?.startsWith('public/')) {
+    imageSource = customLogo.replace('public/', '/');
+  } else if (logoUrl) {
+    imageSource = logoUrl;
+  }
 
   const menu = (
     <Menu

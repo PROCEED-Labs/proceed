@@ -14,7 +14,7 @@ import Icon, {
 } from '@ant-design/icons';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiDownloadSimple } from 'react-icons/pi';
-import { SvgXML } from '@/components/svg';
+import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -26,11 +26,14 @@ import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
+import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder, { canHaveForm } from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import { getSpaceSettingsValues } from '@/lib/data/space-settings';
 import { Process } from '@/lib/data/process-schema';
 import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
 import { TimerEventButton, isTimerEvent } from './planned-duration-input';
@@ -62,6 +65,37 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareModalDefaultOpenTab, setShareModalDefaultOpenTab] =
     useState<ComponentProps<typeof ShareModal>['defaultOpenTab']>(undefined);
+
+  const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
+
+  const [ganttEnabled, setGanttEnabled] = useState<boolean | null>(null);
+
+  // Fetch gantt view settings
+  useEffect(() => {
+    const fetchGanttSettings = async () => {
+      try {
+        const settingsResult = await getSpaceSettingsValues(
+          environment.spaceId,
+          'process-documentation',
+        );
+
+        // Handle userError result from server action (e.g., permission errors)
+        if (isUserErrorResponse(settingsResult)) {
+          console.warn('Cannot access settings, using defaults:', settingsResult.error.message);
+          setGanttEnabled(true);
+          return;
+        }
+
+        const ganttViewSettings = settingsResult?.['gantt-view'];
+        setGanttEnabled(ganttViewSettings?.enabled ?? true);
+      } catch (error) {
+        console.warn('Failed to fetch gantt view settings, using defaults:', error);
+        setGanttEnabled(true);
+      }
+    };
+
+    fetchGanttSettings();
+  }, [environment.spaceId]);
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
@@ -268,7 +302,6 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     createVersion={createProcessVersion}
                   ></VersionCreationButton>
                 </Tooltip>
-
                 <Tooltip title="Undo">
                   <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
                 </Tooltip>
@@ -338,6 +371,19 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     icon={<Icon aria-label="xml-sign" component={SvgXML} />}
                     onClick={handleOpenXmlEditor}
                   />
+                </Tooltip>
+              )}
+              {env.PROCEED_PUBLIC_TIMELINE_VIEW === true && ganttEnabled === true && (
+                <Tooltip title="Switch to Gantt view">
+                  <Button
+                    icon={<Icon aria-label="gantt-view" component={SvgGantt} />}
+                    onClick={() => {
+                      enableTimelineView();
+                      // Use router to preserve the current URL and just add the hash
+                      const currentUrl = window.location.pathname + window.location.search;
+                      window.history.replaceState(null, '', currentUrl + '#gantt-view');
+                    }}
+                  ></Button>
                 </Tooltip>
               )}
               <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />

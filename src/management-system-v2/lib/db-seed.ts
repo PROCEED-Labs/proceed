@@ -1,19 +1,21 @@
 import z from 'zod';
 import db from '@/lib/data/db';
-import { addUser, getUserById } from './data/db/iam/users';
+import { addUser, getUserById, setUserPassword } from './data/db/iam/users';
 import { addRoleMappings } from './data/db/iam/role-mappings';
 import {
   OrganizationEnvironment,
   UserOrganizationEnvironmentInputSchema,
   environmentSchema,
 } from './data/environment-schema';
-import { addRole } from './data/db/iam/roles';
+import { addRole, getRoleById } from './data/db/iam/roles';
 import { addEnvironment, getEnvironmentById } from './data/db/iam/environments';
 import { addMember, isMember } from './data/db/iam/memberships';
 import { getRoleMappingByUserId } from './data/db/iam/role-mappings';
 import { zodPhoneNumber } from './utils';
 import { permissionIdentifiersToNumber } from './authorization/permissionHelpers';
 import { ResourceType, resourceAction, resources } from './ability/caslAbility';
+import { hashPassword } from './password-hashes';
+import { env } from './ms-config/env-vars';
 
 /* -------------------------------------------------------------------------------------------------
  * Schema + Verification
@@ -56,6 +58,7 @@ for (const resource of resources) {
 }
 
 const roleSchema = z.object({
+  id: z.string().uuid(),
   name: z.string(),
   description: z.string().nullish().optional(),
   note: z.string().nullish().optional(),
@@ -81,12 +84,22 @@ const organizationSchema = UserOrganizationEnvironmentInputSchema.extend({
 });
 
 const seedSchema = z.object({
+  version: z.string().datetime(),
   users: z.array(userSchema),
   organizations: z.array(organizationSchema),
 });
 export type DBSeed = z.infer<typeof seedSchema>;
 
 function verifySeed(seed: DBSeed) {
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
+    if (seed?.organizations.length !== 1) {
+      console.error(
+        'When PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is active you have to define exactly one organization in the seed file.',
+      );
+      process.exit(1);
+    }
+  }
+
   // verify users
   const users = new Set<string>();
   const userNames = new Set<string>();
@@ -139,6 +152,31 @@ function verifySeed(seed: DBSeed) {
 
 async function writeSeedToDb(seed: DBSeed) {
   await db.$transaction(async (tx) => {
+    const seedVersion = new Date(seed.version);
+    const seedVersionDb = await tx.seedVersion.findUnique({
+      where: {
+        id: 0,
+      },
+    });
+
+    if (seedVersionDb && seedVersionDb.version >= seedVersion) {
+      return;
+    }
+
+    if (!seedVersionDb) {
+      await tx.seedVersion.create({
+        data: {
+          id: 0,
+          version: seedVersion,
+        },
+      });
+    } else {
+      await tx.seedVersion.update({
+        where: { id: 0 },
+        data: { version: seedVersion },
+      });
+    }
+
     // create users
     // TODO: passwords
     const usernameToId = new Map<string, string>();
@@ -151,6 +189,8 @@ async function writeSeedToDb(seed: DBSeed) {
       }
 
       const newUser = await addUser({ ...user, isGuest: false, emailVerifiedOn: null }, tx);
+      const hashedPassword = await hashPassword(user.initialPassword);
+      await setUserPassword(user.id, hashedPassword, tx, true);
       usernameToId.set(user.username, newUser.id);
     }
 
@@ -158,7 +198,7 @@ async function writeSeedToDb(seed: DBSeed) {
     for (const organization of seed.organizations) {
       // create org
       let org = await getEnvironmentById(organization.id);
-      if (!org)
+      if (!org) {
         org = (await addEnvironment(
           {
             id: organization.id,
@@ -169,23 +209,26 @@ async function writeSeedToDb(seed: DBSeed) {
             contactEmail: organization.contactEmail,
             isOrganization: true,
             isActive: true,
+            spaceLogo: organization.spaceLogo,
           },
           undefined,
           tx,
         )) as OrganizationEnvironment;
+      }
 
       // Add members + get their roles
       const userRoleMappings = new Map<string, string[]>();
       for (const member of organization.members) {
         const memberId = usernameToId.get(member)!;
-        if (!(await isMember(org.id, memberId, tx)))
+        if (!(await isMember(org.id, memberId, tx))) {
           await addMember(org.id, memberId, undefined, tx);
+        }
 
         // get members role mappings
         const userRoles = await getRoleMappingByUserId(memberId, org.id, undefined, undefined, tx);
         userRoleMappings.set(
           memberId,
-          userRoles.map((role) => role.roleName),
+          userRoles.map((role) => role.roleId),
         );
       }
 
@@ -196,12 +239,14 @@ async function writeSeedToDb(seed: DBSeed) {
           name: '@admin',
         },
       });
-      if (!adminRole)
+      if (!adminRole) {
         throw new Error(`Consistency error: Admin role for ${organization.name} not found`);
+      }
 
+      // Admin role is created by default when the org is created
       for (const admin of organization.admins) {
         const adminId = usernameToId.get(admin)!;
-        if (userRoleMappings.get(adminId)?.includes('@admin')) continue;
+        if (userRoleMappings.get(adminId)?.includes(adminRole.id)) continue;
 
         await addRoleMappings(
           [
@@ -219,33 +264,37 @@ async function writeSeedToDb(seed: DBSeed) {
       // Add roles
       // Here we go by the name of the role
       if (organization.roles) {
-        for (const role of organization.roles) {
-          const roleMembers = role.members;
-          delete (role as any)['members'];
+        for (const roleInput of organization.roles) {
+          const roleMembers = roleInput.members;
+          delete (roleInput as any)['members'];
 
-          const rolePermissions: Partial<Record<ResourceType, number>> = {};
-          for (const [action, permissions] of Object.entries(role.permissions))
-            rolePermissions[action as ResourceType] = permissionIdentifiersToNumber(permissions);
+          let role = await getRoleById(roleInput.id, undefined, tx);
+          if (!role) {
+            const rolePermissions: Partial<Record<ResourceType, number>> = {};
+            for (const [action, permissions] of Object.entries(roleInput.permissions)) {
+              rolePermissions[action as ResourceType] = permissionIdentifiersToNumber(permissions);
+            }
 
-          const newRole = await addRole(
-            {
-              ...role,
-              permissions: rolePermissions,
-              environmentId: org.id,
-            },
-            undefined,
-            tx,
-          );
+            role = await addRole(
+              {
+                ...roleInput,
+                permissions: rolePermissions,
+                environmentId: org.id,
+              },
+              undefined,
+              tx,
+            );
+          }
 
           for (const roleMember of roleMembers) {
             const roleMemberId = usernameToId.get(roleMember)!;
-            if (userRoleMappings.get(roleMemberId)?.includes(role.name)) continue;
+            if (userRoleMappings.get(roleMemberId)?.includes(role.id)) continue;
 
             await addRoleMappings(
               [
                 {
                   userId: roleMemberId,
-                  roleId: newRole.id,
+                  roleId: role.id,
                   environmentId: org.id,
                 },
               ],
@@ -263,6 +312,9 @@ async function writeSeedToDb(seed: DBSeed) {
  * Import Seed + Verification + Write to DB
  * -----------------------------------------------------------------------------------------------*/
 
+/**
+ * @note This function will terminate the process if the import fails.
+ */
 export async function importSeed() {
   let seedDbConfig: unknown | undefined;
   try {
@@ -284,8 +336,11 @@ export async function importSeed() {
     verifySeed(parseResult.data);
 
     await writeSeedToDb(parseResult.data);
+
+    return parseResult.data;
   } catch (e) {
     console.error('Failed to import seed');
     console.error(e);
+    process.exit(1);
   }
 }

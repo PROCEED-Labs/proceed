@@ -4,6 +4,7 @@ import Content from '@/components/content';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { SpaceNotFoundError } from '@/lib/errors';
+import { UIError } from '@/lib/ui-error';
 import { Button, Result } from 'antd';
 
 export default function Error({
@@ -13,9 +14,13 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  let title = 'Something went wrong!';
   if (error.message.startsWith(UnauthorizedError.prefix)) {
     return <UnauthorizedFallback />;
+  } else if (error.message.startsWith(UIError.prefix)) {
+    title = error.message.substring(UIError.prefix.length + 2);
   }
+
   const retryButton = (
     <Button type="primary" onClick={() => reset()}>
       Try again
@@ -25,7 +30,7 @@ export default function Error({
   let feedback = (
     <Result
       status="warning"
-      title="Something went wrong!"
+      title={title}
       subTitle={`Digest: ${error.digest}`}
       extra={retryButton}
     />

@@ -40,6 +40,7 @@ const ELEMENTS_WITHOUT_PLANNED_DURATION = ['bpmn:StartEvent', 'bpmn:TextAnnotati
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
+  readOnly?: boolean;
 };
 
 export const updateMetaData = async (
@@ -68,6 +69,7 @@ export const updateMetaData = async (
 
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
+  readOnly = false,
 }) => {
   const env = use(EnvVarsContext);
   const environment = useEnvironment();
@@ -232,6 +234,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               onBlur={handleNameChange}
+              disabled={readOnly}
             />
 
             {selectedElement.type === 'bpmn:Process' && (
@@ -243,6 +246,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 value={userDefinedId}
                 onChange={(e) => setUserDefinedId(e.target.value)}
                 onBlur={handleUserDefinedIdChange}
+                disabled={readOnly}
               />
             )}
 
@@ -260,13 +264,24 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 onImageUpdate={(imageFileName) => {
                   updateMetaData(modeler!, selectedElement, 'overviewImage', imageFileName);
                 }}
+                readOnly={readOnly}
               ></ImageSelectionSection>
             </div>
           </Space>
-          <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
+          <DescriptionSection
+            selectedElement={selectedElement}
+            readOnly={readOnly}
+          ></DescriptionSection>
           {/* Responsibility */}
-          <ResponsibleParty selectedElement={selectedElement} modeler={modeler} />
-          <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
+          <ResponsibleParty
+            selectedElement={selectedElement}
+            modeler={modeler}
+            readOnly={readOnly}
+          />
+          <MilestoneSelectionSection
+            selectedElement={selectedElement}
+            readOnly={readOnly}
+          ></MilestoneSelectionSection>
           <Space direction="vertical" style={{ width: '100%' }}>
             <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
             <PlannedCostInput
@@ -280,6 +295,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                   unit: currency,
                 });
               }}
+              readOnly={readOnly}
             ></PlannedCostInput>
             {!ELEMENTS_WITHOUT_PLANNED_DURATION.includes(selectedElement.type) && (
               <PlannedDurationInput
@@ -292,6 +308,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                   );
                 }}
                 timePlannedDuration={timePlannedDuration || ''}
+                readOnly={readOnly}
               ></PlannedDurationInput>
             )}
           </Space>
@@ -312,6 +329,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                   : undefined,
               );
             }}
+            readOnly={readOnly}
           ></CustomPropertySection>
 
           {selectedElement.type !== 'bpmn:Process' &&
@@ -325,6 +343,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                     presets={colorPickerPresets}
                     value={backgroundColor}
                     onChange={(_, hex) => updateBackgroundColor(hex)}
+                    disabled={readOnly}
                   />
                   <span>Background Color</span>
                 </Space>
@@ -335,6 +354,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                     presets={colorPickerPresets}
                     value={borderColor}
                     onChange={(_, hex) => updateBorderColor(hex)}
+                    disabled={readOnly}
                   />
                   <span>Border Color</span>
                 </Space>
@@ -347,6 +367,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                       presets={colorPickerPresets}
                       value={textColor}
                       onChange={(_, hex) => updateTextColor(hex)}
+                      disabled={readOnly}
                     />
                     <span>Text Color</span>
                   </Space>
@@ -372,11 +393,15 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           >
             {selectedElement.type === 'bpmn:UserTask' && (
               <>
-                <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
+                <PotentialOwner
+                  selectedElement={selectedElement}
+                  modeler={modeler}
+                  readOnly={readOnly}
+                />
                 <Divider />
               </>
             )}
-            <VariableDefinition />
+            <VariableDefinition readOnly={readOnly} />
           </Space>
         </>
       ),
@@ -407,12 +432,14 @@ type PropertiesPanelProperties = {
   selectedElement: ElementLike;
   isOpen: boolean;
   close: () => void;
+  readOnly?: boolean;
 };
 
 const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
   selectedElement,
   isOpen,
   close,
+  readOnly = false,
 }) => {
   const [showInfo, setShowInfo] = useState(true);
 
@@ -447,7 +474,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
         title="Properties"
         collapsedWidth="40px"
       >
-        <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
+        <PropertiesPanelContent
+          selectedElement={selectedElement}
+          readOnly={readOnly}
+        ></PropertiesPanelContent>
       </CollapsibleCard>
     </ResizableElement>
   ) : (
@@ -470,7 +500,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
         </div>
       }
     >
-      <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
+      <PropertiesPanelContent
+        selectedElement={selectedElement}
+        readOnly={readOnly}
+      ></PropertiesPanelContent>
     </Modal>
   );
 };

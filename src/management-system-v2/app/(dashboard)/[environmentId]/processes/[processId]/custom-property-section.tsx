@@ -11,12 +11,14 @@ type CustomPropertyFormProperties = {
   customMetaData: { [key: string]: any };
   initialValues: { name: string; value: string };
   onChange: (name: string, value?: any, oldName?: string) => void;
+  readOnly?: boolean;
 };
 const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
   isCreationForm,
   customMetaData,
   onChange,
   initialValues,
+  readOnly = false,
 }) => {
   const [form] = Form.useForm<{ name: string; value: any }>();
 
@@ -73,6 +75,7 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
         marginBottom: '1rem',
         flexWrap: 'nowrap',
       }}
+      disabled={readOnly}
     >
       <Space direction="vertical" size={0} style={{ flexGrow: 1 }}>
         <Form.Item
@@ -119,11 +122,13 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
 type CustomPropertySectionProperties = {
   metaData: { [key: string]: any };
   onChange: (name: string, value: any, oldName?: string) => void;
+  readOnly?: boolean;
 };
 
 const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
   metaData,
   onChange,
+  readOnly = false,
 }) => {
   const {
     overviewImage,
@@ -207,6 +212,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
                 updateProperty(name, value, oldName);
               }
             }}
+            readOnly={readOnly}
           ></CustomPropertyForm>
         ))}
       </div>
@@ -215,7 +221,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
           type="text"
           size="small"
           style={{ padding: 0, fontSize: '0.75rem' }}
-          disabled={customProperties.length > Object.keys(customMetaData).length}
+          disabled={readOnly || customProperties.length > Object.keys(customMetaData).length}
           icon={<PlusOutlined />}
           onClick={() => {
             setCustomProperties([...customProperties, { name: '', value: '' }]);

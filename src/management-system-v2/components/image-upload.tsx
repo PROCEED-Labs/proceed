@@ -19,6 +19,7 @@ interface ImageUploadProps {
     fileName?: string;
   };
   fileManagerErrorToasts?: boolean;
+  readOnly?: boolean;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -29,6 +30,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   deletable = true,
   config,
   fileManagerErrorToasts = true,
+  readOnly = false,
 }) => {
   const { upload, remove, replace } = useFileManager({
     entityType: config.entityType,
@@ -83,8 +85,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             onUploadFail?.();
           }
         }}
+        disabled={readOnly}
       >
-        <Button type="default" ghost>
+        <Button type="default" ghost disabled={readOnly}>
           {imageExists ? <EditOutlined /> : 'Add Image'}
         </Button>
       </Upload>
@@ -104,6 +107,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           }}
           type="default"
           ghost
+          disabled={readOnly}
         >
           <DeleteOutlined />
         </Button>

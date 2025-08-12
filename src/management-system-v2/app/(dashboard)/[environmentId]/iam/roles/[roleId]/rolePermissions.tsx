@@ -2,7 +2,7 @@
 
 import { Divider, Form, Row, Space, Switch, Typography, App, Button } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
-import { ResourceActionType } from '@/lib/ability/caslAbility';
+import { ResourceActionType, ResourceType } from '@/lib/ability/caslAbility';
 import { FC, Fragment, useState } from 'react';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
@@ -14,7 +14,7 @@ import { UserErrorType } from '@/lib/user-error';
 type PermissionCategory = {
   key: string;
   title: string;
-  resource: keyof Role['permissions'] | (keyof Role['permissions'])[];
+  resource: ResourceType | ResourceType[];
   permissions: {
     key: string;
     title: string;
@@ -40,7 +40,7 @@ const basePermissionOptions: PermissionCategory[] = [
         title: 'Administrate Organization',
         description:
           'Allows a user to update the Organization information and to delete the Organization.',
-        permission: 'manage',
+        permission: 'admin',
       },
     ],
   },
@@ -278,12 +278,12 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
   return (
     <Form form={form} onFinish={updateRole}>
       {basePermissionOptions.map((permissionCategory) => (
-        <>
+        <Fragment key={permissionCategory.key}>
           <Typography.Title type="secondary" level={5}>
             {permissionCategory.title}
           </Typography.Title>
           {permissionCategory.permissions.map((permission, idx) => (
-            <Fragment key={permissionCategory.key}>
+            <Fragment key={permission.key}>
               <Row align="top" justify="space-between" wrap={false}>
                 <Space direction="vertical" size={0}>
                   <Typography.Text strong>{permission.title}</Typography.Text>
@@ -320,7 +320,7 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
             </Fragment>
           ))}
           <br />
-        </>
+        </Fragment>
       ))}
 
       <Button

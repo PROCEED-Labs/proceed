@@ -3,8 +3,8 @@
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { Alert, App, Button, DatePicker, Form, Input, Modal, Space } from 'antd';
 import { FC, useState } from 'react';
-import dayjs from 'dayjs';
-import germanLocale from 'antd/es/date-picker/locale/de_DE';
+// import dayjs from 'dayjs';
+// import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole } from '@/lib/data/roles';
 import { useRouter } from 'next/navigation';
@@ -103,10 +103,10 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
   const role = toCaslResource('Role', _role);
 
   async function submitChanges(values: Record<string, any>) {
-    if (typeof values?.expirationDayJs === 'object') {
-      values.expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
-      delete values.expirationDayJs;
-    }
+    // if (typeof values?.expirationDayJs === 'object') {
+    //   values.expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
+    //   delete values.expirationDayJs;
+    // }
 
     await wrapServerCall({
       fn: () => updateRole(environment.spaceId, role.id, values),
@@ -145,7 +145,7 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
         />
       </Form.Item>
 
-      <Form.Item label="Expiration" name="expirationDayJs">
+      {/** <Form.Item label="Expiration" name="expirationDayJs">
         <DatePicker
           // Note german locale hard coded
           locale={germanLocale}
@@ -153,7 +153,7 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
           disabled={!ability.can('update', role, { field: 'expiration' })}
           defaultValue={role.expiration ? dayjs(new Date(role.expiration)) : undefined}
         />
-      </Form.Item>
+      </Form.Item>*/}
 
       <Form.Item label="Folder" name="parentId">
         <FolderInput defaultFolder={roleParentFolder} />

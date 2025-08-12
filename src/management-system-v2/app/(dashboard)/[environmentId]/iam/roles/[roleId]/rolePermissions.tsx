@@ -3,13 +3,14 @@
 import { Divider, Form, Row, Space, Switch, Typography, App, Button } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { ResourceActionType, ResourceType } from '@/lib/ability/caslAbility';
-import { FC, Fragment, useState } from 'react';
+import { FC, Fragment, use, useState } from 'react';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole as serverUpdateRole } from '@/lib/data/roles';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { UserErrorType } from '@/lib/user-error';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 type PermissionCategory = {
   key: string;
@@ -36,11 +37,10 @@ const basePermissionOptions: PermissionCategory[] = [
         permission: 'update',
       },
       {
-        key: 'Administrate Organization',
-        title: 'Administrate Organization',
-        description:
-          'Allows a user to update the Organization information and to delete the Organization.',
-        permission: 'admin',
+        key: 'Delete Organization',
+        title: 'Delete Organization',
+        description: 'Allows a user to delete the Organization.',
+        permission: 'delete',
       },
     ],
   },
@@ -51,21 +51,15 @@ const basePermissionOptions: PermissionCategory[] = [
     permissions: [
       {
         key: 'process_view',
-        title: 'View processes',
+        title: 'View Processes',
         description: 'Allows a user to view processes. (Enables the Processes view.)',
         permission: 'view',
       },
       {
         key: 'process_manage',
-        title: 'Manage processes',
-        description: 'Allows a user to create, modify and delete processes in the Processes view.',
+        title: 'Manage Processes',
+        description: 'Allows a user to create, modify and delete processes.',
         permission: 'manage',
-      },
-      {
-        key: 'process_admin',
-        title: 'Administrate processes',
-        description: 'Allows a user to perform any action on processes.',
-        permission: 'admin',
       },
     ],
   },
@@ -76,49 +70,44 @@ const basePermissionOptions: PermissionCategory[] = [
     permissions: [
       {
         key: 'folder_view',
-        title: 'View folders',
-        description: 'Allows a user to folders.',
+        title: 'View Folders',
+        description: 'Allows a user to view folders.',
         permission: 'view',
       },
       {
         key: 'folder_manage',
-        title: 'Manage folders',
+        title: 'Manage Folders',
         description: 'Allows a user to create, modify and delete folders.',
         permission: 'manage',
       },
-      {
-        key: 'folder_admin',
-        title: 'Administrate folders',
-        description: 'Allows a user to perform any action on processes.',
-        permission: 'admin',
-      },
     ],
   },
-  {
-    key: 'projects',
-    title: 'PROJECTS',
-    resource: 'Project',
-    permissions: [
-      {
-        key: 'View projects',
-        title: 'View projects',
-        description: 'Allows a user to view projects. (Enables the Projects view.)',
-        permission: 'view',
-      },
-      {
-        key: 'Manage projects',
-        title: 'Manage projects',
-        description: 'Allows a user to create, modify and delete projects in the Projects view.',
-        permission: 'manage',
-      },
-      {
-        key: 'Administrate projects',
-        title: 'Administrate projects',
-        description: 'Allows a user to perform any action on projects.',
-        permission: 'admin',
-      },
-    ],
-  },
+  // NOTE: Currently not implemented
+  // {
+  //   key: 'projects',
+  //   title: 'PROJECTS',
+  //   resource: 'Project',
+  //   permissions: [
+  //     {
+  //       key: 'View projects',
+  //       title: 'View projects',
+  //       description: 'Allows a user to view projects. (Enables the Projects view.)',
+  //       permission: 'view',
+  //     },
+  //     {
+  //       key: 'Manage projects',
+  //       title: 'Manage projects',
+  //       description: 'Allows a user to create, modify and delete projects in the Projects view.',
+  //       permission: 'manage',
+  //     },
+  //     {
+  //       key: 'Administrate projects',
+  //       title: 'Administrate projects',
+  //       description: 'Allows a user to perform any action on projects.',
+  //       permission: 'admin',
+  //     },
+  //   ],
+  // },
   // {
   //   key: 'templates',
   //   title: 'TEMPLATES',
@@ -151,11 +140,12 @@ const basePermissionOptions: PermissionCategory[] = [
     resource: 'Task',
     permissions: [
       {
-        key: 'View tasks',
-        title: 'View tasks',
-        description: 'Allows a user to view tasks. (Enables the Tasklist view.)',
+        key: 'View Tasks',
+        title: 'View Tasks',
+        description: 'Allows a user to view tasks.',
         permission: 'view',
       },
+      // TODO: expand when we implement more advanced task management
     ],
   },
   {
@@ -164,15 +154,15 @@ const basePermissionOptions: PermissionCategory[] = [
     resource: 'Machine',
     permissions: [
       {
-        key: 'View machines',
+        key: 'View Machines',
         title: 'View machines',
         description: 'Allows a user to view all machines. (Enables the Machines view.)',
         permission: 'view',
       },
 
       {
-        key: 'Manage machines',
-        title: 'Manage machines',
+        key: 'Manage Machines',
+        title: 'Manage Machines',
         description: 'Allows a user to create, modify and delete machines in the Machines view.',
         permission: 'manage',
       },
@@ -184,9 +174,15 @@ const basePermissionOptions: PermissionCategory[] = [
     resource: 'Execution',
     permissions: [
       {
-        key: 'View executions',
-        title: 'View executions',
+        key: 'View Executions',
+        title: 'View Executions',
         description: 'Allows a user to view all executions. (Enables the Executions view.)',
+        permission: 'view',
+      },
+      {
+        key: 'Manage Executions',
+        title: 'Manage Executions',
+        description: 'Allows a user to to start, modify and delete process executions.',
         permission: 'view',
       },
     ],
@@ -197,9 +193,9 @@ const basePermissionOptions: PermissionCategory[] = [
     resource: ['Role', 'RoleMapping'],
     permissions: [
       {
-        key: 'Manage roles',
-        title: 'Manage roles',
-        description: 'Allows a user to create, modify and delete roles. (Enables the IAM view.)',
+        key: 'Manage Roles',
+        title: 'Manage Roles',
+        description: 'Allows a user to create, modify and delete roles.',
         permission: 'manage',
       },
     ],
@@ -211,36 +207,28 @@ const basePermissionOptions: PermissionCategory[] = [
     permissions: [
       {
         key: 'Manage users',
-        title: 'Manage users',
+        title: 'Manage Users',
         description: 'Allows a user to add or remove users from the Organization.',
         permission: 'manage',
       },
     ],
   },
-  // {
-  //   key: 'settings',
-  //   title: 'SETTINGS',
-  //   resource: 'Setting',
-  //   permissions: [
-  //     {
-  //       key: 'Administrate settings',
-  //       title: 'Administrate settings',
-  //       description:
-  //         'Allows a user to administrate the settings of the Management System and the Engine. (Enables the Settings view.)',
-  //       permission: 'admin',
-  //     },
-  //   ],
-  // },
   {
-    key: 'all',
-    title: 'ALL',
-    resource: 'All',
+    key: 'settings',
+    title: 'SETTINGS',
+    resource: 'Setting',
     permissions: [
       {
-        key: 'Administrator Permissions',
-        title: 'Administrator Permissions',
-        description: 'Grants a user full administrator permissions for the Organization.',
-        permission: 'admin',
+        key: 'View Settings',
+        title: 'View Settings',
+        description: 'Allows a user to view the settings of the Organization.',
+        permission: 'view',
+      },
+      {
+        key: 'Update Settings',
+        title: 'Update Settings',
+        description: 'Allows a user to update the settings of the Organization.',
+        permission: 'update',
       },
     ],
   },
@@ -249,6 +237,7 @@ const basePermissionOptions: PermissionCategory[] = [
 const RolePermissions: FC<{ role: Role }> = ({ role }) => {
   const ability = useAbilityStore((store) => store.ability);
   const environment = useEnvironment();
+  const envVars = use(EnvVarsContext);
 
   const { message } = App.useApp();
   const [form] = Form.useForm();
@@ -275,9 +264,21 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
     setLoading(false);
   }
 
+  const options = basePermissionOptions.filter((permissionCategory) => {
+    if (
+      !envVars.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+      (permissionCategory.resource === 'Execution' ||
+        permissionCategory.resource === 'Task' ||
+        permissionCategory.resource === 'Machine')
+    ) {
+      return false;
+    } else {
+      return true;
+    }
+  });
   return (
     <Form form={form} onFinish={updateRole}>
-      {basePermissionOptions.map((permissionCategory) => (
+      {options.map((permissionCategory) => (
         <Fragment key={permissionCategory.key}>
           <Typography.Title type="secondary" level={5}>
             {permissionCategory.title}

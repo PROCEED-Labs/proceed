@@ -73,7 +73,8 @@
     "zustand": "4.5.2",
     "react-resizable": "^3.0.5",
     "mqtt": "^5.10.1",
-    "bcrypt": "^5.1.1"
+    "bcrypt": "^5.1.1",
+    "sharp": "0.34.3"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "5.28.11",

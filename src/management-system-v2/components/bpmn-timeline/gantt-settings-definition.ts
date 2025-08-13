@@ -35,7 +35,7 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       type: 'number' as const,
       value: 1,
       description:
-        'Maximum number of loop iterations to process. Only used in every-occurrence and latest-occurrence modes. Minimum value is 0 which means no loops are processed.',
+        'Maximum loop iterations to process. For earliest mode: only affects ghost elements. For latest mode: determines element positioning and ghost elements. For every-occurrence mode: controls all loop processing.',
     },
     {
       key: 'show-loop-icons',
@@ -43,7 +43,7 @@ export const ganttViewSettingsDefinition: SettingGroup = {
       type: 'boolean' as const,
       value: true,
       description:
-        'Show warning icons for elements that are part of loops or where flow traversal was cut off. Relevant for every-occurrence and latest-occurrence modes.',
+        'Show warning icons for elements that are part of loops or where flow traversal was cut off.',
     },
     // Ghost Elements
     {

@@ -79,7 +79,6 @@ export class TimeMatrix {
    */
   createZoomedMatrix(newScale: number, focalPointWorld: number): TimeMatrix {
     // Calculate the current screen position of the focal point
-    const focalPointScreen = this.transformPoint(focalPointWorld);
 
     // Convert to relative coordinates for the pure function
     const relativeFocalPoint = focalPointWorld - this.baseTime;
@@ -142,14 +141,10 @@ export class TimeMatrix {
     dataEnd: number,
     viewportWidth: number,
     scale: number,
-    padding: number = 0.1,
+    _padding: number = 0.1,
   ): TimeMatrix {
     // Use the data start as the base time for relative calculations
     const baseTime = dataStart;
-
-    // Calculate time span with padding
-    const timeSpan = dataEnd - dataStart;
-    const paddedTimeSpan = timeSpan * (1 + padding * 2);
 
     // Create matrix with the provided scale and the data start as base time
     const matrix = new TimeMatrix(scale, 0, baseTime);

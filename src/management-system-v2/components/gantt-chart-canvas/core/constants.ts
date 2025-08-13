@@ -7,7 +7,7 @@
 export const ROW_HEIGHT = 30; // Fixed row height for all chart rows
 export const HEADER_HEIGHT = 60; // Height of the time axis header
 export const DEFAULT_HEIGHT = 500; // Default chart height
-export const DEFAULT_TASK_LIST_WIDTH = 250; // Default width for task list panel
+export const DEFAULT_TASK_LIST_WIDTH = 300; // Default width for task list panel
 
 // Zoom settings
 export const DEFAULT_ZOOM = 50; // Mid-level zoom (centered in the range)
@@ -22,6 +22,7 @@ export const TASK_PADDING = 4; // Vertical padding for task bars
 export const MILESTONE_SIZE = 12; // Diamond size for milestones
 export const DEPENDENCY_ARROW_SIZE = 8; // Arrow head size for dependencies
 export const ELEMENT_MIN_WIDTH = 20; // Minimum width for rendered elements
+export const MIN_ARROW_TIP_DISTANCE = 16; // Minimum distance to show arrow tips for ghost dependencies
 
 // Performance thresholds
 export const VIRTUALIZATION_BUFFER_ROWS = 5; // Extra rows to render above/below viewport

@@ -8,7 +8,7 @@ import {
   // AppstoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Space, Button, Breakpoint, Grid, FloatButton, Tooltip, App } from 'antd';
+import { Space, Button, Breakpoint, Grid, FloatButton, Tooltip, App, TableProps } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -85,7 +85,7 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
     });
   }
 
-  const columns = [
+  const columns: TableProps<FilteredRole>['columns'] = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -95,6 +95,7 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
           {name.highlighted}
         </Link>
       ),
+      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
     },
     {
       title: 'Members',
@@ -102,6 +103,7 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
       render: (members: FilteredRole['members']) => (
         <Tooltip title={getMembersRepresentation(members)}>{members.length}</Tooltip>
       ),
+      sorter: (a, b) => a.members.length - b.members.length,
       key: 'username',
     },
     {

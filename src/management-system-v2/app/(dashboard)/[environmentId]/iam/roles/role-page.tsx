@@ -4,8 +4,8 @@ import { useState } from 'react';
 import {
   DeleteOutlined,
   InfoCircleOutlined,
-  UnorderedListOutlined,
-  AppstoreOutlined,
+  // UnorderedListOutlined,
+  // AppstoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import { Space, Button, Table, Breakpoint, Grid, FloatButton, Tooltip, App } from 'antd';
@@ -24,7 +24,6 @@ import { RoleWithMembers } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
 import styles from './role-page.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
-import cn from 'classnames';
 
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import SelectionActions from '@/components/selection-actions';
@@ -59,7 +58,7 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [showMobileRoleSider, setShowMobileRoleSider] = useState(false);
 
-  const addPreferences = useUserPreferences.use.addPreferences();
+  // const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-role-list']();
 
   const breakpoint = Grid.useBreakpoint();
@@ -180,28 +179,26 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
                   {selectedRowKeys.length > 0 ? <Space size={20}></Space> : undefined}
                 </span>
 
-                {
-                  <span>
-                    <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
-                      <Button
-                        style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                        onClick={() => {
-                          addPreferences({ 'icon-view-in-process-list': false });
-                        }}
-                      >
-                        <UnorderedListOutlined />
-                      </Button>
-                      <Button
-                        style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                        onClick={() => {
-                          addPreferences({ 'icon-view-in-process-list': true });
-                        }}
-                      >
-                        <AppstoreOutlined />
-                      </Button>
-                    </Space.Compact>
-                  </span>
-                }
+                {/**
+                  <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
+                    <Button
+                      style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                      onClick={() => {
+                        addPreferences({ 'icon-view-in-process-list': false });
+                      }}
+                    >
+                      <UnorderedListOutlined />
+                    </Button>
+                    <Button
+                      style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                      onClick={() => {
+                        addPreferences({ 'icon-view-in-process-list': true });
+                      }}
+                    >
+                      <AppstoreOutlined />
+                    </Button>
+                  </Space.Compact>
+                */}
 
                 {/* <!-- FloatButtonGroup needs a z-index of 101
               since BPMN Logo of the viewer has an z-index of 100 --> */}

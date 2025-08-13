@@ -104,9 +104,14 @@ export async function getRoleMappingByUserId(
 export async function addRoleMappings(
   roleMappingsInput: RoleMappingInput[],
   ability?: Ability,
-  tx?: Prisma.TransactionClient,
-) {
-  const dbMutator = tx ? tx : db;
+  _tx?: Prisma.TransactionClient,
+): Promise<void> {
+  if (!_tx) {
+    return db.$transaction(async (tx) => {
+      return await addRoleMappings(roleMappingsInput, ability, tx);
+    });
+  }
+  const tx = _tx!;
 
   const roleMappings = roleMappingsInput.map((roleMappingInput) =>
     RoleMappingInputSchema.parse(roleMappingInput),
@@ -119,29 +124,27 @@ export async function addRoleMappings(
   for (const roleMapping of allowedRoleMappings) {
     const { roleId, userId, environmentId } = roleMapping;
 
-    /*
-       Check for role and environment, only if not in transaction
-       Reason: if the transaction was stared by another function,
-       for eg: add User, the values like environment, user from previous tx queries are not available until the tx is committed.
-    */
-    if (!tx) {
-      const environment = await getEnvironmentById(environmentId, undefined, tx);
-      if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
-      if (!environment.isOrganization)
-        throw new Error('Cannot add role mapping to personal environment');
+    const environment = await getEnvironmentById(environmentId, undefined, undefined, tx);
+    if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
+    if (!environment.isOrganization) {
+      throw new UserFacingError('Cannot add role mapping to personal environment');
+    }
 
-      const role = await getRoleById(roleId, undefined, tx);
-      if (!role) throw new Error('Role not found');
+    const role = await getRoleById(roleId, undefined, tx);
+    if (!role) throw new UserFacingError('Role not found');
+
+    if (role.name === '@everyone' || role.name === '@guest') {
+      throw new UserFacingError(`Cannot add role mappings to ${role.name} role`);
     }
 
     const user = await getUserById(userId, undefined, tx);
     if (!user) throw new Error('User not found');
-    if (user.isGuest) throw new Error('Guests cannot have role mappings');
+    if (user.isGuest) throw new UserFacingError('Guests cannot have role mappings');
 
-    const existingRoleMapping = await dbMutator.roleMember.findFirst({
+    const existingRoleMapping = await tx.roleMember.findFirst({
       where: { roleId, userId },
     });
-    if (existingRoleMapping) throw new Error('Role mapping already exists');
+    if (existingRoleMapping) throw new UserFacingError('Role mapping already exists');
 
     const id = v4();
     const createdOn = new Date().toISOString();
@@ -154,7 +157,7 @@ export async function addRoleMappings(
       createdOn,
     };
 
-    await dbMutator.roleMember.create({
+    await tx.roleMember.create({
       data: {
         id: newRoleMapping.id,
         roleId: newRoleMapping.roleId,

@@ -12,15 +12,20 @@ export async function addRoleMappings(
   environmentId: string,
   roleMappings: Omit<RoleMappingInput, 'environmentId'>[],
 ) {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+  try {
+    const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
-  await _addRoleMappings(
-    roleMappings.map((roleMapping) => ({
-      ...roleMapping,
-      environmentId: activeEnvironment.spaceId,
-    })),
-    ability,
-  );
+    await _addRoleMappings(
+      roleMappings.map((roleMapping) => ({
+        ...roleMapping,
+        environmentId: activeEnvironment.spaceId,
+      })),
+      ability,
+    );
+  } catch (error) {
+    console.error(error);
+    return userError(getErrorMessage(error));
+  }
 }
 
 export async function deleteRoleMappings(

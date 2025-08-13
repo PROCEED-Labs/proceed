@@ -42,6 +42,30 @@ const Page = async ({
 
   const roleParentFolder = role.parentId ? await getFolderById(role.parentId, ability) : undefined;
 
+  const tabs = [
+    {
+      key: 'generalData',
+      label: 'General Data',
+      children: <RoleGeneralData role={role} roleParentFolder={roleParentFolder} />,
+    },
+    {
+      key: 'permissions',
+      label: 'Permissions',
+      children: <RolePermissions role={role} />,
+    },
+    ,
+  ];
+
+  if (role.name !== '@everyone' && role.name !== '@guest') {
+    tabs.push({
+      key: 'members',
+      label: 'Manage Members',
+      children: (
+        <RoleMembers role={role} usersNotInRole={usersNotInRole} usersInRole={usersInRole} />
+      ),
+    });
+  }
+
   return (
     <Content
       title={
@@ -57,31 +81,7 @@ const Page = async ({
     >
       <div style={{ maxWidth: '800px', margin: 'auto' }}>
         <Card>
-          <Tabs
-            items={[
-              {
-                key: 'generalData',
-                label: 'General Data',
-                children: <RoleGeneralData role={role} roleParentFolder={roleParentFolder} />,
-              },
-              {
-                key: 'permissions',
-                label: 'Permissions',
-                children: <RolePermissions role={role} />,
-              },
-              {
-                key: 'members',
-                label: 'Manage Members',
-                children: (
-                  <RoleMembers
-                    role={role}
-                    usersNotInRole={usersNotInRole}
-                    usersInRole={usersInRole}
-                  />
-                ),
-              },
-            ]}
-          />
+          <Tabs items={tabs} />
         </Card>
       </div>
     </Content>

@@ -8,7 +8,7 @@ import {
   // AppstoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Space, Button, Table, Breakpoint, Grid, FloatButton, Tooltip, App } from 'antd';
+import { Space, Button, Breakpoint, Grid, FloatButton, Tooltip, App } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -24,10 +24,12 @@ import { RoleWithMembers } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
 import styles from './role-page.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
+import tableStles from '@/components/item-list-view.module.scss';
 
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import SelectionActions from '@/components/selection-actions';
 import { spaceURL, userRepresentation } from '@/lib/utils';
+import ElementList from '@/components/item-list-view';
 
 function getMembersRepresentation(members: RoleWithMembers['members']) {
   if (members.length === 0) return undefined;
@@ -53,9 +55,7 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
     transformData: (items) => items.map((item) => ({ ...item.item })),
   });
 
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<FilteredRole[]>([]);
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [showMobileRoleSider, setShowMobileRoleSider] = useState(false);
 
   // const addPreferences = useUserPreferences.use.addPreferences();
@@ -78,7 +78,6 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
     await wrapServerCall({
       fn: () => serverDeleteRoles(environment.spaceId, roleIds),
       onSuccess: () => {
-        setSelectedRowKeys([]);
         setSelectedRows([]);
         router.refresh();
       },
@@ -117,10 +116,9 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
           onConfirm={() => deleteRoles([id])}
           canCloseWhileLoading={true}
           buttonProps={{
+            className: tableStles.HoverableTableCell,
             disabled: !ability.can('delete', toCaslResource('Role', role)),
             style: {
-              opacity: selectedRowKeys.length === 0 && id === hoveredRow ? 1 : 0,
-              // Otherwise the button stretches the row
               position: 'absolute',
               margin: 'auto',
               top: '0',
@@ -158,16 +156,16 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
                 <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                   {breakpoint.xs ? null : <HeaderActions />}
 
-                  <SelectionActions count={selectedRowKeys.length}>
+                  <SelectionActions count={selectedRows.length}>
                     <Button
                       type="text"
                       icon={<CloseOutlined />}
-                      onClick={() => setSelectedRowKeys([])}
+                      onClick={() => setSelectedRows([])}
                     />
                     <ConfirmationButton
                       title="Delete Roles"
                       description="Are you sure you want to delete the selected roles?"
-                      onConfirm={() => deleteRoles(selectedRowKeys)}
+                      onConfirm={() => deleteRoles(selectedRows.map((role) => role.id))}
                       buttonProps={{
                         icon: <DeleteOutlined />,
                         disabled: cannotDeleteSelected,
@@ -176,10 +174,10 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
                     />
                   </SelectionActions>
 
-                  {selectedRowKeys.length > 0 ? <Space size={20}></Space> : undefined}
+                  {selectedRows.length > 0 ? <Space size={20}></Space> : undefined}
                 </span>
 
-                {/**
+                {/** TODO: uncomment this when the icon view is implemented
                   <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
                     <Button
                       style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
@@ -228,27 +226,17 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
           {iconView ? undefined : ( //IconView
             //TODO: add IconView for roles?
             //ListView
-            <Table<FilteredRole>
+            <ElementList<FilteredRole>
               columns={columns}
-              dataSource={filteredRoles}
-              onRow={(element) => ({
-                onMouseEnter: () => setHoveredRow(element.id),
-                onMouseLeave: () => setHoveredRow(null),
-                onDoubleClick: () => router.push(spaceURL(environment, `/iam/roles/${element.id}`)),
-                onClick: () => {
-                  setSelectedRowKeys([element.id]);
-                  setSelectedRows([element]);
-                },
-              })}
-              rowSelection={{
-                selectedRowKeys,
-                onChange: (selectedRowKeys, selectedRows) => {
-                  setSelectedRowKeys(selectedRowKeys as string[]);
-                  setSelectedRows(selectedRows);
-                },
+              data={filteredRoles}
+              elementSelection={{
+                selectedElements: selectedRows,
+                setSelectionElements: setSelectedRows,
               }}
-              rowKey="id"
-              pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
+              tableProps={{
+                rowKey: 'id',
+                pagination: { position: ['bottomCenter'], pageSize: numberOfRows },
+              }}
             />
           )}
         </div>

@@ -187,19 +187,19 @@ const basePermissionOptions: PermissionCategory[] = [
       },
     ],
   },
-  {
-    key: 'roles',
-    title: 'ROLES',
-    resource: ['Role', 'RoleMapping'],
-    permissions: [
-      {
-        key: 'Manage Roles',
-        title: 'Manage Roles',
-        description: 'Allows a user to create, modify and delete roles.',
-        permission: 'manage',
-      },
-    ],
-  },
+  // {
+  //   key: 'roles',
+  //   title: 'ROLES',
+  //   resource: ['Role', 'RoleMapping'],
+  //   permissions: [
+  //     {
+  //       key: 'Manage Roles',
+  //       title: 'Manage Roles',
+  //       description: 'Allows a user to create, modify and delete roles.',
+  //       permission: 'manage',
+  //     },
+  //   ],
+  // },
   {
     key: 'users',
     title: 'USERS',

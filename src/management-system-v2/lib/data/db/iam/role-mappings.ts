@@ -106,6 +106,10 @@ export async function addRoleMappings(
   ability?: Ability,
   _tx?: Prisma.TransactionClient,
 ): Promise<void> {
+  if (ability && !ability.can('admin', 'All')) {
+    throw new UnauthorizedError();
+  }
+
   if (!_tx) {
     return db.$transaction(async (tx) => {
       return await addRoleMappings(roleMappingsInput, ability, tx);
@@ -178,6 +182,10 @@ export async function deleteRoleMapping(
   environmentId: string,
   ability?: Ability,
 ) {
+  if (ability && !ability.can('admin', 'All')) {
+    throw new UnauthorizedError();
+  }
+
   const [environment, user, roleMapping, role] = await Promise.all([
     getEnvironmentById(environmentId),
     getUserById(userId),

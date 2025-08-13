@@ -2,7 +2,6 @@ import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
 import { getRoleWithMembersById } from '@/lib/data/db/iam/roles';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 import { getMembers } from '@/lib/data/db/iam/memberships';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { Button, Card, Space, Tabs } from 'antd';
@@ -21,7 +20,8 @@ const Page = async ({
 }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
   const role = await getRoleWithMembersById(roleId, ability);
-  if (role && !ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
+  // if (role && !ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
+  if (!ability.can('admin', 'All')) return <UnauthorizedFallback />;
 
   if (!role)
     return (

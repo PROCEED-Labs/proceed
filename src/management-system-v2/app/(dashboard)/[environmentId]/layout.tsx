@@ -185,36 +185,40 @@ const DashboardLayout = async ({
   ) {
     const children: MenuProps['items'] = [];
 
-    if (can('update', 'Environment') || can('delete', 'Environment'))
+    if (can('update', 'Environment') || can('delete', 'Environment')) {
       children.push({
         key: 'organization-settings',
         label: <Link href={spaceURL(activeEnvironment, `/settings`)}>Settings</Link>,
         icon: <SettingOutlined />,
       });
+    }
 
     if (
       activeEnvironment.isOrganization &&
       (can('update', 'Environment') || can('delete', 'Environment'))
-    )
+    ) {
       children.push({
         key: 'organization-management',
         label: <Link href={spaceURL(activeEnvironment, `/management`)}>Management</Link>,
         icon: <GoOrganization />,
       });
+    }
 
-    if (can('manage', 'User'))
+    if (can('manage', 'User')) {
       children.push({
         key: 'users',
         label: <Link href={spaceURL(activeEnvironment, `/iam/users`)}>Users</Link>,
         icon: <UserOutlined />,
       });
+    }
 
-    if (can('manage', 'RoleMapping') || can('manage', 'Role'))
+    if (can('admin', 'All')) {
       children.push({
         key: 'roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,
         icon: <TeamOutlined />,
       });
+    }
 
     layoutMenuItems.push({
       key: 'iam-group',

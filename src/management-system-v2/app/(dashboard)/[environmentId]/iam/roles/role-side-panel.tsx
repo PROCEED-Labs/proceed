@@ -35,8 +35,12 @@ const RoleContent: FC<{
             </>
           )}
 
-          <Typography.Title>Members</Typography.Title>
-          <Typography.Text>{role.members.length}</Typography.Text>
+          {role.name.value !== '@everyone' && role.name.value !== '@gues' && (
+            <>
+              <Typography.Title>Members</Typography.Title>
+              <Typography.Text>{role.members.length}</Typography.Text>
+            </>
+          )}
 
           <Typography.Title>Last Edited</Typography.Title>
           <Typography.Text>{role.lastEditedOn.toUTCString()}</Typography.Text>

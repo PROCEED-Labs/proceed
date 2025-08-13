@@ -47,12 +47,17 @@ const RoleContent: FC<{
           {role.members.length > 0 && (
             <>
               <Typography.Title>Members</Typography.Title>
-              {role.members.map((user) => (
-                <Space key={user.id}>
-                  <UserAvatar user={user} size={30} />
-                  <Typography.Text>{userRepresentation(user)}</Typography.Text>
-                </Space>
-              ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem' }}>
+                {role.members.map((user) => (
+                  <div
+                    key={user.id}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <UserAvatar user={user} size={30} />
+                    <Typography.Text>{userRepresentation(user)}</Typography.Text>
+                  </div>
+                ))}
+              </div>
             </>
           )}
         </>

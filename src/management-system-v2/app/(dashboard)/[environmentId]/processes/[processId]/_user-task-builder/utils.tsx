@@ -169,6 +169,20 @@ p, h1, h2, h3, h4, h5, th, td {
   text-decoration: none;
 }
 
+.validation-error {
+  visibility: hidden;
+  color: red;
+  font-size: 12px !important;
+}
+
+[class*="input-for-"].invalid .validation-error {
+  visibility: visible;
+}
+
+[class*="input-for-"].invalid input {
+  border: 1px solid red;
+}
+
 `;
 
 export function toHtml(json: string) {
@@ -197,7 +211,7 @@ export function toHtml(json: string) {
       ${styles}
     </style>
     <script>
-      {script}
+      {{script}}
     </script>
   </head>
   <body>

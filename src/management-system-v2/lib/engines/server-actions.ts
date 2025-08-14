@@ -28,6 +28,7 @@ import {
   inlineUserTaskData,
   getCorrectVariableState,
   getCorrectMilestoneState,
+  inlineScript,
 } from '@proceed/user-task-helper';
 import { UserTask } from '../user-task-schema';
 
@@ -38,6 +39,8 @@ import {
   updateUserTask,
   deleteUserTask,
 } from '../data/user-tasks';
+import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
+import { Variable } from '@proceed/bpmn-helper/src/getters';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -283,6 +286,15 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
 
       html = await getUserTaskFileFromMachine(deployments[0][0], definitionId, filename);
 
+      const processIds = await getProcessIds(version.bpmn);
+      let variableDefinitions: undefined | Variable[];
+      if (processIds.length) {
+        const [processId] = processIds;
+        variableDefinitions = await getVariablesFromElementById(version.bpmn, processId);
+      }
+
+      html = inlineScript(html, instanceId, taskId, variableDefinitions);
+
       if (storedState === 'READY') {
         await activateUserTask(deployments[0][0], instanceId, taskId, startTime);
         storedState = 'ACTIVE';
@@ -300,7 +312,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       }
     }
 
-    return inlineUserTaskData(html, instanceId, taskId, variableChanges, milestones);
+    return inlineUserTaskData(html, variableChanges, milestones);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

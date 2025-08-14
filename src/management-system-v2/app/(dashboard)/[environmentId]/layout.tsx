@@ -177,16 +177,14 @@ const DashboardLayout = async ({
   if (
     activeEnvironment.isOrganization &&
     (can('manage', 'User') ||
-      // can('manage', 'RoleMapping') ||
-      // can('manage', 'Role') ||
+      can('manage', 'RoleMapping') ||
+      can('manage', 'Role') ||
       can('update', 'Environment') ||
-      can('delete', 'Environment') ||
-      can('view', 'Setting') ||
-      can('update', 'Setting'))
+      can('delete', 'Environment'))
   ) {
     const children: MenuProps['items'] = [];
 
-    if (can('view', 'Setting') || can('update', 'Setting')) {
+    if (can('update', 'Environment') || can('delete', 'Environment')) {
       children.push({
         key: 'organization-settings',
         label: <Link href={spaceURL(activeEnvironment, `/settings`)}>Settings</Link>,

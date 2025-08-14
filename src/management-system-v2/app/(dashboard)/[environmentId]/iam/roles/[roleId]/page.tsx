@@ -53,7 +53,6 @@ const Page = async ({
       label: 'Permissions',
       children: <RolePermissions role={role} />,
     },
-    ,
   ];
 
   if (role.name !== '@everyone' && role.name !== '@guest') {

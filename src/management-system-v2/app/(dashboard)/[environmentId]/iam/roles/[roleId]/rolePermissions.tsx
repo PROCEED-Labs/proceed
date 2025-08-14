@@ -1,7 +1,6 @@
 'use client';
 
 import { Divider, Form, Row, Space, Switch, Typography, App, Button } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
 import { ResourceActionType, ResourceType } from '@/lib/ability/caslAbility';
 import { FC, Fragment, use, useState } from 'react';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
@@ -328,13 +327,12 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
         type="primary"
         htmlType="submit"
         loading={loading}
-        icon={<SaveOutlined />}
         style={{
           position: 'sticky',
           bottom: 0,
         }}
       >
-        Save
+        Update Role
       </Button>
     </Form>
   );

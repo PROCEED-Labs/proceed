@@ -4,7 +4,7 @@ import { getRoleWithMembersById } from '@/lib/data/db/iam/roles';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { getMembers } from '@/lib/data/db/iam/memberships';
 import { getUserById } from '@/lib/data/db/iam/users';
-import { Button, Card, Space, Tabs } from 'antd';
+import { Button, Card, Result, Space, Tabs } from 'antd';
 import { LeftOutlined } from '@ant-design/icons';
 import RoleGeneralData from './roleGeneralData';
 import RolePermissions from './rolePermissions';
@@ -26,7 +26,17 @@ const Page = async ({
   if (!role)
     return (
       <Content>
-        <h1>Role not found</h1>
+        <Result
+          status="404"
+          title="Role not found"
+          subTitle="Sorry, the page you visited does not exist."
+          extra={
+            <SpaceLink href={`/iam/roles`}>
+              <Button type="primary">Back to Roles</Button>
+            </SpaceLink>
+          }
+        />
+        );
       </Content>
     );
 

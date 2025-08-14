@@ -5,6 +5,7 @@ import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/de
 import { Drawer, Grid, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
+import InstanceVariables from './instance-variables';
 
 export type RelevantInstanceInfo = {
   instance?: InstanceInfo;
@@ -39,10 +40,12 @@ export default function InstanceInfoPanel({
   open,
   close,
   info,
+  refetch,
 }: {
   close: () => void;
   open: boolean;
   info: RelevantInstanceInfo;
+  refetch: () => void;
 }) {
   const resizableElementRef = useRef<ResizableElementRefType>(null);
   const breakpoints = Grid.useBreakpoint();
@@ -74,6 +77,11 @@ export default function InstanceInfoPanel({
           key: 'Assignments',
           label: 'Assignments',
           children: 'How to proceed',
+        },
+        {
+          key: 'Variables',
+          label: 'Variables',
+          children: <InstanceVariables refetch={refetch} info={info} />,
         },
         {
           key: 'Resources',

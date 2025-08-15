@@ -73,7 +73,7 @@ const DashboardLayout = async ({
     activeEnvironment.spaceId,
     'general-settings',
   );
-  const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks || [];
+  const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks?.links || [];
   const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
   const middleCustomNavLinks = customNavLinks.filter((link) => link.position === 'middle');
   const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');

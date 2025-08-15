@@ -32,7 +32,7 @@ export async function createChangeEmailVerificationToken({
   const verificationToken = {
     type: 'change_email',
     token: await getTokenHash(token),
-    expiresAt: expires,
+    expires,
     identifier,
     userId,
   } satisfies EmailVerificationToken;
@@ -63,12 +63,12 @@ export async function createUserRegistrationToken({
   passwordHash?: string;
 }) {
   const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
   const verificationToken = {
     type: 'register_new_user',
     token: await getTokenHash(token),
-    expiresAt,
+    expires,
     identifier,
     username,
     firstName,
@@ -83,7 +83,7 @@ export async function createUserRegistrationToken({
   return { verificationToken, redirectUrl: redirectUrl.toString() };
 }
 
-export async function notExpired(verificationToken: { expiresAt: Date }) {
-  if (verificationToken.expiresAt.valueOf() < Date.now()) return false;
+export async function notExpired(verificationToken: { expires: Date }) {
+  if (verificationToken.expires.valueOf() < Date.now()) return false;
   return true;
 }

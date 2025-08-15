@@ -57,15 +57,26 @@ export async function activateEnvrionment(environmentId: string, userId: string)
   const adminRole = await getRoleByName(environmentId, '@admin');
   if (!adminRole) throw new Error(`Consistency error: admin role of ${environmentId} not found`);
 
-  await addMember(environmentId, userId);
+  await db.$transaction(async (tx) => {
+    await tx.space.update({
+      where: { id: environmentId },
+      data: { isActive: true },
+    });
 
-  await addRoleMappings([
-    {
-      environmentId,
-      roleId: adminRole.id,
-      userId,
-    },
-  ]);
+    await addMember(environmentId, userId, undefined, tx);
+
+    await addRoleMappings(
+      [
+        {
+          environmentId,
+          roleId: adminRole.id,
+          userId,
+        },
+      ],
+      undefined,
+      tx,
+    );
+  });
 }
 
 export async function addEnvironment(

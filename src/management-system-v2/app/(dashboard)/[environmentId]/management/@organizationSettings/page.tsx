@@ -4,17 +4,23 @@ import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import Wrapper from './wrapper';
 import { Setting, SettingGroup } from '../../settings/type-util';
 import SettingsInjector from '../../settings/settings-injector';
+import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 
 const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  if (!activeEnvironment.isOrganization || !ability.can('manage', 'Environment')) return null;
+  if (
+    !activeEnvironment.isOrganization ||
+    (!ability.can('update', 'Environment') && !ability.can('delete', 'Environment'))
+  ) {
+    throw new UnauthorizedError();
+  }
 
   const organization = (await getEnvironmentById(
     activeEnvironment.spaceId,
   )) as OrganizationEnvironment;
 
   const children: (Setting | SettingGroup)[] = [];
-  if (ability.can('manage', 'Environment')) {
+  if (ability.can('update', 'Environment')) {
     children.push({
       key: 'organizationDetails',
       name: 'Information',

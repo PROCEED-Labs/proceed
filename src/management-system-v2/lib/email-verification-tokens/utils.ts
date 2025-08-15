@@ -49,19 +49,22 @@ export async function createChangeEmailVerificationToken({
   return { verificationToken, redirectUrl };
 }
 
-export async function createUserRegistrationToken({
-  identifier,
-  username,
-  firstName,
-  lastName,
-  passwordHash,
-}: {
-  identifier: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  passwordHash?: string;
-}) {
+export async function createUserRegistrationToken(
+  {
+    identifier,
+    username,
+    firstName,
+    lastName,
+    passwordHash,
+  }: {
+    identifier: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    passwordHash?: string;
+  },
+  callbackUrl?: string,
+) {
   const token = crypto.randomUUID();
   const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
@@ -79,6 +82,9 @@ export async function createUserRegistrationToken({
   const redirectUrl = new URL(`/api/register-new-user`, env.NEXTAUTH_URL);
   redirectUrl.searchParams.set('token', token);
   redirectUrl.searchParams.set('email', identifier);
+  if (callbackUrl) {
+    redirectUrl.searchParams.set('callbackUrl', callbackUrl);
+  }
 
   return { verificationToken, redirectUrl: redirectUrl.toString() };
 }

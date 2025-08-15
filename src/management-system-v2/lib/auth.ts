@@ -356,9 +356,18 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
       credentials,
       authorize: async (
         credentials: Partial<
-          Record<'firstName' | 'lastName' | 'username' | 'email' | 'password', string>
+          Record<
+            'firstName' | 'lastName' | 'username' | 'email' | 'password' | 'callbackUrl',
+            string
+          >
         >,
       ) => {
+        let callbackUrl: string | undefined = undefined;
+        // only allow urls that start with / = redirect to out site
+        if (credentials.callbackUrl && credentials.callbackUrl.startsWith('/')) {
+          callbackUrl = credentials.callbackUrl;
+        }
+
         let user: User | null = null;
 
         // Whenever the email is active, we create the user after he verifies his email
@@ -373,7 +382,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
           if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE)
             tokenParams['passwordHash'] = await hashPassword(credentials.password as string);
 
-          const userRegistrationToken = await createUserRegistrationToken(tokenParams);
+          const userRegistrationToken = await createUserRegistrationToken(tokenParams, callbackUrl);
 
           await saveEmailVerificationToken(userRegistrationToken.verificationToken);
 

@@ -9,7 +9,6 @@ import {
   Divider,
   ButtonProps,
   ConfigProvider,
-  AlertProps,
 } from 'antd';
 
 import { useSearchParams } from 'next/navigation';
@@ -20,6 +19,7 @@ import { type ExtractedProvider } from '@/lib/auth';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import AuthModal from '../auth-modal';
 import { SigninOptions } from '@/components/signin-options';
+import { getAuthJsErrorMessageFromType } from '@/lib/authjs-error-message';
 
 const verticalGap = '1rem';
 
@@ -67,13 +67,7 @@ const SignIn: FC<{
     ? `/transfer-processes?referenceToken=${guestReferenceToken}&callbackUrl=${callbackUrl}`
     : callbackUrl;
 
-  let authError = searchParams.get('error');
-  let authErrorType = 'error';
-  const errorTypeMatch = authError?.match(/^\$(?<type>\w+)\s+(?<message>.+)/);
-  if (errorTypeMatch?.groups) {
-    authError = errorTypeMatch.groups.message;
-    authErrorType = errorTypeMatch.groups.type;
-  }
+  const authError = getAuthJsErrorMessageFromType(searchParams.get('error'));
 
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
 
@@ -104,8 +98,8 @@ const SignIn: FC<{
       >
         {authError && (
           <Alert
-            description={authError}
-            type={authErrorType as AlertProps['type']}
+            description={authError.message}
+            type={authError.type}
             style={{ marginBottom: verticalGap }}
           />
         )}

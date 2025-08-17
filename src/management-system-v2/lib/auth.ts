@@ -130,6 +130,7 @@ const nextAuthOptions: NextAuthConfig = {
   },
   pages: {
     signIn: '/signin',
+    error: '/signin',
   },
 };
 

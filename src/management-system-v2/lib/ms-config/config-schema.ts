@@ -54,9 +54,6 @@ export const mSConfigEnvironmentOnlyKeys = [
 export const msConfigSchema = {
   all: {
     PROCEED_PUBLIC_GENERAL_MS_LOGO: z.string().default(''),
-    PROCEED_PUBLIC_GENERAL_DEFAULT_CURRENCY: z.string().default('EUR'),
-    PROCEED_PUBLIC_GENERAL_DEFAULT_TIME_FORMAT: z.string().default('24'),
-    PROCEED_PUBLIC_GENERAL_DEFAULT_DATE_FORMAT: z.string().default(''),
 
     PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE: z.string().default('TRUE').transform(boolParser),
     PROCEED_PUBLIC_GANTT_ACTIVE: z

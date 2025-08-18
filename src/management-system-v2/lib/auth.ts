@@ -228,16 +228,6 @@ if (env.NODE_ENV === 'development') {
       emailVerifiedOn: null,
       profileImage: null,
     },
-    {
-      username: 'admin',
-      firstName: 'Admin',
-      lastName: 'Admin',
-      email: 'admin@proceed-labs.org',
-      id: 'development-id|admin',
-      isGuest: false,
-      emailVerifiedOn: null,
-      profileImage: null,
-    },
   ] satisfies User[];
 
   nextAuthOptions.providers.push(

@@ -159,7 +159,6 @@ export const msConfigSchema = {
     SCHEDULER_JOB_DELETE_INACTIVE_GUESTS: z.coerce.number().default(0),
     SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
 
-    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
     PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
 
     MQTT_SERVER_ADDRESS: z.string().url().optional(),

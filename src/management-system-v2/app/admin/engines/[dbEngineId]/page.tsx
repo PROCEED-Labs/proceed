@@ -20,7 +20,7 @@ export default async function EnginesPage({
   searchParams: { engineId: string };
 }) {
   const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
+  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
   const user = await getCurrentUser();
   if (!user.systemAdmin) redirect('/');

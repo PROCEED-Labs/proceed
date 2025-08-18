@@ -11,7 +11,6 @@ import { addEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
 import { getUserOrganizationEnvironments } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
-import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data/db';
 import { Prisma, PasswordAccount } from '@prisma/client';
 import { UserFacingError } from '@/lib/user-error';
@@ -105,15 +104,6 @@ export async function addUser(
 
     if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
       await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
-
-    if ((await getSystemAdmins()).length === 0 && !user.isGuest)
-      await addSystemAdmin(
-        {
-          role: 'admin',
-          userId: user.id!,
-        },
-        tx,
-      );
 
     if (user.isGuest) {
       await tx.guestSignin.create({

@@ -30,6 +30,7 @@ import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/lib/auth';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import AuthModal from '../auth-modal';
+import useMSLogo from '@/lib/use-ms-logo';
 
 const verticalGap = '1rem';
 
@@ -130,6 +131,8 @@ const SignIn: FC<{
   );
 
   const [_activeIndex, setActiveIndex] = useState<string | null>(null);
+
+  const { imageSource } = useMSLogo(logoUrl, { disableResponsive: false });
 
   // We need to wait until the component is mounted on the client
   // to open the modal, otherwise it will cause a hydration mismatch
@@ -278,8 +281,9 @@ const SignIn: FC<{
     >
       <AuthModal
         title={
+          // TODO: imageSource could be not hosted by use
           <Image
-            src={logoUrl ?? '/proceed.svg'}
+            src={imageSource}
             alt="PROCEED Logo"
             width={160}
             height={63}

@@ -141,6 +141,10 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User doesn't exist");
 
+  if (user.username === 'admin') {
+    throw new UserFacingError('The user "admin" cannot be deleted');
+  }
+
   const userOrganizations = await getUserOrganizationEnvironments(userId);
   const orgsWithNoNextAdmin: string[] = [];
   for (const environmentId of userOrganizations) {
@@ -195,6 +199,14 @@ export async function updateUser(
     updatedUser = { isGuest: true };
   } else {
     const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
+
+    if (newUserData.username && newUserData.username === 'admin') {
+      throw new UserFacingError('The username is already taken');
+    }
+
+    if (!user.isGuest && user.username === 'admin' && 'username' in newUserData) {
+      throw new UserFacingError('The username "admin" cannot be changed');
+    }
 
     if (newUserData.email) {
       const existingUser = await db.user.findUnique({ where: { email: newUserData.email } });

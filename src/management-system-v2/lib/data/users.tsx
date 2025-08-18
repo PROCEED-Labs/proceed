@@ -23,7 +23,7 @@ export async function deleteUser() {
   try {
     await _deleteUser(userId);
   } catch (e) {
-    let message: ReactNode = 'Error deleting user';
+    let message: ReactNode;
 
     if (e instanceof UserHasToDeleteOrganizationsError) {
       const conflictingOrgsNames = e.conflictingOrgs.map(
@@ -55,6 +55,8 @@ export async function deleteUser() {
           </p>
         </>
       );
+    } else {
+      message = getErrorMessage(e, 'Error deleting user');
     }
 
     return userError(message);

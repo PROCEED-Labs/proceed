@@ -209,6 +209,7 @@ async function writeSeedToDb(seed: DBSeed) {
             contactEmail: organization.contactEmail,
             isOrganization: true,
             isActive: true,
+            spaceLogo: organization.spaceLogo,
           },
           undefined,
           tx,

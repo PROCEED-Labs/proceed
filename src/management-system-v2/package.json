@@ -45,7 +45,6 @@
     "fs-extra": "11.3.0",
     "fuse.js": "7.0.0",
     "immer": "10.0.4",
-    "install": "^0.13.0",
     "js-md5": "^0.7.3",
     "jsonwebtoken": "^8.5.1",
     "jspdf": "2.5.1",

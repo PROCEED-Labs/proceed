@@ -7,6 +7,7 @@ import {
   $createNodeSelection,
   $selectAll,
   $getSelection,
+  $getRoot,
 } from 'lexical';
 
 export type CustomContentEditableProps = {
@@ -41,6 +42,15 @@ const CustomContentEditable: React.FC<CustomContentEditableProps> = ({ EditableE
   }, [editor]);
 
   // TODO: set the caret at the end of the editor when it is mounted
+  useEffect(() => {
+    setTimeout(
+      () =>
+        editor.update(() => {
+          $selectAll();
+        }),
+      0,
+    );
+  }, [isEditable]);
 
   return <EditableElement contentEditable={isEditable} ref={makeEditorRoot} />;
 };

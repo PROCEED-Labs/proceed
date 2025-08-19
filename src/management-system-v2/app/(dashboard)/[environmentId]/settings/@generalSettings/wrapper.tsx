@@ -66,7 +66,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
       onUpdate={setUpToDateGroup}
       onNestedSettingUpdate={(key, value) => debouncedUpdate(spaceId, key, value)}
       renderNestedSettingInput={(id, setting, _key, onUpdate) => {
-        if (setting.key === 'spaceLogo') {
+        if (setting.key === 'logo') {
           return {
             input: (
               <Space id={id}>
@@ -132,7 +132,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
               </Space>
             ),
           };
-        } else if (setting.key === 'customNavigationLinks') {
+        } else if (setting.key === 'links') {
           return {
             input: <CustomNavigationLinks onUpdate={onUpdate} values={setting.value} />,
           };

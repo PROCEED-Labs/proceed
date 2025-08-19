@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
 import * as os from 'node:os';
+import path from 'node:path';
 
 export const config = {
   dbPath: process.env.DB_PATH || 'src/db/dbs/',
@@ -16,8 +17,12 @@ export const config = {
   ollamaBearerToken: process.env.OLLAMA_BEARER_TOKEN || '',
   ollamaBatchSize: parseInt(process.env.OLLAMA_BATCH_SIZE || '5', 10),
   splittingModel: process.env.SPLITTING_MODEL || 'llama3.2',
+  splittingLength: parseInt(process.env.SPLITTING_LENGTH || '1000', 10), // Set this to 0 to disable splitting
   reasonModel: process.env.REASON_MODEL || 'llama3.2',
   splittingSymbol: process.env.SPLITTING_SYMBOL || 'SPLITTING_SYMBOL',
   maxWorkerThreads: parseInt(process.env.NUMBER_OF_THREADS || String(os.cpus().length - 1), 10), // -1 for main thread
   maxJobTime: parseInt(process.env.MAX_JOB_TIME || '600', 10) * 1_000, // converted from seconds to milliseconds
+  verbose: process.env.VERBOSE === 'true' || false,
+  logDir: process.env.LOG_DIR || path.join(process.cwd(), 'logs'),
+  logFile: process.env.LOG_FILE || path.join(process.cwd(), 'logs', 'competence-matcher.log'),
 };

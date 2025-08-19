@@ -144,3 +144,22 @@ export interface TransformerPipelineOptions {
   model: string;
   options?: PretrainedModelOptions;
 }
+
+export interface LogEntry {
+  timestamp: string;
+  requestId: string;
+  type: 'request' | 'response' | 'error';
+  method?: string;
+  path?: string;
+  query?: object;
+  body?: any;
+  headers?: object;
+  params?: object;
+  ip?: string;
+  realIp?: string | string[];
+  statusCode?: number;
+  responseTime?: number;
+  error?: string;
+  errorStack?: string;
+  context?: string;
+}

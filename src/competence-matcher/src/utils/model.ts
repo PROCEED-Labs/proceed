@@ -53,7 +53,9 @@ export abstract class TransformerPipeline<PI> {
 
       // mark it as loaded and log on first load
       if (!this.loaded && isMainThread) {
-        console.log(`${model} (${task}) is ready`);
+        if (config.verbose) {
+          console.log(`[Model-Pipeline] ${model} (${task}) is ready`);
+        }
         this.loaded = true;
       }
     }

@@ -4,59 +4,82 @@ import { getDB } from '../utils/db';
 import workerManager from '../worker/worker-manager';
 import { splitSemantically } from '../tasks/semantic-split';
 import { CompetenceInput, EmbeddingJob, EmbeddingTask, ResourceInput } from '../utils/types';
+import {
+  ValidationError,
+  ResourceNotFoundError,
+  DatabaseError,
+  CompetenceMatcherError,
+} from '../utils/errors';
+import { logError } from './logging';
 
 export function getResourceLists(req: Request, res: Response, next: NextFunction): void {
+  const requestId = (req as any).requestId;
+
   try {
-    const db = getDB(req.dbName!);
+    let db;
+    try {
+      db = getDB(req.dbName!);
+    } catch (error) {
+      throw new DatabaseError(
+        'getDB',
+        error instanceof Error ? error : new Error(String(error)),
+        requestId,
+      );
+    }
 
-    const availableResourceLists = db.getAvailableResourceLists();
+    let availableResourceLists;
+    try {
+      availableResourceLists = db.getAvailableResourceLists();
+    } catch (error) {
+      throw new DatabaseError(
+        'getAvailableResourceLists',
+        error instanceof Error ? error : new Error(String(error)),
+        requestId,
+      );
+    }
 
-    res.status(200).json(availableResourceLists); // string[]
+    res.status(200).json(availableResourceLists);
   } catch (error) {
-    console.error('Error retrieving resource lists:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    next(error);
   }
 }
 
 export function getResourceList(req: Request, res: Response, next: NextFunction): void {
+  const requestId = (req as any).requestId;
+
   try {
-    const db = getDB(req.dbName!);
     const resourceListId = req.params.resourceListId;
 
     if (!resourceListId) {
-      res.status(400).json({ error: 'Resource list ID is required' });
-      return;
+      throw new ValidationError(
+        'Resource list ID is required in the request parameters',
+        'resourceListId',
+        resourceListId,
+        requestId,
+      );
+    }
+
+    let db;
+    try {
+      db = getDB(req.dbName!);
+    } catch (error) {
+      throw new DatabaseError(
+        'getDB',
+        error instanceof Error ? error : new Error(String(error)),
+        requestId,
+      );
     }
 
     let resourceList;
     try {
       resourceList = db.getResourceList(resourceListId);
     } catch (error) {
-      res.status(404).json({ error: 'Resource list not found' });
-      return;
+      throw new ResourceNotFoundError('Resource list', resourceListId, requestId);
     }
 
     res.status(200).json(resourceList);
-    // type:
-    // resourceList: {
-    //     competenceListId: string;
-    //     resources: Array<{
-    //         resourceId: string;
-    //         competencies: Array<{
-    //             competenceId: string;
-    //             name?: string;
-    //             description?: string;
-    //             externalQualificationNeeded: boolean;
-    //             renewTime?: number;
-    //             proficiencyLevel?: string;
-    //             qualificationDates: string[];
-    //             lastUsages: string[];
-    //         }>;
-    //     }>;
-    // }
   } catch (error) {
-    console.error('Error retrieving resource list:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    next(error);
   }
 }
 

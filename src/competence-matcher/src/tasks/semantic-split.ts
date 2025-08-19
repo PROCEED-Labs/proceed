@@ -3,94 +3,24 @@ import { config } from '../config';
 import { SEMANTIC_SPLITTER as intructPrompt } from '../utils/prompts';
 import type { Message } from 'ollama';
 import { EmbeddingTask } from '../utils/types';
+import { SemanticSplittingError, OllamaConnectionError } from '../utils/errors';
+import { logError } from '../middleware/logging';
 
-const { splittingModel, splittingSymbol, ollamaBatchSize } = config;
-
-const MIN_TEXT_LENGTH = 60; // Minimum length of text to consider for splitting (I noticed that text inputs that are too short often lead to errors in the splitting process - and since they are so small, they can be embedded directly without splitting)
-
-// async function ollamaChat(messages: Array<{ role: string; content: string }>) {
-//   const res = await fetch(`${ollamaPath}/api/chat`, {
-//     method: 'POST',
-//     headers: { 'Content-Type': 'application/json' },
-//     body: JSON.stringify({
-//       model: config.ollamaSplittingModel,
-//       messages,
-//       stream: false,
-//     }),
-//   });
-//   if (!res.ok) {
-//     const t = await res.text();
-//     throw new Error(`Ollama REST chat failed: ${res.status} ${t}`);
-//   }
-//   const data = (await res.json()) as { message: { content: string } };
-//   return data.message.content as string;
-// }
-
-// export async function splitSemantically(tasks: EmbeddingTask[]): Promise<EmbeddingTask[]> {
-//   const splittedTasks: EmbeddingTask[] = [];
-
-//   // First, for each task, decide whether it needs splitting (filteredMessages)
-//   // or can be passed through as‐is.
-//   const toSplit: { task: EmbeddingTask; messages: Message[] }[] = [];
-//   for (const task of tasks) {
-//     const messages: Message[] = [...intructPrompt, { role: 'user', content: task.text }];
-
-//     // Filter out too‐short or empty
-//     const filtered = messages.filter(({ content }) => {
-//       const c = content.replace(/\s+/g, ' ').trim();
-//       return c.length > MIN_TEXT_LENGTH;
-//     });
-
-//     if (filtered.length === 0) {
-//       // no splitting needed
-//       splittedTasks.push({ ...task, text: task.text });
-//     } else {
-//       toSplit.push({ task, messages: filtered });
-//     }
-//   }
-
-//   // Now process in batches of size ollamaBatchSize
-//   for (let i = 0; i < toSplit.length; i += ollamaBatchSize) {
-//     const batch = toSplit.slice(i, i + ollamaBatchSize);
-
-//     // Kick off all requests in this batch in parallel
-//     const promises = batch.map(async ({ task, messages }) => {
-//       try {
-//         const response = await ollamaChat(messages);
-//         const parts = response
-//           .replace(/\s+/g, ' ')
-//           .trim()
-//           .split(splittingSymbol)
-//           .map((p: string) => p.trim())
-//           .filter((p: string) => p.length > 0);
-
-//         if (parts.length === 0) {
-//           // fallback to original text if splitting yields nothing
-//           splittedTasks.push({ ...task, text: task.text });
-//         } else {
-//           for (const part of parts) {
-//             splittedTasks.push({ ...task, text: part });
-//           }
-//         }
-//       } catch (err) {
-//         console.error('Error during semantic splitting:', err);
-//         // in case of error, include the original
-//         splittedTasks.push({ ...task, text: task.text });
-//       }
-//     });
-
-//     // Wait for this batch to finish before launching the next
-//     await Promise.all(promises);
-//   }
-
-//   return splittedTasks;
-// }
-
-// _______________________________________________
+const {
+  splittingModel,
+  splittingSymbol,
+  ollamaBatchSize,
+  splittingLength: MIN_TEXT_LENGTH,
+  verbose,
+} = config;
 
 export async function splitSemantically(tasks: EmbeddingTask[]): Promise<EmbeddingTask[]> {
   const splittedTasks: EmbeddingTask[] = [];
   const toSplit: { task: EmbeddingTask; messages: Message[] }[] = [];
+
+  if (verbose) {
+    console.log(`[Semantic Split] Processing ${tasks.length} tasks`);
+  }
 
   for (const task of tasks) {
     const messages: Message[] = [
@@ -113,16 +43,26 @@ export async function splitSemantically(tasks: EmbeddingTask[]): Promise<Embeddi
       return content !== '' && content.length > MIN_TEXT_LENGTH;
     });
 
-    if (filteredMessages.length === 0) {
+    if (filteredMessages.length === 0 || MIN_TEXT_LENGTH === 0) {
       splittedTasks.push({ ...task, text: task.text });
     } else {
       toSplit.push({ task, messages: filteredMessages });
     }
   }
 
+  if (verbose) {
+    console.log(`[Semantic Split] ${toSplit.length} tasks require splitting`);
+  }
+
   // Process in batches
   for (let i = 0; i < toSplit.length; i += ollamaBatchSize) {
     const batch = toSplit.slice(i, i + ollamaBatchSize);
+
+    if (verbose) {
+      console.log(
+        `[Semantic Split] Processing batch ${Math.floor(i / ollamaBatchSize) + 1}/${Math.ceil(toSplit.length / ollamaBatchSize)} (${batch.length} tasks)`,
+      );
+    }
 
     const promises = batch.map(async ({ task, messages }) => {
       try {
@@ -130,25 +70,67 @@ export async function splitSemantically(tasks: EmbeddingTask[]): Promise<Embeddi
           model: splittingModel,
           messages,
         });
+
         const parts = response.message.content
           .split(splittingSymbol)
           .map((part: string) => part.trim())
           .filter((part: string) => part !== '');
 
         if (parts.length === 0) {
+          if (verbose) {
+            console.warn(
+              `[Semantic Split] No valid parts found for task ${task.listId}/${task.resourceId}/${task.competenceId}, using original text`,
+            );
+          }
           splittedTasks.push({ ...task, text: task.text });
         } else {
+          if (verbose) {
+            console.log(
+              `[Semantic Split] Split task ${task.listId}/${task.resourceId}/${task.competenceId} into ${parts.length} parts`,
+            );
+          }
           for (const part of parts) {
             splittedTasks.push({ ...task, text: part });
           }
         }
       } catch (error) {
-        console.error('Error during semantic splitting:', error);
+        const semanticError = new SemanticSplittingError(
+          task.text.length,
+          error instanceof Error ? error : new Error(String(error)),
+        );
+
+        logError(semanticError, 'semantic_splitting_task_failure', undefined, {
+          taskId: `${task.listId}/${task.resourceId}/${task.competenceId}`,
+          textLength: task.text.length,
+          splittingModel,
+        });
+
+        // Fallback to original text
         splittedTasks.push({ ...task, text: task.text });
       }
     });
 
-    await Promise.all(promises);
+    try {
+      await Promise.all(promises);
+    } catch (error) {
+      // This shouldn't happen since we catch errors in individual promises,
+      // but just in case there's an unexpected Promise.all failure
+      logError(
+        new SemanticSplittingError(
+          batch.length,
+          error instanceof Error ? error : new Error(String(error)),
+        ),
+        'semantic_splitting_batch_failure',
+        undefined,
+        { batchSize: batch.length, batchIndex: Math.floor(i / ollamaBatchSize) },
+      );
+    }
+  }
+
+  if (verbose) {
+    console.log(
+      `[Semantic Split] Completed: ${tasks.length} input tasks → ${splittedTasks.length} output tasks`,
+    );
   }
 
   return splittedTasks;

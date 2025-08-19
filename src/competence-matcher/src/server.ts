@@ -5,14 +5,17 @@ import MatchRouter from './routes/match';
 import { config } from './config';
 import { dbHeader } from './middleware/db-locator';
 import { requestLogger } from './middleware/logging';
+import { errorHandler } from './middleware/error-handler';
 import Embedding from './tasks/embedding';
 import { ensureAllOllamaModelsAreAvailable } from './utils/ollama';
 import { splitSemantically } from './tasks/semantic-split';
 import { createWorker } from './utils/worker';
 import { ensureAllHuggingfaceModelsAreAvailable } from './utils/huggingface';
 import { EmbeddingTask } from './utils/types';
+import { CompetenceMatcherError } from './utils/errors';
+import { logError } from './middleware/logging';
 
-const { port: PORT } = config;
+const { port: PORT, verbose } = config;
 
 export const PATHS = {
   resource: '/resource-competence-list',
@@ -29,58 +32,43 @@ declare module 'express-serve-static-core' {
 async function main() {
   const app = express();
 
-  // Ensure all required models are available
-  // Hugging Face models
-  await ensureAllHuggingfaceModelsAreAvailable();
-  // Ollama models
-  await ensureAllOllamaModelsAreAvailable();
+  try {
+    if (verbose) {
+      console.log('[Server] Initialising competence matcher service...');
+    }
 
-  // const tasks = [
-  //   {
-  //     listId: 'test-list',
-  //     resourceId: 'test-resource',
-  //     competenceId: 'test-competence',
-  //     text: 'This competence covers the principles and best practices of designing scalable software systems. It includes high-level architecture, component interaction, and trade-off analysis. Practitioners will need to balance performance, reliability, and maintainability when making design decisions.',
-  //     type: 'description',
-  //   },
-  //   {
-  //     listId: 'test-list',
-  //     resourceId: 'test-resource',
-  //     competenceId: 'test-competence',
-  //     text: 'This competence focuses on building and maintaining RESTful and GraphQL APIs. It covers endpoint design, versioning strategies, and error handling. Learners will gain hands-on experience with request validation, authentication, and performance tuning.',
-  //     type: 'description',
-  //   },
-  //   {
-  //     listId: 'test-list',
-  //     resourceId: 'test-resource',
-  //     competenceId: 'test-competence',
-  //     text: 'This competence entails designing effective database schemas to represent business domains. It involves normalization, denormalization, and indexing strategies for optimal query performance. Real-world scenarios will illustrate when to choose relational versus NoSQL approaches.',
-  //     type: 'description',
-  //   },
-  //   {
-  //     listId: 'test-list',
-  //     resourceId: 'test-resource',
-  //     competenceId: 'test-competence',
-  //     text: 'This competence covers fundamental security principles for web applications. Topics include authentication, authorization, encryption, and secure configuration management. Practical exercises demonstrate common vulnerabilities and how to mitigate them effectively.',
-  //     type: 'description',
-  //   },
-  //   {
-  //     listId: 'test-list',
-  //     resourceId: 'test-resource',
-  //     competenceId: 'test-competence',
-  //     text: "This person can not swim at all. Please don't let them close water at all.",
-  //     type: 'description',
-  //   },
-  // ] as EmbeddingTask[];
+    // Ensure all required models are available
+    // Hugging Face models
+    if (verbose) {
+      console.log('[Server] Checking HuggingFace models availability...');
+    }
+    await ensureAllHuggingfaceModelsAreAvailable();
 
-  // const testworker = createWorker('test');
-  // testworker.on('message', (message) => {
-  //   console.log(message);
-  // });
-  // testworker.postMessage(tasks);
+    // Ollama models
+    if (verbose) {
+      console.log('[Server] Checking Ollama models availability...');
+    }
+    await ensureAllOllamaModelsAreAvailable();
 
-  // const result = await splitSemantically(tasks);
-  // console.log(result);
+    if (verbose) {
+      console.log('[Server] All required models are available');
+    }
+  } catch (error) {
+    const initError = new CompetenceMatcherError(
+      `Failed to initialise required models: ${error instanceof Error ? error.message : String(error)}`,
+      'server_initialisation',
+      503,
+      undefined,
+      {
+        stage: 'model_initialisation',
+        originalError: error instanceof Error ? error.message : String(error),
+      },
+    );
+
+    logError(initError, 'server_startup_failure');
+    console.error('[Server] Failed to start due to model initialisation error');
+    process.exit(1);
+  }
 
   // Parse JSON
   app.use(express.json());
@@ -89,11 +77,10 @@ async function main() {
   // Middleware to handle database header
   app.use(dbHeader);
   // Logging middleware
-  // app.use(requestLogger);
+  app.use(requestLogger);
 
   // Hello World
   app.get('/', (req, res, next) => {
-    console.log('Received a GET request on /');
     res.status(200).send('Welcome to the Matching Server');
   });
 
@@ -101,12 +88,26 @@ async function main() {
   app.use(PATHS.resource, ResourceRouter);
   app.use(PATHS.match, MatchRouter);
 
+  // Error handler middleware (must be last, only invoked if error occurs)
+  app.use(errorHandler);
+
   app.listen(PORT, () => {
-    console.log(`Matching-Server is running on http://localhost:${PORT}`);
+    if (verbose) {
+      console.log(`[Server] Matching-Server is running on http://localhost:${PORT}`);
+    }
   });
 }
 
 main().catch((error) => {
-  console.error('Server shutdown due to error:', error);
+  const startupError = new CompetenceMatcherError(
+    `Server startup failed: ${error instanceof Error ? error.message : String(error)}`,
+    'server_startup',
+    500,
+    undefined,
+    { originalError: error instanceof Error ? error.message : String(error) },
+  );
+
+  logError(startupError, 'server_startup_failure');
+  console.error('[Server] Server shutdown due to startup error:', error);
   process.exit(1);
 });

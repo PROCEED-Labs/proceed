@@ -7,7 +7,6 @@ import {
   Heading,
   Hr,
   Html,
-  Img,
   Link,
   Preview,
   Section,
@@ -35,136 +34,162 @@ function SigninUrlMail(mailProps: MailProps) {
   return (
     <Html>
       <Head />
-      <Preview>PROCEED magic link</Preview>
+      <Preview>Access your PROCEED account - secure authentication link inside</Preview>
       <Body
         style={{
           backgroundColor: '#fff',
           color: '#212121',
           textAlign: 'center',
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
         }}
       >
         <Container
           style={{
             padding: '20px',
             margin: '0 auto',
-            backgroundColor: '#eee',
+            backgroundColor: '#f8f9fa',
+            maxWidth: '600px',
           }}
         >
           <Section
             style={{
               backgroundColor: '#fff',
+              borderRadius: '8px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             }}
           >
             <Section
               style={{
                 backgroundColor: '#252f3d',
-                padding: '20px 5px',
+                padding: '24px 20px',
                 textAlign: 'center',
-                verticalAlign: 'middle',
+                borderRadius: '8px 8px 0 0',
               }}
             >
-              <Img
-                src="httpsL//proceed.surge.sh/proceed.svg"
-                height="45"
-                alt="PROCEED"
+              <Text
                 style={{
                   display: 'block',
-                  margin: '0 auto',
-                  color: '#a6adb5',
-                  fontWeight: 'bold',
+                  margin: 0,
+                  color: '#ffffff',
+                  fontWeight: '600',
                   fontSize: '24px',
-                }}
-              />
-            </Section>
-            <Section style={{ padding: '25px 35px' }}>
-              <Heading
-                style={{
-                  color: '#333',
-                  fontFamily:
-                    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  marginBottom: '15px',
+                  letterSpacing: '0.5px',
                 }}
               >
-                {mailProps.headerText ?? 'Sign in to PROCEED'}
-              </Heading>
-              <Text style={{ ...text, marginBottom: '14px' }}>
-                {mailProps.description ??
-                  `Hi, with this mail you can sign in to your PROCEED account. If you don't have
-                an account yet, a new one will be created for you. Just click on the following link:`}
+                PROCEED
               </Text>
+            </Section>
+
+            <Section style={{ padding: '32px 40px' }}>
+              <Heading
+                style={{
+                  color: '#1a1a1a',
+                  fontSize: '24px',
+                  fontWeight: '600',
+                  marginBottom: '16px',
+                  lineHeight: '1.3',
+                }}
+              >
+                {mailProps.headerText ?? 'Access your PROCEED account'}
+              </Heading>
+
+              <Text style={{ ...text, marginBottom: '24px' }}>
+                {mailProps.description ??
+                  `You requested secure access to PROCEED. Click the button below to authenticate and access your account. If this is your first time, a new account will be created for you.`}
+              </Text>
+
+              <Section style={{ textAlign: 'center', margin: '32px 0' }}>
+                <Link
+                  href={mailProps.signInLink}
+                  style={{
+                    backgroundColor: '#2754C5',
+                    color: '#ffffff',
+                    padding: '14px 28px',
+                    textDecoration: 'none',
+                    borderRadius: '6px',
+                    fontWeight: '600',
+                    fontSize: '16px',
+                    display: 'inline-block',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  {mailProps.linkText ?? 'Access PROCEED'}
+                </Link>
+              </Section>
 
               <Text
                 style={{
                   ...text,
-                  margin: 0,
-                  marginTop: '20x',
+                  fontSize: '13px',
+                  color: '#666666',
                   textAlign: 'center',
-                  fontWeight: 'bold',
+                  margin: '16px 0 0 0',
                 }}
               >
-                {mailProps.linkText ?? 'Sign in Link'}
+                This secure link expires in {linkDuration} hour{linkDuration !== 1 ? 's' : ''}
               </Text>
 
-              <Link
-                href={mailProps.signInLink}
-                target="_blank"
+              <Section
                 style={{
-                  ...link,
-                  fontWeight: 'bold',
-                  margin: '10px 0',
-                  width: '100%',
-                  textAlign: 'center',
+                  backgroundColor: '#f8f9fa',
+                  padding: '16px',
+                  borderRadius: '6px',
+                  marginTop: '24px',
                 }}
               >
                 <Text
                   style={{
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '16px',
+                    ...text,
+                    fontSize: '13px',
+                    color: '#666666',
+                    margin: 0,
                   }}
                 >
-                  Signin to PROCEED
+                  <strong>Can't click the button?</strong> Copy and paste this link into your
+                  browser:
                 </Text>
-              </Link>
-
-              <Text
-                style={{
-                  ...text,
-                  margin: '0px',
-                  textAlign: 'center' as const,
-                }}
-              >
-                (This link is valid for {linkDuration} hours)
-              </Text>
+                <Text
+                  style={{
+                    ...text,
+                    fontSize: '12px',
+                    color: '#2754C5',
+                    wordBreak: 'break-all',
+                    margin: '8px 0 0 0',
+                  }}
+                >
+                  {mailProps.signInLink}
+                </Text>
+              </Section>
             </Section>
-            <Hr />
-            <Section style={{ padding: '25px 35px' }}>
-              <Text style={{ ...text, margin: '0px' }}>
+
+            <Hr style={{ margin: 0, borderColor: '#e5e5e5' }} />
+
+            <Section style={{ padding: '24px 40px' }}>
+              <Text style={{ ...text, fontSize: '13px', color: '#666666', margin: 0 }}>
                 {mailProps.footerText ??
-                  `If you have not initiated the sign in, you can simply ignore this mail. Your account
-                is still secure as you can only sign in by email. The PROCEED Crew`}
+                  `Didn't request this access link? You can safely ignore this email. Your account security is maintained through email-based authentication only.`}
               </Text>
             </Section>
           </Section>
-          <Text
-            style={{
-              ...text,
-              fontSize: '12px',
-              padding: '0 20px',
-              textAlign: 'center' as const,
-            }}
-          >
-            <Link href={baseUrl} target="_blank" style={link}>
-              PROCEED
-            </Link>
-            {' | '}
-            <Link href={`${baseUrl}/privacy-policy`} target="_blank" style={link}>
-              privacy policy
-            </Link>
-            .
-          </Text>
+
+          <Section style={{ textAlign: 'center', padding: '16px 0' }}>
+            <Text
+              style={{
+                fontSize: '12px',
+                color: '#999999',
+                margin: 0,
+              }}
+            >
+              <Link href={baseUrl} style={{ ...link, color: '#666666' }}>
+                PROCEED Platform
+              </Link>
+              {' • '}
+              <Link href={`${baseUrl}/privacy-policy`} style={{ ...link, color: '#666666' }}>
+                Privacy Policy
+              </Link>
+            </Text>
+          </Section>
         </Container>
       </Body>
     </Html>
@@ -173,22 +198,18 @@ function SigninUrlMail(mailProps: MailProps) {
 
 const link = {
   color: '#2754C5',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: '14px',
+  fontSize: '12px',
   textDecoration: 'underline',
 };
 
 const text = {
-  color: '#333',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
+  color: '#333333',
   fontSize: '14px',
-  margin: '24px 0',
+  lineHeight: '1.6',
+  margin: '16px 0',
 };
 
 export default function renderSigninLinkEmail(mailProps: MailProps) {
   const email = <SigninUrlMail {...mailProps} />;
-
   return { html: render(email), text: render(email, { plainText: true }) };
 }

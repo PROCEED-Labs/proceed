@@ -67,7 +67,10 @@ const SignIn: FC<{
     ? `/transfer-processes?referenceToken=${guestReferenceToken}&callbackUrl=${callbackUrl}`
     : callbackUrl;
 
-  const authError = getAuthJsErrorMessageFromType(searchParams.get('error'));
+  const authError = getAuthJsErrorMessageFromType(
+    searchParams.get('error'),
+    searchParams.get('code'),
+  );
 
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
 

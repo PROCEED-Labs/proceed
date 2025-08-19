@@ -1,4 +1,24 @@
-export function getAuthJsErrorMessageFromType(error: string | null | undefined) {
+import { CredentialsSignin } from 'next-auth';
+
+export class NextAuthUsernameTakenError extends CredentialsSignin {
+  static code = 'username_taken' as const;
+  static message = 'This username is already taken. Please choose a different one.' as const;
+  constructor(message?: string) {
+    super(message || 'Username is already taken');
+    this.code = NextAuthUsernameTakenError.code;
+  }
+}
+
+export class NextAuthEmailTakenError extends CredentialsSignin {
+  static code = 'email_taken' as const;
+  static message = 'This E-Mail is already taken. Please choose a different one.' as const;
+  constructor(message?: string) {
+    super(message || 'Email is already taken');
+    this.code = NextAuthEmailTakenError.code;
+  }
+}
+
+export function getAuthJsErrorMessageFromType(error: string | null, code?: string | null) {
   if (!error) return null;
 
   let type = 'error';
@@ -18,7 +38,13 @@ export function getAuthJsErrorMessageFromType(error: string | null | undefined) 
         message = "Couldn't send the verification email. Please try again later.";
         break;
       case 'CredentialsSignin': //The authorize callback returned null in the Credentials provider.
-        message = 'Invalid credentials. Please try again.';
+        if (code === NextAuthUsernameTakenError.code) {
+          message = NextAuthUsernameTakenError.message;
+        } else if (code === NextAuthEmailTakenError.code) {
+          message = NextAuthEmailTakenError.message;
+        } else {
+          message = 'Invalid credentials. Please try again.';
+        }
         break;
       case 'SessionRequired': //The content of this page requires you to be signed in at all times. See useSession for configuration.
       case 'Callback': //Error in the OAuth callback handler route

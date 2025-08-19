@@ -11,6 +11,7 @@ import * as noIamUser from '@/lib/no-iam-user';
 import {
   addUser,
   deleteUser,
+  getUserByEmail,
   getUserById,
   getUserByUsername,
   setUserPassword,
@@ -27,6 +28,7 @@ import { comparePassword, hashPassword } from './password-hashes';
 import db from './data/db';
 import { createUserRegistrationToken } from './email-verification-tokens/utils';
 import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
+import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -301,7 +303,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
           type: 'password',
         },
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, req) => {
         const userAndPassword = await getUserAndPasswordByUsername(credentials.username as string);
 
         if (!userAndPassword) return null;
@@ -373,6 +375,17 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
 
         // Whenever the email is active, we create the user after he verifies his email
         if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+          const [existingUserUsername, existingUserMail] = await Promise.all([
+            getUserByUsername(credentials.username as string),
+            getUserByEmail(credentials.email as string),
+          ]);
+          if (existingUserUsername) {
+            throw new NextAuthUsernameTakenError();
+          }
+          if (existingUserMail) {
+            throw new NextAuthEmailTakenError();
+          }
+
           const tokenParams: any = {
             identifier: credentials.email,
             username: credentials.username,

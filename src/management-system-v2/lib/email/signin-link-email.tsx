@@ -64,7 +64,7 @@ function SigninUrlMail(mailProps: MailProps) {
               }}
             >
               <Img
-                src={`${baseUrl}/proceed.svg`}
+                src="httpsL//proceed.surge.sh/proceed.svg"
                 height="45"
                 alt="PROCEED"
                 style={{
@@ -91,7 +91,7 @@ function SigninUrlMail(mailProps: MailProps) {
               </Heading>
               <Text style={{ ...text, marginBottom: '14px' }}>
                 {mailProps.description ??
-                  `Hi, with this mail you can sign in to your PROCEED account. If you don&apos;t have
+                  `Hi, with this mail you can sign in to your PROCEED account. If you don't have
                 an account yet, a new one will be created for you. Just click on the following link:`}
               </Text>
 

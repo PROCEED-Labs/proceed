@@ -1,5 +1,7 @@
-import Page from '../../[processId]/page';
+import { ProcessComponent } from '../../[processId]/page';
 
-const ListPage = (props: any) => Page({ ...props, isListView: true });
+const ListPage = async (props: any) => {
+  return <ProcessComponent {...props} isListView={true} />;
+};
 
 export default ListPage;

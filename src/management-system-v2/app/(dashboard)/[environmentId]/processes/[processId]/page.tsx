@@ -14,17 +14,20 @@ import type { Process } from '@/lib/data/process-schema';
 import { redirect } from 'next/navigation';
 import { spaceURL } from '@/lib/utils';
 
-type ProcessProps = {
+type ProcessPageProps = {
   params: { processId: string; environmentId: string };
   searchParams: { version?: string };
+};
+
+type ProcessComponentProps = ProcessPageProps & {
   isListView?: boolean;
 };
 
-const Process = async ({
+const ProcessComponent = async ({
   params: { processId, environmentId },
   searchParams,
   isListView,
-}: ProcessProps) => {
+}: ProcessComponentProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   //console.log('processId', processId);
@@ -106,4 +109,9 @@ const Process = async ({
   );
 };
 
+const Process = async (props: ProcessPageProps) => {
+  return <ProcessComponent {...props} />;
+};
+
 export default Process;
+export { ProcessComponent };

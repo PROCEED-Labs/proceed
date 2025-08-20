@@ -151,7 +151,7 @@ export class ProcessListPage {
     // IMPORTANT: URL can change while old page is still visible.
     await page.locator('.bjs-container').waitFor({ state: 'visible' });
 
-    const id = page.url().split('processes/').pop();
+    const id = page.url().split('processes/editor/').pop();
     this.processDefinitionIds.push(id);
 
     if (returnToProcessList) {

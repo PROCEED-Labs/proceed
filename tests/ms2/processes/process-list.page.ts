@@ -18,8 +18,8 @@ export class ProcessListPage {
   }
 
   async goto() {
-    await this.page.goto('/processes');
-    await this.page.waitForURL('**/processes');
+    await this.page.goto('/processes/editor');
+    await this.page.waitForURL('**/processes/editor');
     await waitForHydration(this.page);
   }
 

@@ -529,7 +529,7 @@ test('create a new folder and process, move process to folder and then delete bo
   // go to folder page
   const nameCell = folderRow.locator(`td:has-text("${folderId}")`);
   await nameCell.click({ clickCount: 1 });
-  await page.waitForURL(/\/processes\/folder\/([a-zA-Z0-9-_]+)/);
+  await page.waitForURL(/\/processes\/editor\/folder\/([a-zA-Z0-9-_]+)/);
 
   // check for process and delete it
   await expect(processLocator).toBeVisible();
@@ -621,7 +621,7 @@ test.describe('shortcuts in process-list', () => {
 
     /* The /processes page should be visibe again */
     // await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);
-    await page.waitForURL('/processes');
+    await page.waitForURL('/processes/editor');
 
     /* New created Process should be in List */
     await expect(

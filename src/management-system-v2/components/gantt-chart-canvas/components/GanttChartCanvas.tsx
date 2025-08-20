@@ -270,9 +270,7 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
                         ({formatDependencyType(dep)})
                       </span>
                       {dep.name && (
-                        <span style={{ marginLeft: '8px', color: '#1890ff' }}>
-                          "{dep.name}"
-                        </span>
+                        <span style={{ marginLeft: '8px', color: '#1890ff' }}>"{dep.name}"</span>
                       )}
                     </div>
                   </div>
@@ -314,9 +312,7 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
                         ({formatDependencyType(dep)})
                       </span>
                       {dep.name && (
-                        <span style={{ marginLeft: '8px', color: '#1890ff' }}>
-                          "{dep.name}"
-                        </span>
+                        <span style={{ marginLeft: '8px', color: '#1890ff' }}>"{dep.name}"</span>
                       )}
                     </div>
                   </div>

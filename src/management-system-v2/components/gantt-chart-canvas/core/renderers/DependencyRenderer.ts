@@ -690,7 +690,6 @@ export class DependencyRenderer {
     highlightedDependencies?: GanttDependency[],
     curvedDependencies: boolean = false,
   ): void {
-    
     // Cache elements array for participant connection calculations
     this.lastElementsArray = elements;
 
@@ -1075,13 +1074,12 @@ export class DependencyRenderer {
     const sourceInstanceId = (dep as any).sourceInstanceId || dep.sourceId;
     const targetInstanceId = (dep as any).targetInstanceId || dep.targetId;
 
-
     elements.forEach((el, index) => {
       // For ghost dependencies, match by base ID since ghost deps use base IDs
       if (dep.isGhost) {
         // Extract base ID from element ID (remove _instance_X suffix)
         const elementBaseId = el.id.includes('_instance_') ? el.id.split('_instance_')[0] : el.id;
-        
+
         if (elementBaseId === dep.sourceId && fromIndex === -1) {
           fromElement = el;
           fromIndex = index;
@@ -1102,7 +1100,6 @@ export class DependencyRenderer {
         }
       }
     });
-
 
     return { fromElement, toElement, fromIndex, toIndex };
   }

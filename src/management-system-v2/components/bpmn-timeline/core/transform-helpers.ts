@@ -523,7 +523,9 @@ export function detectGhostDependenciesThroughGateways(
     elementsWithGhosts.forEach((element) => {
       const elementId = element.id;
       // Extract base ID from element ID (remove _instance_X suffix)
-      const elementBaseId = elementId.includes('_instance_') ? elementId.split('_instance_')[0] : elementId;
+      const elementBaseId = elementId.includes('_instance_')
+        ? elementId.split('_instance_')[0]
+        : elementId;
 
       // Check path dependencies to find gateways this element connects through
       pathDependencies.forEach((dep) => {

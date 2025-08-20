@@ -209,6 +209,31 @@ export function transformBPMNToGantt(
     boundaryEventMapping,
   );
 
+  // DEBUG: Log what the mode handlers produced
+  console.log(
+    'MODE RESULT DEBUG:',
+    JSON.stringify({
+      totalGanttElements: modeResult.ganttElements.length,
+      ganttElementSummary: modeResult.ganttElements.map((el) => ({
+        id: el.id,
+        name: el.name,
+        type: el.type,
+        isBoundaryEvent: (el as any).isBoundaryEvent,
+      })),
+      boundaryEventsFromMode: modeResult.ganttElements
+        .filter((el) => (el as any).isBoundaryEvent)
+        .map((el) => ({
+          id: el.id,
+          name: el.name,
+        })),
+      elementToComponentSize: Object.keys(modeResult.elementToComponent).length,
+      elementToComponentKeys: Object.keys(modeResult.elementToComponent),
+      boundaryEventsInComponentMap: Object.keys(modeResult.elementToComponent).filter(
+        (id) => id.includes('Event_0wkrmr9') || id.includes('Event_1uf1gmy'),
+      ),
+    }),
+  );
+
   // CRITICAL FIX: Inherit lane metadata for instance elements
   // This must happen after mode handling but before grouping
   modeResult.ganttElements.forEach((ganttElement) => {
@@ -239,6 +264,22 @@ export function transformBPMNToGantt(
 
   // Group and sort elements first - this creates participant headers
   const hasLanes = laneHierarchy.length > 0;
+
+  // DEBUG: Log what's being passed to groupAndSortElements
+  console.log(
+    'BEFORE GROUP AND SORT:',
+    JSON.stringify({
+      ganttElementsLength: modeResult.ganttElements.length,
+      ganttElementIds: modeResult.ganttElements.map((el) => el.id),
+      boundaryEventsInGantt: modeResult.ganttElements
+        .filter((el) => (el as any).isBoundaryEvent)
+        .map((el) => el.id),
+      elementToComponentKeys: Object.keys(modeResult.elementToComponent),
+      boundaryEventsInComponentMap: Object.keys(modeResult.elementToComponent).filter(
+        (id) => id.includes('Event_0wkrmr9') || id.includes('Event_1uf1gmy'),
+      ),
+    }),
+  );
 
   const sortedElements = groupAndSortElements(
     modeResult.ganttElements,

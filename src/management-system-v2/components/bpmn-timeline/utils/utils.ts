@@ -1749,6 +1749,40 @@ function groupElementsByParticipants<
 ): T[] {
   const result: T[] = [];
 
+  // DEBUG: Detailed logging of function parameters
+  console.log(
+    'GROUP AND SORT ELEMENTS PARAMETERS:',
+    JSON.stringify({
+      elementsLength: elements.length,
+      elementsIds: elements.map((el) => el.id),
+      participantsCount: participants ? participants.length : 0,
+      participantIds: participants ? participants.map((p) => p.participantId) : [],
+      hasElementToComponent: !!elementToComponent,
+      chronologicalSorting,
+      groupByLanes,
+    }),
+  );
+
+  // DEBUG: Log all elements at the start
+  console.log(
+    'ALL ELEMENTS AT START:',
+    JSON.stringify({
+      totalElements: elements.length,
+      elementSummary: elements.map((el) => ({
+        id: el.id,
+        name: el.name,
+        type: el.type,
+        isBoundaryEvent: (el as any).isBoundaryEvent,
+      })),
+      boundaryEvents: elements
+        .filter((el) => (el as any).isBoundaryEvent)
+        .map((el) => ({
+          id: el.id,
+          name: el.name,
+        })),
+    }),
+  );
+
   // Group elements by participant
   const participantGroups = new Map<string, T[]>();
   const unparticipantedElements: T[] = [];
@@ -1757,6 +1791,19 @@ function groupElementsByParticipants<
   const laneGroups = new Map<string, T[]>();
 
   elements.forEach((element) => {
+    // DEBUG: Log boundary event processing
+    if ((element as any).isBoundaryEvent) {
+      console.log(
+        'PROCESSING BOUNDARY EVENT:',
+        JSON.stringify({
+          elementId: element.id,
+          elementName: element.name,
+          hasParticipantInfo: !!(element as any).participantId,
+          participantId: (element as any).participantId,
+        }),
+      );
+    }
+
     // Check if element has participant metadata
     const participantMetadata = (element as any)._participantMetadata;
     const participantId = participantMetadata?.participantId || element.participantId;
@@ -1779,6 +1826,24 @@ function groupElementsByParticipants<
       const baseElementId = element.id.split('_instance_')[0];
       let foundParticipant = false;
 
+      // DEBUG: Log boundary event participant matching
+      if (element.name === 'b1' || baseElementId.includes('0wkrmr9')) {
+        console.log(
+          'B1 PARTICIPANT MATCHING DEBUG:',
+          JSON.stringify({
+            elementId: element.id,
+            elementName: element.name,
+            baseElementId: baseElementId,
+            participantCount: participants.length,
+            participantIds: participants.map((p) => p.participantId),
+            participantElementIds: participants.map((p) => ({
+              participantId: p.participantId,
+              elementIds: p.elementIds,
+            })),
+          }),
+        );
+      }
+
       for (const participant of participants) {
         if (participant.elementIds.includes(baseElementId)) {
           if (!participantGroups.has(participant.participantId)) {
@@ -1786,12 +1851,36 @@ function groupElementsByParticipants<
           }
           participantGroups.get(participant.participantId)!.push(element);
           foundParticipant = true;
+
+          // DEBUG: Log successful match
+          if (element.name === 'b1' || baseElementId.includes('0wkrmr9')) {
+            console.log(
+              'B1 FOUND PARTICIPANT:',
+              JSON.stringify({
+                elementId: element.id,
+                elementName: element.name,
+                participantId: participant.participantId,
+              }),
+            );
+          }
           break;
         }
       }
 
       if (!foundParticipant) {
         unparticipantedElements.push(element);
+
+        // DEBUG: Log when b1 is not found
+        if (element.name === 'b1' || baseElementId.includes('0wkrmr9')) {
+          console.log(
+            'B1 NOT FOUND IN ANY PARTICIPANT:',
+            JSON.stringify({
+              elementId: element.id,
+              elementName: element.name,
+              baseElementId: baseElementId,
+            }),
+          );
+        }
       }
     }
   });
@@ -1872,7 +1961,7 @@ function groupElementsByParticipants<
         isParticipantHeader: true,
         participantId: participant.participantId,
         participantName: participant.participantName,
-        childIds: participantElements.map((el) => el.id),
+        childIds: [], // Will be updated below with actual element IDs from the final list
         isSubProcess: true, // Mark as sub-process so gantt chart handles it the same way
         hasChildren: true,
         hierarchyLevel: -1, // Above lanes (which are level 0+)
@@ -1922,6 +2011,79 @@ function groupElementsByParticipants<
     }
 
     result.push(...sortedParticipantElements);
+
+    // Update participant header childIds with actual element IDs (including instance IDs)
+    if (participantHeader) {
+      if (groupByLanes && participant && participant.laneHierarchy.length > 0) {
+        // For lane grouping, childIds should include top-level lane headers
+        // (this was already handled above, no change needed)
+      } else {
+        // For non-lane grouping, include all actual element IDs
+        const actualChildIds = sortedParticipantElements
+          .filter((el) => !(el as any).isLaneHeader && !(el as any).isParticipantHeader)
+          .map((el) => el.id);
+        (participantHeader as any).childIds = actualChildIds;
+      }
+    }
+  });
+
+  // FINAL STEP: Update all participant and lane headers with correct childIds (instance IDs)
+  // This ensures that elements with instance IDs are properly recognized as children
+  result.forEach((element) => {
+    const isParticipantHeader = (element as any).isParticipantHeader;
+    const isLaneHeader = (element as any).isLaneHeader;
+
+    if (isParticipantHeader || isLaneHeader) {
+      const originalChildIds = (element as any).childIds || [];
+      const updatedChildIds: string[] = [];
+
+      console.log(
+        'CHILD ID UPDATE DEBUG:',
+        JSON.stringify({
+          headerType: isParticipantHeader ? 'participant' : 'lane',
+          headerId: element.id,
+          headerName: element.name,
+          originalChildIds: originalChildIds,
+        }),
+      );
+
+      // For each original child ID, find all matching instance IDs in the result
+      originalChildIds.forEach((originalChildId: string) => {
+        const matchingElements = result.filter((el) => {
+          // Match exact ID or instance ID pattern (baseId_instance_N)
+          return el.id === originalChildId || el.id.startsWith(originalChildId + '_instance_');
+        });
+
+        console.log(
+          'MATCHING ELEMENTS DEBUG:',
+          JSON.stringify({
+            originalChildId,
+            matchingElementIds: matchingElements.map((el) => el.id),
+            matchingElementNames: matchingElements.map((el) => el.name),
+          }),
+        );
+
+        matchingElements.forEach((matchingEl) => {
+          if (!updatedChildIds.includes(matchingEl.id)) {
+            updatedChildIds.push(matchingEl.id);
+          }
+        });
+      });
+
+      // Update the childIds with instance IDs
+      (element as any).childIds = updatedChildIds;
+      (element as any).hasChildren = updatedChildIds.length > 0;
+
+      console.log(
+        'FINAL CHILD IDS DEBUG:',
+        JSON.stringify({
+          headerId: element.id,
+          headerName: element.name,
+          finalChildIds: updatedChildIds,
+          hasChildren: updatedChildIds.length > 0,
+        }),
+      );
+    }
   });
 
   return result;

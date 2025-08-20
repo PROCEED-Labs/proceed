@@ -147,7 +147,7 @@ export class ProcessListPage {
     await modal.getByRole('textbox', { name: 'Process Name' }).fill(processName ?? 'My Process');
     await modal.getByLabel('Process Description').fill(description ?? 'Process Description');
     await modal.getByRole('button', { name: 'Create' }).click();
-    await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
+    await page.waitForURL(/processes\/editor\/([a-zA-Z0-9-_]+)/);
     // IMPORTANT: URL can change while old page is still visible.
     await page.locator('.bjs-container').waitFor({ state: 'visible' });
 
@@ -168,9 +168,9 @@ export class ProcessListPage {
     const { page } = this;
 
     if (this.processDefinitionIds.length) {
-      if (!page.url().endsWith('processes')) {
+      if (!page.url().endsWith('editor')) {
         await this.goto();
-        await page.waitForURL('**/processes');
+        await page.waitForURL('**/processes/editor');
       }
 
       /* Ensure nothing is selected (esc) */

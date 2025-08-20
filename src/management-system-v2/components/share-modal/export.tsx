@@ -210,23 +210,30 @@ export function ProcessExportSubmitButton({
   type,
   state,
   exportProcesses,
-  moreThanOne,
+  moreThanOneProcess,
   isExporting,
   closeModal,
 }: {
   type: ProcessExportTypes;
   state: ExportOptionState;
   exportProcesses: ExportProcessesFunction;
-  moreThanOne: boolean;
+  moreThanOneProcess: boolean;
   isExporting: ExportingState;
   closeModal?: () => void;
 }) {
   return (
     <>
-      {!['pdf', 'svg'].includes(type) && !moreThanOne && (
+      {!['pdf', 'svg'].includes(type) && !moreThanOneProcess && (
         <Button
           loading={isExporting === 'copying'}
-          disabled={state[type].selectedOptions.length > 0 || !!isExporting}
+          disabled={
+            // Don't disable copy to clipboard if onlySelection is selected
+            (state[type].selectedOptions.length === 1 &&
+              state[type].selectedOptions[0] !== 'onlySelection') ||
+            // Two options are selected -> likely more than one process -> zip file -> disable copy to clipboard
+            state[type].selectedOptions.length >= 2 ||
+            !!isExporting
+          }
           type="primary"
           onClick={async () => {
             await exportProcesses(type, 'clipboard');
@@ -238,7 +245,7 @@ export function ProcessExportSubmitButton({
       )}
       <Button
         loading={isExporting === 'exporting'}
-        disabled={!!isExporting || (type === 'pdf' && moreThanOne)}
+        disabled={!!isExporting || (type === 'pdf' && moreThanOneProcess)}
         type="primary"
         onClick={async () => {
           await exportProcesses(type, 'download');

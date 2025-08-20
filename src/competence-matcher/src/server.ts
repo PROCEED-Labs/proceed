@@ -14,6 +14,7 @@ import { ensureAllHuggingfaceModelsAreAvailable } from './utils/huggingface';
 import { EmbeddingTask } from './utils/types';
 import { CompetenceMatcherError } from './utils/errors';
 import { logError } from './middleware/logging';
+import workerManager from './worker/worker-manager';
 
 const { port: PORT, verbose } = config;
 
@@ -53,20 +54,32 @@ async function main() {
     if (verbose) {
       console.log('[Server] All required models are available');
     }
+
+    // Wait for worker pools to be ready
+    if (verbose) {
+      console.log('[Server] Waiting for worker pools to be ready...');
+    }
+    await workerManager.ready();
+    if (verbose) {
+      console.log('[Server] All worker pools are ready');
+    }
   } catch (error) {
     const initError = new CompetenceMatcherError(
-      `Failed to initialise required models: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to initialise service: ${error instanceof Error ? error.message : String(error)}`,
       'server_initialisation',
       503,
       undefined,
       {
-        stage: 'model_initialisation',
+        stage:
+          error instanceof Error && error.message.includes('worker')
+            ? 'worker_initialisation'
+            : 'model_initialisation',
         originalError: error instanceof Error ? error.message : String(error),
       },
     );
 
     logError(initError, 'server_startup_failure');
-    console.error('[Server] Failed to start due to model initialisation error');
+    console.error('[Server] Failed to start due to initialisation error');
     process.exit(1);
   }
 

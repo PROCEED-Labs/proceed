@@ -175,7 +175,7 @@ export async function handleCreateResourceList(
     .finally(() => {
       db.updateJobStatus(jobId!, 'pending');
       workerManager.enqueue(job!, 'embedder', {
-        onExit: (job, code) => onWorkerExit?.(job, code, jobId!),
+        onExit: (job: any, code: number) => onWorkerExit?.(job, code, jobId!),
       });
     });
 

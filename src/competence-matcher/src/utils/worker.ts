@@ -69,8 +69,8 @@ export async function withJobUpdates<T>(
   } finally {
     clearTimeout(maxTimeCheck);
     db.close();
-    parentPort!.close();
-    process.exit(exitCode);
+    // Don't close parentPort or exit process for static worker pools
+    // Workers need to stay alive to process more jobs
   }
 }
 

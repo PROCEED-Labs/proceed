@@ -15,12 +15,14 @@ export const config = {
   multipleDBs: process.env.MULTIPLE_DBS === 'true' || false,
   ollamaPath: process.env.OLLAMA_PATH || 'http://localhost:11434',
   ollamaBearerToken: process.env.OLLAMA_BEARER_TOKEN || '',
-  ollamaBatchSize: parseInt(process.env.OLLAMA_BATCH_SIZE || '5', 10),
+  ollamaBatchSize: parseInt(process.env.OLLAMA_BATCH_SIZE || '20', 10),
   splittingModel: process.env.SPLITTING_MODEL || 'llama3.2',
   splittingLength: parseInt(process.env.SPLITTING_LENGTH || '1000', 10), // Set this to 0 to disable splitting
   reasonModel: process.env.REASON_MODEL || 'llama3.2',
   splittingSymbol: process.env.SPLITTING_SYMBOL || 'SPLITTING_SYMBOL',
-  maxWorkerThreads: parseInt(process.env.NUMBER_OF_THREADS || String(os.cpus().length - 1), 10), // -1 for main thread
+  maxWorkerThreads: parseInt(process.env.NUMBER_OF_THREADS || String(os.cpus().length - 1), 10), // -1 for main thread (kept for backward compatibility)
+  embeddingWorkers: parseInt(process.env.EMBEDDING_WORKERS || '1', 10), // Number of embedding workers to keep alive
+  matchingWorkers: parseInt(process.env.MATCHING_WORKERS || '1', 10), // Number of matching workers to keep alive
   maxJobTime: parseInt(process.env.MAX_JOB_TIME || '600', 10) * 1_000, // converted from seconds to milliseconds
   verbose: process.env.VERBOSE === 'true' || false,
   logDir: process.env.LOG_DIR || path.join(process.cwd(), 'logs'),

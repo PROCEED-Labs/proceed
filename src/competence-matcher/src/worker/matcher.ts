@@ -1,130 +1,209 @@
-import { parentPort } from 'worker_threads';
+import { parentPort, threadId } from 'worker_threads';
 import Embedding from '../tasks/embedding';
 import { withJobUpdates } from '../utils/worker';
 import { addReason } from '../tasks/reason';
 import { Match, MatchingJob } from '../utils/types';
 import ZeroShot from '../tasks/semantic-zeroshot';
+import { config } from '../config';
 
-parentPort!.once('message', async (job: MatchingJob) => {
-  // For workaround:
-  const matchResults: { [description: string]: any[] } = {};
-  for (const task of job.tasks) {
-    const { taskId, name, description, executionInstructions, requiredCompetencies } = task;
-    if (!description) {
-      continue; // Skip tasks without description
+const { verbose } = config;
+
+/**
+ * New matcher worker that stays alive and processes jobs sequentially
+ */
+if (!parentPort) {
+  throw new Error('This file must be run as a Worker thread');
+}
+
+// Set up health check handler immediately, before any heavy initialisation
+parentPort.on('message', async (message: any) => {
+  // Handle health checks with highest priority
+  if (message?.type === 'health_check') {
+    if (verbose) {
+      console.log(`[Matcher Worker] Thread ${threadId} received health check ${message.checkId}`);
     }
-    // Add task description to match results
-    matchResults[description] = [];
+    parentPort!.postMessage({
+      type: 'health_check_response',
+      checkId: message.checkId,
+      timestamp: Date.now(),
+      workerType: 'matcher',
+      threadId: threadId,
+    });
+    if (verbose) {
+      console.log(`[Matcher Worker] Thread ${threadId} sent health check response`);
+    }
+    return;
   }
 
-  await withJobUpdates<MatchingJob>(
-    job,
-    async (db, { jobId, tasks, listId: listIdFilter, resourceId: resourceIdFilter }) => {
-      for (const task of tasks) {
-        const { taskId, name, description, executionInstructions, requiredCompetencies } = task;
-        if (!description) {
-          continue; // Skip tasks without description
-        }
-        // Embed the task description
-        const [vector] = await Embedding.embed(description);
+  // Handle job messages
+  const job = message as MatchingJob;
 
-        // Search for matches in the competence list (and resource if provided)
-        let matches: Match[] = db.searchEmbedding(vector, {
-          filter: {
-            listId: listIdFilter,
-            resourceId: resourceIdFilter, // Optional: If matching against a single resource
-          },
-        });
+  // Set global job context for logging
+  (global as any).CURRENT_JOB = job.jobId;
 
-        // TODO: This appears to cause the worker to not start at all
-        // Invert potentially contrastive matches
-        // Add reasoning for matching score
-        // matches = await addReason(matches, description);
+  if (verbose) {
+    console.log(
+      `[Matcher Worker] Received and starting job ${job.jobId} with ${job.tasks.length} tasks`,
+    );
+  }
 
-        for (const match of matches) {
-          // Check for semantic opposites
-          const zeroshotText = `Task description: ${description}\nSkill/Capability description: ${match.text}`;
-          // From unsuitable to suitable
-          const contraLabels = ['contradicting', 'aligning'];
-          const contraHypothesis = 'Task description and Skill/Capability descriptions are {}.';
-          const scalingLabls = ['perfect', 'mediocre'];
-          const scalingHypothesis =
-            'Task description and Skill/Capability descriptions are a {} match.';
-          const labelScalar = [
-            0.25, // Contradicting matches should be penalised
-            0.5, // Scale it down a bit to avoid too high scores for irrelevant matches
-            1, // keep the best matches as is
-          ];
-          const contraClassification = await ZeroShot.classify(
-            zeroshotText,
-            contraLabels,
-            contraHypothesis,
-          );
-          let flag: 'contradicting' | 'neutral' | 'aligning' = 'neutral';
-          // console.log(contraClassification);
+  try {
+    // Store match results for reasoning workaround
+    const matchResults: { [description: string]: any[] } = {};
+    for (const task of job.tasks) {
+      const { description } = task;
+      if (!description) {
+        continue; // Skip tasks without description
+      }
+      matchResults[description] = [];
+    }
 
-          // @ts-ignore
-          if (contraClassification.labels[0] === contraLabels[0]) {
-            // Invert the match distance (since it's normalised to [0,1]: 1 - distance)
-            match.distance = (1 - match.distance) * labelScalar[0];
-            flag = 'contradicting';
-          } else {
-            const scalingClassification = await ZeroShot.classify(
-              zeroshotText,
-              scalingLabls,
-              scalingHypothesis,
-            );
+    await withJobUpdates<MatchingJob>(
+      job,
+      async (db, { jobId, tasks, listId: listIdFilter, resourceId: resourceIdFilter }) => {
+        for (const task of tasks) {
+          const { taskId, name, description, executionInstructions, requiredCompetencies } = task;
 
-            // console.log(scalingClassification);
-            if (
-              // @ts-ignore
-              scalingClassification.labels[0] === scalingLabls[0] &&
-              // @ts-ignore
-              scalingClassification.scores[0] > 0.65
-            ) {
-              // Keep the match as is
-              match.distance *= labelScalar[2];
-              flag = 'aligning';
+          if (!description) {
+            if (verbose) {
+              console.log(`[Matcher Worker] Skipping task ${taskId} - no description provided`);
             }
-            // @ts-ignore
-            else if (scalingClassification.labels[0] === scalingLabls[1]) {
-              // Scale it down a bit
-              match.distance *= labelScalar[1];
-              flag = 'neutral';
-            }
+            continue; // Skip tasks without description
           }
 
-          //   db.addMatchResult({
-          //     jobId,
-          //     taskId,
-          //     competenceId: match.competenceId,
-          //     text: match.text,
-          //     type: match.type as 'name' | 'description' | 'proficiencyLevel',
-          //     distance: match.distance,
-          //     reason: match.reason,
-          //   });
-          // }
+          try {
+            // Generate embedding for the task description
+            // Note: This could potentially be optimised by having the embedder worker handle this
+            // and passing the embedding directly, but for now we keep the same approach
+            const [vector] = await Embedding.embed(description);
 
-          // Workaround to avoid the worker crashing silently
-          matchResults[description].push({
-            jobId,
-            taskId,
-            taskText: description,
-            competenceId: match.competenceId,
-            resourceId: match.resourceId,
-            text: match.text,
-            type: match.type as 'name' | 'description' | 'proficiencyLevel',
-            alignment: flag,
-            distance: match.distance,
-            reason: match.reason,
-          });
+            if (verbose) {
+              console.log(
+                `[Matcher Worker] Generated task embedding for job ${jobId}, task ${taskId}`,
+              );
+            }
+
+            // Search for matches in the competence database
+            let matches: Match[] = db.searchEmbedding(vector, {
+              filter: {
+                listId: listIdFilter,
+                resourceId: resourceIdFilter, // Optional: If matching against a single resource
+              },
+            });
+
+            if (verbose) {
+              console.log(
+                `[Matcher Worker] Found ${matches.length} initial matches for task ${taskId}`,
+              );
+            }
+
+            // TODO: Re-enable reasoning once worker stability issues are resolved
+            // Apply reasoning to each match to enhance context
+            // matches = await addReason(description, matches);
+
+            // Zero-shot classification for scaling scores based on alignment
+            const scalingLabels = ['conflicting', 'neutral', 'aligning'];
+            const labelScalar = [0.8, 1.0, 1.2];
+
+            // Process each match
+            for (const match of matches) {
+              try {
+                let flag = 'neutral'; // Default flag
+
+                // Apply zero-shot classification
+                const scalingClassification = await ZeroShot.classify(
+                  `Task: ${description} | Competence: ${match.text}`,
+                  scalingLabels,
+                );
+
+                if (scalingClassification) {
+                  // @ts-ignore - ZeroShot classification result structure
+                  if (
+                    scalingClassification.labels[0] === scalingLabels[2] &&
+                    // @ts-ignore
+                    scalingClassification.scores[0] > 0.65
+                  ) {
+                    // Perfect match - keep as is
+                    match.distance *= labelScalar[2];
+                    flag = 'aligning';
+                  }
+                  // @ts-ignore - ZeroShot classification result structure
+                  else if (scalingClassification.labels[0] === scalingLabels[1]) {
+                    // Mediocre match - scale it down
+                    match.distance *= labelScalar[1];
+                    flag = 'neutral';
+                  }
+                }
+
+                // Store match result for reasoning workaround
+                matchResults[description].push({
+                  jobId,
+                  taskId,
+                  taskText: description,
+                  competenceId: match.competenceId,
+                  resourceId: match.resourceId,
+                  text: match.text,
+                  type: match.type as 'name' | 'description' | 'proficiencyLevel',
+                  alignment: flag,
+                  distance: match.distance,
+                  reason: match.reason,
+                });
+              } catch (error) {
+                // Log error for individual match processing but continue
+                parentPort!.postMessage({
+                  type: 'error',
+                  jobId,
+                  error: `Failed to process match for task ${taskId}: ${error instanceof Error ? error.message : String(error)}`,
+                });
+              }
+            }
+          } catch (error) {
+            // Log error for task processing but continue with other tasks
+            parentPort!.postMessage({
+              type: 'error',
+              jobId,
+              error: `Failed to process task ${taskId}: ${error instanceof Error ? error.message : String(error)}`,
+            });
+          }
         }
-      }
-    },
-    {
-      onDone: () => {
-        parentPort!.postMessage({ type: 'job', job: 'reason', workload: matchResults });
       },
-    },
-  );
+      {
+        // When job processing is done, send results for reasoning
+        onDone: () => {
+          parentPort!.postMessage({
+            type: 'job',
+            job: 'reason',
+            workload: matchResults,
+          });
+        },
+      },
+    );
+
+    // Notify that job is completed
+    parentPort!.postMessage({
+      type: 'job_completed',
+      jobId: job.jobId,
+    });
+
+    if (verbose) {
+      console.log(`[Matcher Worker] Completed job ${job.jobId}`);
+    }
+  } catch (error) {
+    // Handle job-level errors
+    parentPort!.postMessage({
+      type: 'error',
+      jobId: job.jobId,
+      error: `Job failed: ${error instanceof Error ? error.message : String(error)}`,
+    });
+
+    // Still notify completion so the worker can move to next job
+    parentPort!.postMessage({
+      type: 'job_completed',
+      jobId: job.jobId,
+    });
+  }
 });
+
+if (verbose) {
+  console.log(`[Matcher Worker] Worker thread ${threadId} ready to process matching jobs`);
+}

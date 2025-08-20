@@ -599,17 +599,18 @@ test.describe('shortcuts in process-list', () => {
 
     /* Wait for Modeler to open */
     await page.waitForURL(
-      /\/processes\/([a-zA-Z0-9-_]+)/,
+      /\/processes\/editor\/([a-zA-Z0-9-_]+)/,
     ); /* TODO: should this be an expect / is this part of the test? */
     // await expect(page, 'New-Process-Modal should be submitable via ctrl/meta+enter').toHaveURL(
     //   /\/processes\/([a-zA-Z0-9-_]+)/,
     // );
 
     /* Save Process-ID*/
-    const processID = page.url().split('/').pop();
+    const processID = page.url().split('/processes/editor/').pop();
 
     await waitForHydration(page);
 
+    await page.waitForTimeout(4000);
     /* Wait for modeler to load */
     await page.locator('svg[data-element-id^="Process_"]').waitFor({
       state: 'visible',

@@ -219,7 +219,7 @@ export class ProcessListPage {
         // avoid double navigations next.
         // this.processDefinitionIds = [];
 
-        /* Rendereing potential placeholder element can take longer */
+        /* Rendering potential placeholder element can take longer */
         /* -> ensure new rows are rendered */
 
         // await page.locator('tr[data-row-key=' + visibleIds[0] + ']').waitFor({ state: 'hidden' });

@@ -7,7 +7,8 @@ import UnauthorizedFallback from '@/components/unauthorized-fallback';
 const Page = async ({ params }: { params: { environmentId: string } }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
-  if (!ability.can('manage', 'Role')) return <UnauthorizedFallback />;
+  // if (!ability.can('manage', 'Role')) return <UnauthorizedFallback />;
+  if (!ability.can('admin', 'All')) return <UnauthorizedFallback />;
 
   const roles = await getRolesWithMembers(activeEnvironment.spaceId, ability);
 

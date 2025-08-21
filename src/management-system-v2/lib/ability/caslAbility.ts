@@ -17,9 +17,7 @@ export const resources = [
   'Role',
   'User',
   'Setting',
-  'EnvConfig',
   'RoleMapping',
-  'Share',
   'Environment',
   'Folder',
   // NOTE: All is just supposed to be used for storing permissions in roles

@@ -157,7 +157,12 @@ export async function addRole(
 
   const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
 
-  if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation))) {
+  // if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation))) {
+  if (
+    ability &&
+    (!ability.can('create', toCaslResource('Role', roleRepresentation)) ||
+      !ability.can('admin', 'All'))
+  ) {
     throw new UnauthorizedError();
   }
 
@@ -220,7 +225,8 @@ export async function updateRole(
       ability.can('create', toCaslResource('Role', roleRepresentation), {
         environmentId: targetRole.environmentId,
       })
-    )
+    ) ||
+    !ability.can('admin', 'All')
   )
     throw new UnauthorizedError();
   const updatedRole = await db.role.update({
@@ -256,7 +262,10 @@ export async function deleteRole(roleId: string, ability?: Ability) {
   }
 
   // Check if user has permission to delete the role
-  if (ability && !ability.can('delete', toCaslResource('Role', role))) {
+  if (
+    ability &&
+    (!ability.can('delete', toCaslResource('Role', role)) || !ability.can('admin', 'All'))
+  ) {
     throw new UnauthorizedError();
   }
 

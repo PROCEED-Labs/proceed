@@ -121,26 +121,25 @@ const UserList: FC<UserListProps> = ({
               ) : null}
             </span>
 
-            <span>
+            {/** TODO: implement icon view and uncomment this toggle
               <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
-                <Button
-                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                  onClick={() => {
-                    addPreferences({ 'icon-view-in-process-list': false });
-                  }}
-                >
-                  <UnorderedListOutlined />
-                </Button>
-                <Button
-                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                  onClick={() => {
-                    addPreferences({ 'icon-view-in-process-list': true });
-                  }}
-                >
-                  <AppstoreOutlined />
-                </Button>
-              </Space.Compact>
-            </span>
+              <Button
+                style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                onClick={() => {
+                  addPreferences({ 'icon-view-in-process-list': false });
+                }}
+              >
+                <UnorderedListOutlined />
+              </Button>
+              <Button
+                style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                onClick={() => {
+                  addPreferences({ 'icon-view-in-process-list': true });
+                }}
+              >
+                <AppstoreOutlined />
+              </Button>
+            </Space.Compact>*/}
           </span>
         }
         searchProps={{
@@ -164,15 +163,10 @@ const UserList: FC<UserListProps> = ({
             onRow: (element) => ({
               onMouseEnter: () => setHoveredRowId(element.id),
               onMouseLeave: () => setHoveredRowId(null),
-              onClick: () => {
-                setSelectedRows([element]);
-                if (onSelectedRows) onSelectedRows([element]);
-              },
-
-              pagination: { position: ['bottomCenter'] },
-              rowKey: 'id',
-              loading,
             }),
+            pagination: { position: ['bottomCenter'] },
+            rowKey: 'id',
+            loading,
           }}
         />
       )}

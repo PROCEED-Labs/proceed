@@ -13,6 +13,7 @@ const {
   modelLoadingTimeout,
   maxWorkerRetries,
   workerRetryWindow,
+  modelLoadingTime,
 } = config;
 const logger = getLogger();
 
@@ -327,7 +328,7 @@ class WorkerPool {
    */
   private performHealthCheck(worker: Worker) {
     const healthCheckId = `health_check_${Date.now()}_${worker.threadId}`;
-    const timeout = modelLoadingTimeout * 1_000; // convert to milliseconds
+    const timeout = modelLoadingTimeout;
 
     logger.debug(
       'system',
@@ -591,7 +592,7 @@ class WorkerManager {
   private async waitForWorkersReady(): Promise<void> {
     logger.debug('system', '[WorkerManager] Waiting for worker pools to become ready...');
 
-    const maxWaitTime = 30_000; // 30 seconds max wait
+    const maxWaitTime = modelLoadingTime; // 30 seconds max wait
     const checkInterval = 500; // Check every 500ms
     const startTime = Date.now();
 

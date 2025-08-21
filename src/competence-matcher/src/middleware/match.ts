@@ -18,7 +18,9 @@ import {
   DatabaseError,
   CompetenceMatcherError,
 } from '../utils/errors';
-import { logError } from './logging';
+import { getLogger } from '../utils/logger';
+
+const logger = getLogger();
 
 export function matchCompetenceList(req: Request, res: Response, next: NextFunction): void {
   const requestId = (req as any).requestId;
@@ -211,13 +213,15 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
             try {
               db.updateJobStatus(matchingJobId, 'failed');
             } catch (error) {
-              logError(
-                new DatabaseError(
-                  'updateJobStatus',
-                  error instanceof Error ? error : new Error(String(error)),
-                  requestId,
-                ),
-                'inline_job_failure_update',
+              const dbError = new DatabaseError(
+                'updateJobStatus',
+                error instanceof Error ? error : new Error(String(error)),
+                requestId,
+              );
+              logger.databaseError(
+                'Failed to update job status to failed',
+                dbError,
+                { matchingJobId },
                 requestId,
               );
             }
@@ -227,13 +231,15 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
           try {
             db.updateJobStatus(matchingJobId, 'pending');
           } catch (error) {
-            logError(
-              new DatabaseError(
-                'updateJobStatus',
-                error instanceof Error ? error : new Error(String(error)),
-                requestId,
-              ),
-              'inline_job_pending_update',
+            const dbError = new DatabaseError(
+              'updateJobStatus',
+              error instanceof Error ? error : new Error(String(error)),
+              requestId,
+            );
+            logger.databaseError(
+              'Failed to update job status to pending',
+              dbError,
+              { matchingJobId },
               requestId,
             );
             return;
@@ -278,26 +284,31 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
           try {
             db.updateJobStatus(matchingJobId, 'failed');
           } catch (dbError) {
-            logError(
-              new DatabaseError(
-                'updateJobStatus',
-                dbError instanceof Error ? dbError : new Error(String(dbError)),
-                requestId,
-              ),
-              'inline_job_error_update',
+            const dbErrorObj = new DatabaseError(
+              'updateJobStatus',
+              dbError instanceof Error ? dbError : new Error(String(dbError)),
+              requestId,
+            );
+            logger.databaseError(
+              'Failed to update job status after error',
+              dbErrorObj,
+              { matchingJobId },
               requestId,
             );
           }
 
-          logError(
-            new CompetenceMatcherError(
-              `Failed to create inline matching job: ${error instanceof Error ? error.message : String(error)}`,
-              'inline_job_creation',
-              500,
-              requestId,
-              { matchingJobId },
-            ),
+          const matchingError = new CompetenceMatcherError(
+            `Failed to create inline matching job: ${error instanceof Error ? error.message : String(error)}`,
             'inline_job_creation',
+            500,
+            requestId,
+            { matchingJobId },
+          );
+          logger.error(
+            'request',
+            'Failed to create inline matching job',
+            matchingError,
+            { matchingJobId },
             requestId,
           );
         }

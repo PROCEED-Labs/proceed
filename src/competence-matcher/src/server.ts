@@ -1,22 +1,23 @@
 import express from 'express';
 
+import { config } from './config';
+import { Logger, createLoggerConfig } from './utils/logger';
+
+// Initilise logger first, before any other imports that might use it
+const loggerConfig = createLoggerConfig();
+const logger = Logger.getInstance(loggerConfig);
+
 import ResourceRouter from './routes/resource';
 import MatchRouter from './routes/match';
-import { config } from './config';
 import { dbHeader } from './middleware/db-locator';
-import { requestLogger } from './middleware/logging';
+import { requestLogger } from './middleware/request-logger';
 import { errorHandler } from './middleware/error-handler';
-import Embedding from './tasks/embedding';
 import { ensureAllOllamaModelsAreAvailable } from './utils/ollama';
-import { splitSemantically } from './tasks/semantic-split';
-import { createWorker } from './utils/worker';
 import { ensureAllHuggingfaceModelsAreAvailable } from './utils/huggingface';
-import { EmbeddingTask } from './utils/types';
 import { CompetenceMatcherError } from './utils/errors';
-import { logError } from './middleware/logging';
 import workerManager from './worker/worker-manager';
 
-const { port: PORT, verbose } = config;
+const { port: PORT } = config;
 
 export const PATHS = {
   resource: '/resource-competence-list',
@@ -34,35 +35,23 @@ async function main() {
   const app = express();
 
   try {
-    if (verbose) {
-      console.log('[Server] Initialising competence matcher service...');
-    }
+    logger.info('server', 'Initialising competence matcher service...');
 
     // Ensure all required models are available
     // Hugging Face models
-    if (verbose) {
-      console.log('[Server] Checking HuggingFace models availability...');
-    }
+    logger.info('server', 'Checking HuggingFace models availability...');
     await ensureAllHuggingfaceModelsAreAvailable();
 
     // Ollama models
-    if (verbose) {
-      console.log('[Server] Checking Ollama models availability...');
-    }
+    logger.info('server', 'Checking Ollama models availability...');
     await ensureAllOllamaModelsAreAvailable();
 
-    if (verbose) {
-      console.log('[Server] All required models are available');
-    }
+    logger.info('server', 'All required models are available');
 
     // Wait for worker pools to be ready
-    if (verbose) {
-      console.log('[Server] Waiting for worker pools to be ready...');
-    }
+    logger.info('server', 'Waiting for worker pools to be ready...');
     await workerManager.ready();
-    if (verbose) {
-      console.log('[Server] All worker pools are ready');
-    }
+    logger.info('server', 'All worker pools are ready');
   } catch (error) {
     const initError = new CompetenceMatcherError(
       `Failed to initialise service: ${error instanceof Error ? error.message : String(error)}`,
@@ -78,8 +67,7 @@ async function main() {
       },
     );
 
-    logError(initError, 'server_startup_failure');
-    console.error('[Server] Failed to start due to initialisation error');
+    logger.error('server', 'Failed to start due to initialisation error', initError);
     process.exit(1);
   }
 
@@ -105,9 +93,7 @@ async function main() {
   app.use(errorHandler);
 
   app.listen(PORT, () => {
-    if (verbose) {
-      console.log(`[Server] Matching-Server is running on http://localhost:${PORT}`);
-    }
+    logger.info('server', `Matching-Server is running on http://localhost:${PORT}`);
   });
 }
 
@@ -120,7 +106,7 @@ main().catch((error) => {
     { originalError: error instanceof Error ? error.message : String(error) },
   );
 
-  logError(startupError, 'server_startup_failure');
-  console.error('[Server] Server shutdown due to startup error:', error);
+  logger.error('server', 'Server startup failed', startupError);
+  logger.error('system', '[Server] Server shutdown due to startup error:', error);
   process.exit(1);
 });

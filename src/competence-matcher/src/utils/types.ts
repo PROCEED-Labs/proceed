@@ -1,5 +1,47 @@
 import { PretrainedModelOptions } from '@huggingface/transformers';
 
+// ===== LOGGING TYPES =====
+
+// Logger levels in order of severity
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
+}
+
+// Logger types for different components
+export type LogType = 'server' | 'request' | 'worker' | 'database' | 'model' | 'system';
+
+// Log entry structure
+export interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  levelName: string;
+  type: LogType;
+  message: string;
+  context?: string;
+  requestId?: string;
+  data?: any;
+  error?: {
+    message: string;
+    stack?: string;
+    name?: string;
+  };
+}
+
+// Logger configuration
+export interface LoggerConfig {
+  level: LogLevel;
+  enabledTypes: LogType[];
+  enableConsole: boolean;
+  enableFile: boolean;
+  logDir: string;
+  colorize: boolean;
+}
+
+// ===== COMPETENCE MATCHING TYPES =====
+
 export type Competence = {
   listId: string; // UUIDString
   resourceId: string; // UUIDString
@@ -143,23 +185,4 @@ export interface TransformerPipelineOptions {
   task: string;
   model: string;
   options?: PretrainedModelOptions;
-}
-
-export interface LogEntry {
-  timestamp: string;
-  requestId: string;
-  type: 'request' | 'response' | 'error';
-  method?: string;
-  path?: string;
-  query?: object;
-  body?: any;
-  headers?: object;
-  params?: object;
-  ip?: string;
-  realIp?: string | string[];
-  statusCode?: number;
-  responseTime?: number;
-  error?: string;
-  errorStack?: string;
-  context?: string;
 }

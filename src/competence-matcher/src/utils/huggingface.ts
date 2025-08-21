@@ -1,29 +1,21 @@
 import Embedding from '../tasks/embedding';
 import ZeroShotSemanticOpposites from '../tasks/semantic-zeroshot';
 import { HuggingFaceModelError } from './errors';
-import { config } from '../config';
+import { getLogger } from './logger';
 
-const { verbose } = config;
+const logger = getLogger();
 
 export async function ensureAllHuggingfaceModelsAreAvailable() {
-  if (verbose) {
-    console.log('[HuggingFace] Checking availability of required models...');
-  }
+  logger.debug('model', 'Checking availability of required models...');
 
   try {
-    if (verbose) {
-      console.log('[HuggingFace] Initialising embedding model...');
-    }
+    logger.debug('model', 'Initialising embedding model...');
     await Embedding.getInstance();
 
-    if (verbose) {
-      console.log('[HuggingFace] Initialising zero-shot semantic opposites model...');
-    }
+    logger.debug('model', 'Initialising zero-shot semantic opposites model...');
     await ZeroShotSemanticOpposites.getInstance();
 
-    if (verbose) {
-      console.log('[HuggingFace] All models initialised successfully');
-    }
+    logger.modelInfo('All HuggingFace models initialised successfully');
   } catch (error) {
     throw new HuggingFaceModelError(
       'unknown', // We don't know which specific model failed - will maybe add later
@@ -31,7 +23,5 @@ export async function ensureAllHuggingfaceModelsAreAvailable() {
       error instanceof Error ? error : new Error(String(error)),
     );
   }
-  if (verbose) {
-    console.log('[HuggingFace] All required HuggingFace-Models are available');
-  }
+  logger.modelInfo('All required HuggingFace models are available');
 }

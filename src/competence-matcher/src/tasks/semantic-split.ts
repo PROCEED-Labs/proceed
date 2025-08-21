@@ -4,23 +4,28 @@ import { SEMANTIC_SPLITTER as intructPrompt } from '../utils/prompts';
 import type { Message } from 'ollama';
 import { EmbeddingTask } from '../utils/types';
 import { SemanticSplittingError, OllamaConnectionError } from '../utils/errors';
-import { logError } from '../middleware/logging';
+import { getLogger } from '../utils/logger';
 
 const {
   splittingModel,
   splittingSymbol,
   ollamaBatchSize,
   splittingLength: MIN_TEXT_LENGTH,
-  verbose,
 } = config;
 
+function getLoggerInstance() {
+  return getLogger();
+}
+
 export async function splitSemantically(tasks: EmbeddingTask[]): Promise<EmbeddingTask[]> {
+  const logger = getLoggerInstance();
   const splittedTasks: EmbeddingTask[] = [];
   const toSplit: { task: EmbeddingTask; messages: Message[] }[] = [];
 
-  if (verbose) {
-    console.log(`[Semantic Split] Processing ${tasks.length} tasks`);
-  }
+  logger.debug('system', `Processing ${tasks.length} tasks for semantic splitting`, {
+    taskCount: tasks.length,
+    minTextLength: MIN_TEXT_LENGTH,
+  });
 
   for (const task of tasks) {
     const messages: Message[] = [
@@ -50,19 +55,16 @@ export async function splitSemantically(tasks: EmbeddingTask[]): Promise<Embeddi
     }
   }
 
-  if (verbose) {
-    console.log(`[Semantic Split] ${toSplit.length} tasks require splitting`);
-  }
+  logger.debug('system', `[Semantic Split] ${toSplit.length} tasks require splitting`);
 
   // Process in batches
   for (let i = 0; i < toSplit.length; i += ollamaBatchSize) {
     const batch = toSplit.slice(i, i + ollamaBatchSize);
 
-    if (verbose) {
-      console.log(
-        `[Semantic Split] Processing batch ${Math.floor(i / ollamaBatchSize) + 1}/${Math.ceil(toSplit.length / ollamaBatchSize)} (${batch.length} tasks)`,
-      );
-    }
+    logger.debug(
+      'system',
+      `[Semantic Split] Processing batch ${Math.floor(i / ollamaBatchSize) + 1}/${Math.ceil(toSplit.length / ollamaBatchSize)} (${batch.length} tasks)`,
+    );
 
     const promises = batch.map(async ({ task, messages }) => {
       try {
@@ -77,18 +79,16 @@ export async function splitSemantically(tasks: EmbeddingTask[]): Promise<Embeddi
           .filter((part: string) => part !== '');
 
         if (parts.length === 0) {
-          if (verbose) {
-            console.warn(
-              `[Semantic Split] No valid parts found for task ${task.listId}/${task.resourceId}/${task.competenceId}, using original text`,
-            );
-          }
+          logger.warn(
+            'system',
+            `[Semantic Split] No valid parts found for task ${task.listId}/${task.resourceId}/${task.competenceId}, using original text`,
+          );
           splittedTasks.push({ ...task, text: task.text });
         } else {
-          if (verbose) {
-            console.log(
-              `[Semantic Split] Split task ${task.listId}/${task.resourceId}/${task.competenceId} into ${parts.length} parts`,
-            );
-          }
+          logger.debug(
+            'system',
+            `[Semantic Split] Split task ${task.listId}/${task.resourceId}/${task.competenceId} into ${parts.length} parts`,
+          );
           for (const part of parts) {
             splittedTasks.push({ ...task, text: part });
           }
@@ -99,7 +99,7 @@ export async function splitSemantically(tasks: EmbeddingTask[]): Promise<Embeddi
           error instanceof Error ? error : new Error(String(error)),
         );
 
-        logError(semanticError, 'semantic_splitting_task_failure', undefined, {
+        logger.error('system', 'Semantic splitting error', semanticError, {
           taskId: `${task.listId}/${task.resourceId}/${task.competenceId}`,
           textLength: task.text.length,
           splittingModel,
@@ -115,23 +115,22 @@ export async function splitSemantically(tasks: EmbeddingTask[]): Promise<Embeddi
     } catch (error) {
       // This shouldn't happen since we catch errors in individual promises,
       // but just in case there's an unexpected Promise.all failure
-      logError(
+      logger.error(
+        'system',
+        'Semantic splitting error',
         new SemanticSplittingError(
           batch.length,
           error instanceof Error ? error : new Error(String(error)),
         ),
-        'semantic_splitting_batch_failure',
-        undefined,
         { batchSize: batch.length, batchIndex: Math.floor(i / ollamaBatchSize) },
       );
     }
   }
 
-  if (verbose) {
-    console.log(
-      `[Semantic Split] Completed: ${tasks.length} input tasks → ${splittedTasks.length} output tasks`,
-    );
-  }
+  logger.debug(
+    'system',
+    `[Semantic Split] Completed: ${tasks.length} input tasks → ${splittedTasks.length} output tasks`,
+  );
 
   return splittedTasks;
 }

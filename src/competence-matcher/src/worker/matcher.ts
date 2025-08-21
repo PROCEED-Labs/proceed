@@ -4,9 +4,16 @@ import { withJobUpdates } from '../utils/worker';
 import { addReason } from '../tasks/reason';
 import { Match, MatchingJob } from '../utils/types';
 import ZeroShot from '../tasks/semantic-zeroshot';
-import { config } from '../config';
+import { Logger, createLoggerConfig } from '../utils/logger';
 
-const { verbose } = config;
+// Initialise logger for this worker thread
+try {
+  Logger.getInstance(createLoggerConfig());
+} catch (error) {
+  // Logger already initialised
+}
+
+// Note: Verbose logging has been replaced with the new logger system
 
 /**
  * New matcher worker that stays alive and processes jobs sequentially
@@ -19,9 +26,6 @@ if (!parentPort) {
 parentPort.on('message', async (message: any) => {
   // Handle health checks with highest priority
   if (message?.type === 'health_check') {
-    if (verbose) {
-      console.log(`[Matcher Worker] Thread ${threadId} received health check ${message.checkId}`);
-    }
     parentPort!.postMessage({
       type: 'health_check_response',
       checkId: message.checkId,
@@ -29,9 +33,7 @@ parentPort.on('message', async (message: any) => {
       workerType: 'matcher',
       threadId: threadId,
     });
-    if (verbose) {
-      console.log(`[Matcher Worker] Thread ${threadId} sent health check response`);
-    }
+
     return;
   }
 
@@ -40,12 +42,6 @@ parentPort.on('message', async (message: any) => {
 
   // Set global job context for logging
   (global as any).CURRENT_JOB = job.jobId;
-
-  if (verbose) {
-    console.log(
-      `[Matcher Worker] Received and starting job ${job.jobId} with ${job.tasks.length} tasks`,
-    );
-  }
 
   try {
     // Store match results for reasoning workaround
@@ -65,9 +61,6 @@ parentPort.on('message', async (message: any) => {
           const { taskId, name, description, executionInstructions, requiredCompetencies } = task;
 
           if (!description) {
-            if (verbose) {
-              console.log(`[Matcher Worker] Skipping task ${taskId} - no description provided`);
-            }
             continue; // Skip tasks without description
           }
 
@@ -77,12 +70,6 @@ parentPort.on('message', async (message: any) => {
             // and passing the embedding directly, but for now we keep the same approach
             const [vector] = await Embedding.embed(description);
 
-            if (verbose) {
-              console.log(
-                `[Matcher Worker] Generated task embedding for job ${jobId}, task ${taskId}`,
-              );
-            }
-
             // Search for matches in the competence database
             let matches: Match[] = db.searchEmbedding(vector, {
               filter: {
@@ -90,12 +77,6 @@ parentPort.on('message', async (message: any) => {
                 resourceId: resourceIdFilter, // Optional: If matching against a single resource
               },
             });
-
-            if (verbose) {
-              console.log(
-                `[Matcher Worker] Found ${matches.length} initial matches for task ${taskId}`,
-              );
-            }
 
             // TODO: Re-enable reasoning once worker stability issues are resolved
             // Apply reasoning to each match to enhance context
@@ -184,10 +165,6 @@ parentPort.on('message', async (message: any) => {
       type: 'job_completed',
       jobId: job.jobId,
     });
-
-    if (verbose) {
-      console.log(`[Matcher Worker] Completed job ${job.jobId}`);
-    }
   } catch (error) {
     // Handle job-level errors
     parentPort!.postMessage({
@@ -203,7 +180,3 @@ parentPort.on('message', async (message: any) => {
     });
   }
 });
-
-if (verbose) {
-  console.log(`[Matcher Worker] Worker thread ${threadId} ready to process matching jobs`);
-}

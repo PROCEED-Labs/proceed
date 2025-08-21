@@ -10,7 +10,9 @@ import {
   DatabaseError,
   CompetenceMatcherError,
 } from '../utils/errors';
-import { logError } from './logging';
+import { getLogger } from '../utils/logger';
+
+const logger = getLogger();
 
 export function getResourceLists(req: Request, res: Response, next: NextFunction): void {
   const requestId = (req as any).requestId;
@@ -87,6 +89,7 @@ export function getResourceList(req: Request, res: Response, next: NextFunction)
 export async function handleCreateResourceList(
   dbName: string,
   resources: ResourceInput[],
+  requestId?: string,
   onWorkerExit?: (job: any, code: number, jobId: string) => void,
 ): Promise<{ jobId: string; status: string }> {
   let resourceIds: string[] = [];
@@ -165,7 +168,15 @@ export async function handleCreateResourceList(
       };
     })
     .catch((err) => {
-      console.error('Error splitting semantically:', err);
+      logger.warn(
+        'system',
+        'Error during semantic splitting, falling back to original tasks',
+        {
+          error: err instanceof Error ? err.message : String(err),
+          taskCount: descriptionEmbeddingInput.length,
+        },
+        requestId,
+      );
       job = {
         jobId: jobId!,
         dbName: dbName,
@@ -183,24 +194,54 @@ export async function handleCreateResourceList(
 }
 
 export function createResourceList(req: Request, res: Response, next: NextFunction): void {
+  const requestId = req.requestId;
+
   if (!Array.isArray(req.body) || req.body.length === 0) {
     res.status(400).json({ error: 'Invalid request body. Expected an array of resources.' });
     return;
   }
   try {
-    handleCreateResourceList(req.dbName!, req.body)
+    handleCreateResourceList(req.dbName!, req.body, requestId)
       .then(({ jobId, status }) => {
+        logger.debug(
+          'request',
+          'Resource list creation job created',
+          {
+            jobId,
+            status,
+            resourceCount: req.body.length,
+          },
+          requestId,
+        );
+
         res
           .setHeader('Location', `${PATHS.resource}/jobs/${jobId}`)
           .status(202)
           .json({ jobId, status });
       })
       .catch((error) => {
-        console.error('Error adding resource list:', error);
+        logger.error(
+          'request',
+          'Error adding resource list',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            resourceCount: req.body.length,
+          },
+          requestId,
+        );
         res.status(400).json({ error: error.message || 'Invalid request body format' });
       });
   } catch (error) {
-    console.error('Error processing request body:', error);
+    logger.error(
+      'request',
+      'Error processing request body',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        bodyType: typeof req.body,
+        bodyLength: Array.isArray(req.body) ? req.body.length : 'not array',
+      },
+      requestId,
+    );
     res.status(400).json({ error: 'Invalid request body format' });
   }
 }
@@ -230,7 +271,7 @@ export function getJobStatus(req: Request, res: Response) {
         return;
     }
   } catch (err) {
-    // console.error(err);
+    // logger.error("system", err);
     res.status(404).json({ error: 'Job not found' });
   }
 }

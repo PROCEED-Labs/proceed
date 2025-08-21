@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
 import * as os from 'node:os';
-import path from 'node:path';
 
 export const config = {
   dbPath: process.env.DB_PATH || 'src/db/dbs/',
@@ -19,12 +18,17 @@ export const config = {
   splittingModel: process.env.SPLITTING_MODEL || 'llama3.2',
   splittingLength: parseInt(process.env.SPLITTING_LENGTH || '1000', 10), // Set this to 0 to disable splitting
   reasonModel: process.env.REASON_MODEL || 'llama3.2',
-  splittingSymbol: process.env.SPLITTING_SYMBOL || 'SPLITTING_SYMBOL',
+  splittingSymbol: process.env.SPLITTING_SYMBOL || '<SPLITTING_SYMBOL>',
   maxWorkerThreads: parseInt(process.env.NUMBER_OF_THREADS || String(os.cpus().length - 1), 10), // -1 for main thread (kept for backward compatibility)
   embeddingWorkers: parseInt(process.env.EMBEDDING_WORKERS || '1', 10), // Number of embedding workers to keep alive
   matchingWorkers: parseInt(process.env.MATCHING_WORKERS || '1', 10), // Number of matching workers to keep alive
   maxJobTime: parseInt(process.env.MAX_JOB_TIME || '600', 10) * 1_000, // converted from seconds to milliseconds
-  verbose: process.env.VERBOSE === 'true' || false,
-  logDir: process.env.LOG_DIR || path.join(process.cwd(), 'logs'),
-  logFile: process.env.LOG_FILE || path.join(process.cwd(), 'logs', 'competence-matcher.log'),
+  logLevel: process.env.LOG_LEVEL || 'INFO', // Levels: 'DEBUG', 'INFO', 'WARN', 'ERROR'
+  logTypes: process.env.LOG_TYPES || 'server,request,worker,database,model,system',
+  logToConsole: process.env.LOG_CONSOLE !== 'false', // Default to true unless explicitly set to false
+  logToFile: process.env.LOG_FILE === 'true' || false, // Default to false unless explicitly set to true
+  logPath: process.env.LOG_PATH || 'logs/',
+  modelLoadingTimeout: parseInt(process.env.MODEL_LOADING_TIMEOUT || '20', 10), // Timeout for model loading in seconds
+  maxWorkerRetries: parseInt(process.env.MAX_WORKER_RETRIES || '3', 10), // Maximum worker restart attempts before escalating to ERROR
+  workerRetryWindow: parseInt(process.env.WORKER_RETRY_WINDOW || '300', 10) * 1_000, // Time window in seconds to reset retry count (converted to ms)
 };

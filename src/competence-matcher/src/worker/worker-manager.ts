@@ -3,11 +3,18 @@ import { config } from '../config';
 import { createWorker } from '../utils/worker';
 import { EmbeddingJob, MatchingJob, workerTypes, Match } from '../utils/types';
 import { WorkerError, DatabaseError, ReasoningError } from '../utils/errors';
-import { logError } from '../middleware/logging';
+import { getLogger } from '../utils/logger';
 import { addReason } from '../tasks/reason';
 import { getDB } from '../utils/db';
 
-const { verbose, embeddingWorkers, matchingWorkers } = config;
+const {
+  embeddingWorkers,
+  matchingWorkers,
+  modelLoadingTimeout,
+  maxWorkerRetries,
+  workerRetryWindow,
+} = config;
+const logger = getLogger();
 
 // Job queue interface for task-specific queues
 interface JobQueueItem {
@@ -31,6 +38,11 @@ class WorkerPool {
   private pendingHealthChecks: Map<Worker, NodeJS.Timeout> = new Map(); // Track pending health checks
   private beingReplaced: Set<Worker> = new Set(); // Track workers being replaced to prevent double replacement
 
+  // Retry tracking
+  private failureCount: number = 0; // Total failures for this worker type
+  private lastFailureTime: number = 0; // Timestamp of last failure
+  private consecutiveFailures: number = 0; // Consecutive failures without recovery
+
   constructor(workerType: workerTypes, poolSize: number) {
     this.workerType = workerType;
     this.poolSize = poolSize;
@@ -45,9 +57,7 @@ class WorkerPool {
       this.createAndRegisterWorker();
     }
 
-    if (verbose) {
-      console.log(`[WorkerPool] Initialised ${this.poolSize} ${this.workerType} workers`);
-    }
+    logger.debug('system', `[WorkerPool] Initialised ${this.poolSize} ${this.workerType} workers`);
   }
 
   /**
@@ -56,11 +66,10 @@ class WorkerPool {
   private createAndRegisterWorker() {
     // Check if we already have enough workers (including those pending health checks)
     if (this.workers.length >= this.poolSize) {
-      if (verbose) {
-        console.log(
-          `[WorkerPool] Not creating new ${this.workerType} worker - pool already has ${this.workers.length}/${this.poolSize} workers`,
-        );
-      }
+      logger.debug(
+        'system',
+        `[WorkerPool] Not creating new ${this.workerType} worker - pool already has ${this.workers.length}/${this.poolSize} workers`,
+      );
       return;
     }
 
@@ -74,7 +83,7 @@ class WorkerPool {
         error instanceof Error ? error : new Error(String(error)),
       );
 
-      logError(workerError, 'worker_pool_creation_failure', undefined, {
+      logger.workerError('worker_pool_creation_failure', workerError, {
         workerType: this.workerType,
         poolSize: this.poolSize,
       });
@@ -91,9 +100,7 @@ class WorkerPool {
 
     // Handle worker lifecycle events
     worker.once('online', () => {
-      if (verbose) {
-        console.log(`[WorkerPool] ${this.workerType} worker ${worker.threadId} is online`);
-      }
+      logger.debug('system', `[WorkerPool] ${this.workerType} worker ${worker.threadId} is online`);
     });
 
     worker.on('error', (err) => {
@@ -104,11 +111,26 @@ class WorkerPool {
         err instanceof Error ? err : new Error(String(err)),
       );
 
-      logError(workerError, 'worker_pool_runtime_error', undefined, {
+      // Track failure and determine logging severity
+      const { shouldLogAsError, retryCount } = this.trackWorkerFailure();
+
+      const errorData = {
         workerType: this.workerType,
         threadId: worker.threadId,
         jobId,
-      });
+        retryCount,
+        maxRetries: maxWorkerRetries,
+      };
+
+      if (shouldLogAsError) {
+        logger.workerError('worker_pool_runtime_error', workerError, errorData);
+      } else {
+        logger.warn(
+          'worker',
+          `Worker runtime error (attempt ${retryCount}/${maxWorkerRetries}): ${err.message}`,
+          errorData,
+        );
+      }
 
       // Mark worker as available again and try to process next job
       this.markWorkerAvailable(worker);
@@ -119,19 +141,17 @@ class WorkerPool {
     worker.once('exit', (code) => {
       const jobId = this.busyWorkers.get(worker) || 'unknown';
 
-      if (verbose) {
-        console.log(
-          `[WorkerPool] ${this.workerType} worker ${worker.threadId} exited with code ${code}`,
-        );
-      }
+      logger.debug(
+        'system',
+        `[WorkerPool] ${this.workerType} worker ${worker.threadId} exited with code ${code}`,
+      );
 
       // Check if this worker is already being replaced to prevent double replacement
       if (this.beingReplaced.has(worker)) {
-        if (verbose) {
-          console.log(
-            `[WorkerPool] Worker ${worker.threadId} already being replaced, skipping duplicate replacement`,
-          );
-        }
+        logger.debug(
+          'system',
+          `[WorkerPool] Worker ${worker.threadId} already being replaced, skipping duplicate replacement`,
+        );
         this.removeWorkerFromPool(worker);
         return;
       }
@@ -148,11 +168,10 @@ class WorkerPool {
   public enqueue(job: EmbeddingJob | MatchingJob, options?: JobQueueItem['options']) {
     this.queue.push({ job, options });
 
-    if (verbose) {
-      console.log(
-        `[WorkerPool] Enqueued ${this.workerType} job ${job.jobId} (queue: ${this.queue.length}, available: ${this.availableWorkers.size})`,
-      );
-    }
+    logger.debug(
+      'system',
+      `[WorkerPool] Enqueued ${this.workerType} job ${job.jobId} (queue: ${this.queue.length}, available: ${this.availableWorkers.size})`,
+    );
 
     this.processNextJob();
   }
@@ -179,32 +198,29 @@ class WorkerPool {
     this.availableWorkers.delete(worker);
     this.busyWorkers.set(worker, job.jobId);
 
-    if (verbose) {
-      console.log(
-        `[WorkerPool] Assigning ${this.workerType} job ${job.jobId} to worker ${worker.threadId}`,
-      );
-    }
+    logger.debug(
+      'system',
+      `[WorkerPool] Assigning ${this.workerType} job ${job.jobId} to worker ${worker.threadId}`,
+    );
 
     // Set up message handling for this specific job
     const messageHandler = (message: any) => {
       try {
         switch (message.type) {
           case 'status':
-            if (verbose) {
-              console.log(
-                `[WorkerPool] Worker ${worker.threadId} for job ${message.jobId || job.jobId} status: ${message.status}`,
-              );
-            }
+            logger.debug(
+              'system',
+              `[WorkerPool] Worker ${worker.threadId} for job ${message.jobId || job.jobId} status: ${message.status}`,
+            );
             break;
           case 'error':
-            logError(
+            logger.workerError(
+              'worker_reported_error',
               new WorkerError(
                 this.workerType,
                 message.jobId || job.jobId,
                 new Error(message.error),
               ),
-              'worker_reported_error',
-              undefined,
               {
                 workerType: this.workerType,
                 threadId: worker.threadId,
@@ -214,9 +230,30 @@ class WorkerPool {
             );
             break;
           case 'log':
-            if (verbose) {
-              console.log(
-                `[WorkerPool] Worker ${worker.threadId} for job ${message.jobId || job.jobId} log: ${message.message}`,
+            // Forward worker logs to main logger
+            try {
+              const logType = message.logType || 'worker';
+              switch (message.level) {
+                case 'debug':
+                  logger.debug(logType, message.message, message.data);
+                  break;
+                case 'info':
+                  logger.info(logType, message.message, message.data);
+                  break;
+                case 'warn':
+                  logger.warn(logType, message.message, message.data);
+                  break;
+                case 'error':
+                  const error = message.error ? new Error(message.error.message) : undefined;
+                  if (error && message.error.stack) error.stack = message.error.stack;
+                  logger.error(logType, message.message, error, message.data);
+                  break;
+              }
+            } catch (err) {
+              logger.error(
+                'system',
+                'Failed to forward worker log',
+                err instanceof Error ? err : new Error(String(err)),
               );
             }
             break;
@@ -231,10 +268,9 @@ class WorkerPool {
             if (message.job === 'reason') {
               // Handle reasoning asynchronously without blocking the worker
               handleReasoning(job, message).catch((error: any) => {
-                logError(
-                  error instanceof Error ? error : new Error(String(error)),
+                logger.workerError(
                   'reasoning_handler_async_failure',
-                  undefined,
+                  error instanceof Error ? error : new Error(String(error)),
                   { jobId: job.jobId },
                 );
               });
@@ -250,7 +286,7 @@ class WorkerPool {
           error instanceof Error ? error : new Error(String(error)),
         );
 
-        logError(messageHandlingError, 'worker_message_handling_error', undefined, {
+        logger.workerError('worker_message_handling_error', messageHandlingError, {
           workerType: this.workerType,
           threadId: worker.threadId,
           jobId: job.jobId,
@@ -272,7 +308,7 @@ class WorkerPool {
         error instanceof Error ? error : new Error(String(error)),
       );
 
-      logError(messageError, 'worker_message_send_failure', undefined, {
+      logger.workerError('worker_message_send_failure', messageError, {
         workerType: this.workerType,
         threadId: worker.threadId,
         jobId: job.jobId,
@@ -291,26 +327,40 @@ class WorkerPool {
    */
   private performHealthCheck(worker: Worker) {
     const healthCheckId = `health_check_${Date.now()}_${worker.threadId}`;
-    const timeout = 20000; // 20 seconds timeout for model loading
+    const timeout = modelLoadingTimeout * 1_000; // convert to milliseconds
 
-    if (verbose) {
-      console.log(
-        `[WorkerPool] Performing health check on ${this.workerType} worker ${worker.threadId}`,
-      );
-    }
+    logger.debug(
+      'system',
+      `[WorkerPool] Performing health check on ${this.workerType} worker ${worker.threadId}`,
+    );
 
     // Set up timeout for health check
     const healthCheckTimeout = setTimeout(() => {
-      logError(
-        new WorkerError(this.workerType, healthCheckId, new Error('Health check timeout')),
-        'worker_health_check_timeout',
-        undefined,
-        {
-          workerType: this.workerType,
-          threadId: worker.threadId,
-          timeout,
-        },
+      // Track failure and determine logging severity
+      const { shouldLogAsError, retryCount } = this.trackWorkerFailure();
+
+      const error = new WorkerError(
+        this.workerType,
+        healthCheckId,
+        new Error('Health check timeout'),
       );
+      const errorData = {
+        workerType: this.workerType,
+        threadId: worker.threadId,
+        timeout,
+        retryCount,
+        maxRetries: maxWorkerRetries,
+      };
+
+      if (shouldLogAsError) {
+        logger.workerError('worker_health_check_timeout', error, errorData);
+      } else {
+        logger.warn(
+          'worker',
+          `Worker health check timeout (attempt ${retryCount}/${maxWorkerRetries})`,
+          errorData,
+        );
+      }
 
       // Clean up pending health check
       this.pendingHealthChecks.delete(worker);
@@ -321,15 +371,16 @@ class WorkerPool {
       // Terminate unresponsive worker explicitly
       try {
         worker.terminate();
-        if (verbose) {
-          console.log(
-            `[WorkerPool] Terminated unresponsive ${this.workerType} worker ${worker.threadId}`,
-          );
-        }
+        logger.debug(
+          'system',
+          `[WorkerPool] Terminated unresponsive ${this.workerType} worker ${worker.threadId}`,
+        );
       } catch (error) {
-        if (verbose) {
-          console.log(`[WorkerPool] Failed to terminate worker ${worker.threadId}:`, error);
-        }
+        logger.debug(
+          'system',
+          `[WorkerPool] Failed to terminate worker ${worker.threadId}:`,
+          error,
+        );
       }
 
       // Remove unresponsive worker and create a replacement
@@ -355,11 +406,13 @@ class WorkerPool {
         // NOW mark worker as available since it passed health check
         this.availableWorkers.add(worker);
 
-        if (verbose) {
-          console.log(
-            `[WorkerPool] ${this.workerType} worker ${worker.threadId} passed health check and is now available`,
-          );
-        }
+        // Reset failure tracking on successful recovery
+        this.resetFailureTracking();
+
+        logger.debug(
+          'system',
+          `[WorkerPool] ${this.workerType} worker ${worker.threadId} passed health check and is now available`,
+        );
 
         // Process any queued jobs now that we have an available worker
         this.processNextJob();
@@ -385,14 +438,13 @@ class WorkerPool {
 
       worker.off('message', healthCheckHandler);
 
-      logError(
+      logger.workerError(
+        'worker_health_check_send_failure',
         new WorkerError(
           this.workerType,
           healthCheckId,
           error instanceof Error ? error : new Error(String(error)),
         ),
-        'worker_health_check_send_failure',
-        undefined,
         {
           workerType: this.workerType,
           threadId: worker.threadId,
@@ -430,12 +482,48 @@ class WorkerPool {
     } catch (error) {
       // Ignore termination errors
     }
-  } /**
+  }
+
+  /**
+   * Track a worker failure and determine appropriate logging level
+   */
+  private trackWorkerFailure(): { shouldLogAsError: boolean; retryCount: number } {
+    const now = Date.now();
+
+    // Reset consecutive failures if enough time has passed since last failure
+    if (now - this.lastFailureTime > workerRetryWindow) {
+      this.consecutiveFailures = 0;
+    }
+
+    this.failureCount++;
+    this.consecutiveFailures++;
+    this.lastFailureTime = now;
+
+    // Log as ERROR only if we've exceeded the max retries
+    const shouldLogAsError = this.consecutiveFailures > maxWorkerRetries;
+
+    return {
+      shouldLogAsError,
+      retryCount: this.consecutiveFailures,
+    };
+  }
+
+  /**
+   * Reset failure tracking when workers recover successfully
+   */
+  private resetFailureTracking() {
+    this.consecutiveFailures = 0;
+  }
+
+  /**
    * Mark a worker as available for new jobs
    */
   private markWorkerAvailable(worker: Worker) {
     this.busyWorkers.delete(worker);
     this.availableWorkers.add(worker);
+
+    // Reset failure tracking on successful job completion
+    this.resetFailureTracking();
   }
 
   /**
@@ -456,9 +544,7 @@ class WorkerPool {
    * Shutdown all workers in this pool
    */
   public async shutdown() {
-    if (verbose) {
-      console.log(`[WorkerPool] Shutting down ${this.workerType} worker pool`);
-    }
+    logger.debug('system', `[WorkerPool] Shutting down ${this.workerType} worker pool`);
 
     const shutdownPromises = this.workers.map((worker) => {
       return new Promise<void>((resolve) => {
@@ -490,11 +576,10 @@ class WorkerManager {
     this.embeddingPool = new WorkerPool('embedder', embeddingWorkers);
     this.matchingPool = new WorkerPool('matcher', matchingWorkers);
 
-    if (verbose) {
-      console.log(
-        `[WorkerManager] Initialised with ${embeddingWorkers} embedding workers and ${matchingWorkers} matching workers`,
-      );
-    }
+    logger.debug(
+      'system',
+      `[WorkerManager] Initialised with ${embeddingWorkers} embedding workers and ${matchingWorkers} matching workers`,
+    );
 
     // Create ready promise
     this.readyPromise = this.waitForWorkersReady();
@@ -504,9 +589,7 @@ class WorkerManager {
    * Wait for all worker pools to have at least one available worker
    */
   private async waitForWorkersReady(): Promise<void> {
-    if (verbose) {
-      console.log('[WorkerManager] Waiting for worker pools to become ready...');
-    }
+    logger.debug('system', '[WorkerManager] Waiting for worker pools to become ready...');
 
     const maxWaitTime = 30_000; // 30 seconds max wait
     const checkInterval = 500; // Check every 500ms
@@ -522,20 +605,20 @@ class WorkerManager {
 
         if (embeddingReady && matchingReady) {
           this.isReady = true;
-          if (verbose) {
-            console.log(`[WorkerManager] All worker pools ready:
+          logger.debug(
+            'system',
+            `[WorkerManager] All worker pools ready:
       - Embedding workers: ${embeddingStats.totalWorkers} total, ${embeddingStats.availableWorkers} available
-      - Matching workers: ${matchingStats.totalWorkers} total, ${matchingStats.availableWorkers} available`);
-          }
+      - Matching workers: ${matchingStats.totalWorkers} total, ${matchingStats.availableWorkers} available`,
+          );
           resolve();
         } else if (Date.now() - startTime > maxWaitTime) {
           reject(new Error('Timeout waiting for worker pools to become ready'));
         } else {
-          if (verbose) {
-            console.log(
-              `[WorkerManager] Waiting for workers... Embedding: ${embeddingReady ? '✓' : '✗'}, Matching: ${matchingReady ? '✓' : '✗'}`,
-            );
-          }
+          logger.debug(
+            'system',
+            `[WorkerManager] Waiting for workers... Embedding: ${embeddingReady ? '✓' : '✗'}, Matching: ${matchingReady ? '✓' : '✗'}`,
+          );
           setTimeout(checkReady, checkInterval);
         }
       };
@@ -564,19 +647,20 @@ class WorkerManager {
    * @deprecated Use ready() promise instead
    */
   private performInitialHealthCheck() {
-    if (verbose) {
-      console.log('[WorkerManager] Performing initial health check on all worker pools');
-    }
+    logger.debug('system', '[WorkerManager] Performing initial health check on all worker pools');
 
     const embeddingStats = this.embeddingPool.getStats();
     const matchingStats = this.matchingPool.getStats();
 
-    console.log(`[WorkerManager] Health check complete:
+    logger.debug(
+      'system',
+      `[WorkerManager] Health check complete:
       - Embedding workers: ${embeddingStats.totalWorkers} total, ${embeddingStats.availableWorkers} available, ${embeddingStats.pendingHealthChecks} pending health checks
-      - Matching workers: ${matchingStats.totalWorkers} total, ${matchingStats.availableWorkers} available, ${matchingStats.pendingHealthChecks} pending health checks`);
+      - Matching workers: ${matchingStats.totalWorkers} total, ${matchingStats.availableWorkers} available, ${matchingStats.pendingHealthChecks} pending health checks`,
+    );
 
     if (embeddingStats.totalWorkers === 0 || matchingStats.totalWorkers === 0) {
-      console.error('[WorkerManager] WARNING: Some worker pools have no active workers!');
+      logger.error('system', '[WorkerManager] WARNING: Some worker pools have no active workers!');
     }
   }
 
@@ -622,9 +706,7 @@ class WorkerManager {
    * Shutdown all worker pools
    */
   public async shutdown() {
-    if (verbose) {
-      console.log('[WorkerManager] Shutting down all worker pools');
-    }
+    logger.debug('system', '[WorkerManager] Shutting down all worker pools');
 
     await Promise.all([this.embeddingPool.shutdown(), this.matchingPool.shutdown()]);
   }
@@ -638,9 +720,7 @@ async function handleReasoning(job: any, message: any) {
   const jobId = job.jobId || 'unknown';
 
   try {
-    if (verbose) {
-      console.log(`[WorkerManager] Processing reasoning for job ${jobId}`);
-    }
+    logger.debug('system', `[WorkerManager] Processing reasoning for job ${jobId}`);
 
     const finalMatches = [];
 
@@ -670,7 +750,7 @@ async function handleReasoning(job: any, message: any) {
           error instanceof Error ? error : new Error(String(error)),
         );
 
-        logError(reasoningError, 'reasoning_task_failure', undefined, {
+        logger.workerError('reasoning_task_failure', reasoningError, {
           jobId,
           task: task.substring(0, 100) + (task.length > 100 ? '...' : ''),
           matchCount: (matches as any[]).length,
@@ -715,11 +795,10 @@ async function handleReasoning(job: any, message: any) {
     try {
       db.updateJobStatus(job.jobId, 'completed');
 
-      if (verbose) {
-        console.log(
-          `[WorkerManager] Job ${jobId} completed successfully with ${finalMatches.length} matches`,
-        );
-      }
+      logger.debug(
+        'system',
+        `[WorkerManager] Job ${jobId} completed successfully with ${finalMatches.length} matches`,
+      );
     } catch (error) {
       throw new DatabaseError(
         'updateJobStatus',
@@ -727,10 +806,9 @@ async function handleReasoning(job: any, message: any) {
       );
     }
   } catch (error) {
-    logError(
-      error instanceof Error ? error : new Error(String(error)),
+    logger.workerError(
       'reasoning_handler_failure',
-      undefined,
+      error instanceof Error ? error : new Error(String(error)),
       { jobId },
     );
 
@@ -739,13 +817,12 @@ async function handleReasoning(job: any, message: any) {
       const db = getDB(job.dbName);
       db.updateJobStatus(job.jobId, 'failed');
     } catch (dbError) {
-      logError(
+      logger.workerError(
+        'job_failure_update_error',
         new DatabaseError(
           'updateJobStatus',
           dbError instanceof Error ? dbError : new Error(String(dbError)),
         ),
-        'job_failure_update_error',
-        undefined,
         { jobId },
       );
     }

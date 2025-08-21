@@ -1,11 +1,17 @@
-import { parentPort, threadId } from 'worker_threads';
+import { parentPort, threadId, workerData } from 'worker_threads';
 import Embedding from '../tasks/embedding';
 import { splitSemantically } from '../tasks/semantic-split';
 import { withJobUpdates } from '../utils/worker';
-import { config } from '../config';
 import { EmbeddingJob } from '../utils/types';
+import { workerLogger } from '../utils/worker';
+import { getLogger, createLoggerConfig, Logger } from '../utils/logger';
 
-const { verbose } = config;
+// Initialise logger for this worker thread
+try {
+  Logger.getInstance(createLoggerConfig());
+} catch (error) {
+  // Logger already initialised
+}
 
 /**
  * New embedder worker that stays alive and processes jobs sequentially
@@ -18,9 +24,11 @@ if (!parentPort) {
 parentPort.on('message', async (message: any) => {
   // Handle health checks with highest priority
   if (message?.type === 'health_check') {
-    if (verbose) {
-      console.log(`[Embedder Worker] Thread ${threadId} received health check ${message.checkId}`);
-    }
+    workerLogger('system', 'debug', `Health check received: ${message.checkId}`, {
+      threadId,
+      checkId: message.checkId,
+    });
+
     parentPort!.postMessage({
       type: 'health_check_response',
       checkId: message.checkId,
@@ -28,9 +36,10 @@ parentPort.on('message', async (message: any) => {
       workerType: 'embedder',
       threadId: threadId,
     });
-    if (verbose) {
-      console.log(`[Embedder Worker] Thread ${threadId} sent health check response`);
-    }
+
+    workerLogger('system', 'debug', `Health check response sent: ${message.checkId}`, {
+      threadId,
+    });
     return;
   }
 
@@ -40,11 +49,10 @@ parentPort.on('message', async (message: any) => {
   // Set global job context for logging
   (global as any).CURRENT_JOB = job.jobId;
 
-  if (verbose) {
-    console.log(
-      `[Embedder Worker] Received and starting job ${job.jobId} with ${job.tasks.length} tasks`,
-    );
-  }
+  workerLogger(job.jobId, 'info', `Starting embedding job with ${job.tasks.length} tasks`, {
+    threadId,
+    taskCount: job.tasks.length,
+  });
 
   try {
     await withJobUpdates<EmbeddingJob>(job, async (db, { tasks, jobId }) => {
@@ -60,9 +68,11 @@ parentPort.on('message', async (message: any) => {
           // Generate embedding for the text
           const [vector] = await Embedding.embed(text);
 
-          if (verbose) {
-            console.log(`[Embedder Worker] Generated embedding for ${type} text (job ${jobId})`);
-          }
+          workerLogger(jobId, 'debug', `Generated embedding for ${type} text`, {
+            threadId,
+            competenceId,
+            textLength: text.length,
+          });
 
           // Store embedding in database
           db.upsertEmbedding({
@@ -75,6 +85,18 @@ parentPort.on('message', async (message: any) => {
           });
         } catch (error) {
           // Log the error but continue with other tasks
+          workerLogger(
+            jobId,
+            'error',
+            `Failed to process embedding task`,
+            {
+              threadId,
+              competenceId,
+              type,
+            },
+            error instanceof Error ? error : new Error(String(error)),
+          );
+
           parentPort!.postMessage({
             type: 'error',
             jobId,
@@ -90,11 +112,22 @@ parentPort.on('message', async (message: any) => {
       jobId: job.jobId,
     });
 
-    if (verbose) {
-      console.log(`[Embedder Worker] Completed job ${job.jobId}`);
-    }
+    workerLogger(job.jobId, 'info', `Embedding job completed`, {
+      threadId,
+      taskCount: job.tasks.length,
+    });
   } catch (error) {
     // Handle job-level errors
+    workerLogger(
+      job.jobId,
+      'error',
+      `Embedding job failed`,
+      {
+        threadId,
+      },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+
     parentPort!.postMessage({
       type: 'error',
       jobId: job.jobId,
@@ -109,6 +142,6 @@ parentPort.on('message', async (message: any) => {
   }
 });
 
-if (verbose) {
-  console.log(`[Embedder Worker] Worker thread ${threadId} ready to process embedding jobs`);
-}
+workerLogger('system', 'info', `Embedder worker thread ready`, {
+  threadId,
+});

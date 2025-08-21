@@ -4,20 +4,25 @@ import { MATCH_REASON as intructPrompt } from '../utils/prompts';
 import type { Message } from 'ollama';
 import { Match } from '../utils/types';
 import { ReasoningError, OllamaConnectionError } from '../utils/errors';
-import { logError } from '../middleware/logging';
+import { getLogger } from '../utils/logger';
 
-const { reasonModel, verbose } = config;
+const { reasonModel } = config;
+
+function getLoggerInstance() {
+  return getLogger();
+}
 
 export async function addReason<T extends Match>(matches: T[], targetText: string): Promise<T[]> {
   if (matches.length === 0) {
     return matches; // No matches to reason about
   }
 
-  if (verbose) {
-    console.log(
-      `[Reasoning] Adding reasons for ${matches.length} matches using model: ${reasonModel}`,
-    );
-  }
+  const logger = getLoggerInstance();
+
+  logger.debug('model', `Adding reasoning to ${matches.length} matches`, {
+    targetTextLength: targetText.length,
+    reasonModel,
+  });
 
   const reasonMatches: T[] = await Promise.all(
     matches.map(async (match, index) => {
@@ -38,9 +43,14 @@ export async function addReason<T extends Match>(matches: T[], targetText: strin
         // Extract the reason from the response
         const reason = response.message.content.trim();
 
-        if (verbose) {
-          console.log(`[Reasoning] Generated reason for match ${index + 1}/${matches.length}`);
-        }
+        getLoggerInstance().debug(
+          'model',
+          `Generated reasoning for match ${index + 1}/${matches.length}`,
+          {
+            matchText: match.text.substring(0, 50) + (match.text.length > 50 ? '...' : ''),
+            reasonLength: reason.length,
+          },
+        );
 
         return {
           ...match,
@@ -52,14 +62,19 @@ export async function addReason<T extends Match>(matches: T[], targetText: strin
           error instanceof Error ? error : new Error(String(error)),
         );
 
-        logError(reasoningError, 'reasoning_single_match_failure', undefined, {
-          matchIndex: index,
-          totalMatches: matches.length,
-          targetTextLength: targetText.length,
-          matchText: match.text.substring(0, 100) + (match.text.length > 100 ? '...' : ''),
-          similarity: match.distance,
-          reasonModel,
-        });
+        getLoggerInstance().error(
+          'model',
+          'Failed to generate reasoning for match',
+          reasoningError,
+          {
+            matchIndex: index,
+            totalMatches: matches.length,
+            targetTextLength: targetText.length,
+            matchText: match.text.substring(0, 100) + (match.text.length > 100 ? '...' : ''),
+            similarity: match.distance,
+            reasonModel,
+          },
+        );
 
         // If there's an error, just keep the original match without a reason
         return match;
@@ -67,14 +82,19 @@ export async function addReason<T extends Match>(matches: T[], targetText: strin
     }),
   );
 
-  if (verbose) {
-    const successfulReasons = reasonMatches.filter(
-      (match) => 'reason' in match && match.reason,
-    ).length;
-    console.log(
-      `[Reasoning] Completed: ${successfulReasons}/${matches.length} matches received reasons`,
-    );
-  }
+  const successfulReasons = reasonMatches.filter(
+    (match) => 'reason' in match && match.reason,
+  ).length;
+
+  getLoggerInstance().debug(
+    'model',
+    `Reasoning completed: ${successfulReasons}/${matches.length} matches received reasons`,
+    {
+      successfulReasons,
+      totalMatches: matches.length,
+      reasonModel,
+    },
+  );
 
   return reasonMatches;
 }

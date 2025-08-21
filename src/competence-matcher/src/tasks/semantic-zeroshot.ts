@@ -6,6 +6,11 @@ import {
 import { config } from '../config';
 import { TransformerPipeline } from '../utils/model';
 import { TransformerPipelineOptions } from '../utils/types';
+import { getLogger } from '../utils/logger';
+
+function getLoggerInstance() {
+  return getLogger();
+}
 
 export default class ZeroShot extends TransformerPipeline<ZeroShotClassificationPipeline> {
   protected static override getPipelineOptions(): TransformerPipelineOptions {
@@ -14,7 +19,7 @@ export default class ZeroShot extends TransformerPipeline<ZeroShotClassification
       model: config.nliModel,
       options: {
         // progress_callback: (progress) => {
-        //   console.log(`Embedding progress: ${progress}`);
+        //   logger.debug("system", `Embedding progress: ${progress}`);
         // },
         model_file_name: 'model.onnx',
         use_external_data_format: true,

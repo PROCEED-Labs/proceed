@@ -1,8 +1,18 @@
 import { Ollama } from 'ollama';
 import { config } from '../config';
 import { OllamaConnectionError } from './errors';
+import { getLogger } from './logger';
 
-const { ollamaPath, splittingModel, reasonModel, ollamaBearerToken, verbose } = config;
+const { ollamaPath, splittingModel, reasonModel, ollamaBearerToken } = config;
+
+// Lazy logger initialization to avoid module loading order issues
+let logger: ReturnType<typeof getLogger> | null = null;
+const getLoggerInstance = () => {
+  if (!logger) {
+    logger = getLogger();
+  }
+  return logger;
+};
 
 export const ollama = new Ollama({
   host: ollamaPath,
@@ -21,18 +31,17 @@ export const ollama = new Ollama({
 export async function ensureAllOllamaModelsAreAvailable() {
   const models = [splittingModel, reasonModel];
 
-  if (verbose) {
-    console.log(`[Ollama] Checking availability of models: ${models.join(', ')}`);
-  }
+  getLoggerInstance().debug(
+    'model',
+    `Checking availability of Ollama models: ${models.join(', ')}`,
+  );
 
   let availableModels: string[];
   try {
     const modelList = await ollama.list();
     availableModels = modelList.models.map((model) => model.model);
 
-    if (verbose) {
-      console.log(`[Ollama] Available models: ${availableModels.join(', ')}`);
-    }
+    getLoggerInstance().debug('model', `Available Ollama models: ${availableModels.join(', ')}`);
   } catch (error) {
     throw new OllamaConnectionError(
       ollamaPath,
@@ -43,9 +52,7 @@ export async function ensureAllOllamaModelsAreAvailable() {
 
   for (const model of models) {
     if (!availableModels.includes(model)) {
-      if (verbose) {
-        console.log(`[Ollama] Model '${model}' not found, attempting to pull...`);
-      }
+      getLoggerInstance().info('model', `Ollama model '${model}' not found, attempting to pull...`);
 
       try {
         const modelpull = await ollama.pull({
@@ -63,9 +70,7 @@ export async function ensureAllOllamaModelsAreAvailable() {
           );
         }
 
-        if (verbose) {
-          console.log(`[Ollama] Successfully pulled model '${model}'`);
-        }
+        getLoggerInstance().info('model', `Successfully pulled Ollama model '${model}'`);
       } catch (error) {
         // If the pull takes too long and the ollama is behind a proxy, it can timeout (504 as response code)
         // In this case, we just recheck the model availability
@@ -80,13 +85,12 @@ export async function ensureAllOllamaModelsAreAvailable() {
         );
       }
     } else {
-      if (verbose) {
-        console.log(`[Ollama] Model '${model}' is available (already downloaded)`);
-      }
+      getLoggerInstance().debug(
+        'model',
+        `Ollama model '${model}' is available (already downloaded)`,
+      );
     }
   }
 
-  if (verbose) {
-    console.log('[Ollama] All required Ollama-Models models are available');
-  }
+  getLoggerInstance().modelInfo('All required Ollama models are available');
 }

@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { CompetenceMatcherError } from '../utils/errors';
-import { logError } from './logging';
+import { getLogger } from '../utils/logger';
+
+const logger = getLogger();
 
 /**
- * Central error handler middleware
- * Catches all errors and provides consistent error responses
+ * Enhanced error handler middleware using the new logging system
  */
 export function errorHandler(
   error: Error | CompetenceMatcherError,
@@ -12,34 +13,36 @@ export function errorHandler(
   res: Response,
   next: NextFunction,
 ): void {
-  const requestId = (req as any).requestId || 'unknown';
+  const requestId = req.requestId || 'unknown';
 
   if (error instanceof CompetenceMatcherError) {
     // Handle our custom errors
-    logError(error, error.context, requestId, {
+    logger.error('request', `${error.context}: ${error.message}`, error, {
       statusCode: error.statusCode,
       details: error.details,
       path: req.path,
       method: req.method,
-    });
+      requestId,
+    }, requestId);
 
     res.status(error.statusCode).json({
       error: {
         message: error.message,
         context: error.context,
-        requestId: error.requestId || requestId,
+        requestId: requestId,
         ...(error.details && { details: error.details }),
       },
     });
   } else {
     // Handle unexpected errors
-    logError(error, 'unhandled_error', requestId, {
+    logger.error('system', 'Unhandled error occurred', error, {
       path: req.path,
       method: req.method,
       body: req.body,
       query: req.query,
       params: req.params,
-    });
+      requestId,
+    }, requestId);
 
     res.status(500).json({
       error: {

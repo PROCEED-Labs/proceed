@@ -53,9 +53,9 @@ export abstract class TransformerPipeline<PI> {
 
       // mark it as loaded and log on first load
       if (!this.loaded && isMainThread) {
-        if (config.verbose) {
-          console.log(`[Model-Pipeline] ${model} (${task}) is ready`);
-        }
+        const { getLogger } = require('./logger');
+        const logger = getLogger();
+        logger.modelInfo(`Model pipeline ${model} (${task}) is ready`);
         this.loaded = true;
       }
     }

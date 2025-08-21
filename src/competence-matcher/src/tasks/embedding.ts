@@ -6,6 +6,11 @@ import {
 import { config } from '../config';
 import { TransformerPipeline } from '../utils/model';
 import { TransformerPipelineOptions } from '../utils/types';
+import { getLogger } from '../utils/logger';
+
+function getLoggerInstance() {
+  return getLogger();
+}
 
 export default class Embedding extends TransformerPipeline<FeatureExtractionPipeline> {
   protected static override getPipelineOptions(): TransformerPipelineOptions {
@@ -14,7 +19,7 @@ export default class Embedding extends TransformerPipeline<FeatureExtractionPipe
       model: config.embeddingModel,
       options: {
         // progress_callback: (progress) => {
-        //   console.log(`Embedding progress: ${progress}`);
+        //   logger.debug("system", `Embedding progress: ${progress}`);
         // },
       },
     };

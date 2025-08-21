@@ -25,8 +25,6 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
 
   let providers = getProviders();
 
-  providers = providers.filter((provider) => !isGuest || 'development-users' !== provider.id);
-
   providers = providers.toSorted((a, b) => {
     if (a.id === 'guest-signin') return 1;
     if (b.id === 'guest-signin') return -1;

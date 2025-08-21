@@ -6,9 +6,11 @@ import { Match, MatchingJob } from '../utils/types';
 import ZeroShot from '../tasks/semantic-zeroshot';
 import { Logger, createLoggerConfig } from '../utils/logger';
 
-// Initialise logger for this worker thread
+// Initialise logger for this worker thread & Initialise ZeroShot model
 try {
   Logger.getInstance(createLoggerConfig());
+  Embedding.getInstance();
+  ZeroShot.getInstance();
 } catch (error) {
   // Logger already initialised
 }
@@ -66,8 +68,7 @@ parentPort.on('message', async (message: any) => {
 
           try {
             // Generate embedding for the task description
-            // Note: This could potentially be optimised by having the embedder worker handle this
-            // and passing the embedding directly, but for now we keep the same approach
+            // Todo: Handle embedding via the dedicated embedding worker
             const [vector] = await Embedding.embed(description);
 
             // Search for matches in the competence database
@@ -98,8 +99,8 @@ parentPort.on('message', async (message: any) => {
                 );
 
                 if (scalingClassification) {
-                  // @ts-ignore - ZeroShot classification result structure
                   if (
+                    // @ts-ignore - ZeroShot classification result structure
                     scalingClassification.labels[0] === scalingLabels[2] &&
                     // @ts-ignore
                     scalingClassification.scores[0] > 0.65

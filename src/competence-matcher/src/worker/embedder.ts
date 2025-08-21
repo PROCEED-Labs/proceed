@@ -6,9 +6,10 @@ import { EmbeddingJob } from '../utils/types';
 import { workerLogger } from '../utils/worker';
 import { getLogger, createLoggerConfig, Logger } from '../utils/logger';
 
-// Initialise logger for this worker thread
+// Initialise logger for this worker thread & Initialise Embedding model
 try {
   Logger.getInstance(createLoggerConfig());
+  Embedding.getInstance();
 } catch (error) {
   // Logger already initialised
 }

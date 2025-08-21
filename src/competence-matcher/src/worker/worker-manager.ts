@@ -592,7 +592,7 @@ class WorkerManager {
   private async waitForWorkersReady(): Promise<void> {
     logger.debug('system', '[WorkerManager] Waiting for worker pools to become ready...');
 
-    const maxWaitTime = modelLoadingTime; // 30 seconds max wait
+    const maxWaitTime = modelLoadingTime;
     const checkInterval = 500; // Check every 500ms
     const startTime = Date.now();
 

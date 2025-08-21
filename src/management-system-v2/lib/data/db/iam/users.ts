@@ -16,6 +16,7 @@ import db from '@/lib/data/db';
 import { Prisma, PasswordAccount } from '@prisma/client';
 import { UserFacingError } from '@/lib/user-error';
 import { env } from '@/lib/ms-config/env-vars';
+import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from '@/lib/authjs-error-message';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -81,13 +82,19 @@ export async function addUser(
 
   if (!user.isGuest) {
     const checks = [];
-    if (user.username) checks.push(getUserByUsername(user.username));
-    if (user.email) checks.push(getUserByEmail(user.email));
+    checks.push(user.username ? getUserByUsername(user.username) : undefined);
+    checks.push(user.email ? getUserByEmail(user.email) : undefined);
 
-    const res = await Promise.all(checks);
+    const [usernameRes, emailRes] = await Promise.all(checks);
+    console.log('usernameRes', usernameRes);
+    console.log('emailRes', emailRes);
 
-    if (res.some((user) => !!user))
-      throw new Error('User with this email or username already exists');
+    if (usernameRes) {
+      throw new NextAuthUsernameTakenError();
+    }
+    if (emailRes) {
+      throw new NextAuthEmailTakenError();
+    }
   }
 
   if (!user.id) user.id = v4();

@@ -11,6 +11,7 @@ import * as noIamUser from '@/lib/no-iam-user';
 import {
   addUser,
   deleteUser,
+  getUserByEmail,
   getUserById,
   getUserByUsername,
   setUserPassword,
@@ -27,6 +28,7 @@ import { comparePassword, hashPassword } from './password-hashes';
 import db from './data/db';
 import { createUserRegistrationToken } from './email-verification-tokens/utils';
 import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
+import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -130,6 +132,7 @@ const nextAuthOptions: NextAuthConfig = {
   },
   pages: {
     signIn: '/signin',
+    error: '/signin',
   },
 };
 
@@ -300,7 +303,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
           type: 'password',
         },
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, req) => {
         const userAndPassword = await getUserAndPasswordByUsername(credentials.username as string);
 
         if (!userAndPassword) return null;
@@ -356,13 +359,33 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
       credentials,
       authorize: async (
         credentials: Partial<
-          Record<'firstName' | 'lastName' | 'username' | 'email' | 'password', string>
+          Record<
+            'firstName' | 'lastName' | 'username' | 'email' | 'password' | 'callbackUrl',
+            string
+          >
         >,
       ) => {
+        let callbackUrl: string | undefined = undefined;
+        // only allow urls that start with / = redirect to out site
+        if (credentials.callbackUrl && credentials.callbackUrl.startsWith('/')) {
+          callbackUrl = credentials.callbackUrl;
+        }
+
         let user: User | null = null;
 
         // Whenever the email is active, we create the user after he verifies his email
         if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+          const [existingUserUsername, existingUserMail] = await Promise.all([
+            getUserByUsername(credentials.username as string),
+            getUserByEmail(credentials.email as string),
+          ]);
+          if (existingUserUsername) {
+            throw new NextAuthUsernameTakenError();
+          }
+          if (existingUserMail) {
+            throw new NextAuthEmailTakenError();
+          }
+
           const tokenParams: any = {
             identifier: credentials.email,
             username: credentials.username,
@@ -373,13 +396,13 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
           if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE)
             tokenParams['passwordHash'] = await hashPassword(credentials.password as string);
 
-          const userRegistrationToken = await createUserRegistrationToken(tokenParams);
+          const userRegistrationToken = await createUserRegistrationToken(tokenParams, callbackUrl);
 
           await saveEmailVerificationToken(userRegistrationToken.verificationToken);
 
           const signinMail = renderSigninLinkEmail({
             signInLink: userRegistrationToken.redirectUrl,
-            expires: userRegistrationToken.verificationToken.expiresAt,
+            expires: userRegistrationToken.verificationToken.expires,
           });
 
           await sendEmail({

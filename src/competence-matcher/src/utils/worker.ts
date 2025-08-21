@@ -156,7 +156,7 @@ export class WorkerContext {
   }
 
   /**
-   * Enhanced worker creation with context support
+   * Worker creation with context support
    */
   static createWorkerWithContext(
     filename: string,
@@ -188,7 +188,7 @@ export class WorkerContext {
 }
 
 /**
- * Enhanced worker message handling with logging
+ * Worker message handling with logging
  */
 export function handleWorkerMessage(
   worker: Worker,

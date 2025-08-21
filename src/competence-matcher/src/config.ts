@@ -31,4 +31,7 @@ export const config = {
   modelLoadingTimeout: parseInt(process.env.MODEL_LOADING_TIMEOUT || '20', 10), // Timeout for model loading in seconds
   maxWorkerRetries: parseInt(process.env.MAX_WORKER_RETRIES || '3', 10), // Maximum worker restart attempts before escalating to ERROR
   workerRetryWindow: parseInt(process.env.WORKER_RETRY_WINDOW || '300', 10) * 1_000, // Time window in seconds to reset retry count (converted to ms)
+  maxOllamaRetries: parseInt(process.env.MAX_OLLAMA_RETRIES || '5', 10), // Maximum model pull retry attempts
+  ollamaRetryDelay: parseInt(process.env.OLLAMA_RETRY_DELAY || '30', 10) * 1_000, // Base delay between retries in seconds (converted to ms)
+  ollamaRetryBackoff: parseFloat(process.env.OLLAMA_RETRY_BACKOFF || '1.5'), // Exponential backoff multiplier
 };

@@ -5,7 +5,7 @@ import { getLogger } from '../utils/logger';
 const logger = getLogger();
 
 /**
- * Enhanced error handler middleware using the new logging system
+ * Error handler middleware using the logging system
  */
 export function errorHandler(
   error: Error | CompetenceMatcherError,
@@ -17,13 +17,19 @@ export function errorHandler(
 
   if (error instanceof CompetenceMatcherError) {
     // Handle our custom errors
-    logger.error('request', `${error.context}: ${error.message}`, error, {
-      statusCode: error.statusCode,
-      details: error.details,
-      path: req.path,
-      method: req.method,
+    logger.error(
+      'request',
+      `${error.context}: ${error.message}`,
+      error,
+      {
+        statusCode: error.statusCode,
+        details: error.details,
+        path: req.path,
+        method: req.method,
+        requestId,
+      },
       requestId,
-    }, requestId);
+    );
 
     res.status(error.statusCode).json({
       error: {
@@ -35,14 +41,20 @@ export function errorHandler(
     });
   } else {
     // Handle unexpected errors
-    logger.error('system', 'Unhandled error occurred', error, {
-      path: req.path,
-      method: req.method,
-      body: req.body,
-      query: req.query,
-      params: req.params,
+    logger.error(
+      'system',
+      'Unhandled error occurred',
+      error,
+      {
+        path: req.path,
+        method: req.method,
+        body: req.body,
+        query: req.query,
+        params: req.params,
+        requestId,
+      },
       requestId,
-    }, requestId);
+    );
 
     res.status(500).json({
       error: {

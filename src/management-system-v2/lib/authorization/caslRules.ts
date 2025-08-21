@@ -179,7 +179,9 @@ export function computeRulesForUser({
   purchasedResources?: ResourceType[];
 }) {
   if (!space.isOrganization) {
-    if (userId !== space.id) throw new Error("Personal environment doesn't belong to user");
+    if (userId !== space.id) {
+      throw new Error(`Personal environment ${space.id} doesn't belong to user ${userId}`);
+    }
 
     const personalEnvironmentRules = [
       {

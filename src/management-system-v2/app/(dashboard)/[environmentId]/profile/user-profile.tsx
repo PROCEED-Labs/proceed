@@ -29,6 +29,7 @@ import { requestEmailChange as serverRequestEmailChange } from '@/lib/email-veri
 import Link from 'next/link';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import ChangeUserPasswordModal from './change-password-modal';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
   userData,
@@ -51,16 +52,18 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [userHasPassword, setUserHasPassword] = useState(_userHasPassword);
 
+  const isAdmin = !userData.isGuest && userData.username === 'admin';
+
   async function deleteUser() {
     try {
       const response = await deleteUserServerAction();
-      if (response && 'error' in response) throw response;
+      if (isUserErrorResponse(response)) throw response;
 
       messageApi.success({ content: 'Your account was deleted' });
       signOut();
     } catch (e: unknown) {
       //@ts-ignore
-      if (e?.error?.message as ReactNode) setErrorMessage(e.error.message);
+      if (isUserErrorResponse(e)) setErrorMessage(e.error.message);
       else messageApi.error({ content: 'An error ocurred' });
     }
   }
@@ -124,6 +127,7 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
               label: 'Username',
               submitField: 'username',
               userDataField: 'username',
+              disabled: isAdmin,
             },
           ],
         }}
@@ -216,14 +220,14 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
                   key: 'username',
                   title: 'Username',
                   value: !userData.isGuest ? userData.username : 'Guest',
-                  action: () => setChangeNameModalOpen(true),
+                  action: () => !isAdmin && setChangeNameModalOpen(true),
                 },
                 {
                   key: 'email',
                   title: 'Email',
                   value: !userData.isGuest ? userData.email : 'Guest',
-                  action: () => setChangeEmailModalOpen(true),
-                  disabled: !env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE,
+                  action: () =>
+                    env.PROCEED_PUBLIC_MAILSERVER_ACTIVE && setChangeEmailModalOpen(true),
                 },
               ]}
               columns={[
@@ -253,14 +257,15 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
                     >;
 
                     if (
-                      props['data-row-key'] === 'email' &&
-                      !env.PROCEED_PUBLIC_MAILSERVER_ACTIVE
+                      (props['data-row-key'] === 'email' &&
+                        !env.PROCEED_PUBLIC_MAILSERVER_ACTIVE) ||
+                      (props['data-row-key'] === 'username' && isAdmin)
                     ) {
                       buttonProps = {
                         style: {
                           color: colorTextDisabled,
                           backgroundColor: colorBgContainerDisabled,
-                          pointerEvents: 'none',
+                          cursor: 'not-allowed',
                         },
                       };
                     } else {

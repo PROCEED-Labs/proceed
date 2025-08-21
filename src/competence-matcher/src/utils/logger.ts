@@ -82,23 +82,24 @@ export class Logger {
   private initialiseLogStreams(): void {
     if (!this.config.enableFile) return;
 
-    // Ensure log directory exists
-    if (!fs.existsSync(this.config.logDir)) {
-      fs.mkdirSync(this.config.logDir, { recursive: true });
+    const today = new Date().toISOString().split('T')[0];
+    const dayLogDir = path.join(this.config.logDir, today);
+
+    // Ensure date-specific log directory exists
+    if (!fs.existsSync(dayLogDir)) {
+      fs.mkdirSync(dayLogDir, { recursive: true });
     }
 
-    const today = new Date().toISOString().split('T')[0];
-
-    // Main log file (all logs)
-    const mainLogPath = path.join(this.config.logDir, `competence-matcher-${today}.json`);
+    // Main log file (all logs) - structured JSON
+    const mainLogPath = path.join(dayLogDir, 'competence-matcher.json');
     this.logStreams.set('main', fs.createWriteStream(mainLogPath, { flags: 'a' }));
 
-    // Error-only log file
-    const errorLogPath = path.join(this.config.logDir, `errors-${today}.log`);
+    // Error-only log file - human readable
+    const errorLogPath = path.join(dayLogDir, 'errors.log');
     this.logStreams.set('error', fs.createWriteStream(errorLogPath, { flags: 'a' }));
 
-    // Request-only log file
-    const requestLogPath = path.join(this.config.logDir, `requests-${today}.log`);
+    // Request-only log file - human readable
+    const requestLogPath = path.join(dayLogDir, 'requests.log');
     this.logStreams.set('request', fs.createWriteStream(requestLogPath, { flags: 'a' }));
   }
 
@@ -119,7 +120,7 @@ export class Logger {
     const typeColor = typeColors[entry.type];
     const timestamp = `${colors.gray}[${entry.timestamp}]${colors.reset}`;
     const level = `${levelColor}${entry.levelName.padEnd(5)}${colors.reset}`;
-    const type = `${typeColor}[${entry.type}${entry.requestId ? `:${String(entry.requestId).slice(0, 8)}` : ''}]${colors.reset}`;
+    const type = `${typeColor}[${entry.type}${entry.requestId ? `:${String(entry.requestId).slice(-12)}` : ''}]${colors.reset}`;
     const message = entry.message;
 
     let output = `${timestamp} ${level} ${type} ${message}`;
@@ -145,7 +146,7 @@ export class Logger {
   private formatPlainMessage(entry: LogEntry): string {
     const timestamp = `[${entry.timestamp}]`;
     const level = entry.levelName.padEnd(5);
-    const type = `[${entry.type}${entry.requestId ? `:${String(entry.requestId).slice(0, 8)}` : ''}]`;
+    const type = `[${entry.type}${entry.requestId ? `:${String(entry.requestId).slice(-12)}` : ''}]`;
 
     let output = `${timestamp} ${level} ${type} ${entry.message}`;
 

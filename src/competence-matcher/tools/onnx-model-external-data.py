@@ -2,6 +2,8 @@ import onnx
 import argparse
 import sys
 
+# optimum-cli export onnx --model <model_name> <output_directory>
+
 def main():
     parser = argparse.ArgumentParser(description="Convert ONNX model weights to external data format.")
     parser.add_argument('--input', '-i', required=True, help='Path to the input ONNX model')

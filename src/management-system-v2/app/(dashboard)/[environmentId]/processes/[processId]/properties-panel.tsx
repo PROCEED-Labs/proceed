@@ -358,7 +358,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     },
   ];
 
-  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     tabs.push({
       key: 'Property-Panel-Execution',
       label: 'Automation Properties',

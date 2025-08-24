@@ -324,7 +324,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
           <ToolbarGroup>
             {selectedElementId &&
               selectedElement &&
-              ((env.PROCEED_PUBLIC_ENABLE_EXECUTION && canHaveForm(selectedElement) && (
+              ((env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && canHaveForm(selectedElement) && (
                 <Tooltip title={formEditorTitle}>
                   <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
                 </Tooltip>
@@ -336,7 +336,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     </Button>
                   </Tooltip>
                 )) ||
-                (env.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+                (env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
                   bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
                     <Tooltip title="Edit Script Task">
                       <Button
@@ -345,15 +345,16 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                       />
                     </Tooltip>
                   )) ||
-                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isConditionalFlow(selectedElement) && (
-                  <Tooltip title="Edit Condition">
-                    <Button
-                      icon={<FormOutlined />}
-                      onClick={() => setShowFlowNodeConditionModal(true)}
-                    />
-                  </Tooltip>
-                )) ||
-                (env.PROCEED_PUBLIC_ENABLE_EXECUTION && isTimerEvent(selectedElement) && (
+                (env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+                  isConditionalFlow(selectedElement) && (
+                    <Tooltip title="Edit Condition">
+                      <Button
+                        icon={<FormOutlined />}
+                        onClick={() => setShowFlowNodeConditionModal(true)}
+                      />
+                    </Tooltip>
+                  )) ||
+                (env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && isTimerEvent(selectedElement) && (
                   <TimerEventButton element={selectedElement} />
                 )))}
           </ToolbarGroup>
@@ -447,7 +448,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
         versionName={versionName}
       />
 
-      {env.PROCEED_PUBLIC_ENABLE_EXECUTION && (
+      {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
         <>
           <UserTaskBuilder
             processId={processId}

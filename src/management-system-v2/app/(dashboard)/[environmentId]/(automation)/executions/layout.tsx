@@ -11,7 +11,7 @@ type ExecutionLayoutProps = {
 const ExecutionsLayout: React.FC<ExecutionLayoutProps> = async ({ params, children }) => {
   const msConfig = await getMSConfig();
 
-  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return notFound();
+  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
   const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 

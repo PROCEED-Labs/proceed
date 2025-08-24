@@ -51,6 +51,9 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
       where: {
         isOrganization: true,
       },
+      select: {
+        spaceLogo: true,
+      },
     });
     // TODO: show url if it's not in the public directory
     if (org?.spaceLogo?.startsWith('public/')) {

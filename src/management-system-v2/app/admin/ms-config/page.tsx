@@ -93,9 +93,9 @@ async function ConfigPage() {
         // Process Import Validation Rules (no Env Var): rule list with checkboxes (popup-modal)
         {
           type: 'boolean',
-          name: 'PROCEED_PUBLIC_ENABLE_EXECUTION',
-          key: 'PROCEED_PUBLIC_ENABLE_EXECUTION',
-          value: msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION,
+          name: 'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE',
+          key: 'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE',
+          value: msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE,
         },
         {
           type: 'boolean',
@@ -336,7 +336,7 @@ async function ConfigPage() {
         },
         {
           groupKey: 'msconfig-process-automation',
-          disablerKey: 'PROCEED_PUBLIC_ENABLE_EXECUTION',
+          disablerKey: 'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE',
         },
         {
           groupKey: 'msconfig-mailserver',

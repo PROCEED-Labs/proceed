@@ -18,6 +18,7 @@ import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/lib/auth';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import AuthModal from '../auth-modal';
+import useMSLogo from '@/lib/use-ms-logo';
 import { SigninOptions } from '@/components/signin-options';
 import { getAuthJsErrorMessageFromType } from '@/lib/authjs-error-message';
 
@@ -74,6 +75,8 @@ const SignIn: FC<{
 
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
 
+  const { imageSource } = useMSLogo(logoUrl, { disableResponsive: false });
+
   return (
     <ConfigProvider
       theme={{
@@ -86,8 +89,9 @@ const SignIn: FC<{
     >
       <AuthModal
         title={
+          // TODO: imageSource could be not hosted by use
           <Image
-            src={logoUrl ?? '/proceed.svg'}
+            src={imageSource}
             alt="PROCEED Logo"
             width={160}
             height={63}

@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthConfig } from 'next-auth';
+import NextAuth, { AuthError, NextAuthConfig } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import { User as ProviderUser } from '@auth/core/types';
 
@@ -133,6 +133,19 @@ const nextAuthOptions: NextAuthConfig = {
   pages: {
     signIn: '/signin',
     error: '/signin',
+  },
+  logger: {
+    error(error) {
+      if (error instanceof AuthError) {
+        if (['AdapterError', 'CallbackRouteError', 'OAuthProfileParseError'].includes(error.type)) {
+          console.error(error);
+        } else {
+          console.error('NextAuth error:', error.type);
+        }
+      } else {
+        console.error(error);
+      }
+    },
   },
 };
 

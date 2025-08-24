@@ -220,18 +220,16 @@ if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
 }
 
 if (env.NODE_ENV === 'development') {
-  const developmentUsers = [
-    {
-      username: 'johndoe',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'johndoe@proceed-labs.org',
-      id: 'development-id|johndoe',
-      isGuest: false,
-      emailVerifiedOn: null,
-      profileImage: null,
-    },
-  ] satisfies User[];
+  const johnDoeTemplate = {
+    username: 'johndoe',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'johndoe@proceed-labs.org',
+    id: 'development-id|johndoe',
+    isGuest: false,
+    emailVerifiedOn: null,
+    profileImage: null,
+  };
 
   nextAuthOptions.providers.push(
     CredentialsProvider({
@@ -246,13 +244,14 @@ if (env.NODE_ENV === 'development') {
         },
       },
       async authorize(credentials) {
-        const userTemplate = developmentUsers.find(
-          (user) => user.username === credentials?.username,
-        );
-        if (!userTemplate) return null;
+        let user: User | null = null;
 
-        let user = await getUserByUsername(userTemplate.username);
-        if (!user) user = await addUser(userTemplate);
+        if (credentials.username === 'johndoe') {
+          user = await getUserByUsername('johndoe');
+          if (!user) user = await addUser(johnDoeTemplate);
+        } else if (credentials.username === 'admin') {
+          user = await getUserByUsername('admin');
+        }
 
         return user;
       },

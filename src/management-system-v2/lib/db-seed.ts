@@ -16,6 +16,7 @@ import { permissionIdentifiersToNumber } from './authorization/permissionHelpers
 import { ResourceType, resourceAction, resources } from './ability/caslAbility';
 import { hashPassword } from './password-hashes';
 import { env } from './ms-config/env-vars';
+import { addSystemAdmin } from './data/db/iam/system-admins';
 
 /* -------------------------------------------------------------------------------------------------
  * Schema + Verification
@@ -83,8 +84,13 @@ const organizationSchema = UserOrganizationEnvironmentInputSchema.extend({
   roles: z.array(roleSchema).optional(),
 });
 
+const systemSettingsSchema = z.object({
+  msAdministrators: z.array(z.string()).min(1, 'At least one MS admin is required'),
+});
+
 const seedSchema = z.object({
   version: z.string().datetime(),
+  systemSettings: systemSettingsSchema,
   users: z.array(userSchema),
   organizations: z.array(organizationSchema),
 });
@@ -109,6 +115,15 @@ function verifySeed(seed: DBSeed) {
 
     users.add(user.id);
     userNames.add(user.username);
+  }
+
+  // verify system settings
+  if (seed.systemSettings) {
+    for (const admin of seed.systemSettings.msAdministrators ?? []) {
+      if (!userNames.has(admin)) {
+        throw new Error(`System setting admin ${admin} does not exist in seed`);
+      }
+    }
   }
 
   // verify organizations
@@ -178,7 +193,6 @@ async function writeSeedToDb(seed: DBSeed) {
     }
 
     // create users
-    // TODO: passwords
     const usernameToId = new Map<string, string>();
     for (const user of seed.users) {
       const existingUser = await getUserById(user.id);
@@ -192,6 +206,28 @@ async function writeSeedToDb(seed: DBSeed) {
       const hashedPassword = await hashPassword(user.initialPassword);
       await setUserPassword(user.id, hashedPassword, tx, true);
       usernameToId.set(user.username, newUser.id);
+    }
+
+    // Add system administrators
+    const existingAdmins = await tx.systemAdmin.findMany({
+      where: {
+        userId: {
+          in: seed.systemSettings.msAdministrators,
+        },
+      },
+    });
+
+    for (const adminUsername of seed.systemSettings.msAdministrators) {
+      const userId = usernameToId.get(adminUsername);
+      if (existingAdmins.find((u) => u.id === userId)) continue;
+
+      await addSystemAdmin(
+        {
+          userId: userId!,
+          role: 'admin',
+        },
+        tx,
+      );
     }
 
     // Create / Update organizations

@@ -243,6 +243,7 @@ const CreateOrganizationPage = ({
               <SigninOptions
                 providers={providers!}
                 callbackUrl={() => createOrganization() as Promise<string>}
+                createOrgOption={false}
               />
             </div>
           )}

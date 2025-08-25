@@ -16,6 +16,19 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     return notFound();
   }
 
+  const { userId, user: userData } = await getCurrentUser();
+
+  if (!userData || userData?.isGuest) {
+    return (
+      <Content title="Tasklist">
+        <Result
+          status="404"
+          title="Please sign in with a user account if you want to work on user tasks."
+        />
+      </Content>
+    );
+  }
+
   const {
     ability,
     activeEnvironment: { spaceId, isOrganization },
@@ -36,8 +49,6 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
       </Content>
     );
   }
-
-  const { userId, user: userData } = await getCurrentUser();
 
   const roles = isOrganization ? await getRolesWithMembers(spaceId, ability) : [];
   const userRoles = roles.filter((role) => {
@@ -60,7 +71,8 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     {} as { [key: string]: { userName?: string; name: string } },
   );
 
-  if (!isOrganization && userData && !userData.isGuest) {
+  if (!isOrganization) {
+    // make sure that the user is part of the list of users in personal spaces
     const { username, firstName, lastName } = userData;
     users[userId] = { userName: username, name: `${firstName} ${lastName}` };
   }

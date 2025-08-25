@@ -31,12 +31,13 @@ export async function requestEmailChange(newEmail: string) {
 
     const signinMail = renderSigninLinkEmail({
       signInLink: redirectUrl,
-      expires: verificationToken.expiresAt,
+      expires: verificationToken.expires,
       headerText: 'Change your email address',
       description:
         'Hi, you have requested to change the email address associated with your PROCEED account. Please click the link below to confirm this change:',
       footerText:
         'If you did not request this email change, you can ignore this email. Your account remains secure and can only be accessed with your original email address. The PROCEED Crew',
+      linkText: 'Change my email address',
     });
 
     await sendEmail({

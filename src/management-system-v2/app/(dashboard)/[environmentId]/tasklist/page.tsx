@@ -49,17 +49,15 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
   }
 
   const spaceUsers = await getUsersInSpace(spaceId, ability);
-  const users = spaceUsers.reduce(
-    (acc, member) => {
-      acc[member.id] = {
+  const users = Object.fromEntries(
+    spaceUsers.map((member) => [
+      member.id,
+      {
         userName: member.username || undefined,
         name: member.firstName + ' ' + member.lastName,
-      };
-      return acc;
-    },
-    {} as { [key: string]: { userName?: string; name: string } },
+      },
+    ]),
   );
-
   if (!isOrganization) {
     // make sure that the user is part of the list of users in personal spaces
     const { username, firstName, lastName } = userData;

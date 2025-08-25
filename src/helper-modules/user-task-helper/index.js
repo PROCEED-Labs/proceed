@@ -154,80 +154,56 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
     window.addEventListener('submit', (event) => {
       event.preventDefault();
 
-      const data = new FormData(event.target);
+      async function submitData() {
+        const data = new FormData(event.target);
 
-
-      const variables = {};
-      const entries = data.entries();
-      let entry = entries.next();
-      while (!entry.done) {
-        const [key, value] = entry.value;
-        if (variables[key]) {
-          if (!Array.isArray(variables[key])) {
-            variables[key] = [variables[key]];
+        const variables = {};
+        const entries = data.entries();
+        let entry = entries.next();
+        while (!entry.done) {
+          const [key, value] = entry.value;
+          if (variables[key]) {
+            if (!Array.isArray(variables[key])) {
+              variables[key] = [variables[key]];
+            }
+            variables[key].push(value);
+          } else {
+            variables[key] = value;
           }
-          variables[key].push(value);
-        } else {
-          variables[key] = value;
+          entry = entries.next();
         }
-        entry = entries.next();
-      }
 
-      for (const [key, value] of Object.entries(variables)) {
-        if (value instanceof File) {
-// TODO: submit the file to a new endpoint and transform the variable to the link to the
-// new file that should be returned by the endpoint call
+        for (const [key, value] of Object.entries(variables)) {
+          if (value instanceof File) {
+            const buffer = await value.arrayBuffer();
 
+            const { path } = await window.PROCEED_DATA.post(
+              '/tasklist/api/variable-file',
+              Array.from(new Uint8Array(buffer)),
+              {
+                instanceID,
+                userTaskID,
+                type: value.type,
+                name: value.name
+              },
+            );
 
-console.log(value);
-
-
-// const reader = new FileReader();
-// reader.onload = () => {
-//   console.log(reader.result);
-//   window.PROCEED_DATA.submit(
-//     '/tasklist/api/variable-file',
-//     reader.result,
-//     {
-//       instanceID,
-//       userTaskID,
-//     },
-//     value.type
-//   );
-// };
-// reader.onerror = () => {
-//   console.log("Error reading the file. Please try again.");
-// };
-// reader.readAsArrayBuffer(value);
-
-
-const fileData = new FormData();
-fileData.append("file", value);
-
-window.PROCEED_DATA.submit(
-  '/tasklist/api/variable-file',
-  fileData,
-  {
-    instanceID,
-    userTaskID,
-  },
-  value.type
-);
-
-          console.log('File:', key);
-return;
+            variables[key] = path;
+          }
         }
-      }
 
-      window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
-          instanceID,
-          userTaskID,
-      }).then(() => {
-        window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
-          instanceID,
-          userTaskID,
+        await window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
+            instanceID,
+            userTaskID,
+        }).then(() => {
+          window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
+            instanceID,
+            userTaskID,
+          });
         });
-      });
+      }
+
+      submitData();
     })
 
     function updateUploadInfo(input) {

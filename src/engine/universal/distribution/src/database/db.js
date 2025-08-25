@@ -370,28 +370,22 @@ module.exports = {
     return images;
   },
 
-  async saveInstanceFile(definitionId, instanceId, fileName, file) {
+  async saveInstanceFile(definitionId, instanceId, fileName, fileType, file) {
     if (!(await this.isProcessExisting(definitionId))) {
-      throw new Error('Process with given ID does not exist!');
+      throw new Error('Process with given ID does not exist');
     }
 
-    if (!file) {
-      throw new Error('File must not be empty!');
-    }
-
-    await data.writeInstanceFile(definitionId, instanceId, fileName, file);
+    return await data.writeInstanceFile(definitionId, instanceId, fileName, fileType, file);
   },
 
   async getInstanceFile(definitionId, instanceId, fileName) {
-    const file = await data.readInstanceFile(definitionId, instanceId, fileName);
+    const { mimeType, data: fileData } = await data.readInstanceFile(
+      definitionId,
+      instanceId,
+      fileName,
+    );
 
-    if (!file) {
-      throw new Error(
-        'No file found. Either the process, the instance or the file does not seem to exist.',
-      );
-    }
-
-    return file;
+    return { mimeType, data: fileData };
   },
 
   /**

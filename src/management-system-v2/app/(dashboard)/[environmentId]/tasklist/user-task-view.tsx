@@ -13,6 +13,7 @@ import {
   getTasklistEntryHTML,
   setTasklistEntryVariableValues,
   setTasklistMilestoneValues,
+  submitFile,
 } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 
@@ -27,6 +28,7 @@ type UserTaskFormProps = {
   isPaused?: boolean;
   onMilestoneUpdate?: (milestones: { [key: string]: any }) => void;
   onVariablesUpdate?: (variables: { [key: string]: any }) => void;
+  onFileSubmit?: (data: any, fileName: string, fileType: string) => Promise<{ path: string }>;
   onSubmit?: (variables: { [key: string]: any }) => void;
 };
 
@@ -36,6 +38,7 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
   isPaused,
   onMilestoneUpdate,
   onVariablesUpdate,
+  onFileSubmit,
   onSubmit,
 }) => {
   return (
@@ -65,8 +68,14 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
               }
 
               (iframe.contentWindow as any).PROCEED_DATA = {
-                post: async (path: string, body: { [key: string]: any }) => {
+                post: async (
+                  path: string,
+                  body: { [key: string]: any },
+                  fileInfo?: { type: string; name: string },
+                ) => {
                   if (path === '/tasklist/api/userTask') onSubmit?.(body);
+                  if (path === '/tasklist/api/variable-file')
+                    return await onFileSubmit?.(body, fileInfo!.name, fileInfo!.type);
                 },
                 put: async (path: string, body: { [key: string]: any }) => {
                   if (path === '/tasklist/api/milestone') onMilestoneUpdate?.(body);
@@ -138,14 +147,18 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task }) => 
         onMilestoneUpdate={(newValues) =>
           wrapServerCall({
             fn: () => setTasklistMilestoneValues(spaceId, task.id, newValues),
-            onSuccess: () => {},
+            onSuccess: () => { },
           })
         }
         onVariablesUpdate={(newValues) => {
           wrapServerCall({
             fn: () => setTasklistEntryVariableValues(spaceId, task.id, newValues),
-            onSuccess: () => {},
+            onSuccess: () => { },
           });
+        }}
+        onFileSubmit={async (file, fileName, fileType) => {
+          const path = await submitFile(spaceId, task.id, fileName, fileType, file);
+          return { path };
         }}
       />
     )

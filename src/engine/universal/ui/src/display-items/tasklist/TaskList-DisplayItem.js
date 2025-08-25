@@ -28,7 +28,7 @@ class TaskListTab extends DisplayItem {
       '/api/userTask': { get: this.getUserTask.bind(this), post: this.postUserTask.bind(this) },
       '/api/variable': { put: this.putVariable.bind(this) },
       '/api/milestone': { put: this.putMilestone.bind(this) },
-      '/api/variable-file': { put: this.putFile.bind(this) },
+      '/api/variable-file': { post: this.postFile.bind(this) },
     };
   }
 
@@ -136,7 +136,6 @@ class TaskListTab extends DisplayItem {
   async postUserTask(variables, query) {
     const engine = this.getTaskEngine(query);
 
-    return;
     engine.completeUserTask(query.instanceID, query.userTaskID, {});
 
     this.logger.debug('--> Tasklist Form submitted: ', variables);
@@ -156,7 +155,7 @@ class TaskListTab extends DisplayItem {
 
   async putVariable(body, query) {
     const engine = this.getTaskEngine(query);
-    engine.updateIntermediateVariablesState(query.instanceID, query.userTaskID, body);
+    await engine.updateIntermediateVariablesState(query.instanceID, query.userTaskID, body);
 
     return 'true';
   }
@@ -168,12 +167,20 @@ class TaskListTab extends DisplayItem {
     return 'true';
   }
 
-  async putFile(body, query) {
-    console.log(body, typeof body, Buffer.isBuffer(body));
-    console.log(body.data);
-    console.log(Buffer.from(body.data));
-    console.log(query);
-    console.log(body);
+  async postFile(body, query) {
+    const data = Buffer.from(body);
+    const { instanceID, name } = query;
+    const [definitionId] = instanceID.split('-_');
+
+    return {
+      path: await distribution.db.saveInstanceFile(
+        definitionId,
+        instanceID,
+        name,
+        query.type,
+        data,
+      ),
+    };
   }
 }
 

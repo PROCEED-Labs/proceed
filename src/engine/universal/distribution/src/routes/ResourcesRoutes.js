@@ -59,22 +59,32 @@ module.exports = (path) => {
   );
 
   network.put(
-    `${path}/process/:definitionId/instance/:instanceId/files/:fileName`,
+    `${path}/process/:definitionId/instance/:instanceId/file/:fileName`,
     { cors: true },
     async (req) => {
       const { definitionId, instanceId, fileName } = req.params;
+      const { mimeType } = req.query;
       const { body } = req;
 
-      console.log('Submitting File');
+      const file = Buffer.from(body);
 
-      const filename = `${fileName}-${instanceId}`;
+      return await db.saveInstanceFile(definitionId, instanceId, fileName, mimeType, file);
+    },
+  );
 
-      console.log(fileName, instanceId, filename);
+  network.get(
+    `${path}/process/:definitionId/instance/:instanceId/file/:fileName`,
+    { cors: true },
+    async (req) => {
+      const { definitionId, instanceId, fileName } = req.params;
 
-      const file = Buffer.from(body.data);
-      await db.saveInstanceFile(definitionId, instanceId, fileName, file);
+      const { mimeType, data } = await db.getInstanceFile(definitionId, instanceId, fileName);
 
-      return '';
+      return {
+        statusCode: 200,
+        mimeType,
+        response: data,
+      };
     },
   );
 };

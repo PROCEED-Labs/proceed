@@ -38,7 +38,7 @@ import {
   updateUserTask,
   deleteUserTask,
 } from '../data/user-tasks';
-import { updateVariablesOnMachine } from './instances';
+import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } from './instances';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -233,11 +233,10 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       state: storedState,
     } = storedUserTask;
     const [taskId, instanceId, startTimeString] = userTaskId.split('|');
+    const [definitionId] = instanceId.split('-_');
 
     if (!html || !milestones || !initialVariables) {
       const startTime = parseInt(startTimeString);
-
-      const definitionId = instanceId.split('-_')[0];
 
       let engines = await getCorrectTargetEngines(spaceId);
       let deployments = await asyncMap(engines, async (engine) => {
@@ -301,7 +300,31 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       }
     }
 
-    return inlineUserTaskData(html, instanceId, taskId, variableChanges, milestones);
+    // maps relative urls used to get resources on the engine to the MS api to allow them to work here as well
+    function mapResourceUrls(variables: Record<string, any>) {
+      if (!variables) return variables;
+
+      return Object.fromEntries(
+        Object.entries(variables).map(([key, value]) => {
+          if (
+            typeof value === 'string' &&
+            value.includes(`resources/process/${definitionId}/instance/${instanceId}/file/`)
+          ) {
+            return [key, `api/private/${spaceId}/engine/` + value];
+          }
+
+          return [key, value];
+        }),
+      );
+    }
+
+    return inlineUserTaskData(
+      html,
+      instanceId,
+      taskId,
+      mapResourceUrls(variableChanges),
+      milestones,
+    );
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -472,6 +495,75 @@ export async function updateVariables(
       engines,
       async (engine) => await updateVariablesOnMachine(definitionId, instanceId, engine, variables),
     );
+  } catch (err) {
+    const message = getErrorMessage(err);
+    return userError(message);
+  }
+}
+
+export async function submitFile(
+  spaceId: string,
+  userTaskId: string,
+  fileName: string,
+  fileType: string,
+  file: Buffer,
+) {
+  try {
+    if (!enableUseDB) throw new Error('submitFile only available with enableUseDB');
+
+    const [taskId, instanceId] = userTaskId.split('|');
+    const [definitionId] = instanceId.split('-_');
+
+    // find the engine the user task is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      const instance = deployments
+        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
+        ?.instances.find((i) => i.processInstanceId === instanceId);
+
+      if (!instance) return false;
+
+      return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+    });
+
+    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+
+    return await submitFileToMachine(
+      definitionId,
+      instanceId,
+      engines[0],
+      fileName,
+      fileType,
+      file,
+    );
+  } catch (err) {
+    const message = getErrorMessage(err);
+    return userError(message);
+  }
+}
+
+export async function getFile(
+  spaceId: string,
+  definitionId: string,
+  instanceId: string,
+  fileName: string,
+) {
+  try {
+    if (!enableUseDB) throw new Error('submitFile only available with enableUseDB');
+
+    // find the engine the instance is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      return deployments.some((deployment) =>
+        deployment.instances.some((i) => i.processInstanceId === instanceId),
+      );
+    });
+
+    if (!engines.length) throw new Error('Failed to find the engine the instance is running on!');
+
+    return await getFileFromMachine(definitionId, instanceId, fileName, engines[0]);
   } catch (err) {
     const message = getErrorMessage(err);
     return userError(message);

@@ -61,7 +61,7 @@ export class UserFacingError extends Error {
   }
 }
 
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: any, defaultMessage?: string): string {
   if (error instanceof UserFacingError) return error.message;
-  else return 'Something went wrong';
+  else return defaultMessage || 'Something went wrong';
 }

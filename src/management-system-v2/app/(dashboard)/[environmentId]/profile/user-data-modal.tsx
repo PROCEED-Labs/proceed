@@ -13,6 +13,7 @@ type modalInputField = {
   submitField: keyof AuthenticatedUserData;
   label: string;
   password?: boolean;
+  disabled?: boolean;
 };
 
 type modalInput = {
@@ -72,7 +73,7 @@ const AuthenticatedUserDataModal: FC<{
             help={input.submitField in formatErrors ? formatErrors[input.submitField] : ''}
             required
           >
-            <Input />
+            <Input disabled={input.disabled} />
           </Form.Item>
         ))}
 

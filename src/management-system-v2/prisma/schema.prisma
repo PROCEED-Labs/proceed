@@ -264,7 +264,7 @@ model EmailVerificationToken {
   token        String   @id /// Hashed UUID + Salt (the Auth secret is used as salt)
   type         String
   identifier   String /// Stores an email (it's named this way because of NextAuth)
-  expiresAt      DateTime 
+  expires      DateTime 
   user         User?     @relation(name: "verificationToken", fields: [userId], references: [id])
   userId       String? /// If this is set, then the token is for an email change: userId is the user who wants to change his email and the idenrtifier is the new email
   username     String?

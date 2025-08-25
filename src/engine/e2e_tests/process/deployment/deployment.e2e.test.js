@@ -2033,7 +2033,11 @@ describe('Test deploying a process', () => {
                   intermediateVariablesState: {},
                   milestones: {},
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                 },
               ]);
 
@@ -2050,7 +2054,11 @@ describe('Test deploying a process', () => {
                 milestones: {},
                 attrs: expect.any(Object),
                 priority: 1,
-                performers: [],
+                actualOwner: [],
+                performers: {
+                  roles: [],
+                  user: [],
+                },
                 progress: 0,
                 startTime: expect.any(Number),
                 endTime: null,
@@ -2104,7 +2112,11 @@ describe('Test deploying a process', () => {
                   intermediateVariablesState: {},
                   milestones: {},
                   priority: 1,
-                  performers: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
+                  actualOwner: [],
                 },
               ]);
 
@@ -2129,7 +2141,11 @@ describe('Test deploying a process', () => {
                   milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                   progress: 0,
                   startTime: expect.any(Number),
                   endTime: null,
@@ -2141,7 +2157,11 @@ describe('Test deploying a process', () => {
                   milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                   progress: 0,
                   startTime: expect.any(Number),
                   endTime: expect.any(Number),
@@ -2176,7 +2196,11 @@ describe('Test deploying a process', () => {
                 progress: { value: 0, manual: false },
                 milestones: {},
                 priority: 1,
-                performers: [],
+                actualOwner: [],
+                performers: {
+                  roles: [],
+                  user: [],
+                },
               });
 
               expect(instanceInfo.adaptationLog).toEqual([
@@ -2198,7 +2222,11 @@ describe('Test deploying a process', () => {
                   milestones: {},
                   attrs: expect.any(Object),
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                   progress: 0,
                   startTime: expect.any(Number),
                   endTime: expect.any(Number),
@@ -2281,7 +2309,11 @@ describe('Test deploying a process', () => {
                 attrs: expect.any(Object),
                 priority: 1,
                 milestones: {},
-                performers: [],
+                performers: {
+                  roles: [],
+                  user: [],
+                },
+                actualOwner: [],
                 progress: 0,
                 startTime: expect.any(Number),
                 endTime: null,
@@ -2493,7 +2525,11 @@ describe('Test deploying a process', () => {
                   intermediateVariablesState: {},
                   milestones: {},
                   priority: 1,
-                  performers: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
+                  actualOwner: [],
                 },
               ]);
               expect(instanceInfo.log).toEqual([
@@ -2525,7 +2561,11 @@ describe('Test deploying a process', () => {
                   progress: { value: 100, manual: false },
                   milestones: {},
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                 },
               ]);
 
@@ -2666,7 +2706,11 @@ describe('Test deploying a process', () => {
                   progress: { value: 0, manual: false },
                   milestones: {},
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                 },
                 {
                   tokenId: expect.any(String),
@@ -2683,7 +2727,11 @@ describe('Test deploying a process', () => {
                   progress: { value: 100, manual: false },
                   milestones: {},
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                 },
                 {
                   tokenId: expect.any(String),
@@ -2839,7 +2887,11 @@ describe('Test deploying a process', () => {
                   progress: { value: 0, manual: false },
                   milestones: {},
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                 },
                 {
                   tokenId: expect.any(String),
@@ -2856,7 +2908,11 @@ describe('Test deploying a process', () => {
                   progress: { value: 100, manual: false },
                   milestones: {},
                   priority: 1,
-                  performers: [],
+                  actualOwner: [],
+                  performers: {
+                    roles: [],
+                    user: [],
+                  },
                 },
                 {
                   tokenId: expect.any(String),

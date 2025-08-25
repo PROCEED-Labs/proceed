@@ -13,8 +13,8 @@ import {
 } from '@ant-design/icons';
 import { generateDateString } from '@/lib/utils';
 import { transformMilisecondsToDurationValues } from '@/lib/helpers/timeHelper';
-import { UserTask } from '@/lib/user-task-schema';
 import styles from './userTaskCard.module.scss';
+import { ExtendedTaskListEntry } from './user-task-view';
 
 type CardLineEntry = { icon: ReactNode; text: ReactNode };
 const CardInfoLine: React.FC<{ entries: CardLineEntry[] }> = ({ entries }) => {
@@ -33,20 +33,35 @@ const CardInfoLine: React.FC<{ entries: CardLineEntry[] }> = ({ entries }) => {
   );
 };
 
+const OwnerInfo: React.FC<{ task: ExtendedTaskListEntry }> = ({ task }) => {
+  let owner = '';
+
+  if (task.actualOwner.length === 1) {
+    owner = task.actualOwner[0].name || task.actualOwner[0].userName || '<unknown>';
+  } else if (task.actualOwner.length > 1) {
+    owner = task.actualOwner.map(({ name, userName }) => name || userName).join(' | ');
+  }
+
+  return (
+    <Tooltip title={owner}>
+      <UserOutlined />{' '}
+      <Typography.Text ellipsis style={{ fontSize: 'inherit' }}>
+        {owner}
+      </Typography.Text>
+    </Tooltip>
+  );
+};
+
 const UserTaskCard = ({
   userTaskData,
   clickHandler,
   selected = false,
 }: {
-  userTaskData: UserTask;
+  userTaskData: ExtendedTaskListEntry;
   clickHandler?: () => void;
   selected?: boolean;
 }) => {
   const endTime = userTaskData.endTime;
-
-  const endTimeString = endTime
-    ? generateDateString(new Date(userTaskData.endTime || 0), true)
-    : '';
 
   const durationValues = transformMilisecondsToDurationValues(
     (endTime || +new Date()) - userTaskData.startTime,
@@ -61,7 +76,7 @@ const UserTaskCard = ({
 
   const lines = [
     [
-      { icon: <UserOutlined />, text: userTaskData.owner },
+      { icon: <OwnerInfo task={userTaskData} /> },
       {
         icon: <CalendarOutlined />,
         text: generateDateString(new Date(userTaskData.startTime), true),

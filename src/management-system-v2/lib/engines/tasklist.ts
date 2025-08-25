@@ -148,11 +148,8 @@ export async function completeTasklistEntryOnMachine(
 
 export async function addOwnerToTaskListEntryOnMachine(
   machine: Engine,
-
   instanceId: string,
-
   userTaskId: string,
-
   owner: string,
 ) {
   const updatedOwners = await engineRequest({

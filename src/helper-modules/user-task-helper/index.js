@@ -155,7 +155,7 @@ const script = `
       if (element.tagName === 'INPUT') {
         if (element.type === 'number') {
           value = element.value && parseFloat(element.value);
-          if (value && Number.isNaN(value)) throw new Error('The given value is not a valid number.');
+          if (Number.isNaN(value)) throw new Error('The given value is not a valid number.');
         } else {
           value = element.value;
         }

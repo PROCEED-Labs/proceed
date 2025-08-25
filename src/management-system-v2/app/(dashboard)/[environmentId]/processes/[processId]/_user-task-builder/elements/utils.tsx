@@ -15,9 +15,8 @@ import { useDndContext } from '@dnd-kit/core';
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
-import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
-import useProcessVariables from '../../use-process-variables';
-import ProcessVariableForm, { typeLabelMap } from '../../variable-definition/process-variable-form';
+import useProcessVariables, { ProcessVariable, typeLabelMap } from '../../use-process-variables';
+import ProcessVariableForm from '../../variable-definition/process-variable-form';
 
 export const Setting: React.FC<{
   label: string;
@@ -254,22 +253,32 @@ export function getVariableTooltip(variables: ProcessVariable[], name?: string) 
   const variable = variables.find((v) => v.name === name);
   if (!variable) return;
 
-  let tooltip = `Type: ${typeLabelMap[variable.dataType as keyof typeof typeLabelMap]}`;
+  let tooltip = `Type: ${typeLabelMap[variable.dataType]}`;
 
   if (variable.description) tooltip += `\nDescription: ${variable.description}`;
 
   return tooltip;
 }
 
+type AllowedTypes = React.ComponentProps<typeof ProcessVariableForm>['allowedTypes'];
 type VariableSettingProps = {
   variable?: string;
-  onChange: (newVariable?: string) => void;
+  allowedTypes?: AllowedTypes;
+  onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
 };
 
-export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onChange }) => {
+export const VariableSetting: React.FC<VariableSettingProps> = ({
+  variable,
+  allowedTypes,
+  onChange,
+}) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
   const { variables, addVariable } = useProcessVariables();
+
+  const validVariables = variables.filter(
+    (variable) => !allowedTypes || allowedTypes.includes(variable.dataType),
+  );
 
   return (
     <Setting
@@ -280,13 +289,14 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onCh
             value={variable}
             style={{ display: 'block' }}
             title={getVariableTooltip(variables, variable)}
-            options={variables.map((v) => ({
+            options={validVariables.map((v) => ({
               label: v.name,
               title: getVariableTooltip(variables, v.name),
               value: v.name,
             }))}
             onChange={(val) => {
-              onChange(val);
+              const variableType = variables.find((v) => v.name === val)?.dataType;
+              onChange(val, variableType);
             }}
             dropdownRender={(menu) => (
               <>
@@ -302,10 +312,11 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onCh
           <ProcessVariableForm
             open={showVariableForm}
             variables={variables}
+            allowedTypes={allowedTypes}
             onSubmit={(newVar) => {
               addVariable(newVar);
               setShowVariableForm(false);
-              onChange(newVar.name);
+              onChange(newVar.name, newVar.dataType);
             }}
             onCancel={() => setShowVariableForm(false)}
           />

@@ -1,4 +1,4 @@
-const whiskers = require('whiskers');
+const { render } = require('./src/render.js');
 
 const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/getters');
 /**
@@ -136,38 +136,106 @@ async function getCorrectMilestoneState(bpmn, userTask, instance) {
   }));
 }
 
-/**
- * Function that replaces placeholders in html with the correct data
- *
- * @param {string} html the html that contains placeholders to replace with some data
- * @param {string} instanceId the id of the instance the user task was triggered in
- * @param {string} userTaskId the id of the user task element that created this user task instance
- * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
- * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
- * @returns {string} the html with the placeholders replaced by the correct values
- */
-function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones) {
-  const script = `
-    const instanceID = '${instanceId}';
-    const userTaskID = '${userTaskId}';
+const script = `
+    const instanceID = '{{instanceId}}';
+    const userTaskID = '{{userTaskId}}';
+
+    const variableDefinitions = {{variableDefinitions}};
+
+    function getValueFromCheckbox(checkbox) {
+      if (!checkbox.defaultValue) {
+        return !!checkbox.checked;
+      } else {
+        return checkbox.checked ? checkbox.defaultValue : undefined;
+      }
+    }
+
+    function getValueFromVariableElement(element) {
+      let value;
+      if (element.tagName === 'INPUT') {
+        if (element.type === 'number') {
+          value = element.value && parseFloat(element.value);
+          if (Number.isNaN(value)) throw new Error('The given value is not a valid number.');
+        } else {
+          value = element.value;
+        }
+      } else {
+        const classes = Array.from(element.classList.values());
+        if (classes.includes('user-task-form-input-group')) {
+          const checkboxes = Array.from(element.querySelectorAll("input[type='checkbox']"));
+          const radios = Array.from(element.querySelectorAll("input[type='radio']"));
+          if (checkboxes.length) {
+            if (checkboxes.length === 1) {
+              const [checkbox] = checkboxes;
+              value = getValueFromCheckbox(checkbox);
+            } else {
+              value = checkboxes.map(getValueFromCheckbox).filter(v => v !== undefined);
+            }
+          } else if (radios.length) {
+            const checked = radios.find(r => r.checked === true);
+            value = checked.value;
+          }
+        }
+      }
+
+      return value;
+    }
+
+    function validateValue(key, value) {
+      if (!value) return;
+
+      const definition = variableDefinitions[key];
+      if (!definition) return;
+
+      if (definition.enum) {
+        const allowedValues = definition.enum.split(';');
+        if (!allowedValues.includes((typeof value === 'string') ? value : JSON.stringify(value))) {
+          throw new Error(\`Invalid value. Expected one of \${allowedValues.join(', ')}\`);
+        }
+      }
+    }
+
+    function updateValidationErrorMessage(key, message) {
+      const elements = Array.from(document.getElementsByClassName(\`input-for-\${key}\`));
+      if (!elements.length) return;
+      const [element] = elements;
+      element.classList.remove('invalid');
+      const messageEl = element.getElementsByClassName('validation-error');
+      if (messageEl.length) messageEl[0].textContent = '';
+      if (message) {
+        element.classList.add('invalid');
+        if (messageEl.length) messageEl[0].textContent = message;
+      }
+    }
 
     window.addEventListener('submit', (event) => {
       event.preventDefault();
 
-      const data = new FormData(event.target);
+      const variableElements = Array.from(document.querySelectorAll('[class*=\"variable-\"]'));
+
       const variables = {};
+      let validationErrors = 0;
+      variableElements.forEach(el => {
+        const key = Array.from(el.classList.values()).find(c => c.startsWith('variable-')).split('variable-')[1];
+        try {
+          const value = getValueFromVariableElement(el);
+          validateValue(key, value);
+          updateValidationErrorMessage(key);
+          variables[key] = value;
+        } catch (err) {
+          ++validationErrors;
+          updateValidationErrorMessage(key, err.message);
+        }
+      });
+
+      if (validationErrors) return;
+
+      const data = new FormData(event.target);
       const entries = data.entries();
       let entry = entries.next();
       while (!entry.done) {
         const [key, value] = entry.value;
-        if (variables[key]) {
-          if (!Array.isArray(variables[key])) {
-            variables[key] = [variables[key]]; 
-          }
-          variables[key].push(value);
-        } else {
-          variables[key] = value; 
-        }
+        if (!variables[key]) variables[key] = value;
         entry = entries.next();
       }
 
@@ -212,7 +280,7 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
       const variableInputs = document.querySelectorAll(
         'input[class^="variable-"]'
       );
-      Array.from(variableInputs).forEach((variableInput) => {
+      Array.from(variableInputs).filter(input => input.tagName === 'INPUT').forEach((variableInput) => {
         let variableInputTimer;
 
         variableInput.addEventListener('input', (event) => {
@@ -225,24 +293,71 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
           clearTimeout(variableInputTimer);
 
           variableInputTimer = setTimeout(() => {
-            window.PROCEED_DATA.put(
-              '/tasklist/api/variable',
-              { [variableName]: event.target.value },
-              {
-                instanceID,
-                userTaskID,
-              }
-            );
-          }, 5000)
+            try {
+              const value = getValueFromVariableElement(event.target);
+
+              validateValue(variableName, value);
+              updateValidationErrorMessage(variableName);
+
+              window.PROCEED_DATA.put(
+                '/tasklist/api/variable',
+                { [variableName]: value },
+                {
+                  instanceID,
+                  userTaskID,
+                }
+              );
+            } catch (err) {
+              updateValidationErrorMessage(variableName, err.message);
+            }
+          }, 2000)
         });
       });
     })
     `;
 
-  const finalHtml = whiskers.render(html, {
+/**
+ * Function that replaces the {{script}} placeholder in the html with the default script
+ *
+ * @param {string | Buffer} html the html that contains placeholders to replace with some data
+ * @param {string} instanceId the id of the instance the user task was triggered in
+ * @param {string} userTaskId the id of the user task element that created this user task instance
+ * @param {{ name: string; dataType: string; enum?: string; }[]} [variableDefinitions=[]] meta data about the variables expected in the instance
+ * containing the user task
+ * @returns {string} the html with the placeholders replaced by the correct values
+ */
+function inlineScript(html, instanceId, userTaskId, variableDefinitions = []) {
+  const variableDefinitionsMap = Object.fromEntries(
+    variableDefinitions.map((def) => [def.name, def]),
+  );
+
+  if (Buffer.isBuffer(html)) html = html.toString();
+
+  const finalScript = render(script, {
+    instanceId,
+    userTaskId,
+    variableDefinitions: JSON.stringify(variableDefinitionsMap),
+  });
+
+  html = render(html, { script: finalScript }, true);
+
+  return html;
+}
+
+/**
+ * Function that replaces placeholders in html with the correct data
+ *
+ * @param {string | Buffer} html the html that contains placeholders to replace with some data
+ * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
+ * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
+ * @returns {string} the html with the placeholders replaced by the correct values
+ */
+function inlineUserTaskData(html, variables, milestones) {
+  if (Buffer.isBuffer(html)) html = html.toString();
+
+  const finalHtml = render(html, {
     ...variables,
     milestones,
-    script,
   });
 
   return finalHtml;
@@ -251,5 +366,6 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
 module.exports = {
   getCorrectVariableState,
   getCorrectMilestoneState,
+  inlineScript,
   inlineUserTaskData,
 };

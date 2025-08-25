@@ -370,6 +370,7 @@ const DeploymentsModal = ({
                     process={process}
                   />
                 )}
+                isReadOnly={false}
               />
             </div>
           )}

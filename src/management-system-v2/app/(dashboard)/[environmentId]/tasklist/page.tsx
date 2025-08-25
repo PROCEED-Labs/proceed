@@ -5,10 +5,10 @@ import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getAvailableTaskListEntries } from '@/lib/engines/server-actions';
-import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
+import { getUserRoles } from '@/lib/data/db/iam/roles';
 import { truthyFilter } from '@/lib/typescript-utils';
-import { getUserById } from '@/lib/data/db/iam/users';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { getUsersInSpace } from '@/lib/data/db/iam/memberships';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
@@ -17,7 +17,6 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
   }
 
   const { userId, user: userData } = await getCurrentUser();
-
   if (!userData || userData?.isGuest) {
     return (
       <Content title="Tasklist">
@@ -35,7 +34,6 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
   } = await getCurrentEnvironment(params.environmentId);
 
   const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation');
-
   if (automationSettings.active === false || automationSettings.tasklist?.active === false) {
     return notFound();
   }
@@ -50,22 +48,13 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     );
   }
 
-  const roles = isOrganization ? await getRolesWithMembers(spaceId, ability) : [];
-  const userRoles = roles.filter((role) => {
-    return (
-      role.environmentId === params.environmentId &&
-      role.members.some((member) => member.id === userId)
-    );
-  });
-
-  const users = roles.reduce(
-    (acc, role) => {
-      role.members.forEach((member) => {
-        acc[member.id] = {
-          userName: member.username,
-          name: member.firstName + ' ' + member.lastName,
-        };
-      });
+  const spaceUsers = await getUsersInSpace(spaceId, ability);
+  const users = spaceUsers.reduce(
+    (acc, member) => {
+      acc[member.id] = {
+        userName: member.username || undefined,
+        name: member.firstName + ' ' + member.lastName,
+      };
       return acc;
     },
     {} as { [key: string]: { userName?: string; name: string } },
@@ -77,6 +66,7 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     users[userId] = { userName: username, name: `${firstName} ${lastName}` };
   }
 
+  const userRoles = await getUserRoles(userId, spaceId, ability);
   userTasks = userTasks.filter((uT) => {
     const utRoles = uT.potentialOwners?.roles || [];
     const utUsers = uT.potentialOwners?.user || [];

@@ -37,8 +37,7 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     );
   }
 
-  const { userId } = await getCurrentUser();
-  let userData = await getUserById(userId);
+  const { userId, user: userData } = await getCurrentUser();
 
   const roles = isOrganization ? await getRolesWithMembers(spaceId, ability) : [];
   const userRoles = roles.filter((role) => {
@@ -61,7 +60,7 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     {} as { [key: string]: { userName?: string; name: string } },
   );
 
-  if (!isOrganization && !userData.isGuest) {
+  if (!isOrganization && userData && !userData.isGuest) {
     const { username, firstName, lastName } = userData;
     users[userId] = { userName: username, name: `${firstName} ${lastName}` };
   }

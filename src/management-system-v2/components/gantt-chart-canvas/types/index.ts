@@ -27,11 +27,25 @@ export interface GanttElement {
   isPathCutoff?: boolean; // Indicates this element is where flow traversal stopped due to loop depth
   isLoop?: boolean; // Indicates this element is part of a loop
   isLoopCut?: boolean; // Indicates this element is where loop was cut off
+  // Boundary event specific properties
+  isBoundaryEvent?: boolean; // Indicates this is a boundary event
+  attachedToId?: string; // ID of the task this boundary event is attached to
+  cancelActivity?: boolean; // Whether this boundary event interrupts the attached activity
   ghostOccurrences?: Array<{
     start: number;
     end?: number; // For tasks only
     instanceId?: string; // For dependency tracking
   }>;
+  // Hierarchy properties for sub-processes
+  hierarchyLevel?: number; // Indentation level (0 = root, 1 = first sub-process level, etc.)
+  parentSubProcessId?: string; // ID of the parent sub-process if nested
+  isSubProcess?: boolean; // True if this element is a sub-process
+  hasChildren?: boolean; // True if this sub-process has child elements (for triangle indicators)
+  // Lane properties for organizational grouping
+  laneId?: string; // ID of the lane this element belongs to
+  laneName?: string; // Name of the lane this element belongs to
+  laneLevel?: number; // Nesting level of the lane (0 = top level, 1 = nested, etc.)
+  isLaneHeader?: boolean; // True if this is a lane header element
 }
 
 /**
@@ -77,10 +91,17 @@ export interface GanttDependency {
   targetId: string; // ID of the target element
   type: DependencyType; // Type of dependency relationship
   name?: string; // Optional name for the dependency
-  flowType?: 'conditional' | 'default' | 'normal'; // Type of flow for BPMN sequence flows
+  flowType?:
+    | 'conditional'
+    | 'default'
+    | 'normal'
+    | 'boundary'
+    | 'boundary-non-interrupting'
+    | 'message'; // Type of flow for BPMN sequence flows
   isGhost?: boolean; // Indicates this is a ghost dependency
   sourceInstanceId?: string; // For ghost dependencies, the specific instance
   targetInstanceId?: string; // For ghost dependencies, the specific instance
+  isBoundaryEvent?: boolean; // Special styling for boundary event dependencies
 }
 
 /**

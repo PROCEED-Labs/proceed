@@ -78,12 +78,12 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
   }
 
   userTasks = userTasks.filter((uT) => {
-    if (!uT.potentialOwners?.user?.length && !uT.potentialOwners?.roles?.length) return true;
+    const utRoles = uT.potentialOwners?.roles || [];
+    const utUsers = uT.potentialOwners?.user || [];
+    if (!utUsers.length && !utRoles.length) return true;
 
-    const userCanOwn = uT.potentialOwners?.user?.some((id) => id === userId);
-    const userRoleCanOwn = uT.potentialOwners?.roles?.some((id) =>
-      userRoles.some((role) => role.id === id),
-    );
+    const userCanOwn = utUsers.some((id) => id === userId);
+    const userRoleCanOwn = utRoles.some((id) => userRoles.some((role) => role.id === id));
 
     return userCanOwn || userRoleCanOwn;
   });

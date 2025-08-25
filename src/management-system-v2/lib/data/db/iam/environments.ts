@@ -57,15 +57,26 @@ export async function activateEnvrionment(environmentId: string, userId: string)
   const adminRole = await getRoleByName(environmentId, '@admin');
   if (!adminRole) throw new Error(`Consistency error: admin role of ${environmentId} not found`);
 
-  await addMember(environmentId, userId);
+  await db.$transaction(async (tx) => {
+    await tx.space.update({
+      where: { id: environmentId },
+      data: { isActive: true },
+    });
 
-  await addRoleMappings([
-    {
-      environmentId,
-      roleId: adminRole.id,
-      userId,
-    },
-  ]);
+    await addMember(environmentId, userId, undefined, tx);
+
+    await addRoleMappings(
+      [
+        {
+          environmentId,
+          roleId: adminRole.id,
+          userId,
+        },
+      ],
+      undefined,
+      tx,
+    );
+  });
 }
 
 export async function addEnvironment(
@@ -157,6 +168,12 @@ export async function addEnvironment(
 export async function deleteEnvironment(environmentId: string, ability?: Ability) {
   const environment = await getEnvironmentById(environmentId);
   if (!environment) throw new Error('Environment not found');
+
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE && environment.isOrganization) {
+    throw new Error(
+      'Organizations cannot be deleted when PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is true',
+    );
+  }
 
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
   await db.space.delete({

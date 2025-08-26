@@ -98,25 +98,52 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
 
   const canEdit = !selectedVersionId && !showMobileView;
 
-  const saveDebounced = useMemo(
-    () =>
-      debounce(async (xml: string, invalidate: boolean = false) => {
-        try {
-          await updateProcess(
-            process.id,
-            environment.spaceId,
-            xml,
-            undefined,
-            undefined,
-            undefined,
-            invalidate,
-          );
-        } catch (err) {
-          console.log(err);
-        }
-      }, 2000),
-    [process.id],
+  // We shouldn't get to a place where the event listener isn't removed, since the debounce will
+  // always be fired, as it doesn't get cancelled when process.id changes
+  const beforeWindowUnloadEventHandler = useRef<((e: BeforeUnloadEvent) => any) | undefined>(
+    undefined,
   );
+  const saveDebounced = useMemo(() => {
+    async function saveXml(xml: string, invalidate: boolean) {
+      try {
+        await updateProcess(
+          process.id,
+          environment.spaceId,
+          xml,
+          undefined,
+          undefined,
+          undefined,
+          invalidate,
+        );
+
+        if (beforeWindowUnloadEventHandler.current) {
+          window.removeEventListener('beforeunload', beforeWindowUnloadEventHandler.current);
+          beforeWindowUnloadEventHandler.current = undefined;
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    const debouncedSaveXmlFn = debounce(saveXml, 2000);
+
+    return function (xml: string, invalidate: boolean = false) {
+      if (!beforeWindowUnloadEventHandler.current) {
+        function onBeforeUnload(e: BeforeUnloadEvent) {
+          e.preventDefault();
+          saveXml(xml, invalidate);
+          if (beforeWindowUnloadEventHandler.current) {
+            window.removeEventListener('beforeunload', beforeWindowUnloadEventHandler.current);
+            beforeWindowUnloadEventHandler.current = undefined;
+          }
+        }
+
+        beforeWindowUnloadEventHandler.current = onBeforeUnload;
+        window.addEventListener('beforeunload', onBeforeUnload);
+      }
+
+      debouncedSaveXmlFn(xml, invalidate);
+    };
+  }, [process.id]);
 
   useEffect(() => {
     console.log('modeler changed');

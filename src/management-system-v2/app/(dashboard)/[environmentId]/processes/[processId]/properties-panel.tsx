@@ -36,7 +36,23 @@ import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import VariableDefinition from './variable-definition';
 
 // Elements that should not display the planned duration field
-const ELEMENTS_WITHOUT_PLANNED_DURATION = ['bpmn:StartEvent', 'bpmn:TextAnnotation'];
+// These are non-executable elements that don't have execution time
+const ELEMENTS_WITHOUT_PLANNED_DURATION = [
+  // Start events are instantaneous
+  'bpmn:StartEvent',
+  // Artifacts - documentation and data elements that don't execute
+  'bpmn:TextAnnotation',
+  'bpmn:DataObject',
+  'bpmn:DataObjectReference',
+  'bpmn:DataStore',
+  'bpmn:DataStoreReference',
+  'bpmn:Group',
+  'bpmn:Association',
+  // Organizational elements - containers, not executable elements
+  'bpmn:Participant',
+  'bpmn:Lane',
+  'bpmn:LaneSet',
+];
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;

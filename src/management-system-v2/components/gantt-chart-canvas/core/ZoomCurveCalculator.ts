@@ -262,9 +262,6 @@ export class ZoomCurveCalculator {
       const diff = Math.abs(zoom - reversedZoom);
 
       if (diff > tolerance) {
-        console.warn(
-          `Zoom curve inverse mismatch: zoom ${zoom} -> scale ${scale} -> zoom ${reversedZoom} (diff: ${diff})`,
-        );
         allPassed = false;
       }
     }
@@ -278,9 +275,6 @@ export class ZoomCurveCalculator {
         const relDiff = Math.abs(scale - reversedScale) / scale;
 
         if (relDiff > tolerance) {
-          console.warn(
-            `Zoom curve inverse mismatch: scale ${scale} -> zoom ${zoom} -> scale ${reversedScale} (rel diff: ${relDiff})`,
-          );
           allPassed = false;
         }
       }

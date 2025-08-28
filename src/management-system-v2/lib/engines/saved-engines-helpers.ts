@@ -89,7 +89,6 @@ export async function savedEnginesToEngines(spaceEngines: SavedEngine[]): Promis
       status.push('failed', request);
 
       console.log('error', request.reason);
-
       status.push('error', request.reason);
     }
 

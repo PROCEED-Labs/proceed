@@ -74,14 +74,23 @@ export async function savedEnginesToEngines(spaceEngines: SavedEngine[]): Promis
   const engines = [];
 
   const allPromises = await Promise.allSettled(enginesRequests);
+  const status = [];
   console.log(`checking ${allPromises.length} promises`);
+  status.push(`checking ${allPromises.length} promises`);
+
   for (const request of allPromises)
     if (request.status === 'fulfilled') {
       console.log('fulfilled', request);
+      status.push('fulfilled', request);
+
       engines.push(...request.value);
     } else {
       console.log('failed', request);
+      status.push('failed', request);
+
       console.log('error', request.reason);
+
+      status.push('error', request.reason);
     }
 
   return engines;

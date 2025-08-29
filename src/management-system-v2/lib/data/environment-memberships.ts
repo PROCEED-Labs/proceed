@@ -47,6 +47,7 @@ export async function inviteUsersToEnvironment(
 
     const filteredRoles = roleIds?.filter(async (roleId) => {
       return (
+        ability.can('admin', 'All') &&
         ability.can('manage', toCaslResource('Role', await getRoleById(roleId))) &&
         ability.can(
           'create',

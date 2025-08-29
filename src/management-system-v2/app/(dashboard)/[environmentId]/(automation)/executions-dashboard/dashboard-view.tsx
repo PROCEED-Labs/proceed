@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import useDeployments from './use-deployments';
-import { Card, Col, Row, Statistic } from 'antd';
+import { Card, Col, Row, Skeleton, Statistic } from 'antd';
 
 const DashboardView: React.FC = () => {
   const { engines, deployments } = useDeployments(
@@ -92,7 +92,7 @@ const DashboardView: React.FC = () => {
     };
   }, [engines, deployments]);
 
-  if (!stats) return <>Loading</>;
+  if (!stats) return <Skeleton active />;
 
   return (
     <>

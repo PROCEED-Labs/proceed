@@ -331,7 +331,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
               type={tabs[activeIndex]?.key as any}
               exportProcesses={exportProcesses}
               isExporting={isExporting}
-              moreThanOne={processes.length > 1}
+              moreThanOneProcess={processes.length > 1}
               state={exportState[0]}
               closeModal={() => setOpen(false)}
             />

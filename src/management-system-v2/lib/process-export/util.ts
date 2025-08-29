@@ -52,7 +52,6 @@ export function downloadFile(filename: string, data: Blob) {
   URL.revokeObjectURL(objectURL);
 }
 
-// This function can't be async do to safari limitations
 /** Exports a blob with the specified method in ProcessExportOptions */
 export async function handleExportMethod(
   exportBlob: Promise<{ filename: string; blob: Blob } & ({} | { zip: true })>,
@@ -64,18 +63,21 @@ export async function handleExportMethod(
     if ('canShare' in window?.navigator)
       try {
         const { blob, filename } = await exportBlob;
-        navigator.share({
+
+        await navigator.share({
           files: [new File([blob], filename, { type: blob.type })],
         });
-        return fallback;
+
+        return undefined;
       } catch (_) {}
 
     fallback = 'Failed, copied to clipboard instead.';
   }
 
-  if (!('zip' in exportBlob) && (fallback || options.exportMethod === 'clipboard')) {
-    // needed for clipboard export
-    let prematureClipboardTypeIfNotZip;
+  if (fallback || options.exportMethod === 'clipboard') {
+    // What the type of the blob is, we don't know for sure since it could be a zip and the blob
+    // promise hasn't been resolved yet
+    let prematureClipboardTypeIfNotZip: 'text/plain' | 'image/png' | null = null;
     if (options.type === 'bpmn') {
       prematureClipboardTypeIfNotZip = 'text/plain';
     } else if (options.type === 'png') {
@@ -93,7 +95,7 @@ export async function handleExportMethod(
 
         await navigator.clipboard.write([
           new ClipboardItem({
-            [prematureClipboardTypeIfNotZip!]: item,
+            [prematureClipboardTypeIfNotZip]: item,
           }),
         ]);
         return fallback;

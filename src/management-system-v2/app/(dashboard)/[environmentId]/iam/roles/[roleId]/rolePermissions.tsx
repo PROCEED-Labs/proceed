@@ -265,7 +265,7 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
 
   const options = basePermissionOptions.filter((permissionCategory) => {
     if (
-      !envVars.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+      !envVars.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
       (permissionCategory.resource === 'Execution' ||
         permissionCategory.resource === 'Task' ||
         permissionCategory.resource === 'Machine')

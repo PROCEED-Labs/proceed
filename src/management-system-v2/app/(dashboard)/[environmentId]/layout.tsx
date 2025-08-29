@@ -103,7 +103,7 @@ const DashboardLayout = async ({
     'process-automation',
   );
   if (
-    msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+    msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
     automationSettings.active !== false &&
     automationSettings.tasklist?.active !== false
   ) {
@@ -144,7 +144,7 @@ const DashboardLayout = async ({
     }
   }
 
-  if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     if (automationSettings.active !== false) {
       let children: MenuProps['items'] = [
         automationSettings.dashboard?.active !== false && {

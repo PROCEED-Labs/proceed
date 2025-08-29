@@ -15,7 +15,7 @@ interface CommandOptions {
 }
 
 const config = {
-  containerName: 'postgres_database_proceed',
+  containerName: 'postgres_database_proceed_development',
   postgresUser: 'proceed',
   postgresPassword: 'proceed',
   defaultDb: 'proceed_db',
@@ -116,11 +116,27 @@ async function dropDatabase(dbName: string): Promise<void> {
 }
 
 async function ensureDockerContainerRunning(): Promise<void> {
+  // Docker container should have been started via docker compose. But maybe the container was just started and still needs some time for startup. If it is not up for longer than 10s, we wait for some seconds.
   try {
-    const { stdout } = execaSync('docker', ['ps']);
-    if (!stdout.includes(config.containerName)) {
-      console.log(`Starting Docker container: ${config.containerName}`);
-      execaSync('docker', ['start', config.containerName]);
+    // execaSync throws error if container not found
+    const { stdout } = execaSync('docker', [
+      'container',
+      'inspect',
+      '--format',
+      '{{.State.StartedAt}}',
+      config.containerName,
+    ]);
+    const timeDiffSinceContainerStarted = Date.now() - Date.parse(stdout);
+
+    console.info(
+      'Development Postgres Docker Container is running since ' +
+        timeDiffSinceContainerStarted / 1000 +
+        ' seconds.',
+    );
+
+    if (timeDiffSinceContainerStarted < 10000) {
+      console.info('Waiting for some seconds for the container to be ready...');
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   } catch (error) {
     console.error('Failed to start Docker container:', error);

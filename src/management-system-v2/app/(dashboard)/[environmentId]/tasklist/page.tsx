@@ -9,7 +9,7 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     return notFound();
   }
 

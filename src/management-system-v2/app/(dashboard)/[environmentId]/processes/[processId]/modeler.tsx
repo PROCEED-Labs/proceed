@@ -126,11 +126,13 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
     }
     const debouncedSaveXmlFn = debounce(saveXml, 2000);
 
-    return function (xml: string, invalidate: boolean = false) {
+    const wrappedDebouncedSaveFuncion = function (xml?: string, invalidate: boolean = false) {
+      if (!xml) return;
+
       if (!beforeWindowUnloadEventHandler.current) {
         function onBeforeUnload(e: BeforeUnloadEvent) {
           e.preventDefault();
-          saveXml(xml, invalidate);
+          saveXml(xml!, invalidate);
           if (beforeWindowUnloadEventHandler.current) {
             window.removeEventListener('beforeunload', beforeWindowUnloadEventHandler.current);
             beforeWindowUnloadEventHandler.current = undefined;
@@ -143,6 +145,11 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
 
       debouncedSaveXmlFn(xml, invalidate);
     };
+
+    wrappedDebouncedSaveFuncion.immediate = debouncedSaveXmlFn.immediate;
+    wrappedDebouncedSaveFuncion.asyncImmediate = debouncedSaveXmlFn.asyncImmediate;
+
+    return wrappedDebouncedSaveFuncion;
   }, [process.id]);
 
   useEffect(() => {

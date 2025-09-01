@@ -960,7 +960,7 @@ function insertBoundaryEventsAfterTasks<
     // Process elements maintaining hierarchy
     const processed = new Set<string>();
 
-    function addElementWithHierarchy(element: T) {
+    const addElementWithHierarchy = (element: T) => {
       if (processed.has(element.id)) return;
 
       processed.add(element.id);
@@ -1508,7 +1508,7 @@ function groupElementsByLanes<
   // If we have lane hierarchy, create headers for ALL lanes (including parent-only lanes)
   if (laneHierarchy && laneHierarchy.length > 0) {
     // Process a single lane with proper parent-child relationships
-    function processLaneHierarchically(lane: any, level: number, parentLaneId?: string): T[] {
+    const processLaneHierarchically = (lane: any, level: number, parentLaneId?: string): T[] => {
       const laneResult: T[] = [];
 
       const laneElements = laneGroups.get(lane.laneId) || [];
@@ -1727,6 +1727,8 @@ function groupElementsByLanes<
 function groupElementsByParticipants<
   T extends {
     id: string;
+    name?: string;
+    type?: string;
     start: number;
     elementType?: string;
     laneId?: string;

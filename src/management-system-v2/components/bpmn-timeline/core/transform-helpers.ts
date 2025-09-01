@@ -346,7 +346,7 @@ export function filterDependenciesForVisibleElements(
     const visibleIds = new Set(ganttElements.map((el) => el.id));
 
     // Helper function to extract base element ID from instance ID
-    function getBaseElementId(id: string): string {
+    const getBaseElementId = (id: string): string => {
       // Instance IDs have format: "ElementId_instance_N"
       // Base IDs are just: "ElementId"
       const instanceParts = id.split('_instance_');
@@ -354,7 +354,7 @@ export function filterDependenciesForVisibleElements(
     }
 
     // Helper function to check if an element is visible
-    function isElementVisible(id: string): boolean {
+    const isElementVisible = (id: string): boolean => {
       const baseId = getBaseElementId(id);
       // Check if it's a gateway - gateways are NOT visible when renderGateways=false
       if (baseId.includes('Gateway') || id.includes('Gateway')) {
@@ -391,7 +391,7 @@ export function filterDependenciesForVisibleElements(
     const processedPairs = new Set<string>();
 
     // Helper function to find all reachable targets from a source through gateway chains
-    function findTransitiveTargets(sourceId: string, visited = new Set<string>()): string[] {
+    const findTransitiveTargets = (sourceId: string, visited = new Set<string>()): string[] => {
       if (visited.has(sourceId)) return []; // Prevent cycles
 
       const newVisited = new Set(visited);

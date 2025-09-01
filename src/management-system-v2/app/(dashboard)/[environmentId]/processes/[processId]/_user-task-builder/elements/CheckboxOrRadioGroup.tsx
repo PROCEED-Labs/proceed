@@ -306,7 +306,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
           r && connect(r);
         }}
       >
-        <div className="user-task-form-input-group">
+        <div className={`user-task-form-input-group variable-${variable}`}>
           {dataWithPreviews.map(
             ({ label, value, checked, isAddPreview, isRemovePreview, isEditTarget }, index) => (
               <div

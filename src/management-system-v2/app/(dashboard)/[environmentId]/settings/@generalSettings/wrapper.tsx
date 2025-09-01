@@ -32,9 +32,10 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
     entityType: EntityType.ORGANIZATION,
   });
   const { colorWarning } = theme.useToken().token;
-  const initialLogoFilePath = (
-    group.children.find((setting) => setting.key === 'spaceLogo') as Setting
-  ).value as string | null;
+  // NOTE: this may break
+  const initialLogoFilePath = (group as any).children.find(
+    (setting: any) => setting.key === 'spaceLogo',
+  )?.children[0]?.value as string | null;
   const [spaceLogoFilePath, setLogoFilePath] = useState<string | undefined>(
     initialLogoFilePath || undefined,
   );
@@ -83,7 +84,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                     visible: false,
                     mask: (
                       <ImageUpload
-                        imageExists={!!spaceLogoUrl && !spaceLogoFilePath!.startsWith('public/')}
+                        imageExists={!!spaceLogoUrl || spaceLogoFilePath?.startsWith('public/')}
                         onImageUpdate={(filePath) => {
                           const deleted = typeof filePath === 'undefined';
 

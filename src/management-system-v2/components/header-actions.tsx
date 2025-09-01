@@ -32,6 +32,7 @@ import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-clie
 import { FaSignOutAlt } from 'react-icons/fa';
 import { EnvVarsContext } from './env-vars-context';
 import { TbUserEdit } from 'react-icons/tb';
+import { useRouter } from 'next/navigation';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -42,6 +43,7 @@ const HeaderActions: FC = () => {
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
   const envVars = use(EnvVarsContext);
+  const router = useRouter();
 
   if (!loggedIn) {
     return (
@@ -106,33 +108,54 @@ const HeaderActions: FC = () => {
       },
     );
 
-    // userSpaces is null when the component is outside of the UserSpaces provider
-    if (userSpaces) {
+    if (
+      userSpaces &&
+      !(
+        envVars.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE &&
+        !envVars.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE
+      )
+    ) {
       actionButton = (
         <div style={{ padding: '1rem' }}>
           <Select
             options={userSpaces.map((space) => {
               const name = space.isOrganization ? space.name : 'My Personal Space';
+              const label = <Typography.Text>{name}</Typography.Text>;
               return {
                 label: (
                   <Tooltip title={name} placement="left">
-                    <Link
-                      style={{ display: 'block' }}
-                      href={spaceURL(
-                        {
-                          spaceId: space?.id ?? '',
-                          isOrganization: space?.isOrganization ?? false,
-                        },
-                        `/processes`,
-                      )}
-                    >
-                      <Typography.Text>{name}</Typography.Text>
-                    </Link>
+                    {/** The active space cannot be a link, otherwise clicking the select will direct
+                      the user to the process page of the active space. */}
+                    {activeSpace.spaceId === space.id ? (
+                      label
+                    ) : (
+                      <Link
+                        style={{ display: 'block' }}
+                        href={spaceURL(
+                          {
+                            spaceId: space?.id ?? '',
+                            isOrganization: space?.isOrganization ?? false,
+                          },
+                          `/processes`,
+                        )}
+                      >
+                        {label}
+                      </Link>
+                    )}
                   </Tooltip>
                 ),
                 value: space.id,
+                _space: space,
               };
             })}
+            // Sometimes the click can select the option, but not click the anchor tag.
+            // Next dedupes the duplicate, in case the anchor tag was clicked route so the browser history is not polluted.
+            onChange={(spaceId) => {
+              const space = userSpaces.find((s) => s.id === spaceId)!;
+              router.push(
+                spaceURL({ spaceId: space.id, isOrganization: space.isOrganization }, '/processes'),
+              );
+            }}
             defaultValue={activeSpace.spaceId}
             style={{ width: '23ch' }}
           />

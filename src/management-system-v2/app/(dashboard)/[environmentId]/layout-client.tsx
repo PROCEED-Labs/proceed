@@ -13,7 +13,6 @@ import {
   Modal,
   Tooltip,
 } from 'antd';
-import { AppstoreOutlined, SettingOutlined, HomeOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
@@ -25,11 +24,12 @@ import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
-import { TbUser, TbUserEdit } from 'react-icons/tb';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { EnvVarsContext } from '@/components/env-vars-context';
 import { useSession } from '@/components/auth-can';
+import ChangeUserPasswordModal from './profile/change-password-modal';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import useMSLogo from '@/lib/use-ms-logo';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -57,6 +57,7 @@ const Layout: FC<
     hideSider?: boolean;
     customLogo?: string;
     disableUserDataModal?: boolean;
+    userNeedsToChangePassword?: boolean;
     bottomMenuItems?: NonNullable<MenuProps['items']>;
   }>
 > = ({
@@ -68,22 +69,23 @@ const Layout: FC<
   hideSider,
   customLogo,
   disableUserDataModal = false,
+  userNeedsToChangePassword: _userNeedsToChangePassword,
   bottomMenuItems,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
-  const { download: getLogo, fileUrl: logoUrl } = useFileManager({
-    entityType: EntityType.ORGANIZATION,
-  });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
-  const envVars = use(EnvVarsContext);
 
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
   const [showLoginRequest, setShowLoginRequest] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
+
+  const [userNeedsToChangePassword, setUserNeedsToChangePassword] = useState(
+    _userNeedsToChangePassword ?? false,
+  );
 
   let layoutMenuItems = _layoutMenuItems;
 
@@ -93,12 +95,8 @@ const Layout: FC<
     );
   }
 
-  useEffect(() => {
-    if (customLogo) getLogo({ entityId: activeSpace.spaceId, filePath: customLogo });
-  }, [activeSpace, customLogo]);
-
-  let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (logoUrl) imageSource = logoUrl;
+  // The space id needs to be set here, because the hook is outside of the SpaceContext.Provider
+  const { imageSource } = useMSLogo(customLogo, { spaceId: activeSpace.spaceId });
 
   const menu = (
     <Menu
@@ -153,6 +151,22 @@ const Layout: FC<
             modalProps={{ closeIcon: null, destroyOnClose: true }}
           />
         ) : null}
+
+        {userNeedsToChangePassword && (
+          <ChangeUserPasswordModal
+            open={true}
+            close={(passwordChanged) => {
+              if (passwordChanged) {
+                setUserNeedsToChangePassword(false);
+              }
+            }}
+            title="You need to set your password"
+            hint={
+              <Alert message="Your account still has a temporary password, in order to use PROCEED you need to set a new password" />
+            }
+            modalProps={{ closable: false }}
+          />
+        )}
 
         <AntLayout style={{ height: '100vh' }}>
           <AntLayout hasSider>

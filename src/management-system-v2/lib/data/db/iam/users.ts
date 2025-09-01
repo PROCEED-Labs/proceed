@@ -11,10 +11,11 @@ import { addEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
 import { getUserOrganizationEnvironments } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
-import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data/db';
 import { Prisma, PasswordAccount } from '@prisma/client';
 import { UserFacingError } from '@/lib/user-error';
+import { env } from '@/lib/ms-config/env-vars';
+import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from '@/lib/authjs-error-message';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -80,13 +81,19 @@ export async function addUser(
 
   if (!user.isGuest) {
     const checks = [];
-    if (user.username) checks.push(getUserByUsername(user.username));
-    if (user.email) checks.push(getUserByEmail(user.email));
+    checks.push(user.username ? getUserByUsername(user.username) : undefined);
+    checks.push(user.email ? getUserByEmail(user.email) : undefined);
 
-    const res = await Promise.all(checks);
+    const [usernameRes, emailRes] = await Promise.all(checks);
+    console.log('usernameRes', usernameRes);
+    console.log('emailRes', emailRes);
 
-    if (res.some((user) => !!user))
-      throw new Error('User with this email or username already exists');
+    if (usernameRes) {
+      throw new NextAuthUsernameTakenError();
+    }
+    if (emailRes) {
+      throw new NextAuthEmailTakenError();
+    }
   }
 
   if (!user.id) user.id = v4();
@@ -94,6 +101,7 @@ export async function addUser(
   try {
     const userExists = await tx.user.findUnique({ where: { id: user.id } });
     if (userExists) throw new Error('User already exists');
+
     await tx.user.create({
       data: {
         ...user,
@@ -101,16 +109,8 @@ export async function addUser(
       },
     });
 
-    await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
-
-    if ((await getSystemAdmins()).length === 0 && !user.isGuest)
-      await addSystemAdmin(
-        {
-          role: 'admin',
-          userId: user.id!,
-        },
-        tx,
-      );
+    if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
+      await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
 
     if (user.isGuest) {
       await tx.guestSignin.create({
@@ -147,6 +147,10 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
   const dbMutator = tx;
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User doesn't exist");
+
+  if (user.username === 'admin') {
+    throw new UserFacingError('The user "admin" cannot be deleted');
+  }
 
   const userOrganizations = await getUserOrganizationEnvironments(userId);
   const orgsWithNoNextAdmin: string[] = [];
@@ -202,6 +206,14 @@ export async function updateUser(
     updatedUser = { isGuest: true };
   } else {
     const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
+
+    if (newUserData.username && newUserData.username === 'admin') {
+      throw new UserFacingError('The username is already taken');
+    }
+
+    if (!user.isGuest && user.username === 'admin' && 'username' in newUserData) {
+      throw new UserFacingError('The username "admin" cannot be changed');
+    }
 
     if (newUserData.email) {
       const existingUser = await db.user.findUnique({ where: { email: newUserData.email } });
@@ -314,8 +326,9 @@ export async function deleteInactiveGuestUsers(
 /** Note: make sure to save a salted hash of the password */
 export async function setUserPassword(
   userId: string,
-  password: string,
+  passwordHash: string,
   tx?: Prisma.TransactionClient,
+  isTemporaryPassword: boolean = false,
 ) {
   const dbMutator = tx || db;
 
@@ -328,11 +341,11 @@ export async function setUserPassword(
   if (user.passwordAccount) {
     await dbMutator.passwordAccount.update({
       where: { userId },
-      data: { password: password },
+      data: { password: passwordHash, isTemporaryPassword },
     });
   } else {
     await dbMutator.passwordAccount.create({
-      data: { userId, password: password },
+      data: { userId, password: passwordHash, isTemporaryPassword },
     });
   }
 }

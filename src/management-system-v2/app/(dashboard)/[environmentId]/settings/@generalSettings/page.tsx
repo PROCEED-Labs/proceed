@@ -5,13 +5,14 @@ import { SettingGroup } from '../type-util';
 import Wrapper from './wrapper';
 import db from '@/lib/data/db';
 import { SpaceNotFoundError } from '@/lib/errors';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
   const {
     ability,
     activeEnvironment: { spaceId },
   } = await getCurrentEnvironment(params.environmentId);
-  if (!ability.can('update', 'Environment')) return null;
+  //if (!ability.can('update', 'Environment')) return null;
 
   const spaceLogo = await db.space.findUnique({
     where: { id: spaceId },
@@ -19,6 +20,8 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
   });
   if (!spaceLogo) throw new SpaceNotFoundError();
 
+  // NOTE: beware when changing the structure of space logo, the client component sort of relies on
+  // it
   const settings: SettingGroup = {
     key: 'general-settings',
     name: 'General Settings',
@@ -26,16 +29,28 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
       {
         key: 'spaceLogo',
         name: 'Space Logo',
-        type: 'custom',
-        description: 'The logo that is displayed in the top left corner of the space.',
-        value: spaceLogo.spaceLogo,
+        children: [
+          {
+            key: 'logo',
+            name: '',
+            type: 'custom',
+            description: 'The logo that is displayed in the top left corner of the space.',
+            value: spaceLogo.spaceLogo,
+          },
+        ],
       },
       {
         key: 'customNavigationLinks',
         name: 'Custom Navigation Links',
-        type: 'custom',
-        description: 'Pinned links',
-        value: [],
+        children: [
+          {
+            key: 'links',
+            name: '',
+            type: 'custom',
+            description: 'Pinned links',
+            value: [],
+          },
+        ],
       },
     ],
   };

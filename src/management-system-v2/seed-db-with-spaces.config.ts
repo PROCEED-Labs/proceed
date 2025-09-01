@@ -11,7 +11,7 @@ export const seedDbConfig: DBSeed = {
       username: 'admin',
       firstName: 'Admin',
       lastName: 'Admin',
-      initialPassword: process.env.PROCEED_ADMIN_INITIAL_PASSWORD || 'PROCEED',
+      initialPassword: process.env.IAM_MS_ADMIN_INITIAL_PASSWORD || 'proceed',
     },
   ],
   organizations: [],

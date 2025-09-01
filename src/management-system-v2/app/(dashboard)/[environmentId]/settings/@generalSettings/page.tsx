@@ -20,6 +20,8 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
   });
   if (!spaceLogo) throw new SpaceNotFoundError();
 
+  // NOTE: beware when changing the structure of space logo, the client component sort of relies on
+  // it
   const settings: SettingGroup = {
     key: 'general-settings',
     name: 'General Settings',

@@ -9,8 +9,5 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint ."
-  },
-  "dependencies": {
-    "whiskers": "^0.4.0"
   }
 }

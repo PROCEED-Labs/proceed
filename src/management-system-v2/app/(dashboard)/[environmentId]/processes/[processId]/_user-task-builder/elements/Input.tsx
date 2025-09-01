@@ -30,7 +30,7 @@ export const ExportInput: UserComponent<InputProps> = ({
 }) => {
   const inputId = useId();
 
-  const value = defaultValue || (variable && `{${variable}}`);
+  const value = defaultValue || (variable && `{{${variable}}}`);
 
   const input = (
     <input
@@ -45,7 +45,7 @@ export const ExportInput: UserComponent<InputProps> = ({
   return (
     <ContextMenu menu={[]}>
       <div
-        className="user-task-form-input"
+        className={`user-task-form-input input-for-${variable}`}
         style={{
           display: 'flex',
           flexDirection: labelPosition === 'top' ? 'column' : 'row',
@@ -58,11 +58,11 @@ export const ExportInput: UserComponent<InputProps> = ({
               style={{ whiteSpace: 'nowrap' }}
               value={label}
               active={false}
-              onStopEditing={() => {}}
+              onStopEditing={() => { }}
               tagName="label"
               htmlFor={inputId}
-              onClick={() => {}}
-              onChange={() => {}}
+              onClick={() => { }}
+              onChange={() => { }}
             />
           </div>
         )}
@@ -75,9 +75,13 @@ export const ExportInput: UserComponent<InputProps> = ({
               {input}
             </label>
             <div className="selected-files"></div>
+            <div className="validation-error"></div>
           </>
         ) : (
-          input
+          <>
+            input
+            <div className="validation-error"></div>
+          </>
         )}
       </div>
     </ContextMenu>

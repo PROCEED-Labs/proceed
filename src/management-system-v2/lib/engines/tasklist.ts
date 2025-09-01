@@ -2,7 +2,7 @@
 
 import { Engine } from './machines';
 import { engineRequest } from './endpoints/index';
-import { inlineUserTaskData } from '@proceed/user-task-helper';
+import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
 export type TaskListEntry = {
   id: string;
@@ -86,7 +86,10 @@ export async function getStartFormFromMachine(
   // initialize the placeholders in the form with empty strings
   // TODO: use the information from the variable data in the bpmn to initialize the actual initial
   // values set by the process designer
-  if (html) html = inlineUserTaskData(html, '', '', {}, []);
+  if (html) {
+    html = inlineScript(html, '', '');
+    html = inlineUserTaskData(html, {}, []);
+  }
 
   return html as string;
 }

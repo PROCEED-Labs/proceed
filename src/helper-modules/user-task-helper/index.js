@@ -272,9 +272,7 @@ function inlineUserTaskData(html, instanceId, userTaskId, variables, milestones)
 
           clearTimeout(variableInputTimer);
 
-console.log(event.target);
           if (event.target.type === 'file') {
-console.log('Test');
             updateUploadInfo(event.target);
             return;
           }

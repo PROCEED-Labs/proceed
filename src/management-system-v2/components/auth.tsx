@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
-import { isMember } from '@/lib/data/db/iam/memberships';
+import { getUserOrganizationEnvironments, isMember } from '@/lib/data/db/iam/memberships';
 import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import Ability from '@/lib/ability/abilityHelper';
 import {
@@ -10,11 +10,12 @@ import {
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
+import { env } from '@/lib/ms-config/env-vars';
+import * as noIamUser from '@/lib/no-iam-user';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { cookies } from 'next/headers';
-import * as noIamUser from '@/lib/no-iam-user';
-import { env } from '@/lib/ms-config/env-vars';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { UIError as UserUIError } from '@/lib/ui-error';
 
 export const getCurrentUser = cache(async () => {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
@@ -22,6 +23,7 @@ export const getCurrentUser = cache(async () => {
       session: noIamUser.session,
       userId: noIamUser.userId,
       systemAdmin: noIamUser.systemAdmin,
+      user: noIamUser.user,
     };
   }
 
@@ -29,7 +31,7 @@ export const getCurrentUser = cache(async () => {
   const userId = session?.user.id || '';
   const [systemAdmin, user] = await Promise.all([
     getSystemAdminByUserId(userId),
-    userId !== '' && getUserById(userId),
+    userId !== '' ? getUserById(userId) : undefined,
   ]);
 
   // Sign out user if the id doesn't correspond to a user in the db
@@ -43,7 +45,7 @@ export const getCurrentUser = cache(async () => {
     redirect(`/api/private/signout?csrfToken=${csrfToken}`);
   }
 
-  return { session, userId, systemAdmin };
+  return { session, userId, systemAdmin, user };
 });
 
 // TODO: To enable PPR move the session redirect into this function, so it will
@@ -64,15 +66,32 @@ export const getCurrentEnvironment = cache(
     const msConfig = await getMSConfig();
 
     if (
+      // userId && // first of all, only do this for users that are signed in
       spaceIdParam === 'my' || // Use hardcoded environment /my/processes for personal spaces.
       !msConfig.PROCEED_PUBLIC_IAM_ACTIVE // when iam isn't active we hardcode the space to be the no-iam user's personal space
     ) {
-      // Note: will be undefined for not logged in users
       spaceIdParam = userId;
     }
 
-    const activeSpace = decodeURIComponent(spaceIdParam);
-    const isOrganization = activeSpace !== userId;
+    let activeSpace = decodeURIComponent(spaceIdParam);
+    let isOrganization = activeSpace !== userId;
+
+    // When trying to access a personal space
+    if (userId && !isOrganization && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+      // Note: will be undefined for not logged in users
+      const userOrgs = await getUserOrganizationEnvironments(userId);
+
+      if (userOrgs.length === 0) {
+        if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
+          throw new UserUIError('You are not part of an organization.');
+        } else {
+          return redirect(`/create-organization`);
+        }
+      }
+
+      activeSpace = userOrgs[0];
+      isOrganization = true;
+    }
 
     // TODO: account for bought resources
 

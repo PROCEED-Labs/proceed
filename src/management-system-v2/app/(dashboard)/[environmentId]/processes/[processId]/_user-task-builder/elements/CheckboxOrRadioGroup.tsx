@@ -15,6 +15,7 @@ import {
   Overlay,
   SidebarButtonFactory,
   MenuItemFactoryFactory,
+  VariableSetting,
 } from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 
@@ -27,7 +28,7 @@ const checkboxValueHint =
 const radioValueHint =
   'This will be the value that is assigned to the variable associated with this group when the radio button is selected at the time the form is submitted.';
 
-type CheckBoxOrRadioGroupProps = {
+export type CheckBoxOrRadioGroupProps = {
   type: 'checkbox' | 'radio';
   variable?: string;
   data: { label: string; value: string; checked: boolean }[];
@@ -91,6 +92,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               key: 'setting',
             },
           ]}
+          onDoubleClick={() => setTextEditing(true)}
         >
           <EditableText
             value={label}
@@ -298,7 +300,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
           r && connect(r);
         }}
       >
-        <div className="user-task-form-input-group">
+        <div className={`user-task-form-input-group variable-${variable}`}>
           {dataWithPreviews.map(
             ({ label, value, checked, isAddPreview, isRemovePreview, isEditTarget }, index) => (
               <div
@@ -392,24 +394,16 @@ export const CheckBoxOrRadioGroupSettings = () => {
   } = useNode((node) => ({
     variable: node.data.props.variable,
   }));
-  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   return (
-    <>
-      <Setting
-        label="Variable"
-        control={
-          <Input
-            value={variable}
-            onChange={(e) => {
-              setProp((props: CheckBoxOrRadioGroupProps) => {
-                props.variable = e.target.value;
-              });
-            }}
-          />
-        }
-      />
-    </>
+    <VariableSetting
+      variable={variable}
+      onChange={(newVariable) =>
+        setProp((props: CheckBoxOrRadioGroupProps) => {
+          props.variable = newVariable;
+        })
+      }
+    />
   );
 };
 
@@ -421,7 +415,6 @@ CheckBoxOrRadioGroup.craft = {
     settings: CheckBoxOrRadioGroupSettings,
   },
   props: {
-    variable: 'test',
     data: [{ label: 'New Element', value: '', checked: false }],
   },
 };

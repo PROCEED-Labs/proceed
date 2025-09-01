@@ -27,11 +27,9 @@ export async function httpRequest(
   if (response.headers.get('content-type')?.includes('application/json')) {
     return response.json();
   } else if (
-    contentType.includes('text/plain') ||
-    contentType.includes('text/javascript') ||
     contentType.includes('application/javascript') ||
     contentType.includes('application/xml') ||
-    contentType.includes('text/xml')
+    contentType.includes('text')
   ) {
     return await response.text();
   } else if (

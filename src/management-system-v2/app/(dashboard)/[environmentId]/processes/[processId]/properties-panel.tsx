@@ -33,6 +33,10 @@ import { Element, Shape } from 'bpmn-js/lib/model/Types';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+import VariableDefinition from './variable-definition';
+
+// Elements that should not display the planned duration field
+const ELEMENTS_WITHOUT_PLANNED_DURATION = ['bpmn:StartEvent', 'bpmn:TextAnnotation'];
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -277,17 +281,19 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 });
               }}
             ></PlannedCostInput>
-            <PlannedDurationInput
-              onChange={(changedTimePlannedDuration) => {
-                updateMetaData(
-                  modeler!,
-                  selectedElement,
-                  'timePlannedDuration',
-                  changedTimePlannedDuration,
-                );
-              }}
-              timePlannedDuration={timePlannedDuration || ''}
-            ></PlannedDurationInput>
+            {!ELEMENTS_WITHOUT_PLANNED_DURATION.includes(selectedElement.type) && (
+              <PlannedDurationInput
+                onChange={(changedTimePlannedDuration) => {
+                  updateMetaData(
+                    modeler!,
+                    selectedElement,
+                    'timePlannedDuration',
+                    changedTimePlannedDuration,
+                  );
+                }}
+                timePlannedDuration={timePlannedDuration || ''}
+              ></PlannedDurationInput>
+            )}
           </Space>
 
           <CustomPropertySection
@@ -352,7 +358,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     },
   ];
 
-  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     tabs.push({
       key: 'Property-Panel-Execution',
       label: 'Automation Properties',
@@ -364,9 +370,13 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             role="group"
             aria-labelledby="general-title"
           >
-            {environment?.isOrganization && (
-              <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
+            {selectedElement.type === 'bpmn:UserTask' && (
+              <>
+                <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
+                <Divider />
+              </>
             )}
+            <VariableDefinition />
           </Space>
         </>
       ),

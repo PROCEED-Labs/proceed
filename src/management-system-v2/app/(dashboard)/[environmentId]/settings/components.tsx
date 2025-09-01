@@ -122,6 +122,7 @@ type SettingsGroupProps = {
   onUpdate: (changedGroup: SettingGroupType) => void;
   onNestedSettingUpdate?: (key: string, value: any) => void;
   renderNestedSettingInput?: SettingProps['renderInput'];
+  hideTitle?: boolean;
 };
 
 export const SettingsGroup: React.FC<SettingsGroupProps> = ({
@@ -130,6 +131,7 @@ export const SettingsGroup: React.FC<SettingsGroupProps> = ({
   onUpdate,
   onNestedSettingUpdate,
   renderNestedSettingInput,
+  hideTitle = false,
 }) => {
   const update = (childIndex: number, changedChild: SettingGroupType | SettingType) => {
     onUpdate({
@@ -144,7 +146,7 @@ export const SettingsGroup: React.FC<SettingsGroupProps> = ({
 
   return (
     <div id={mergeKeys(group, parentKey)}>
-      <Typography.Title level={parentKey ? 4 : 2}>{group.name}</Typography.Title>
+      {!hideTitle && <Typography.Title level={parentKey ? 4 : 2}>{group.name}</Typography.Title>}
       {group.children.map((el, index) =>
         isGroup(el) ? (
           <SettingsGroup
@@ -154,6 +156,7 @@ export const SettingsGroup: React.FC<SettingsGroupProps> = ({
             onUpdate={(changed) => update(index, changed)}
             onNestedSettingUpdate={onNestedSettingUpdate}
             renderNestedSettingInput={renderNestedSettingInput}
+            hideTitle={hideTitle}
           />
         ) : (
           <Setting

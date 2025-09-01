@@ -9,16 +9,15 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     return notFound();
   }
 
   const {
     activeEnvironment: { spaceId },
-    ability,
   } = await getCurrentEnvironment(params.environmentId);
 
-  const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation', ability);
+  const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation');
 
   if (automationSettings.active === false || automationSettings.tasklist?.active === false) {
     return notFound();

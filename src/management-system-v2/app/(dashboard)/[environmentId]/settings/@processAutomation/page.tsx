@@ -7,14 +7,14 @@ import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) return null;
+  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return null;
 
   const {
     ability,
     activeEnvironment: { spaceId },
   } = await getCurrentEnvironment(params.environmentId);
 
-  await populateSpaceSettingsGroup(spaceId, settings, ability);
+  await populateSpaceSettingsGroup(spaceId, settings);
 
   return (
     <>

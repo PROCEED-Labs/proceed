@@ -147,6 +147,13 @@ class Messaging extends System {
     return listenPromise;
   }
 
+  async onConnect(url, connectionOptions, cb) {
+    const taskID = generateUniqueTaskID();
+    connectionOptions = JSON.stringify(connectionOptions);
+    this.commandResponse(taskID, cb);
+    this.commandRequest(taskID, ['messaging_on_connect', [url, connectionOptions]]);
+  }
+
   /**
    * Close a connection to a messaging server
    *

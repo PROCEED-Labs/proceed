@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthConfig } from 'next-auth';
+import NextAuth, { AuthError, NextAuthConfig } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import { User as ProviderUser } from '@auth/core/types';
 
@@ -11,6 +11,7 @@ import * as noIamUser from '@/lib/no-iam-user';
 import {
   addUser,
   deleteUser,
+  getUserByEmail,
   getUserById,
   getUserByUsername,
   setUserPassword,
@@ -25,6 +26,9 @@ import { env } from '@/lib/ms-config/env-vars';
 import { getUserAndPasswordByUsername, updateGuestUserLastSigninTime } from './data/db/iam/users';
 import { comparePassword, hashPassword } from './password-hashes';
 import db from './data/db';
+import { createUserRegistrationToken } from './email-verification-tokens/utils';
+import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
+import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -44,16 +48,7 @@ const nextAuthOptions: NextAuthConfig = {
     },
   },
   trustHost: true,
-  providers: [
-    CredentialsProvider({
-      name: 'Continue as Guest',
-      id: 'guest-signin',
-      credentials: {},
-      async authorize() {
-        return addUser({ isGuest: true });
-      },
-    }),
-  ],
+  providers: [],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
       if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
@@ -74,7 +69,12 @@ const nextAuthOptions: NextAuthConfig = {
 
       return session;
     },
-    signIn: async ({ account, user: _user, email }) => {
+    signIn: async (params) => {
+      const { account, user: _user, email } = params;
+      if (account?.provider === 'register-as-new-user' && (_user as any).notARealUser === true) {
+        return `/signin?error=${encodeURIComponent('$success Check your email: we sent you a link to sign in with your new user.')}`;
+      }
+
       const session = await auth();
       const sessionUser = session?.user;
 
@@ -132,6 +132,20 @@ const nextAuthOptions: NextAuthConfig = {
   },
   pages: {
     signIn: '/signin',
+    error: '/signin',
+  },
+  logger: {
+    error(error) {
+      if (error instanceof AuthError) {
+        if (['AdapterError', 'CallbackRouteError', 'OAuthProfileParseError'].includes(error.type)) {
+          console.error(error);
+        } else {
+          console.error('NextAuth error:', error.type);
+        }
+      } else {
+        console.error(error);
+      }
+    },
   },
 };
 
@@ -159,9 +173,10 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
   );
 }
 
-if (env.NODE_ENV === 'production') {
+if (env.PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE) {
   nextAuthOptions.providers.push(
     GoogleProvider({
+      id: 'google',
       clientId: env.IAM_LOGIN_OAUTH_GOOGLE_CLIENT_ID,
       clientSecret: env.IAM_LOGIN_OAUTH_GOOGLE_CLIENT_SECRET,
       profile(profile) {
@@ -175,18 +190,13 @@ if (env.NODE_ENV === 'production') {
         };
       },
     }),
-    DiscordProvider({
-      clientId: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID,
-      clientSecret: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET,
-      profile(profile) {
-        const image = profile.avatar
-          ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
-          : null;
+  );
+}
 
-        return { ...profile, image };
-      },
-    }),
+if (env.PROCEED_PUBLIC_IAM_LOGIN_OAUTH_X_ACTIVE) {
+  nextAuthOptions.providers.push(
     TwitterProvider({
+      id: 'twitter',
       clientId: env.IAM_LOGIN_OAUTH_X_CLIENT_ID,
       clientSecret: env.IAM_LOGIN_OAUTH_X_CLIENT_SECRET,
       profile({ data, email }) {
@@ -207,29 +217,32 @@ if (env.NODE_ENV === 'production') {
   );
 }
 
+// Guest users can only have a personal space, so it doesn't make sense to have guests when
+// personal spaces are deactivated
+if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      name: 'Continue as Guest',
+      id: 'guest-signin',
+      credentials: {},
+      async authorize() {
+        return addUser({ isGuest: true });
+      },
+    }),
+  );
+}
+
 if (env.NODE_ENV === 'development') {
-  const developmentUsers = [
-    {
-      username: 'johndoe',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'johndoe@proceed-labs.org',
-      id: 'development-id|johndoe',
-      isGuest: false,
-      emailVerifiedOn: null,
-      profileImage: null,
-    },
-    {
-      username: 'admin',
-      firstName: 'Admin',
-      lastName: 'Admin',
-      email: 'admin@proceed-labs.org',
-      id: 'development-id|admin',
-      isGuest: false,
-      emailVerifiedOn: null,
-      profileImage: null,
-    },
-  ] satisfies User[];
+  const johnDoeTemplate = {
+    username: 'johndoe',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'johndoe@proceed-labs.org',
+    id: 'development-id|johndoe',
+    isGuest: false,
+    emailVerifiedOn: null,
+    profileImage: null,
+  };
 
   nextAuthOptions.providers.push(
     CredentialsProvider({
@@ -244,15 +257,33 @@ if (env.NODE_ENV === 'development') {
         },
       },
       async authorize(credentials) {
-        const userTemplate = developmentUsers.find(
-          (user) => user.username === credentials?.username,
-        );
-        if (!userTemplate) return null;
+        let user: User | null = null;
 
-        let user = await getUserByUsername(userTemplate.username);
-        if (!user) user = await addUser(userTemplate);
+        if (credentials.username === 'johndoe') {
+          user = await getUserByUsername('johndoe');
+          if (!user) user = await addUser(johnDoeTemplate);
+        } else if (credentials.username === 'admin') {
+          user = await getUserByUsername('admin');
+        }
 
         return user;
+      },
+    }),
+  );
+}
+
+if (env.PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE) {
+  nextAuthOptions.providers.push(
+    DiscordProvider({
+      id: 'discord',
+      clientId: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID,
+      clientSecret: env.IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET,
+      profile(profile) {
+        const image = profile.avatar
+          ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+          : null;
+
+        return { ...profile, image };
       },
     }),
   );
@@ -274,7 +305,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
           type: 'password',
         },
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, req) => {
         const userAndPassword = await getUserAndPasswordByUsername(credentials.username as string);
 
         if (!userAndPassword) return null;
@@ -288,36 +319,123 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
         return userAndPassword as User;
       },
     }),
+  );
+}
+
+if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+  //Vorname, Nachname und Username input feldern,
+  const credentials: Record<string, CredentialInput> = {
+    firstName: {
+      type: 'string',
+      label: 'First Name',
+    },
+    lastName: {
+      type: 'string',
+      label: 'Last Name',
+    },
+    username: {
+      type: 'string',
+      label: 'Username',
+    },
+  };
+
+  if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+    credentials['email'] = {
+      type: 'email',
+      label: 'E-Mail',
+    };
+  }
+
+  if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
+    credentials['password'] = {
+      type: 'password',
+      label: 'Password',
+    };
+  }
+
+  nextAuthOptions.providers.push(
     CredentialsProvider({
-      name: 'Sign Up',
+      name: 'Register as New User',
       type: 'credentials',
-      id: 'username-password-signup',
-      credentials: {
-        username: {
-          type: 'string',
-          label: 'Username',
-        },
-        password: {
-          type: 'password',
-          label: 'Password',
-        },
-      },
-      authorize: async (credentials) => {
+      id: 'register-as-new-user',
+      credentials,
+      authorize: async (
+        credentials: Partial<
+          Record<
+            'firstName' | 'lastName' | 'username' | 'email' | 'password' | 'callbackUrl',
+            string
+          >
+        >,
+      ) => {
+        let callbackUrl: string | undefined = undefined;
+        // only allow urls that start with / = redirect to out site
+        if (credentials.callbackUrl && credentials.callbackUrl.startsWith('/')) {
+          callbackUrl = credentials.callbackUrl;
+        }
+
         let user: User | null = null;
 
-        await db.$transaction(async (tx) => {
-          user = await addUser(
-            {
-              username: credentials.username as string,
-              isGuest: false,
-              emailVerifiedOn: null,
-            },
-            tx,
-          );
+        // Whenever the email is active, we create the user after he verifies his email
+        if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+          const [existingUserUsername, existingUserMail] = await Promise.all([
+            getUserByUsername(credentials.username as string),
+            getUserByEmail(credentials.email as string),
+          ]);
+          if (existingUserUsername) {
+            throw new NextAuthUsernameTakenError();
+          }
+          if (existingUserMail) {
+            throw new NextAuthEmailTakenError();
+          }
 
-          const hashedPassword = await hashPassword(credentials.password as string);
-          await setUserPassword(user.id, hashedPassword, tx);
-        });
+          const tokenParams: any = {
+            identifier: credentials.email,
+            username: credentials.username,
+            firstName: credentials.firstName,
+            lastName: credentials.lastName,
+          };
+
+          if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE)
+            tokenParams['passwordHash'] = await hashPassword(credentials.password as string);
+
+          const userRegistrationToken = await createUserRegistrationToken(tokenParams, callbackUrl);
+
+          await saveEmailVerificationToken(userRegistrationToken.verificationToken);
+
+          const signinMail = renderSigninLinkEmail({
+            signInLink: userRegistrationToken.redirectUrl,
+            expires: userRegistrationToken.verificationToken.expires,
+          });
+
+          await sendEmail({
+            to: credentials.email as string,
+            subject: 'Sign in to PROCEED',
+            html: signinMail.html,
+            text: signinMail.text,
+          });
+
+          // This allows nextauth to proceed in the signin flow.
+          // This dummy user will be caught by the signin callback and will redirect the user back
+          // to the signin page with a success message.
+          return { id: '', notARealUser: true };
+        } else {
+          // Only password is enabled -> immediately create user
+          await db.$transaction(async (tx) => {
+            user = await addUser(
+              {
+                username: credentials.username,
+                firstName: credentials.firstName,
+                lastName: credentials.lastName,
+                isGuest: false,
+                emailVerifiedOn: null,
+              },
+              tx,
+            );
+
+            const hashedPassword = await hashPassword(credentials.password as string);
+            await setUserPassword(user.id, hashedPassword, tx);
+          });
+        }
 
         return user;
       },

@@ -1,12 +1,23 @@
-import React, { ReactElement, ReactNode, useEffect, useId, useMemo, useState } from 'react';
+import React, {
+  MouseEvent,
+  ReactElement,
+  ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Menu, MenuProps } from 'antd';
+import { Button, Menu, MenuProps, Select, Space } from 'antd';
 import { useDndContext } from '@dnd-kit/core';
 
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
+import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
+import useProcessVariables from '../../use-process-variables';
+import ProcessVariableForm, { typeLabelMap } from '../../variable-definition/process-variable-form';
 
 export const Setting: React.FC<{
   label: string;
@@ -77,7 +88,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
         onClose?.();
       };
 
-      const handleContextMenu = (e: MouseEvent) => {
+      const handleContextMenu = () => {
         setMenuPosition(undefined);
         onClose?.();
       };
@@ -135,9 +146,16 @@ type OverlayProps = React.PropsWithChildren<{
   show: boolean;
   onHide: () => void;
   controls: ({ icon: ReactNode; key: string } | undefined | false)[];
+  onDoubleClick?: (e: MouseEvent<HTMLDivElement>) => void;
 }>;
 
-export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, children }) => {
+export const Overlay: React.FC<OverlayProps> = ({
+  show,
+  onHide,
+  controls,
+  children,
+  onDoubleClick,
+}) => {
   const { active } = useDndContext();
 
   useEffect(() => {
@@ -154,7 +172,11 @@ export const Overlay: React.FC<OverlayProps> = ({ show, onHide, controls, childr
   return (
     <>
       {show && !active && (
-        <div className="overlay-mask" onMouseMove={(e) => e.stopPropagation()}>
+        <div
+          className="overlay-mask"
+          onMouseMove={(e) => e.stopPropagation()}
+          onDoubleClick={onDoubleClick}
+        >
           {controls.filter(truthyFilter).map(({ icon, key }) => (
             <div className="overlay-control-icon" key={key}>
               {icon}
@@ -226,3 +248,69 @@ export function MenuItemFactoryFactory<T extends string>(options: Record<T, Opti
   return (...args: Tail<Parameters<typeof MenuItemFactory<T>>>) =>
     MenuItemFactory<T>(options, ...args);
 }
+
+export function getVariableTooltip(variables: ProcessVariable[], name?: string) {
+  if (!name) return;
+  const variable = variables.find((v) => v.name === name);
+  if (!variable) return;
+
+  let tooltip = `Type: ${typeLabelMap[variable.dataType as keyof typeof typeLabelMap]}`;
+
+  if (variable.description) tooltip += `\nDescription: ${variable.description}`;
+
+  return tooltip;
+}
+
+type VariableSettingProps = {
+  variable?: string;
+  onChange: (newVariable?: string) => void;
+};
+
+export const VariableSetting: React.FC<VariableSettingProps> = ({ variable, onChange }) => {
+  const [showVariableForm, setShowVariableForm] = useState(false);
+
+  const { variables, addVariable } = useProcessVariables();
+
+  return (
+    <Setting
+      label="Variable"
+      control={
+        <>
+          <Select
+            value={variable}
+            style={{ display: 'block' }}
+            title={getVariableTooltip(variables, variable)}
+            options={variables.map((v) => ({
+              label: v.name,
+              title: getVariableTooltip(variables, v.name),
+              value: v.name,
+            }))}
+            onChange={(val) => {
+              onChange(val);
+            }}
+            dropdownRender={(menu) => (
+              <>
+                {menu}
+                <Space style={{ display: 'block', padding: '0 8px 4px' }}>
+                  <Button block onClick={() => setShowVariableForm(true)}>
+                    Add Variable
+                  </Button>
+                </Space>
+              </>
+            )}
+          />
+          <ProcessVariableForm
+            open={showVariableForm}
+            variables={variables}
+            onSubmit={(newVar) => {
+              addVariable(newVar);
+              setShowVariableForm(false);
+              onChange(newVar.name);
+            }}
+            onCancel={() => setShowVariableForm(false)}
+          />
+        </>
+      }
+    />
+  );
+};

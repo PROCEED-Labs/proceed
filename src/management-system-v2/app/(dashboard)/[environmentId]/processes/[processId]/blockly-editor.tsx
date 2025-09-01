@@ -59,7 +59,13 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
   };
 
   useEffect(() => {
-    if (blocklyEditorRef.current && blocklyEditorRef.current.rendered && initialXml) {
+    if (blocklyEditorRef.current && initialXml) {
+      if (!blocklyEditorRef.current.rendered) {
+        throw new Error(
+          'Tried to render xml, but the blockly editor was in headless mode (probably unmounted)',
+        );
+      }
+
       const xml = Blockly.utils.xml.textToDom(initialXml);
       Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyEditorRef.current);
       blocklyEditorRef.current.scrollCenter();
@@ -119,13 +125,6 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
     onChangeFunc.current?.(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
   }, []);
 
-  useEffect(() => {
-    if (!blocklyEditorRef.current || initialXml === '') return;
-    const xml = Blockly.utils.xml.textToDom(initialXml);
-    Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyEditorRef.current);
-    blocklyEditorRef.current.scrollCenter();
-  }, [initialXml]);
-
   // react blockly doesn't when readOnly changes and it can even lead to issues if the workspace was
   // readonly and changed to editable
   // For this reason, when reaOnly changes, we unmount the BlocklyWorkspace and mount a new one
@@ -146,6 +145,9 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
         ...blocklyOptions,
       }}
       onWorkspaceChange={onWorkspaceChange}
+      onInject={(newWorkspace) => {
+        blocklyEditorRef.current = newWorkspace;
+      }}
     />
   ) : (
     <BlocklyWorkspace

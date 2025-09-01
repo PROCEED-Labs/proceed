@@ -118,6 +118,7 @@ async function dropDatabase(dbName: string): Promise<void> {
 async function ensureDockerContainerRunning(): Promise<void> {
   // Docker container should have been started via docker compose. But maybe the container was just started and still needs some time for startup. If it is not up for longer than 10s, we wait for some seconds.
   try {
+    // execaSync throws error if container not found
     const { stdout } = execaSync('docker', [
       'container',
       'inspect',
@@ -128,7 +129,7 @@ async function ensureDockerContainerRunning(): Promise<void> {
     const timeDiffSinceContainerStarted = Date.now() - Date.parse(stdout);
 
     console.info(
-      'Development Postgres Docker Container running since ' +
+      'Development Postgres Docker Container is running since ' +
         timeDiffSinceContainerStarted / 1000 +
         ' seconds.',
     );

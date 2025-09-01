@@ -73,7 +73,7 @@ export default function ToolbarPlugin() {
       setLinkType('url');
       if (link) {
         const test = link as string;
-        const regex = /^{(.*)}$/g;
+        const regex = /^{{(.*)}}$/g;
         if (test.match(regex)) {
           setLinkType('variable');
           const newLink = test.replace(regex, '$1');
@@ -209,7 +209,10 @@ export default function ToolbarPlugin() {
               setLink('');
             }}
             value={link}
-            onValueChange={(newLink) => setLink(newLink || '')}
+            onValueChange={(newLink) => {
+              console.log(newLink);
+              setLink(newLink || '');
+            }}
             onDone={(newLink) => {
               editor.dispatchCommand(TOGGLE_LINK_COMMAND, newLink ? { url: newLink } : null);
             }}

@@ -375,7 +375,7 @@ export const ArtifactSourceSelection: React.FC<ArtifactSourceSelectionProps> = (
         allowedTypes={['file']}
         compact
         onChange={(newVariable) => {
-          const newValue = newVariable && `{${newVariable}}`;
+          const newValue = newVariable && `{{${newVariable}}}`;
           onValueChange(newValue);
           onDone(newValue);
         }}

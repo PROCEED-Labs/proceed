@@ -156,6 +156,8 @@ const script = `
         if (element.type === 'number') {
           value = element.value && parseFloat(element.value);
           if (Number.isNaN(value)) throw new Error('The given value is not a valid number.');
+        } else if (element.type === 'file') {
+          value = element.files.length ? element.files[0] : undefined;
         } else {
           value = element.value;
         }

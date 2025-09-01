@@ -198,7 +198,7 @@ export const ImageSettings = () => {
         setSrcType('file');
       } else if (src.startsWith('{')) {
         setSrcType('variable');
-        setCurrentSrc(src.substring(1, src.length - 1));
+        setCurrentSrc(src.substring(2, src.length - 2));
       } else {
         setSrcType('url');
       }

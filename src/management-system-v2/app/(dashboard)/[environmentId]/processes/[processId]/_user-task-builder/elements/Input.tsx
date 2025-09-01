@@ -79,7 +79,7 @@ export const ExportInput: UserComponent<InputProps> = ({
           </>
         ) : (
           <>
-            input
+            {input}
             <div className="validation-error"></div>
           </>
         )}

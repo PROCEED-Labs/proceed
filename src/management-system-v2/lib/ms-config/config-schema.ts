@@ -54,9 +54,6 @@ export const mSConfigEnvironmentOnlyKeys = [
 export const msConfigSchema = {
   all: {
     PROCEED_PUBLIC_GENERAL_MS_LOGO: z.string().default(''),
-    PROCEED_PUBLIC_GENERAL_DEFAULT_CURRENCY: z.string().default('EUR'),
-    PROCEED_PUBLIC_GENERAL_DEFAULT_TIME_FORMAT: z.string().default('24'),
-    PROCEED_PUBLIC_GENERAL_DEFAULT_DATE_FORMAT: z.string().default(''),
 
     PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE: z.string().default('TRUE').transform(boolParser),
     PROCEED_PUBLIC_GANTT_ACTIVE: z
@@ -161,9 +158,6 @@ export const msConfigSchema = {
     SCHEDULER_TOKEN: z.string().optional(),
     SCHEDULER_JOB_DELETE_INACTIVE_GUESTS: z.coerce.number().default(0),
     SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
-
-    PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
-    PROCEED_PUBLIC_GANTT_ACTIVE: z.string().optional().transform(boolParser),
 
     MQTT_SERVER_ADDRESS: z.string().url().optional(),
     MQTT_USERNAME: z.string().optional(),

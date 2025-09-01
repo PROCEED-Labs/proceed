@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthConfig } from 'next-auth';
+import NextAuth, { AuthError, NextAuthConfig } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import { User as ProviderUser } from '@auth/core/types';
 
@@ -11,6 +11,7 @@ import * as noIamUser from '@/lib/no-iam-user';
 import {
   addUser,
   deleteUser,
+  getUserByEmail,
   getUserById,
   getUserByUsername,
   setUserPassword,
@@ -27,6 +28,7 @@ import { comparePassword, hashPassword } from './password-hashes';
 import db from './data/db';
 import { createUserRegistrationToken } from './email-verification-tokens/utils';
 import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
+import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -130,6 +132,20 @@ const nextAuthOptions: NextAuthConfig = {
   },
   pages: {
     signIn: '/signin',
+    error: '/signin',
+  },
+  logger: {
+    error(error) {
+      if (error instanceof AuthError) {
+        if (['AdapterError', 'CallbackRouteError', 'OAuthProfileParseError'].includes(error.type)) {
+          console.error(error);
+        } else {
+          console.error('NextAuth error:', error.type);
+        }
+      } else {
+        console.error(error);
+      }
+    },
   },
 };
 
@@ -217,28 +233,16 @@ if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
 }
 
 if (env.NODE_ENV === 'development') {
-  const developmentUsers = [
-    {
-      username: 'johndoe',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'johndoe@proceed-labs.org',
-      id: 'development-id|johndoe',
-      isGuest: false,
-      emailVerifiedOn: null,
-      profileImage: null,
-    },
-    {
-      username: 'admin',
-      firstName: 'Admin',
-      lastName: 'Admin',
-      email: 'admin@proceed-labs.org',
-      id: 'development-id|admin',
-      isGuest: false,
-      emailVerifiedOn: null,
-      profileImage: null,
-    },
-  ] satisfies User[];
+  const johnDoeTemplate = {
+    username: 'johndoe',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'johndoe@proceed-labs.org',
+    id: 'development-id|johndoe',
+    isGuest: false,
+    emailVerifiedOn: null,
+    profileImage: null,
+  };
 
   nextAuthOptions.providers.push(
     CredentialsProvider({
@@ -253,13 +257,14 @@ if (env.NODE_ENV === 'development') {
         },
       },
       async authorize(credentials) {
-        const userTemplate = developmentUsers.find(
-          (user) => user.username === credentials?.username,
-        );
-        if (!userTemplate) return null;
+        let user: User | null = null;
 
-        let user = await getUserByUsername(userTemplate.username);
-        if (!user) user = await addUser(userTemplate);
+        if (credentials.username === 'johndoe') {
+          user = await getUserByUsername('johndoe');
+          if (!user) user = await addUser(johnDoeTemplate);
+        } else if (credentials.username === 'admin') {
+          user = await getUserByUsername('admin');
+        }
 
         return user;
       },
@@ -300,7 +305,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
           type: 'password',
         },
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, req) => {
         const userAndPassword = await getUserAndPasswordByUsername(credentials.username as string);
 
         if (!userAndPassword) return null;
@@ -356,13 +361,33 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
       credentials,
       authorize: async (
         credentials: Partial<
-          Record<'firstName' | 'lastName' | 'username' | 'email' | 'password', string>
+          Record<
+            'firstName' | 'lastName' | 'username' | 'email' | 'password' | 'callbackUrl',
+            string
+          >
         >,
       ) => {
+        let callbackUrl: string | undefined = undefined;
+        // only allow urls that start with / = redirect to out site
+        if (credentials.callbackUrl && credentials.callbackUrl.startsWith('/')) {
+          callbackUrl = credentials.callbackUrl;
+        }
+
         let user: User | null = null;
 
         // Whenever the email is active, we create the user after he verifies his email
         if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
+          const [existingUserUsername, existingUserMail] = await Promise.all([
+            getUserByUsername(credentials.username as string),
+            getUserByEmail(credentials.email as string),
+          ]);
+          if (existingUserUsername) {
+            throw new NextAuthUsernameTakenError();
+          }
+          if (existingUserMail) {
+            throw new NextAuthEmailTakenError();
+          }
+
           const tokenParams: any = {
             identifier: credentials.email,
             username: credentials.username,
@@ -373,13 +398,13 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
           if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE)
             tokenParams['passwordHash'] = await hashPassword(credentials.password as string);
 
-          const userRegistrationToken = await createUserRegistrationToken(tokenParams);
+          const userRegistrationToken = await createUserRegistrationToken(tokenParams, callbackUrl);
 
           await saveEmailVerificationToken(userRegistrationToken.verificationToken);
 
           const signinMail = renderSigninLinkEmail({
             signInLink: userRegistrationToken.redirectUrl,
-            expires: userRegistrationToken.verificationToken.expiresAt,
+            expires: userRegistrationToken.verificationToken.expires,
           });
 
           await sendEmail({

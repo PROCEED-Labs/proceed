@@ -14,7 +14,7 @@ import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[p
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import useProcessVersion from './use-process-version';
-import { UserError, UserErrorType } from '@/lib/user-error';
+import { UserError, UserErrorType, isUserErrorResponse } from '@/lib/user-error';
 import { FaRegQuestionCircle } from 'react-icons/fa';
 
 export type ProcessExportTypes = ProcessExportOptions['type'] | 'pdf';
@@ -164,13 +164,17 @@ export function useExportProcess(
           const { definitionId, processVersion } = processes[0];
 
           // the timestamp does not matter here since it is overridden by the user being an owner of the process
-          return generateSharedViewerUrl(
+          const url = await generateSharedViewerUrl(
             { processId: definitionId, timestamp: 0 },
             processVersion,
             selectedOptions as string[],
           );
+
+          if (isUserErrorResponse(url)) throw url;
+
+          return url;
         } else {
-          const error = await exportProcessesAsFile(
+          const { fallback, blob } = await exportProcessesAsFile(
             {
               type: type,
               artefacts: selectedOptions.includes('artefacts'),
@@ -184,17 +188,34 @@ export function useExportProcess(
             spaceId,
           );
 
-          if (error) throw { message: error, type: UserErrorType.UnknownError } as UserError;
+          if (fallback) throw { message: fallback, type: UserErrorType.UnknownError } as UserError;
+
+          return await blob;
         }
       },
-      onSuccess: (url) => {
+      onSuccess: async (urlOrBlob) => {
         if (type === 'pdf') {
+          if (!urlOrBlob || typeof urlOrBlob !== 'string')
+            throw new Error('No URL returned for PDF export');
+
           const { definitionId, processVersion } = processes[0];
-          window.open(url, `${definitionId}-${processVersion}-tab`);
-        } else {
-          if (method === 'clipboard') app.message.success('Copied to clipboard');
+          window.open(urlOrBlob, `${definitionId}-${processVersion}-tab`);
+        } else if (method === 'clipboard') {
+          if (typeof urlOrBlob !== 'string' && urlOrBlob.blob.type === 'image/png') {
+            const dataUrl = URL.createObjectURL(urlOrBlob.blob);
+
+            app.message.success(
+              <Space direction="vertical">
+                <img src={dataUrl} style={{ maxWidth: '5rem', maxHeight: '5rem' }} />
+                Copied to clipboard
+              </Space>,
+            );
+          } else {
+            app.message.success('Copied to clipboard');
+          }
         }
       },
+
       app,
     });
 
@@ -210,23 +231,30 @@ export function ProcessExportSubmitButton({
   type,
   state,
   exportProcesses,
-  moreThanOne,
+  moreThanOneProcess,
   isExporting,
   closeModal,
 }: {
   type: ProcessExportTypes;
   state: ExportOptionState;
   exportProcesses: ExportProcessesFunction;
-  moreThanOne: boolean;
+  moreThanOneProcess: boolean;
   isExporting: ExportingState;
   closeModal?: () => void;
 }) {
   return (
     <>
-      {!['pdf', 'svg'].includes(type) && !moreThanOne && (
+      {!['pdf', 'svg'].includes(type) && !moreThanOneProcess && (
         <Button
           loading={isExporting === 'copying'}
-          disabled={state[type].selectedOptions.length > 0 || !!isExporting}
+          disabled={
+            // Don't disable copy to clipboard if onlySelection is selected
+            (state[type].selectedOptions.length === 1 &&
+              state[type].selectedOptions[0] !== 'onlySelection') ||
+            // Two options are selected -> likely more than one process -> zip file -> disable copy to clipboard
+            state[type].selectedOptions.length >= 2 ||
+            !!isExporting
+          }
           type="primary"
           onClick={async () => {
             await exportProcesses(type, 'clipboard');
@@ -238,7 +266,7 @@ export function ProcessExportSubmitButton({
       )}
       <Button
         loading={isExporting === 'exporting'}
-        disabled={!!isExporting || (type === 'pdf' && moreThanOne)}
+        disabled={!!isExporting || (type === 'pdf' && moreThanOneProcess)}
         type="primary"
         onClick={async () => {
           await exportProcesses(type, 'download');

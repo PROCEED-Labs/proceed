@@ -139,12 +139,11 @@ export async function getExportblob(
  * @param options the options that were selected by the user
  * @param processes the processes(and versions) to export
  */
-export function exportProcesses(
+export async function exportProcesses(
   options: ProcessExportOptions,
   processes: ExportProcessInfo,
   spaceId: string,
 ) {
   const blob = getExportblob(options, processes, spaceId);
-
-  return handleExportMethod(blob, options);
+  return { fallback: await handleExportMethod(blob, options), blob };
 }

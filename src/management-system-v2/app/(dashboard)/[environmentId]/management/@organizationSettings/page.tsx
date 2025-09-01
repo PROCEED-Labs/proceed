@@ -4,6 +4,7 @@ import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import Wrapper from './wrapper';
 import { Setting, SettingGroup } from '../../settings/type-util';
 import SettingsInjector from '../../settings/settings-injector';
+import { env } from '@/lib/ms-config/env-vars';
 
 const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
@@ -48,7 +49,10 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
     });
   }
 
-  if (ability.can('delete', 'Environment')) {
+  if (
+    !env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE &&
+    ability.can('delete', 'Environment')
+  ) {
     children.push({
       key: 'deleteOrganization',
       name: 'Delete Organization',

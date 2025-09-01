@@ -8,7 +8,7 @@ export const UserOrganizationEnvironmentInputSchema = z.object({
   description: z.string().min(4, { message: 'Description must be at least 4 characters long' }),
   contactPhoneNumber: zodPhoneNumber().optional(),
   contactEmail: z.string().email('Invalid E-Mail address').optional(),
-  spaceLogo: z.string().url().optional(),
+  spaceLogo: z.string().optional(),
 });
 
 export const OrganizationEnvironmentSchema = z.union([
@@ -44,4 +44,6 @@ export type PersonalEnvironment = z.infer<typeof PersonalEnvironmentSchema> & {
 export type OrganizationEnvironment = z.infer<typeof OrganizationEnvironmentSchema> & {
   id: string;
 };
+export type ActiveOrganizationEnvironment = Extract<OrganizationEnvironment, { isActive: true }>;
+export type InactiveOrganizationEnvironment = Extract<OrganizationEnvironment, { isActive: false }>;
 export type Environment = EnvironmentInput & { id: string };

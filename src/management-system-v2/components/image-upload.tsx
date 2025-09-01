@@ -19,6 +19,7 @@ interface ImageUploadProps {
     fileName?: string;
   };
   fileManagerErrorToasts?: boolean;
+  ghostButtons?: boolean;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -29,6 +30,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   deletable = true,
   config,
   fileManagerErrorToasts = true,
+  ghostButtons = true,
 }) => {
   const { upload, remove, replace } = useFileManager({
     entityType: config.entityType,
@@ -84,7 +86,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           }
         }}
       >
-        <Button type="default" ghost>
+        <Button type="default" ghost={ghostButtons}>
           {imageExists ? <EditOutlined /> : 'Add Image'}
         </Button>
       </Upload>
@@ -103,7 +105,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             }
           }}
           type="default"
-          ghost
+          ghost={ghostButtons}
         >
           <DeleteOutlined />
         </Button>

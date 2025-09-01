@@ -321,26 +321,30 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
             if (result) {
               const { valueA, valueB, path } = result;
-              const valueAHasSrc = valueA?.hasOwnProperty('src');
-              const valueBHasSrc = valueB?.hasOwnProperty('src');
+              let valueASrc =
+                valueA?.hasOwnProperty('src') &&
+                valueA.src.startsWith('processes-artifacts/images') &&
+                valueA.src;
+              let valueBSrc =
+                valueB?.hasOwnProperty('src') &&
+                valueB.src.startsWith('processes-artifacts/images') &&
+                valueB.src;
 
-              // Handle image deletion
-              if (valueAHasSrc && !valueBHasSrc) {
-                console.log('image deleted');
-                updateImageReference('delete', valueA.src);
-              }
-
-              // Handle image addition
-              if (!valueAHasSrc && valueBHasSrc) {
-                console.log('image added');
-                updateImageReference('add', valueB.src);
-              }
-
-              // Handle image replacement
               if (path?.includes('props.src')) {
+                valueASrc = valueA.startsWith('processes-artifacts/images') && valueA;
+                valueBSrc = valueB.startsWith('processes-artifacts/images') && valueB;
+              }
+
+              if (valueASrc && valueBSrc) {
                 console.log('image replaced');
-                updateImageReference('add', valueB.src);
-                updateImageReference('delete', valueA.src);
+                updateImageReference('add', valueBSrc);
+                updateImageReference('delete', valueASrc);
+              } else if (valueASrc && !valueBSrc) {
+                console.log('image deleted');
+                updateImageReference('delete', valueASrc);
+              } else if (!valueASrc && valueBSrc) {
+                console.log('image added');
+                updateImageReference('add', valueBSrc);
               }
 
               // Handle deleted and added image nodes
@@ -348,7 +352,11 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
                 [result.valueA, result.valueB].forEach((value, isAdding) => {
                   for (const key in value) {
                     const node = value[key];
-                    if (node?.displayName === 'Image' && node.props?.hasOwnProperty('src')) {
+                    if (
+                      node?.displayName === 'Image' &&
+                      node.props?.hasOwnProperty('src') &&
+                      node.props.src.startsWith('processes-artifacts/images')
+                    ) {
                       console.log(`Image Node ${isAdding ? 'added' : 'deleted'}`, node.props);
                       updateImageReference(isAdding ? 'add' : 'delete', node.props.src);
                     }

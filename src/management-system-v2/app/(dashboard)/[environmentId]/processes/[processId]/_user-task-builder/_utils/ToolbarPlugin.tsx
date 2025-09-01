@@ -10,10 +10,12 @@ import {
   AlignLeftOutlined,
   AlignRightOutlined,
   AlignCenterOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { mergeRegister } from '@lexical/utils';
+import { $isLinkNode, TOGGLE_LINK_COMMAND, LinkNode } from '@lexical/link';
 
 import {
   $getSelection,
@@ -28,6 +30,7 @@ import {
 } from 'lexical';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArtifactSourceSelection } from '../elements/utils';
 
 const LowPriority = 1;
 
@@ -39,7 +42,9 @@ export default function ToolbarPlugin() {
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
-  const [fontSize, setFontSize] = useState(0);
+  const [isLink, setIsLink] = useState(false);
+  const [link, setLink] = useState('');
+  const [linkType, setLinkType] = useState<'url' | 'variable'>('url');
 
   const $updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -48,6 +53,33 @@ export default function ToolbarPlugin() {
       setIsBold(selection.hasFormat('bold'));
       setIsItalic(selection.hasFormat('italic'));
       setIsUnderline(selection.hasFormat('underline'));
+
+      const nodes = selection.getNodes();
+      let isLink = nodes.length > 0;
+      let link: string | undefined = undefined;
+      nodes.forEach((node) => {
+        const nodeIsLink = $isLinkNode(node) || $isLinkNode(node.getParent());
+        isLink &&= nodeIsLink;
+
+        if (!nodeIsLink) link = '';
+        else {
+          const linkNode = $isLinkNode(node) ? node : (node.getParent() as LinkNode);
+          if (link === undefined) link = linkNode.__url;
+          else if (link != linkNode.__url) link = '';
+        }
+      });
+      setIsLink(isLink);
+
+      setLinkType('url');
+      if (link) {
+        const test = link as string;
+        const regex = /^{(.*)}$/g;
+        if (test.match(regex)) {
+          setLinkType('variable');
+          const newLink = test.replace(regex, '$1');
+          setLink(newLink);
+        } else setLink(test);
+      } else setLink('');
     }
   }, []);
 
@@ -87,69 +119,103 @@ export default function ToolbarPlugin() {
 
   return (
     <div className="toolbar" ref={toolbarRef} onMouseDown={(e) => e.stopPropagation()}>
-      <Button
-        disabled={!canUndo}
-        className="toolbar-item spaced"
-        aria-label="Undo"
-        type="text"
-        icon={<UndoOutlined />}
-        onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
-      />
-      <Button
-        disabled={!canRedo}
-        className="toolbar-item"
-        aria-label="Redo"
-        type="text"
-        icon={<RedoOutlined />}
-        onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
-      />
-      <Divider type="vertical" />
-      <Button
-        className={'toolbar-item spaced '}
-        aria-label="Format Bold"
-        style={{ backgroundColor: isBold ? '#a9a9a94d' : undefined }}
-        type="text"
-        icon={<BoldOutlined />}
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
-      />
-      <Button
-        className={'toolbar-item spaced '}
-        aria-label="Format Italics"
-        style={{ backgroundColor: isItalic ? '#a9a9a94d' : undefined }}
-        type="text"
-        icon={<ItalicOutlined />}
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
-      />
-      <Button
-        className={'toolbar-item spaced '}
-        aria-label="Format Underline"
-        style={{ backgroundColor: isUnderline ? '#a9a9a94d' : undefined }}
-        type="text"
-        icon={<UnderlineOutlined />}
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
-      />
-      <Divider type="vertical" />
-      <Button
-        className="toolbar-item spaced"
-        aria-label="Left Align"
-        type="text"
-        icon={<AlignLeftOutlined />}
-        onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')}
-      />
-      <Button
-        className="toolbar-item spaced"
-        aria-label="Center Align"
-        type="text"
-        icon={<AlignCenterOutlined />}
-        onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')}
-      />
-      <Button
-        className="toolbar-item spaced"
-        aria-label="Right Align"
-        type="text"
-        icon={<AlignRightOutlined />}
-        onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')}
-      />
+      <div>
+        <Button
+          disabled={!canUndo}
+          className="toolbar-item spaced"
+          aria-label="Undo"
+          type="text"
+          icon={<UndoOutlined />}
+          onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
+        />
+        <Button
+          disabled={!canRedo}
+          className="toolbar-item"
+          aria-label="Redo"
+          type="text"
+          icon={<RedoOutlined />}
+          onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
+        />
+        <Divider type="vertical" />
+        <Button
+          className={'toolbar-item spaced '}
+          aria-label="Format Bold"
+          style={{ backgroundColor: isBold ? '#a9a9a94d' : undefined }}
+          type="text"
+          icon={<BoldOutlined />}
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
+        />
+        <Button
+          className={'toolbar-item spaced '}
+          aria-label="Format Italics"
+          style={{ backgroundColor: isItalic ? '#a9a9a94d' : undefined }}
+          type="text"
+          icon={<ItalicOutlined />}
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
+        />
+        <Button
+          className={'toolbar-item spaced '}
+          aria-label="Format Underline"
+          style={{ backgroundColor: isUnderline ? '#a9a9a94d' : undefined }}
+          type="text"
+          icon={<UnderlineOutlined />}
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
+        />
+        <Button
+          className={'toolbar-item spaced '}
+          aria-label="Format Link"
+          style={{ backgroundColor: isLink ? '#a9a9a94d' : undefined }}
+          type="text"
+          icon={<LinkOutlined />}
+          onClick={() => {
+            setIsLink(!isLink);
+            setLinkType('url');
+            const newLink = isLink ? '' : 'https://';
+            setLink(newLink);
+            editor.dispatchCommand(TOGGLE_LINK_COMMAND, isLink ? null : { url: newLink });
+          }}
+        />
+        <Divider type="vertical" />
+        <Button
+          className="toolbar-item spaced"
+          aria-label="Left Align"
+          type="text"
+          icon={<AlignLeftOutlined />}
+          onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')}
+        />
+        <Button
+          className="toolbar-item spaced"
+          aria-label="Center Align"
+          type="text"
+          icon={<AlignCenterOutlined />}
+          onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')}
+        />
+        <Button
+          className="toolbar-item spaced"
+          aria-label="Right Align"
+          type="text"
+          icon={<AlignRightOutlined />}
+          onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')}
+        />
+      </div>
+      {isLink && (
+        <div style={{ margin: '5px' }}>
+          Link:
+          <ArtifactSourceSelection
+            type={linkType}
+            allowedTypes={['url', 'variable']}
+            onTypeChange={(type) => {
+              setLinkType(type as 'url' | 'variable');
+              setLink('');
+            }}
+            value={link}
+            onValueChange={(newLink) => setLink(newLink || '')}
+            onDone={(newLink) => {
+              editor.dispatchCommand(TOGGLE_LINK_COMMAND, newLink ? { url: newLink } : null);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

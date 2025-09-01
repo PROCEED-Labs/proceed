@@ -6,8 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
-import { ContextMenu, Setting } from './utils';
-import ImageUpload from '@/components/image-upload';
+import { ArtifactSourceSelection, ContextMenu, Setting } from './utils';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { useCanEdit } from '../../modeler';
@@ -16,31 +15,30 @@ type ImageProps = {
   src?: string;
   reloadParam?: number;
   width?: number;
+  definitionId?: string;
 };
 
 // How the image should be rendered for use outside of the MS (mainly for use on the engine)
-export const ExportImage: UserComponent<ImageProps> = ({ src, width }) => {
-  if (src) {
+export const ExportImage: UserComponent<ImageProps> = ({ src, width, definitionId }) => {
+  if (src && src.startsWith('processes-artifacts/images')) {
     // transform the url used inside the MS into the one expected on the engine
     // cannot use useParams and useEnvironment since this will not be used inside the context in
     // which they are defined
     const msUrl = src.split('/');
     const filename = msUrl.pop();
-    msUrl.pop();
-    const definitionId = msUrl.pop();
 
     src = `/resources/process/${definitionId}/images/${filename}`;
   }
 
   return (
     <div className="user-task-form-image">
-      <img style={{ width: width && `${width}%` }} src={src ? `${src}` : fallbackImage} />
+      <img style={{ width: width && `${width}%` }} src={src || fallbackImage} />
     </div>
   );
 };
 
 // the Image component to use in the Editor
-export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
+export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId }) => {
   const { query } = useEditor();
 
   const [showResize, setShowResize] = useState(false);
@@ -51,26 +49,43 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
   const {
     connectors: { connect },
     actions: { setProp },
-    isHovered,
   } = useNode((state) => {
     const parent = state.data.parent && query.node(state.data.parent).get();
 
     return { isHovered: !!parent && parent.events.hovered };
   });
 
+  const { processId } = useParams<{ processId: string }>();
+
+  useEffect(() => {
+    // initialize the definitionId prop that is needed to map the image url on export
+    if (!definitionId) setProp((props: ImageProps) => (props.definitionId = processId));
+  }, []);
+
   const editingEnabled = useCanEdit();
+
+  const [imageSrc, setImageSrc] = useState('');
 
   const { fileUrl: imageUrl, download: getImageUrl } = useFileManager({
     entityType: EntityType.PROCESS,
   });
 
-  const params = useParams<{ processId: string }>();
-
   useEffect(() => {
+    setImageSrc(fallbackImage);
     if (src) {
-      getImageUrl({ entityId: params.processId as string, filePath: src });
+      if (src.startsWith('processes-artifacts/images')) {
+        getImageUrl({ entityId: processId as string, filePath: src });
+      } else if (!src.startsWith('{')) {
+        setImageSrc(src);
+      }
     }
   }, [src]);
+
+  useEffect(() => {
+    if (imageUrl && imageUrl !== imageSrc) {
+      setImageSrc(imageUrl);
+    }
+  }, [imageUrl]);
 
   return (
     <ContextMenu menu={[]}>
@@ -87,31 +102,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
           }
         }}
       >
-        <img
-          ref={imageRef}
-          style={{ width: width && `${width}%` }}
-          src={src ? imageUrl! : fallbackImage}
-        />
-        {editingEnabled && isHovered && (
-          <ImageUpload
-            imageExists={!!src}
-            onReload={() => {
-              setProp((props: ImageProps) => (props.reloadParam = Date.now()));
-            }}
-            onImageUpdate={(imageFileName) => {
-              setProp((props: ImageProps) => {
-                props.src = imageFileName && imageFileName;
-                props.width = undefined;
-              });
-            }}
-            config={{
-              entityType: EntityType.PROCESS,
-              entityId: params.processId,
-              useDefaultRemoveFunction: false,
-              fileName: src,
-            }}
-          />
-        )}
+        <img ref={imageRef} style={{ width: width && `${width}%` }} src={imageSrc} />
         {/* Allows resizing  */}
         {/* TODO: maybe use some react library for this */}
         {showResize && (
@@ -190,12 +181,29 @@ export const ImageSettings = () => {
     width,
     dom,
   } = useNode((node) => ({
-    src: node.data.props.src,
+    src: node.data.props.src as string | undefined,
     width: node.data.props.width,
     dom: node.dom,
   }));
 
   const [currentWidth, setCurrentWidth] = useState<number | null>(null);
+
+  const [srcType, setSrcType] = useState<'url' | 'variable' | 'file'>('file');
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+    if (src) {
+      if (src.startsWith('processes-artifacts/images')) {
+        setSrcType('file');
+      } else if (src.startsWith('{')) {
+        setSrcType('variable');
+        setCurrentSrc(src.substring(1, src.length - 1));
+      } else {
+        setSrcType('url');
+      }
+    }
+  }, [src]);
 
   useEffect(() => {
     if (src && dom?.children[0]) {
@@ -236,6 +244,21 @@ export const ImageSettings = () => {
           />
         }
       />
+
+      <div style={{ margin: '5px' }}>
+        Source:
+        <ArtifactSourceSelection
+          type={srcType}
+          allowedTypes={['url', 'variable', 'file']}
+          onTypeChange={(newType) => {
+            setSrcType(newType);
+            setCurrentSrc('');
+          }}
+          value={currentSrc || ''}
+          onValueChange={(newValue) => setCurrentSrc(newValue)}
+          onDone={(newValue) => setProp((props: ImageProps) => (props.src = newValue))}
+        />
+      </div>
     </>
   );
 };

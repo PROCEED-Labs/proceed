@@ -127,7 +127,9 @@ function getImagesReferencedByJSON(json: string) {
         const nodeType = typeof node.type === 'object' ? node.type.resolvedName : node.type;
         return nodeType === 'Image' && node.props.src;
       })
-      .map((node) => node.props.src as string);
+      .map((node) => node.props.src as string)
+      // images that start with "processes-artifacts/images" reference a local file that has to be sent all others do not
+      .filter((src) => src.startsWith('processes-artifacts/images'));
 
     // remove duplicates
     return [...new Set(images)];
@@ -506,7 +508,8 @@ export async function prepareExport(
       }
 
       // fetch the required image files from the backend
-      for (const filename of allRequiredImageFiles) {
+      for (let filename of allRequiredImageFiles) {
+        if (filename.includes('/')) filename = filename.split('/').pop() as string;
         const image = await getProcessImage(definitionId, filename, spaceId);
 
         if ('error' in image) throw image.error;

@@ -373,7 +373,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                   />
                 </Tooltip>
               )}
-              {env.PROCEED_PUBLIC_TIMELINE_VIEW === true && ganttEnabled === true && (
+              {env.PROCEED_PUBLIC_GANTT_ACTIVE === true && ganttEnabled === true && (
                 <Tooltip title="Switch to Gantt view">
                   <Button
                     icon={<Icon aria-label="gantt-view" component={SvgGantt} />}

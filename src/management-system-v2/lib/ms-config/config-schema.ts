@@ -32,7 +32,7 @@ export const mSConfigEnvironmentOnlyKeys = [
   'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE',
 
   'PROCEED_PUBLIC_IAM_ACTIVE',
-  'PROCEED_PUBLIC_TIMELINE_VIEW',
+  'PROCEED_PUBLIC_GANTT_ACTIVE',
 
   'IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET',
   'IAM_GUEST_CONVERSION_REFERENCE_SECRET',
@@ -163,7 +163,7 @@ export const msConfigSchema = {
     SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
 
     PROCEED_PUBLIC_ENABLE_EXECUTION: z.string().optional().transform(boolParser),
-    PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
+    PROCEED_PUBLIC_GANTT_ACTIVE: z.string().optional().transform(boolParser),
 
     MQTT_SERVER_ADDRESS: z.string().url().optional(),
     MQTT_USERNAME: z.string().optional(),

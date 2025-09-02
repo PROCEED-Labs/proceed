@@ -506,7 +506,8 @@ export async function prepareExport(
       }
 
       // fetch the required image files from the backend
-      for (const filename of allRequiredImageFiles) {
+      for (let filename of allRequiredImageFiles) {
+        if (filename.includes('/')) filename = filename.split('/').pop() as string;
         const image = await getProcessImage(definitionId, filename, spaceId);
 
         if ('error' in image) throw image.error;

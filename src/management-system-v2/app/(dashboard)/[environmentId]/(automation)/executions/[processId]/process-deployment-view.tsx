@@ -23,7 +23,6 @@ import { MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useDeployment from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
@@ -32,7 +31,8 @@ import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import StartFormModal from './start-form-modal';
-import { getProcessIds, getVariablesFromElementById, toBpmnObject } from '@proceed/bpmn-helper';
+import useInstanceVariables from './use-instance-variables';
+import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
 export default function ProcessDeploymentView({
   processId,
@@ -117,6 +117,11 @@ export default function ProcessDeploymentView({
     };
   }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
 
+  const { variableDefinitions, variables } = useInstanceVariables({
+    process: deploymentInfo,
+    version: currentVersion,
+  });
+
   const selectedBpmn = useMemo(() => {
     return { bpmn: currentVersion?.bpmn || '' };
   }, [currentVersion]);
@@ -183,47 +188,28 @@ export default function ProcessDeploymentView({
                         const latestDeployment = getLatestDeployment(deploymentInfo);
                         const versionId = latestDeployment.versionId;
 
-                        const startForm = await getStartForm(versionId);
+                        let startForm = await getStartForm(versionId);
 
                         if (typeof startForm !== 'string') return startForm;
 
                         if (startForm) {
+                          const mappedVariables = Object.fromEntries(
+                            variables
+                              .filter((variable) => variable.value !== undefined)
+                              .map((variable) => [variable.name, variable.value]),
+                          );
+                          startForm = inlineScript(startForm, '', '', variableDefinitions);
+                          startForm = inlineUserTaskData(startForm, mappedVariables, []);
+
                           setStartForm(startForm);
                         } else {
-                          const variables: Record<string, any> = {};
+                          const mappedVariables = Object.fromEntries(
+                            variables
+                              .filter((variable) => variable.value !== undefined)
+                              .map((variable) => [variable.name, { value: variable.value }]),
+                          );
 
-                          try {
-                            const bpmnObj = await toBpmnObject(latestDeployment.bpmn);
-                            const [processElementId] = await getProcessIds(bpmnObj);
-                            if (processElementId) {
-                              const variableDefinitions = await getVariablesFromElementById(
-                                bpmnObj,
-                                processElementId,
-                              );
-
-                              for (const variable of variableDefinitions) {
-                                if (variable.defaultValue) {
-                                  switch (variable.dataType) {
-                                    case 'string':
-                                      variables[variable.name] = { value: variable.defaultValue };
-                                      break;
-                                    case 'number':
-                                      variables[variable.name] = {
-                                        value: parseFloat(variable.defaultValue),
-                                      };
-                                      break;
-                                    case 'boolean':
-                                      variables[variable.name] = {
-                                        value: variable.defaultValue === 'true' ? true : false,
-                                      };
-                                      break;
-                                  }
-                                }
-                              }
-                            }
-                          } catch (err) {}
-
-                          return startInstance(versionId, variables);
+                          return startInstance(versionId, mappedVariables);
                         }
                       },
                       onSuccess: async (instanceId) => {
@@ -383,11 +369,19 @@ export default function ProcessDeploymentView({
 
         <StartFormModal
           html={startForm}
-          onSubmit={(variables) => {
+          onSubmit={(submitVariables) => {
             const versionId = getLatestDeployment(deploymentInfo).versionId;
 
-            const mappedVariables = Object.fromEntries(
-              Object.entries(variables).map(([key, value]) => [key, { value }]),
+            const mappedVariables: Record<string, { value: any }> = {};
+
+            variables.forEach((variable) => {
+              if (variable.value !== undefined) {
+                mappedVariables[variable.name] = { value: variable.value };
+              }
+            });
+
+            Object.entries(submitVariables).forEach(
+              ([key, value]) => (mappedVariables[key] = { value }),
             );
             wrapServerCall({
               fn: () => startInstance(versionId, mappedVariables),

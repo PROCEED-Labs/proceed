@@ -45,7 +45,7 @@ const DEFAULT_CONFIG: TimeAxisConfig = {
   labelPrimaryColor: '#333333',
   labelSecondaryColor: '#777777',
   gridMajorColor: '#E0E0E0',
-  gridMinorColor: '#F0F0F0', // Fixed: was '#000000' which was causing styling issues
+  gridMinorColor: '#F0F0F0',
   gridMajorLineWidth: 1,
   gridMinorLineWidth: 0.5,
   gridMajorTimelineTickSize: 10, // Draw as 10px ticks at the bottom

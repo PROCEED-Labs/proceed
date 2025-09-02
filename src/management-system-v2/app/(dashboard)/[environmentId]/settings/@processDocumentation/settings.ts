@@ -3,7 +3,7 @@ import { env } from '@/lib/ms-config/env-vars';
 import { ganttViewSettingsDefinition } from '@/components/bpmn-timeline/gantt-settings-definition';
 
 const ganttViewSettings =
-  env.PROCEED_PUBLIC_TIMELINE_VIEW === true ? ganttViewSettingsDefinition : null;
+  env.PROCEED_PUBLIC_GANTT_ACTIVE === true ? ganttViewSettingsDefinition : null;
 
 export const settings: SettingGroup = {
   key: 'process-documentation',

@@ -106,7 +106,7 @@ export function calculateAutoFit(
   const requiredScale = viewportWidth / paddedTimeSpan;
 
   // Convert scale to zoom level using ZoomCurveCalculator
-  const zoomCalculator = new ZoomCurveCalculator(ZOOM_PRESETS.DEFAULT);
+  const zoomCalculator = new ZoomCurveCalculator('DEFAULT');
 
   // Check if required scale is within zoom curve range
   const { minScale, maxScale } = zoomCalculator.getConfig();

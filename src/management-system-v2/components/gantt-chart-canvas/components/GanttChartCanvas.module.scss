@@ -232,6 +232,7 @@
   width: 120px;
   padding: 0 8px;
   @extend %column-base;
+  justify-content: flex-start; /* Override center alignment for hierarchy visibility */
 }
 
 .infoButtonColumn {

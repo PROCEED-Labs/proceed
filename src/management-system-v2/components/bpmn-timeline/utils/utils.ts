@@ -1028,7 +1028,7 @@ function insertBoundaryEventsAfterTasks<
           }
         });
       }
-    }
+    };
 
     // Process root elements (elements without parents) in order
     regularElements.forEach((element) => {
@@ -1643,7 +1643,7 @@ function groupElementsByLanes<
       }
 
       return laneResult;
-    }
+    };
 
     // Process all top-level lanes with proper hierarchy
     laneHierarchy.forEach((lane: any) => {

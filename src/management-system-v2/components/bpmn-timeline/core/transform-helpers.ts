@@ -351,7 +351,7 @@ export function filterDependenciesForVisibleElements(
       // Base IDs are just: "ElementId"
       const instanceParts = id.split('_instance_');
       return instanceParts.length > 0 ? instanceParts[0] : id;
-    }
+    };
 
     // Helper function to check if an element is visible
     const isElementVisible = (id: string): boolean => {
@@ -361,7 +361,7 @@ export function filterDependenciesForVisibleElements(
         return false;
       }
       return visibleIds.has(baseId) || visibleIds.has(id);
-    }
+    };
 
     // Build a map of gateway bypass connections
     const gatewayBypass = new Map<string, string[]>(); // gateway instance ID -> source instance IDs that lead to it
@@ -412,7 +412,7 @@ export function filterDependenciesForVisibleElements(
       });
 
       return allTargets;
-    }
+    };
 
     // For each gateway, find all visible sources and connect them to all reachable visible targets
     gatewayBypass.forEach((sources, gatewayId) => {

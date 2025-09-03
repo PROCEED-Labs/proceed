@@ -837,7 +837,7 @@ function getVariablesFromElement(element) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId the id of the element
- * @returns {Variable[]} array with all variables
+ * @returns {Promise<Variable[]>} array with all variables
  */
 async function getVariablesFromElementById(bpmn, elementId) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;

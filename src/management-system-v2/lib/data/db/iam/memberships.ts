@@ -68,6 +68,28 @@ export async function getMembers(environmentId: string, ability?: Ability) {
   return workspace.members;
 }
 
+/**
+ * Returns the users that exist in a specific space
+ */
+export async function getUsersInSpace(spaceId: string, ability?: Ability) {
+  //TODO: ability check
+  if (ability) ability;
+
+  const users = await db.user.findMany({
+    where: {
+      memberIn: {
+        some: {
+          space: {
+            id: spaceId,
+          },
+        },
+      },
+    },
+  });
+
+  return users;
+}
+
 export async function isMember(
   environmentId: string,
   userId: string,

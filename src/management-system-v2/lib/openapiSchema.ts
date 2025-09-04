@@ -401,7 +401,6 @@ export interface components {
         Role?: components['schemas']['PermissionNumber'];
         User?: components['schemas']['PermissionNumber'];
         Setting?: components['schemas']['PermissionNumber'];
-        EnvConfig?: components['schemas']['PermissionNumber'];
         All?: components['schemas']['PermissionNumber'];
       };
       expiration?: string;

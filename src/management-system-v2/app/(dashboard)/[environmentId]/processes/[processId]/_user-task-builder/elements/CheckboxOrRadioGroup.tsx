@@ -317,32 +317,31 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
       };
     });
 
-    if (editTarget !== undefined) {
-      const addPreview = {
-        label: getNewElementLabel(type),
-        value: '',
-        isAddPreview: true,
-        checked: false,
-      };
-      if (hoveredAction === 'add-above') dataCopy.splice(editTarget, 0, addPreview);
-      else if (hoveredAction === 'add-below') dataCopy.splice(editTarget + 1, 0, addPreview);
-      else if (hoveredAction === 'move-down' && editTarget < dataCopy.length - 1)
-        dataCopy = [
-          ...dataCopy.slice(0, editTarget),
-          { ...dataCopy[editTarget], isRemovePreview: true },
-          dataCopy[editTarget + 1],
-          { ...dataCopy[editTarget], isAddPreview: true },
-          ...dataCopy.slice(editTarget + 2),
-        ];
-      else if (hoveredAction === 'move-up' && editTarget)
-        dataCopy = [
-          ...dataCopy.slice(0, editTarget - 1),
-          { ...dataCopy[editTarget], isAddPreview: true },
-          dataCopy[editTarget - 1],
-          { ...dataCopy[editTarget], isRemovePreview: true },
-          ...dataCopy.slice(editTarget + 1),
-        ];
-    }
+    const addPreview = {
+      label: getNewElementLabel(type),
+      value: '',
+      isAddPreview: true,
+      checked: false,
+    };
+    if (hoveredAction === 'add-above') dataCopy.splice(editTarget || 0, 0, addPreview);
+    else if (hoveredAction === 'add-below')
+      dataCopy.splice(editTarget ? editTarget + 1 : dataCopy.length, 0, addPreview);
+    else if (editTarget && hoveredAction === 'move-down' && editTarget < dataCopy.length - 1)
+      dataCopy = [
+        ...dataCopy.slice(0, editTarget),
+        { ...dataCopy[editTarget], isRemovePreview: true },
+        dataCopy[editTarget + 1],
+        { ...dataCopy[editTarget], isAddPreview: true },
+        ...dataCopy.slice(editTarget + 2),
+      ];
+    else if (hoveredAction === 'move-up' && editTarget)
+      dataCopy = [
+        ...dataCopy.slice(0, editTarget - 1),
+        { ...dataCopy[editTarget], isAddPreview: true },
+        dataCopy[editTarget - 1],
+        { ...dataCopy[editTarget], isRemovePreview: true },
+        ...dataCopy.slice(editTarget + 1),
+      ];
 
     return dataCopy;
   }, [data, editTarget, hoveredAction]);
@@ -393,7 +392,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
               </div>
             ),
           )}
-          {editTarget !== undefined &&
+          {isSelected &&
             createPortal(
               <>
                 <Divider>{type === 'checkbox' ? 'Checkbox' : 'Radio'} Settings</Divider>
@@ -402,33 +401,44 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                     <SidebarButton
                       action="add-above"
                       onClick={() => {
-                        handleAddButton(editTarget);
-                        setEditTarget(editTarget + 1);
+                        handleAddButton(editTarget || 0);
+                        setEditTarget(editTarget ? editTarget + 1 : 0);
                       }}
                       onHovered={setHoveredAction}
                     />
                     <SidebarButton
                       action="add-below"
-                      onClick={() => handleAddButton(editTarget + 1)}
+                      onClick={() => {
+                        if (editTarget !== undefined) {
+                          handleAddButton(editTarget + 1);
+                        } else {
+                          handleAddButton(data.length);
+                          setEditTarget(data.length);
+                        }
+                      }}
                       onHovered={setHoveredAction}
                     />
                     <SidebarButton
                       action="remove"
-                      disabled={data.length < 2}
+                      disabled={editTarget === undefined || data.length < 2}
                       onClick={() => {
-                        handleRemoveButton(editTarget);
-                        setEditTarget(undefined);
-                        setCurrentValue('');
-                        setHoveredAction(undefined);
+                        if (editTarget !== undefined) {
+                          handleRemoveButton(editTarget);
+                          setEditTarget(undefined);
+                          setCurrentValue('');
+                          setHoveredAction(undefined);
+                        }
                       }}
                       onHovered={setHoveredAction}
                     />
                     <SidebarButton
                       action="move-down"
-                      disabled={data.length - 1 === editTarget}
+                      disabled={editTarget === undefined || data.length - 1 === editTarget}
                       onClick={() => {
-                        handleMoveDown(editTarget);
-                        setEditTarget(editTarget + 1);
+                        if (editTarget !== undefined) {
+                          handleMoveDown(editTarget);
+                          setEditTarget(editTarget + 1);
+                        }
                       }}
                       onHovered={setHoveredAction}
                     />
@@ -436,8 +446,10 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                       action="move-up"
                       disabled={!editTarget}
                       onClick={() => {
-                        handleMoveUp(editTarget);
-                        setEditTarget(editTarget - 1);
+                        if (editTarget !== undefined) {
+                          handleMoveUp(editTarget);
+                          setEditTarget(editTarget - 1);
+                        }
                       }}
                       onHovered={setHoveredAction}
                     />
@@ -451,7 +463,9 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                           value={currentValue}
                           onChange={(e) => setCurrentValue(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
-                          onBlur={() => handleValueChange(editTarget, currentValue)}
+                          onBlur={() =>
+                            editTarget !== undefined && handleValueChange(editTarget, currentValue)
+                          }
                         />
                       }
                     />

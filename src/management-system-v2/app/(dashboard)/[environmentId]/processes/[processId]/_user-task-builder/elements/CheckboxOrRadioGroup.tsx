@@ -19,7 +19,7 @@ import {
 } from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 
-import { SettingOutlined, EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 import { useCanEdit } from '../../modeler';
 

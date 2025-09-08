@@ -18,7 +18,7 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
 
   useEffect(() => {
     if (document && !isTextEditing) {
-      // handle events that are only thrown inside the iframe and cannot be handled by react
+      // handle events that are thrown inside the iframe and cannot be handled by react
       // handlers
       const onDelete = (e: KeyboardEvent) => {
         if (selected && e.key === 'Delete') {

@@ -1,6 +1,6 @@
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { auth } from '@/lib/auth';
-import { getFile, getProcessImage } from '@/lib/engines/server-actions';
+import { getProcessImage } from '@/lib/engines/server-actions';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(

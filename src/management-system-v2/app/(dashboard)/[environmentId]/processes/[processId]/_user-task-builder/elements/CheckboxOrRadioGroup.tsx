@@ -78,7 +78,11 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
         onClick={onChange}
         onChange={onChange}
       />
-      <span style={{ position: 'relative', width: '100%' }} onMouseEnter={() => setHovered(true)}>
+      <span
+        onClick={() => onEdit?.()}
+        style={{ position: 'relative', width: '100%' }}
+        onMouseEnter={() => setHovered(true)}
+      >
         <Overlay
           show={hovered && !textEditing}
           onHide={() => setHovered(false)}
@@ -86,10 +90,6 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
             editingEnabled && {
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,
               key: 'edit',
-            },
-            {
-              icon: <SettingOutlined onClick={() => onEdit?.()} />,
-              key: 'setting',
             },
           ]}
           onDoubleClick={() => setTextEditing(true)}

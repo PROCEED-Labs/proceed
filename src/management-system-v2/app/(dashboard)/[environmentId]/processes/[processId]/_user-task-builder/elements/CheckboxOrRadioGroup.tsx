@@ -2,7 +2,14 @@ import { useEffect, useId, useMemo, useState } from 'react';
 
 import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { TbRowInsertTop, TbRowInsertBottom, TbRowRemove } from 'react-icons/tb';
+import {
+  TbRowInsertTop,
+  TbRowInsertBottom,
+  TbRowRemove,
+  TbArrowBarToDown,
+  TbArrowBarUp,
+  TbArrowBarDown,
+} from 'react-icons/tb';
 
 import cn from 'classnames';
 
@@ -116,6 +123,8 @@ const menuOptions = {
   'add-above': { label: 'Above', icon: <TbRowInsertTop size={20} /> },
   'add-below': { label: 'Below', icon: <TbRowInsertBottom size={20} /> },
   remove: { label: 'Remove', icon: <TbRowRemove size={20} /> },
+  'move-down': { label: 'Down', icon: <TbArrowBarDown /> },
+  'move-up': { label: 'Up', icon: <TbArrowBarUp /> },
 } as const;
 
 type EditAction = keyof typeof menuOptions;
@@ -203,6 +212,30 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     });
   };
 
+  const handleMoveDown = (index: number) => {
+    if (!editingEnabled) return;
+    setProp((props: CheckBoxOrRadioGroupProps) => {
+      props.data = [
+        ...data.slice(0, index),
+        data[index + 1],
+        data[index],
+        ...data.slice(index + 2),
+      ];
+    });
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (!editingEnabled) return;
+    setProp((props: CheckBoxOrRadioGroupProps) => {
+      props.data = [
+        ...data.slice(0, index - 1),
+        data[index],
+        data[index - 1],
+        ...data.slice(index + 1),
+      ];
+    });
+  };
+
   const handleRemoveButton = (index: number) => {
     if (!editingEnabled) return;
     setProp((props: CheckBoxOrRadioGroupProps) => {
@@ -225,6 +258,18 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
             children: [
               toMenuItem('add-above', () => handleAddButton(editTarget), setHoveredAction),
               toMenuItem('add-below', () => handleAddButton(editTarget + 1), setHoveredAction),
+            ],
+          },
+          {
+            key: 'move',
+            label: 'Move',
+            children: [
+              toMenuItem('move-up', () => editTarget && handleMoveUp(editTarget), setHoveredAction),
+              toMenuItem(
+                'move-down',
+                () => editTarget < data.length - 1 && handleMoveDown(editTarget),
+                setHoveredAction,
+              ),
             ],
           },
           toMenuItem('remove', () => handleRemoveButton(editTarget), setHoveredAction),
@@ -264,7 +309,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
       isRemovePreview?: boolean;
       isEditTarget?: boolean;
     };
-    const dataCopy: DataOrPreview[] = data.map((entry, index) => {
+    let dataCopy: DataOrPreview[] = data.map((entry, index) => {
       return {
         ...entry,
         isEditTarget: editTarget === index,
@@ -281,6 +326,22 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
       };
       if (hoveredAction === 'add-above') dataCopy.splice(editTarget, 0, addPreview);
       else if (hoveredAction === 'add-below') dataCopy.splice(editTarget + 1, 0, addPreview);
+      else if (hoveredAction === 'move-down' && editTarget < dataCopy.length - 1)
+        dataCopy = [
+          ...dataCopy.slice(0, editTarget),
+          { ...dataCopy[editTarget], isRemovePreview: true },
+          dataCopy[editTarget + 1],
+          { ...dataCopy[editTarget], isAddPreview: true },
+          ...dataCopy.slice(editTarget + 2),
+        ];
+      else if (hoveredAction === 'move-up' && editTarget)
+        dataCopy = [
+          ...dataCopy.slice(0, editTarget - 1),
+          { ...dataCopy[editTarget], isAddPreview: true },
+          dataCopy[editTarget - 1],
+          { ...dataCopy[editTarget], isRemovePreview: true },
+          ...dataCopy.slice(editTarget + 1),
+        ];
     }
 
     return dataCopy;
@@ -359,6 +420,24 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                         setEditTarget(undefined);
                         setCurrentValue('');
                         setHoveredAction(undefined);
+                      }}
+                      onHovered={setHoveredAction}
+                    />
+                    <SidebarButton
+                      action="move-down"
+                      disabled={data.length - 1 === editTarget}
+                      onClick={() => {
+                        handleMoveDown(editTarget);
+                        setEditTarget(editTarget + 1);
+                      }}
+                      onHovered={setHoveredAction}
+                    />
+                    <SidebarButton
+                      action="move-up"
+                      disabled={!editTarget}
+                      onClick={() => {
+                        handleMoveUp(editTarget);
+                        setEditTarget(editTarget - 1);
                       }}
                       onHovered={setHoveredAction}
                     />

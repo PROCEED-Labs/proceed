@@ -323,3 +323,16 @@ export async function getDeployments(engines: Engine[], entries?: string) {
 
   return deployments as DeployedProcessInfo[];
 }
+
+export async function getProcessImageFromMachine(
+  engine: Engine,
+  definitionId: string,
+  fileName: string,
+) {
+  return engineRequest({
+    method: 'get',
+    endpoint: '/resources/process/:definitionId/images/:fileName',
+    engine,
+    pathParams: { definitionId, fileName },
+  });
+}

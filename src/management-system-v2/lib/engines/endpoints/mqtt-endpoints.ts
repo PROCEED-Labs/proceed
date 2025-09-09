@@ -137,6 +137,14 @@ export async function mqttRequest(
 
     let result: string | object;
 
+    if (message.mimeType && message.bodyIsBuffer) {
+      const buffer = new Uint8Array(message.body);
+      const blob = new Blob([buffer], { type: message.mimeType });
+      result = blob;
+      res(result);
+      return;
+    }
+
     try {
       result = JSON.parse(message.body);
     } catch (err) {

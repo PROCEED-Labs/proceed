@@ -333,7 +333,7 @@ export async function deleteSpaceLogo(organizationId: string): Promise<boolean> 
     select: { spaceLogo: true },
   });
 
-  if (result?.spaceLogo) {
+  if (result?.spaceLogo && !result.spaceLogo.startsWith('public')) {
     const isDeleted = await deleteFile(result.spaceLogo);
     if (isDeleted) {
       await db.space.update({

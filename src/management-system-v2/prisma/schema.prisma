@@ -298,6 +298,7 @@ model UserTask {
  milestones            Json?
  milestonesChanges     Json?
  machineId             String
+ json                  String?
 
  @@map("userTask")
 }

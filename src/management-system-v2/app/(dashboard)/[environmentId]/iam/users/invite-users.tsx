@@ -107,7 +107,6 @@ const AddUsersModal: FC<{
 
   const { data, isLoading: usersSearchLoading } = useQuery({
     queryFn: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate loading delay
       if (debouncedSearch.length < 4) {
         return [];
       } else {

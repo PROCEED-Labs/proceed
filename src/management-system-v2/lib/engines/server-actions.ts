@@ -23,6 +23,7 @@ import {
   getUserTaskFileFromMachine,
   setTasklistEntryVariableValuesOnMachine,
   setTasklistEntryMilestoneValuesOnMachine,
+  addOwnerToTaskListEntryOnMachine,
 } from './tasklist';
 import { truthyFilter } from '../typescript-utils';
 import {
@@ -155,7 +156,11 @@ export async function getAvailableTaskListEntries(spaceId: string) {
           );
           removedTasks.push(...Object.keys(removedFromMachine));
 
-          return taskList.map((task) => ({ ...task, machineId: engine.id }));
+          return taskList.map((task) => ({
+            ...task,
+            machineId: engine.id,
+            potentialOwners: task.performers,
+          }));
         } catch (e) {
           return null;
         }
@@ -319,6 +324,53 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
     }
 
     return inlineUserTaskData(html, variableChanges, milestones);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: string, owner: string) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    const storedUserTask = await getUserTaskById(userTaskId);
+
+    if (!storedUserTask || 'error' in storedUserTask) {
+      throw new Error('Failed to get stored user task data.');
+    }
+
+    let { actualOwner } = storedUserTask;
+
+    if (!actualOwner.includes(owner)) {
+      await updateUserTask(userTaskId, {
+        actualOwner: [...actualOwner, owner],
+      });
+
+      const [taskId, instanceId] = userTaskId.split('|');
+
+      // find the engine the user task is running on
+      const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+        const deployments = await fetchDeployments([engine]);
+
+        const instance = deployments
+          .find((deployment) =>
+            deployment.instances.some((i) => i.processInstanceId === instanceId),
+          )
+          ?.instances.find((i) => i.processInstanceId === instanceId);
+
+        if (!instance) return false;
+
+        return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+      });
+
+      if (engines.length) {
+        return await addOwnerToTaskListEntryOnMachine(engines[0], instanceId, taskId, owner);
+      }
+    }
+
+    return {};
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

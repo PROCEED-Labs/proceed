@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import styles from './planned-cost-input.module.scss';
 
 import worldCurrencies from '@/lib/worldCurrencies';
+import { generateNumberString } from '@/lib/utils';
 
 type PlannedCostInputProperties = {
   costsPlanned: { value?: number; currency?: string };
@@ -63,10 +64,10 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
       }}
       value={
         !isEditing && costsPlanned.value
-          ? new Intl.NumberFormat('de-DE', {
+          ? generateNumberString(costsPlanned.value, {
               style: 'currency',
               currency: costsPlanned.currency,
-            }).format(costsPlanned.value)
+            })
           : costsPlanned.value
       }
     />

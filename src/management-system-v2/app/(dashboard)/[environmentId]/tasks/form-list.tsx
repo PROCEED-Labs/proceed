@@ -5,20 +5,8 @@ import Bar from '@/components/bar';
 import ConfirmationButton from '@/components/confirmation-button';
 import ElementList from '@/components/item-list-view';
 import SelectionActions from '@/components/selection-actions';
-import { UserTask } from '@/lib/user-task-schema';
-import { generateDateString, generateTableDateString, spaceURL } from '@/lib/utils';
-import {
-  Button,
-  Divider,
-  Dropdown,
-  Form,
-  Grid,
-  Input,
-  Modal,
-  Space,
-  TableColumnsType,
-  Tooltip,
-} from 'antd';
+import { spaceURL } from '@/lib/utils';
+import { Button, Divider, Form, Grid, Input, Modal, Space, TableColumnsType, Tooltip } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { IoOpenOutline } from 'react-icons/io5';
@@ -27,16 +15,20 @@ import { DeleteOutlined } from '@ant-design/icons';
 
 import styles from '@/components/item-list-view.module.scss';
 import useFuzySearch from '@/lib/useFuzySearch';
+import { v4 } from 'uuid';
+import { HtmlForm } from '@prisma/client';
+import { addHtmlForm, removeHtmlForm } from '@/lib/data/html-forms';
+import { defaultForm } from '../processes/[processId]/_user-task-builder/utils';
 
-type TaskListProps = {
-  data: UserTask[];
+type FormListProps = {
+  data: HtmlForm[];
 };
 
-const TaskList: React.FC<TaskListProps> = ({ data }) => {
-  const [selectedTasks, setSelectedTasks] = useState<UserTask[]>([]);
+const FormList: React.FC<FormListProps> = ({ data }) => {
+  const [selectedForms, setSelectedForms] = useState<HtmlForm[]>([]);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [initialData, setInitialData] = useState({ name: '' });
+  const [initialData, setInitialData] = useState({ name: '', userDefinedId: '', description: '' });
 
   const breakpoint = Grid.useBreakpoint();
 
@@ -47,12 +39,12 @@ const TaskList: React.FC<TaskListProps> = ({ data }) => {
 
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: data ?? [],
-    keys: ['name'],
-    highlightedKeys: ['name'],
+    keys: ['name', 'description'],
+    highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
-  const columns: TableColumnsType<UserTask> = useMemo(() => {
+  const columns: TableColumnsType<HtmlForm> = useMemo(() => {
     return [
       {
         title: 'Name',
@@ -60,7 +52,7 @@ const TaskList: React.FC<TaskListProps> = ({ data }) => {
         key: 'Name',
         ellipsis: true,
         sorter: (a, b) => a.name!.localeCompare(b.name!),
-        // render: (_, record: UserTask) => (
+        // render: (_, record: HtmlForm) => (
         //   <ListEntryLink
         //     data={record}
         //     style={{
@@ -73,16 +65,44 @@ const TaskList: React.FC<TaskListProps> = ({ data }) => {
         // ),
         // responsive: ['xs', 'sm'],
       },
+      {
+        title: 'ID',
+        dataIndex: 'userDefinedId',
+        key: 'ID',
+        sorter: (a, b) => (a.userDefinedId ?? '').localeCompare(b.userDefinedId ?? ''),
+      },
+      {
+        title: 'Description',
+        dataIndex: 'description',
+        key: 'description',
+        ellipsis: true,
+        sorter: (a, b) => a.description.localeCompare(b.description),
+      },
     ];
   }, []);
+  console.log(data);
 
-  function deleteItems(tasks: UserTask[]) {
-    console.log('Delete');
+  async function deleteItems(forms: HtmlForm[]) {
+    for (const form of forms) {
+      await removeHtmlForm(form.id);
+    }
+    setSelectedForms([]);
+    router.refresh();
   }
 
-  function createNewForm() {
-    console.log('Create');
+  async function createNewForm() {
+    const data: typeof initialData = await form.validateFields();
+    console.log(data);
+    await addHtmlForm({
+      id: v4(),
+      html: '<html><head></head> <body>Hello World</body> </html>',
+      json: defaultForm,
+      environmentId: space.spaceId,
+      ...data,
+    });
     setOpenCreateModal(false);
+    setInitialData({ name: '', userDefinedId: '', description: '' });
+    router.refresh();
   }
 
   return (
@@ -94,22 +114,22 @@ const TaskList: React.FC<TaskListProps> = ({ data }) => {
               {!breakpoint.xs && (
                 <Space>
                   <Button type="primary" onClick={() => setOpenCreateModal(true)}>
-                    Create Task Form
+                    Create Html Form
                   </Button>
                 </Space>
               )}
 
               {/* DIVIDER BLOCK */}
-              <SelectionActions count={selectedTasks.length} readOnly={false}>
+              <SelectionActions count={selectedForms.length} readOnly={false}>
                 <Space split={<Divider type="vertical" />}>
-                  {selectedTasks.length === 1 && (
+                  {selectedForms.length === 1 && (
                     <div>
                       <Tooltip placement="top" title={'Open Editor'}>
                         <Button
                           type="text"
                           icon={<PiNotePencil className={styles.Icon} />}
                           onClick={() => {
-                            const url = spaceURL(space, `/tasks/${selectedTasks[0].id}`);
+                            const url = spaceURL(space, `/tasks/${selectedForms[0].id}`);
                             router.push(url);
                           }}
                         />
@@ -119,7 +139,7 @@ const TaskList: React.FC<TaskListProps> = ({ data }) => {
                           type="text"
                           icon={<IoOpenOutline className={styles.Icon} />}
                           onClick={() => {
-                            const url = spaceURL(space, `/tasks/${selectedTasks[0].id}`);
+                            const url = spaceURL(space, `/tasks/${selectedForms[0].id}`);
                             window.open(url, '_blank');
                           }}
                         />
@@ -155,11 +175,11 @@ const TaskList: React.FC<TaskListProps> = ({ data }) => {
                       {
                         <ConfirmationButton
                           tooltip="Delete"
-                          title="Delete Task Form"
+                          title="Delete Html Form"
                           externalOpen={openDeleteModal}
                           onExternalClose={() => setOpenDeleteModal(false)}
                           description="Are you sure you want to delete the selected processes?"
-                          onConfirm={() => deleteItems(selectedTasks)}
+                          onConfirm={() => deleteItems(selectedForms)}
                           buttonProps={{
                             icon: <DeleteOutlined className={styles.Icon} />,
                             type: 'text',
@@ -180,16 +200,20 @@ const TaskList: React.FC<TaskListProps> = ({ data }) => {
         }}
       />
       <ElementList
-        data={filteredData.map((d) => ({ ...d, name: d.name.value }))}
+        data={filteredData.map((d) => ({
+          ...d,
+          name: d.name.highlighted,
+          description: d.description.highlighted,
+        }))}
         columns={columns}
         elementSelection={{
-          selectedElements: selectedTasks,
-          setSelectionElements: setSelectedTasks,
+          selectedElements: selectedForms,
+          setSelectionElements: setSelectedForms,
         }}
       />
       <Modal
         open={openCreateModal}
-        title="Create Process Form"
+        title="Create Html Form"
         onClose={() => setOpenCreateModal(false)}
         onCancel={() => setOpenCreateModal(false)}
         onOk={createNewForm}
@@ -216,10 +240,34 @@ const TaskList: React.FC<TaskListProps> = ({ data }) => {
           >
             <Input />
           </Form.Item>
+
+          <Form.Item
+            name={'userDefinedId'}
+            label="ID"
+            rules={[
+              { max: 50, message: 'ID can be max 50 characters long' },
+              {
+                required: false,
+                message: 'Please enter a unique ID for the form.',
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name={'description'}
+            label="Html Form Description"
+            rules={[
+              { max: 1000, message: 'Form description can be max 1000 characters long' },
+              { required: false, message: 'Please fill out the Form description' },
+            ]}
+          >
+            <Input.TextArea showCount rows={4} maxLength={1000} />
+          </Form.Item>
         </Form>
       </Modal>
     </>
   );
 };
 
-export default TaskList;
+export default FormList;

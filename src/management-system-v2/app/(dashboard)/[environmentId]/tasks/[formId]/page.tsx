@@ -1,13 +1,13 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { getHtmlForm } from '@/lib/data/html-forms';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { Result, Space } from 'antd';
+import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import { Result } from 'antd';
 import { notFound } from 'next/navigation';
-import FormList from './form-list';
-import { getHtmlForms } from '@/lib/data/html-forms';
+import FormView from './form-view';
 
-const FormsPage = async ({ params }: { params: { environmentId: string } }) => {
+const FormPage = async ({ params }: { params: { environmentId: string; formId: string } }) => {
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     return notFound();
@@ -23,23 +23,17 @@ const FormsPage = async ({ params }: { params: { environmentId: string } }) => {
     return notFound();
   }
 
-  const htmlForms = await getHtmlForms(spaceId);
+  const htmlForm = await getHtmlForm(params.formId, true);
 
-  if ('error' in htmlForms) {
+  if ('error' in htmlForm) {
     return (
-      <Content title="Forms">
+      <Content title="Form">
         <Result status="404" title="Could not load task list data" />
       </Content>
     );
   }
 
-  return (
-    <Content title="Forms">
-      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <FormList data={htmlForms} />
-      </Space>
-    </Content>
-  );
+  return <FormView data={htmlForm} />;
 };
 
-export default FormsPage;
+export default FormPage;

@@ -454,18 +454,30 @@ class Messaging extends System {
           // handle the different ways in which the handlers might return their results
           let sendResponse = res;
           let statusCode = 200;
+          let mimeType = undefined;
+          let isBuffer = false;
           if (typeof res === 'object') {
             sendResponse = res.response;
             statusCode = res.statusCode || 200;
+            mimeType = res.mimeType;
           }
 
-          if (Buffer.isBuffer(sendResponse)) sendResponse = sendResponse.toString();
+          if (Buffer.isBuffer(sendResponse)) {
+            if (mimeType && mimeType.startsWith('text')) {
+              sendResponse = sendResponse.toString();
+            } else {
+              sendResponse = Array.from(new Uint8Array(sendResponse));
+              isBuffer = true;
+            }
+          }
 
           // answer the request on the same topic using the same id
           await this.publish(topic, {
             type: 'response',
             id: request.id,
             statusCode,
+            mimeType,
+            bodyIsBuffer: isBuffer,
             body: sendResponse,
           });
         }

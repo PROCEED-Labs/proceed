@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
+import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
 import {
   Alert,
   Layout as AntLayout,
@@ -28,6 +28,8 @@ import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useSession } from '@/components/auth-can';
 import ChangeUserPasswordModal from './profile/change-password-modal';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import useMSLogo from '@/lib/use-ms-logo';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -72,9 +74,6 @@ const Layout: FC<
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
-  const { download: getLogo, fileUrl: logoUrl } = useFileManager({
-    entityType: EntityType.ORGANIZATION,
-  });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
 
@@ -96,12 +95,8 @@ const Layout: FC<
     );
   }
 
-  useEffect(() => {
-    if (customLogo) getLogo({ entityId: activeSpace.spaceId, filePath: customLogo });
-  }, [activeSpace, customLogo]);
-
-  let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (logoUrl) imageSource = logoUrl;
+  // The space id needs to be set here, because the hook is outside of the SpaceContext.Provider
+  const { imageSource } = useMSLogo(customLogo, { spaceId: activeSpace.spaceId });
 
   const menu = (
     <Menu

@@ -6,7 +6,7 @@ import {
 import db from '@/lib/data/db';
 import { addUser, setUserPassword } from '@/lib/data/db/iam/users';
 import { getTokenHash, notExpired } from '@/lib/email-verification-tokens/utils';
-import { env } from 'process';
+import { env } from '@/lib/ms-config/env-vars';
 
 // TODO: maybe add PRETTIER error handling
 

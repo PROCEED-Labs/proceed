@@ -37,7 +37,7 @@ const Adapter = {
     return await saveEmailVerificationToken({
       type: 'signin_with_email',
       ...token,
-      expiresAt: expires,
+      expires,
     });
   },
   useVerificationToken: async (params: { identifier: string; token: string }) => {

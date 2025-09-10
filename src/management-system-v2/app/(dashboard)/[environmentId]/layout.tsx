@@ -74,7 +74,7 @@ const DashboardLayout = async ({
     activeEnvironment.spaceId,
     'general-settings',
   );
-  const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks || [];
+  const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks?.links || [];
   const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
   const middleCustomNavLinks = customNavLinks.filter((link) => link.position === 'middle');
   const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');
@@ -104,7 +104,7 @@ const DashboardLayout = async ({
     'process-automation',
   );
   if (
-    msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION &&
+    msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
     automationSettings.active !== false &&
     automationSettings.tasklist?.active !== false
   ) {
@@ -145,7 +145,7 @@ const DashboardLayout = async ({
     }
   }
 
-  if (msConfig.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     if (automationSettings.active !== false) {
       let children: MenuProps['items'] = [
         automationSettings.dashboard?.active !== false && {
@@ -271,7 +271,14 @@ const DashboardLayout = async ({
     });
   }
 
-  if (systemAdmin && msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
+  if (
+    systemAdmin &&
+    msConfig.PROCEED_PUBLIC_IAM_ACTIVE &&
+    !(
+      msConfig.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE &&
+      !msConfig.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE
+    )
+  ) {
     layoutMenuItems.push({
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,

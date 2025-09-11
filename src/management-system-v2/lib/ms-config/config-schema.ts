@@ -4,38 +4,29 @@ import z, { type ZodType } from 'zod';
 // Add MS Configs here
 // --------------------------------------------
 
-// NOTE: order of default and optional matter, it's best not to mix them
-// default.optional -> input: undefined = output: undefined
-// optional.default -> input: undefined = output: default value
-
 export const mSConfigEnvironmentOnlyKeys = [
   'NEXTAUTH_URL',
   'NEXTAUTH_SECRET',
+  'IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET',
+  'IAM_GUEST_CONVERSION_REFERENCE_SECRET',
   'SHARING_ENCRYPTION_SECRET',
+
   'DATABASE_URL',
   'NODE_ENV',
-  'MQTT_SERVER_ADDRESS',
-  'MQTT_USERNAME',
-  'MQTT_PASSWORD',
-  'MQTT_BASETOPIC',
 
-  // TODO: remove this from environment only list
-  'STORAGE_CLOUD_BUCKET_NAME',
   'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
+
+  'PROCEED_PUBLIC_IAM_ACTIVE',
   'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
   'PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE',
-
   'PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE',
   'PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE',
+
   'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE',
   'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_X_ACTIVE',
   'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_DISCORD_ACTIVE',
 
-  'PROCEED_PUBLIC_IAM_ACTIVE',
   'PROCEED_PUBLIC_TIMELINE_VIEW',
-
-  'IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET',
-  'IAM_GUEST_CONVERSION_REFERENCE_SECRET',
 
   'IAM_LOGIN_OAUTH_GOOGLE_CLIENT_ID',
   'IAM_LOGIN_OAUTH_GOOGLE_CLIENT_SECRET',
@@ -45,12 +36,17 @@ export const mSConfigEnvironmentOnlyKeys = [
 
   'IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID',
   'IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET',
+
   'PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV',
+  'STORAGE_CLOUD_BUCKET_NAME',
 
   // Variables that aren't implemented yet
   // 'PRISMA_???',
 ] satisfies (keyof MergedSchemas)[];
 
+// NOTE: order of default and optional matter, it's best not to mix them
+// default.optional -> input: undefined = output: undefined
+// optional.default -> input: undefined = output: default value
 export const msConfigSchema = {
   all: {
     PROCEED_PUBLIC_GENERAL_MS_LOGO: z.string().default(''),
@@ -160,11 +156,6 @@ export const msConfigSchema = {
     SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
 
     PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
-
-    MQTT_SERVER_ADDRESS: z.string().url().optional(),
-    MQTT_USERNAME: z.string().optional(),
-    MQTT_PASSWORD: z.string().optional(),
-    MQTT_BASETOPIC: z.string().optional(),
   },
   production: {
     DATABASE_URL: z.string(),

@@ -74,7 +74,14 @@ export function _endpointBuilder(
   );
 
   if (options?.queryParams && Object.keys(options.queryParams).length > 0) {
-    const searchParams = new URLSearchParams(options.queryParams);
+    const searchParams = new URLSearchParams();
+
+    for (const [key, paramValue] of Object.entries(options.queryParams)) {
+      if (paramValue !== undefined) {
+        searchParams.set(key, paramValue);
+      }
+    }
+
     builtEndpoint += `?${searchParams.toString()}`;
   }
 

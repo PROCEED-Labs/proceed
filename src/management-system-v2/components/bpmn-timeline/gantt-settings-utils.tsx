@@ -51,15 +51,7 @@ export function createGanttSettingsRenderer(settingsGroup: SettingGroup) {
     if (setting.type === 'boolean') {
       let disabled = !mainEnabled;
 
-      // For loop icons, also disable when earliest occurrence is selected
-      if (key === 'gantt-view.show-loop-icons') {
-        const positioningLogicSetting = settingsGroup.children.find(
-          (child) => child.key === 'positioning-logic',
-        ) as Setting;
-
-        const isEarliestOccurrence = positioningLogicSetting.value === 'earliest-occurrence';
-        disabled = disabled || isEarliestOccurrence;
-      }
+      // Loop icons are now enabled for all modes
 
       return {
         input: (
@@ -154,15 +146,7 @@ export function createGanttSettingsRenderer(settingsGroup: SettingGroup) {
     if (setting.type === 'number') {
       let disabled = !mainEnabled;
 
-      // For loop depth, also disable when earliest occurrence is selected
-      if (key === 'gantt-view.loop-depth') {
-        const positioningLogicSetting = settingsGroup.children.find(
-          (child) => child.key === 'positioning-logic',
-        ) as Setting;
-
-        const isEarliestOccurrence = positioningLogicSetting.value === 'earliest-occurrence';
-        disabled = disabled || isEarliestOccurrence;
-      }
+      // Loop depth is now enabled for all modes
 
       return {
         input: (

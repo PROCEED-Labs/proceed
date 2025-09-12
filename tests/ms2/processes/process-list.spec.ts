@@ -394,32 +394,29 @@ test('toggle process list columns', async ({ processListPage }) => {
 test('test that selected columns are persisted on reload', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const VisibleColumns = ['ID', 'Description ', 'Last Edited '];
-  const HiddenColumns = ['Created On ', 'Created By '];
+  const HiddenColumns = ['ID', 'Description ', 'Last Edited '];
+  const VisibleColumns = ['Created On ', 'Created By '];
 
-  const toggleMenu = () =>
-    page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
+  // Open column selection
+  page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
 
   for (const column of VisibleColumns) {
     const checkbox = page.getByRole('checkbox', { name: column });
 
-    await toggleMenu(); // open
     expect(checkbox).toBeVisible();
     if (!(await checkbox.isChecked())) await checkbox.check();
     await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
-    await toggleMenu(); // close
   }
 
   for (const column of HiddenColumns) {
     const checkbox = page.getByRole('checkbox', { name: column });
 
-    await toggleMenu(); // open
     expect(checkbox).toBeVisible();
     if (await checkbox.isChecked()) await checkbox.uncheck();
     await expect(page.getByRole('columnheader', { name: column })).not.toBeVisible();
-    await toggleMenu(); // close
   }
 
+  // Reload page to see if columns are persisted
   await page.reload();
 
   for (const column of VisibleColumns) {

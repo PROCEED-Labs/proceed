@@ -49,7 +49,8 @@ export async function engineRequest<
 
     // NOTE: not awaiting this could be a problem if hosted on vercel
     if (engine.spaceEngine) {
-      spaceEngineClient?.endAsync();
+      // TODO: removed because sometimes the same client is used for multiple requests.
+      //spaceEngineClient?.endAsync();
     }
 
     return response;

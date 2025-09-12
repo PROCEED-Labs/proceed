@@ -9,9 +9,8 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 
-import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
-import useProcessVariables from '../use-process-variables';
-import ProcessVariableForm, { typeLabelMap } from './process-variable-form';
+import useProcessVariables, { ProcessVariable, typeLabelMap } from '../use-process-variables';
+import ProcessVariableForm from './process-variable-form';
 
 type VariableDefinitionProps = {};
 
@@ -61,9 +60,7 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
               title: 'Data Type',
               dataIndex: 'dataType',
               key: 'type',
-              render: (_, record) => (
-                <Space>{typeLabelMap[record.dataType as keyof typeof typeLabelMap]}</Space>
-              ),
+              render: (_, record) => <Space>{typeLabelMap[record.dataType]}</Space>,
             },
             {
               title: 'Default Value',

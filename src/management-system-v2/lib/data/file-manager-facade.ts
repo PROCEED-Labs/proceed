@@ -10,14 +10,14 @@ import {
 import { contentTypeNotAllowed } from './content-upload-error';
 import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
-import { getProcessUserTaskJSON } from './db/process';
+import { getProcessHtmlFormJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
-import { env } from '../env-vars';
 import { Prisma } from '@prisma/client';
 import { use } from 'react';
 import { checkValidity } from './processes';
+import { env } from '@/lib/ms-config/env-vars';
 
-const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV;
+const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
@@ -134,7 +134,7 @@ export async function saveEntityFile(
     case EntityType.PROCESS:
       return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
     case EntityType.ORGANIZATION:
-      return saveOrganizationLogo(entityId, fileName, mimeType, fileContent);
+      return saveSpaceLogo(entityId, fileName, mimeType, fileContent);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -152,7 +152,7 @@ export async function retrieveEntityFile(
       if (!filePath) throw new Error('File name is required for process artifacts');
       return retrieveFile(filePath, true);
     case EntityType.ORGANIZATION:
-      return getOrganizationLogo(entityId);
+      return getSpaceLogo(entityId);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -170,7 +170,7 @@ export async function deleteEntityFile(
       if (!fileName) throw new Error('File name is required for process artifacts');
       return deleteProcessArtifact(fileName, false, entityId);
     case EntityType.ORGANIZATION:
-      return deleteOrganizationLogo(entityId);
+      return deleteSpaceLogo(entityId);
     // Extend for other entity types if needed
     default:
       throw new Error(`Unsupported entity type: ${entityType}`);
@@ -290,7 +290,7 @@ export async function deleteProcessArtifact(
 }
 
 // Functionality for handling organization logo files
-export async function saveOrganizationLogo(
+export async function saveSpaceLogo(
   organizationId: string,
   fileName: string,
   mimeType: string,
@@ -314,7 +314,7 @@ export async function saveOrganizationLogo(
   return { presignedUrl, filePath };
 }
 
-export async function getOrganizationLogo(organizationId: string) {
+export async function getSpaceLogo(organizationId: string) {
   const result = await db.space.findUnique({
     where: { id: organizationId },
     select: { spaceLogo: true },
@@ -327,13 +327,13 @@ export async function getOrganizationLogo(organizationId: string) {
   return null;
 }
 
-export async function deleteOrganizationLogo(organizationId: string): Promise<boolean> {
+export async function deleteSpaceLogo(organizationId: string): Promise<boolean> {
   const result = await db.space.findUnique({
     where: { id: organizationId },
     select: { spaceLogo: true },
   });
 
-  if (result?.spaceLogo) {
+  if (result?.spaceLogo && !result.spaceLogo.startsWith('public')) {
     const isDeleted = await deleteFile(result.spaceLogo);
     if (isDeleted) {
       await db.space.update({
@@ -411,7 +411,7 @@ async function getArtifactReference(artifactId: string, processId: string) {
 
 // Soft delete a user task and its associated artifacts
 export async function softDeleteProcessUserTask(processId: string, userTaskFilename: string) {
-  const res = await getProcessUserTaskJSON(processId, userTaskFilename);
+  const res = await getProcessHtmlFormJSON(processId, userTaskFilename);
   if (res) {
     const userTaskJson = JSON.parse(res);
     const referencedArtifactFilenames = findKey(userTaskJson, 'src');
@@ -461,7 +461,7 @@ export async function softDeleteProcessScriptTask(processId: string, scriptTaskF
 
 // Revert soft deletion of a user task and restore its artifacts
 export async function revertSoftDeleteProcessUserTask(processId: string, userTaskFilename: string) {
-  const res = await getProcessUserTaskJSON(processId, userTaskFilename);
+  const res = await getProcessHtmlFormJSON(processId, userTaskFilename);
   if (res) {
     const userTaskJson = JSON.parse(res);
     const referencedArtifactFilenames = findKey(userTaskJson, 'src');

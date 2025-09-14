@@ -31,12 +31,19 @@ const defaultPreferences = {
   'icon-view-in-role-list': false,
   'columns-in-table-view-process-list': [
     { name: 'Favorites', width: 40 },
+    { name: 'ID', width: 'auto' },
     { name: 'Name', width: 'auto' },
     { name: 'Description', width: 'auto' },
     { name: 'Last Edited', width: 'auto' },
     // { name: 'Created On', width: 'auto' },
     // { name: 'Created By', width: 'auto' },
     // { name: "Responsibility", width: 'auto' },
+  ],
+  'columns-in-engine-view': [
+    { name: 'Name', width: 'auto' },
+    { name: 'Type', width: 'auto' },
+    { name: 'Engines', width: 'auto' },
+    { name: 'Status', width: 'auto' },
   ],
   'role-page-side-panel': { open: false, width: 300 },
   'user-page-side-panel': { open: false, width: 300 },
@@ -64,7 +71,7 @@ const partialUpdate = (
       /* For speed up (cannot break map)*/
       if (shapeIsDifferent) return currentValue;
 
-      /* Default elment is an array */
+      /* Default element is an array */
       if (Array.isArray(defaultValueSample)) {
         /* Currently saved is not an array */
         if (!Array.isArray(currentValue)) {
@@ -74,7 +81,7 @@ const partialUpdate = (
         } else {
           return updateArray(defaultValueSample, currentValue);
         }
-        /* Default elment is an an object */
+        /* Default element is an an object */
       } else if (typeof defaultValueSample === 'object' && defaultValueSample !== null) {
         /* Currently saved is not an object */
         if (
@@ -225,7 +232,7 @@ for (const preference of Object.keys(defaultPreferences)) {
 }
 
 /**
- * Custom hook for managing device dependant user preferences in components.
+ * Custom hook for managing device dependent user preferences in components.
  * The default values for the preferences should be defined in the 'user-preferences.ts' file.
  * The store is initialised with these defaults, and it persists changes in the local storage.
  *

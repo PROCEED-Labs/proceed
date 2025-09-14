@@ -83,9 +83,13 @@ export async function GET(request: NextRequest) {
         statusText: 'Cannot read file type of requested file',
       });
     }
+    let mimeType: string = fileType.mime;
+
+    if (fileType.mime === 'application/xml' && filePath?.endsWith('.svg'))
+      mimeType = 'image/svg+xml';
 
     const headers = new Headers();
-    headers.set('Content-Type', fileType.mime);
+    headers.set('Content-Type', mimeType);
     return new NextResponse(data, { status: 200, statusText: 'OK', headers });
   } catch (error: any) {
     console.error('Error retrieving file:', error);
@@ -109,7 +113,6 @@ export async function PUT(request: NextRequest) {
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId');
   const filePath = searchParams.get('filePath');
-
   if (!entityId || !environmentId || !entityType || !filePath) {
     return new NextResponse(null, {
       status: 400,

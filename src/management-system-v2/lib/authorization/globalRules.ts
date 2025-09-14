@@ -3,16 +3,15 @@
 
 import { packRules } from '@casl/ability/extra';
 import { AbilityRule, ResourceType, resourceAction, resources } from '../ability/caslAbility';
-import { env } from '../env-vars';
+import { env } from '../ms-config/env-vars';
 
 // NOTE: move this to the feature store once it exists
 export const BuyableResources = Object.freeze([] satisfies ResourceType[]);
 export type BuyableResource = (typeof BuyableResources)[number];
 
-let _enabledResources: ResourceType[] = env.MS_ENABLED_RESOURCES
-  ? JSON.parse(env.MS_ENABLED_RESOURCES)
-  : resources;
-if (!env.PROCEED_PUBLIC_IAM_ACTIVATE) {
+let _enabledResources: readonly ResourceType[] = resources;
+
+if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
   _enabledResources = _enabledResources.filter(
     (resource) => !['User', 'Role', 'RoleMapping'].includes(resource),
   );
@@ -53,7 +52,14 @@ export const packedGlobalOrganizationRules = Object.freeze(
 );
 
 export const globalPersonalSpaceRules = Object.freeze(
-  getRulesForTargetResources(['Process', 'Folder', 'Execution', 'Machine']),
+  getRulesForTargetResources([
+    'Process',
+    'Folder',
+    'Execution',
+    'Machine',
+    'Environment',
+    'Setting',
+  ]),
 );
 
 export const packedGlobalUserRules = Object.freeze(

@@ -29,12 +29,57 @@ import { useEnvironment } from '@/components/auth-can';
 import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
-import { Shape } from 'bpmn-js/lib/model/Types';
+import { Element, Shape } from 'bpmn-js/lib/model/Types';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
+import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+import VariableDefinition from './variable-definition';
+
+// Elements that should not display the planned duration field
+// These are non-executable elements that don't have execution time
+const ELEMENTS_WITHOUT_PLANNED_DURATION = [
+  // Start events are instantaneous
+  'bpmn:StartEvent',
+  // Artifacts - documentation and data elements that don't execute
+  'bpmn:TextAnnotation',
+  'bpmn:DataObject',
+  'bpmn:DataObjectReference',
+  'bpmn:DataStore',
+  'bpmn:DataStoreReference',
+  'bpmn:Group',
+  'bpmn:Association',
+  // Organizational elements - containers, not executable elements
+  'bpmn:Participant',
+  'bpmn:Lane',
+  'bpmn:LaneSet',
+];
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
+};
+
+export const updateMetaData = async (
+  modeler: BPMNCanvasRef,
+  element: ElementLike,
+  name: string,
+  value: any,
+  attributes?: { [key: string]: any },
+  oldAttributes?: { [key: string]: any },
+) => {
+  const modeling = modeler.getModeling();
+  const bpmn = await modeler.getXML();
+
+  // create deep copy of selected element and set proceed element in this object so that bpmn.js event system can recognise changes in object
+  const selectedElementCopy = (await deepCopyElementById(bpmn!, element.id)) as any;
+
+  if (name === 'property') {
+    setProceedElement(selectedElementCopy, name, value.value, value.attributes, oldAttributes);
+  } else {
+    setProceedElement(selectedElementCopy, name, value ? value : null, attributes);
+  }
+  modeling.updateProperties(element as any, {
+    extensionElements: selectedElementCopy.extensionElements,
+  });
 };
 
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
@@ -170,28 +215,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     });
   };
 
-  const updateMetaData = async (
-    name: string,
-    value: any,
-    attributes?: { [key: string]: any },
-    oldAttributes?: { [key: string]: any },
-  ) => {
-    const modeling = modeler!.getModeling();
-    const bpmn = await modeler!.getXML();
-
-    // create deep copy of selected element and set proceed element in this object so that bpmn.js event system can recognise changes in object
-    const selectedElementCopy = (await deepCopyElementById(bpmn!, selectedElement.id)) as any;
-
-    if (name === 'property') {
-      setProceedElement(selectedElementCopy, name, value.value, value.attributes, oldAttributes);
-    } else {
-      setProceedElement(selectedElementCopy, name, value ? value : null, attributes);
-    }
-    modeling.updateProperties(selectedElement as any, {
-      extensionElements: selectedElementCopy.extensionElements,
-    });
-  };
-
   /* TABS: */
   const [activeTab, setActiveTab] = useState('Property-Panel-General');
 
@@ -250,8 +273,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             >
               <ImageSelectionSection
                 imageFilePath={metaData.overviewImage}
-                onImageUpdate={(imageFilePath) => {
-                  updateMetaData('overviewImage', imageFilePath);
+                onImageUpdate={(imageFileName) => {
+                  updateMetaData(modeler!, selectedElement, 'overviewImage', imageFileName);
                 }}
               ></ImageSelectionSection>
             </div>
@@ -269,21 +292,32 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                   : { currency: 'EUR' }
               }
               onInput={({ value, currency }) => {
-                updateMetaData('costsPlanned', value, { unit: currency });
+                updateMetaData(modeler!, selectedElement, 'costsPlanned', value, {
+                  unit: currency,
+                });
               }}
             ></PlannedCostInput>
-            <PlannedDurationInput
-              onChange={(changedTimePlannedDuration) => {
-                updateMetaData('timePlannedDuration', changedTimePlannedDuration);
-              }}
-              timePlannedDuration={timePlannedDuration || ''}
-            ></PlannedDurationInput>
+            {!ELEMENTS_WITHOUT_PLANNED_DURATION.includes(selectedElement.type) && (
+              <PlannedDurationInput
+                onChange={(changedTimePlannedDuration) => {
+                  updateMetaData(
+                    modeler!,
+                    selectedElement,
+                    'timePlannedDuration',
+                    changedTimePlannedDuration,
+                  );
+                }}
+                timePlannedDuration={timePlannedDuration || ''}
+              ></PlannedDurationInput>
+            )}
           </Space>
 
           <CustomPropertySection
             metaData={metaData}
             onChange={(name, value, oldName) => {
               updateMetaData(
+                modeler!,
+                selectedElement,
                 'property',
                 { value: value, attributes: { name } },
                 undefined,
@@ -340,7 +374,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     },
   ];
 
-  if (env.PROCEED_PUBLIC_ENABLE_EXECUTION) {
+  if (env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     tabs.push({
       key: 'Property-Panel-Execution',
       label: 'Automation Properties',
@@ -352,9 +386,13 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             role="group"
             aria-labelledby="general-title"
           >
-            {environment?.isOrganization && (
-              <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
+            {selectedElement.type === 'bpmn:UserTask' && (
+              <>
+                <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
+                <Divider />
+              </>
             )}
+            <VariableDefinition />
           </Space>
         </>
       ),

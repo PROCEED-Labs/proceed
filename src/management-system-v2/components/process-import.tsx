@@ -32,6 +32,7 @@ export type ProcessData = {
   folderId?: string;
   bpmn: string;
   artefacts?: {
+    startForm?: Array<{ name: string; content: string }>;
     images?: Array<{ name: string; content: string }>;
     userTasks?: Array<{ name: string; content: string }>;
     scriptTasks?: Array<{ name: string; content: string }>;
@@ -54,7 +55,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
     await Promise.all(
       fileList.map(async (file) => {
         try {
-          if (file.type === 'application/zip') {
+          if (file.name.toLowerCase().endsWith('.zip')) {
             await handleZipFile(file, processesData, errors);
           } else {
             await handleBpmnFile(file, processesData, errors);
@@ -142,6 +143,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
         folderId: currentFolderId,
         bpmn,
         artefacts: {
+          startForm: [],
           images: [],
           userTasks: [],
           scriptTasks: [],
@@ -149,7 +151,8 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
       };
       if (zip) {
         // Handle artefacts in the same directory as the BPMN file
-        const artefactPath = bpmnFilePath.split('/').slice(0, -1).join('/');
+        const normalizedBpmnPath = bpmnFilePath.replace(/\\/g, '/');
+        const artefactPath = normalizedBpmnPath.split('/').slice(0, -1).join('/');
         const artefactFiles = Object.keys(zip.files).filter(
           (name) =>
             name.startsWith(artefactPath.concat('/')) &&
@@ -171,10 +174,18 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
                 processData.artefacts!.scriptTasks!.push({ name, content });
               } else if (['.json', '.html'].some((ext) => name.endsWith(ext))) {
                 const textContent = await file.async('text');
-                processData.artefacts!.userTasks!.push({
-                  name,
-                  content: textContent,
-                });
+                const subPath = fileName.split(artefactPath + '/')[1];
+                if (subPath.includes('Process_Start')) {
+                  processData.artefacts!.startForm!.push({
+                    name,
+                    content: textContent,
+                  });
+                } else {
+                  processData.artefacts!.userTasks!.push({
+                    name,
+                    content: textContent,
+                  });
+                }
               }
             } catch (e: any) {
               errors.push({
@@ -187,6 +198,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
       }
 
       const validationRes = await checkIfAllReferencedArtefactsAreProvided(bpmn, {
+        startForm: processData.artefacts?.startForm?.map((item) => item.name) || [],
         images: processData.artefacts?.images?.map((item) => item.name) || [],
         userTasks: processData.artefacts?.userTasks?.map((item) => item.name) || [],
         scriptTasks: processData.artefacts?.scriptTasks?.map((item) => item.name) || [],

@@ -29,6 +29,15 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
     if (!zipFolder) return { filename: `${getProcessFilePathName(filename)}.bpmn`, blob: bpmnBlob };
 
     zipFolder.file(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
+
+    if (versionData.startForm) {
+      const htmlFormFolder = zipFolder.folder('html-forms');
+      const { json, html, filename } = versionData.startForm;
+      const jsonBlob = new Blob([json], { type: 'application/json' });
+      htmlFormFolder?.file(filename + '.json', jsonBlob);
+      const htmlBlob = new Blob([html], { type: 'application/html' });
+      htmlFormFolder?.file(filename + '.html', htmlBlob);
+    }
   }
 
   if (zipFolder) {
@@ -53,12 +62,12 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
 
     // export the user tasks of the process
     if (processData.userTasks.length) {
-      const userTaskFolder = zipFolder.folder('user-tasks');
+      const htmlFormFolder = zipFolder.folder('html-forms');
       for (const { filename, json, html } of processData.userTasks) {
         const jsonBlob = new Blob([json], { type: 'application/json' });
-        userTaskFolder?.file(filename + '.json', jsonBlob);
+        htmlFormFolder?.file(filename + '.json', jsonBlob);
         const htmlBlob = new Blob([html], { type: 'application/html' });
-        userTaskFolder?.file(filename + '.html', htmlBlob);
+        htmlFormFolder?.file(filename + '.html', htmlBlob);
       }
     }
     // export the images used either for flow elements or inside user tasks
@@ -81,6 +90,7 @@ export async function getExportblob(
   // the following cases are only relevant if there is only one process to export (in any other case needsZip becomes true anyway)
   const hasMulitpleVersions = Object.keys(exportData[0].versions).length > 1;
   const hasArtefacts =
+    !!Object.values(exportData[0].versions)[0].startForm ||
     !!exportData[0].userTasks.length ||
     !!exportData[0].scriptTasks.length ||
     !!exportData[0].images.length;
@@ -115,7 +125,7 @@ export async function getExportblob(
         exportData.length === 1
           ? `${exportData[0].definitionName}.zip`
           : 'PROCEED_Multiple-Processes_bpmn.zip',
-      blob: await zip.generateAsync({ type: 'blob' }),
+      blob: await zip.generateAsync({ type: 'blob', platform: 'UNIX' }),
       zip: true,
     };
   } else {
@@ -129,12 +139,11 @@ export async function getExportblob(
  * @param options the options that were selected by the user
  * @param processes the processes(and versions) to export
  */
-export function exportProcesses(
+export async function exportProcesses(
   options: ProcessExportOptions,
   processes: ExportProcessInfo,
   spaceId: string,
 ) {
   const blob = getExportblob(options, processes, spaceId);
-
-  return handleExportMethod(blob, options);
+  return { fallback: await handleExportMethod(blob, options), blob };
 }

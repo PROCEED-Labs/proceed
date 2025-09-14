@@ -162,15 +162,14 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         return modeler.current!.get<ElementRegistry>('elementRegistry').getAll();
       },
       getCurrentRoot: () => {
-        if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
+        const rootElement = modeler.current!.get<Canvas>('canvas').getRootElement();
+        if (!rootElement?.businessObject) {
           return;
         }
 
         return modeler
           .current!.get<ElementRegistry>('elementRegistry')
-          .get(
-            modeler.current!.get<Canvas>('canvas').getRootElement().businessObject.id,
-          ) as Element;
+          .get(rootElement.businessObject.id) as Element;
       },
       getEventBus: () => {
         return modeler.current!.get<EventBus>('eventBus');
@@ -207,7 +206,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       deactivateKeyboard: () => {
         modeler.current!.get<Keyboard>('keyboard').unbind();
       },
-      removeColors: () => {},
     }));
 
     const [Modeler, NavigatedViewer, Viewer] = use(BPMNJs);
@@ -356,7 +354,10 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         // This handler is added here because it would fire before the onLoaded
         // callback. Since we set the root for subprocesses in the onLoaded, the
         // URL check in onRootChange would fire too early.
-        rootSet({ element: m.get<Canvas>('canvas').getRootElement() as Root });
+        const rootElement = m.get<Canvas>('canvas').getRootElement();
+        if (rootElement) {
+          rootSet({ element: rootElement as Root });
+        }
         modeler.current!.on<{ element: Root }>('root.set', rootSet);
       }
 

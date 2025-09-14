@@ -5,9 +5,9 @@ import Content from '@/components/content';
 import Title from 'antd/es/typography/Title';
 import { redirect } from 'next/navigation';
 import SpaceSettings from './space-settings';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/db/iam/environments';
+import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
-import DeleteOrganizationButton from './delete-organization-button';
+import DeleteOrganizationButton from '@/app/(dashboard)/[environmentId]/management/@organizationSettings/delete-organization-button';
 import { AuthCan } from '@/components/auth-can';
 
 const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {

@@ -128,10 +128,10 @@ function getOnTokenEndedHandler(engine, instance) {
  */
 function getOnScriptTaskErrorHandler(engine, instance) {
   return (execution) => {
-    // engine._log.info({
-    //   msg: `Technical Error in Script Task with id ${execution.flowElementId} on token ${execution.tokenId}. InstanceId = ${instance.id} `,
-    //   instanceId: instance.id,
-    // });
+    engine._log.info({
+      msg: `${execution.errorMessage} in Script Task with id ${execution.flowElementId} on token ${execution.tokenId}. InstanceId = ${instance.id} `,
+      instanceId: instance.id,
+    });
   };
 }
 
@@ -368,6 +368,13 @@ module.exports = {
               performers: token.performers,
             });
             newInstance.updateToken(execution.tokenId, { performers: undefined });
+          }
+
+          if (token.actualOwner) {
+            newInstance.updateLog(execution.flowElementId, execution.tokenId, {
+              actualOwner: token.actualOwner,
+            });
+            newInstance.updateToken(execution.tokenId, { actualOwner: undefined });
           }
 
           const flowElement = newInstance.getFlowElement(execution.flowElementId);

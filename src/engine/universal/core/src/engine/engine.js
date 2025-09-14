@@ -130,9 +130,13 @@ class Engine {
         'port',
       ]);
 
-      const { ip } = distribution.communication
+      const thisEngine = distribution.communication
         .getAvailableMachines()
         .find((machine) => machine.id === id);
+
+      let ip;
+
+      if (thisEngine) ({ ip } = thisEngine);
 
       this.machineInformation = { id, name: name || hostname, ip, port };
 
@@ -357,6 +361,7 @@ class Engine {
     // remember the changes made by this user task invocation
     userTask.variableChanges = { ...token.intermediateVariablesState };
     userTask.milestones = { ...token.milestones };
+    userTask.actualOwner = [...token.actualOwner];
 
     userTask.processInstance.completeActivity(userTask.id, userTask.tokenId, variables);
   }
@@ -589,6 +594,7 @@ class Engine {
             progress: token.currentFlowNodeProgress,
             priority: token.priority,
             performers: token.performers,
+            actualOwner: token.actualOwner,
           });
         }
       });
@@ -799,6 +805,7 @@ class Engine {
         priority: token.priority,
         progress: token.currentFlowNodeProgress.value,
         performers: token.performers,
+        actualOwner: token.actualOwner,
       };
     });
     return pendingUserTasksWithTokenInfo;
@@ -821,6 +828,7 @@ class Engine {
         priority: userTaskLogEntry.priority,
         progress: userTaskLogEntry.progress.value,
         performers: userTaskLogEntry.performers,
+        actualOwner: userTaskLogEntry.actualOwner,
       };
     });
     return inactiveUserTasksWithLogInfo;

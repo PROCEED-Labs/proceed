@@ -1,11 +1,11 @@
 import { useEffect, useId, useState } from 'react';
 
-import { Select, Input as AntInput } from 'antd';
+import { Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
-import { ContextMenu, Overlay, Setting } from './utils';
+import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useBuilderStateStore from '../use-builder-state-store';
 import { useCanEdit } from '../../modeler';
@@ -27,12 +27,12 @@ export const ExportInput: UserComponent<InputProps> = ({
 }) => {
   const inputId = useId();
 
-  const value = defaultValue || (variable && `{${variable}}`);
+  const value = defaultValue || (variable && `{{${variable}}}`);
 
   return (
     <ContextMenu menu={[]}>
       <div
-        className="user-task-form-input"
+        className={`user-task-form-input input-for-${variable}`}
         style={{
           display: 'flex',
           flexDirection: labelPosition === 'top' ? 'column' : 'row',
@@ -61,6 +61,7 @@ export const ExportInput: UserComponent<InputProps> = ({
           defaultValue={value}
           name={variable}
         />
+        <div className="validation-error"></div>
       </div>
     </ContextMenu>
   );
@@ -124,6 +125,7 @@ const Input: UserComponent<InputProps> = ({
                   icon: <EditOutlined onClick={() => setTextEditing(true)} />,
                 },
               ]}
+              onDoubleClick={() => setTextEditing(true)}
             >
               <EditableText
                 style={{ whiteSpace: 'nowrap' }}
@@ -213,17 +215,13 @@ export const InputSettings = () => {
           />
         }
       />
-      <Setting
-        label="Variable"
-        control={
-          <AntInput
-            value={variable}
-            onChange={(e) => {
-              setProp((props: InputProps) => {
-                props.variable = e.target.value;
-              });
-            }}
-          />
+
+      <VariableSetting
+        variable={variable}
+        onChange={(newVariable) =>
+          setProp((props: InputProps) => {
+            props.variable = newVariable;
+          })
         }
       />
     </>

@@ -27,12 +27,17 @@
     "/configuration/api/config": {},
     "/logging/api/log": {},
     "/": {},
-    "/process/": {},
+    "/process/": {
+      "queryParams": {
+        "entries": true
+      }
+    },
     "/process/:definitionId": {},
     "/process/:definitionId/versions": {},
     "/process/:definitionId/versions/:version": {},
     "/process/:definitionId/instance": {},
     "/process/:definitionId/instance/:instanceID": {},
+    "/process/:definitionId/versions/:version/start-form": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/user-tasks": {},
     "/process/:definitionId/script-tasks/:fileName": {},
@@ -46,6 +51,12 @@
     "/capabilities/return": {},
     "/evaluation/": {},
     "/tasklist/api/userTask": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
+    "/tasklist/api/userTask/owner": {
       "queryParams": {
         "instanceID": true,
         "userTaskID": true
@@ -76,6 +87,7 @@
     "/process/:definitionId/instance/:instanceID/instanceState": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId/currentFlowNodeState": {},
+    "/process/:definitionId/versions/:version/start-form": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/script-tasks/:fileName": {},
     "/resources/process/:definitionId/images/:fileName": {}

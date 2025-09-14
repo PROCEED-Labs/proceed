@@ -5,12 +5,12 @@ import fse from 'fs-extra';
 import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
-import { env } from '@/lib/env-vars';
+import { env } from '@/lib/ms-config/env-vars';
 
 // Constants
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10 MB
-const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
-const BUCKET_NAME = env.GOOGLE_CLOUD_BUCKET_NAME || '';
+const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV as 'cloud' | 'local';
+const BUCKET_NAME = env.STORAGE_CLOUD_BUCKET_NAME || '';
 const cache = new LRUCache<string, Buffer>({
   maxSize: 100,
   ttl: 60 * 60 * 1000, // 1 hour TTL
@@ -20,7 +20,9 @@ const cache = new LRUCache<string, Buffer>({
 const getLocalStorageBasePath = (): string => {
   let appDir = envPaths('proceed-management-system').config;
   appDir = appDir.slice(0, appDir.search('-nodejs'));
-  return process.env.NODE_ENV === 'development' ? path.join(appDir, 'development') : appDir;
+  return process.env.NODE_ENV === 'development'
+    ? path.join(appDir, 'development')
+    : path.join(process.cwd(), 'volume');
 };
 
 const LOCAL_STORAGE_BASE = getLocalStorageBasePath();
@@ -35,19 +37,19 @@ if (DEPLOYMENT_ENV === 'cloud') {
       : undefined,
   );
   bucket = storage.bucket(BUCKET_NAME);
+  bucket
+    .setCorsConfiguration([
+      {
+        maxAgeSeconds: 3600,
+        method: ['GET', 'PUT'],
+        origin: ['https://app.proceed-labs.org', 'https://staging.proceed-labs.org'],
+        responseHeader: ['content-type', 'x-goog-content-length-range'],
+      },
+    ])
+    .catch((error: any) => {
+      console.error(`Failed to set CORS configuration for bucket ${BUCKET_NAME}:`, error);
+    });
 }
-
-// Helper functions
-const setCors = async (bucket: any) => {
-  await bucket.setCorsConfiguration([
-    {
-      maxAgeSeconds: 3600,
-      method: ['GET', 'PUT'],
-      origin: ['*'], // Adjust trusted origin for production
-      responseHeader: ['content-type', 'x-goog-content-length-range'],
-    },
-  ]);
-};
 
 const ensureBucketExists = () => {
   if (!bucket) throw new Error('Storage bucket not initialized');

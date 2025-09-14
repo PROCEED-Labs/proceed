@@ -2,18 +2,22 @@ import React from 'react';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { notFound } from 'next/navigation';
 import { getCurrentEnvironment } from '@/components/auth';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 type ExecutionLayoutProps = {
   params: { environmentId: string };
 } & React.PropsWithChildren;
 
 const ExecutionsLayout: React.FC<ExecutionLayoutProps> = async ({ params, children }) => {
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const msConfig = await getMSConfig();
+
+  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
+
+  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   const exeuctionsSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-automation.executions',
-    ability,
   );
 
   if (exeuctionsSettings.active === false) {

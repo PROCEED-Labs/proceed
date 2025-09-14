@@ -1,4 +1,4 @@
-import 'server-only';
+'use server';
 
 import {
   getElementMachineMapping,
@@ -13,7 +13,7 @@ import {
 import { Engine } from './machines';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
-import { engineRequest } from './endpoints';
+import { engineRequest } from './endpoints/index';
 import { asyncForEach } from '../helpers/javascriptHelpers';
 import { UserFacingError } from '../user-error';
 
@@ -46,6 +46,21 @@ async function deployProcessToMachines(
             body: { bpmn: version.bpmn },
             engine,
           });
+
+          if (version.startForm) {
+            engineRequest({
+              method: 'put',
+              endpoint: '/process/:definitionId/versions/:version/start-form',
+              pathParams: {
+                definitionId: exportData.definitionId,
+                version: Object.keys(exportData.versions)[0],
+              },
+              body: {
+                html: version.startForm.html,
+              },
+              engine,
+            });
+          }
 
           const userTasks = exportData.userTasks.map((userTask) =>
             engineRequest({
@@ -287,13 +302,16 @@ export type DeployedProcessInfo = {
   instances: InstanceInfo[];
 };
 
-export async function getDeployments(engines: Engine[]) {
+export async function getDeployments(engines: Engine[], entries?: string) {
   const deploymentsresponse = await Promise.allSettled(
     engines.map(async (engine) =>
       engineRequest({
         method: 'get',
         endpoint: '/process/',
         engine,
+        queryParams: {
+          entries,
+        },
       }),
     ),
   );
@@ -304,4 +322,17 @@ export async function getDeployments(engines: Engine[]) {
     .flat(1) as DeployedProcessInfo[];
 
   return deployments as DeployedProcessInfo[];
+}
+
+export async function getProcessImageFromMachine(
+  engine: Engine,
+  definitionId: string,
+  fileName: string,
+) {
+  return engineRequest({
+    method: 'get',
+    endpoint: '/resources/process/:definitionId/images/:fileName',
+    engine,
+    pathParams: { definitionId, fileName },
+  });
 }

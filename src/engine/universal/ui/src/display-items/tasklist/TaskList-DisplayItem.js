@@ -7,7 +7,9 @@ const {
   inlineUserTaskData,
   getCorrectVariableState,
   getCorrectMilestoneState,
+  inlineScript,
 } = require('@proceed/user-task-helper/index.js');
+const { getProcessIds, getVariablesFromElementById } = require('@proceed/bpmn-helper');
 
 class TaskListTab extends DisplayItem {
   constructor(management) {
@@ -28,6 +30,7 @@ class TaskListTab extends DisplayItem {
       '/api/userTask': { get: this.getUserTask.bind(this), post: this.postUserTask.bind(this) },
       '/api/variable': { put: this.putVariable.bind(this) },
       '/api/milestone': { put: this.putMilestone.bind(this) },
+      '/api/userTask/owner': { post: this.addOwner.bind(this) },
     };
   }
 
@@ -44,6 +47,7 @@ class TaskListTab extends DisplayItem {
         state: task.state,
         priority: task.priority,
         performers: task.performers,
+        actualOwner: task.actualOwner,
         progress: task.progress,
         startTime: task.startTime,
         endTime: task.endTime,
@@ -123,12 +127,15 @@ class TaskListTab extends DisplayItem {
       const { 'proceed:fileName': userTaskFileName } = attrs;
 
       const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
-      const html = await distribution.db.getHTML(definitionId, userTaskFileName);
+      let html = await distribution.db.getHTML(definitionId, userTaskFileName);
 
       const variables = getCorrectVariableState(userTask, userTaskInstance);
       const milestones = await getCorrectMilestoneState(bpmn, userTask, userTaskInstance);
+      const processIds = await getProcessIds(bpmn);
+      const variableDefinitions = await getVariablesFromElementById(bpmn, processIds[0]);
 
-      return await inlineUserTaskData(html, instanceId, userTask.id, variables, milestones);
+      html = inlineScript(html, instanceId, userTask.id, variableDefinitions);
+      return inlineUserTaskData(html, variables, milestones);
     }
   }
 
@@ -164,6 +171,43 @@ class TaskListTab extends DisplayItem {
     engine.updateMilestones(query.instanceID, query.userTaskID, body);
 
     return 'true';
+  }
+
+  async addOwner(body, query) {
+    const { instanceID, userTaskID } = query;
+
+    if (!instanceID || !userTaskID) {
+      throw new Error(
+        'Expected "instanceID" and "userTaskID" that specify the user task as query parameters on the request.',
+      );
+    }
+
+    const engine = this.getTaskEngine(query);
+
+    const userTask = engine.userTasks.find(
+      (uT) =>
+        uT.processInstance.id === query.instanceID &&
+        uT.id === query.userTaskID &&
+        (uT.state === 'READY' || uT.state === 'ACTIVE'),
+    );
+
+    if (!userTask) {
+      throw new Error(`No pending user task with id ${query.userTaskID}`);
+    }
+
+    const token = engine.getToken(query.instanceID, userTask.tokenId);
+
+    if (!token) {
+      throw new Error(`No pending user task with id ${query.userTaskID}`);
+    }
+
+    const { owner } = body;
+    let actualOwner = token.actualOwner || [];
+    actualOwner = actualOwner.filter((id) => id !== owner);
+
+    engine.updateToken(instanceID, token.tokenId, { actualOwner: [...actualOwner, owner] });
+
+    return actualOwner;
   }
 }
 

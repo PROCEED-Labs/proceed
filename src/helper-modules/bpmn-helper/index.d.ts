@@ -16,6 +16,7 @@ declare const _exports: {
   generateBpmnId(prefix?: string): string;
   generateDefinitionsId(): string;
   generateProcessId(): string;
+  generateStartFormFileName(): string;
   generateUserTaskFileName(): string;
   generateScriptTaskFileName(): string;
   getUserTaskImplementationString(): string;
@@ -41,6 +42,11 @@ declare const _exports: {
     },
   ): Promise<string | object>;
   setProcessId(bpmn: string, id: string): Promise<string | object>;
+  setStartFormFileName(
+    bpmn: string | object,
+    processId: string,
+    newFileName: string,
+  ): Promise<string | object>;
   setTemplateId(bpmn: string, id: string): Promise<string | object>;
   setTargetNamespace(bpmn: string | object, id: string): Promise<string | object>;
   setStandardDefinitions(
@@ -172,6 +178,11 @@ declare const _exports: {
   }>;
   getProcessDocumentation(bpmn: string | object): Promise<string>;
   getProcessDocumentationByObject(processObject: object): string;
+  getVariablesFromElement(element: object): getters.Variable[];
+  getVariablesFromElementById(bpmn: string | object, elementId: string): getters.Variable[];
+  getStartFormFileNameMapping(bpmn: string | object): Promise<{
+    [processId: string]: string;
+  }>;
   getUserTaskFileNameMapping(bpmn: string | object): Promise<{
     [userTaskId: string]: {
       fileName?: string;
@@ -268,6 +279,13 @@ declare const _exports: {
   };
   getPerformersFromElement(element: object): any[];
   getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
+  getPotentialOwnersFromElementById(
+    elementId: string,
+    bpmn: string | object,
+  ): {
+    user: string[];
+    roles: string[];
+  };
   parseISODuration(isoDuration: string): {
     years: number;
     months: number;

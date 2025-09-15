@@ -8,13 +8,11 @@ import {
 } from '@/lib/data/environment-schema';
 import { updateOrganization as serverUpdateOrganization } from '@/lib/data/environments';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
-import { App, Button, Form, Table, Input, Image, theme, Space, Modal } from 'antd';
+import { App, Button, Form, Table, Input, theme, Space, Modal } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
-import { fallbackImage } from '../processes/[processId]/image-selection-section';
+import { useTransition } from 'react';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { useFileManager } from '@/lib/useFileManager';
 
 const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment }) => {
   const [form] = Form.useForm();
@@ -46,19 +44,6 @@ const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment
       }
     });
   }
-
-  const { download: getLogoUrl } = useFileManager({
-    entityType: EntityType.ORGANIZATION,
-  });
-  const [organizationLogo, setOrganizationLogo] = useState<string | undefined>();
-  useEffect(() => {
-    if (organization.spaceLogo) {
-      getLogoUrl({
-        entityId: organization.id,
-        filePath: organization.spaceLogo,
-      }).then((data) => setOrganizationLogo(data.fileUrl));
-    }
-  }, [organization]);
 
   return (
     <Form form={form} initialValues={organization} onFinish={updateOrganization}>
@@ -122,50 +107,24 @@ const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment
             title: 'Organization Logo',
             value: (
               <Space>
-                <Image
-                  src={organizationLogo || fallbackImage}
-                  fallback={fallbackImage}
-                  alt={organization.name}
-                  style={{
-                    width: '100%',
-                    maxHeight: '7.5rem',
-                    borderRadius: '6px',
-                    border: '1px solid #d9d9d9',
+                <ImageUpload
+                  onImageUpdate={(name) => {
+                    const deleted = typeof name === 'undefined';
+                    if (deleted) {
+                      message.success('Logo deleted');
+                    } else {
+                      message.success('Logo uploaded');
+                    }
+                    // To update other components that might depend on the logo
+                    router.refresh();
                   }}
-                  preview={{
-                    visible: false,
-                    mask: (
-                      <ImageUpload
-                        imageExists={!!organizationLogo}
-                        onImageUpdate={(name) => {
-                          const deleted = typeof name === 'undefined';
-                          if (deleted) {
-                            message.success('Logo deleted');
-                            setOrganizationLogo(undefined);
-                          } else {
-                            getLogoUrl({
-                              entityId: organization.id,
-                              filePath: name,
-                            }).then((data) => setOrganizationLogo(data.fileUrl));
-                            message.success('Logo uploaded');
-                          }
-                          // To update other components that might depend on the logo
-                          router.refresh();
-                        }}
-                        onUploadFail={() => message.error('Error uploading image')}
-                        config={{
-                          entityType: EntityType.ORGANIZATION,
-                          entityId: organization.id,
-                          useDefaultRemoveFunction: true,
-                        }}
-                        fileManagerErrorToasts={false}
-                      />
-                    ),
+                  onUploadFail={() => message.error('Error uploading image')}
+                  config={{
+                    entityType: EntityType.ORGANIZATION,
+                    entityId: organization.id,
                   }}
-                  role="group"
-                  aria-label="image-section"
+                  fileManagerErrorToasts={false}
                 />
-
                 <Button
                   onClick={() =>
                     Modal.confirm({

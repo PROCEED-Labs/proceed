@@ -14,30 +14,27 @@ export default function useEditorControls() {
     };
   });
 
-  const deleteElement = useCallback(
-    (idOrNode: string | Node) => {
-      let node = typeof idOrNode === 'string' ? undefined : idOrNode;
+  const deleteElement = useCallback((idOrNode: string | Node) => {
+    let node = typeof idOrNode === 'string' ? undefined : idOrNode;
 
-      if (typeof idOrNode === 'string') {
-        node = query.node(idOrNode).get();
+    if (typeof idOrNode === 'string') {
+      node = query.node(idOrNode).get();
+    }
+
+    while (node?.data.parent && node.data.name !== 'Column') {
+      node = query.node(node.data.parent).get();
+    }
+
+    if (node) {
+      const parentRow = node.data.parent && query.node(node.data.parent).get();
+
+      if (parentRow && parentRow.data.nodes.length === 1) {
+        actions.delete(parentRow.id);
+      } else {
+        actions.delete(node.id);
       }
-
-      while (node?.data.parent && node.data.name !== 'Column') {
-        node = query.node(node.data.parent).get();
-      }
-
-      if (node) {
-        const parentRow = node.data.parent && query.node(node.data.parent).get();
-
-        if (parentRow && parentRow.data.nodes.length === 1) {
-          actions.delete(parentRow.id);
-        } else {
-          actions.delete(node.id);
-        }
-      }
-    },
-    [actions, query],
-  );
+    }
+  }, []);
 
   return {
     selected,

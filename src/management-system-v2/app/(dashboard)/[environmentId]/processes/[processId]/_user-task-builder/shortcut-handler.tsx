@@ -54,16 +54,16 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
   // }, [document, selected, onClose, isTextEditing, canUndo, canRedo, undo, redo]);
 
   // handle events thrown outside the iframe
-  // useAddControlCallback(
-  //   'html-editor',
-  //   'del',
-  //   () => {
-  //     if (selected) {
-  //       deleteElement(selected);
-  //     }
-  //   },
-  //   { dependencies: [selected] },
-  // );
+  useAddControlCallback(
+    'html-editor',
+    'del',
+    () => {
+      if (selected) {
+        deleteElement(selected);
+      }
+    },
+    { dependencies: [selected] },
+  );
 
   // useAddControlCallback(
   //   'html-editor',

@@ -71,7 +71,7 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
     () => {
       if (canUndo) undo();
     },
-    { dependencies: [undo] },
+    { dependencies: [] },
   );
 
   // useAddControlCallback(

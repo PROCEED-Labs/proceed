@@ -156,8 +156,9 @@ export const msConfigSchema = {
 
     SCHEDULER_INTERVAL: z.string().default('0 3 * * *'),
     SCHEDULER_TOKEN: z.string().optional(),
-    SCHEDULER_JOB_DELETE_INACTIVE_GUESTS: z.coerce.number().default(0),
+    SCHEDULER_JOB_DELETE_INACTIVE_GUESTS: z.coerce.number().default(30),
     SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
+    SCHEDULER_JOB_DELETE_INACTIVE_SPACES: z.coerce.number().default(7),
 
     PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
 

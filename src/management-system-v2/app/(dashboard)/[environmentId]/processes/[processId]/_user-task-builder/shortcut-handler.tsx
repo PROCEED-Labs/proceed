@@ -65,14 +65,14 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
     { dependencies: [selected] },
   );
 
-  // useAddControlCallback(
-  //   'html-editor',
-  //   'undo',
-  //   () => {
-  //     if (canUndo) undo();
-  //   },
-  //   { dependencies: [canUndo, undo] },
-  // );
+  useAddControlCallback(
+    'html-editor',
+    'undo',
+    () => {
+      if (canUndo) undo();
+    },
+    { dependencies: [canUndo, undo] },
+  );
 
   // useAddControlCallback(
   //   'html-editor',

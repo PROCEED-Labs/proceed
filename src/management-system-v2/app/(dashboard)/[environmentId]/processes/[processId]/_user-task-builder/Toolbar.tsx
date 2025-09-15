@@ -31,7 +31,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
 
   const editingEnabled = useCanEdit();
-
+  console.log(canUndo);
   return (
     <Row className={styles.EditorHeader}>
       <Col span={4}></Col>
@@ -41,13 +41,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <>
               <Button
                 type="text"
-                icon={<UndoOutlined style={{ color: true ? 'blue' : undefined }} />}
+                icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
                 disabled={!canUndo}
                 onClick={() => undo()}
               />
               <Button
                 type="text"
-                icon={<RedoOutlined style={{ color: true ? 'blue' : undefined }} />}
+                icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
                 disabled={!canRedo}
                 onClick={() => redo()}
               />

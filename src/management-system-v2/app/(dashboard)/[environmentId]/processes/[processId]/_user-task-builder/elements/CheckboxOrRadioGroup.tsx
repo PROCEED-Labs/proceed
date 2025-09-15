@@ -416,13 +416,9 @@ export const CheckBoxOrRadioGroupSettings = () => {
         setProp((props: CheckBoxOrRadioGroupProps) => {
           props.variable = newVariable;
 
-          if (variableType) {
-            switch (variableType) {
-              case 'boolean':
-                props.data = [{ ...data[0], value: '' }];
-                break;
-            }
-          }
+          // if the type is set to boolean make sure there is only one checkbox and the
+          // value is empty so the default on/off is used
+          if (variableType === 'boolean') props.data = [{ ...data[0], value: '' }];
         })
       }
     />

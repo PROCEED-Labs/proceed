@@ -213,6 +213,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
       onCancel={onClose}
       okButtonProps={{ disabled: !editingEnabled }}
       onOk={handleSave}
+      destroyOnClose
     >
       <EditorDnDHandler
         iframeRef={iframeRef}
@@ -253,7 +254,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
                 mountTarget="#mountHere"
                 contentDidMount={() => setIframeMounted(true)}
               >
-                {open && <ShortcutHandler onClose={onClose} />}
+                <ShortcutHandler onClose={onClose} />
                 <Frame />
               </IFrame>
             </Col>

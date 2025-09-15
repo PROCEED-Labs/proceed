@@ -38,7 +38,7 @@ import { Element as BpmnElement } from 'bpmn-js/lib/model/Types';
 import { useCanEdit } from '../modeler';
 import { Element } from 'diagram-js/lib/model/Types';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import ShortcutHandler from './shortcut-handler';
+// import ShortcutHandler from './shortcut-handler';
 
 type BuilderProps = {
   processId: string;
@@ -254,7 +254,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
                 mountTarget="#mountHere"
                 contentDidMount={() => setIframeMounted(true)}
               >
-                <ShortcutHandler onClose={onClose} />
+                {/* <ShortcutHandler onClose={onClose} /> */}
                 <Frame />
               </IFrame>
             </Col>

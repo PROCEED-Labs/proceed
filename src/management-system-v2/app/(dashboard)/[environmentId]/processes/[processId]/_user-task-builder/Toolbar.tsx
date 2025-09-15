@@ -12,7 +12,6 @@ import {
 
 import styles from './index.module.scss';
 
-import { useEditor, Node } from '@craftjs/core';
 import { useCanEdit } from '../modeler';
 import useEditorControls from './use-editor-controls';
 
@@ -29,7 +28,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   iframeLayout,
   onLayoutChange,
 }) => {
-  const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
+  // const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
 
   const editingEnabled = useCanEdit();
 
@@ -42,15 +41,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <>
               <Button
                 type="text"
-                icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
-                disabled={!canUndo}
-                onClick={() => undo()}
+                icon={<UndoOutlined style={{ color: true ? 'blue' : undefined }} />}
+                // disabled={!canUndo}
+                // onClick={() => undo()}
               />
               <Button
                 type="text"
-                icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
-                disabled={!canRedo}
-                onClick={() => redo()}
+                icon={<RedoOutlined style={{ color: true ? 'blue' : undefined }} />}
+                // disabled={!canRedo}
+                // onClick={() => redo()}
               />
             </>
           )}
@@ -80,11 +79,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               <Divider type="vertical" />
               <Button
                 danger
-                disabled={!selected}
+                // disabled={!selected}
                 type="text"
                 icon={<DeleteOutlined />}
                 onClick={async () => {
-                  selected && deleteElement(selected);
+                  // selected && deleteElement(selected);
                 }}
               />
             </>

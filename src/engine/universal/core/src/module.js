@@ -51,6 +51,9 @@ module.exports = {
     // Open /status endpoint at last
     distribution.init(management);
 
+    logger.info(`Engine-ID: ${(await machineInformation.getMachineInformation(['id'])).id}`);
+    logger.info(`Engine-Name (self-defined in config.json): ${await config.readConfig('name')}`);
+
     if (enableMessaging) {
       await setupMessaging(system.messaging, config, machineInformation, logger);
       await setupMonitoringAndLogging(system.messaging, config, machineInformation, logger);
@@ -82,7 +85,6 @@ module.exports = {
    * communication channels.
    */
   async deactivateSilentMode() {
-    logger.info('Publishing the engine (deactivating silentmode)');
     logger.debug('Set port for HTTP endpoint of the engine');
     logger.debug('Start advertising on the network via mDNS');
     await distribution.publish();

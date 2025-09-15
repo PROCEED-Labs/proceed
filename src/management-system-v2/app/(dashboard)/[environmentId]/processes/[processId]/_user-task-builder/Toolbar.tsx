@@ -28,7 +28,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   iframeLayout,
   onLayoutChange,
 }) => {
-  // const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
+  const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
 
   const editingEnabled = useCanEdit();
 
@@ -42,14 +42,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               <Button
                 type="text"
                 icon={<UndoOutlined style={{ color: true ? 'blue' : undefined }} />}
-                // disabled={!canUndo}
-                // onClick={() => undo()}
+                disabled={!canUndo}
+                onClick={() => undo()}
               />
               <Button
                 type="text"
                 icon={<RedoOutlined style={{ color: true ? 'blue' : undefined }} />}
-                // disabled={!canRedo}
-                // onClick={() => redo()}
+                disabled={!canRedo}
+                onClick={() => redo()}
               />
             </>
           )}
@@ -79,11 +79,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               <Divider type="vertical" />
               <Button
                 danger
-                // disabled={!selected}
+                disabled={!selected}
                 type="text"
                 icon={<DeleteOutlined />}
                 onClick={async () => {
-                  // selected && deleteElement(selected);
+                  selected && deleteElement(selected);
                 }}
               />
             </>

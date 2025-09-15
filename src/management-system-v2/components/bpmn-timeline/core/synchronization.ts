@@ -3,6 +3,7 @@
  */
 
 import type { BPMNFlowElement, BPMNSequenceFlow } from '../types/types';
+import { extractSourceId, extractTargetId } from '../utils/reference-extractor';
 import { isGatewayElement } from '../transformers/element-transformers';
 
 export interface SynchronizationRequirement {
@@ -54,19 +55,13 @@ export function buildSynchronizationRequirements(
     if (incomingFlows.length > 1 && outgoingFlows.length >= 1) {
       const sourcesFromIncoming = extractSourcesFromIncomingFlows(incomingFlows, allElements);
 
-      // Create synchronization requirements for all targets of this parallel join
-      for (const outFlow of outgoingFlows) {
-        const targetId = extractTargetId(outFlow);
-        const targetElement = allElements.find((el) => el.id === targetId);
-
-        if (targetElement && !isGatewayElement(targetElement) && incomingFlows.length > 1) {
-          syncReqs.set(targetId, {
-            requiredSources: sourcesFromIncoming,
-            gatewayId: gateway.id,
-            gatewayType: 'bpmn:ParallelGateway',
-          });
-        }
-      }
+      // CRITICAL FIX: The GATEWAY ITSELF needs synchronization, not its targets!
+      // The gateway is the synchronization point that waits for all inputs
+      syncReqs.set(gateway.id, {
+        requiredSources: sourcesFromIncoming,
+        gatewayId: gateway.id,
+        gatewayType: gateway.$type || 'bpmn:ParallelGateway',
+      });
     }
   }
 
@@ -82,7 +77,8 @@ export function incomingFlowsCountForGateway(
 ): number {
   const incomingFlows = elements.filter(
     (el) =>
-      el.$type === 'bpmn:SequenceFlow' && extractTargetId(el as BPMNSequenceFlow) === gatewayId,
+      el.$type === 'bpmn:SequenceFlow' &&
+      extractTargetId((el as BPMNSequenceFlow).targetRef) === gatewayId,
   ) as BPMNSequenceFlow[];
 
   return incomingFlows.length;
@@ -139,12 +135,14 @@ export function recordSourceArrival(
 function getGatewayFlows(gateway: BPMNFlowElement, allElements: BPMNFlowElement[]) {
   const incomingFlows = allElements.filter(
     (el) =>
-      el.$type === 'bpmn:SequenceFlow' && extractTargetId(el as BPMNSequenceFlow) === gateway.id,
+      el.$type === 'bpmn:SequenceFlow' &&
+      extractTargetId((el as BPMNSequenceFlow).targetRef) === gateway.id,
   ) as BPMNSequenceFlow[];
 
   const outgoingFlows = allElements.filter(
     (el) =>
-      el.$type === 'bpmn:SequenceFlow' && extractSourceId(el as BPMNSequenceFlow) === gateway.id,
+      el.$type === 'bpmn:SequenceFlow' &&
+      extractSourceId((el as BPMNSequenceFlow).sourceRef) === gateway.id,
   ) as BPMNSequenceFlow[];
 
   return { incomingFlows, outgoingFlows };
@@ -160,7 +158,9 @@ function extractSourcesFromIncomingFlows(
   const sourcesFromIncoming = new Set<string>();
 
   for (const flow of incomingFlows) {
-    const sourceId = extractSourceId(flow);
+    const sourceId = extractSourceId(flow.sourceRef);
+    if (!sourceId) continue;
+
     // Only include non-gateway sources (actual task/event elements)
     const sourceElement = allElements.find((el) => el.id === sourceId);
     if (sourceElement && !isGatewayElement(sourceElement)) {
@@ -169,22 +169,4 @@ function extractSourcesFromIncomingFlows(
   }
 
   return sourcesFromIncoming;
-}
-
-/**
- * Extract source ID from a sequence flow
- */
-function extractSourceId(flow: BPMNSequenceFlow): string {
-  return typeof flow.sourceRef === 'string'
-    ? flow.sourceRef
-    : (flow.sourceRef as any)?.id || flow.sourceRef;
-}
-
-/**
- * Extract target ID from a sequence flow
- */
-function extractTargetId(flow: BPMNSequenceFlow): string {
-  return typeof flow.targetRef === 'string'
-    ? flow.targetRef
-    : (flow.targetRef as any)?.id || flow.targetRef;
 }

@@ -16,42 +16,42 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
 
   const isTextEditing = useBuilderStateStore((state) => state.isTextEditing);
 
-  // useEffect(() => {
-  //   if (document && !isTextEditing) {
-  //     // handle events that are thrown inside the iframe and cannot be handled by react
-  //     // handlers
-  //     const onDelete = (e: KeyboardEvent) => {
-  //       if (selected && e.key === 'Delete') {
-  //         deleteElement(selected);
-  //       }
-  //     };
-  //     document.body.addEventListener('keydown', onDelete);
-  //
-  //     const onEscape = (e: KeyboardEvent) => {
-  //       if (e.key === 'Escape') {
-  //         onClose?.();
-  //       }
-  //     };
-  //     document.body.addEventListener('keydown', onEscape);
-  //
-  //     const onUndo = (e: KeyboardEvent) => {
-  //       if (canUndo && e.ctrlKey && e.key === 'z') undo();
-  //     };
-  //     document.body.addEventListener('keydown', onUndo);
-  //
-  //     const onRedo = (e: KeyboardEvent) => {
-  //       if (canRedo && e.ctrlKey && e.key === 'y') redo();
-  //     };
-  //     document.body.addEventListener('keydown', onRedo);
-  //
-  //     return () => {
-  //       document.body.removeEventListener('keydown', onDelete);
-  //       document.body.removeEventListener('keydown', onEscape);
-  //       document.body.removeEventListener('keydown', onUndo);
-  //       document.body.removeEventListener('keydown', onRedo);
-  //     };
-  //   }
-  // }, [document, selected, onClose, isTextEditing, canUndo, canRedo, undo, redo]);
+  useEffect(() => {
+    if (document && !isTextEditing) {
+      // handle events that are thrown inside the iframe and cannot be handled by react
+      // handlers
+      const onDelete = (e: KeyboardEvent) => {
+        if (selected && e.key === 'Delete') {
+          deleteElement(selected);
+        }
+      };
+      document.body.addEventListener('keydown', onDelete);
+
+      const onEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          onClose?.();
+        }
+      };
+      document.body.addEventListener('keydown', onEscape);
+
+      const onUndo = (e: KeyboardEvent) => {
+        if (canUndo && e.ctrlKey && e.key === 'z') undo();
+      };
+      document.body.addEventListener('keydown', onUndo);
+
+      const onRedo = (e: KeyboardEvent) => {
+        if (canRedo && e.ctrlKey && e.key === 'y') redo();
+      };
+      document.body.addEventListener('keydown', onRedo);
+
+      return () => {
+        document.body.removeEventListener('keydown', onDelete);
+        document.body.removeEventListener('keydown', onEscape);
+        document.body.removeEventListener('keydown', onUndo);
+        document.body.removeEventListener('keydown', onRedo);
+      };
+    }
+  }, [document, selected, onClose, isTextEditing, canUndo, canRedo, undo, redo]);
 
   // handle events thrown outside the iframe
   useAddControlCallback(
@@ -71,17 +71,17 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
     () => {
       if (canUndo) undo();
     },
-    { dependencies: [] },
+    { dependencies: [canUndo] },
   );
 
-  // useAddControlCallback(
-  //   'html-editor',
-  //   'redo',
-  //   () => {
-  //     if (canRedo) redo();
-  //   },
-  //   { dependencies: [canRedo, redo] },
-  // );
+  useAddControlCallback(
+    'html-editor',
+    'redo',
+    () => {
+      if (canRedo) redo();
+    },
+    { dependencies: [canRedo] },
+  );
 
   return <AddUserControls name="html-editor" />;
 };

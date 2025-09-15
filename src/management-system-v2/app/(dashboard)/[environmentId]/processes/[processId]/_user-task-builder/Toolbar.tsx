@@ -31,7 +31,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
 
   const editingEnabled = useCanEdit();
-  console.log(canUndo);
+
   return (
     <Row className={styles.EditorHeader}>
       <Col span={4}></Col>

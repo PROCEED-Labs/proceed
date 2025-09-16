@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 
 import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -22,6 +22,7 @@ import { WithRequired } from '@/lib/typescript-utils';
 import { SettingOutlined, EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 import { useCanEdit } from '../../modeler';
+import useProcessVariables from '../../use-process-variables';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
@@ -125,7 +126,7 @@ const toMenuItem = MenuItemFactoryFactory(menuOptions);
 
 const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   type,
-  variable = 'test',
+  variable = '',
   data,
 }) => {
   const { query } = useEditor();
@@ -133,6 +134,8 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   const [editTarget, setEditTarget] = useState<number>();
   const [hoveredAction, setHoveredAction] = useState<EditAction>();
   const [currentValue, setCurrentValue] = useState('');
+
+  const { variables } = useProcessVariables();
 
   const {
     connectors: { connect },
@@ -216,47 +219,50 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     </Tooltip>
   );
 
-  const contextMenu: MenuProps['items'] =
-    editTarget !== undefined
-      ? [
-          {
-            key: 'add',
-            label: 'Add',
-            children: [
-              toMenuItem('add-above', () => handleAddButton(editTarget), setHoveredAction),
-              toMenuItem('add-below', () => handleAddButton(editTarget + 1), setHoveredAction),
-            ],
-          },
-          toMenuItem('remove', () => handleRemoveButton(editTarget), setHoveredAction),
-          {
-            key: 'value',
-            label: (
-              <div
-                style={{
-                  display: 'flex',
-                  width: '100%',
-                  height: '100%',
-                  alignItems: 'center',
+  const selectedVariable = variables.find((v) => v.name === variable);
+  const showAdditionalOptions =
+    editTarget !== undefined && selectedVariable && selectedVariable.dataType !== 'boolean';
+
+  const contextMenu: MenuProps['items'] = showAdditionalOptions
+    ? [
+        {
+          key: 'add',
+          label: 'Add',
+          children: [
+            toMenuItem('add-above', () => handleAddButton(editTarget), setHoveredAction),
+            toMenuItem('add-below', () => handleAddButton(editTarget + 1), setHoveredAction),
+          ],
+        },
+        toMenuItem('remove', () => handleRemoveButton(editTarget), setHoveredAction),
+        {
+          key: 'value',
+          label: (
+            <div
+              style={{
+                display: 'flex',
+                width: '100%',
+                height: '100%',
+                alignItems: 'center',
+              }}
+            >
+              <Input
+                addonBefore="Value"
+                addonAfter={valueTooltip}
+                style={{ width: '250px' }}
+                value={currentValue}
+                onChange={(e) => setCurrentValue(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
+                  e.stopPropagation();
                 }}
-              >
-                <Input
-                  addonBefore="Value"
-                  addonAfter={valueTooltip}
-                  style={{ width: '250px' }}
-                  value={currentValue}
-                  onChange={(e) => setCurrentValue(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
-                    e.stopPropagation();
-                  }}
-                  onBlur={() => handleValueChange(editTarget, currentValue)}
-                />
-              </div>
-            ),
-          },
-        ]
-      : [];
+                onBlur={() => handleValueChange(editTarget, currentValue)}
+              />
+            </div>
+          ),
+        },
+      ]
+    : [];
 
   const dataWithPreviews = useMemo(() => {
     type DataOrPreview = (typeof data)[number] & {
@@ -332,7 +338,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
               </div>
             ),
           )}
-          {editTarget !== undefined &&
+          {showAdditionalOptions &&
             createPortal(
               <>
                 <Divider>{type === 'checkbox' ? 'Checkbox' : 'Radio'} Settings</Divider>
@@ -390,17 +396,29 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
 export const CheckBoxOrRadioGroupSettings = () => {
   const {
     actions: { setProp },
+    type,
     variable,
+    data,
   } = useNode((node) => ({
+    type: node.data.props.type,
     variable: node.data.props.variable,
+    data: node.data.props.data,
   }));
+
+  const allowedTypes: React.ComponentProps<typeof VariableSetting>['allowedTypes'] =
+    type === 'radio' ? ['string', 'number'] : ['boolean', 'array'];
 
   return (
     <VariableSetting
       variable={variable}
-      onChange={(newVariable) =>
+      allowedTypes={allowedTypes}
+      onChange={(newVariable, variableType) =>
         setProp((props: CheckBoxOrRadioGroupProps) => {
           props.variable = newVariable;
+
+          // if the type is set to boolean make sure there is only one checkbox and the
+          // value is empty so the default on/off is used
+          if (variableType === 'boolean') props.data = [{ ...data[0], value: '' }];
         })
       }
     />

@@ -75,8 +75,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   useEffect(() => {
     async function downloadFile() {
+      // "loading" state
+      setFileUrl(undefined);
+
       if (!fileName) {
-        setFileUrl(undefined);
         return;
       }
 

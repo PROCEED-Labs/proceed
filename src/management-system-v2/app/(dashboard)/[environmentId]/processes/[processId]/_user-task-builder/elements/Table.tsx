@@ -9,6 +9,10 @@ import {
   TbRowInsertTop,
   TbRowInsertBottom,
   TbRowRemove,
+  TbArrowBarUp,
+  TbArrowBarDown,
+  TbArrowBarLeft,
+  TbArrowBarRight,
 } from 'react-icons/tb';
 
 import cn from 'classnames';
@@ -63,6 +67,7 @@ const TableCell: React.FC<
         'sub-element-add-preview': isAddPreview,
         'sub-element-remove-preview': isRemovePreview,
       }),
+      onClick: () => onEdit?.(),
       onContextMenu: onEdit,
       onMouseEnter: () => setHovered(true),
     },
@@ -73,10 +78,6 @@ const TableCell: React.FC<
         {
           icon: <EditOutlined onClick={() => setTextEditing(true)} />,
           key: 'edit',
-        },
-        {
-          icon: <SettingOutlined onClick={onEdit} />,
-          key: 'setting',
         },
       ]}
       onDoubleClick={() => setTextEditing(true)}
@@ -99,6 +100,10 @@ const menuOptions = {
   'add-row-below': { label: 'Add Row Below', icon: <TbRowInsertBottom size={20} /> },
   'add-col-left': { label: 'Add Column Before', icon: <TbColumnInsertLeft size={20} /> },
   'add-col-right': { label: 'Add Column After', icon: <TbColumnInsertRight size={20} /> },
+  'move-row-down': { label: 'Move Row Down', icon: <TbArrowBarDown size={20} /> },
+  'move-row-up': { label: 'Move Row Up', icon: <TbArrowBarUp size={20} /> },
+  'move-col-left': { label: 'Move Column Left', icon: <TbArrowBarLeft size={20} /> },
+  'move-col-right': { label: 'Move Column Right', icon: <TbArrowBarRight size={20} /> },
 } as const;
 
 type CellAction = keyof typeof menuOptions;
@@ -203,6 +208,54 @@ const Table: UserComponent<TableProps> = ({
     });
   };
 
+  const handleMoveDown = (index: number) => {
+    if (!editingEnabled) return;
+    setProp((props: TableProps) => {
+      props.tableData = [
+        ...tableData.slice(0, index),
+        tableData[index + 1],
+        tableData[index],
+        ...tableData.slice(index + 2),
+      ];
+    });
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (!editingEnabled) return;
+    setProp((props: TableProps) => {
+      props.tableData = [
+        ...tableData.slice(0, index - 1),
+        tableData[index],
+        tableData[index - 1],
+        ...tableData.slice(index + 1),
+      ];
+    });
+  };
+
+  const handleMoveRight = (index: number) => {
+    if (!editingEnabled) return;
+    setProp((props: TableProps) => {
+      props.tableData = tableData.map((row) => [
+        ...row.slice(0, index),
+        row[index + 1],
+        row[index],
+        ...row.slice(index + 2),
+      ]);
+    });
+  };
+
+  const handleMoveLeft = (index: number) => {
+    if (!editingEnabled) return;
+    setProp((props: TableProps) => {
+      props.tableData = tableData.map((row) => [
+        ...row.slice(0, index - 1),
+        row[index],
+        row[index - 1],
+        ...row.slice(index + 1),
+      ]);
+    });
+  };
+
   const handleCellEdit = (newContent: string, rowIndex: number, colIndex: number) => {
     if (!editingEnabled) return;
     const newRow = [
@@ -241,6 +294,28 @@ const Table: UserComponent<TableProps> = ({
       toMenuItem('add-col-right', () => addColumn(col + 1), setHoveredAction),
     );
 
+    const move: NonNullable<MenuProps['items']>[number] = {
+      key: 'table-move',
+      label: 'Move',
+      children: [],
+    };
+
+    if (row > 1) {
+      move.children.push(toMenuItem('move-row-up', () => handleMoveUp(row), setHoveredAction));
+    }
+    if (row && row < tableData.length - 1) {
+      move.children.push(toMenuItem('move-row-down', () => handleMoveDown(row), setHoveredAction));
+    }
+    if (col) {
+      move.children.push(toMenuItem('move-col-left', () => handleMoveLeft(col), setHoveredAction));
+    }
+    if (col < tableData[0].length - 1) {
+      move.children.push(
+        toMenuItem('move-col-right', () => handleMoveRight(col), setHoveredAction),
+      );
+    }
+    if (move.children.length) contextMenu.push(move);
+
     const deleteOptions: NonNullable<MenuProps['items']>[number] = {
       key: 'table-remove',
       label: 'Remove',
@@ -258,7 +333,7 @@ const Table: UserComponent<TableProps> = ({
   }
 
   const tableDataWithPreviews = useMemo(() => {
-    const dataCopy = tableData.map((row, rowIndex) => {
+    let dataCopy = tableData.map((row, rowIndex) => {
       const rowCopy: CellDataWithPreviews[] = row.map((content, colIndex) => {
         if (targetCell) {
           return {
@@ -307,6 +382,38 @@ const Table: UserComponent<TableProps> = ({
             isAddPreview: true,
           })),
         );
+      } else if (hoveredAction === 'move-row-up' && targetCell.row > 1) {
+        dataCopy = [
+          ...dataCopy.slice(0, targetCell.row - 1),
+          dataCopy[targetCell.row].map((c) => ({ ...c, isAddPreview: true })),
+          dataCopy[targetCell.row - 1],
+          dataCopy[targetCell.row].map((c) => ({ ...c, isRemovePreview: true })),
+          ...dataCopy.slice(targetCell.row + 1),
+        ];
+      } else if (hoveredAction === 'move-row-down' && targetCell.row < tableData.length - 1) {
+        dataCopy = [
+          ...dataCopy.slice(0, targetCell.row),
+          dataCopy[targetCell.row].map((c) => ({ ...c, isRemovePreview: true })),
+          dataCopy[targetCell.row + 1],
+          dataCopy[targetCell.row].map((c) => ({ ...c, isAddPreview: true })),
+          ...dataCopy.slice(targetCell.row + 2),
+        ];
+      } else if (hoveredAction === 'move-col-left' && targetCell.col > 0) {
+        dataCopy = dataCopy.map((row) => [
+          ...row.slice(0, targetCell.col - 1),
+          { ...row[targetCell.col], isAddPreview: true },
+          row[targetCell.col - 1],
+          { ...row[targetCell.col], isRemovePreview: true },
+          ...row.slice(targetCell.col + 1),
+        ]);
+      } else if (hoveredAction === 'move-col-right' && targetCell.col < tableData[0].length - 1) {
+        dataCopy = dataCopy.map((row) => [
+          ...row.slice(0, targetCell.col),
+          { ...row[targetCell.col], isRemovePreview: true },
+          row[targetCell.col + 1],
+          { ...row[targetCell.col], isAddPreview: true },
+          ...row.slice(targetCell.col + 2),
+        ]);
       }
     }
 
@@ -385,6 +492,24 @@ const Table: UserComponent<TableProps> = ({
                   }}
                   onHovered={setHoveredAction}
                 />
+                <SidebarButton
+                  action="move-row-down"
+                  disabled={targetCell.row >= tableData.length - 1}
+                  onClick={() => {
+                    handleMoveDown(targetCell.row);
+                    setTargetCell({ ...targetCell, row: targetCell.row + 1 });
+                  }}
+                  onHovered={setHoveredAction}
+                />
+                <SidebarButton
+                  action="move-row-up"
+                  disabled={targetCell.row < 2}
+                  onClick={() => {
+                    handleMoveUp(targetCell.row);
+                    setTargetCell({ ...targetCell, row: targetCell.row - 1 });
+                  }}
+                  onHovered={setHoveredAction}
+                />
               </Space.Compact>
               <Space.Compact>
                 <SidebarButton
@@ -410,6 +535,24 @@ const Table: UserComponent<TableProps> = ({
                     removeColumn(targetCell.col);
                     setTargetCell(undefined);
                     setHoveredAction(undefined);
+                  }}
+                  onHovered={setHoveredAction}
+                />
+                <SidebarButton
+                  action="move-col-left"
+                  disabled={!targetCell.col}
+                  onClick={() => {
+                    handleMoveLeft(targetCell.col);
+                    setTargetCell({ ...targetCell, col: targetCell.col - 1 });
+                  }}
+                  onHovered={setHoveredAction}
+                />
+                <SidebarButton
+                  action="move-col-right"
+                  disabled={targetCell.col >= tableData[0].length - 1}
+                  onClick={() => {
+                    handleMoveRight(targetCell.col);
+                    setTargetCell({ ...targetCell, col: targetCell.col + 1 });
                   }}
                   onHovered={setHoveredAction}
                 />

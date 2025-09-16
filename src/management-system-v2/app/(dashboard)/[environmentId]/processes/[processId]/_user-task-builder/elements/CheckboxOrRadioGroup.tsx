@@ -6,7 +6,6 @@ import {
   TbRowInsertTop,
   TbRowInsertBottom,
   TbRowRemove,
-  TbArrowBarToDown,
   TbArrowBarUp,
   TbArrowBarDown,
 } from 'react-icons/tb';

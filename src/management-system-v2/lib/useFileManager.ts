@@ -86,19 +86,19 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
         filePath: filePath || (file instanceof File ? file.name : ''),
       });
 
-      const fetchParmas: RequestInit = {
+      const fetchParams: RequestInit = {
         method: 'PUT',
         body: file,
       };
 
       if (DEPLOYMENT_ENV === 'cloud')
-        fetchParmas.headers = {
+        fetchParams.headers = {
           'Content-Type': file.type,
           'x-goog-content-length-range': `0,${MAX_CONTENT_LENGTH}`,
         };
 
       try {
-        const response = await fetch(uploadResults.uploadUrl, fetchParmas);
+        const response = await fetch(uploadResults.uploadUrl, fetchParams);
         if (!response.ok) throw new Error(`Upload failed! Status: ${response.status}`);
 
         if (DEPLOYMENT_ENV === 'cloud') return { filePath: uploadResults.filePath! };

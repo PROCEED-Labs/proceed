@@ -1,21 +1,17 @@
 import { parentPort, threadId } from 'worker_threads';
 import Embedding from '../tasks/embedding';
-import { withJobUpdates } from '../utils/worker';
+import { withJobUpdates, workerLogger } from '../utils/worker';
 import { addReason } from '../tasks/reason';
 import { Match, MatchingJob } from '../utils/types';
 import ZeroShot from '../tasks/semantic-zeroshot';
-import { Logger, createLoggerConfig } from '../utils/logger';
 
-// Initialise logger for this worker thread & Initialise ZeroShot model
-try {
-  Logger.getInstance(createLoggerConfig());
-  Embedding.getInstance();
-  ZeroShot.getInstance();
-} catch (error) {
-  // Logger already initialised
-}
-
-// Note: Verbose logging has been replaced with the new logger system
+// // Initialise models on startup
+// try {
+//   Embedding.getInstance();
+//   ZeroShot.getInstance();
+// } catch (error) {
+//   // Models already initialised
+// }
 
 /**
  * New matcher worker that stays alive and processes jobs sequentially
@@ -24,10 +20,29 @@ if (!parentPort) {
   throw new Error('This file must be run as a Worker thread');
 }
 
+let modelsInitialised = false;
+async function ensureModelsInitialised() {
+  if (modelsInitialised) return;
+  try {
+    await Embedding.getInstance();
+    await ZeroShot.getInstance();
+    modelsInitialised = true;
+    workerLogger('system', 'info', 'Matcher worker models initialized', { threadId });
+  } catch (err) {
+    // Bubble up so job handling can report the error
+    throw err;
+  }
+}
+
 // Set up health check handler immediately, before any heavy initialisation
 parentPort.on('message', async (message: any) => {
   // Handle health checks with highest priority
   if (message?.type === 'health_check') {
+    workerLogger('system', 'debug', `Health check received: ${message.checkId}`, {
+      threadId,
+      checkId: message.checkId,
+    });
+
     parentPort!.postMessage({
       type: 'health_check_response',
       checkId: message.checkId,
@@ -36,14 +51,40 @@ parentPort.on('message', async (message: any) => {
       threadId: threadId,
     });
 
+    workerLogger('system', 'debug', `Health check response sent: ${message.checkId}`, {
+      threadId,
+    });
     return;
   }
 
   // Handle job messages
   const job = message as MatchingJob;
 
-  // Set global job context for logging
-  (global as any).CURRENT_JOB = job.jobId;
+  try {
+    await ensureModelsInitialised();
+  } catch (err) {
+    workerLogger(
+      job.jobId || 'system',
+      'error',
+      'Failed to initialise models',
+      { threadId },
+      err instanceof Error ? err : new Error(String(err)),
+    );
+    // Notify parent and exit or mark job failed
+    parentPort!.postMessage({
+      type: 'error',
+      jobId: job.jobId,
+      error: `Model initialisation failed: ${err instanceof Error ? err.message : String(err)}`,
+    });
+    // still send job_completed so worker pool can continue
+    parentPort!.postMessage({ type: 'job_completed', jobId: job.jobId });
+    return;
+  }
+
+  workerLogger(job.jobId, 'info', `Starting matching job with ${job.tasks.length} tasks`, {
+    threadId,
+    taskCount: job.tasks.length,
+  });
 
   try {
     // Store match results for reasoning workaround
@@ -132,6 +173,19 @@ parentPort.on('message', async (message: any) => {
                 });
               } catch (error) {
                 // Log error for individual match processing but continue
+                workerLogger(
+                  jobId,
+                  'error',
+                  `Failed to process match for task ${taskId}`,
+                  {
+                    threadId,
+                    taskId,
+                    competenceId: match.competenceId,
+                  },
+                  error instanceof Error ? error : new Error(String(error)),
+                );
+
+                // Individual match errors don't fail the entire job
                 parentPort!.postMessage({
                   type: 'error',
                   jobId,
@@ -141,6 +195,18 @@ parentPort.on('message', async (message: any) => {
             }
           } catch (error) {
             // Log error for task processing but continue with other tasks
+            workerLogger(
+              jobId,
+              'error',
+              `Failed to process task ${taskId}`,
+              {
+                threadId,
+                taskId,
+              },
+              error instanceof Error ? error : new Error(String(error)),
+            );
+
+            // Individual task errors don't fail the entire job
             parentPort!.postMessage({
               type: 'error',
               jobId,
@@ -161,23 +227,32 @@ parentPort.on('message', async (message: any) => {
       },
     );
 
-    // Notify that job is completed
-    parentPort!.postMessage({
-      type: 'job_completed',
-      jobId: job.jobId,
+    // Job completed successfully
+    workerLogger(job.jobId, 'info', `Matching job completed`, {
+      threadId,
+      taskCount: job.tasks.length,
     });
   } catch (error) {
-    // Handle job-level errors
-    parentPort!.postMessage({
-      type: 'error',
-      jobId: job.jobId,
-      error: `Job failed: ${error instanceof Error ? error.message : String(error)}`,
-    });
-
-    // Still notify completion so the worker can move to next job
+    // Job-level error - already handled by withJobUpdates
+    // Just log it for worker context
+    workerLogger(
+      job.jobId,
+      'error',
+      `Matching job failed`,
+      {
+        threadId,
+      },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+  } finally {
+    // Always notify job completion so worker can process next job
     parentPort!.postMessage({
       type: 'job_completed',
       jobId: job.jobId,
     });
   }
+});
+
+workerLogger('system', 'info', `Matcher worker thread ready`, {
+  threadId,
 });

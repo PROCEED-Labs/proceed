@@ -28,8 +28,14 @@ export const config = {
   logToConsole: process.env.LOG_CONSOLE !== 'false', // Default to true unless explicitly set to false
   logToFile: process.env.LOG_FILE === 'true' || false, // Default to false unless explicitly set to true
   logPath: process.env.LOG_PATH || 'logs/',
-  modelLoadingTimeout: parseInt(process.env.MODEL_LOADING_TIMEOUT || '20', 10) * 1_000, // Waiting time, before trying to load a model again in seconds (converted to ms)
-  modelLoadingTime: parseInt(process.env.MODEL_LOADING_TIME || '300', 10) * 1_000, // Time to wait for model loading in seconds (converted to ms)
+  workerHealthCheckTimeout:
+    parseInt(
+      process.env.WORKER_HEALTH_CHECK_TIMEOUT || process.env.MODEL_LOADING_TIMEOUT || '20',
+      10,
+    ) * 1_000, // Maximum time to wait for individual worker health check response (seconds to ms)
+  systemStartupTimeout:
+    parseInt(process.env.SYSTEM_STARTUP_TIMEOUT || process.env.MODEL_LOADING_TIME || '300', 10) *
+    1_000, // Maximum time to wait for all worker pools to become ready at startup (seconds to ms)
   maxWorkerRetries: parseInt(process.env.MAX_WORKER_RETRIES || '3', 10), // Maximum worker restart attempts before escalating to ERROR
   workerRetryWindow: parseInt(process.env.WORKER_RETRY_WINDOW || '300', 10) * 1_000, // Time window in seconds to reset retry count (converted to ms)
   maxOllamaRetries: parseInt(process.env.MAX_OLLAMA_RETRIES || '5', 10), // Maximum model pull retry attempts

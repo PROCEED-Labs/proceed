@@ -4,9 +4,6 @@ import { randomUUID } from 'node:crypto';
 import { config } from '../config';
 import { LogLevel, LogType, LogEntry, LoggerConfig } from './types';
 
-// Re-export types for convenience
-export { LogLevel, LogType, LogEntry, LoggerConfig } from './types';
-
 export function createLoggerConfig(): LoggerConfig {
   // Parse enabled log types from config
   const enabledTypes = config.logTypes
@@ -63,6 +60,7 @@ export class Logger {
   private static instance: Logger;
   private config: LoggerConfig;
   private logStreams: Map<string, fs.WriteStream> = new Map();
+  private currentLogDate: string = ''; // Track current log date
 
   private constructor(config: LoggerConfig) {
     this.config = config;
@@ -83,24 +81,59 @@ export class Logger {
     if (!this.config.enableFile) return;
 
     const today = new Date().toISOString().split('T')[0];
-    const dayLogDir = path.join(this.config.logDir, today);
+    this.currentLogDate = today;
+
+    this.createLogStreamsForDate(today);
+  }
+
+  /**
+   * Create log streams for a specific date
+   */
+  private createLogStreamsForDate(date: string): void {
+    const dayLogDir = path.join(this.config.logDir, date);
 
     // Ensure date-specific log directory exists
     if (!fs.existsSync(dayLogDir)) {
       fs.mkdirSync(dayLogDir, { recursive: true });
     }
 
+    // Close existing streams if they exist
+    this.closeLogStreams();
+
     // Main log file (all logs) - structured JSON
     const mainLogPath = path.join(dayLogDir, 'competence-matcher.json');
     this.logStreams.set('main', fs.createWriteStream(mainLogPath, { flags: 'a' }));
 
-    // Error-only log file - human readable
+    // Error-only log file
     const errorLogPath = path.join(dayLogDir, 'errors.log');
     this.logStreams.set('error', fs.createWriteStream(errorLogPath, { flags: 'a' }));
 
-    // Request-only log file - human readable
+    // Request-only log file
     const requestLogPath = path.join(dayLogDir, 'requests.log');
     this.logStreams.set('request', fs.createWriteStream(requestLogPath, { flags: 'a' }));
+  }
+
+  /**
+   * Check if we need to rotate logs to a new date and do so if necessary
+   */
+  private checkAndRotateLogsIfNeeded(): void {
+    const today = new Date().toISOString().split('T')[0];
+
+    if (today !== this.currentLogDate) {
+      // Date has changed, rotate to new log files
+      this.currentLogDate = today;
+      this.createLogStreamsForDate(today);
+    }
+  }
+
+  /**
+   * Close all log streams
+   */
+  private closeLogStreams(): void {
+    for (const stream of this.logStreams.values()) {
+      stream.end();
+    }
+    this.logStreams.clear();
   }
 
   private shouldLog(level: LogLevel, type: LogType): boolean {
@@ -166,13 +199,16 @@ export class Logger {
   private writeToFile(entry: LogEntry): void {
     if (!this.config.enableFile) return;
 
-    // Write to main log file (structured JSON)
+    // Check if we need to rotate logs for a new date
+    this.checkAndRotateLogsIfNeeded();
+
+    // Write to main log file (structured JSON) - EXCEPT for requests
     const mainStream = this.logStreams.get('main');
-    if (mainStream) {
+    if (mainStream && entry.type !== 'request') {
       mainStream.write(JSON.stringify(entry) + '\n');
     }
 
-    // Write to error log file (human readable)
+    // Write to error log file
     if (entry.level === LogLevel.ERROR) {
       const errorStream = this.logStreams.get('error');
       if (errorStream) {
@@ -295,10 +331,7 @@ export class Logger {
   }
 
   public close(): void {
-    for (const stream of this.logStreams.values()) {
-      stream.end();
-    }
-    this.logStreams.clear();
+    this.closeLogStreams();
   }
 
   // Update configuration
@@ -307,7 +340,6 @@ export class Logger {
 
     // Reinitialise streams if file logging config changed
     if (newConfig.enableFile !== undefined || newConfig.logDir) {
-      this.close();
       this.initialiseLogStreams();
     }
   }

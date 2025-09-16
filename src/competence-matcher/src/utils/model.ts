@@ -62,4 +62,9 @@ export abstract class TransformerPipeline<PI> {
 
     return this.instance;
   }
+
+  public static deleteInstance() {
+    this.instance = null;
+    this.loaded = false;
+  }
 }

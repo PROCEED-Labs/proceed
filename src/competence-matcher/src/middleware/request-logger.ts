@@ -14,6 +14,34 @@ declare global {
 }
 
 /**
+ * Extract real IP address from request, considering proxy headers
+ */
+function getRealIP(req: Request): string {
+  // Check for common proxy headers in order of preference
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const realIP = req.headers['x-real-ip'];
+  const clientIP = req.headers['x-client-ip'];
+
+  // x-forwarded-for can be a comma-separated list, take the first (original) IP
+  if (forwardedFor) {
+    const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+    return ips.split(',')[0].trim();
+  }
+
+  // Single IP headers
+  if (realIP) {
+    return Array.isArray(realIP) ? realIP[0] : realIP;
+  }
+
+  if (clientIP) {
+    return Array.isArray(clientIP) ? clientIP[0] : clientIP;
+  }
+
+  // Fallback to express's req.ip (which might be the proxy IP)
+  return req.ip || 'unknown';
+}
+
+/**
  * Request logger middleware
  */
 export function requestLogger(req: Request, res: Response, next: NextFunction): void {
@@ -25,15 +53,20 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
   req.startTime = startTime;
 
   // Log incoming request
+  const realIP = getRealIP(req);
   logger.debug(
     'request',
     `Incoming ${req.method} ${req.path}`,
     {
       query: req.query,
       params: req.params,
-      ip: req.ip,
+      ip: realIP,
+      proxyIP: req.ip, // Keep original for debugging
       userAgent: req.headers['user-agent'],
       contentType: req.headers['content-type'],
+      // Include proxy headers for debugging if they exist
+      ...(req.headers['x-forwarded-for'] && { 'x-forwarded-for': req.headers['x-forwarded-for'] }),
+      ...(req.headers['x-real-ip'] && { 'x-real-ip': req.headers['x-real-ip'] }),
     },
     requestId,
   );
@@ -46,6 +79,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
 
     // Log the request completion
     logger.request(req.method, req.path, res.statusCode, responseTime, requestId, {
+      ip: getRealIP(req),
       contentLength: res.get('content-length'),
       responseSize: body ? Buffer.byteLength(body, 'utf8') : 0,
     });

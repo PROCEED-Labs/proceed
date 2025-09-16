@@ -10,10 +10,11 @@ import { getDB } from '../utils/db';
 const {
   embeddingWorkers,
   matchingWorkers,
-  modelLoadingTimeout,
+  workerHealthCheckTimeout,
   maxWorkerRetries,
   workerRetryWindow,
-  modelLoadingTime,
+  systemStartupTimeout,
+  maxJobTime,
 } = config;
 const logger = getLogger();
 
@@ -38,11 +39,16 @@ class WorkerPool {
   private busyWorkers: Map<Worker, string> = new Map(); // Maps worker to current jobId
   private pendingHealthChecks: Map<Worker, NodeJS.Timeout> = new Map(); // Track pending health checks
   private beingReplaced: Set<Worker> = new Set(); // Track workers being replaced to prevent double replacement
+  private jobTimeouts: Map<Worker, NodeJS.Timeout> = new Map(); // Track job timeouts
 
   // Retry tracking
   private failureCount: number = 0; // Total failures for this worker type
   private lastFailureTime: number = 0; // Timestamp of last failure
   private consecutiveFailures: number = 0; // Consecutive failures without recovery
+
+  // Health check failure tracking
+  private consecutiveHealthCheckFailures: number = 0; // Consecutive health check failures
+  private poolBroken: boolean = false; // Pool marked as broken due to persistent failures
 
   constructor(workerType: workerTypes, poolSize: number) {
     this.workerType = workerType;
@@ -65,6 +71,15 @@ class WorkerPool {
    * Create a new worker and register it in the pool
    */
   private createAndRegisterWorker() {
+    // Don't create new workers if pool is broken
+    if (this.poolBroken) {
+      logger.debug(
+        'system',
+        `[WorkerPool] Not creating new ${this.workerType} worker - pool is marked as broken`,
+      );
+      return;
+    }
+
     // Check if we already have enough workers (including those pending health checks)
     if (this.workers.length >= this.poolSize) {
       logger.debug(
@@ -204,6 +219,12 @@ class WorkerPool {
       `[WorkerPool] Assigning ${this.workerType} job ${job.jobId} to worker ${worker.threadId}`,
     );
 
+    // Set up job timeout
+    const jobTimeout = setTimeout(() => {
+      this.handleJobTimeout(worker, job);
+    }, maxJobTime);
+    this.jobTimeouts.set(worker, jobTimeout);
+
     // Set up message handling for this specific job
     const messageHandler = (message: any) => {
       try {
@@ -259,6 +280,9 @@ class WorkerPool {
             }
             break;
           case 'job_completed':
+            // Clear job timeout since job completed
+            this.clearJobTimeout(worker);
+
             // Job is done, mark worker as available and process next job
             this.markWorkerAvailable(worker);
             this.processNextJob();
@@ -303,6 +327,9 @@ class WorkerPool {
       worker.postMessage(job);
       options?.onOnline?.(job);
     } catch (error) {
+      // Clear timeout since job failed to start
+      this.clearJobTimeout(worker);
+
       const messageError = new WorkerError(
         this.workerType,
         job.jobId,
@@ -324,11 +351,78 @@ class WorkerPool {
   }
 
   /**
+   * Handle job timeout for a worker
+   */
+  private handleJobTimeout(worker: Worker, job: EmbeddingJob | MatchingJob) {
+    const jobId = job.jobId;
+
+    logger.workerError(
+      'job_timeout',
+      new WorkerError(this.workerType, jobId, new Error(`Job timed out after ${maxJobTime}ms`)),
+      {
+        workerType: this.workerType,
+        threadId: worker.threadId,
+        jobId,
+        timeout: maxJobTime,
+      },
+    );
+
+    // Clear the timeout from tracking
+    this.clearJobTimeout(worker);
+
+    // Update job status in database
+    try {
+      const db = getDB(job.dbName);
+      db.updateJobStatus(jobId, 'failed');
+      db.close();
+    } catch (error) {
+      logger.error(
+        'system',
+        `Failed to update job status for timed out job ${jobId}`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
+    }
+
+    // Mark worker as being replaced to prevent double replacement
+    this.beingReplaced.add(worker);
+
+    // Terminate the unresponsive worker
+    try {
+      worker.terminate();
+      logger.debug(
+        'system',
+        `[WorkerPool] Terminated ${this.workerType} worker ${worker.threadId} due to job timeout`,
+      );
+    } catch (error) {
+      logger.debug(
+        'system',
+        `[WorkerPool] Failed to terminate timed-out worker ${worker.threadId}:`,
+        error,
+      );
+    }
+
+    // Remove worker and create replacement
+    this.removeWorkerFromPool(worker);
+    this.createAndRegisterWorker();
+  }
+
+  /**
+   * Clear job timeout for a worker
+   */
+  private clearJobTimeout(worker: Worker) {
+    const timeout = this.jobTimeouts.get(worker);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.jobTimeouts.delete(worker);
+    }
+  }
+
+  /**
    * Perform health check on a worker to ensure it's responsive
    */
   private performHealthCheck(worker: Worker) {
     const healthCheckId = `health_check_${Date.now()}_${worker.threadId}`;
-    const timeout = modelLoadingTimeout;
+    const timeout = workerHealthCheckTimeout;
 
     logger.debug(
       'system',
@@ -337,8 +431,8 @@ class WorkerPool {
 
     // Set up timeout for health check
     const healthCheckTimeout = setTimeout(() => {
-      // Track failure and determine logging severity
-      const { shouldLogAsError, retryCount } = this.trackWorkerFailure();
+      // Track health check failure and check if pool should be marked as broken
+      const poolBroken = this.trackHealthCheckFailure();
 
       const error = new WorkerError(
         this.workerType,
@@ -349,16 +443,21 @@ class WorkerPool {
         workerType: this.workerType,
         threadId: worker.threadId,
         timeout,
-        retryCount,
-        maxRetries: maxWorkerRetries,
+        consecutiveHealthCheckFailures: this.consecutiveHealthCheckFailures,
+        maxHealthCheckFailures: 5,
       };
 
-      if (shouldLogAsError) {
-        logger.workerError('worker_health_check_timeout', error, errorData);
+      if (poolBroken) {
+        logger.error(
+          'worker',
+          `Worker health check timeout - pool marked as broken`,
+          undefined,
+          errorData,
+        );
       } else {
         logger.warn(
           'worker',
-          `Worker health check timeout (attempt ${retryCount}/${maxWorkerRetries})`,
+          `Worker health check timeout (failure ${this.consecutiveHealthCheckFailures}/5)`,
           errorData,
         );
       }
@@ -384,9 +483,11 @@ class WorkerPool {
         );
       }
 
-      // Remove unresponsive worker and create a replacement
+      // Remove unresponsive worker and create a replacement only if pool is not broken
       this.removeWorkerFromPool(worker);
-      this.createAndRegisterWorker();
+      if (!poolBroken) {
+        this.createAndRegisterWorker();
+      }
     }, timeout);
 
     // Store the timeout so we can clear it if worker responds
@@ -409,6 +510,7 @@ class WorkerPool {
 
         // Reset failure tracking on successful recovery
         this.resetFailureTracking();
+        this.resetHealthCheckFailures();
 
         logger.debug(
           'system',
@@ -467,11 +569,14 @@ class WorkerPool {
     this.beingReplaced.delete(worker);
 
     // Clean up any pending health check
-    const timeout = this.pendingHealthChecks.get(worker);
-    if (timeout) {
-      clearTimeout(timeout);
+    const healthCheckTimeout = this.pendingHealthChecks.get(worker);
+    if (healthCheckTimeout) {
+      clearTimeout(healthCheckTimeout);
       this.pendingHealthChecks.delete(worker);
     }
+
+    // Clean up any job timeout
+    this.clearJobTimeout(worker);
 
     const index = this.workers.indexOf(worker);
     if (index > -1) {
@@ -483,6 +588,45 @@ class WorkerPool {
     } catch (error) {
       // Ignore termination errors
     }
+  }
+
+  /**
+   * Track a health check failure and determine if pool should be marked as broken
+   */
+  private trackHealthCheckFailure(): boolean {
+    this.consecutiveHealthCheckFailures++;
+
+    // Mark pool as broken after 5 consecutive health check failures
+    if (this.consecutiveHealthCheckFailures >= 5) {
+      this.poolBroken = true;
+      logger.error(
+        'worker',
+        `Pool ${this.workerType} marked as broken after ${this.consecutiveHealthCheckFailures} consecutive health check failures`,
+        undefined,
+        {
+          workerType: this.workerType,
+          consecutiveFailures: this.consecutiveHealthCheckFailures,
+        },
+      );
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Reset health check failure tracking on successful health check
+   */
+  private resetHealthCheckFailures() {
+    this.consecutiveHealthCheckFailures = 0;
+    this.poolBroken = false;
+  }
+
+  /**
+   * Check if this pool is broken due to persistent health check failures
+   */
+  public isBroken(): boolean {
+    return this.poolBroken;
   }
 
   /**
@@ -523,6 +667,9 @@ class WorkerPool {
     this.busyWorkers.delete(worker);
     this.availableWorkers.add(worker);
 
+    // Clear any job timeout since job is completed
+    this.clearJobTimeout(worker);
+
     // Reset failure tracking on successful job completion
     this.resetFailureTracking();
   }
@@ -538,6 +685,8 @@ class WorkerPool {
       busyWorkers: this.busyWorkers.size,
       pendingHealthChecks: this.pendingHealthChecks.size,
       queuedJobs: this.queue.length,
+      consecutiveHealthCheckFailures: this.consecutiveHealthCheckFailures,
+      poolBroken: this.poolBroken,
     };
   }
 
@@ -592,7 +741,7 @@ class WorkerManager {
   private async waitForWorkersReady(): Promise<void> {
     logger.debug('system', '[WorkerManager] Waiting for worker pools to become ready...');
 
-    const maxWaitTime = modelLoadingTime;
+    const maxWaitTime = systemStartupTimeout;
     const checkInterval = 500; // Check every 500ms
     const startTime = Date.now();
 
@@ -600,6 +749,20 @@ class WorkerManager {
       const checkReady = () => {
         const embeddingStats = this.embeddingPool.getStats();
         const matchingStats = this.matchingPool.getStats();
+
+        // Check if any pools are broken and fail fast
+        if (embeddingStats.poolBroken || matchingStats.poolBroken) {
+          const brokenPools = [];
+          if (embeddingStats.poolBroken) brokenPools.push('embedding');
+          if (matchingStats.poolBroken) brokenPools.push('matching');
+
+          reject(
+            new Error(
+              `Worker pools failed to initialise due to persistent health check failures: ${brokenPools.join(', ')}`,
+            ),
+          );
+          return;
+        }
 
         const embeddingReady = embeddingStats.availableWorkers > 0;
         const matchingReady = matchingStats.availableWorkers > 0;
@@ -680,8 +843,7 @@ class WorkerManager {
   }
 
   /**
-   * Generic enqueue method for backward compatibility
-   * @deprecated Use enqueueEmbedding or enqueueMatching instead
+   * Generic enqueue method that routes jobs based on type
    */
   public enqueue(job: any, workerScript: workerTypes, options?: JobQueueItem['options']) {
     if (workerScript === 'embedder') {

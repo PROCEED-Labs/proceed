@@ -39,9 +39,9 @@ async function main() {
 
     // Ensure all required models are available
 
-    // Hugging Face models -> This should no longer be necessary as the availability check is now handled by the worker manager
-    // logger.info('server', 'Checking HuggingFace models availability...');
-    // await ensureAllHuggingfaceModelsAreAvailable();
+    // Hugging Face models
+    logger.info('server', 'Checking HuggingFace models availability...');
+    await ensureAllHuggingfaceModelsAreAvailable();
 
     // Ollama models
     logger.info('server', 'Checking Ollama models availability...');
@@ -69,7 +69,7 @@ async function main() {
     );
 
     logger.error('server', 'Failed to start due to initialisation error', initError);
-    process.exit(1);
+    throw initError; // Rethrow to be caught by outer catch
   }
 
   // Parse JSON

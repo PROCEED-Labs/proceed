@@ -90,14 +90,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
           }
         }}
       >
-        {!editingEnabled && (
-          <img
-            ref={imageRef}
-            style={{ width: width && `${width}%` }}
-            src={src ? imageUrl! : fallbackImage}
-          />
-        )}
-        {editingEnabled && (
+        {editingEnabled ? (
           <ImageUpload
             onImageUpdate={(imageFileName) => {
               setProp((props: ImageProps) => {
@@ -114,6 +107,12 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
             }}
             fileName={src}
             basicLoadingFeedback
+          />
+        ) : (
+          <img
+            ref={imageRef}
+            style={{ width: width && `${width}%` }}
+            src={src ? imageUrl! : fallbackImage}
           />
         )}
         {/* Allows resizing  */}

@@ -1114,5 +1114,5 @@ export async function unblockTask(socketId: string, processDefinitionsId: string
 
 /** Will remove all instance adaptation processes that are stored */
 function removeAdaptationProcesses(processes: ProcessMetadata[]) {
-// TODO
+  // TODO
 }

@@ -29,8 +29,6 @@ import {
 import { useEnvironment } from '@/components/auth-can';
 
 import EditorDnDHandler from './DragAndDropHandler';
-import { DiffResult, deepEquals } from '@/lib/helpers/javascriptHelpers';
-import { updateFileDeletableStatus as updateImageRefCounter } from '@/lib/data/file-manager-facade';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { Element as BpmnElement } from 'bpmn-js/lib/model/Types';
@@ -269,20 +267,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  const prevState = useRef({});
-
   const [modalApi, modalElement] = Modal.useModal();
-
-  function updateImageReference(action: 'add' | 'delete', src: string) {
-    const isDeleteAction = action === 'delete';
-    updateImageRefCounter(
-      // spaceId,
-      // data?.user.id!,
-      src,
-      isDeleteAction,
-      processId,
-    );
-  }
 
   const handleClose = () => {
     if (!hasUnsavedChanges) {

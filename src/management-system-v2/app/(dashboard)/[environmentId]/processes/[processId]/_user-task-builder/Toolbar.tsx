@@ -12,7 +12,6 @@ import {
 
 import styles from './index.module.scss';
 
-import { useEditor, Node } from '@craftjs/core';
 import { useCanEdit } from '../modeler';
 import useEditorControls from './use-editor-controls';
 

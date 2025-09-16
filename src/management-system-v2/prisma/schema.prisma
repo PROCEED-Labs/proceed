@@ -317,7 +317,8 @@ model UserTask {
  milestones            Json?
  milestonesChanges     Json?
  machineId             String
- json                  String?
+ actualOwner           String[]
+ potentialOwners       Json
 
  @@map("userTask")
 }

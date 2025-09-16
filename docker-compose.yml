@@ -1,24 +1,45 @@
 services:
   management_system:
-    image: registry.gitlab.com/dbpms-proceed/mb-techdaten-server-deployment:latest
+    image: proceed/ms-server:latest
     container_name: management_system
+    environment:
+      - NEXTAUTH_URL=http://localhost:3000
+      - PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE=true
     ports:
       - '3000:33081'
     depends_on:
       - postgres
     volumes:
       - ms2_data:/home/nextjs/.config/proceed-management-system
+    networks:
+      - proceed-network
 
   postgres:
     image: postgres:latest
     container_name: postgres_database
+    ports:
+      - '5433:5432'
     environment:
       POSTGRES_DB: proceed_db
       POSTGRES_USER: proceed
       POSTGRES_PASSWORD: proceed
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - proceed-network
+
+  engine:
+    image: proceed/engine:latest
+    container_name: proceed_engine
+    ports:
+      - '33029:33029'
+    networks:
+      - proceed-network
 
 volumes:
   postgres_data:
   ms2_data:
+
+networks:
+  proceed-network:
+    name: proceed-production-network

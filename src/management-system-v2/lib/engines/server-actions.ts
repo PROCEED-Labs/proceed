@@ -41,6 +41,7 @@ import {
   updateUserTask,
   deleteUserTask,
 } from '../data/user-tasks';
+import { updateVariablesOnMachine } from './instances';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
 
@@ -515,6 +516,34 @@ export async function completeTasklistEntry(
     await completeTasklistEntryOnMachine(engines[0], instanceId, taskId, variables);
   } catch (e) {
     const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function updateVariables(
+  spaceId: string,
+  definitionId: string,
+  instanceId: string,
+  variables: Record<string, any>,
+) {
+  try {
+    if (!enableUseDB) throw new Error('updateVariables only available with enableUseDB');
+
+    // find the engine the instance is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      return deployments.some((deployment) =>
+        deployment.instances.some((i) => i.processInstanceId === instanceId),
+      );
+    });
+
+    await asyncForEach(
+      engines,
+      async (engine) => await updateVariablesOnMachine(definitionId, instanceId, engine, variables),
+    );
+  } catch (err) {
+    const message = getErrorMessage(err);
     return userError(message);
   }
 }

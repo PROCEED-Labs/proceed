@@ -208,9 +208,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         accept={'.jpeg,.jpg,.png,.webp,.svg'}
         showUploadList={false}
         customRequest={customUploadRequest}
-        style={{
-          position: 'relative',
-        }}
         onDrop={(e) => {
           console.log(e);
         }}
@@ -225,6 +222,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             width: '100%',
             maxHeight: '7.5rem',
             borderRadius: '6px',
+            display: 'block',
             border: '1px solid #d9d9d9',
           }}
           preview={{

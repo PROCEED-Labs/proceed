@@ -5,7 +5,7 @@ import {
   cleanUpFailedUploadEntry,
   deleteEntityFile,
   retrieveEntityFile,
-  saveEntityFile,
+  saveEntityFileOrGetPresignedUrl,
   updateFileDeletableStatus,
 } from './data/file-manager-facade';
 import { EntityType, getNewFileName } from '@/lib/helpers/fileManagerHelpers';
@@ -32,6 +32,7 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
   const env = use(EnvVarsContext);
   const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
 
+  // This function returns an endpoint to which we upload the file
   const getUploadUrl = useMutation<
     { uploadUrl: string; filePath?: string },
     Error,
@@ -39,7 +40,13 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
   >({
     mutationFn: async ({ fileType, entityId, filePath }) => {
       if (DEPLOYMENT_ENV === 'cloud') {
-        const result = await saveEntityFile(entityType, entityId, fileType, filePath);
+        // Get presigned url to upload to an S3 bucket
+        const result = await saveEntityFileOrGetPresignedUrl(
+          entityType,
+          entityId,
+          fileType,
+          filePath,
+        );
         if (!('presignedUrl' in result) || !result.presignedUrl)
           throw new Error('Failed to get presignedUrl');
 

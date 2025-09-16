@@ -11,7 +11,7 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import {
   deleteEntityFile,
   retrieveEntityFile,
-  saveEntityFile,
+  saveEntityFileOrGetPresignedUrl,
 } from '@/lib/data/file-manager-facade';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -184,7 +184,7 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const res = await saveEntityFile(
+    const res = await saveEntityFileOrGetPresignedUrl(
       entityType as EntityType,
       entityId,
       fileType.mime,

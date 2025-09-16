@@ -119,7 +119,7 @@ export async function getArtifactMetaData(fileNameOrPath: string, isFilePath: bo
 }
 
 // Save a file associated with an entity (process, organization, etc.)
-export async function saveEntityFile(
+export async function saveEntityFileOrGetPresignedUrl(
   entityType: EntityType,
   entityId: string,
   mimeType: string,

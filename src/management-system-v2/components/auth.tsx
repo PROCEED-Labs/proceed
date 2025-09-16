@@ -48,7 +48,7 @@ export const getCurrentUser = cache(async () => {
     if (session?.user.isGuest) {
       searchParams.append(
         'callbackUrl',
-        `/signin?error=${encodeURIComponent('$info Your guest account was deleted due to inactivity')}`,
+        `/signin?error=${encodeURIComponent('$info You have previously used PROCEED as a Guest. This account and your data have been deleted due to discontinued use. If you want to avoid this, please log in as a user.')}`,
       );
     }
 

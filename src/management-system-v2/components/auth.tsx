@@ -42,7 +42,17 @@ export const getCurrentUser = cache(async () => {
   if (userId !== '' && !user) {
     const cookieStore = cookies();
     const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
-    redirect(`/api/private/signout?csrfToken=${csrfToken}`);
+
+    const searchParams = new URLSearchParams({ csrfToken });
+
+    if (session?.user.isGuest) {
+      searchParams.append(
+        'callbackUrl',
+        `/signin?error=${encodeURIComponent('$info Your guest account was deleted due to inactivity')}`,
+      );
+    }
+
+    redirect(`/api/private/signout?${searchParams}`);
   }
 
   return { session, userId, systemAdmin, user };

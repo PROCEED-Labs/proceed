@@ -79,6 +79,20 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
                 e.stopPropagation();
                 selectingText.current = true;
               },
+              onKeyDown: (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                  e.stopPropagation();
+
+                  async function submit() {
+                    if (editorRef.current) {
+                      onChange((await editorRef.current.getCurrentValue()) || '');
+                    }
+                    onStopEditing?.();
+                  }
+
+                  submit();
+                }
+              },
               ...props,
             });
           })}

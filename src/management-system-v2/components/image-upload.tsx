@@ -204,7 +204,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         </div>
       )}
 
-      <Upload.Dragger
+      <Upload
         accept={'.jpeg,.jpg,.png,.webp,.svg'}
         showUploadList={false}
         customRequest={customUploadRequest}
@@ -273,7 +273,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             </Button>
           )}
         </Space>
-      </Upload.Dragger>
+      </Upload>
     </div>
   );
 };

@@ -43,10 +43,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   uploadProps,
   config,
   initialFileName,
-  fileName: userDefinedFileName,
   deletable = true,
   fileManagerErrorToasts = true,
   basicLoadingFeedback = false,
+  ...props
 }) => {
   // The component has a `fileName` (which can be either managed from within the component, or
   // via the props)
@@ -60,8 +60,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [uploadProgress, setUploadProgress] = useState<number | undefined>();
   const [maskVisible, setMaskVisible] = useState(false);
 
-  const fileName = userDefinedFileName || componentManagedFileName;
-  const imageExists = !!componentManagedFileName;
+  const fileName = 'fileName' in props ? props.fileName : componentManagedFileName;
+  const imageExists = !!fileName;
 
   const {
     remove,

@@ -8,6 +8,8 @@ export async function GET(request: NextRequest) {
   const csrfToken = request.nextUrl.searchParams.get('csrfToken');
   if (!csrfToken) return NextResponse.json({ error: 'Missing CSRF token' }, { status: 400 });
 
+  const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+
   // Verify csrf token
   const cookieStore = cookies();
   const csrfCookie = cookieStore.get('proceed.csrf-token');
@@ -16,5 +18,10 @@ export async function GET(request: NextRequest) {
   if (!verified) return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 400 });
 
   await signOut({ redirect: false });
-  return redirect('/signin');
+
+  if (callbackUrl) {
+    redirect(callbackUrl);
+  } else {
+    return redirect('/signin');
+  }
 }

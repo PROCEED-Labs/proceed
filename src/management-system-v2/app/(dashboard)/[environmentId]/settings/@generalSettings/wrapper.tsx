@@ -68,7 +68,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
                   onClick={() =>
                     Modal.confirm({
                       content:
-                        'Logo changes may take some time to appear everywhere. This is normal and should resolve itself shortly',
+                        'Logo changes may take some time to appear everywhere. This is normal and should resolve itself shortly.',
                       footer: (_, { OkBtn }) => <OkBtn />,
                       maskClosable: true,
                     })

@@ -36,12 +36,15 @@ export default function useEditorControls() {
     }
   }, []);
 
+  const undo = useCallback(() => actions.history.undo(), []);
+  const redo = useCallback(() => actions.history.redo(), []);
+
   return {
     selected,
     deleteElement,
     canUndo,
     canRedo,
-    undo: actions.history.undo,
-    redo: actions.history.redo,
+    undo,
+    redo,
   };
 }

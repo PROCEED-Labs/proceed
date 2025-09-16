@@ -71,7 +71,7 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
     () => {
       if (canUndo) undo();
     },
-    { dependencies: [canUndo] },
+    { dependencies: [canUndo, undo] },
   );
 
   useAddControlCallback(
@@ -80,7 +80,7 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
     () => {
       if (canRedo) redo();
     },
-    { dependencies: [canRedo] },
+    { dependencies: [canRedo, redo] },
   );
 
   return <AddUserControls name="html-editor" />;

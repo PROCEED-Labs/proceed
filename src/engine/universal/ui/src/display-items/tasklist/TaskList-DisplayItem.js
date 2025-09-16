@@ -31,6 +31,7 @@ class TaskListTab extends DisplayItem {
       '/api/variable': { put: this.putVariable.bind(this) },
       '/api/milestone': { put: this.putMilestone.bind(this) },
       '/api/variable-file': { post: this.postFile.bind(this) },
+      '/api/userTask/owner': { post: this.addOwner.bind(this) },
     };
   }
 
@@ -47,6 +48,7 @@ class TaskListTab extends DisplayItem {
         state: task.state,
         priority: task.priority,
         performers: task.performers,
+        actualOwner: task.actualOwner,
         progress: task.progress,
         startTime: task.startTime,
         endTime: task.endTime,
@@ -186,6 +188,43 @@ class TaskListTab extends DisplayItem {
         data,
       ),
     };
+  }
+
+  async addOwner(body, query) {
+    const { instanceID, userTaskID } = query;
+
+    if (!instanceID || !userTaskID) {
+      throw new Error(
+        'Expected "instanceID" and "userTaskID" that specify the user task as query parameters on the request.',
+      );
+    }
+
+    const engine = this.getTaskEngine(query);
+
+    const userTask = engine.userTasks.find(
+      (uT) =>
+        uT.processInstance.id === query.instanceID &&
+        uT.id === query.userTaskID &&
+        (uT.state === 'READY' || uT.state === 'ACTIVE'),
+    );
+
+    if (!userTask) {
+      throw new Error(`No pending user task with id ${query.userTaskID}`);
+    }
+
+    const token = engine.getToken(query.instanceID, userTask.tokenId);
+
+    if (!token) {
+      throw new Error(`No pending user task with id ${query.userTaskID}`);
+    }
+
+    const { owner } = body;
+    let actualOwner = token.actualOwner || [];
+    actualOwner = actualOwner.filter((id) => id !== owner);
+
+    engine.updateToken(instanceID, token.tokenId, { actualOwner: [...actualOwner, owner] });
+
+    return actualOwner;
   }
 }
 

@@ -23,11 +23,7 @@ const useInstanceVariables = (info: DeploymentInfo) => {
     const initVariables = async (version: VersionInfo) => {
       const [processId] = await getProcessIds(version.bpmn);
       const variables = await getVariablesFromElementById(version.bpmn, processId);
-      setVariableDefinitions(
-        variables.map((v) => ({
-          ...v,
-        })),
-      );
+      setVariableDefinitions(variables);
     };
     if (info.version) initVariables(info.version);
 

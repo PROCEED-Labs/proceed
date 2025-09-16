@@ -282,6 +282,13 @@ declare const _exports: {
   };
   getPerformersFromElement(element: object): any[];
   getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
+  getPotentialOwnersFromElementById(
+    elementId: string,
+    bpmn: string | object,
+  ): {
+    user: string[];
+    roles: string[];
+  };
   parseISODuration(isoDuration: string): {
     years: number;
     months: number;

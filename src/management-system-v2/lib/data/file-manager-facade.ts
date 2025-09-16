@@ -7,17 +7,12 @@ import {
   ArtifactType,
   generateProcessFilePath,
 } from '../helpers/fileManagerHelpers';
-import { contentTypeNotAllowed } from './content-upload-error';
-import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
+import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
 import { getProcessHtmlFormJSON } from './db/process';
 import { asyncMap, findKey } from '../helpers/javascriptHelpers';
 import { Prisma } from '@prisma/client';
-import { use } from 'react';
 import { checkValidity } from './processes';
-import { env } from '@/lib/ms-config/env-vars';
-
-const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
@@ -510,6 +505,32 @@ export async function revertSoftDeleteProcessScriptTask(
       });
     }
   }
+}
+
+export async function removeDeletedArtifactsFromDb(
+  expirationInMs: number,
+  tx?: Prisma.TransactionClient,
+): Promise<{ count: number }> {
+  if (!tx) {
+    return db.$transaction((trx) => removeDeletedArtifactsFromDb(expirationInMs, trx));
+  }
+
+  const cutoff = new Date(Date.now() - expirationInMs);
+
+  const deletableFiles = await tx.artifact.findMany({
+    where: {
+      deletable: true,
+      deletedOn: { lte: cutoff },
+    },
+    select: { filePath: true },
+  });
+
+  if (deletableFiles.length > 0) {
+    await Promise.all(
+      deletableFiles.map((file) => deleteProcessArtifact(file.filePath, true, undefined, tx)),
+    );
+  }
+  return { count: deletableFiles.length };
 }
 
 // Update artifact references for a versioned user task

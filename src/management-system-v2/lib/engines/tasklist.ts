@@ -2,7 +2,6 @@
 
 import { Engine } from './machines';
 import { engineRequest } from './endpoints/index';
-import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
 export type TaskListEntry = {
   id: string;
@@ -12,11 +11,12 @@ export type TaskListEntry = {
   attrs: {
     'proceed:fileName': string;
   };
+  actualOwner: string[];
   state: string;
   status: string;
   owner: string;
   priority: number;
-  performers: string[];
+  performers: { user?: string[]; roles: string[] };
   progress: 0;
   startTime: number;
   endTime: number;
@@ -83,14 +83,6 @@ export async function getStartFormFromMachine(
     },
   });
 
-  // initialize the placeholders in the form with empty strings
-  // TODO: use the information from the variable data in the bpmn to initialize the actual initial
-  // values set by the process designer
-  if (html) {
-    html = inlineScript(html, '', '');
-    html = inlineUserTaskData(html, {}, []);
-  }
-
   return html as string;
 }
 
@@ -146,4 +138,24 @@ export async function completeTasklistEntryOnMachine(
     },
     body: variables,
   });
+}
+
+export async function addOwnerToTaskListEntryOnMachine(
+  machine: Engine,
+  instanceId: string,
+  userTaskId: string,
+  owner: string,
+) {
+  const updatedOwners = await engineRequest({
+    method: 'post',
+    endpoint: '/tasklist/api/userTask/owner',
+    engine: machine,
+    queryParams: {
+      instanceID: instanceId,
+      userTaskID: userTaskId,
+    },
+    body: { owner },
+  });
+
+  return updatedOwners as string[];
 }

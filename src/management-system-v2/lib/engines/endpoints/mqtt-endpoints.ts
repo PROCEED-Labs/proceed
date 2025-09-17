@@ -1,7 +1,7 @@
 import mqtt from 'mqtt';
 import { MqttEngine } from '../machines';
 
-const mqttTimeout = 1000;
+const mqttTimeout = 10000;
 
 const defaultBaseTopicPrefix = '';
 function getEnginePrefix(engineId: string, prefix = defaultBaseTopicPrefix) {
@@ -159,7 +159,7 @@ export async function mqttRequest(
   mqttClient.publish(requestTopic, JSON.stringify({ ...message, type: 'request', id: requestId }));
 
   // await for response or timeout
-  setTimeout(rej!, mqttTimeout);
+  setTimeout(() => rej(new Error('MQTT request timed out (10s)')), mqttTimeout);
   const response = await receivedAnswer;
 
   // cleanup

@@ -68,7 +68,6 @@ export function measureTextWithEllipsis(
   if (fullWidth <= maxWidth) return text;
 
   const ellipsis = '...';
-  const ellipsisWidth = ctx.measureText(ellipsis).width;
 
   // Binary search for optimal text length
   let left = 0;

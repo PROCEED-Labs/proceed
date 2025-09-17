@@ -448,6 +448,10 @@ class Messaging extends System {
             }
           }
 
+          this._logger.info(
+            `Request received via Messaging System (REST-API Mapping). ID: ${request.id} Request: ${request.method} ${path}`,
+          );
+
           // call the handler for the called "endpoint"
           const res = await callback({ body: request.body, params, query: request.query || {} });
 
@@ -480,6 +484,9 @@ class Messaging extends System {
             bodyIsBuffer: isBuffer,
             body: sendResponse,
           });
+          this._logger.info(
+            `Response sent    via Messaging System (REST-API Mapping). ID: ${request.id} Response: ${statusCode}`,
+          );
         }
       } catch (err) {
         if (this._logger)

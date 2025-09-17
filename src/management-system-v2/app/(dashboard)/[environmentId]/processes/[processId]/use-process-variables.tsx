@@ -12,7 +12,7 @@ import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import useModelerStateStore from './use-modeler-state-store';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
 
-const allowedTypes = ['string', 'number', 'boolean', 'object', 'array'] as const;
+const allowedTypes = ['string', 'number', 'boolean', 'object', 'array', 'file'] as const;
 type AllowedType = (typeof allowedTypes)[number];
 
 // maps from the data types to what we want to display to the user
@@ -22,9 +22,18 @@ export const typeLabelMap: Record<AllowedType, string> = {
   boolean: 'On/Off - True/False',
   object: 'Combined Structure',
   array: 'List',
+  file: 'File',
 } as const;
 
-export type ProcessVariable = Omit<Variable, 'dataType'> & { dataType: AllowedType };
+export const textFormatMap = {
+  email: 'E-Mail',
+  url: 'URL',
+};
+
+export type ProcessVariable = Omit<Variable, 'dataType' | 'textFormat'> & {
+  dataType: AllowedType;
+  textFormat?: keyof typeof textFormatMap;
+};
 
 export default function useProcessVariables() {
   const [variables, setVariables] = useState<ProcessVariable[]>([]);

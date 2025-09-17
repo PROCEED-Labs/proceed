@@ -9,31 +9,42 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Menu, MenuProps, Select, Space } from 'antd';
+import { Button, Input, Menu, MenuProps, Select, Space } from 'antd';
 import { useDndContext } from '@dnd-kit/core';
 
 import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { useCanEdit } from '../../modeler';
-import useProcessVariables, { ProcessVariable, typeLabelMap } from '../../use-process-variables';
+import useProcessVariables, {
+  ProcessVariable,
+  textFormatMap,
+  typeLabelMap,
+} from '../../use-process-variables';
 import ProcessVariableForm from '../../variable-definition/process-variable-form';
+import { useParams } from 'next/navigation';
+import ImageUpload from '@/components/image-upload';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
 export const Setting: React.FC<{
-  label: string;
+  label?: string;
   control: ReactElement;
+  disabled?: boolean;
   style?: React.CSSProperties;
-}> = ({ label, control, style = {} }) => {
+  compact?: boolean;
+}> = ({ label, control, disabled, style = {}, compact = false }) => {
   const id = useId();
 
   const editingEnabled = useCanEdit();
 
-  const clonedControl = React.cloneElement(control, { id, disabled: !editingEnabled });
+  const clonedControl = React.cloneElement(control, { id, disabled: disabled || !editingEnabled });
 
   return (
-    <div style={{ margin: '5px', ...style }}>
-      <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
-        {label}:
-      </label>
+    <div style={{ margin: compact ? undefined : '5px', ...style }}>
+      {label && (
+        <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
+          {label}:
+        </label>
+      )}
       {clonedControl}
     </div>
   );
@@ -248,28 +259,25 @@ export function MenuItemFactoryFactory<T extends string>(options: Record<T, Opti
     MenuItemFactory<T>(options, ...args);
 }
 
-export function getVariableTooltip(variables: ProcessVariable[], name?: string) {
-  if (!name) return;
-  const variable = variables.find((v) => v.name === name);
-  if (!variable) return;
-
-  let tooltip = `Type: ${typeLabelMap[variable.dataType]}`;
-
-  if (variable.description) tooltip += `\nDescription: ${variable.description}`;
-
-  return tooltip;
-}
-
 type AllowedTypes = React.ComponentProps<typeof ProcessVariableForm>['allowedTypes'];
+
 type VariableSettingProps = {
   variable?: string;
   allowedTypes?: AllowedTypes;
-  onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
+  prefix?: ReactNode;
+  compact?: boolean;
+  onChange: (
+    newVariableName?: string,
+    newVariableType?: NonNullable<AllowedTypes>[number],
+    newVariableTextFormat?: keyof typeof textFormatMap,
+  ) => void;
 };
 
 export const VariableSetting: React.FC<VariableSettingProps> = ({
   variable,
   allowedTypes,
+  prefix,
+  compact = false,
   onChange,
 }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
@@ -282,21 +290,21 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
 
   return (
     <Setting
-      label="Variable"
+      label={compact ? undefined : 'Variable'}
+      compact={compact}
       control={
         <>
           <Select
             value={variable}
             style={{ display: 'block' }}
-            title={getVariableTooltip(variables, variable)}
+            prefix={prefix}
             options={validVariables.map((v) => ({
               label: v.name,
-              title: getVariableTooltip(variables, v.name),
               value: v.name,
             }))}
             onChange={(val) => {
-              const variableType = variables.find((v) => v.name === val)?.dataType;
-              onChange(val, variableType);
+              const variable = variables.find((v) => v.name === val);
+              onChange(val, variable?.dataType, variable?.textFormat);
             }}
             dropdownRender={(menu) => (
               <>
@@ -316,12 +324,87 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
             onSubmit={(newVar) => {
               addVariable(newVar);
               setShowVariableForm(false);
-              onChange(newVar.name, newVar.dataType);
+              onChange(newVar.name, newVar.dataType, newVar.textFormat);
             }}
             onCancel={() => setShowVariableForm(false)}
           />
         </>
       }
     />
+  );
+};
+
+const artifactSelectionTypes = ['url', 'variable', 'file'] as const;
+
+type ArtifactSourceSelectionProps = {
+  type: (typeof artifactSelectionTypes)[number];
+  allowedTypes: Partial<typeof artifactSelectionTypes>;
+  onTypeChange: (type: (typeof artifactSelectionTypes)[number]) => void;
+  value: string;
+  onValueChange: (value?: string) => void;
+  onDone: (value?: string) => void;
+};
+
+export const ArtifactSourceSelection: React.FC<ArtifactSourceSelectionProps> = ({
+  type,
+  allowedTypes,
+  onTypeChange,
+  value,
+  onValueChange,
+  onDone,
+}) => {
+  const typeOptionMap = {
+    url: { label: 'URL', value: 'url' },
+    variable: { label: 'Variable', value: 'variable' },
+    file: { label: 'File', value: 'file' },
+  };
+  const options = allowedTypes.map((t) => (t ? typeOptionMap[t] : {}));
+
+  const params = useParams<{ processId: string }>();
+
+  const typeInputMap = {
+    url: (
+      <Input
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        onBlur={() => onDone(value)}
+      />
+    ),
+    variable: (
+      <VariableSetting
+        variable={value}
+        allowedTypes={['file']}
+        compact
+        onChange={(newVariable) => {
+          const newValue = newVariable && `{{${newVariable}}}`;
+          onValueChange(newValue);
+          onDone(newValue);
+        }}
+      />
+    ),
+    file: (
+      <ImageUpload
+        onImageUpdate={(imageFileName) => {
+          onDone(imageFileName);
+        }}
+        config={{
+          entityType: EntityType.PROCESS,
+          entityId: params.processId,
+        }}
+        fileName={value.startsWith('processes-artifacts/images') ? value : undefined}
+        uploadControl={
+          <Button>
+            {value.startsWith('processes-artifacts/images') ? 'Change Image' : 'Select Image'}
+          </Button>
+        }
+      />
+    ),
+  };
+
+  return (
+    <Space.Compact style={{ width: '100%' }}>
+      <Select options={options} value={type} onChange={onTypeChange} />
+      <div style={{ flexGrow: '1' }}>{typeInputMap[type]}</div>
+    </Space.Compact>
   );
 };

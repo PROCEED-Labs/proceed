@@ -127,7 +127,9 @@ function getImagesReferencedByJSON(json: string) {
         const nodeType = typeof node.type === 'object' ? node.type.resolvedName : node.type;
         return nodeType === 'Image' && node.props.src;
       })
-      .map((node) => node.props.src as string);
+      .map((node) => node.props.src as string)
+      // images that start with "processes-artifacts/images" reference a local file that has to be sent all others do not
+      .filter((src) => src.startsWith('processes-artifacts/images'));
 
     // remove duplicates
     return [...new Set(images)];

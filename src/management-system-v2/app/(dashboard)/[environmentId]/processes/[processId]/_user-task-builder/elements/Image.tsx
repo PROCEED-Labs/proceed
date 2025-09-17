@@ -5,7 +5,7 @@ import { InputNumber } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
 import { useParams } from 'next/navigation';
-import { ContextMenu, Setting } from './utils';
+import { ArtifactSourceSelection, ContextMenu, Setting } from './utils';
 import ImageUpload, { fallbackImage } from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
@@ -20,7 +20,7 @@ type ImageProps = {
 
 // How the image should be rendered for use outside of the MS (mainly for use on the engine)
 export const ExportImage: UserComponent<ImageProps> = ({ src, width, definitionId }) => {
-  if (src) {
+  if (src && src.startsWith('processes-artifacts/images')) {
     // transform the url used inside the MS into the one expected on the engine
     // cannot use useParams and useEnvironment since this will not be used inside the context in
     // which they are defined
@@ -49,7 +49,6 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
   const {
     connectors: { connect },
     actions: { setProp },
-    isHovered,
   } = useNode((state) => {
     const parent = state.data.parent && query.node(state.data.parent).get();
 
@@ -69,11 +68,24 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
     entityType: EntityType.PROCESS,
   });
 
+  const [imageSrc, setImageSrc] = useState('');
+
   useEffect(() => {
+    setImageSrc(fallbackImage);
     if (src) {
-      getImageUrl({ entityId: processId as string, filePath: src });
+      if (src.startsWith('processes-artifacts/images')) {
+        getImageUrl({ entityId: processId as string, filePath: src });
+      } else if (!src.startsWith('{')) {
+        setImageSrc(src);
+      }
     }
   }, [src]);
+
+  useEffect(() => {
+    if (imageUrl && imageUrl !== imageSrc) {
+      setImageSrc(imageUrl);
+    }
+  }, [imageUrl]);
 
   return (
     <ContextMenu menu={[]}>
@@ -90,31 +102,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
           }
         }}
       >
-        {editingEnabled ? (
-          <ImageUpload
-            onImageUpdate={(imageFileName) => {
-              setProp((props: ImageProps) => {
-                props.src = imageFileName && imageFileName;
-                props.width = undefined;
-              });
-            }}
-            config={{
-              entityType: EntityType.PROCESS,
-              entityId: processId,
-            }}
-            uploadProps={{
-              style: { width: width && `${width}%` },
-            }}
-            fileName={src}
-            basicLoadingFeedback
-          />
-        ) : (
-          <img
-            ref={imageRef}
-            style={{ width: width && `${width}%` }}
-            src={src ? imageUrl! : fallbackImage}
-          />
-        )}
+        <img ref={imageRef} style={{ width: width && `${width}%` }} src={imageSrc} />
         {/* Allows resizing  */}
         {/* TODO: maybe use some react library for this */}
         {showResize && (
@@ -193,12 +181,29 @@ export const ImageSettings = () => {
     width,
     dom,
   } = useNode((node) => ({
-    src: node.data.props.src,
+    src: node.data.props.src as string | undefined,
     width: node.data.props.width,
     dom: node.dom,
   }));
 
   const [currentWidth, setCurrentWidth] = useState<number | null>(null);
+
+  const [srcType, setSrcType] = useState<'url' | 'variable' | 'file'>('file');
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+    if (src) {
+      if (src.startsWith('processes-artifacts/images')) {
+        setSrcType('file');
+      } else if (src.startsWith('{')) {
+        setSrcType('variable');
+        setCurrentSrc(src.substring(2, src.length - 2));
+      } else {
+        setSrcType('url');
+      }
+    }
+  }, [src]);
 
   useEffect(() => {
     if (src && dom?.children[0]) {
@@ -239,6 +244,21 @@ export const ImageSettings = () => {
           />
         }
       />
+
+      <div style={{ margin: '5px' }}>
+        Source:
+        <ArtifactSourceSelection
+          type={srcType}
+          allowedTypes={['url', 'variable', 'file']}
+          onTypeChange={(newType) => {
+            setSrcType(newType);
+            setCurrentSrc('');
+          }}
+          value={currentSrc || ''}
+          onValueChange={(newValue) => setCurrentSrc(newValue)}
+          onDone={(newValue) => setProp((props: ImageProps) => (props.src = newValue))}
+        />
+      </div>
     </>
   );
 };

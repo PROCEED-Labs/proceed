@@ -8,16 +8,15 @@ import { getLogger } from '../utils/logger';
 
 const { reasonModel } = config;
 
-function getLoggerInstance() {
-  return getLogger();
-}
-
-export async function addReason<T extends Match>(matches: T[], targetText: string): Promise<T[]> {
+export async function addReason<T extends Match & { alignment: string }>(
+  matches: T[],
+  targetText: string,
+): Promise<T[]> {
   if (matches.length === 0) {
     return matches; // No matches to reason about
   }
 
-  const logger = getLoggerInstance();
+  const logger = getLogger();
 
   logger.debug('model', `Adding reasoning to ${matches.length} matches`, {
     targetTextLength: targetText.length,
@@ -30,7 +29,7 @@ export async function addReason<T extends Match>(matches: T[], targetText: strin
         ...intructPrompt,
         {
           role: 'user',
-          content: `Task: ${targetText}\nCompetence: ${match.text}\nSimilarity Score: ${match.distance}`,
+          content: `Task: ${targetText}\nCompetence: ${match.text}\nSimilarity Score: ${match.distance}\nAlignment: ${match.alignment}`,
         },
       ];
 
@@ -43,14 +42,10 @@ export async function addReason<T extends Match>(matches: T[], targetText: strin
         // Extract the reason from the response
         const reason = response.message.content.trim();
 
-        getLoggerInstance().debug(
-          'model',
-          `Generated reasoning for match ${index + 1}/${matches.length}`,
-          {
-            matchText: match.text.substring(0, 50) + (match.text.length > 50 ? '...' : ''),
-            reasonLength: reason.length,
-          },
-        );
+        logger.debug('model', `Generated reasoning for match ${index + 1}/${matches.length}`, {
+          matchText: match.text.substring(0, 50) + (match.text.length > 50 ? '...' : ''),
+          reasonLength: reason.length,
+        });
 
         return {
           ...match,
@@ -62,19 +57,14 @@ export async function addReason<T extends Match>(matches: T[], targetText: strin
           error instanceof Error ? error : new Error(String(error)),
         );
 
-        getLoggerInstance().error(
-          'model',
-          'Failed to generate reasoning for match',
-          reasoningError,
-          {
-            matchIndex: index,
-            totalMatches: matches.length,
-            targetTextLength: targetText.length,
-            matchText: match.text.substring(0, 100) + (match.text.length > 100 ? '...' : ''),
-            similarity: match.distance,
-            reasonModel,
-          },
-        );
+        logger.error('model', 'Failed to generate reasoning for match', reasoningError, {
+          matchIndex: index,
+          totalMatches: matches.length,
+          targetTextLength: targetText.length,
+          matchText: match.text.substring(0, 100) + (match.text.length > 100 ? '...' : ''),
+          similarity: match.distance,
+          reasonModel,
+        });
 
         // If there's an error, just keep the original match without a reason
         return match;
@@ -86,7 +76,7 @@ export async function addReason<T extends Match>(matches: T[], targetText: strin
     (match) => 'reason' in match && match.reason,
   ).length;
 
-  getLoggerInstance().debug(
+  logger.debug(
     'model',
     `Reasoning completed: ${successfulReasons}/${matches.length} matches received reasons`,
     {

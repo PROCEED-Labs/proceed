@@ -126,72 +126,56 @@ parentPort.on('message', async (message: any) => {
 
             // Zero-shot classification for scaling scores based on alignment
             const scalingLabels = ['conflicting', 'neutral', 'aligning'];
-            const labelScalar = [0.8, 1.0, 1.2];
+            const labelScalar = [0.05, 0.25, 1];
 
             // Process each match
             for (const match of matches) {
-              try {
-                let flag = 'neutral'; // Default flag
+              let flag = 'neutral'; // Default flag
 
-                // Apply zero-shot classification
-                const scalingClassification = await ZeroShot.classify(
-                  `Task: ${description} | Competence: ${match.text}`,
-                  scalingLabels,
-                );
+              // Apply zero-shot classification
+              const scalingClassification = await ZeroShot.classify(
+                `Task: ${description} | Competence: ${match.text}`,
+                scalingLabels,
+              );
 
-                if (scalingClassification) {
-                  if (
-                    // @ts-ignore - ZeroShot classification result structure
-                    scalingClassification.labels[0] === scalingLabels[2] &&
-                    // @ts-ignore
-                    scalingClassification.scores[0] > 0.65
-                  ) {
-                    // Perfect match - keep as is
-                    match.distance *= labelScalar[2];
-                    flag = 'aligning';
-                  }
+              if (scalingClassification) {
+                if (
                   // @ts-ignore - ZeroShot classification result structure
-                  else if (scalingClassification.labels[0] === scalingLabels[1]) {
-                    // Mediocre match - scale it down
-                    match.distance *= labelScalar[1];
-                    flag = 'neutral';
-                  }
+                  scalingClassification.labels[0] === scalingLabels[2] &&
+                  // @ts-ignore
+                  scalingClassification.scores[0] > 0.65
+                ) {
+                  // Perfect match - keep as is
+                  match.distance *= labelScalar[2];
+                  flag = 'aligning';
                 }
-
-                // Store match result for reasoning workaround
-                matchResults[description].push({
-                  jobId,
-                  taskId,
-                  taskText: description,
-                  competenceId: match.competenceId,
-                  resourceId: match.resourceId,
-                  text: match.text,
-                  type: match.type as 'name' | 'description' | 'proficiencyLevel',
-                  alignment: flag,
-                  distance: match.distance,
-                  reason: match.reason,
-                });
-              } catch (error) {
-                // Log error for individual match processing but continue
-                workerLogger(
-                  jobId,
-                  'error',
-                  `Failed to process match for task ${taskId}`,
-                  {
-                    threadId,
-                    taskId,
-                    competenceId: match.competenceId,
-                  },
-                  error instanceof Error ? error : new Error(String(error)),
-                );
-
-                // Individual match errors don't fail the entire job
-                parentPort!.postMessage({
-                  type: 'error',
-                  jobId,
-                  error: `Failed to process match for task ${taskId}: ${error instanceof Error ? error.message : String(error)}`,
-                });
+                // @ts-ignore - ZeroShot classification result structure
+                else if (scalingClassification.labels[0] === scalingLabels[1]) {
+                  // Mediocre match - scale it down
+                  match.distance *= labelScalar[1];
+                  flag = 'neutral';
+                }
+                // @ts-ignore - ZeroShot classification result structure
+                else if (scalingClassification.labels[0] === scalingLabels[0]) {
+                  // Poor match - scale it down significantly
+                  match.distance *= labelScalar[0];
+                  flag = 'contradicting';
+                }
               }
+
+              // Store match result for reasoning workaround
+              matchResults[description].push({
+                jobId,
+                taskId,
+                taskText: description,
+                competenceId: match.competenceId,
+                resourceId: match.resourceId,
+                text: match.text,
+                type: match.type as 'name' | 'description' | 'proficiencyLevel',
+                alignment: flag,
+                distance: match.distance,
+                reason: match.reason,
+              });
             }
           } catch (error) {
             // Log error for task processing but continue with other tasks

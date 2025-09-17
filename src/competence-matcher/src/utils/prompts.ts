@@ -109,16 +109,77 @@ export const SEMANTIC_SPLITTER: Message[] = [
  * -------------------------------------------------------------
  */
 
+// const MATCH_REASON_INTRUCT: Message = {
+//   role: 'system',
+//   content: `
+//     You are an expert in generating reasons for matching scores between tasks and competences.
+//     Your task is to generate a reason for the matching score between a task and a competence.
+//     The reason should be one to three short, concise sentence that explain why the task and competence match as well as they did or why they did not match that well.
+//     Do not mention the similarity score in your response.
+//     The reason should be based on the text of the task and the competence and their estimated normalized similarity score.
+//     The similarity score is a number between 0 and 1, where 0 means no similarity and 1 means perfect similarity.
+//     Do not mention the similarity score in your response.
+//     `,
+// };
+
+// const MATCH_REASON_EXAMPLES: Message[] = [
+//   {
+//     role: 'user',
+//     content: `
+//         Task: Operate CNC milling machines to produce precision metal parts.
+//         Competence: Experience with CNC milling machines and precision machining.
+//         Similarity Score: 0.95
+//     `,
+//   },
+//   {
+//     role: 'assistant',
+//     content: `
+//         The statements match very well because the task requires operating CNC milling machines, which is exactly what the competence is about.
+//     `,
+//   },
+//   {
+//     role: 'user',
+//     content: `
+//         Task: Assemble circuit boards according to schematic diagrams.
+//         Competence: Basic knowledge of electronics and soldering skills.
+//         Similarity Score: 0.65
+//     `,
+//   },
+//   {
+//     role: 'assistant',
+//     content: `
+//         The the statements have a moderate match because while assembling circuit boards requires some knowledge of electronics, it does not specifically require advanced soldering skills.
+//     `,
+//   },
+//   {
+//     role: 'user',
+//     content: `
+//         Task: Prepare raw materials for production.
+//         Competence: Experience with inventory management and supply chain logistics.
+//         Similarity Score: 0.30
+//     `,
+//   },
+//   {
+//     role: 'assistant',
+//     content: `
+//         The statements have a low match because preparing raw materials is a basic task that does not require advanced inventory management or supply chain logistics skills.
+//     `,
+//   },
+// ];
+
 const MATCH_REASON_INTRUCT: Message = {
   role: 'system',
   content: `
-    You are an expert in generating reasons for matching scores between tasks and competences.
+    You are an expert in generating reasons for matching scores and their alignment between tasks and competences.
     Your task is to generate a reason for the matching score between a task and a competence.
+    In addition to the score - which is the normalized similarity score between the task and competence - you also receive an alignment label which can be one of 'aligning', 'neutral' or 'contradicting'.
+    The alignment label indicates whether the task and competence are well aligned ('aligning'), not really related, so do not match well nor badly ('neutral') or are in conflict with each other ('contradicting').
     The reason should be one to three short, concise sentence that explain why the task and competence match as well as they did or why they did not match that well.
-    Do not mention the similarity score in your response.
-    The reason should be based on the text of the task and the competence and their estimated normalized similarity score.
+    Do not mention the similarity score or alignment label in your response.
+    The reason should be based on the text of the task and the competence and their estimated normalized similarity score and alignment.
     The similarity score is a number between 0 and 1, where 0 means no similarity and 1 means perfect similarity.
     Do not mention the similarity score in your response.
+    Do not mention the alignment label in your response.
     `,
 };
 
@@ -129,6 +190,7 @@ const MATCH_REASON_EXAMPLES: Message[] = [
         Task: Operate CNC milling machines to produce precision metal parts.
         Competence: Experience with CNC milling machines and precision machining.
         Similarity Score: 0.95
+        Alignment: aligning
     `,
   },
   {
@@ -137,12 +199,29 @@ const MATCH_REASON_EXAMPLES: Message[] = [
         The statements match very well because the task requires operating CNC milling machines, which is exactly what the competence is about.
     `,
   },
+
+  {
+    role: 'user',
+    content: `
+        Task: Delivering packages to customers on time. Driving a delivery van safely through city traffic. Loading and unloading packages efficiently. Communicating with customers professionally. Planning optimal delivery routes using GPS technology.
+        Competence: Has no drivers license and cannot operate vehicles.
+        Similarity Score: 0.16
+        Alignment: contradicting
+    `,
+  },
+  {
+    role: 'assistant',
+    content: `
+        The statements do not match. The task requires driving a delivery van, but the competence indicates that the person cannot operate vehicles at all.
+    `,
+  },
   {
     role: 'user',
     content: `
         Task: Assemble circuit boards according to schematic diagrams.
         Competence: Basic knowledge of electronics and soldering skills.
         Similarity Score: 0.65
+        Alignment: aligning
     `,
   },
   {
@@ -156,13 +235,14 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     content: `
         Task: Prepare raw materials for production.
         Competence: Experience with inventory management and supply chain logistics.
-        Similarity Score: 0.30
+        Similarity Score: 0.49
+        Alignment: neutral
     `,
   },
   {
     role: 'assistant',
     content: `
-        The statements have a low match because preparing raw materials is a basic task that does not require advanced inventory management or supply chain logistics skills.
+        The statements have a relativly low match because preparing raw materials is a basic task that does not require advanced inventory management or supply chain logistics skills.
     `,
   },
 ];

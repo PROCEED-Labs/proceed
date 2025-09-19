@@ -10,7 +10,7 @@ import { Alert } from 'antd';
 import { App, Form, Input, Space } from 'antd';
 import PhoneInput from '@/components/phone-input';
 import { useRouter } from 'next/navigation';
-import DeleteOrganizationButton from './delete-organization-button';
+import DeleteOrganizationButton from '@/app/(dashboard)/[environmentId]/management/@organizationSettings/delete-organization-button';
 import { updateOrganization as serverUpdateOrganization } from '@/lib/data/environments';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { UserOrganizationEnvironmentInputSchema } from '@/lib/data/environment-schema';

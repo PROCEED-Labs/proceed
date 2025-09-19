@@ -212,14 +212,16 @@ async function writeSeedToDb(seed: DBSeed) {
     const existingAdmins = await tx.systemAdmin.findMany({
       where: {
         userId: {
-          in: seed.systemSettings.msAdministrators,
+          in: seed.systemSettings.msAdministrators.map(
+            (userName) => usernameToId.get(userName) as string,
+          ),
         },
       },
     });
 
     for (const adminUsername of seed.systemSettings.msAdministrators) {
       const userId = usernameToId.get(adminUsername);
-      if (existingAdmins.find((u) => u.id === userId)) continue;
+      if (existingAdmins.find((u) => u.userId === userId)) continue;
 
       await addSystemAdmin(
         {

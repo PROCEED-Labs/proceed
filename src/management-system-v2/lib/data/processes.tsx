@@ -650,7 +650,7 @@ export const saveProcessHtmlForm = async (
       UserErrorType.ConstraintError,
     );
 
-  _saveProcessHtmlForm(definitionId, fileName, json, html);
+  _saveProcessHtmlForm(definitionId, fileName, json, html, undefined, true);
 };
 
 export const getProcessScriptTaskData = async (

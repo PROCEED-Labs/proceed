@@ -1,5 +1,4 @@
 import { Editor, Frame } from '@craftjs/core';
-import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';

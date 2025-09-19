@@ -17,6 +17,7 @@ const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
 interface FileManagerHookProps {
   entityType: EntityType;
   errorToasts?: boolean;
+  dontUpdateProcessArtifactsReferences?: boolean;
 }
 
 interface FileOperationResult {
@@ -25,7 +26,11 @@ interface FileOperationResult {
   fileUrl?: string;
 }
 
-export function useFileManager({ entityType, errorToasts = true }: FileManagerHookProps) {
+export function useFileManager({
+  entityType,
+  errorToasts = true,
+  dontUpdateProcessArtifactsReferences = false,
+}: FileManagerHookProps) {
   const queryClient = useQueryClient();
   const { spaceId } = useEnvironment();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -46,6 +51,10 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
           entityId,
           fileType,
           filePath,
+          undefined,
+          {
+            saveWithoutSavingReference: dontUpdateProcessArtifactsReferences,
+          },
         );
         if (!('presignedUrl' in result) || !result.presignedUrl)
           throw new Error('Failed to get presignedUrl');
@@ -56,6 +65,7 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
           environmentId: spaceId,
           entityId,
           entityType,
+          ...(dontUpdateProcessArtifactsReferences ? { saveWithoutSavingReference: 'true' } : {}),
           ...(filePath ? { filePath } : {}),
         })}`;
 
@@ -177,7 +187,9 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
     mutationFn: async ({ entityId, filePath }) => {
       if (entityType === EntityType.PROCESS) {
         if (!filePath) throw new Error('File name is required when deleting process entity type');
-        await updateFileDeletableStatus(filePath, true, entityId);
+        if (!dontUpdateProcessArtifactsReferences) {
+          await updateFileDeletableStatus(filePath, true, entityId);
+        }
       } else {
         await deleteEntityFile(entityType, entityId, filePath);
       }

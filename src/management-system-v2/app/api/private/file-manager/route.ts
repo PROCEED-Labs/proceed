@@ -113,6 +113,8 @@ export async function PUT(request: NextRequest) {
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId');
   const filePath = searchParams.get('filePath');
+  const saveWithoutSavingReference = !!searchParams.get('saveWithoutSavingReference');
+
   if (!entityId || !environmentId || !entityType || !filePath) {
     return new NextResponse(null, {
       status: 400,
@@ -190,6 +192,7 @@ export async function PUT(request: NextRequest) {
       fileType.mime,
       filePath,
       buffer,
+      { saveWithoutSavingReference },
     );
 
     if ('error' in res) throw new Error((res.error as any).message);

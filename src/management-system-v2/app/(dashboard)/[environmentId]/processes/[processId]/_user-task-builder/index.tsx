@@ -144,9 +144,8 @@ const EditorModal: React.FC<BuilderModalProps> = ({
 
   const handleSave = async () => {
     const json = query.serialize();
-    if (modeler && affectedElement) {
-      const html = toHtml(json);
 
+    if (modeler && affectedElement) {
       let fileNameAttribute = '';
       let additionalChanges = {};
 

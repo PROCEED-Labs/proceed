@@ -25,6 +25,7 @@ interface ImageUploadProps {
   config: {
     entityType: EntityType; // to decide where to save the file
     entityId: string; // needed for folder hierarchy
+    dontUpdateProcessArtifactsReferences?: boolean;
   };
   fileManagerErrorToasts?: boolean;
   imageProps?: ImageProps;
@@ -71,6 +72,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   } = useFileManager({
     entityType: config.entityType,
     errorToasts: fileManagerErrorToasts,
+    dontUpdateProcessArtifactsReferences: config.dontUpdateProcessArtifactsReferences,
   });
 
   useEffect(() => {

@@ -101,6 +101,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
             config={{
               entityType: EntityType.PROCESS,
               entityId: processId,
+              dontUpdateProcessArtifactsReferences: true,
             }}
             uploadProps={{
               style: { width: width && `${width}%` },

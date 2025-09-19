@@ -66,7 +66,10 @@ export async function getClient(
     const savedClient = proceedMqttEngineClients.get(brokerAddress);
     if (savedClient) return savedClient;
 
-    const client = await mqtt.connectAsync(brokerAddress, options);
+    const client = await mqtt.connectAsync(brokerAddress, {
+      rejectUnauthorized: false, // allow self-signed certificates, could be removed later and implemented as an option in the UI
+      ...options,
+    });
     const engineMap = new Map();
 
     collectEnginesStatus({ client, brokerAddress, engineMap });
@@ -76,7 +79,10 @@ export async function getClient(
     return client;
   }
 
-  return await mqtt.connectAsync(brokerAddress, options);
+  return await mqtt.connectAsync(brokerAddress, {
+    rejectUnauthorized: false, // allow self-signed certificates, could be removed later and implemented as an option in the UI
+    ...options,
+  });
 }
 
 export async function getCollectedProceedMqttEngines(

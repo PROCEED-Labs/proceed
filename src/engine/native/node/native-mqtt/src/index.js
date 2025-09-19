@@ -115,6 +115,7 @@ class NativeMQTT extends NativeModule {
     // connect to the mqtt server using optional parameters like username and password
     const client = await mqtt.connectAsync(url, {
       clean: true, // don't reuse an earlier connection
+      rejectUnauthorized: false, // allow self-signed certificates, could be removed later and implemented as an option
       ...connectionOptions,
     });
 

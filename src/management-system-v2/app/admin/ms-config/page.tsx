@@ -48,34 +48,18 @@ async function ConfigPage() {
           key: 'PROCEED_PUBLIC_GENERAL_MS_LOGO',
           value: msConfig.PROCEED_PUBLIC_GENERAL_MS_LOGO,
         },
-        {
-          type: 'string',
-          name: 'PROCEED_PUBLIC_GENERAL_DEFAULT_CURRENCY',
-          key: 'PROCEED_PUBLIC_GENERAL_DEFAULT_CURRENCY',
-          value: msConfig.PROCEED_PUBLIC_GENERAL_DEFAULT_CURRENCY,
-        },
-        {
-          type: 'string',
-          name: 'PROCEED_PUBLIC_GENERAL_DEFAULT_TIME_FORMAT',
-          key: 'PROCEED_PUBLIC_GENERAL_DEFAULT_TIME_FORMAT',
-          value: msConfig.PROCEED_PUBLIC_GENERAL_DEFAULT_TIME_FORMAT,
-        },
-        {
-          type: 'string',
-          name: 'PROCEED_PUBLIC_GENERAL_DEFAULT_DATE_FORMAT',
-          key: 'PROCEED_PUBLIC_GENERAL_DEFAULT_DATE_FORMAT',
-          value: msConfig.PROCEED_PUBLIC_GENERAL_DEFAULT_DATE_FORMAT,
-        }, // TODO
-        // Additional Navigation Elements (no Env Var): list in table format with columns Name*, Icon*, URL*, Show Status   (* = required, "Icon" can be selected from a predefined list, "URL" can be HTTP(S) or MQTT, "Show Status" tests with HTTP GET or MQTT Connection setup if the system is online and shows a green or red dot next to the navigation element)
       ],
     },
     {
       name: 'Process Documentation',
       key: 'msconfig-process-documentation',
       children: [
-        //TODO
-        // Process Modeling Style Rules (no Env Var): rule list with checkboxes (popup-modal)
-        // Process Import Validation Rules (no Env Var): rule list with checkboxes (popup-modal)
+        {
+          type: 'boolean',
+          name: 'PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE',
+          key: 'PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE',
+          value: msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE,
+        },
         {
           type: 'boolean',
           name: 'PROCEED_PUBLIC_GANTT_ACTIVE',
@@ -99,9 +83,9 @@ async function ConfigPage() {
         },
         {
           type: 'boolean',
-          name: 'PROCEED_PUBLIC_GANTT_ACTIVE',
-          key: 'PROCEED_PUBLIC_GANTT_ACTIVE',
-          value: msConfig.PROCEED_PUBLIC_GANTT_ACTIVE,
+          name: 'PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE',
+          key: 'PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE',
+          value: msConfig.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE,
         },
       ],
     },

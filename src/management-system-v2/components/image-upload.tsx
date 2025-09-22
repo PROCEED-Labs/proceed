@@ -245,45 +245,52 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           {...imageProps}
         />
 
-        <Space
+        <div
           style={{
-            zIndex: 20,
+            zIndex: 10,
             // The mask was done this way, since otherwise it wouldn't work in the task builder, as
             // there ant design's style don't work
             display: maskVisible && !loadingIndicator ? 'flex' : 'none',
             // center div
             position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
+            width: '100%',
+            height: '100%',
+            top: 0,
+            left: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.2)',
           }}
         >
-          <Button type="default" ghost>
-            {imageExists ? <EditOutlined /> : 'Add Image'}
-          </Button>
-
-          {imageExists && deletable && (
-            <Button
-              onClick={async (e) => {
-                e.stopPropagation(); // Don't trigger upload
-
-                try {
-                  await remove({ entityId: config.entityId, filePath: fileName });
-
-                  setFileUrl(undefined);
-                  setComponentManagedFileName(undefined);
-                  onImageUpdate?.(undefined);
-                } catch (error) {
-                  onUploadFail?.();
-                }
-              }}
-              type="default"
-              ghost
-            >
-              <DeleteOutlined />
+          <div style={{ display: 'flex', gap: '.5rem' }}>
+            <Button type="default" ghost>
+              {imageExists ? <EditOutlined /> : 'Add Image'}
             </Button>
-          )}
-        </Space>
+
+            {imageExists && deletable && (
+              <Button
+                onClick={async (e) => {
+                  e.stopPropagation(); // Don't trigger upload
+
+                  try {
+                    await remove({ entityId: config.entityId, filePath: fileName });
+
+                    setFileUrl(undefined);
+                    setComponentManagedFileName(undefined);
+                    onImageUpdate?.(undefined);
+                  } catch (error) {
+                    onUploadFail?.();
+                  }
+                }}
+                type="default"
+                ghost
+              >
+                <DeleteOutlined />
+              </Button>
+            )}
+          </div>
+        </div>
       </Upload>
     </div>
   );

@@ -42,7 +42,17 @@ export const getCurrentUser = cache(async () => {
   if (userId !== '' && !user) {
     const cookieStore = cookies();
     const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
-    redirect(`/api/private/signout?csrfToken=${csrfToken}`);
+
+    const searchParams = new URLSearchParams({ csrfToken });
+
+    if (session?.user.isGuest) {
+      searchParams.append(
+        'callbackUrl',
+        `/signin?error=${encodeURIComponent('$info You have previously used PROCEED as a Guest. This account and your data have been deleted due to discontinued use. If you want to avoid this, please log in as a user.')}`,
+      );
+    }
+
+    redirect(`/api/private/signout?${searchParams}`);
   }
 
   return { session, userId, systemAdmin, user };

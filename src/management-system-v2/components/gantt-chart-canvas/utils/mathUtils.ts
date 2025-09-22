@@ -6,8 +6,6 @@
  * for using pure functions for mathematical operations.
  */
 
-import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../core/constants';
-
 /**
  * Convert time (milliseconds) to pixel position using scale and translate
  * Pure function implementation of coordinate transformation
@@ -142,23 +140,6 @@ export function timeRangeIntersection(
   }
 
   return [Math.max(start1, start2), Math.min(end1, end2)];
-}
-
-/**
- * Format duration in human-readable format
- */
-export function formatDuration(milliseconds: number): string {
-  const days = Math.floor(milliseconds / MS_PER_DAY);
-  const hours = Math.floor((milliseconds % MS_PER_DAY) / MS_PER_HOUR);
-  const minutes = Math.floor((milliseconds % MS_PER_HOUR) / MS_PER_MINUTE);
-
-  if (days > 0) {
-    return `${days}d ${hours}h`;
-  } else if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else {
-    return `${minutes}m`;
-  }
 }
 
 /**

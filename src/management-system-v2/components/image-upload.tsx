@@ -112,7 +112,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     try {
       if (!(file instanceof File) || !('size' in file)) return;
 
-      const fileName = file.name;
+      const uploadFileName = file.name;
       let image: File | Blob = file;
       if (file.size > 2000000) {
         image = await scaleDownImage(file, 1500);
@@ -126,7 +126,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       const { uploadUrl } = await getUploadUrl({
         fileType: image.type,
         entityId: config.entityId,
-        filePath: fileName,
+        filePath: uploadFileName,
       });
 
       const xhr = new XMLHttpRequest();

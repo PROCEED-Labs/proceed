@@ -34,8 +34,6 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
           borderRadius: '6px',
           border: '1px solid #d9d9d9',
         },
-        role: 'group',
-        ['aria-label']: 'image-section',
       }}
     />
   );

@@ -192,6 +192,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       }}
       onMouseEnter={() => setMaskVisible(true)}
       onMouseLeave={() => setMaskVisible(false)}
+      role="group"
+      aria-label="image-upload"
     >
       {loadingIndicator && (
         <div
@@ -239,7 +241,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             mask: false,
           }}
           role="group"
-          aria-label="image-section"
+          alt="Image"
           {...imageProps}
         />
 

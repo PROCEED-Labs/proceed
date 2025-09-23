@@ -12,7 +12,6 @@ import {
   BarChartOutlined,
   EditOutlined,
   CopyOutlined,
-  CheckSquareOutlined,
   NodeExpandOutlined,
   PlaySquareOutlined,
   LaptopOutlined,
@@ -103,17 +102,6 @@ const DashboardLayout = async ({
     activeEnvironment.spaceId,
     'process-automation',
   );
-  if (
-    msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
-    automationSettings.active !== false &&
-    automationSettings.tasklist?.active !== false
-  ) {
-    layoutMenuItems.push({
-      key: 'tasklist',
-      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
-      icon: <CheckSquareOutlined />,
-    });
-  }
 
   if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && can('view', 'Process')) {
     const documentationSettings = await getSpaceSettingsValues(

@@ -1,10 +1,11 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
+import { FC, PropsWithChildren, createContext, use, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Layout as AntLayout,
+  Badge,
   Button,
   Drawer,
   Grid,
@@ -13,6 +14,7 @@ import {
   Modal,
   Tooltip,
 } from 'antd';
+import { CheckSquareOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
@@ -24,12 +26,14 @@ import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
-import { useFileManager } from '@/lib/useFileManager';
-import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useSession } from '@/components/auth-can';
 import ChangeUserPasswordModal from './profile/change-password-modal';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import useMSLogo from '@/lib/use-ms-logo';
+import { getSpaceSettingsValues } from '@/lib/data/space-settings';
+import { useQuery } from '@tanstack/react-query';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import useUserTasks from '@/lib/use-user-tasks';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -88,6 +92,48 @@ const Layout: FC<
   );
 
   let layoutMenuItems = _layoutMenuItems;
+
+  const { data: automationSettings } = useQuery({
+    queryFn: async () => {
+      return wrapServerCall({
+        fn: async () => getSpaceSettingsValues(activeSpace.spaceId, 'process-automation'),
+        onSuccess: false,
+      });
+    },
+    queryKey: ['space-settings', activeSpace.spaceId, 'process-automation'],
+  });
+
+  const env = use(EnvVarsContext);
+
+  const userTaskFilter = useMemo(
+    () => ({
+      hideUnassignedTasks: true,
+      hideNonOwnableTasks: true,
+    }),
+    [],
+  );
+
+  const { userTasks } = useUserTasks(activeSpace, 2000, userTaskFilter);
+
+  if (
+    env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+    automationSettings &&
+    automationSettings.active !== false &&
+    automationSettings.tasklist?.active !== false
+  ) {
+    layoutMenuItems = [
+      {
+        key: 'tasklist',
+        label: (
+          <Badge count={userTasks?.length}>
+            <Link href={spaceURL(activeSpace, `/tasklist`)}>My Tasks</Link>
+          </Badge>
+        ),
+        icon: <CheckSquareOutlined />,
+      },
+      ...layoutMenuItems,
+    ];
+  }
 
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(

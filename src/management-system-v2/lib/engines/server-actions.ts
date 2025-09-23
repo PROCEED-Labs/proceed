@@ -222,6 +222,101 @@ export async function getAvailableTaskListEntries(spaceId: string) {
   }
 }
 
+export async function getAvailableTaskListEntriesNew(spaceId: string, engines: Engine[]) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    let stored = await getUserTasks();
+
+    if ('error' in stored) {
+      throw stored.error;
+    }
+
+    const removedTasks = [] as string[];
+
+    const fetched = (
+      await asyncMap(engines, async (engine) => {
+        try {
+          const taskList = await getTaskListFromMachine(engine);
+
+          // check if we have stored user tasks for this machine which have been removed from the
+          // machine
+          const removedFromMachine = Object.fromEntries(
+            (stored as UserTask[])
+              .filter((task) => task.machineId === engine.id)
+              .map((task) => [task.id, task]),
+          );
+          taskList.forEach(
+            (task) => delete removedFromMachine[`${task.id}|${task.instanceID}|${task.startTime}`],
+          );
+          removedTasks.push(...Object.keys(removedFromMachine));
+
+          return taskList.map((task) => ({
+            ...task,
+            machineId: engine.id,
+            potentialOwners: task.performers,
+          }));
+        } catch (e) {
+          return null;
+        }
+      })
+    )
+      .filter(truthyFilter)
+      .flat()
+      .map(
+        (task) =>
+          ({
+            ...task,
+            id: `${task.id}|${task.instanceID}|${task.startTime}`,
+            taskId: task.id,
+            fileName: task.attrs['proceed:fileName'],
+            milestones: undefined,
+          }) as UserTask,
+      );
+
+    const newTasks: UserTask[] = [];
+    const changedTasks: UserTask[] = [];
+
+    fetched.forEach((task) => {
+      const alreadyStored = (stored as UserTask[]).some((t) => t.id === task.id);
+      if (alreadyStored) {
+        // TODO: maybe check if the task actually changed
+        changedTasks.push(task);
+      } else {
+        newTasks.push(task);
+      }
+    });
+
+    if (newTasks.length) await addUserTasks(newTasks);
+    await asyncForEach(changedTasks, async (task) => {
+      delete task.milestones;
+      await updateUserTask(task.id, task);
+    });
+    await asyncForEach(removedTasks, async (id) => {
+      await deleteUserTask(id);
+      stored = (stored as UserTask[]).filter((task) => task.id !== id);
+    });
+
+    return [
+      ...fetched,
+      ...stored
+        .filter((task) => !fetched.some((t) => t.id === task.id))
+        .map(
+          (task) =>
+            ({
+              ...task,
+              startTime: +task.startTime,
+              endTime: task.endTime && +task.endTime,
+            }) as UserTask,
+        ),
+    ];
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
 export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, filename: string) {
   try {
     if (!enableUseDB)

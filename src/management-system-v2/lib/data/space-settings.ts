@@ -13,8 +13,7 @@ import { UnauthorizedError } from '../ability/abilityHelper';
 
 export async function getSpaceSettingsValues(spaceId: string, searchKey: string) {
   try {
-    const { ability } = await getCurrentEnvironment(spaceId);
-    return await _getSpaceSettingsValues(spaceId, searchKey, ability);
+    return await _getSpaceSettingsValues(spaceId, searchKey);
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('You do not have permission view settings', UserErrorType.PermissionError);

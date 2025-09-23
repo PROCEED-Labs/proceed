@@ -7,22 +7,21 @@ import { removeInactiveSpaces } from './data/db/iam/environments';
 import { removeExpiredEmailVerificationTokens } from './data/db/iam/verification-tokens';
 
 const global = globalThis as any;
-let job: CronJob | undefined = global.schedulerCronJob;
 
 /** Restart cronjob with new ms config values or start it, in the case that no job was running */
 export async function restartInternalScheduler() {
   try {
     const msConfig = await getMSConfig({ dontForceDynamicThroughHeaders: true });
 
-    if (job) {
-      await job.stop();
-      job = undefined;
+    if (global.schedulerCronJob) {
+      await global.schedulerCronJob.stop();
+      global.schedulerCronJob = undefined;
     }
 
     // NOTE: not sure if doing this here may be too much functionality in one function
     if (!msConfig.SCHEDULER_INTERNAL_ACTIVE) return;
 
-    job = CronJob.from({
+    global.schedulerCronJob = CronJob.from({
       cronTime: msConfig.SCHEDULER_INTERVAL,
       onTick: async function () {
         try {

@@ -53,7 +53,6 @@
     "monaco-editor": "0.47.0",
     "next": "14.2.3",
     "next-auth": "5.0.0-beta.25",
-    "node-cron": "^3.0.3",
     "nodemailer": "6.9.13",
     "openapi-fetch": "0.8.2",
     "react": "18.2.0",
@@ -72,7 +71,8 @@
     "react-resizable": "^3.0.5",
     "mqtt": "^5.10.1",
     "bcryptjs": "3.0.2",
-    "sharp": "0.34.3"
+    "sharp": "0.34.3",
+    "cron": "4.3.3"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "5.28.11",

@@ -154,6 +154,7 @@ export const msConfigSchema = {
     IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID: z.string().default(''),
     IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET: z.string().default(''),
 
+    SCHEDULER_INTERNAL_ACTIVE: z.string().optional().transform(boolParser),
     SCHEDULER_INTERVAL: z.string().default('0 3 * * *'),
     SCHEDULER_TOKEN: z.string().optional(),
     SCHEDULER_JOB_DELETE_INACTIVE_GUESTS: z.coerce.number().default(30),

@@ -59,7 +59,7 @@ const Layout: FC<
     disableUserDataModal?: boolean;
     userNeedsToChangePassword?: boolean;
     bottomMenuItems?: NonNullable<MenuProps['items']>;
-    showTasklisSidebarEntry?: boolean;
+    showTasklistSidebarEntry?: boolean;
   }>
 > = ({
   loggedIn,
@@ -72,7 +72,7 @@ const Layout: FC<
   disableUserDataModal = false,
   userNeedsToChangePassword: _userNeedsToChangePassword,
   bottomMenuItems,
-  showTasklisSidebarEntry,
+  showTasklistSidebarEntry,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -91,13 +91,18 @@ const Layout: FC<
 
   let layoutMenuItems = _layoutMenuItems;
 
-  const { userTasks } = useUserTasks(activeSpace, 2000, {
-    allowedStates: ['READY', 'ACTIVE'],
-    hideUnassignedTasks: activeSpace.isOrganization,
-    hideNonOwnableTasks: true,
-  });
+  const { userTasks } = useUserTasks(
+    activeSpace,
+    2000,
+    {
+      allowedStates: ['READY', 'ACTIVE'],
+      hideUnassignedTasks: activeSpace.isOrganization,
+      hideNonOwnableTasks: true,
+    },
+    !showTasklistSidebarEntry,
+  );
 
-  if (showTasklisSidebarEntry) {
+  if (showTasklistSidebarEntry) {
     layoutMenuItems = [
       {
         key: 'tasklist',

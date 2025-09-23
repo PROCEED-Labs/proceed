@@ -13,6 +13,7 @@ function useUserTasks(
     hideUnassignedTasks?: boolean;
     hideNonOwnableTasks?: boolean;
   },
+  disabled?: boolean,
 ) {
   const { data: engines } = useEngines(space);
 
@@ -72,6 +73,7 @@ function useUserTasks(
       filter?.hideUnassignedTasks,
     ],
     refetchInterval: fetchInterval,
+    enabled: !disabled,
   });
 
   return { engines, userTasks: query.data, ...query };

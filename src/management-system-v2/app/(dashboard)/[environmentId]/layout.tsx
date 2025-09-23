@@ -313,7 +313,7 @@ const DashboardLayout = async ({
               <LinkOutlined />
             ),
           }))}
-          showTasklisSidebarEntry={
+          showTasklistSidebarEntry={
             msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
             automationSettings &&
             automationSettings.active !== false &&

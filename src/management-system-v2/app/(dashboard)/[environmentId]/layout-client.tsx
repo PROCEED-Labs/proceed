@@ -28,7 +28,6 @@ import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
 import { useSession } from '@/components/auth-can';
 import ChangeUserPasswordModal from './profile/change-password-modal';
-import { EnvVarsContext } from '@/components/env-vars-context';
 import useMSLogo from '@/lib/use-ms-logo';
 import { getSpaceSettingsValues } from '@/lib/data/space-settings';
 import { useQuery } from '@tanstack/react-query';
@@ -63,6 +62,7 @@ const Layout: FC<
     disableUserDataModal?: boolean;
     userNeedsToChangePassword?: boolean;
     bottomMenuItems?: NonNullable<MenuProps['items']>;
+    showTasklisSidebarEntry?: boolean;
   }>
 > = ({
   loggedIn,
@@ -75,6 +75,7 @@ const Layout: FC<
   disableUserDataModal = false,
   userNeedsToChangePassword: _userNeedsToChangePassword,
   bottomMenuItems,
+  showTasklisSidebarEntry,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -103,24 +104,18 @@ const Layout: FC<
     queryKey: ['space-settings', activeSpace.spaceId, 'process-automation'],
   });
 
-  const env = use(EnvVarsContext);
-
   const userTaskFilter = useMemo(
     () => ({
-      hideUnassignedTasks: true,
+      allowedStates: ['READY', 'ACTIVE'],
+      hideUnassignedTasks: activeSpace.isOrganization,
       hideNonOwnableTasks: true,
     }),
-    [],
+    [activeSpace.isOrganization],
   );
 
   const { userTasks } = useUserTasks(activeSpace, 2000, userTaskFilter);
 
-  if (
-    env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
-    automationSettings &&
-    automationSettings.active !== false &&
-    automationSettings.tasklist?.active !== false
-  ) {
+  if (showTasklisSidebarEntry) {
     layoutMenuItems = [
       {
         key: 'tasklist',

@@ -3,7 +3,6 @@
 import React from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import cn from 'classnames';
 
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -20,11 +19,7 @@ import { useEnvironment } from '@/components/auth-can';
 import styles from './user-task-view.module.scss';
 
 import { Skeleton } from 'antd';
-import { UserTask } from '@/lib/user-task-schema';
-
-export type ExtendedTaskListEntry = Omit<UserTask, 'actualOwner'> & {
-  actualOwner: { id: string; name: string; userName?: string }[];
-};
+import { ExtendedTaskListEntry } from '@/lib/user-task-schema';
 
 type UserTaskFormProps = {
   html?: string;
@@ -98,7 +93,6 @@ type TaskListUserTaskFormProps = {
 };
 
 const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userId }) => {
-  const router = useRouter();
   const { spaceId } = useEnvironment();
 
   const { data: html } = useQuery({
@@ -144,7 +138,6 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
               }
               return await completeTasklistEntry(spaceId, task.id, variables);
             },
-            onSuccess: () => router.refresh(),
           });
         }}
         onMilestoneUpdate={(newValues) =>

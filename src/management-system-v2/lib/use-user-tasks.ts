@@ -2,14 +2,14 @@ import { useSession } from '@/components/auth-can';
 import useEngines from '@/lib/engines/use-engines';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { getAvailableTaskListEntriesNew } from './engines/server-actions';
+import { getAvailableTaskListEntries } from './engines/server-actions';
 import { getUserRoles } from './data/roles';
 
 function useUserTasks(
   space: { spaceId: string; isOrganization: boolean },
   fetchInterval = 1000,
   filter?: {
-    showEndedTasks?: boolean;
+    allowedStates?: string[];
     hideUnassignedTasks?: boolean;
     hideNonOwnableTasks?: boolean;
   },
@@ -20,12 +20,12 @@ function useUserTasks(
 
   const queryFn = useCallback(async () => {
     if (engines) {
-      let result = await getAvailableTaskListEntriesNew(space.spaceId, engines);
+      let result = await getAvailableTaskListEntries(space.spaceId, engines);
 
       if ('error' in result) return [];
 
-      if (!filter?.showEndedTasks) {
-        result = result.filter((task) => ['READY', 'ACTIVE', 'PAUSED'].includes(task.state));
+      if (filter?.allowedStates) {
+        result = result.filter((task) => filter.allowedStates?.includes(task.state));
       }
 
       if (space.isOrganization && filter?.hideUnassignedTasks) {
@@ -64,7 +64,13 @@ function useUserTasks(
 
   const query = useQuery({
     queryFn,
-    queryKey: ['userTasks', space.spaceId],
+    queryKey: [
+      'userTasks',
+      space.spaceId,
+      filter?.allowedStates?.join(','),
+      filter?.hideNonOwnableTasks,
+      filter?.hideUnassignedTasks,
+    ],
     refetchInterval: fetchInterval,
   });
 

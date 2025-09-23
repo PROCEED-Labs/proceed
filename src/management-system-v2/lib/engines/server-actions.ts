@@ -11,7 +11,7 @@ import {
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
@@ -32,7 +32,7 @@ import {
   getCorrectMilestoneState,
   inlineScript,
 } from '@proceed/user-task-helper';
-import { UserTask } from '../user-task-schema';
+import { ExtendedTaskListEntry, UserTask } from '../user-task-schema';
 
 import {
   addUserTasks,
@@ -44,6 +44,7 @@ import {
 import { updateVariablesOnMachine } from './instances';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
+import { getUsersInSpace } from '../data/db/iam/memberships';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -125,104 +126,7 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
   }
 }
 
-export async function getAvailableTaskListEntries(spaceId: string) {
-  try {
-    if (!enableUseDB)
-      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
-
-    const engines = await getCorrectTargetEngines(spaceId);
-
-    let stored = await getUserTasks();
-
-    if ('error' in stored) {
-      throw stored.error;
-    }
-
-    const removedTasks = [] as string[];
-
-    const fetched = (
-      await asyncMap(engines, async (engine) => {
-        try {
-          const taskList = await getTaskListFromMachine(engine);
-
-          // check if we have stored user tasks for this machine which have been removed from the
-          // machine
-          const removedFromMachine = Object.fromEntries(
-            (stored as UserTask[])
-              .filter((task) => task.machineId === engine.id)
-              .map((task) => [task.id, task]),
-          );
-          taskList.forEach(
-            (task) => delete removedFromMachine[`${task.id}|${task.instanceID}|${task.startTime}`],
-          );
-          removedTasks.push(...Object.keys(removedFromMachine));
-
-          return taskList.map((task) => ({
-            ...task,
-            machineId: engine.id,
-            potentialOwners: task.performers,
-          }));
-        } catch (e) {
-          return null;
-        }
-      })
-    )
-      .filter(truthyFilter)
-      .flat()
-      .map(
-        (task) =>
-          ({
-            ...task,
-            id: `${task.id}|${task.instanceID}|${task.startTime}`,
-            taskId: task.id,
-            fileName: task.attrs['proceed:fileName'],
-            milestones: undefined,
-          }) as UserTask,
-      );
-
-    const newTasks: UserTask[] = [];
-    const changedTasks: UserTask[] = [];
-
-    fetched.forEach((task) => {
-      const alreadyStored = (stored as UserTask[]).some((t) => t.id === task.id);
-      if (alreadyStored) {
-        // TODO: maybe check if the task actually changed
-        changedTasks.push(task);
-      } else {
-        newTasks.push(task);
-      }
-    });
-
-    if (newTasks.length) await addUserTasks(newTasks);
-    await asyncForEach(changedTasks, async (task) => {
-      delete task.milestones;
-      await updateUserTask(task.id, task);
-    });
-    await asyncForEach(removedTasks, async (id) => {
-      await deleteUserTask(id);
-      stored = (stored as UserTask[]).filter((task) => task.id !== id);
-    });
-
-    return [
-      ...fetched,
-      ...stored
-        .filter((task) => !fetched.some((t) => t.id === task.id))
-        .map(
-          (task) =>
-            ({
-              ...task,
-              startTime: +task.startTime,
-              endTime: task.endTime && +task.endTime,
-            }) as UserTask,
-        ),
-    ];
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
-}
-
-export async function getAvailableTaskListEntriesNew(spaceId: string, engines: Engine[]) {
+export async function getAvailableTaskListEntries(spaceId: string, engines: Engine[]) {
   try {
     if (!enableUseDB)
       throw new Error('getAvailableTaskListEntries only available with enableUseDB');
@@ -298,7 +202,7 @@ export async function getAvailableTaskListEntriesNew(spaceId: string, engines: E
       stored = (stored as UserTask[]).filter((task) => task.id !== id);
     });
 
-    return [
+    const userTasks = [
       ...fetched,
       ...stored
         .filter((task) => !fetched.some((t) => t.id === task.id))
@@ -311,6 +215,45 @@ export async function getAvailableTaskListEntriesNew(spaceId: string, engines: E
             }) as UserTask,
         ),
     ];
+
+    return await asyncMap(userTasks, async (task) => {
+      const users: {
+        id: string;
+        username?: string | null;
+        firstName?: string | null;
+        lastName?: string | null;
+      }[] = await getUsersInSpace(spaceId);
+      const currentUser = await getCurrentUser();
+
+      if (currentUser.user?.isGuest === false && !users.some((u) => u.id === currentUser.userId)) {
+        // ensure that the current user is in the users list (not the case in personal spaces)
+        const {
+          userId,
+          user: { firstName, lastName, username },
+        } = currentUser;
+        users.push({
+          id: userId,
+          firstName: firstName,
+          lastName: lastName,
+          username: username,
+        });
+      }
+
+      const actualOwner = task.actualOwner.map((ownerId) => {
+        const user = users.find((u) => u.id === ownerId);
+
+        return {
+          id: ownerId,
+          name: user ? user.firstName + ' ' + user.lastName : '',
+          username: user?.username,
+        };
+      });
+
+      return {
+        ...task,
+        actualOwner,
+      } satisfies ExtendedTaskListEntry;
+    });
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

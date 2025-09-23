@@ -48,19 +48,19 @@ export async function allSchedulerTasks() {
   let message = '';
   await db.$transaction(async (tx) => {
     const removedArtifacts = await removeDeletedArtifactsFromDb(
-      msConfig.SCHEDULER_JOB_DELETE_OLD_ARTIFACTS * MS_IN_DAY,
+      msConfig.SCHEDULER_TASK_DELETE_OLD_ARTIFACTS * MS_IN_DAY,
       tx,
     );
     message += `Removed ${removedArtifacts.count} artifacts.\n`;
 
     const removedInactiveGuests = await deleteInactiveGuestUsers(
-      msConfig.SCHEDULER_JOB_DELETE_INACTIVE_GUESTS * MS_IN_DAY,
+      msConfig.SCHEDULER_TASK_DELETE_INACTIVE_GUESTS * MS_IN_DAY,
       tx,
     );
     message += `Removed ${removedInactiveGuests.count} inactive guests.\n`;
 
     const inactiveSpaces = await removeInactiveSpaces(
-      msConfig.SCHEDULER_JOB_DELETE_INACTIVE_SPACES * MS_IN_DAY,
+      msConfig.SCHEDULER_TASK_DELETE_INACTIVE_SPACES * MS_IN_DAY,
       tx,
     );
     message += `Removed ${inactiveSpaces.count} inactive spaces.\n`;

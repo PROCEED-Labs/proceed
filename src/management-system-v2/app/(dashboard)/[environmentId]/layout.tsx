@@ -78,6 +78,39 @@ const DashboardLayout = async ({
   const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
   const middleCustomNavLinks = customNavLinks.filter((link) => link.position === 'middle');
   const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');
+  const externalServicesLabel = (
+    <span style={{ display: 'block', width: '100%', textAlign: 'center', fontSize: '.75rem' }}>
+      External Services
+    </span>
+  );
+  let bottomNavLinks: MenuProps['items'] = [];
+  if (bottomCustomNavLinks.length > 0) {
+    const bottomCustomNavLinksMenuItems: MenuProps['items'] = bottomCustomNavLinks.map(
+      (link, idx) => ({
+        key: idx,
+        label: <CustomLink link={link} />,
+        icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
+      }),
+    );
+    if (middleCustomNavLinks.length > 0) {
+      // If we already show a external services label for the middle links, don't show one again for
+      // the bottom links
+      bottomNavLinks.push(...bottomCustomNavLinksMenuItems);
+    } else {
+      bottomNavLinks.push(
+        {
+          key: 'bottom-custom-links-divider',
+          type: 'divider',
+        },
+        {
+          key: 'bottom-custom-links',
+          type: 'group',
+          label: externalServicesLabel,
+          children: bottomCustomNavLinksMenuItems,
+        },
+      );
+    }
+  }
 
   const userPassword = await getUserPassword(user!.id);
   const userNeedsToChangePassword = userPassword ? userPassword.isTemporaryPassword : false;
@@ -287,17 +320,21 @@ const DashboardLayout = async ({
   }
 
   if (middleCustomNavLinks.length > 0) {
-    layoutMenuItems.push({
-      key: 'bottom-custom-links-divider',
-      type: 'divider',
-    });
-
     layoutMenuItems.push(
-      ...middleCustomNavLinks.map((link, idx) => ({
-        key: idx,
-        label: <CustomLink link={link} />,
-        icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
-      })),
+      {
+        key: 'middle-custom-links-divider',
+        type: 'divider',
+      },
+      {
+        key: 'middle-custom-links',
+        type: 'group',
+        label: externalServicesLabel,
+        children: middleCustomNavLinks.map((link, idx) => ({
+          key: idx,
+          label: <CustomLink link={link} />,
+          icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
+        })),
+      },
     );
   }
 
@@ -318,13 +355,7 @@ const DashboardLayout = async ({
           activeSpace={activeEnvironment}
           customLogo={logo}
           userNeedsToChangePassword={userNeedsToChangePassword}
-          bottomMenuItems={bottomCustomNavLinks.map((link, idx) => ({
-            key: idx,
-            label: <CustomLink link={link} />,
-            icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || (
-              <LinkOutlined />
-            ),
-          }))}
+          bottomMenuItems={bottomNavLinks}
         >
           {children}
         </Layout>

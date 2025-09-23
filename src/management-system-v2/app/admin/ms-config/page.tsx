@@ -7,11 +7,17 @@ import { getMSConfig, updateMSConfig, writeDefaultMSConfig } from '@/lib/ms-conf
 import MSConfigForm from './ms-config-form';
 import { userError } from '@/lib/user-error';
 import { SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';
+import { ConfigurableMSConfig } from '@/lib/ms-config/config-schema';
+import { restartInternalScheduler } from '@/lib/scheduler';
 
-async function saveConfig(newConfig: Record<string, string>) {
+async function saveConfig(changedValues: Record<keyof ConfigurableMSConfig, string>) {
   'use server';
   try {
-    await updateMSConfig(newConfig);
+    await updateMSConfig(changedValues);
+
+    if ('SCHEDULER_INTERNAL_ACTIVE' in changedValues || 'SCHEDULER_INTERVAL' in changedValues) {
+      await restartInternalScheduler();
+    }
   } catch (e) {
     return userError('Error saving config');
   }
@@ -302,6 +308,12 @@ async function ConfigPage() {
           name: 'SCHEDULER_INTERVAL',
           key: 'SCHEDULER_INTERVAL',
           value: msConfig.SCHEDULER_INTERVAL,
+        },
+        {
+          type: 'boolean',
+          name: 'SCHEDULER_INTERNAL_ACTIVE',
+          key: 'SCHEDULER_INTERNAL_ACTIVE',
+          value: msConfig.SCHEDULER_INTERNAL_ACTIVE,
         },
         {
           type: 'boolean',

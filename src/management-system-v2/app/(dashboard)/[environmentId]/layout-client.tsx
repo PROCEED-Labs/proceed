@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, use, useEffect, useMemo, useState } from 'react';
+import { FC, PropsWithChildren, createContext, useState } from 'react';
 import {
   Alert,
   Layout as AntLayout,
@@ -29,9 +29,6 @@ import SpaceLink from '@/components/space-link';
 import { useSession } from '@/components/auth-can';
 import ChangeUserPasswordModal from './profile/change-password-modal';
 import useMSLogo from '@/lib/use-ms-logo';
-import { getSpaceSettingsValues } from '@/lib/data/space-settings';
-import { useQuery } from '@tanstack/react-query';
-import { wrapServerCall } from '@/lib/wrap-server-call';
 import useUserTasks from '@/lib/use-user-tasks';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
@@ -94,26 +91,11 @@ const Layout: FC<
 
   let layoutMenuItems = _layoutMenuItems;
 
-  const { data: automationSettings } = useQuery({
-    queryFn: async () => {
-      return wrapServerCall({
-        fn: async () => getSpaceSettingsValues(activeSpace.spaceId, 'process-automation'),
-        onSuccess: false,
-      });
-    },
-    queryKey: ['space-settings', activeSpace.spaceId, 'process-automation'],
+  const { userTasks } = useUserTasks(activeSpace, 2000, {
+    allowedStates: ['READY', 'ACTIVE'],
+    hideUnassignedTasks: activeSpace.isOrganization,
+    hideNonOwnableTasks: true,
   });
-
-  const userTaskFilter = useMemo(
-    () => ({
-      allowedStates: ['READY', 'ACTIVE'],
-      hideUnassignedTasks: activeSpace.isOrganization,
-      hideNonOwnableTasks: true,
-    }),
-    [activeSpace.isOrganization],
-  );
-
-  const { userTasks } = useUserTasks(activeSpace, 2000, userTaskFilter);
 
   if (showTasklisSidebarEntry) {
     layoutMenuItems = [

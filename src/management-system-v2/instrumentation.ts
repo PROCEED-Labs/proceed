@@ -57,7 +57,7 @@ export async function register() {
     }
 
     // Start scheduler if necessary
-    const { restartInternalScheduler } = await import('./lib/scheduler');
-    await restartInternalScheduler();
+    const { restartInternalSchedulerWithCurrentConfigs } = await import('./lib/scheduler');
+    await restartInternalSchedulerWithCurrentConfigs();
   }
 }

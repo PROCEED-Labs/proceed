@@ -9,7 +9,7 @@ import { removeExpiredEmailVerificationTokens } from './data/db/iam/verification
 const global = globalThis as any;
 
 /** Restart cronjob with new ms config values or start it, in the case that no job was running */
-export async function restartInternalScheduler() {
+export async function restartInternalSchedulerWithCurrentConfigs() {
   try {
     const msConfig = await getMSConfig({ dontForceDynamicThroughHeaders: true });
 
@@ -18,7 +18,6 @@ export async function restartInternalScheduler() {
       global.schedulerCronJob = undefined;
     }
 
-    // NOTE: not sure if doing this here may be too much functionality in one function
     if (!msConfig.SCHEDULER_INTERNAL_ACTIVE) return;
 
     global.schedulerCronJob = CronJob.from({

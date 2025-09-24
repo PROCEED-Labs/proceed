@@ -168,6 +168,9 @@ export const msConfigSchema = {
     MQTT_USERNAME: z.string().optional(),
     MQTT_PASSWORD: z.string().optional(),
     MQTT_BASETOPIC: z.string().optional(),
+
+    EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS: z.coerce.number().default(7),
+    EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS: z.coerce.number().default(7),
   },
   production: {
     DATABASE_URL: z.string(),

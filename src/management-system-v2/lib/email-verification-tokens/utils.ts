@@ -3,6 +3,9 @@ import 'server-only';
 import { z } from 'zod';
 import { EmailVerificationToken } from '@/lib/data/db/iam/verification-tokens';
 import { env } from '@/lib/ms-config/env-vars';
+import { getMSConfig } from '../ms-config/ms-config';
+
+const MS_IN_HOUR = 1000 * 60 * 60;
 
 async function createHash(message: string) {
   const msgUint8 = new TextEncoder().encode(message);
@@ -26,8 +29,12 @@ export async function createChangeEmailVerificationToken({
 }) {
   const identifier = z.string().email().parse(email);
 
+  const msConfig = await getMSConfig();
+
   const token = crypto.randomUUID();
-  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+  const expires = new Date(
+    Date.now() + MS_IN_HOUR * msConfig.EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS,
+  );
 
   const verificationToken = {
     type: 'change_email',
@@ -65,8 +72,12 @@ export async function createUserRegistrationToken(
   },
   callbackUrl?: string,
 ) {
+  const msConfig = await getMSConfig();
+
   const token = crypto.randomUUID();
-  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+  const expires = new Date(
+    Date.now() + MS_IN_HOUR * msConfig.EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS,
+  );
 
   const verificationToken = {
     type: 'register_new_user',

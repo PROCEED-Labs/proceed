@@ -226,6 +226,18 @@ async function ConfigPage() {
           value: msConfig.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE,
         },
         {
+          type: 'number',
+          name: 'EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS',
+          key: 'EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS',
+          value: msConfig.EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS,
+        },
+        {
+          type: 'number',
+          name: 'EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS',
+          key: 'EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS',
+          value: msConfig.EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS,
+        },
+        {
           name: 'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE',
           key: 'msconfig-iam-oauth-google',
           children: [
@@ -363,6 +375,14 @@ async function ConfigPage() {
         {
           groupKey: 'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
           disablerKey: 'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
+        },
+        {
+          groupKey: 'EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS',
+          disablerKey: 'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
+        },
+        {
+          groupKey: 'EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS',
+          disablerKey: 'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
         },
       ]}
     />

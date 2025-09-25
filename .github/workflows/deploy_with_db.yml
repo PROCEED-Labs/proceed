@@ -151,7 +151,7 @@ jobs:
           image: proceed/engine
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          path: ${{ env.DOCKER_PATH_ENGINE }}
+          build_file: '${{ env.DOCKER_PATH_ENGINE }}/Dockerfile'
           tag: ${{ env.IMAGE_TAG }}
 
   # testMS:

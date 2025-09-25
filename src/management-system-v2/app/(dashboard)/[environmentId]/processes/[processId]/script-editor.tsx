@@ -94,7 +94,10 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       ]);
 
       const unsuccessful = +isUserErrorResponse(jsScript) + +isUserErrorResponse(blocklyScript);
+      // If both request failed, it means that we're storing blockly + typescript code ->
+      // inconsistent state
       if (unsuccessful === 0) throw new Error('Inconsistency in script storage');
+      // If the two requests failed, it means this script task has no code associated to it yet
       if (unsuccessful === 2) return ['', null] as const;
 
       const scriptType = isUserErrorResponse(jsScript) ? 'blockly' : 'JS';

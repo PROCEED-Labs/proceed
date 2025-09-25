@@ -260,7 +260,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       width="90vw"
       styles={{ body: { height: '85vh', marginTop: '0.5rem' }, header: { margin: 0 } }}
       title={
-        <span style={{ fontSize: '1.5rem' }}>{canEdit ? 'Edit Script Task' : 'Script Task'}</span>
+        <span style={{ fontSize: '1.5rem' }}>
+          {`${canEdit ? 'Edit Script Task' : 'Script Task'}: ${filename}`}
+        </span>
       }
       onCancel={handleClose}
       footer={

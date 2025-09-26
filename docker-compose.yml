@@ -1,6 +1,6 @@
 services:
   proceed_standalone_management_system:
-    image: proceed/ms-server:latest
+    image: proceed/ms-server:standalone
     container_name: proceed_standalone_management_system
     restart: always
     environment:

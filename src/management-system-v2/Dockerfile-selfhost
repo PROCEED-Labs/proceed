@@ -23,7 +23,7 @@ RUN cd src/management-system-v2 && yarn prisma generate
 
 # Next.js collects completely anonymous telemetry data about general usage. Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line to disable telemetry at build time
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build Next.js
 RUN yarn build-ms
@@ -33,47 +33,46 @@ RUN yarn build-ms
 # Step 2. Production image, copy all the files and run next
 FROM base AS runner
 
-WORKDIR /app
-
 ENV NODE_ENV=production
 ENV PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE=true
 ENV PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV=local
 ENV PROCEED_PUBLIC_IAM_ACTIVE=true
 ENV PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE=true
-
 ENV DATABASE_URL=postgresql://proceed:proceed@postgres:5432/proceed_db?schema=public
+
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder app/src/management-system-v2/public ./public 
-
-COPY --from=builder app/src/management-system-v2/prisma ./prisma
+# Sets the working directory to /app
+WORKDIR /app
 
 # Set the correct permission for prerender cache
 RUN mkdir .next 
 RUN chown nextjs:nodejs .next
 
-RUN mkdir /app/volume
-RUN chown -R nextjs:nodejs /app/volume
-
-# Install prisma CLI
-RUN npm install -g prisma
-
+# Create a data directory for the MS under /app/volume  and gives the right permissions
+RUN mkdir volume
+RUN chown -R nextjs:nodejs volume
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder app/src/management-system-v2/public ./public 
+COPY --from=builder app/src/management-system-v2/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs app/src/management-system-v2/.next/standalone/src/management-system-v2 ./
 COPY --from=builder --chown=nextjs:nodejs app/src/management-system-v2/.next/standalone/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs app/src/management-system-v2/.next/static ./.next/static
 
+# Install prisma CLI globally
+RUN npm install -g prisma
+
 USER nextjs
 
-EXPOSE 33081
-
+# Port and Listening address for Next.js Application (our MS)
 ENV PORT=33081
-# set hostname to localhost
 ENV HOSTNAME="0.0.0.0"
+# EXPOSE is actually optional for documentation purposes
+EXPOSE 33081
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output

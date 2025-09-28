@@ -5,7 +5,7 @@ services:
     restart: always
     environment:
       - DATABASE_URL=postgresql://proceed:proceed@proceed_standalone_postgres_database:5432/proceed_db?schema=public
-      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_URL=http://localhost:3002
       - NEXTAUTH_SECRET=gVRJMFKtjZmfNuLt3ZoxWTMujSwkig
       - PROCEED_PUBLIC_IAM_ACTIVE=true
       - PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE=true
@@ -18,7 +18,7 @@ services:
     depends_on:
       - proceed_standalone_postgres_database
     volumes:
-      - proceed_standalone_management-system_data:/home/nextjs/.config/proceed-management-system
+      - proceed_standalone_management-system_data:/app/volume
     networks:
       - proceed-standalone-network
 

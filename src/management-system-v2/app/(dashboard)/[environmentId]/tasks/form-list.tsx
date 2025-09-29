@@ -210,6 +210,14 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
           selectedElements: selectedForms,
           setSelectionElements: setSelectedForms,
         }}
+        tableProps={{
+          onRow: (element) => ({
+            onClick: () => {
+              const url = spaceURL(space, `/tasks/${element.id}`);
+              router.push(url);
+            },
+          }),
+        }}
       />
       <Modal
         open={openCreateModal}

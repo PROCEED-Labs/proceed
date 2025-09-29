@@ -142,6 +142,9 @@ const script = `
 
     const variableDefinitions = {{variableDefinitions}};
 
+    let submitting = false;
+    const variableSubmitTimeouts = {};
+
     function getValueFromCheckbox(checkbox) {
       if (!checkbox.defaultValue) {
         return !!checkbox.checked;
@@ -239,14 +242,17 @@ const script = `
         entry = entries.next();
       }
 
+      submitting = true;
+      Object.values(variableSubmitTimeouts).forEach(timeout => clearTimeout(timeout));
       window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
           instanceID,
           userTaskID,
-      }).then(() => {
-        window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
+      }).then(async () => {
+        await window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
           instanceID,
           userTaskID,
         });
+        submitting = false;
       });
     })
 
@@ -259,22 +265,24 @@ const script = `
           milestoneInput.nextElementSibling.value = milestoneInput.value + '%'
         });
 
-        milestoneInput.addEventListener('click', (event) => {
-          const milestoneName = Array.from(event.target.classList)
-          .find((className) => className.includes('milestone-'))
-          .split('milestone-')
-          .slice(1)
-          .join('');
+        if (!submitting) {
+          milestoneInput.addEventListener('click', (event) => {
+            const milestoneName = Array.from(event.target.classList)
+            .find((className) => className.includes('milestone-'))
+            .split('milestone-')
+            .slice(1)
+            .join('');
 
-          window.PROCEED_DATA.put(
-            '/tasklist/api/milestone',
-            { [milestoneName]: parseInt(event.target.value) },
-            {
-              instanceID,
-              userTaskID,
-            }
-          );
-        });
+            window.PROCEED_DATA.put(
+              '/tasklist/api/milestone',
+              { [milestoneName]: parseInt(event.target.value) },
+              {
+                instanceID,
+                userTaskID,
+              }
+            );
+          });
+        }
       });
 
       const variableInputs = document.querySelectorAll(
@@ -292,25 +300,28 @@ const script = `
 
           clearTimeout(variableInputTimer);
 
-          variableInputTimer = setTimeout(() => {
-            try {
-              const value = getValueFromVariableElement(event.target);
+          if (!submitting) {
+            variableInputTimer = setTimeout(() => {
+              try {
+                const value = getValueFromVariableElement(event.target);
 
-              validateValue(variableName, value);
-              updateValidationErrorMessage(variableName);
+                validateValue(variableName, value);
+                updateValidationErrorMessage(variableName);
 
-              window.PROCEED_DATA.put(
-                '/tasklist/api/variable',
-                { [variableName]: value },
-                {
-                  instanceID,
-                  userTaskID,
-                }
-              );
-            } catch (err) {
-              updateValidationErrorMessage(variableName, err.message);
-            }
-          }, 2000)
+                window.PROCEED_DATA.put(
+                  '/tasklist/api/variable',
+                  { [variableName]: value },
+                  {
+                    instanceID,
+                    userTaskID,
+                  }
+                );
+              } catch (err) {
+                updateValidationErrorMessage(variableName, err.message);
+              }
+            }, 2000)
+            variableSubmitTimeouts[variableName] = variableInputTimer;
+          }
         });
       });
     })

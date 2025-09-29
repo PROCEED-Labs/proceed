@@ -843,7 +843,7 @@ export async function saveProcessHtmlForm(
   json: string,
   html: string,
   versionCreatedOn?: string,
-  updateImageReferences: boolean = false,
+  updateImageReferences = false,
 ) {
   // TODO: Use a transaction to avoid storing inconsistent states in case of errors
   checkIfProcessExists(processDefinitionsId);

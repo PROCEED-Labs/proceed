@@ -32,7 +32,6 @@ export async function addReason<T extends Match & { alignment: string }>(
           content: `Task: ${targetText}\nCompetence: ${match.text}\nSimilarity Score: ${match.distance}\nAlignment: ${match.alignment}`,
         },
       ];
-
       try {
         const response = await ollama.chat({
           model: reasonModel,

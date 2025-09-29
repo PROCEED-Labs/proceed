@@ -24,7 +24,7 @@ async function ensureModelsInitialised() {
   try {
     await Embedding.getInstance();
     modelsInitialised = true;
-    workerLogger('system', 'info', 'Embedder worker model initialized', { threadId });
+    workerLogger('system', 'info', 'Embedder worker model initialised', { threadId });
   } catch (err) {
     throw err;
   }
@@ -56,7 +56,7 @@ parentPort.on('message', async (message: any) => {
   // Handle job messages
   const job = message as EmbeddingJob;
 
-  // ensure models are initialized (but do not run this for health_check)
+  // ensure models are initialised (but do not run this for health_check)
   try {
     await ensureModelsInitialised();
   } catch (err) {

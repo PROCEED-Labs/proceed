@@ -8,6 +8,8 @@ export const config = {
   embeddingModel: process.env.EMBEDDING_MODEL || 'onnx-community/Qwen3-Embedding-0.6B-ONNX',
   embeddingDim: parseInt(process.env.EMBEDDING_DIM || '1024', 10),
   nliModel: process.env.NLI_MODEL || 'Maxi-Lein/roberta-large-mnli-onnx',
+  crossEncoderModel: process.env.CROSS_ENCODER_MODEL || 'local/ms-marco-MiniLM-L6-v2-onnx',
+  // crossEncoderModel: process.env.CROSS_ENCODER_MODEL || 'cross-encoder/ms-marco-MiniLM-L6-v2',
   modelCache: process.env.MODEL_CACHE || 'src/models/',
   useGPU: process.env.USE_GPU === 'true' || false,
   port: parseInt(process.env.PORT || '8501', 10),

@@ -3,7 +3,8 @@ import Embedding from '../tasks/embedding';
 import { withJobUpdates, workerLogger } from '../utils/worker';
 import { addReason } from '../tasks/reason';
 import { Match, MatchingJob } from '../utils/types';
-import ZeroShot from '../tasks/semantic-zeroshot';
+import ZeroShot, { labels } from '../tasks/semantic-zeroshot';
+import CrossEncoder from '../tasks/cross-encode';
 
 // // Initialise models on startup
 // try {
@@ -27,7 +28,7 @@ async function ensureModelsInitialised() {
     await Embedding.getInstance();
     await ZeroShot.getInstance();
     modelsInitialised = true;
-    workerLogger('system', 'info', 'Matcher worker models initialized', { threadId });
+    workerLogger('system', 'info', 'Matcher worker models initialised', { threadId });
   } catch (err) {
     // Bubble up so job handling can report the error
     throw err;
@@ -120,47 +121,29 @@ parentPort.on('message', async (message: any) => {
               },
             });
 
-            // TODO: Re-enable reasoning once worker stability issues are resolved
-            // Apply reasoning to each match to enhance context
-            // matches = await addReason(description, matches);
-
-            // Zero-shot classification for scaling scores based on alignment
-            const scalingLabels = ['conflicting', 'neutral', 'aligning'];
-            const labelScalar = [0.05, 0.25, 1];
-
             // Process each match
             for (const match of matches) {
               let flag = 'neutral'; // Default flag
 
-              // Apply zero-shot classification
-              const scalingClassification = await ZeroShot.classify(
-                `Task: ${description} | Competence: ${match.text}`,
-                scalingLabels,
-              );
+              // Balance distance
+              let newDistance = Math.min(1, Math.max(0, match.distance - 0.45) * 2);
 
-              if (scalingClassification) {
-                if (
-                  // @ts-ignore - ZeroShot classification result structure
-                  scalingClassification.labels[0] === scalingLabels[2] &&
-                  // @ts-ignore
-                  scalingClassification.scores[0] > 0.65
-                ) {
-                  // Perfect match - keep as is
-                  match.distance *= labelScalar[2];
-                  flag = 'aligning';
-                }
-                // @ts-ignore - ZeroShot classification result structure
-                else if (scalingClassification.labels[0] === scalingLabels[1]) {
-                  // Mediocre match - scale it down
-                  match.distance *= labelScalar[1];
-                  flag = 'neutral';
-                }
-                // @ts-ignore - ZeroShot classification result structure
-                else if (scalingClassification.labels[0] === scalingLabels[0]) {
-                  // Poor match - scale it down significantly
-                  match.distance *= labelScalar[0];
-                  flag = 'contradicting';
-                }
+              // Get Alignment via Zero-Shot
+              const alignment = await ZeroShot.nliBiDirectional(description, match.text);
+
+              // First: Contradicting?
+              if (alignment.ranking[0] == 'contradict' || alignment.contradict > 0.3) {
+                flag = 'contradicting';
+                newDistance = 0.0;
+                // Second: Aligning?
+              } else if (alignment.entail > 0.55 && match.distance > 0.65) {
+                flag = 'aligning';
+                // Boost similarity-based distance
+                newDistance = Math.min(1, newDistance * 1.65);
+              } else {
+                flag = 'neutral';
+                // Reduce distance for neutral
+                newDistance *= 0.75;
               }
 
               // Store match result for reasoning workaround
@@ -173,7 +156,7 @@ parentPort.on('message', async (message: any) => {
                 text: match.text,
                 type: match.type as 'name' | 'description' | 'proficiencyLevel',
                 alignment: flag,
-                distance: match.distance,
+                distance: newDistance,
                 reason: match.reason,
               });
             }

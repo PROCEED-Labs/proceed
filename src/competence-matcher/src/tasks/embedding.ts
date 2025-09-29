@@ -6,11 +6,6 @@ import {
 import { config } from '../config';
 import { TransformerPipeline } from '../utils/model';
 import { TransformerPipelineOptions } from '../utils/types';
-import { getLogger } from '../utils/logger';
-
-function getLoggerInstance() {
-  return getLogger();
-}
 
 export default class Embedding extends TransformerPipeline<FeatureExtractionPipeline> {
   protected static override getPipelineOptions(): TransformerPipelineOptions {

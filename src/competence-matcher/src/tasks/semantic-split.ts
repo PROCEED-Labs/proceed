@@ -13,12 +13,8 @@ const {
   splittingLength: MIN_TEXT_LENGTH,
 } = config;
 
-function getLoggerInstance() {
-  return getLogger();
-}
-
 export async function splitSemantically(tasks: EmbeddingTask[]): Promise<EmbeddingTask[]> {
-  const logger = getLoggerInstance();
+  const logger = getLogger();
   const splittedTasks: EmbeddingTask[] = [];
   const toSplit: { task: EmbeddingTask; messages: Message[] }[] = [];
 

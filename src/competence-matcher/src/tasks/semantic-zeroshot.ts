@@ -6,11 +6,8 @@ import {
 import { config } from '../config';
 import { TransformerPipeline } from '../utils/model';
 import { TransformerPipelineOptions } from '../utils/types';
-import { getLogger } from '../utils/logger';
 
-function getLoggerInstance() {
-  return getLogger();
-}
+export const labels = ['entailment', 'neutral statement', 'contradiction or not related'];
 
 export default class ZeroShot extends TransformerPipeline<ZeroShotClassificationPipeline> {
   protected static override getPipelineOptions(): TransformerPipelineOptions {
@@ -18,9 +15,6 @@ export default class ZeroShot extends TransformerPipeline<ZeroShotClassification
       task: 'zero-shot-classification' as PipelineType,
       model: config.nliModel,
       options: {
-        // progress_callback: (progress) => {
-        //   logger.debug("system", `Embedding progress: ${progress}`);
-        // },
         model_file_name: 'model.onnx',
         use_external_data_format: true,
         local_files_only: true,
@@ -29,10 +23,9 @@ export default class ZeroShot extends TransformerPipeline<ZeroShotClassification
   }
 
   /**
-   * Classify text against a set of labels using zero-shot classification.
-   * @param text The text to classify.
-   * @param labels The labels to classify against.
-   * @param hypothesisTemplate Optional hypothesis template for classification - should include '{}' as placeholder for label.
+   * Run zero-shot classification using explicit hypotheses.
+   * We keep the existing generic classify() but add a helper to compute entail/neutral/contradict
+   * probabilities given a premise and a hypothesis (text pair).
    */
   public static async classify(text: string, labels?: string[], hypothesisTemplate?: string) {
     const _labels = labels || [
@@ -44,5 +37,81 @@ export default class ZeroShot extends TransformerPipeline<ZeroShotClassification
       hypothesisTemplate || 'Task description and Skill/Capability descriptions are {}.';
     const pipe = await this.getInstance<ZeroShotClassificationPipeline>();
     return pipe(text, _labels, { hypothesis_template });
+  }
+
+  /**
+   * Run MNLI-style check in one direction: premise -> hypothesis sentence string.
+   * Returns object { entail, neutral, contradict } with values in [0,1].
+   */
+  private static async nliDirection(premise: string, hypothesis: string) {
+    const pipe = await this.getInstance<ZeroShotClassificationPipeline>();
+    // Reuse zero-shot pipeline: pass premise as text and labels that (when inserted into template)
+    // produce a hypothesis that matches desired explicit hypothesis.
+    // Instead, easier: pass candidate_labels matching MNLI classes and set hypothesis_template to "{}"
+    const hypothesis_template = `${hypothesis}`; // pipeline will insert label into template; we want explicit hypothesis
+    // Some transformer-js wrappers may require candidate_labels to be "labels", and will return { labels: [...], scores: [...] }
+    const out = await pipe(premise, labels, { hypothesis_template });
+    // out may be e.g. { labels: ['entailment','neutral','contradiction'], scores: [0.7,0.2,0.1] }
+    const mapping: Record<string, number> = {};
+    if (
+      out &&
+      typeof out === 'object' &&
+      !Array.isArray(out) &&
+      'labels' in out &&
+      'scores' in out &&
+      Array.isArray((out as any).labels) &&
+      Array.isArray((out as any).scores)
+    ) {
+      (out as any).labels.forEach(
+        (lbl: string, i: number) => (mapping[lbl] = (out as any).scores[i]),
+      );
+    } else if (Array.isArray(out) && out.length) {
+      // Some versions return array of {label, score} objects
+      out.forEach((item: any) => {
+        if (item.label && typeof item.score === 'number') mapping[item.label] = item.score;
+      });
+    } else {
+      // fallback: return zeros
+      return { entail: 0, neutral: 0, contradict: 0 };
+    }
+
+    return {
+      entail: mapping[labels[0]] ?? 0,
+      neutral: mapping[labels[1]] ?? 0,
+      contradict: mapping[labels[2]] ?? 0,
+    };
+  }
+
+  /**
+   * Run NLI both directions (premise=capability -> hypothesis: task,
+   * and premise=task -> hypothesis: capability). Returns aggregated features.
+   */
+  public static async nliBiDirectional(task: string, capability: string) {
+    // Build explicit hypothesis sentences
+    const h1 = `This is a/an {} to the task: ${task}.`; // capability as premise -> can they perform the task?
+    const h2 = `The described task is a/an {} to the capability: ${capability}.`; // task as premise -> does it require the capability?
+
+    const [dir1, dir2] = await Promise.all([
+      this.nliDirection(capability, h1),
+      this.nliDirection(task, h2),
+    ]);
+
+    const result = {
+      entail: (dir1.entail + dir2.entail) / 2,
+      neutral: (dir1.neutral + dir2.neutral) / 2,
+      contradict: Math.max(dir1.contradict, dir2.contradict),
+      details: { 'competence on task': dir1, 'task on competence': dir2 },
+    };
+
+    // Order the labels by their score in descending order
+    const ranking = ['entail', 'neutral', 'contradict'].sort(
+      // @ts-ignore
+      (a, b) => result[b] - result[a],
+    );
+
+    return {
+      ...result,
+      ranking,
+    };
   }
 }

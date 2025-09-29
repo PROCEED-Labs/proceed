@@ -229,13 +229,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           fallback={fallbackImage}
           // TODO
           // alt={organization.name}
-          style={{
-            width: '100%',
-            maxHeight: '7.5rem',
-            borderRadius: '6px',
-            display: 'block',
-            border: '1px solid #d9d9d9',
-          }}
           preview={{
             visible: false,
             mask: false,
@@ -243,6 +236,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           role="group"
           alt="Image"
           {...imageProps}
+          style={{
+            width: '100%',
+            maxHeight: '7.5rem',
+            borderRadius: '6px',
+            display: 'block',
+            border: '1px solid #d9d9d9',
+            ...imageProps?.style,
+          }}
         />
 
         <div

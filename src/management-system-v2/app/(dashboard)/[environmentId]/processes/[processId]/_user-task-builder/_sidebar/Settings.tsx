@@ -26,22 +26,17 @@ export const Settings: React.FC = () => {
     };
   });
 
-  const isTextEditing = useBuilderStateStore((state) => state.isTextEditing);
+  let settingsElement = <div style={{ textAlign: 'center' }}>No settings available.</div>;
+
+  if (!selectedNodeId) {
+    settingsElement = <div style={{ textAlign: 'center' }}>No element selected.</div>;
+  } else if (settings) {
+    settingsElement = React.createElement(settings);
+  }
 
   return (
     <div className={styles.Settings}>
-      {/* this id is targeted by a react portal to render the text editor interface when a user starts text editing */}
-      <div id="text-editable-toolbar"></div>
-      {!isTextEditing &&
-        (selectedNodeId ? (
-          settings ? (
-            <>{React.createElement(settings)}</>
-          ) : (
-            <div style={{ textAlign: 'center' }}>No settings available.</div>
-          )
-        ) : (
-          <div style={{ textAlign: 'center' }}>No element selected.</div>
-        ))}
+      {settingsElement}
       {/* this id is targeted by react portals that can be used in elements to edit specific sections of the element*/}
       <div id="sub-element-settings-toolbar"></div>
     </div>

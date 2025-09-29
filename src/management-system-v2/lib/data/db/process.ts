@@ -7,12 +7,7 @@ import {
   BpmnAttributeType,
   transformBpmnAttributes,
 } from '../../helpers/processHelpers';
-import {
-  getDefinitionsVersionInformation,
-  generateUserTaskFileName,
-  generateScriptTaskFileName,
-  generateBpmnId,
-} from '@proceed/bpmn-helper';
+import { getDefinitionsVersionInformation, generateBpmnId } from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
@@ -23,12 +18,14 @@ import {
   deleteProcessArtifact,
   getArtifactMetaData,
   saveProcessArtifact,
+  updateFileDeletableStatus,
 } from '../file-manager-facade';
 import { toCustomUTCString } from '@/lib/helpers/timeHelper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { copyFile, retrieveFile } from '../file-manager/file-manager';
-import { ArtifactType, generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
+import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
+import { getUsedImagesFromJson } from '@/app/(dashboard)/[environmentId]/processes/[processId]/_user-task-builder/serialized-format-utils';
 
 /**
  * Returns all processes in an environment
@@ -672,24 +669,38 @@ export async function getProcessScriptTasks(processDefinitionsId: string) {
   // TODO
 }
 
-export async function getProcessHtmlFormJSON(processDefinitionsId: string, fileName: string) {
+export async function getProcessHtmlFormJSON(
+  processDefinitionsId: string,
+  fileName: string,
+  ignoreDeletedStatus = false,
+) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    let res = await db.artifactProcessReference.findFirst({
-      where: { processId: processDefinitionsId, artifact: { fileName: `${fileName}.json` } },
-      select: { artifact: true },
-    });
-    if (!res)
-      res = await db.artifactVersionReference.findFirst({
-        where: {
-          version: { processId: processDefinitionsId },
-          artifact: { fileName: `${fileName}.json` },
-        },
+    let artifact;
+
+    if (ignoreDeletedStatus) {
+      artifact = await db.artifact.findFirst({ where: { fileName: `${fileName}.json` } });
+    } else {
+      let res = await db.artifactProcessReference.findFirst({
+        where: { processId: processDefinitionsId, artifact: { fileName: `${fileName}.json` } },
         select: { artifact: true },
       });
-    if (res?.artifact) {
-      const jsonAsBuffer = (await retrieveFile(res.artifact.filePath, true)) as Buffer;
+
+      if (!res) {
+        res = await db.artifactVersionReference.findFirst({
+          where: {
+            version: { processId: processDefinitionsId },
+            artifact: { fileName: `${fileName}.json` },
+          },
+          select: { artifact: true },
+        });
+      }
+
+      artifact = res?.artifact;
+    }
+    if (artifact) {
+      const jsonAsBuffer = (await retrieveFile(artifact.filePath, true)) as Buffer;
       return jsonAsBuffer.toString('utf8');
     }
   } catch (err) {
@@ -832,11 +843,43 @@ export async function saveProcessHtmlForm(
   json: string,
   html: string,
   versionCreatedOn?: string,
+  updateImageReferences = false,
 ) {
+  // TODO: Use a transaction to avoid storing inconsistent states in case of errors
   checkIfProcessExists(processDefinitionsId);
   try {
     const res = await checkIfHtmlFormExists(processDefinitionsId, fileName);
     const content = new TextEncoder().encode(json);
+
+    // The code that creates versions, already handles creating new references
+    if (updateImageReferences && !versionCreatedOn) {
+      let newUsedImages = getUsedImagesFromJson(JSON.parse(json));
+      let removedImages = new Set<string>();
+
+      if (res?.json) {
+        const oldJson = await getProcessHtmlFormJSON(processDefinitionsId, fileName);
+        if (!oldJson) throw new Error(`Couldn't get JSON for user task ${fileName}`);
+
+        const oldUsedImages = getUsedImagesFromJson(JSON.parse(oldJson));
+
+        for (const oldImage of oldUsedImages) {
+          if (!newUsedImages.has(oldImage)) removedImages.add(oldImage);
+        }
+
+        for (const oldImage of oldUsedImages) {
+          if (newUsedImages.has(oldImage)) newUsedImages.delete(oldImage);
+        }
+      }
+
+      for (const newArtifact of newUsedImages) {
+        updateFileDeletableStatus(newArtifact, false, processDefinitionsId);
+      }
+
+      for (const deletedArtifact of removedImages) {
+        updateFileDeletableStatus(deletedArtifact, true, processDefinitionsId);
+      }
+    }
+
     const { filePath } = await saveProcessArtifact(
       processDefinitionsId,
       `${fileName}.json`,
@@ -862,6 +905,7 @@ export async function saveProcessHtmlForm(
         context: 'html-forms',
       },
     );
+
     return filePath;
   } catch (err) {
     logger.debug(`Error storing html form data for ${fileName}. Reason:\n${err}`);

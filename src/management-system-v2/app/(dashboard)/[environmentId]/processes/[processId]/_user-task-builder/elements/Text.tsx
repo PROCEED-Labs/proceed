@@ -6,6 +6,7 @@ import EditableText from '../_utils/EditableText';
 import { ContextMenu, Overlay } from './utils';
 import { useState } from 'react';
 import { useCanEdit } from '../../modeler';
+import useBuilderStateStore from '../use-builder-state-store';
 
 type TextProps = {
   text?: string;
@@ -49,8 +50,14 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
 };
 
 export const TextSettings = () => {
+  const isTextEditing = useBuilderStateStore((state) => state.isTextEditing);
+
   return (
-    <div style={{ textAlign: 'center' }}>Start editing the text to get text specific settings.</div>
+    !isTextEditing && (
+      <div style={{ textAlign: 'center' }}>
+        Start editing the text to get text specific settings.
+      </div>
+    )
   );
 };
 

@@ -2,7 +2,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
 import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-schema';
-import { SystemAdmin, Engine } from '@prisma/client';
+import { SystemAdmin } from '@prisma/client';
 
 export async function getDbEngines(
   environmentId: string | null,

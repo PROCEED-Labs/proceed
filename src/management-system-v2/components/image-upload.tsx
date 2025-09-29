@@ -219,9 +219,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         accept={'.jpeg,.jpg,.png,.webp,.svg'}
         showUploadList={false}
         customRequest={customUploadRequest}
-        onDrop={(e) => {
-          console.log(e);
-        }}
         {...uploadProps}
       >
         <Image

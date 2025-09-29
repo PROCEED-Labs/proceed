@@ -9,6 +9,8 @@ test('open properties panel for process and fill property values', async ({
   const openButton = propertiesPanelPage.page.getByRole('button', { name: 'info-circle' });
   await openButton.click();
 
+  await propertiesPanelPage.imageSection.hover();
+
   // Create/Edit/Delete image
   await expect(propertiesPanelPage.imageSection).toHaveText('Add Image');
   const placeholderImageURL =

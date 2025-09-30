@@ -91,16 +91,20 @@ export default class ZeroShot extends TransformerPipeline<ZeroShotClassification
     const h1 = `This is a/an {} to the task: ${task}.`; // capability as premise -> can they perform the task?
     const h2 = `The described task is a/an {} to the capability: ${capability}.`; // task as premise -> does it require the capability?
 
-    const [dir1, dir2] = await Promise.all([
+    const h3 = `The task and capability are a/an {}.`; // symmetric
+    const mix = `Task: ${task}\nCapability: ${capability}`;
+
+    const [dir1, dir2, dir3] = await Promise.all([
       this.nliDirection(capability, h1),
       this.nliDirection(task, h2),
+      this.nliDirection(mix, h3),
     ]);
 
     const result = {
-      entail: (dir1.entail + dir2.entail) / 2,
-      neutral: (dir1.neutral + dir2.neutral) / 2,
-      contradict: Math.max(dir1.contradict, dir2.contradict),
-      details: { 'competence on task': dir1, 'task on competence': dir2 },
+      entail: (dir1.entail + dir2.entail + dir3.entail) / 3,
+      neutral: (dir1.neutral + dir2.neutral + dir3.neutral) / 3,
+      contradict: Math.max(dir1.contradict, dir2.contradict, dir3.contradict), // max contradict
+      details: { 'competence on task': dir1, 'task on competence': dir2, combined: dir3 },
     };
 
     // Order the labels by their score in descending order
@@ -112,6 +116,114 @@ export default class ZeroShot extends TransformerPipeline<ZeroShotClassification
     return {
       ...result,
       ranking,
+    };
+  }
+
+  public static async contradictionCheck(task: string, capability: string) {
+    const labels = ['contradicting', 'not contradicting'];
+    const pipe = await this.getInstance<ZeroShotClassificationPipeline>();
+
+    const h1 = `The capability is {} to the task: ${task}.`; // capability as premise -> can they perform the task?
+    const h2 = `The task is {} to the capability: ${capability}.`; // task as premise -> does it require the capability?
+
+    const h3 = `The task and capability are {}.`; // symmetric
+    const mix = `Task: ${task}\nCapability: ${capability}`;
+
+    const [out1, out2, out3] = await Promise.all([
+      pipe(capability, labels, { hypothesis_template: h1 }),
+      pipe(task, labels, { hypothesis_template: h2 }),
+      pipe(mix, labels, { hypothesis_template: h3 }),
+    ]);
+
+    // console.log('________________________________________');
+    // console.log('contradiction check results:');
+    // console.log('task', task);
+    // console.log('capability', capability);
+    // console.log(out1, out2, out3);
+    // console.log('________________________________________');
+
+    const sortedOut = labels.reduce(
+      (acc: Record<string, number[]>, label: string) => {
+        if (acc[label] === undefined) acc[label] = [];
+        [out1, out2, out3].forEach((out) => {
+          // Find index of label in out
+          const idx = ((out as any).labels as string[]).indexOf(label);
+          // Add corresponding score
+          if (idx >= 0) acc[label].push((out as any).scores[idx]);
+        });
+
+        return acc;
+      },
+      {} as Record<string, number[]>,
+    );
+
+    const result = {
+      max: Math.max(...(sortedOut[labels[0]] || [0])),
+      avg:
+        (sortedOut[labels[0]] || [0]).reduce((sum, val) => sum + val, 0) /
+        (sortedOut[labels[0]] || [0]).length,
+      details: { 'competence on task': out1, 'task on competence': out2, combined: out3 },
+    };
+
+    return {
+      ...result,
+      contradicting: result.max > 0.5 || result.avg > 0.45,
+    };
+  }
+
+  public static async alignmentCheck(task: string, capability: string) {
+    const labels = ['somewhat sufficently', 'only partially', 'not at all'];
+    const pipe = await this.getInstance<ZeroShotClassificationPipeline>();
+
+    const h1 = `The capability is meeting the requirements of the task "${task}" {}.`;
+    const h2 = `The tasks requirements are met {} by the capability: "${capability}".`;
+
+    const h3 = `The task and capability are {} matching.`; // symmetric
+    const mix = `Task: "${task}"\nCapability: "${capability}"`;
+
+    const [out1, out2, out3] = await Promise.all([
+      pipe(capability, labels, { hypothesis_template: h1 }),
+      pipe(task, labels, { hypothesis_template: h2 }),
+      pipe(mix, labels, { hypothesis_template: h3 }),
+    ]);
+
+    // console.log('________________________________________');
+    // console.log('alignment check results:');
+    // console.log('task: ', task);
+    // console.log('capability: ', capability);
+    // console.log(out1, out2, out3);
+    // console.log('________________________________________');
+
+    const sortedOut = labels.reduce(
+      (acc: Record<string, number[]>, label: string) => {
+        if (acc[label] === undefined) acc[label] = [];
+        [out1, out2, out3].forEach((out) => {
+          // Find index of label in out
+          const idx = ((out as any).labels as string[]).indexOf(label);
+          // Add corresponding score
+          if (idx >= 0) acc[label].push((out as any).scores[idx]);
+        });
+
+        return acc;
+      },
+      {} as Record<string, number[]>,
+    );
+
+    // console.log('________________________________________');
+    // console.log('sortedOut: ', sortedOut);
+    // console.log('________________________________________');
+
+    const result = {
+      max: Math.max(...(sortedOut[labels[0]] || [0])),
+      avg:
+        (sortedOut[labels[0]] || [0]).reduce((sum, val) => sum + val, 0) /
+        (sortedOut[labels[0]] || [0]).length,
+      details: { 'competence on task': out1, 'task on competence': out2, combined: out3 },
+    };
+
+    return {
+      ...result,
+      aligning: result.max > 0.65 && result.avg > 0.5,
     };
   }
 }

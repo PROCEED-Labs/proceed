@@ -129,21 +129,33 @@ parentPort.on('message', async (message: any) => {
               let newDistance = Math.min(1, Math.max(0, match.distance - 0.45) * 2);
 
               // Get Alignment via Zero-Shot
-              const alignment = await ZeroShot.nliBiDirectional(description, match.text);
+              const sentiment = await ZeroShot.nliBiDirectional(description, match.text);
+
+              const contradiction = await ZeroShot.contradictionCheck(description, match.text);
+              const alignment = await ZeroShot.alignmentCheck(description, match.text);
+
+              // console.log('task: ', description);
+              // console.log('capability: ', match.text);
+              // console.log('alignment: ', alignment);
+              // console.log('________________________________________');
 
               // First: Contradicting?
-              if (alignment.ranking[0] == 'contradict' || alignment.contradict > 0.3) {
+              if (
+                sentiment.ranking[0] == 'contradict' ||
+                sentiment.contradict > 0.3 ||
+                contradiction.contradicting
+              ) {
                 flag = 'contradicting';
                 newDistance = 0.0;
                 // Second: Aligning?
-              } else if (alignment.entail > 0.55 && match.distance > 0.65) {
+              } else if (sentiment.entail > 0.55 && match.distance > 0.65 && alignment.aligning) {
                 flag = 'aligning';
                 // Boost similarity-based distance
-                newDistance = Math.min(1, newDistance * 1.65);
+                newDistance = Math.min(1, newDistance * 1.5);
               } else {
                 flag = 'neutral';
                 // Reduce distance for neutral
-                newDistance *= 0.75;
+                newDistance *= 0.65;
               }
 
               // Store match result for reasoning workaround

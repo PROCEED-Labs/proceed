@@ -4,10 +4,9 @@ import { InputNumber } from 'antd';
 
 import { useEffect, useRef, useState } from 'react';
 
-import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { ContextMenu, Setting } from './utils';
-import ImageUpload from '@/components/image-upload';
+import ImageUpload, { fallbackImage } from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { useCanEdit } from '../../modeler';
@@ -91,17 +90,8 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
           }
         }}
       >
-        <img
-          ref={imageRef}
-          style={{ width: width && `${width}%` }}
-          src={src ? imageUrl! : fallbackImage}
-        />
-        {editingEnabled && isHovered && (
+        {editingEnabled ? (
           <ImageUpload
-            imageExists={!!src}
-            onReload={() => {
-              setProp((props: ImageProps) => (props.reloadParam = Date.now()));
-            }}
             onImageUpdate={(imageFileName) => {
               setProp((props: ImageProps) => {
                 props.src = imageFileName && imageFileName;
@@ -111,9 +101,19 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
             config={{
               entityType: EntityType.PROCESS,
               entityId: processId,
-              useDefaultRemoveFunction: false,
-              fileName: src,
+              dontUpdateProcessArtifactsReferences: true,
             }}
+            uploadProps={{
+              style: { width: width && `${width}%` },
+            }}
+            fileName={src}
+            basicLoadingFeedback
+          />
+        ) : (
+          <img
+            ref={imageRef}
+            style={{ width: width && `${width}%` }}
+            src={src ? imageUrl! : fallbackImage}
           />
         )}
         {/* Allows resizing  */}

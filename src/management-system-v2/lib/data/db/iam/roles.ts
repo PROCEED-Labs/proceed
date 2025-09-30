@@ -143,6 +143,26 @@ export async function getRoleWithMembersById(roleId: string, ability?: Ability) 
 }
 
 /**
+ * Returns the roles that are assigned to a specific user
+ */
+export async function getUserRoles(userId: string, environmentId?: string, ability?: Ability) {
+  const roles = await db.role.findMany({
+    where: {
+      environmentId,
+      members: {
+        some: {
+          userId,
+        },
+      },
+    },
+  });
+
+  const filteredRoles = ability ? ability.filter('view', 'Role', roles) : roles;
+
+  return filteredRoles as Role[];
+}
+
+/**
  * Adds a new role for the PROCEED MS
  *
  * @throws {UnauthorizedError}

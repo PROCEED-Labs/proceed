@@ -27,12 +27,12 @@ export const ExportInput: UserComponent<InputProps> = ({
 }) => {
   const inputId = useId();
 
-  const value = defaultValue || (variable && `{${variable}}`);
+  const value = defaultValue || (variable && `{{${variable}}}`);
 
   return (
     <ContextMenu menu={[]}>
       <div
-        className="user-task-form-input"
+        className={`user-task-form-input input-for-${variable}`}
         style={{
           display: 'flex',
           flexDirection: labelPosition === 'top' ? 'column' : 'row',
@@ -61,6 +61,7 @@ export const ExportInput: UserComponent<InputProps> = ({
           defaultValue={value}
           name={variable}
         />
+        <div className="validation-error"></div>
       </div>
     </ContextMenu>
   );
@@ -177,25 +178,6 @@ export const InputSettings = () => {
   return (
     <>
       <Setting
-        label="Type"
-        control={
-          <Select
-            style={{ display: 'block' }}
-            options={[
-              { value: 'text', label: 'Text' },
-              { value: 'number', label: 'Number' },
-              { value: 'email', label: 'E-Mail' },
-            ]}
-            value={type}
-            onChange={(val) =>
-              setProp((props: InputProps) => {
-                props.type = val;
-              })
-            }
-          />
-        }
-      />
-      <Setting
         label="Label"
         control={
           <Select
@@ -217,9 +199,11 @@ export const InputSettings = () => {
 
       <VariableSetting
         variable={variable}
-        onChange={(newVariable) =>
+        allowedTypes={['string', 'number']}
+        onChange={(newVariable, newVariableType) =>
           setProp((props: InputProps) => {
             props.variable = newVariable;
+            props.type = newVariableType && newVariableType === 'string' ? 'text' : 'number';
           })
         }
       />

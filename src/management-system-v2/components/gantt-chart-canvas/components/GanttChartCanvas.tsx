@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Button, Modal } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useGanttChart } from '../hooks/useGanttChart';
-import { GanttChartOptions, GanttDependency, GanttElementType } from '../types';
+import { GanttChartOptions, GanttDependency, GanttElementType, GanttGroup } from '../types';
 import {
   CanvasRenderer,
   CanvasLayerType,
@@ -17,6 +17,44 @@ import { ROW_HEIGHT } from '../core/constants';
 
 // Import CSS module
 import styles from './GanttChartCanvas.module.scss';
+
+// Helper function to format dependency type for display
+const formatDependencyType = (dep: GanttDependency): string => {
+  // Get the base dependency type
+  let baseType: string;
+  switch (dep.type) {
+    case 'start-to-start':
+      baseType = 'Start to Start';
+      break;
+    case 'finish-to-start':
+      baseType = 'Finish to Start';
+      break;
+    default:
+      baseType = dep.type || 'Unknown';
+  }
+
+  // Add flow type information if available and relevant
+  if (dep.flowType) {
+    switch (dep.flowType) {
+      case 'message':
+        return 'Message Flow';
+      case 'conditional':
+        return `${baseType} - Conditional`;
+      case 'default':
+        return `${baseType} - Default`;
+      case 'boundary':
+        return `${baseType} - Boundary Event`;
+      case 'boundary-non-interrupting':
+        return `${baseType} - Non-Interrupting Boundary`;
+      case 'normal':
+        return baseType; // Just show the base type for normal flows
+      default:
+        return baseType; // Show base type for unknown flow types
+    }
+  }
+
+  return baseType;
+};
 
 interface GanttChartCanvasProps {
   elements: GanttElementType[];
@@ -69,10 +107,7 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
 
   // Get BPMN loop characteristics (actual BPMN attributes)
   const getBPMNLoopCharacteristics = () => {
-    // This would come from the original BPMN element data if available
-    // For now, we don't have access to the original BPMN element here
-    // This should be passed from the BPMN transformation if needed
-    return null;
+    return null; // BPMN element data not available in this context
   };
 
   // Get flow traversal status for inline display
@@ -111,7 +146,26 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
       }
       return 'Milestone';
     } else if (baseType === 'group') {
-      return 'Group/Summary Task';
+      // Check for specific group types
+      if ((element as any).isParticipantHeader) {
+        return 'Participant';
+      } else if ((element as any).isLaneHeader) {
+        return 'Lane';
+      } else if ((element as any).isSubProcess) {
+        // Check specific sub-process types
+        if (elementType === 'AdHocSubProcess') {
+          return 'Ad Hoc Sub-Process';
+        } else if (elementType === 'SubProcess') {
+          return 'Sub-Process';
+        } else if (elementType === 'Transaction') {
+          return 'Transaction';
+        } else if (elementType && elementType.includes('SubProcess')) {
+          return elementType.replace(/([A-Z])/g, ' $1').trim();
+        }
+        return 'Sub-Process';
+      }
+      // Default group fallback
+      return elementType || 'Group';
     }
 
     // Fallback
@@ -212,12 +266,12 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
                     <div>{displayName}</div>
                     <div style={{ color: '#666', fontSize: '12px' }}>
                       <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
-                      {dep.flowType && dep.flowType !== 'normal' && (
-                        <span style={{ marginLeft: '4px', color: '#1890ff' }}>
-                          [{dep.flowType}]
-                        </span>
+                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>
+                        ({formatDependencyType(dep)})
+                      </span>
+                      {dep.name && (
+                        <span style={{ marginLeft: '8px', color: '#1890ff' }}>"{dep.name}"</span>
                       )}
-                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
                     </div>
                   </div>
                 );
@@ -254,12 +308,12 @@ const ElementInfoContent: React.FC<ElementInfoContentProps> = ({
                     <div>{displayName}</div>
                     <div style={{ color: '#666', fontSize: '12px' }}>
                       <em style={{ color: '#999' }}>&lt;{dep.id}&gt;</em>
-                      {dep.flowType && dep.flowType !== 'normal' && (
-                        <span style={{ marginLeft: '4px', color: '#1890ff' }}>
-                          [{dep.flowType}]
-                        </span>
+                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>
+                        ({formatDependencyType(dep)})
+                      </span>
+                      {dep.name && (
+                        <span style={{ marginLeft: '8px', color: '#1890ff' }}>"{dep.name}"</span>
                       )}
-                      <span style={{ marginLeft: '8px', color: '#52c41a' }}>({dep.type})</span>
                     </div>
                   </div>
                 );
@@ -307,8 +361,87 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     // Track scroll position to trigger re-renders for virtualization
     const [scrollTop, setScrollTop] = useState(0);
 
-    // Track selected element for highlighting dependencies
-    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    // Track collapsed sub-processes
+    const [collapsedSubProcesses, setCollapsedSubProcesses] = useState<Set<string>>(new Set());
+
+    // Toggle collapse state for a sub-process
+    const toggleSubProcessCollapse = useCallback((subProcessId: string) => {
+      setCollapsedSubProcesses((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(subProcessId)) {
+          newSet.delete(subProcessId);
+        } else {
+          newSet.add(subProcessId);
+        }
+        return newSet;
+      });
+    }, []);
+
+    // Filter elements based on collapsed sub-processes
+    const filteredElements = useMemo(() => {
+      if (collapsedSubProcesses.size === 0) {
+        return elements;
+      }
+
+      // Create a set of all elements that should be hidden
+      const hiddenElements = new Set<string>();
+
+      // For each collapsed sub-process or lane, find all its children
+      collapsedSubProcesses.forEach((collapsedId) => {
+        const collapsedElement = elements.find((el) => el.id === collapsedId);
+
+        // Handle lane headers and participant headers - they use childIds
+        if (
+          collapsedElement &&
+          ((collapsedElement as any).isLaneHeader ||
+            (collapsedElement as any).isParticipantHeader) &&
+          collapsedElement.type === 'group'
+        ) {
+          const group = collapsedElement as GanttGroup;
+
+          // Recursively hide all descendants
+          const hideAllDescendants = (groupElement: GanttElementType) => {
+            if (groupElement.type === 'group') {
+              const groupData = groupElement as GanttGroup;
+              if (groupData.childIds) {
+                groupData.childIds.forEach((childId: string) => {
+                  hiddenElements.add(childId);
+
+                  // Find the child element and recursively hide its descendants
+                  const childElement = elements.find((el) => el.id === childId);
+                  if (childElement && childElement.type === 'group') {
+                    hideAllDescendants(childElement);
+                  }
+                });
+              }
+            }
+          };
+
+          hideAllDescendants(group);
+        } else {
+          // Regular sub-process handling
+          const addChildrenToHidden = (parentId: string) => {
+            elements.forEach((el) => {
+              const elementParentId = (el as any).parentSubProcessId;
+              if (elementParentId === parentId) {
+                hiddenElements.add(el.id);
+                // Recursively hide children of sub-processes
+                if ((el as any).isSubProcess || el.type === 'group') {
+                  addChildrenToHidden(el.id);
+                }
+              }
+            });
+          };
+          addChildrenToHidden(collapsedId);
+        }
+      });
+
+      // Return only elements that are not hidden
+      return elements.filter((el) => !hiddenElements.has(el.id));
+    }, [elements, collapsedSubProcesses]);
+
+    // Track selected elements for highlighting dependencies (support multiple selection for sub-process children)
+    const [selectedElementIds, setSelectedElementIds] = useState<Set<string>>(new Set());
 
     // Track info modal state
     const [infoModalVisible, setInfoModalVisible] = useState(false);
@@ -322,15 +455,106 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       [dependencies],
     );
 
-    // Handle element selection
-    const handleElementClick = useCallback((elementId: string) => {
-      setSelectedElementId((prev) => (prev === elementId ? null : elementId));
-    }, []);
+    // Handle element selection with sub-process child support
+    const handleElementClick = useCallback(
+      (elementId: string) => {
+        const clickedElement = filteredElements.find((el) => el.id === elementId);
+
+        setSelectedElementIds((prev) => {
+          const newSelection = new Set<string>();
+
+          // If clicking the same element that's already selected, deselect all
+          if (prev.has(elementId)) {
+            return newSelection; // Empty set - deselect everything
+          }
+
+          // Select the clicked element
+          newSelection.add(elementId);
+
+          // If the clicked element is a sub-process, lane header, or participant header, also select all its children
+          if (
+            clickedElement &&
+            clickedElement.type === 'group' &&
+            ((clickedElement as any).isSubProcess ||
+              (clickedElement as any).isLaneHeader ||
+              (clickedElement as any).isParticipantHeader)
+          ) {
+            // Handle lane headers and participant headers - they use childIds but need recursive selection
+            if (
+              (clickedElement as any).isLaneHeader ||
+              (clickedElement as any).isParticipantHeader
+            ) {
+              const group = clickedElement as GanttGroup;
+
+              // Recursively select all descendants for proper hierarchical selection
+              const getAllDescendantsFromGroup = (groupElement: GanttElementType): string[] => {
+                const descendants: string[] = [];
+
+                if (groupElement.type === 'group') {
+                  const groupData = groupElement as GanttGroup;
+                  if (groupData.childIds) {
+                    groupData.childIds.forEach((childId: string) => {
+                      descendants.push(childId);
+
+                      // Find the child element and recursively get its descendants
+                      const childElement = filteredElements.find((el) => el.id === childId);
+                      if (childElement && childElement.type === 'group') {
+                        // For child groups (lane headers), add them AND their descendants
+                        const childDescendants = getAllDescendantsFromGroup(childElement);
+                        descendants.push(...childDescendants);
+                      }
+                    });
+                  }
+                }
+
+                return descendants;
+              };
+
+              const allDescendants = getAllDescendantsFromGroup(group);
+              allDescendants.forEach((descendantId) => {
+                newSelection.add(descendantId);
+              });
+            } else {
+              // Find child elements that belong to this specific sub-process instance
+              const childElements = filteredElements.filter((el) => {
+                const parentId = (el as any).parentSubProcessId;
+                return parentId === elementId;
+              });
+
+              // Also recursively select children of sub-process children (nested sub-processes)
+              const getAllDescendants = (parentId: string): string[] => {
+                const directChildren = filteredElements.filter((el) => {
+                  const elParentId = (el as any).parentSubProcessId;
+                  return elParentId === parentId;
+                });
+
+                let allDescendants: string[] = [];
+                directChildren.forEach((child) => {
+                  allDescendants.push(child.id);
+                  // If this child is also a sub-process, get its children too
+                  if (child.type === 'group' && (child as any).isSubProcess) {
+                    allDescendants = allDescendants.concat(getAllDescendants(child.id));
+                  }
+                });
+
+                return allDescendants;
+              };
+
+              const allDescendantIds = getAllDescendants(elementId);
+              allDescendantIds.forEach((descendantId) => newSelection.add(descendantId));
+            }
+          }
+
+          return newSelection;
+        });
+      },
+      [filteredElements],
+    );
 
     // Handle info button click
     const handleInfoClick = useCallback((element: GanttElementType, event: React.MouseEvent) => {
       event.stopPropagation(); // Prevent bubbling to avoid double selection
-      setSelectedElementId(element.id); // Select the row
+      setSelectedElementIds(new Set([element.id])); // Select only this element
       setInfoModalElement(element);
       setInfoModalVisible(true);
     }, []);
@@ -341,12 +565,11 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       setInfoModalElement(null);
     }, []);
 
-    // Calculate total height for virtualization
-    // This is the full scrollable height based on the number of elements
-    const totalContentHeight = elements.length * ROW_HEIGHT;
+    // Calculate total content height for scrolling
+    const totalContentHeight = filteredElements.length * ROW_HEIGHT;
 
-    // Use the Gantt chart hook
-    const gantt = useGanttChart(elements, options);
+    // Use the Gantt chart hook with visible elements
+    const gantt = useGanttChart(filteredElements, options);
 
     // Cache the time matrix to avoid recreating it on every render
     const timeMatrixRef = useRef<TimeMatrix>();
@@ -379,8 +602,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       // Calculate the current scale based on zoom level
       const currentScale = zoomCurveCalculator.calculateScale(gantt.state.zoom);
 
-      // IMPORTANT: Use the matrix from gantt hook directly instead of creating our own
-      // This ensures we use all the baseTime optimizations and other precision fixes
+      // Use matrix from gantt hook for consistency
       if (gantt.timeMatrixRef && gantt.timeMatrixRef.current) {
         // Use the matrix directly from the hook
         timeMatrixRef.current = gantt.timeMatrixRef.current;
@@ -435,33 +657,35 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
 
         // Always use element manager for consistency
         if (elementManagerRef.current) {
-          elementManagerRef.current.setElements(elements);
+          elementManagerRef.current.setElements(filteredElements);
         }
 
         // Get highlighted dependencies for the selected element
-        const highlightedDependencies = selectedElementId
-          ? getOutgoingDependencies(selectedElementId)
-          : [];
+        const highlightedDependencies =
+          selectedElementIds.size > 0
+            ? Array.from(selectedElementIds).flatMap((id) => getOutgoingDependencies(id))
+            : [];
 
-        // Always pass ALL elements to the renderer
+        // Pass filtered elements to the renderer
         // The renderer will handle visibility filtering internally
         rendererRef.current.renderChartContent(
           timeMatrix,
-          elements,
+          filteredElements,
           visibleRowStart,
           visibleRowEnd,
           currentDateMarkerTime, // Pass the optional custom date marker time
           dependencies, // Pass dependency arrows
           scrollTop, // Pass exact scroll position
           highlightedDependencies, // Pass highlighted dependencies
-          selectedElementId, // Pass selected element ID for row highlighting
+          selectedElementIds.size > 0 ? Array.from(selectedElementIds)[0] : null, // Pass first selected element ID for row highlighting
           options?.curvedDependencies, // Pass curved dependencies setting
+          collapsedSubProcesses, // Pass collapsed sub-processes for visual indicators
         );
 
         // Update current time unit from renderer (moved to separate effect to avoid infinite loop)
       }
     }, [
-      elements,
+      filteredElements,
       gantt.state.zoom,
       gantt.state.visibleTimeStart,
       gantt.state.visibleTimeEnd,
@@ -469,7 +693,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       gantt.taskListRef,
       currentDateMarkerTime,
       dependencies,
-      selectedElementId,
+      selectedElementIds,
       getOutgoingDependencies,
     ]);
 
@@ -492,22 +716,19 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
         // Update scroll state to trigger re-render for task list virtualization
         setScrollTop(newScrollTop);
 
-        // Don't sync scroll to chart container - we handle it via canvas translation
-        // Only update if this is the task list scrolling
+        // Only update if this is the task list scrolling and throttle with requestAnimationFrame
         if (e.currentTarget === gantt.taskListRef.current) {
-          // Just trigger a re-render with the new scroll position
-          renderChart();
-        }
+          // Cancel any pending animation frame to avoid double rendering
+          if (animationFrameIdRef.current) {
+            cancelAnimationFrame(animationFrameIdRef.current);
+          }
 
-        // Throttle rendering
-        if (animationFrameIdRef.current) {
-          cancelAnimationFrame(animationFrameIdRef.current);
+          // Throttle rendering with requestAnimationFrame for smooth scrolling
+          animationFrameIdRef.current = requestAnimationFrame(() => {
+            renderChart();
+            animationFrameIdRef.current = null;
+          });
         }
-
-        animationFrameIdRef.current = requestAnimationFrame(() => {
-          renderChart();
-          animationFrameIdRef.current = null;
-        });
       },
       [renderChart, gantt.taskListRef],
     );
@@ -589,14 +810,10 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
       // Initial render
       renderChart();
 
-      // Force a second render after a brief delay to ensure all grid lines are visible
-      // This helps with the horizontal lines rendering issue
+      // Ensure grid lines render correctly after initialization
       setTimeout(() => {
-        // Forces the horizontal line rendering even when scrolled to the top
         if (rendererRef.current) {
-          // Reset rendering state to force horizontal line redraw
           rendererRef.current.updateConfig({
-            // Reset row references to force redraw but keep all other settings
             _forceGridLineRedraw: true,
           });
         }
@@ -1016,12 +1233,12 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   Math.floor((scrollTop - ROW_HEIGHT * 5) / ROW_HEIGHT),
                 );
                 const endIndex = Math.min(
-                  elements.length - 1,
+                  filteredElements.length - 1,
                   Math.ceil((scrollTop + clientHeight + ROW_HEIGHT * 5) / ROW_HEIGHT),
                 );
 
                 // For large datasets, consider more aggressive virtualization
-                const isLargeDataset = elements.length > 1000;
+                const isLargeDataset = filteredElements.length > 1000;
                 const buffer = isLargeDataset ? 10 : 20;
 
                 const visibleStartIndex = Math.max(
@@ -1029,17 +1246,17 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                   Math.floor((scrollTop - ROW_HEIGHT * buffer) / ROW_HEIGHT),
                 );
                 const visibleEndIndex = Math.min(
-                  elements.length - 1,
+                  filteredElements.length - 1,
                   Math.ceil((scrollTop + clientHeight + ROW_HEIGHT * buffer) / ROW_HEIGHT),
                 );
 
                 // Create array of visible elements only
                 const visibleElements = [];
                 for (let i = visibleStartIndex; i <= visibleEndIndex; i++) {
-                  const element = elements[i];
+                  const element = filteredElements[i];
                   if (!element) continue;
 
-                  const isSelected = selectedElementId === element.id;
+                  const isSelected = selectedElementIds.has(element.id);
 
                   visibleElements.push(
                     <div
@@ -1050,9 +1267,11 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                         top: `${i * ROW_HEIGHT}px`,
                         backgroundColor: isSelected
                           ? 'rgba(24, 144, 255, 0.1)'
-                          : element.type === 'group'
-                            ? 'rgba(114, 46, 209, 0.1)'
-                            : undefined,
+                          : (element as any).isLaneHeader
+                            ? 'rgba(230, 247, 255, 0.6)'
+                            : element.type === 'group'
+                              ? 'rgba(50, 205, 50, 0.1)'
+                              : undefined,
                         cursor: 'pointer',
                       }}
                       onClick={() => handleElementClick(element.id)}
@@ -1077,8 +1296,37 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                             style={{
                               fontWeight: element.type === 'group' ? 'bold' : 'normal',
                               fontStyle: element.name ? 'normal' : 'italic',
+                              marginLeft: `${((element as any).hierarchyLevel || 0) * 20}px`, // 20px indentation per level
+                              display: 'flex',
+                              alignItems: 'center',
                             }}
                           >
+                            {/* Collapse/expand button for sub-processes and lane headers */}
+                            {element.type === 'group' &&
+                              ((element as any).isSubProcess || (element as any).isLaneHeader) && (
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleSubProcessCollapse(element.id);
+                                  }}
+                                  style={{
+                                    padding: '0',
+                                    width: '12px',
+                                    height: '12px',
+                                    minWidth: '12px',
+                                    marginRight: '6px',
+                                    fontSize: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    lineHeight: '1',
+                                  }}
+                                >
+                                  {collapsedSubProcesses.has(element.id) ? '▶' : '▼'}
+                                </Button>
+                              )}
                             {element.name || `<${element.id}>`}
                           </span>
                           {element.type === 'group' &&
@@ -1093,7 +1341,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                         <div className={styles.extraInfoColumn}>{element.elementType || ''}</div>
                         {showInstanceColumn && (
                           <div className={styles.instanceColumn}>
-                            {element.instanceNumber || ''}
+                            {element.instanceNumber ? element.instanceNumber : ''}
                           </div>
                         )}
                         {showLoopColumn && (
@@ -1113,6 +1361,29 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                       </div>
                     </div>,
                   );
+
+                  // Add collapsed indicator in task list (without v symbols)
+                  if (
+                    element.type === 'group' &&
+                    (element as any).isSubProcess &&
+                    collapsedSubProcesses.has(element.id)
+                  ) {
+                    visibleElements.push(
+                      <div
+                        key={`${element.id}-collapsed-indicator-tasklist`}
+                        style={{
+                          position: 'absolute',
+                          top: `${i * ROW_HEIGHT + ROW_HEIGHT - 2.5}px`,
+                          left: '0',
+                          right: '0',
+                          height: '5px',
+                          backgroundColor: '#e8e8e8',
+                          borderTop: '1px solid #d0d0d0',
+                          borderBottom: '1px solid #d0d0d0',
+                        }}
+                      />,
+                    );
+                  }
                 }
 
                 return visibleElements;
@@ -1203,7 +1474,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
                 const element = elements.find((el) => el.id === elementId);
                 if (element) {
                   setInfoModalElement(element);
-                  setSelectedElementId(elementId);
+                  setSelectedElementIds(new Set([elementId]));
                 }
               }}
             />
@@ -1214,5 +1485,4 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
   },
 );
 
-// Set display name for debugging
 GanttChartCanvas.displayName = 'GanttChartCanvas';

@@ -6,6 +6,7 @@ import {
   InstanceInfo,
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
+  getProcessImageFromMachine,
   removeDeploymentFromMachines,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
@@ -22,12 +23,14 @@ import {
   getUserTaskFileFromMachine,
   setTasklistEntryVariableValuesOnMachine,
   setTasklistEntryMilestoneValuesOnMachine,
+  addOwnerToTaskListEntryOnMachine,
 } from './tasklist';
 import { truthyFilter } from '../typescript-utils';
 import {
   inlineUserTaskData,
   getCorrectVariableState,
   getCorrectMilestoneState,
+  inlineScript,
 } from '@proceed/user-task-helper';
 import { UserTask } from '../user-task-schema';
 
@@ -38,6 +41,9 @@ import {
   updateUserTask,
   deleteUserTask,
 } from '../data/user-tasks';
+import { updateVariablesOnMachine } from './instances';
+import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
+import { Variable } from '@proceed/bpmn-helper/src/getters';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -151,7 +157,11 @@ export async function getAvailableTaskListEntries(spaceId: string) {
           );
           removedTasks.push(...Object.keys(removedFromMachine));
 
-          return taskList.map((task) => ({ ...task, machineId: engine.id }));
+          return taskList.map((task) => ({
+            ...task,
+            machineId: engine.id,
+            potentialOwners: task.performers,
+          }));
         } catch (e) {
           return null;
         }
@@ -283,6 +293,20 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
 
       html = await getUserTaskFileFromMachine(deployments[0][0], definitionId, filename);
 
+      html = html.replace(/\/resources\/process[^"]*/g, (match) => {
+        const path = match.split('/');
+        return `/api/private/${spaceId}/engine/resources/process/${definitionId}/images/${path.pop()}`;
+      });
+
+      const processIds = await getProcessIds(version.bpmn);
+      let variableDefinitions: undefined | Variable[];
+      if (processIds.length) {
+        const [processId] = processIds;
+        variableDefinitions = await getVariablesFromElementById(version.bpmn, processId);
+      }
+
+      html = inlineScript(html, instanceId, taskId, variableDefinitions);
+
       if (storedState === 'READY') {
         await activateUserTask(deployments[0][0], instanceId, taskId, startTime);
         storedState = 'ACTIVE';
@@ -300,7 +324,54 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       }
     }
 
-    return inlineUserTaskData(html, instanceId, taskId, variableChanges, milestones);
+    return inlineUserTaskData(html, variableChanges, milestones);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: string, owner: string) {
+  try {
+    if (!enableUseDB)
+      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
+
+    const storedUserTask = await getUserTaskById(userTaskId);
+
+    if (!storedUserTask || 'error' in storedUserTask) {
+      throw new Error('Failed to get stored user task data.');
+    }
+
+    let { actualOwner } = storedUserTask;
+
+    if (!actualOwner.includes(owner)) {
+      await updateUserTask(userTaskId, {
+        actualOwner: [...actualOwner, owner],
+      });
+
+      const [taskId, instanceId] = userTaskId.split('|');
+
+      // find the engine the user task is running on
+      const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+        const deployments = await fetchDeployments([engine]);
+
+        const instance = deployments
+          .find((deployment) =>
+            deployment.instances.some((i) => i.processInstanceId === instanceId),
+          )
+          ?.instances.find((i) => i.processInstanceId === instanceId);
+
+        if (!instance) return false;
+
+        return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+      });
+
+      if (engines.length) {
+        return await addOwnerToTaskListEntryOnMachine(engines[0], instanceId, taskId, owner);
+      }
+    }
+
+    return {};
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -449,6 +520,34 @@ export async function completeTasklistEntry(
   }
 }
 
+export async function updateVariables(
+  spaceId: string,
+  definitionId: string,
+  instanceId: string,
+  variables: Record<string, any>,
+) {
+  try {
+    if (!enableUseDB) throw new Error('updateVariables only available with enableUseDB');
+
+    // find the engine the instance is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      return deployments.some((deployment) =>
+        deployment.instances.some((i) => i.processInstanceId === instanceId),
+      );
+    });
+
+    await asyncForEach(
+      engines,
+      async (engine) => await updateVariablesOnMachine(definitionId, instanceId, engine, variables),
+    );
+  } catch (err) {
+    const message = getErrorMessage(err);
+    return userError(message);
+  }
+}
+
 /** Returns space engines that are currently online */
 export async function getAvailableSpaceEngines(spaceId: string) {
   try {
@@ -470,4 +569,26 @@ export async function getDeployment(spaceId: string, definitionId: string) {
   const deployments = await fetchDeployments(engines);
 
   return deployments.find((d) => d.definitionId === definitionId) || null;
+}
+
+export async function getProcessImage(spaceId: string, definitionId: string, fileName: string) {
+  try {
+    if (!enableUseDB) throw new Error('getProcessImage only available with enableUseDB');
+
+    // find the engine the instance is running on
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      // TODO: when we start to have assignments of processes to multiple machines we need to check
+      // if the deployment on the machine actually contains the image
+      return deployments.some((deployment) => deployment.definitionId === definitionId);
+    });
+
+    if (!engines.length) throw new Error('Failed to an engine the process was deployed to!');
+
+    return await getProcessImageFromMachine(engines[0], definitionId, fileName);
+  } catch (err) {
+    const message = getErrorMessage(err);
+    return userError(message);
+  }
 }

@@ -1,24 +1,51 @@
 services:
-  management_system:
-    image: registry.gitlab.com/dbpms-proceed/mb-techdaten-server-deployment:latest
-    container_name: management_system
+  proceed_standalone_management_system:
+    image: proceed/ms-server:standalone
+    container_name: proceed_standalone_management_system
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://proceed:proceed@proceed_standalone_postgres_database:5432/proceed_db?schema=public
+      - NEXTAUTH_URL=http://localhost:3002
+      - NEXTAUTH_SECRET=gVRJMFKtjZmfNuLt3ZoxWTMujSwkig
+      - PROCEED_PUBLIC_IAM_ACTIVE=true
+      - PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE=true
+      - PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE=true
+      - PROCEED_PUBLIC_GANTT_ACTIVE=true
+      - PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE=false
+      - PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE=true
     ports:
-      - '3000:33081'
+      - '3002:33081'
     depends_on:
-      - postgres
+      - proceed_standalone_postgres_database
     volumes:
-      - ms2_data:/home/nextjs/.config/proceed-management-system
+      - proceed_standalone_management-system_data:/app/volume
+    networks:
+      - proceed-standalone-network
 
-  postgres:
+  proceed_standalone_postgres_database:
     image: postgres:latest
-    container_name: postgres_database
+    container_name: proceed_standalone_postgres_database
+    restart: always
     environment:
       POSTGRES_DB: proceed_db
       POSTGRES_USER: proceed
       POSTGRES_PASSWORD: proceed
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - proceed_standalone_postgres_db:/var/lib/postgresql/data
+    networks:
+      - proceed-standalone-network
+
+  proceed_standalone_engine:
+    image: proceed/engine:latest
+    container_name: proceed_standalone_engine
+    restart: always
+    networks:
+      - proceed-standalone-network
 
 volumes:
-  postgres_data:
-  ms2_data:
+  proceed_standalone_postgres_db:
+  proceed_standalone_management-system_data:
+
+networks:
+  proceed-standalone-network:
+    name: proceed-standalone-network

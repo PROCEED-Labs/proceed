@@ -224,19 +224,35 @@ export function getCorrectMilestoneState(
   }[]
 >;
 /**
- * Function that replaces placeholders in html with the correct data
+ * Function that replaces the {{script}} placeholder in the html with the default script
  *
- * @param {string} html the html that contains placeholders to replace with some data
+ * @param {string | Buffer} html the html that contains placeholders to replace with some data
  * @param {string} instanceId the id of the instance the user task was triggered in
  * @param {string} userTaskId the id of the user task element that created this user task instance
+ * @param {{ name: string; dataType: string; enum?: string; }[]} [variableDefinitions=[]] meta data about the variables expected in the instance
+ * containing the user task
+ * @returns {string} the html with the placeholders replaced by the correct values
+ */
+export function inlineScript(
+  html: string | Buffer,
+  instanceId: string,
+  userTaskId: string,
+  variableDefinitions?: {
+    name: string;
+    dataType: string;
+    enum?: string;
+  }[],
+): string;
+/**
+ * Function that replaces placeholders in html with the correct data
+ *
+ * @param {string | Buffer} html the html that contains placeholders to replace with some data
  * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
  * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
  * @returns {string} the html with the placeholders replaced by the correct values
  */
 export function inlineUserTaskData(
-  html: string,
-  instanceId: string,
-  userTaskId: string,
+  html: string | Buffer,
   variables: ReturnType<typeof getCorrectVariableState>,
   milestones: Awaited<ReturnType<typeof getCorrectMilestoneState>>,
 ): string;

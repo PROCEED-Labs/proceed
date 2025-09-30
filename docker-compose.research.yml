@@ -1,23 +1,34 @@
 services:
-  proceed:
+  proceed_research_management_system:
     image: proceed/ms-server:edge
-    container_name: management_system
+    container_name: proceed_research_management_system
     env_file: .env.research
+    restart: always
     ports:
       - '33081:33081'
+    depends_on:
+      - proceed_research_postgres_database
     volumes:
-      - /opt/proceed-ms-server:/app/volume
-  postgres:
+      - ./proceed-ms-filesystem-data:/app/volume
+    networks:
+      - proceed-network
+
+  proceed_research_postgres_database:
     image: postgres:latest
-    container_name: postgres_database_proceed
-    environment:
-      POSTGRES_DB: proceed_db
-      POSTGRES_USER: proceed_user
-      POSTGRES_PASSWORD: ---
+    container_name: proceed_research_postgres_database
+    env_file: .env.research
+    restart: always
     ports:
       - '5433:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - proceed_research_postgres_db:/var/lib/postgresql/data
+    networks:
+      - proceed-network
 
 volumes:
-  postgres_data:
+  proceed_research_postgres_db:
+
+networks:
+  proceed-network:
+    name: proceed-production-network
+    external: true

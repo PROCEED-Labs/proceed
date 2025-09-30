@@ -1,7 +1,7 @@
 import mqtt from 'mqtt';
 import { MqttEngine } from '../machines';
 
-const mqttTimeout = 1000;
+const mqttTimeout = 10000;
 
 const defaultBaseTopicPrefix = '';
 function getEnginePrefix(engineId: string, prefix = defaultBaseTopicPrefix) {
@@ -66,7 +66,10 @@ export async function getClient(
     const savedClient = proceedMqttEngineClients.get(brokerAddress);
     if (savedClient) return savedClient;
 
-    const client = await mqtt.connectAsync(brokerAddress, options);
+    const client = await mqtt.connectAsync(brokerAddress, {
+      rejectUnauthorized: false, // allow self-signed certificates, could be removed later and implemented as an option in the UI
+      ...options,
+    });
     const engineMap = new Map();
 
     collectEnginesStatus({ client, brokerAddress, engineMap });
@@ -76,7 +79,10 @@ export async function getClient(
     return client;
   }
 
-  return await mqtt.connectAsync(brokerAddress, options);
+  return await mqtt.connectAsync(brokerAddress, {
+    rejectUnauthorized: false, // allow self-signed certificates, could be removed later and implemented as an option in the UI
+    ...options,
+  });
 }
 
 export async function getCollectedProceedMqttEngines(
@@ -137,6 +143,14 @@ export async function mqttRequest(
 
     let result: string | object;
 
+    if (message.mimeType && message.bodyIsBuffer) {
+      const buffer = new Uint8Array(message.body);
+      const blob = new Blob([buffer], { type: message.mimeType });
+      result = blob;
+      res(result);
+      return;
+    }
+
     try {
       result = JSON.parse(message.body);
     } catch (err) {
@@ -151,7 +165,7 @@ export async function mqttRequest(
   mqttClient.publish(requestTopic, JSON.stringify({ ...message, type: 'request', id: requestId }));
 
   // await for response or timeout
-  setTimeout(rej!, mqttTimeout);
+  setTimeout(() => rej(new Error('MQTT request timed out (10s)')), mqttTimeout);
   const response = await receivedAnswer;
 
   // cleanup

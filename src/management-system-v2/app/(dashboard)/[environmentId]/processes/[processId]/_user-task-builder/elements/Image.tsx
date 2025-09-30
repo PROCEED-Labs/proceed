@@ -4,10 +4,9 @@ import { InputNumber } from 'antd';
 
 import { useEffect, useRef, useState } from 'react';
 
-import { fallbackImage } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { ContextMenu, Setting } from './utils';
-import ImageUpload from '@/components/image-upload';
+import ImageUpload, { fallbackImage } from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { useCanEdit } from '../../modeler';
@@ -16,31 +15,30 @@ type ImageProps = {
   src?: string;
   reloadParam?: number;
   width?: number;
+  definitionId?: string;
 };
 
 // How the image should be rendered for use outside of the MS (mainly for use on the engine)
-export const ExportImage: UserComponent<ImageProps> = ({ src, width }) => {
+export const ExportImage: UserComponent<ImageProps> = ({ src, width, definitionId }) => {
   if (src) {
     // transform the url used inside the MS into the one expected on the engine
     // cannot use useParams and useEnvironment since this will not be used inside the context in
     // which they are defined
     const msUrl = src.split('/');
     const filename = msUrl.pop();
-    msUrl.pop();
-    const definitionId = msUrl.pop();
 
     src = `/resources/process/${definitionId}/images/${filename}`;
   }
 
   return (
     <div className="user-task-form-image">
-      <img style={{ width: width && `${width}%` }} src={src ? `${src}` : fallbackImage} />
+      <img style={{ width: width && `${width}%` }} src={src || fallbackImage} />
     </div>
   );
 };
 
 // the Image component to use in the Editor
-export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
+export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId }) => {
   const { query } = useEditor();
 
   const [showResize, setShowResize] = useState(false);
@@ -58,17 +56,22 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
     return { isHovered: !!parent && parent.events.hovered };
   });
 
+  const { processId } = useParams<{ processId: string }>();
+
+  useEffect(() => {
+    // initialize the definitionId prop that is needed to map the image url on export
+    if (!definitionId) setProp((props: ImageProps) => (props.definitionId = processId));
+  }, []);
+
   const editingEnabled = useCanEdit();
 
   const { fileUrl: imageUrl, download: getImageUrl } = useFileManager({
     entityType: EntityType.PROCESS,
   });
 
-  const params = useParams<{ processId: string }>();
-
   useEffect(() => {
     if (src) {
-      getImageUrl({ entityId: params.processId as string, filePath: src });
+      getImageUrl({ entityId: processId as string, filePath: src });
     }
   }, [src]);
 
@@ -87,17 +90,8 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
           }
         }}
       >
-        <img
-          ref={imageRef}
-          style={{ width: width && `${width}%` }}
-          src={src ? imageUrl! : fallbackImage}
-        />
-        {editingEnabled && isHovered && (
+        {editingEnabled ? (
           <ImageUpload
-            imageExists={!!src}
-            onReload={() => {
-              setProp((props: ImageProps) => (props.reloadParam = Date.now()));
-            }}
             onImageUpdate={(imageFileName) => {
               setProp((props: ImageProps) => {
                 props.src = imageFileName && imageFileName;
@@ -106,10 +100,20 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width }) => {
             }}
             config={{
               entityType: EntityType.PROCESS,
-              entityId: params.processId,
-              useDefaultRemoveFunction: false,
-              fileName: src,
+              entityId: processId,
+              dontUpdateProcessArtifactsReferences: true,
             }}
+            uploadProps={{
+              style: { width: width && `${width}%` },
+            }}
+            fileName={src}
+            basicLoadingFeedback
+          />
+        ) : (
+          <img
+            ref={imageRef}
+            style={{ width: width && `${width}%` }}
+            src={src ? imageUrl! : fallbackImage}
           />
         )}
         {/* Allows resizing  */}

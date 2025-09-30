@@ -85,8 +85,6 @@ export async function addUser(
     checks.push(user.email ? getUserByEmail(user.email) : undefined);
 
     const [usernameRes, emailRes] = await Promise.all(checks);
-    console.log('usernameRes', usernameRes);
-    console.log('emailRes', emailRes);
 
     if (usernameRes) {
       throw new NextAuthUsernameTakenError();

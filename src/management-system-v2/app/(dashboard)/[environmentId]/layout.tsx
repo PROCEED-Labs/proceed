@@ -1,5 +1,5 @@
 import { PropsWithChildren } from 'react';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser, getSystemAdminRules } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
 import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
@@ -28,9 +28,8 @@ import { getEnvironmentById, getSpaceLogo } from '@/lib/data/db/iam/environments
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { spaceURL } from '@/lib/utils';
-import { RemoveReadOnly, truthyFilter } from '@/lib/typescript-utils';
+import { truthyFilter } from '@/lib/typescript-utils';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { adminRules } from '@/lib/authorization/globalRules';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import GuestWarningButton from '@/components/guest-warning-button';
@@ -67,7 +66,7 @@ const DashboardLayout = async ({
   userEnvironments.push(...orgEnvironments);
 
   const userRules = systemAdmin
-    ? (adminRules as RemoveReadOnly<typeof adminRules>)
+    ? getSystemAdminRules(activeEnvironment.isOrganization)
     : await getUserRules(userId, activeEnvironment.spaceId);
 
   const generalSettings = await getSpaceSettingsValues(
@@ -218,36 +217,40 @@ const DashboardLayout = async ({
   ) {
     const children: MenuProps['items'] = [];
 
-    if (can('update', 'Environment') || can('delete', 'Environment'))
+    if (can('update', 'Environment') || can('delete', 'Environment')) {
       children.push({
         key: 'organization-settings',
         label: <Link href={spaceURL(activeEnvironment, `/settings`)}>Settings</Link>,
         icon: <SettingOutlined />,
       });
+    }
 
     if (
       activeEnvironment.isOrganization &&
       (can('update', 'Environment') || can('delete', 'Environment'))
-    )
+    ) {
       children.push({
         key: 'organization-management',
         label: <Link href={spaceURL(activeEnvironment, `/management`)}>Management</Link>,
         icon: <GoOrganization />,
       });
+    }
 
-    if (can('manage', 'User'))
+    if (can('manage', 'User')) {
       children.push({
         key: 'users',
         label: <Link href={spaceURL(activeEnvironment, `/iam/users`)}>Users</Link>,
         icon: <UserOutlined />,
       });
+    }
 
-    if (can('manage', 'RoleMapping') || can('manage', 'Role'))
+    if (can('admin', 'All')) {
       children.push({
         key: 'roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,
         icon: <TeamOutlined />,
       });
+    }
 
     layoutMenuItems.push({
       key: 'iam-group',

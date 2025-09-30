@@ -171,6 +171,7 @@ export const msConfigSchema = {
 
     EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS: z.coerce.number().default(7),
     EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS: z.coerce.number().default(7),
+    EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS: z.coerce.number().default(24),
   },
   production: {
     DATABASE_URL: z.string(),

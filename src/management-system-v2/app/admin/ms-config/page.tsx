@@ -238,6 +238,15 @@ async function ConfigPage() {
           value: msConfig.EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS,
         },
         {
+          type: 'number',
+          name: 'EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS',
+          key: 'EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS',
+          value: msConfig.EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS,
+          // NOTE: eventually remove this description
+          description: 'This value will only take effect after restarting the system',
+        },
+
+        {
           name: 'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE',
           key: 'msconfig-iam-oauth-google',
           children: [

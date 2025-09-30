@@ -29,6 +29,7 @@ import db from './data/db';
 import { createUserRegistrationToken } from './email-verification-tokens/utils';
 import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
 import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
+import { getMSConfig } from './ms-config/ms-config';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -168,7 +169,11 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
           text: signinMail.text,
         });
       },
-      maxAge: 24 * 60 * 60, // one day
+      maxAge:
+        (await getMSConfig({ dontForceDynamicThroughHeaders: true }))
+          .EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS *
+        60 *
+        60,
     }),
   );
 }

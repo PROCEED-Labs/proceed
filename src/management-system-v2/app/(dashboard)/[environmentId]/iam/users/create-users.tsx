@@ -59,7 +59,7 @@ export function CreateUsersModal({
   }
 
   return (
-    <Modal open={open} onCancel={close} title="Create User" {...modalProps}>
+    <Modal open={open} onCancel={close} title="Create User" footer={null} {...modalProps}>
       <Form form={form} onFinish={submitUser} layout="vertical">
         <Form.Item name="firstName" label="First Name" rules={[{ required: true }]} required>
           <Input />

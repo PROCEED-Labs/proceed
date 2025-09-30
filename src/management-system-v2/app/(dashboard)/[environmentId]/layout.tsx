@@ -1,5 +1,5 @@
 import { PropsWithChildren } from 'react';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser, getSystemAdminRules } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
 import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
@@ -28,9 +28,8 @@ import { getEnvironmentById, getSpaceLogo } from '@/lib/data/db/iam/environments
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
 import { spaceURL } from '@/lib/utils';
-import { RemoveReadOnly, truthyFilter } from '@/lib/typescript-utils';
+import { truthyFilter } from '@/lib/typescript-utils';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { adminRules } from '@/lib/authorization/globalRules';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import GuestWarningButton from '@/components/guest-warning-button';
@@ -67,7 +66,7 @@ const DashboardLayout = async ({
   userEnvironments.push(...orgEnvironments);
 
   const userRules = systemAdmin
-    ? (adminRules as RemoveReadOnly<typeof adminRules>)
+    ? getSystemAdminRules(activeEnvironment.isOrganization)
     : await getUserRules(userId, activeEnvironment.spaceId);
 
   const generalSettings = await getSpaceSettingsValues(
@@ -78,6 +77,39 @@ const DashboardLayout = async ({
   const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
   const middleCustomNavLinks = customNavLinks.filter((link) => link.position === 'middle');
   const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');
+  const externalServicesLabel = (
+    <span style={{ display: 'block', width: '100%', textAlign: 'center', fontSize: '.75rem' }}>
+      External Services
+    </span>
+  );
+  let bottomNavLinks: MenuProps['items'] = [];
+  if (bottomCustomNavLinks.length > 0) {
+    const bottomCustomNavLinksMenuItems: MenuProps['items'] = bottomCustomNavLinks.map(
+      (link, idx) => ({
+        key: idx,
+        label: <CustomLink link={link} />,
+        icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
+      }),
+    );
+    if (middleCustomNavLinks.length > 0) {
+      // If we already show a external services label for the middle links, don't show one again for
+      // the bottom links
+      bottomNavLinks.push(...bottomCustomNavLinksMenuItems);
+    } else {
+      bottomNavLinks.push(
+        {
+          key: 'bottom-custom-links-divider',
+          type: 'divider',
+        },
+        {
+          key: 'bottom-custom-links',
+          type: 'group',
+          label: externalServicesLabel,
+          children: bottomCustomNavLinksMenuItems,
+        },
+      );
+    }
+  }
 
   const userPassword = await getUserPassword(user!.id);
   const userNeedsToChangePassword = userPassword ? userPassword.isTemporaryPassword : false;
@@ -185,36 +217,40 @@ const DashboardLayout = async ({
   ) {
     const children: MenuProps['items'] = [];
 
-    if (can('update', 'Environment') || can('delete', 'Environment'))
+    if (can('update', 'Environment') || can('delete', 'Environment')) {
       children.push({
         key: 'organization-settings',
         label: <Link href={spaceURL(activeEnvironment, `/settings`)}>Settings</Link>,
         icon: <SettingOutlined />,
       });
+    }
 
     if (
       activeEnvironment.isOrganization &&
       (can('update', 'Environment') || can('delete', 'Environment'))
-    )
+    ) {
       children.push({
         key: 'organization-management',
         label: <Link href={spaceURL(activeEnvironment, `/management`)}>Management</Link>,
         icon: <GoOrganization />,
       });
+    }
 
-    if (can('manage', 'User'))
+    if (can('manage', 'User')) {
       children.push({
         key: 'users',
         label: <Link href={spaceURL(activeEnvironment, `/iam/users`)}>Users</Link>,
         icon: <UserOutlined />,
       });
+    }
 
-    if (can('manage', 'RoleMapping') || can('manage', 'Role'))
+    if (can('admin', 'All')) {
       children.push({
         key: 'roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,
         icon: <TeamOutlined />,
       });
+    }
 
     layoutMenuItems.push({
       key: 'iam-group',
@@ -287,17 +323,21 @@ const DashboardLayout = async ({
   }
 
   if (middleCustomNavLinks.length > 0) {
-    layoutMenuItems.push({
-      key: 'bottom-custom-links-divider',
-      type: 'divider',
-    });
-
     layoutMenuItems.push(
-      ...middleCustomNavLinks.map((link, idx) => ({
-        key: idx,
-        label: <CustomLink link={link} />,
-        icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
-      })),
+      {
+        key: 'middle-custom-links-divider',
+        type: 'divider',
+      },
+      {
+        key: 'middle-custom-links',
+        type: 'group',
+        label: externalServicesLabel,
+        children: middleCustomNavLinks.map((link, idx) => ({
+          key: idx,
+          label: <CustomLink link={link} />,
+          icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
+        })),
+      },
     );
   }
 
@@ -318,13 +358,7 @@ const DashboardLayout = async ({
           activeSpace={activeEnvironment}
           customLogo={logo}
           userNeedsToChangePassword={userNeedsToChangePassword}
-          bottomMenuItems={bottomCustomNavLinks.map((link, idx) => ({
-            key: idx,
-            label: <CustomLink link={link} />,
-            icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || (
-              <LinkOutlined />
-            ),
-          }))}
+          bottomMenuItems={bottomNavLinks}
         >
           {children}
         </Layout>

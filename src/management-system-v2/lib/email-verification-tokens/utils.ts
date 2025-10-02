@@ -33,7 +33,7 @@ export async function createChangeEmailVerificationToken({
 
   const token = crypto.randomUUID();
   const expires = new Date(
-    Date.now() + MS_IN_HOUR * msConfig.EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS,
+    Date.now() + MS_IN_HOUR * msConfig.SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_CHANGE_TOKENS,
   );
 
   const verificationToken = {
@@ -76,7 +76,7 @@ export async function createUserRegistrationToken(
 
   const token = crypto.randomUUID();
   const expires = new Date(
-    Date.now() + MS_IN_HOUR * msConfig.EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS,
+    Date.now() + MS_IN_HOUR * msConfig.SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_REGISTRATION_TOKENS,
   );
 
   const verificationToken = {

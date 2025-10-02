@@ -171,7 +171,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
       },
       maxAge:
         (await getMSConfig({ dontForceDynamicThroughHeaders: true }))
-          .EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS *
+          .SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_VERIFICATION_TOKENS *
         60 *
         60,
     }),

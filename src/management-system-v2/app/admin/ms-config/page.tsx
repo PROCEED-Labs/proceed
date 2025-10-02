@@ -210,27 +210,6 @@ async function ConfigPage() {
           value: msConfig.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE,
         },
         {
-          type: 'number',
-          name: 'EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS',
-          key: 'EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS',
-          value: msConfig.EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS,
-        },
-        {
-          type: 'number',
-          name: 'EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS',
-          key: 'EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS',
-          value: msConfig.EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS,
-        },
-        {
-          type: 'number',
-          name: 'EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS',
-          key: 'EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS',
-          value: msConfig.EMAIL_SIGNIN_VERIFICATION_TOKEN_EXPIRATION_HOURS,
-          // NOTE: eventually remove this description
-          description: 'This value will only take effect after restarting the system',
-        },
-
-        {
           name: 'PROCEED_PUBLIC_IAM_LOGIN_OAUTH_GOOGLE_ACTIVE',
           key: 'msconfig-iam-oauth-google',
           children: [
@@ -338,6 +317,26 @@ async function ConfigPage() {
           key: 'SCHEDULER_TASK_DELETE_INACTIVE_SPACES',
           value: msConfig.SCHEDULER_TASK_DELETE_INACTIVE_SPACES,
         },
+        {
+          type: 'number',
+          name: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_REGISTRATION_TOKENS',
+          key: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_REGISTRATION_TOKENS',
+          value: msConfig.SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_REGISTRATION_TOKENS,
+        },
+        {
+          type: 'number',
+          name: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_CHANGE_TOKENS',
+          key: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_CHANGE_TOKENS',
+          value: msConfig.SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_CHANGE_TOKENS,
+        },
+        {
+          type: 'number',
+          name: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_VERIFICATION_TOKENS',
+          key: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_VERIFICATION_TOKENS',
+          value: msConfig.SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_VERIFICATION_TOKENS,
+          // NOTE: eventually remove this description
+          description: 'This value will only take effect after restarting the system',
+        },
       ],
     },
   ];
@@ -368,14 +367,6 @@ async function ConfigPage() {
         {
           groupKey: 'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
           disablerKey: 'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
-        },
-        {
-          groupKey: 'EMAIL_REGISTRATION_VERIFICATION_TOKEN_EXPIRATION_HOURS',
-          disablerKey: 'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
-        },
-        {
-          groupKey: 'EMAIL_CHANGE_VERIFICATION_TOKEN_EXPIRATION_HOURS',
-          disablerKey: 'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
         },
       ]}
     />

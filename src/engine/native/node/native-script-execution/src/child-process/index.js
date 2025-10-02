@@ -38,6 +38,24 @@ context.global.setSync('_stdout_log', function (...args) {
   console.log(...args);
 });
 
+const wait = new ivm.Reference((ms) => new Promise((res) => setTimeout(res, ms)));
+
+context.evalClosureSync(
+  function wait(ms) {
+    $0.applySyncPromise(null, [ms], {});
+  }.toString() + `globalThis["wait"] = wait;`,
+  [wait],
+);
+
+context.evalClosureSync(
+  async function waitAsync(ms) {
+    await $0.apply(null, [ms], {
+      result: { promise: true },
+    });
+  }.toString() + `globalThis["waitAsync"] = waitAsync;`,
+  [wait],
+);
+
 /* -------------------------------------------------------------------------------------------------
  * Function for communication with universal part
  * -----------------------------------------------------------------------------------------------*/

@@ -93,7 +93,7 @@ class SubprocesScriptExecution extends NativeModule {
       const scriptTask = childProcess.spawn(
         `node`,
         [
-          require.resolve('./childProcess.js'),
+          require.resolve('./child-process/index.js'),
           processId,
           processInstanceId,
           scriptIdentifier,

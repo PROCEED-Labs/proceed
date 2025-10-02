@@ -107,7 +107,7 @@ export default function MSConfigForm({
             // Get context for the setting
             const overridden = overwrittenByEnv.includes(configKey);
             const envOnly = mSConfigEnvironmentOnlyKeys.includes(configKey as any);
-            const disabled = pathParts.find((part) => disabledGroups.get(part));
+            const disabledKey = pathParts.find((part) => disabledGroups.get(part));
 
             // This is needed, for when a key that can disable a group, is part of a group that is
             // disabled
@@ -127,7 +127,7 @@ export default function MSConfigForm({
               !envOnly &&
               !overridden &&
               !parentGroupDisabled &&
-              (!disabled || disablers.length > 0)
+              (!disabledKey || disablers.length > 0)
             )
               return;
 
@@ -150,7 +150,7 @@ export default function MSConfigForm({
               tooltipMessage = 'This config was overridden by an environment variable';
             else if (envOnly)
               tooltipMessage = 'This setting can only be changed through environment variables';
-            else if (disabled) tooltipMessage = `Disabled by ${disabled}`;
+            else if (disabledKey) tooltipMessage = `Disabled by ${disabledGroups.get(disabledKey)}`;
 
             return {
               input: <Tooltip title={tooltipMessage}>{input}</Tooltip>,

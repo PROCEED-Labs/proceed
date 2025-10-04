@@ -495,7 +495,7 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     content: `
     Task: Manage emergency room triage, including rapid patient assessment and prioritization.
     Competence: Registered nurse with prior ER triage experience and ACLS certification.
-    Similarity Score: 0.99
+    Similarity Score: 1
     Alignment: aligning
   `,
   },

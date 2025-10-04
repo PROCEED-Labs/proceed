@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --watch .env src/server.ts",
     "build": "tsc",
-    "run-production": "node dist/server.js"
+    "production": "node dist/server.js"
   },
   "repository": {
     "type": "git",

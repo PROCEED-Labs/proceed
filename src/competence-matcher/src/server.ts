@@ -15,7 +15,6 @@ import { errorHandler } from './middleware/error-handler';
 import { ensureAllOllamaModelsAreAvailable } from './utils/ollama';
 import { ensureAllHuggingfaceModelsAreAvailable } from './utils/huggingface';
 import { CompetenceMatcherError } from './utils/errors';
-import workerManager from './worker/worker-manager';
 
 const { port: PORT } = config;
 
@@ -48,11 +47,6 @@ async function main() {
     await ensureAllOllamaModelsAreAvailable();
 
     logger.info('server', 'All required models are available');
-
-    // Wait for worker pools to be ready
-    logger.info('server', 'Waiting for worker pools to be ready...');
-    await workerManager.ready();
-    logger.info('server', 'All worker pools are ready');
   } catch (error) {
     const initError = new CompetenceMatcherError(
       `Failed to initialise service: ${error instanceof Error ? error.message : String(error)}`,

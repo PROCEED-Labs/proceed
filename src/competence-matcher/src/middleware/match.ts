@@ -206,123 +206,79 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
         );
       }
 
-      handleCreateResourceList(
-        req.dbName!,
-        list,
-        requestId,
-        (job: any, code: number, jobId: string) => {
-          try {
-            // Embedding fails -> no matching possible (i.e. fail the matching job)
-            if (code !== 0) {
-              try {
-                db.updateJobStatus(matchingJobId, 'failed');
-              } catch (error) {
-                const dbError = new DatabaseError(
-                  'updateJobStatus',
-                  error instanceof Error ? error : new Error(String(error)),
-                  requestId,
-                );
-                logger.databaseError(
-                  'Failed to update job status to failed',
-                  dbError,
-                  { matchingJobId },
-                  requestId,
-                );
-              }
-              return;
-            }
+      // Start the embedding job and get the promise for completion
+      const embeddingResult = handleCreateResourceList(req.dbName!, list, requestId);
 
-            try {
-              db.updateJobStatus(matchingJobId, 'pending');
-            } catch (error) {
-              const dbError = new DatabaseError(
-                'updateJobStatus',
-                error instanceof Error ? error : new Error(String(error)),
-                requestId,
-              );
-              logger.databaseError(
-                'Failed to update job status to pending',
-                dbError,
-                { matchingJobId },
-                requestId,
-              );
-              return;
-            }
-
-            // Retrieve the competence list ID
-            const { referenceId: listId } = db.getJob(jobId);
-
-            // Create the matching job
-            const matchingJob: MatchingJob = {
-              jobId: matchingJobId,
-              dbName: req.dbName!,
-              listId,
-              resourceId: undefined, // For now, we don't support matching against a single resource
-              tasks: taskInput!.map((task) => {
-                return {
-                  taskId: task.taskId,
-                  name: task.name,
-                  description: task.description,
-                  executionInstructions: task.executionInstructions,
-                  requiredCompetencies: (task.requiredCompetencies ?? []).map((competence) =>
-                    typeof competence === 'string'
-                      ? (competence as string)
-                      : ({
-                          competenceId: competence.competenceId,
-                          name: competence.name,
-                          description: competence.description,
-                          externalQualificationNeeded: competence.externalQualificationNeeded,
-                          renewTime: competence.renewTime,
-                          proficiencyLevel: competence.proficiencyLevel,
-                          qualificationDates: competence.qualificationDates,
-                          lastUsages: competence.lastUsages,
-                        } as CompetenceInput),
-                  ) as string[] | CompetenceInput[],
-                };
-              }),
-            };
-
-            // Enqueue the matching job
-            workerManager.enqueue(matchingJob, 'matcher');
-          } catch (error) {
-            try {
-              db.updateJobStatus(matchingJobId, 'failed');
-            } catch (dbError) {
-              const dbErrorObj = new DatabaseError(
-                'updateJobStatus',
-                dbError instanceof Error ? dbError : new Error(String(dbError)),
-                requestId,
-              );
-              logger.databaseError(
-                'Failed to update job status after error',
-                dbErrorObj,
-                { matchingJobId },
-                requestId,
-              );
-            }
-
-            const matchingError = new CompetenceMatcherError(
-              `Failed to create inline matching job: ${error instanceof Error ? error.message : String(error)}`,
-              'inline_job_creation',
-              500,
-              requestId,
-              { matchingJobId },
-            );
-            logger.error(
-              'request',
-              'Failed to create inline matching job',
-              matchingError,
-              { matchingJobId },
-              requestId,
-            );
-          }
-        },
-      );
-
+      // Send response immediately with the matching job ID
       res
         .setHeader('Location', `${PATHS.match}/jobs/${matchingJobId}`)
         .status(202)
-        .json({ jobId: matchingJobId, status: 'pending' });
+        .json({ jobId: matchingJobId, status: 'preprocessing' }); // Match the actual database status
+
+      // Chain the matching job to start after embedding completes
+      embeddingResult.promise
+        .then(() => {
+          // Embedding is done, now update matching job status and start it
+          try {
+            db.updateJobStatus(matchingJobId, 'pending');
+          } catch (error) {
+            logger.error(
+              'system',
+              'Failed to update matching job status to pending',
+              error instanceof Error ? error : new Error(String(error)),
+              {},
+              requestId,
+            );
+          }
+
+          const matchingJob: MatchingJob = {
+            jobId: matchingJobId,
+            dbName: req.dbName!,
+            listId: embeddingResult.listId, // Use the embedding result's listId
+            resourceId: undefined,
+            tasks: taskInput!.map((task) => {
+              return {
+                taskId: task.taskId,
+                name: task.name,
+                description: task.description,
+                executionInstructions: task.executionInstructions,
+                requiredCompetencies: (task.requiredCompetencies ?? []).map((competence) =>
+                  typeof competence === 'string'
+                    ? (competence as string)
+                    : ({
+                        competenceId: competence.competenceId,
+                        name: competence.name,
+                        description: competence.description,
+                        externalQualificationNeeded: competence.externalQualificationNeeded,
+                        renewTime: competence.renewTime,
+                        proficiencyLevel: competence.proficiencyLevel,
+                        qualificationDates: competence.qualificationDates,
+                        lastUsages: competence.lastUsages,
+                      } as CompetenceInput),
+                ) as string[] | CompetenceInput[],
+              };
+            }),
+          };
+
+          workerManager.enqueue(matchingJob, 'matcher');
+        })
+        .catch((error) => {
+          // Embedding failed, mark matching job as failed too
+          try {
+            db.updateJobStatus(matchingJobId, 'failed');
+          } catch (dbError) {
+            // Log but don't throw
+            logger.error(
+              'system',
+              'Failed to update matching job status to failed',
+              dbError instanceof Error ? dbError : new Error(String(dbError)),
+              {},
+              requestId,
+            );
+          }
+        });
+
+      return;
     }
   } catch (error) {
     // Pass error to error handler middleware

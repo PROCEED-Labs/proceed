@@ -69,7 +69,7 @@ export async function withJobUpdates<T>(
     // Always re-throw the error so the worker can handle it appropriately
     throw error;
   } finally {
-    db.close();
+    // Don't close the database connection - let DBManager handle connection lifecycle
     // Don't close parentPort or exit process for static worker pools
     // Workers need to stay alive to process more jobs
   }
@@ -107,4 +107,45 @@ export function workerLogger(
   if (parentPort) {
     parentPort.postMessage(logData);
   }
+}
+
+/**
+ * Start sending heartbeat messages to the main thread
+ * This should be called once when a worker starts up
+ *
+ * @param workerType - Type of worker (e.g., 'embedder', 'matcher')
+ * @param intervalMs - Heartbeat interval in milliseconds (default: 20000ms = 20s)
+ * @returns Function to stop the heartbeat
+ */
+export function startHeartbeat(workerType: string, intervalMs: number = 20000): () => void {
+  if (!parentPort) {
+    throw new Error('startHeartbeat can only be called from worker threads');
+  }
+
+  const { threadId } = require('worker_threads');
+
+  const sendHeartbeat = () => {
+    workerLogger('system', 'debug', `${workerType} worker sending heartbeat`, {
+      workerType,
+      threadId,
+    });
+
+    parentPort!.postMessage({
+      type: 'heartbeat',
+      workerType,
+      threadId,
+      timestamp: Date.now(),
+    });
+  };
+
+  // Send initial heartbeat immediately
+  sendHeartbeat();
+
+  // Set up interval for regular heartbeats
+  const heartbeatInterval = setInterval(sendHeartbeat, intervalMs);
+
+  // Return cleanup function
+  return () => {
+    clearInterval(heartbeatInterval);
+  };
 }

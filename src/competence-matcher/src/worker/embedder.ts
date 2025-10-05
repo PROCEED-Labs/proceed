@@ -1,15 +1,9 @@
 import { parentPort, threadId } from 'worker_threads';
 import Embedding from '../tasks/embedding';
 import { splitSemantically } from '../tasks/semantic-split';
-import { withJobUpdates, workerLogger } from '../utils/worker';
+import { withJobUpdates, workerLogger, startHeartbeat } from '../utils/worker';
 import { EmbeddingJob } from '../utils/types';
-
-// // Initialise embedding model on startup
-// try {
-//   Embedding.getInstance();
-// } catch (error) {
-//   // Model already initialised
-// }
+import { config } from '../config';
 
 /**
  * New embedder worker that stays alive and processes jobs sequentially
@@ -24,37 +18,25 @@ async function ensureModelsInitialised() {
   try {
     await Embedding.getInstance();
     modelsInitialised = true;
-    workerLogger('system', 'info', 'Embedder worker model initialised', { threadId });
+    workerLogger('system', 'debug', 'Embedder worker online', { threadId });
   } catch (err) {
     throw err;
   }
 }
 
-// Set up health check handler immediately, before any heavy initialisation
+// Start heartbeat immediately
+startHeartbeat('embedder', config.workerHeartbeatInterval);
+
+// Set up job message handler
 parentPort.on('message', async (message: any) => {
-  // Handle health checks with highest priority
-  if (message?.type === 'health_check') {
-    workerLogger('system', 'debug', `Health check received: ${message.checkId}`, {
-      threadId,
-      checkId: message.checkId,
-    });
-
-    parentPort!.postMessage({
-      type: 'health_check_response',
-      checkId: message.checkId,
-      timestamp: Date.now(),
-      workerType: 'embedder',
-      threadId: threadId,
-    });
-
-    workerLogger('system', 'debug', `Health check response sent: ${message.checkId}`, {
-      threadId,
-    });
-    return;
-  }
-
   // Handle job messages
   const job = message as EmbeddingJob;
+
+  workerLogger(job.jobId || 'system', 'debug', 'Embedder worker received job', {
+    threadId,
+    jobId: job.jobId,
+    taskCount: job.tasks?.length || 0,
+  });
 
   // ensure models are initialised (but do not run this for health_check)
   try {
@@ -62,9 +44,9 @@ parentPort.on('message', async (message: any) => {
   } catch (err) {
     workerLogger(
       job.jobId || 'system',
-      'error',
-      'Failed to initialise models',
-      { threadId },
+      'debug',
+      'Embedder worker failed to initialize models',
+      { threadId, jobId: job.jobId },
       err instanceof Error ? err : new Error(String(err)),
     );
     // Notify parent and exit or mark job failed
@@ -78,7 +60,7 @@ parentPort.on('message', async (message: any) => {
     return;
   }
 
-  workerLogger(job.jobId, 'info', `Starting embedding job with ${job.tasks.length} tasks`, {
+  workerLogger(job.jobId, 'debug', `Starting embedding job with ${job.tasks.length} tasks`, {
     threadId,
     taskCount: job.tasks.length,
   });
@@ -138,7 +120,7 @@ parentPort.on('message', async (message: any) => {
     });
 
     // Job completed successfully
-    workerLogger(job.jobId, 'info', `Embedding job completed`, {
+    workerLogger(job.jobId, 'debug', `Embedding job completed`, {
       threadId,
       taskCount: job.tasks.length,
     });
@@ -147,7 +129,7 @@ parentPort.on('message', async (message: any) => {
     // Just log it for worker context
     workerLogger(
       job.jobId,
-      'error',
+      'debug',
       `Embedding job failed`,
       {
         threadId,
@@ -163,6 +145,6 @@ parentPort.on('message', async (message: any) => {
   }
 });
 
-workerLogger('system', 'info', `Embedder worker thread ready`, {
+workerLogger('system', 'debug', `Embedder worker thread ready`, {
   threadId,
 });

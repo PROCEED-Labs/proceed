@@ -86,12 +86,11 @@ export function getResourceList(req: Request, res: Response, next: NextFunction)
 }
 
 // Helper function to handle the creation logic
-export async function handleCreateResourceList(
+export function handleCreateResourceList(
   dbName: string,
   resources: ResourceInput[],
   requestId?: string,
-  onWorkerExit?: (job: any, code: number, jobId: string) => void,
-): Promise<{ jobId: string; status: string }> {
+): { jobId: string; listId: string; status: string; promise: Promise<void> } {
   let resourceIds: string[] = [];
   let competences: CompetenceInput[][] = [];
 
@@ -157,15 +156,17 @@ export async function handleCreateResourceList(
   // Workaround for now
   // Ideally, the worker should handle the splitting as well
   db.updateJobStatus(jobId!, 'preprocessing');
-  let job: EmbeddingJob | undefined;
 
-  splitSemantically(descriptionEmbeddingInput)
+  const promise = splitSemantically(descriptionEmbeddingInput)
     .then((tasks) => {
-      job = {
+      const job: EmbeddingJob = {
         jobId: jobId!,
         dbName: dbName,
         tasks,
       };
+
+      db.updateJobStatus(jobId!, 'pending');
+      return workerManager.enqueue(job, 'embedder');
     })
     .catch((err) => {
       logger.warn(
@@ -177,20 +178,18 @@ export async function handleCreateResourceList(
         },
         requestId,
       );
-      job = {
+
+      const job: EmbeddingJob = {
         jobId: jobId!,
         dbName: dbName,
         tasks: descriptionEmbeddingInput,
       };
-    })
-    .finally(() => {
+
       db.updateJobStatus(jobId!, 'pending');
-      workerManager.enqueue(job!, 'embedder', {
-        onExit: (job: any, code: number) => onWorkerExit?.(job, code, jobId!),
-      });
+      return workerManager.enqueue(job, 'embedder');
     });
 
-  return { jobId: jobId!, status: 'pending' };
+  return { jobId: jobId!, listId: listId!, status: 'pending', promise };
 }
 
 export function createResourceList(req: Request, res: Response, next: NextFunction): void {
@@ -201,48 +200,36 @@ export function createResourceList(req: Request, res: Response, next: NextFuncti
     return;
   }
   try {
-    handleCreateResourceList(req.dbName!, req.body, requestId)
-      .then(({ jobId, status }) => {
-        logger.debug(
-          'request',
-          'Resource list creation job created',
-          {
-            jobId,
-            status,
-            resourceCount: req.body.length,
-          },
-          requestId,
-        );
+    const { jobId, status } = handleCreateResourceList(req.dbName!, req.body, requestId);
 
-        res
-          .setHeader('Location', `${PATHS.resource}/jobs/${jobId}`)
-          .status(202)
-          .json({ jobId, status });
-      })
-      .catch((error) => {
-        logger.error(
-          'request',
-          'Error adding resource list',
-          error instanceof Error ? error : new Error(String(error)),
-          {
-            resourceCount: req.body.length,
-          },
-          requestId,
-        );
-        res.status(400).json({ error: error.message || 'Invalid request body format' });
-      });
-  } catch (error) {
-    logger.error(
+    logger.debug(
       'request',
-      'Error processing request body',
-      error instanceof Error ? error : new Error(String(error)),
+      'Resource list creation job created',
       {
-        bodyType: typeof req.body,
-        bodyLength: Array.isArray(req.body) ? req.body.length : 'not array',
+        jobId,
+        status,
+        resourceCount: req.body.length,
       },
       requestId,
     );
-    res.status(400).json({ error: 'Invalid request body format' });
+
+    res
+      .setHeader('Location', `${PATHS.resource}/jobs/${jobId}`)
+      .status(202)
+      .json({ jobId, status });
+  } catch (error) {
+    logger.error(
+      'request',
+      'Error adding resource list',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        resourceCount: req.body.length,
+      },
+      requestId,
+    );
+    res
+      .status(400)
+      .json({ error: error instanceof Error ? error.message : 'Invalid request body format' });
   }
 }
 

@@ -186,3 +186,10 @@ export interface TransformerPipelineOptions {
   model: string;
   options?: PretrainedModelOptions;
 }
+
+export interface JobQueueItem {
+  job: EmbeddingJob | MatchingJob;
+  resolve: (result: any) => void;
+  reject: (error: Error) => void;
+  retryCount: number;
+}

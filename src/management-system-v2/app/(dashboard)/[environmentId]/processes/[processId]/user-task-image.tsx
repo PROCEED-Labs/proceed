@@ -5,11 +5,11 @@ import { InputNumber } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
 import { useParams } from 'next/navigation';
-import { ContextMenu, Setting } from './utils';
+import { ContextMenu, Setting } from '@/components/html-form-editor/elements/utils';
 import ImageUpload, { fallbackImage } from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
-import { useCanEdit } from '../../modeler';
+import { useCanEdit } from '@/lib/can-edit-context';
 
 type ImageProps = {
   src?: string;

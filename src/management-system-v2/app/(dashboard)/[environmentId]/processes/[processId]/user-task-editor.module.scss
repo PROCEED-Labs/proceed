@@ -1,4 +1,4 @@
-.BuilderModal {
+.EditorModal {
   :global(.ant-modal-header) {
     margin: 0;
     :global(.ant-modal-title) {
@@ -6,7 +6,7 @@
     }
   }
 
-  .BuilderUI {
+  .EditorUI {
     height: 100%;
     display: flex;
     flex-direction: column;

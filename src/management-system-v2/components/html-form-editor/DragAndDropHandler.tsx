@@ -12,7 +12,7 @@ import {
 import { Active, DroppableContainer, RectMap } from '@dnd-kit/core/dist/store';
 import { Coordinates } from '@dnd-kit/utilities';
 import React, { useCallback, useRef, useState } from 'react';
-import { Row } from './elements';
+import Row from './elements/Row';
 import { createPortal } from 'react-dom';
 
 type CollisionFuncType = {

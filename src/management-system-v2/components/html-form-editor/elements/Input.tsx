@@ -7,8 +7,8 @@ import { UserComponent, useNode } from '@craftjs/core';
 
 import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
-import useBuilderStateStore from '../use-builder-state-store';
-import { useCanEdit } from '../../modeler';
+import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from '../use-editor-state-store';
 
 type InputProps = {
   label?: string;
@@ -86,8 +86,8 @@ const Input: UserComponent<InputProps> = ({
   const [textEditing, setTextEditing] = useState(false);
   const [editingDefault, setEditingDefault] = useState(false);
 
-  const blockDragging = useBuilderStateStore((state) => state.blockDragging);
-  const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
+  const blockDragging = useEditorStateStore((state) => state.blockDragging);
+  const unblockDragging = useEditorStateStore((state) => state.unblockDragging);
   useEffect(() => {
     if (editingDefault) {
       blockDragging(inputId);

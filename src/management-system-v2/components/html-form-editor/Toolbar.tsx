@@ -12,8 +12,8 @@ import {
 
 import styles from './index.module.scss';
 
-import { useCanEdit } from '../modeler';
 import useEditorControls from './use-editor-controls';
+import { useCanEdit } from '@/lib/can-edit-context';
 
 export type EditorLayout = 'computer' | 'mobile';
 

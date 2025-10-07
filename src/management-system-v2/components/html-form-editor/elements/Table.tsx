@@ -1,7 +1,7 @@
 import { useNode, UserComponent, useEditor } from '@craftjs/core';
 
 import { Divider, MenuProps, Space } from 'antd';
-import { SettingOutlined, EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 import {
   TbColumnInsertLeft,
   TbColumnInsertRight,
@@ -21,7 +21,7 @@ import EditableText from '../_utils/EditableText';
 import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from './utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useCanEdit } from '../../modeler';
+import { useCanEdit } from '@/lib/can-edit-context';
 
 const defaultHeaderContent =
   '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Header Cell</strong></b>';

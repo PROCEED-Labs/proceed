@@ -8,8 +8,7 @@ import { Overlay, Setting } from './utils';
 
 import cn from 'classnames';
 import { Checkbox, Select } from 'antd';
-
-import { useCanEdit } from '../../modeler';
+import { useCanEdit } from '@/lib/can-edit-context';
 
 type SubmitButtonProps = React.PropsWithChildren & {
   title?: string;

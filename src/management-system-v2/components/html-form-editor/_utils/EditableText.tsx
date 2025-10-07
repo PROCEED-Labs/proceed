@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, JSX } from 'react';
+import React, { useEffect, useRef, JSX } from 'react';
 
 import { useEditor } from '@craftjs/core';
 

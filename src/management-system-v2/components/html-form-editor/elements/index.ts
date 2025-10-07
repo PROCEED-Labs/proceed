@@ -9,18 +9,17 @@ import SubmitButton from './SubmitButton';
 import Table from './Table';
 import Text from './Text';
 
-export {
-  CheckBoxOrRadioGroup,
-  Column,
+export const defaultElements = {
   Container,
-  EditImage,
-  ExportImage,
-  Input,
-  ExportInput,
   Row,
-  SubmitButton,
-  Table,
+  Column,
   Text,
-  Milestones,
-  ExportMilestones,
+  Table,
+  Input,
+  SubmitButton,
+  CheckBoxOrRadioGroup,
 };
+
+export const exportElements = { ExportInput };
+
+export const specificElements = { EditImage, ExportImage, Milestones, ExportMilestones };

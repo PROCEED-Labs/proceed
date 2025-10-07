@@ -12,11 +12,14 @@ import { createPortal } from 'react-dom';
 import { Button, Menu, MenuProps, Select, Space } from 'antd';
 import { useDndContext } from '@dnd-kit/core';
 
-import useBuilderStateStore from '../use-builder-state-store';
 import { truthyFilter } from '@/lib/typescript-utils';
-import { useCanEdit } from '../../modeler';
-import useProcessVariables, { ProcessVariable, typeLabelMap } from '../../use-process-variables';
-import ProcessVariableForm from '../../variable-definition/process-variable-form';
+import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[processId]/variable-definition/process-variable-form';
+import { useCanEdit } from '@/lib/can-edit-context';
+import {
+  ProcessVariable,
+  typeLabelMap,
+} from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-process-variables';
+import useEditorStateStore from '../use-editor-state-store';
 
 export const Setting: React.FC<{
   label: string;
@@ -40,7 +43,7 @@ export const Setting: React.FC<{
 };
 
 const getIframe = () =>
-  document.getElementById('user-task-builder-iframe') as HTMLIFrameElement | undefined;
+  document.getElementById('html-form-editor-iframe') as HTMLIFrameElement | undefined;
 
 type ContextMenuProps = React.PropsWithChildren<{
   onClose?: () => void;
@@ -53,8 +56,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
   const editingEnabled = useCanEdit();
 
   const id = useId();
-  const blockDragging = useBuilderStateStore((state) => state.blockDragging);
-  const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
+  const blockDragging = useEditorStateStore((state) => state.blockDragging);
+  const unblockDragging = useEditorStateStore((state) => state.unblockDragging);
 
   const position = useMemo(() => {
     const iframe = getIframe();
@@ -274,7 +277,9 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
 }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
-  const { variables, addVariable } = useProcessVariables();
+  const { variables, updateVariables } = useEditorStateStore();
+
+  if (!variables) return null;
 
   const validVariables = variables.filter(
     (variable) => !allowedTypes || allowedTypes.includes(variable.dataType),
@@ -314,7 +319,7 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
             variables={variables}
             allowedTypes={allowedTypes}
             onSubmit={(newVar) => {
-              addVariable(newVar);
+              updateVariables([...variables, newVar]);
               setShowVariableForm(false);
               onChange(newVar.name, newVar.dataType);
             }}

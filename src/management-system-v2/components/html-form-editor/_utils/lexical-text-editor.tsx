@@ -16,7 +16,7 @@ import ToolbarPlugin from './ToolbarPlugin';
 
 import CustomContentEditable, { CustomContentEditableProps } from './ContentEditable';
 import CustomLinkPlugin from './CustomLinkPlugin';
-import useBuilderStateStore from '../use-builder-state-store';
+import useEditorStateStore from '../use-editor-state-store';
 
 const ToggleEditablePlugin: React.FC<{
   disabled: boolean;
@@ -80,6 +80,8 @@ const ImperativeHandlePlugin = forwardRef<TextEditorRef, {}>((_, ref) => {
   return null;
 });
 
+ImperativeHandlePlugin.displayName = 'ImperativeHandlePlugin';
+
 const theme = {
   // disabling some default stylings for elements; otherwise it would not be possible to change these styles (e.g bold header and underlined links)
   paragraph: 'text-style-paragraph',
@@ -107,11 +109,11 @@ type EditorProps = CustomContentEditableProps & {
 
 const LexicalTextEditor = forwardRef<TextEditorRef, EditorProps>(
   ({ value, disabled, ...contentEditableProps }, ref) => {
-    const setIsTextEditing = useBuilderStateStore((state) => state.setIsTextEditing);
+    const setIsTextEditing = useEditorStateStore((state) => state.setIsTextEditing);
 
     const id = useId();
-    const blockDragging = useBuilderStateStore((state) => state.blockDragging);
-    const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
+    const blockDragging = useEditorStateStore((state) => state.blockDragging);
+    const unblockDragging = useEditorStateStore((state) => state.unblockDragging);
 
     useEffect(() => {
       // signal that we started editing text on mount
@@ -159,5 +161,7 @@ const LexicalTextEditor = forwardRef<TextEditorRef, EditorProps>(
     );
   },
 );
+
+LexicalTextEditor.displayName = 'LexicalTextEditor';
 
 export default LexicalTextEditor;

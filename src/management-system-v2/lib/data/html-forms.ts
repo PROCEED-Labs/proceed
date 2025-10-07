@@ -33,7 +33,7 @@ export const addHtmlForm = async (
   });
 };
 
-export const upateHtmlForm = async (formId: string, newData: Partial<HtmlForm>) => {
+export const updateHtmlForm = async (formId: string, newData: Partial<HtmlForm>) => {
   await _updateHtmlForm(formId, newData);
 };
 

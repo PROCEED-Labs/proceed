@@ -1,14 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import {
-  $setSelection,
-  $createRangeSelection,
-  $createNodeSelection,
-  $selectAll,
-  $getSelection,
-  $getRoot,
-} from 'lexical';
+import { $selectAll } from 'lexical';
 
 export type CustomContentEditableProps = {
   EditableElement: ReturnType<

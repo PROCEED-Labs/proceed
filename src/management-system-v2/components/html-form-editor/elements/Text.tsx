@@ -5,8 +5,8 @@ import { EditOutlined } from '@ant-design/icons';
 import EditableText from '../_utils/EditableText';
 import { ContextMenu, Overlay } from './utils';
 import { useState } from 'react';
-import { useCanEdit } from '../../modeler';
-import useBuilderStateStore from '../use-builder-state-store';
+import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from '../use-editor-state-store';
 
 type TextProps = {
   text?: string;
@@ -50,7 +50,7 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
 };
 
 export const TextSettings = () => {
-  const isTextEditing = useBuilderStateStore((state) => state.isTextEditing);
+  const isTextEditing = useEditorStateStore((state) => state.isTextEditing);
 
   return (
     !isTextEditing && (

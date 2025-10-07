@@ -1,7 +1,5 @@
 import { UserComponent, useNode } from '@craftjs/core';
-import useModelerStateStore from '../../use-modeler-state-store';
-import { getMilestonesFromElement } from '@proceed/bpmn-helper';
-import { useMemo } from 'react';
+import useEditorStateStore from '../use-editor-state-store';
 
 export const ExportMilestones: UserComponent = () => {
   return (
@@ -33,20 +31,7 @@ const Milestones: UserComponent = () => {
     connectors: { connect },
   } = useNode();
 
-  const { selectedElementId, modeler } = useModelerStateStore((state) => ({
-    selectedElementId: state.selectedElementId,
-    modeler: state.modeler,
-  }));
-
-  const milestones = useMemo(() => {
-    if (selectedElementId && modeler) {
-      const selectedElement = modeler.getElement(selectedElementId);
-
-      if (selectedElement) return getMilestonesFromElement(selectedElement.businessObject);
-    }
-
-    return [];
-  }, [selectedElementId, modeler]);
+  const { milestones } = useEditorStateStore();
 
   return (
     <div

@@ -6,29 +6,64 @@ import ConfirmationButton from '@/components/confirmation-button';
 import ElementList from '@/components/item-list-view';
 import SelectionActions from '@/components/selection-actions';
 import { spaceURL } from '@/lib/utils';
-import { Button, Divider, Form, Grid, Input, Modal, Space, TableColumnsType, Tooltip } from 'antd';
+import {
+  Button,
+  Cascader,
+  Divider,
+  Form,
+  Grid,
+  Input,
+  Modal,
+  Space,
+  TableColumnsType,
+  Tooltip,
+} from 'antd';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { IoOpenOutline } from 'react-icons/io5';
 import { PiNotePencil } from 'react-icons/pi';
 import { DeleteOutlined } from '@ant-design/icons';
 
+import { UserOutlined } from '@ant-design/icons';
+
 import styles from '@/components/item-list-view.module.scss';
 import useFuzySearch from '@/lib/useFuzySearch';
-import { v4 } from 'uuid';
 import { HtmlForm } from '@prisma/client';
-import { addHtmlForm, removeHtmlForm } from '@/lib/data/html-forms';
-import { defaultForm } from '../processes/[processId]/_user-task-builder/utils';
+import { addHtmlForm, getHtmlFormHtml, removeHtmlForm } from '@/lib/data/html-forms';
+import { defaultForm } from '@/components/html-form-editor/utils';
+import usePotentialOwnerStore, {
+  useInitialisePotentialOwnerStore,
+} from '../processes/[processId]/use-potentialOwner-store';
+import { generateOptions } from '../processes/[processId]/potential-owner';
+import { DefaultOptionType } from 'antd/es/cascader';
+import { addUserTasks } from '@/lib/data/user-tasks';
+
+import { v4 } from 'uuid';
+import { truthyFilter } from '@/lib/typescript-utils';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { inlineScript } from '@proceed/user-task-helper';
 
 type FormListProps = {
   data: HtmlForm[];
 };
+
+const filter = (inputValue: string, path: DefaultOptionType[]) =>
+  path.some((option) => `${option?.value}`.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
 
 const FormList: React.FC<FormListProps> = ({ data }) => {
   const [selectedForms, setSelectedForms] = useState<HtmlForm[]>([]);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [initialData, setInitialData] = useState({ name: '', userDefinedId: '', description: '' });
+
+  const [openUserAssignmentModal, setOpenUserAssignmentModal] = useState(false);
+
+  const [selectedOwners, setSelectedOwners] = useState<string[][]>([]);
+
+  const { user, roles } = usePotentialOwnerStore();
+  useInitialisePotentialOwnerStore();
+
+  const options = generateOptions(user, roles);
 
   const breakpoint = Grid.useBreakpoint();
 
@@ -80,7 +115,6 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
       },
     ];
   }, []);
-  console.log(data);
 
   async function deleteItems(forms: HtmlForm[]) {
     for (const form of forms) {
@@ -90,13 +124,66 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
     router.refresh();
   }
 
+  async function handleTaskAssignment() {
+    const resourceIds = selectedOwners
+      .map((v) => v[v.length - 1])
+      .reduce(
+        (acc, value) => {
+          if (value === 'all-user') {
+            acc.user = Object.keys(user);
+          } else if (value === 'all-roles') {
+            acc.roles = Object.keys(roles);
+          } else {
+            const [type, ...id] = value.split('|') as ['user' | 'roles', string];
+            acc[type].push(id.join('|'));
+          }
+          return acc;
+        },
+        { user: [], roles: [] } as { user: string[]; roles: string[] },
+      );
+
+    let forms = selectedForms
+      .map(({ id }) => {
+        const d = data.find((f) => f.id === id);
+        if (d) {
+          return { ...d, html: '' };
+        }
+      })
+      .filter(truthyFilter);
+
+    const userTasks = await asyncMap(forms, async (task) => {
+      let html = await getHtmlFormHtml(task.id);
+      html = inlineScript(html, '', '', JSON.parse(task.variables));
+      return {
+        id: v4(),
+        name: task.name,
+        taskId: '',
+        instanceID: '',
+        fileName: '',
+        state: 'READY',
+        machineId: 'ms-local',
+        actualOwner: [],
+        potentialOwners: resourceIds,
+        priority: 1,
+        progress: 0,
+        startTime: Date.now(),
+        html,
+        milestones: [],
+        initialVariables: {},
+      };
+    });
+
+    await addUserTasks(userTasks);
+  }
+
   async function createNewForm() {
     const data: typeof initialData = await form.validateFields();
-    console.log(data);
     await addHtmlForm({
       id: v4(),
       html: '<html><head></head> <body>Hello World</body> </html>',
       json: defaultForm,
+      variables: '[]',
+      milestones: '[]',
       environmentId: space.spaceId,
       ...data,
     });
@@ -144,6 +231,34 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
                           }}
                         />
                       </Tooltip>
+                      <Tooltip placement="top" title="Assign Task">
+                        <Button
+                          type="text"
+                          icon={<UserOutlined className={styles.Icon} />}
+                          onClick={() => setOpenUserAssignmentModal(true)}
+                        />
+                      </Tooltip>
+                      <Modal
+                        title="Assign Task"
+                        open={openUserAssignmentModal}
+                        onOk={async () => {
+                          await handleTaskAssignment();
+                          setOpenUserAssignmentModal(false);
+                        }}
+                        onCancel={() => setOpenUserAssignmentModal(false)}
+                        onClose={() => setOpenUserAssignmentModal(false)}
+                      >
+                        <Cascader
+                          options={options}
+                          placeholder="Select User or Roles that can claim this task"
+                          style={{ width: '100%' }}
+                          multiple
+                          showSearch={{ filter }}
+                          // @ts-ignore
+                          onChange={setSelectedOwners}
+                          value={selectedOwners}
+                        />
+                      </Modal>
                       {/* {canEditSelected && ( */}
                       {/*   <Tooltip placement="top" title={'Change Meta Data'}> */}
                       {/*     <Button */}

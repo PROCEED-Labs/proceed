@@ -3,8 +3,9 @@ import { useDraggable } from '@dnd-kit/core';
 import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
-import useBuilderStateStore from '../use-builder-state-store';
-import { useCanEdit } from '../../modeler';
+import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from '../use-editor-state-store';
+
 /**
  * This component wraps every editor element provides drag handling and some styling
  */
@@ -24,7 +25,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
     isSelected: node.events.selected,
   }));
 
-  const dragBlockers = useBuilderStateStore((state) => state.dragBlockers);
+  const dragBlockers = useEditorStateStore((state) => state.dragBlockers);
   const editingEnabled = useCanEdit();
 
   const ref = useRef<HTMLDivElement>();

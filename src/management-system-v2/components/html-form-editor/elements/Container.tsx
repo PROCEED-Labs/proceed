@@ -18,7 +18,6 @@ export type ContainerProps = React.PropsWithChildren & {
 /**
  * This component can be used to group multiple rows of elements (used as the editors root element)
  */
-
 const Container: UserComponent<ContainerProps> = ({
   children,
   padding = 0,

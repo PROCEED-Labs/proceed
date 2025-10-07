@@ -20,6 +20,8 @@ export async function getHtmlForms(environmentId: string, ability?: Ability, wit
       lastEditedOn: true,
       environmentId: true,
       creatorId: true,
+      milestones: true,
+      variables: true,
       html: withFormData,
       json: withFormData,
     },
@@ -45,6 +47,8 @@ export async function getHtmlForm(formId: string, withFormData = false) {
       lastEditedOn: true,
       environmentId: true,
       creatorId: true,
+      milestones: true,
+      variables: true,
       html: withFormData,
       json: withFormData,
     },
@@ -86,7 +90,8 @@ export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlF
       id: formId,
     },
   });
-  if (existingForm) {
+
+  if (!existingForm) {
     throw new Error(`Html Form with id ${formId} does not exist!`);
   }
 

@@ -27,8 +27,8 @@ import { WithRequired } from '@/lib/typescript-utils';
 
 import { EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
-import { useCanEdit } from '../../modeler';
-import useProcessVariables from '../../use-process-variables';
+import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from '../use-editor-state-store';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
@@ -143,7 +143,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   const [hoveredAction, setHoveredAction] = useState<EditAction>();
   const [currentValue, setCurrentValue] = useState('');
 
-  const { variables } = useProcessVariables();
+  const { variables } = useEditorStateStore();
 
   const {
     connectors: { connect },
@@ -251,7 +251,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     </Tooltip>
   );
 
-  const selectedVariable = variables.find((v) => v.name === variable);
+  const selectedVariable = variables?.find((v) => v.name === variable);
   const showAdditionalOptions =
     editTarget !== undefined && selectedVariable && selectedVariable.dataType !== 'boolean';
 

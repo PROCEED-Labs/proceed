@@ -7,7 +7,6 @@ import type { CascaderProps, GetProp } from 'antd';
 import usePotentialOwnerStore, { RoleType, UserType } from './use-potentialOwner-store';
 import useModelerStateStore from './use-modeler-state-store';
 import { Shape } from 'bpmn-js/lib/model/Types';
-import Modeler from 'bpmn-js/lib/Modeler';
 import { is, isAny } from 'bpmn-js/lib/util/ModelUtil';
 
 type PotentialOwnerProps = {

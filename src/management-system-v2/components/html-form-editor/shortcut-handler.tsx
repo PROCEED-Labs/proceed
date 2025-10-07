@@ -3,7 +3,7 @@ import { useFrame } from 'react-frame-component';
 import useEditorControls from './use-editor-controls';
 import { useAddControlCallback } from '@/lib/controls-store';
 import AddUserControls from '@/components/add-user-controls';
-import useBuilderStateStore from './use-builder-state-store';
+import useEditorStateStore from './use-editor-state-store';
 
 type ShortcutHandlerProps = {
   onClose?: () => void;
@@ -14,7 +14,7 @@ const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({ onClose }) => {
 
   const { selected, deleteElement, canUndo, canRedo, undo, redo } = useEditorControls();
 
-  const isTextEditing = useBuilderStateStore((state) => state.isTextEditing);
+  const isTextEditing = useEditorStateStore((state) => state.isTextEditing);
 
   useEffect(() => {
     if (document && !isTextEditing) {

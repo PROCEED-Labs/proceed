@@ -3,7 +3,6 @@ import React from 'react';
 import { useEditor } from '@craftjs/core';
 
 import styles from './index.module.scss';
-import useBuilderStateStore from '../use-builder-state-store';
 
 export const Settings: React.FC = () => {
   const { settings, selectedNodeId } = useEditor((state) => {

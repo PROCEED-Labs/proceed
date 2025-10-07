@@ -36,7 +36,7 @@ services:
       - proceed-standalone-network
 
   proceed_standalone_engine:
-    image: proceed/engine:latest
+    image: proceed/engine:edge
     container_name: proceed_standalone_engine
     restart: always
     networks:

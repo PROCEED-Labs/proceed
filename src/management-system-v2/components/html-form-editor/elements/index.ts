@@ -20,6 +20,6 @@ export const defaultElements = {
   CheckBoxOrRadioGroup,
 };
 
-export const exportElements = { ExportInput };
+export const exportElements = { Input: ExportInput };
 
 export const specificElements = { EditImage, ExportImage, Milestones, ExportMilestones };

@@ -166,7 +166,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfigurationContainerMetaWithoutId"
+                "$ref": "#/components/schemas/ConfigurationContainerMetaWithoutIdShort"
               }
             }
           }
@@ -283,6 +283,75 @@
         }
       }
     },
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/{version-id}": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        },
+        {
+          "name": "config-container-id-or-shortName",
+          "in": "path",
+          "description": "`id` or `shortName` of _Configuration Container_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ConfigurationContainerId"
+          }
+        },
+        {
+          "name": "version-id",
+          "in": "path",
+          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ConfigurationVersionId"
+          }
+        },
+        {
+          "name": "parameter-id",
+          "in": "query",
+          "description": "For selecting a specific parameter with its `id` or `name`",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/ParameterId"
+          }
+        },
+        {
+          "name": "aas-format",
+          "in": "query",
+          "description": "For for retrieving the AAS serialization",
+          "required": false,
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Configurations"],
+        "summary": "Read one specific Version of a Configuration Container",
+        "description": "Read one specific Version of a _Configuration Container_ by its `id` and `version-id`",
+        "responses": {
+          "200": {
+            "description": "one version of one configuration, same as export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigurationContainer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Specified _Space, Configuration Container, Version_ not found"
+          }
+        }
+      }
+    },
     "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/latest-parameter": {
       "parameters": [
         {
@@ -391,7 +460,7 @@
         }
       }
     },
-    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/latest-parameter/{parameter-id-or-name}": {
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/latest-parameter/{parameter-id}": {
       "parameters": [
         {
           "name": "space-id",
@@ -412,7 +481,7 @@
           }
         },
         {
-          "name": "parameter-id-or-name",
+          "name": "parameter-id",
           "in": "path",
           "description": "`id` or `name` of Parameter",
           "required": true,
@@ -518,69 +587,6 @@
           }
         }
       }
-    },
-    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/{version-id}": {
-      "parameters": [
-        {
-          "name": "space-id",
-          "in": "path",
-          "description": "`id` of _Space_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/SpaceId"
-          }
-        },
-        {
-          "name": "config-container-id-or-shortName",
-          "in": "path",
-          "description": "`id` or `shortName` of _Configuration Container_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationContainerId"
-          }
-        },
-        {
-          "name": "version-id",
-          "in": "path",
-          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationVersionId"
-          }
-        },
-        {
-          "name": "parameter-id-or-name",
-          "in": "query",
-          "description": "For selecting a specific parameter with its `id` or `name`",
-          "required": false,
-          "schema": {
-            "$ref": "#/components/schemas/ParameterId"
-          }
-        },
-        {
-          "name": "aas-format",
-          "in": "query",
-          "description": "For for retrieving the AAS serialization",
-          "required": false,
-          "schema": {
-            "type": "boolean"
-          }
-        }
-      ],
-      "get": {
-        "tags": ["Configurations"],
-        "summary": "Read one specific Version of a Configuration Container",
-        "description": "Read one specific Version of a _Configuration Container_ by its `id` and `version-id`",
-
-        "responses": {
-          "200": {
-            "description": "one version of one configuration, same as export"
-          },
-          "404": {
-            "description": "Specified _Space, Configuration Container, Version_ not found"
-          }
-        }
-      },
     },
     "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/{version-id}/machine/{machine-id}/feedback": {
       "parameters": [
@@ -794,6 +800,27 @@
         "format": "uuid",
         "examples": ["27efb505-4485-41fe-9b3d-5289853f5493"]
       },
+      "ConfigurationContainerMetaWithoutIdShort": {
+        "type": "object",
+        "properties": {
+          "shortName": {
+            "type": "string",
+            "example": "Rob001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Robot Config Set for Grinding"
+          },
+          "description": {
+            "type": "string",
+            "example": "This is the Robot Config Set for Grinding"
+          },
+          "categories": {
+            "type": "string",
+            "example": "Robot;Kuka"
+          }
+        }
+      },
       "ConfigurationContainerMetaWithoutId": {
         "type": "object",
         "properties": {
@@ -896,11 +923,12 @@
         "type": "array",
         "items": {
           "$ref": "#/components/schemas/ConfigurationVersionId"
-        }
+        },
+        "example": ["1", "2", "latest"]
       },
       "ConfigurationVersionId": {
         "type": "string",
-        "example": ["1", "2", "latest"]
+        "examples": ["1", "2", "latest"]
       },
       "ParameterId": {
         "type": "string",
@@ -985,8 +1013,7 @@
                   "items": {
                     "type": "string",
                     "example": ["Body", "MachineDatasets", "Machine1Dataset", "FullVersionNumber"]
-                  },
-                  
+                  }
                 }
               }
             }
@@ -1012,8 +1039,7 @@
                         "items": {
                           "type": "string",
                           "example": ["referenceConfig", "temperature"]
-                        },
-                        
+                        }
                       }
                     }
                   }

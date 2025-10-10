@@ -36,7 +36,10 @@ module.exports = function setupNetworkServer({ context }) {
       // within the isolate and then send the response.
 
       for (const [path, match] of listeners.entries()) {
-        if (!match(message.request.path)) continue;
+        const routeMatch = match(message.request.path);
+        if (!routeMatch) continue;
+
+        message.request.params = routeMatch.params;
 
         // NOTE: we just call one handler, maybe we should consider calling more than one
         const result = await context.evalClosureSync(

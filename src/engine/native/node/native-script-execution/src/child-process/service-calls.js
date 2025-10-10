@@ -18,6 +18,24 @@ module.exports = function setupServiceCalls({
   processInstanceId,
   tokenId,
 }) {
+  /** @param {string} serviceName */
+  function _getService(serviceName) {
+    return new Proxy(
+      {},
+      {
+        get: function (_, method) {
+          // network-server is a bit more complex so it requires it's own implementation
+          // _networkServerCall is defined in ./http-server.js
+          if (serviceName === 'network-server') {
+            return (...args) => _networkServerCall(method, args);
+          }
+
+          return (...args) => callToService(serviceName, method, args);
+        },
+      },
+    );
+  }
+
   /**
    * @param {string} serviceName
    * @param {string} method
@@ -45,17 +63,6 @@ module.exports = function setupServiceCalls({
     }
   }
 
-  /** @param {string} serviceName */
-  function _getService(serviceName) {
-    return new Proxy(
-      {},
-      {
-        get: function (_, method) {
-          return (...args) => callToService(serviceName, method, args);
-        },
-      },
-    );
-  }
   context.evalClosureSync(
     `
   ${_callToService.toString()}; globalThis["callToService"] = _callToService;

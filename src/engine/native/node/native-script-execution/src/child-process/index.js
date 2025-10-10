@@ -138,6 +138,9 @@ setupBpmnErrors(setupData);
 const setupTimeouts = require('./timeouts');
 setupTimeouts(setupData);
 
+const setupNetworkServer = require('./http-server');
+setupNetworkServer(setupData);
+
 /* -------------------------------------------------------------------------------------------------
  * Execute script
  * -----------------------------------------------------------------------------------------------*/

@@ -3,23 +3,12 @@
 import { useEnvironment } from '@/components/auth-can';
 import Bar from '@/components/bar';
 import ConfirmationButton from '@/components/confirmation-button';
-import ElementList from '@/components/item-list-view';
+import ElementList, { ListEntryLink } from '@/components/item-list-view';
 import SelectionActions from '@/components/selection-actions';
 import { spaceURL } from '@/lib/utils';
-import {
-  Button,
-  Cascader,
-  Divider,
-  Form,
-  Grid,
-  Input,
-  Modal,
-  Space,
-  TableColumnsType,
-  Tooltip,
-} from 'antd';
+import { Button, Cascader, Divider, Form, Grid, Input, Modal, Space, Table, Tooltip } from 'antd';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { ComponentProps, useMemo, useState } from 'react';
 import { IoOpenOutline } from 'react-icons/io5';
 import { PiNotePencil } from 'react-icons/pi';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -27,7 +16,7 @@ import { DeleteOutlined } from '@ant-design/icons';
 import { UserOutlined } from '@ant-design/icons';
 
 import styles from '@/components/item-list-view.module.scss';
-import useFuzySearch from '@/lib/useFuzySearch';
+import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { HtmlForm } from '@prisma/client';
 import { addHtmlForm, getHtmlFormHtml, removeHtmlForm } from '@/lib/data/html-forms';
 import { defaultForm } from '@/components/html-form-editor/utils';
@@ -47,11 +36,28 @@ type FormListProps = {
   data: HtmlForm[];
 };
 
+export type ListForm = ReplaceKeysWithHighlighted<HtmlForm, 'name' | 'description'>;
+type Column = Exclude<ComponentProps<typeof Table<ListForm>>['columns'], undefined>;
+
+const FormListEntryLink: React.FC<
+  React.PropsWithChildren<{
+    data: ListForm;
+    style?: React.CSSProperties;
+    className?: string;
+  }>
+> = ({ children, data, style, className }) => {
+  return (
+    <ListEntryLink path={'tasks'} data={data} style={style} className={className}>
+      {children}
+    </ListEntryLink>
+  );
+};
+
 const filter = (inputValue: string, path: DefaultOptionType[]) =>
   path.some((option) => `${option?.value}`.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
 
 const FormList: React.FC<FormListProps> = ({ data }) => {
-  const [selectedForms, setSelectedForms] = useState<HtmlForm[]>([]);
+  const [selectedForms, setSelectedForms] = useState<ListForm[]>([]);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [initialData, setInitialData] = useState({ name: '', userDefinedId: '', description: '' });
@@ -79,44 +85,42 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
     transformData: (matches) => matches.map((match) => match.item),
   });
 
-  const columns: TableColumnsType<HtmlForm> = useMemo(() => {
+  const columns: Column = useMemo(() => {
     return [
       {
         title: 'Name',
         dataIndex: 'name',
         key: 'Name',
         ellipsis: true,
-        sorter: (a, b) => a.name!.localeCompare(b.name!),
-        // render: (_, record: HtmlForm) => (
-        //   <ListEntryLink
-        //     data={record}
-        //     style={{
-        //       color: record.id === folder.parentId ? 'grey' : undefined,
-        //       fontStyle: record.id === folder.parentId ? 'italic' : undefined,
-        //     }}
-        //   >
-        //     <ProcessListItemIcon item={record} /> {record.name.highlighted}
-        //   </ListEntryLink>
-        // ),
-        // responsive: ['xs', 'sm'],
+        sorter: (a, b) => a.name!.value.localeCompare(b.name!.value),
+        render: (_, record: ListForm) => (
+          <FormListEntryLink data={record}>{record.name.highlighted}</FormListEntryLink>
+        ),
+        responsive: ['xs', 'sm'],
       },
       {
         title: 'ID',
         dataIndex: 'userDefinedId',
         key: 'ID',
         sorter: (a, b) => (a.userDefinedId ?? '').localeCompare(b.userDefinedId ?? ''),
+        render: (_, record: ListForm) => (
+          <FormListEntryLink data={record}>{record.userDefinedId}</FormListEntryLink>
+        ),
       },
       {
         title: 'Description',
         dataIndex: 'description',
         key: 'description',
         ellipsis: true,
-        sorter: (a, b) => a.description.localeCompare(b.description),
+        sorter: (a, b) => a.description.value.localeCompare(b.description.value),
+        render: (_, record: ListForm) => (
+          <FormListEntryLink data={record}>{record.description.highlighted}</FormListEntryLink>
+        ),
       },
     ];
   }, []);
 
-  async function deleteItems(forms: HtmlForm[]) {
+  async function deleteItems(forms: ListForm[]) {
     for (const form of forms) {
       await removeHtmlForm(form.id);
     }
@@ -209,8 +213,8 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
               {/* DIVIDER BLOCK */}
               <SelectionActions count={selectedForms.length} readOnly={false}>
                 <Space split={<Divider type="vertical" />}>
-                  {selectedForms.length === 1 && (
-                    <div>
+                  <div>
+                    {selectedForms.length === 1 && (
                       <Tooltip placement="top" title={'Open Editor'}>
                         <Button
                           type="text"
@@ -221,57 +225,59 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
                           }}
                         />
                       </Tooltip>
-                      <Tooltip placement="top" title={'Open Editor in new Tab'}>
-                        <Button
-                          type="text"
-                          icon={<IoOpenOutline className={styles.Icon} />}
-                          onClick={() => {
-                            const url = spaceURL(space, `/tasks/${selectedForms[0].id}`);
+                    )}
+                    <Tooltip placement="top" title={'Open Editor in new Tab'}>
+                      <Button
+                        type="text"
+                        icon={<IoOpenOutline className={styles.Icon} />}
+                        onClick={() => {
+                          selectedForms.forEach((form) => {
+                            const url = spaceURL(space, `/tasks/${form.id}`);
                             window.open(url, '_blank');
-                          }}
-                        />
-                      </Tooltip>
-                      <Tooltip placement="top" title="Assign Task">
-                        <Button
-                          type="text"
-                          icon={<UserOutlined className={styles.Icon} />}
-                          onClick={() => setOpenUserAssignmentModal(true)}
-                        />
-                      </Tooltip>
-                      <Modal
-                        title="Assign Task"
-                        open={openUserAssignmentModal}
-                        onOk={async () => {
-                          await handleTaskAssignment();
-                          setOpenUserAssignmentModal(false);
+                          });
                         }}
-                        onCancel={() => setOpenUserAssignmentModal(false)}
-                        onClose={() => setOpenUserAssignmentModal(false)}
-                      >
-                        <Cascader
-                          options={options}
-                          placeholder="Select User or Roles that can claim this task"
-                          style={{ width: '100%' }}
-                          multiple
-                          showSearch={{ filter }}
-                          // @ts-ignore
-                          onChange={setSelectedOwners}
-                          value={selectedOwners}
-                        />
-                      </Modal>
-                      {/* {canEditSelected && ( */}
-                      {/*   <Tooltip placement="top" title={'Change Meta Data'}> */}
-                      {/*     <Button */}
-                      {/*       type="text" */}
-                      {/*       icon={<LuNotebookPen className={styles.Icon} />} */}
-                      {/*       onClick={() => { */}
-                      {/*         editItem(selectedRowElements[0]); */}
-                      {/*       }} */}
-                      {/*     /> */}
-                      {/*   </Tooltip> */}
-                      {/* )} */}
-                    </div>
-                  )}
+                      />
+                    </Tooltip>
+                    <Tooltip placement="top" title="Assign Task">
+                      <Button
+                        type="text"
+                        icon={<UserOutlined className={styles.Icon} />}
+                        onClick={() => setOpenUserAssignmentModal(true)}
+                      />
+                    </Tooltip>
+                    <Modal
+                      title="Assign Task"
+                      open={openUserAssignmentModal}
+                      onOk={async () => {
+                        await handleTaskAssignment();
+                        setOpenUserAssignmentModal(false);
+                      }}
+                      onCancel={() => setOpenUserAssignmentModal(false)}
+                      onClose={() => setOpenUserAssignmentModal(false)}
+                    >
+                      <Cascader
+                        options={options}
+                        placeholder="Select User or Roles that can claim this task"
+                        style={{ width: '100%' }}
+                        multiple
+                        showSearch={{ filter }}
+                        // @ts-ignore
+                        onChange={setSelectedOwners}
+                        value={selectedOwners}
+                      />
+                    </Modal>
+                    {/* {canEditSelected && ( */}
+                    {/*   <Tooltip placement="top" title={'Change Meta Data'}> */}
+                    {/*     <Button */}
+                    {/*       type="text" */}
+                    {/*       icon={<LuNotebookPen className={styles.Icon} />} */}
+                    {/*       onClick={() => { */}
+                    {/*         editItem(selectedRowElements[0]); */}
+                    {/*       }} */}
+                    {/*     /> */}
+                    {/*   </Tooltip> */}
+                    {/* )} */}
+                  </div>
 
                   {
                     <div>
@@ -315,23 +321,11 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
         }}
       />
       <ElementList
-        data={filteredData.map((d) => ({
-          ...d,
-          name: d.name.highlighted,
-          description: d.description.highlighted,
-        }))}
+        data={filteredData}
         columns={columns}
         elementSelection={{
           selectedElements: selectedForms,
           setSelectionElements: setSelectedForms,
-        }}
-        tableProps={{
-          onRow: (element) => ({
-            onClick: () => {
-              const url = spaceURL(space, `/tasks/${element.id}`);
-              router.push(url);
-            },
-          }),
         }}
       />
       <Modal

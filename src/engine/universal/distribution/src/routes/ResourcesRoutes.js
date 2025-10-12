@@ -31,7 +31,7 @@ module.exports = (path) => {
     const image = Buffer.from(body.data);
     await db.saveImage(definitionId, fileName, image);
 
-    return '';
+    return '{}';
   });
 
   network.get(`${path}/process/:definitionId/images/`, { cors: true }, async (req) => {

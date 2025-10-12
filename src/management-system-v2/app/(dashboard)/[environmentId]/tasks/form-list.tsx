@@ -18,7 +18,12 @@ import { UserOutlined } from '@ant-design/icons';
 import styles from '@/components/item-list-view.module.scss';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { HtmlForm } from '@prisma/client';
-import { addHtmlForm, getHtmlFormHtml, removeHtmlForm } from '@/lib/data/html-forms';
+import {
+  addHtmlForm,
+  getHtmlFormHtml,
+  removeHtmlForm,
+  updateHtmlForm,
+} from '@/lib/data/html-forms';
 import { defaultForm } from '@/components/html-form-editor/utils';
 import usePotentialOwnerStore, {
   useInitialisePotentialOwnerStore,
@@ -31,6 +36,7 @@ import { v4 } from 'uuid';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { inlineScript } from '@proceed/user-task-helper';
+import { LuNotebookPen } from 'react-icons/lu';
 
 type FormListProps = {
   data: HtmlForm[];
@@ -59,8 +65,8 @@ const filter = (inputValue: string, path: DefaultOptionType[]) =>
 const FormList: React.FC<FormListProps> = ({ data }) => {
   const [selectedForms, setSelectedForms] = useState<ListForm[]>([]);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [initialData, setInitialData] = useState({ name: '', userDefinedId: '', description: '' });
+  const [openCreateOrUpdateModal, setOpenCreateOrUpdateModal] = useState(false);
+  const [initialData, setInitialData] = useState<HtmlForm | undefined>();
 
   const [openUserAssignmentModal, setOpenUserAssignmentModal] = useState(false);
 
@@ -180,21 +186,32 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
     await addUserTasks(userTasks);
   }
 
-  async function createNewForm() {
-    const data: typeof initialData = await form.validateFields();
-    await addHtmlForm({
-      id: v4(),
-      html: '<html><head></head> <body>Hello World</body> </html>',
-      json: defaultForm,
-      variables: '[]',
-      milestones: '[]',
-      environmentId: space.spaceId,
-      ...data,
-    });
-    setOpenCreateModal(false);
-    setInitialData({ name: '', userDefinedId: '', description: '' });
+  async function handleCreateOrUpdateForm() {
+    const data: { name: string; description: string; userDefinedId: string } =
+      await form.validateFields();
+
+    if (initialData) {
+      await updateHtmlForm(initialData.id, data);
+    } else {
+      await addHtmlForm({
+        id: v4(),
+        html: '<html><head></head> <body>Hello World</body> </html>',
+        json: defaultForm,
+        variables: '[]',
+        milestones: '[]',
+        environmentId: space.spaceId,
+        ...data,
+      });
+    }
+    setOpenCreateOrUpdateModal(false);
+    setInitialData(undefined);
     router.refresh();
   }
+
+  const handleCloseCreateOrUpdateModal = () => {
+    setInitialData(undefined);
+    setOpenCreateOrUpdateModal(false);
+  };
 
   return (
     <>
@@ -204,7 +221,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
             <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
               {!breakpoint.xs && (
                 <Space>
-                  <Button type="primary" onClick={() => setOpenCreateModal(true)}>
+                  <Button type="primary" onClick={() => setOpenCreateOrUpdateModal(true)}>
                     Create Html Form
                   </Button>
                 </Space>
@@ -266,33 +283,27 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
                         value={selectedOwners}
                       />
                     </Modal>
-                    {/* {canEditSelected && ( */}
-                    {/*   <Tooltip placement="top" title={'Change Meta Data'}> */}
-                    {/*     <Button */}
-                    {/*       type="text" */}
-                    {/*       icon={<LuNotebookPen className={styles.Icon} />} */}
-                    {/*       onClick={() => { */}
-                    {/*         editItem(selectedRowElements[0]); */}
-                    {/*       }} */}
-                    {/*     /> */}
-                    {/*   </Tooltip> */}
-                    {/* )} */}
+                    {selectedForms.length === 1 && (
+                      <Tooltip placement="top" title={'Change Meta Data'}>
+                        <Button
+                          type="text"
+                          icon={<LuNotebookPen className={styles.Icon} />}
+                          onClick={() => {
+                            const [form] = selectedForms;
+                            setInitialData({
+                              ...form,
+                              name: form.name.value,
+                              description: form.description.value,
+                            });
+                            setOpenCreateOrUpdateModal(true);
+                          }}
+                        />
+                      </Tooltip>
+                    )}
                   </div>
 
                   {
                     <div>
-                      {/* {canCreateProcess && ( */}
-                      {/*   <Tooltip placement="top" title={'Copy'}> */}
-                      {/*     <Button */}
-                      {/*       type="text" */}
-                      {/*       icon={<IoMdCopy className={styles.Icon} />} */}
-                      {/*       onClick={() => { */}
-                      {/*         setCopySelection(selectedRowElements); */}
-                      {/*         setOpenCopyModal(true); */}
-                      {/*       }} */}
-                      {/*     /> */}
-                      {/*   </Tooltip> */}
-                      {/* )} */}
                       {
                         <ConfirmationButton
                           tooltip="Delete"
@@ -329,21 +340,19 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
         }}
       />
       <Modal
-        open={openCreateModal}
-        title="Create Html Form"
-        onClose={() => setOpenCreateModal(false)}
-        onCancel={() => setOpenCreateModal(false)}
-        onOk={createNewForm}
+        open={openCreateOrUpdateModal}
+        title={initialData ? 'Update Html Form' : 'Create Html Form'}
+        onClose={() => handleCloseCreateOrUpdateModal()}
+        onCancel={() => handleCloseCreateOrUpdateModal()}
+        onOk={handleCreateOrUpdateForm}
+        destroyOnClose
       >
         <Form
           form={form}
           layout="vertical"
-          name="html_creation_form"
+          name="html_meta_data_form"
           initialValues={initialData}
           autoComplete="off"
-          // This resets the fields when the modal is opened again. (apparently
-          // doesn't work in production, that's why we use the useEffect above)
-          preserve={false}
         >
           <Form.Item
             name={'name'}
@@ -352,8 +361,9 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
             hasFeedback
             rules={[
               { max: 100, message: 'Form name can be max 100 characters long' },
-              { required: true, message: '' },
+              { required: true, message: 'Form name cannot be empty' },
             ]}
+            preserve={false}
           >
             <Input />
           </Form.Item>
@@ -361,6 +371,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
           <Form.Item
             name={'userDefinedId'}
             label="ID"
+            initialValue={initialData ? undefined : ''}
             rules={[
               { max: 50, message: 'ID can be max 50 characters long' },
               {
@@ -368,16 +379,19 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
                 message: 'Please enter a unique ID for the form.',
               },
             ]}
+            preserve={false}
           >
             <Input />
           </Form.Item>
           <Form.Item
             name={'description'}
             label="Html Form Description"
+            initialValue={initialData ? undefined : ''}
             rules={[
               { max: 1000, message: 'Form description can be max 1000 characters long' },
               { required: false, message: 'Please fill out the Form description' },
             ]}
+            preserve={false}
           >
             <Input.TextArea showCount rows={4} maxLength={1000} />
           </Form.Item>

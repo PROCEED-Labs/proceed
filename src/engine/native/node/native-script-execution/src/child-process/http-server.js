@@ -41,20 +41,23 @@ module.exports = function setupNetworkServer({ context }) {
 
         message.request.params = routeMatch.params;
 
-        // NOTE: we just call one handler, maybe we should consider calling more than one
-        const result = await context.evalClosureSync(
-          `return _processRequest("${method}", "${path}", $0.copy())`,
-          [new ivm.ExternalCopy(message.request)],
-          { result: { promise: true, externalCopy: true } },
-        );
-
-        const response = result.copy();
-
-        process.send({
-          type: 'http-request-response',
-          id: message.id,
-          response,
-        });
+        try {
+          // NOTE: we just call one handler, maybe we should consider calling more than one
+          await context.evalClosure(
+            `return _processRequest("${method}", "${path}", $0.copy(), "${message.id}")`,
+            [new ivm.ExternalCopy(message.request)],
+            { result: { promise: true, externalCopy: true } },
+          );
+        } catch (e) {
+          process.send({
+            type: 'http-request-response',
+            id: message.id,
+            response: {
+              statusCode: 500,
+              response: 'Error in script task.',
+            },
+          });
+        }
 
         return;
       }
@@ -102,17 +105,42 @@ module.exports = function setupNetworkServer({ context }) {
    * @param {"post" | "put" | "delete" | "get" | "update" } method
    * @param {string} path
    * @param {import('isolated-vm').ExternalCopy} request
+   * @param {number} requestId
    * */
-  async function _processRequest(method, path, request) {
+  async function _processRequest(method, path, request, requestId) {
     let callback = _httpServerListeners[method].get(path);
     if (!callback) {
       return { result: 404 };
     }
 
-    try {
-      return await callback(request);
-    } catch (e) {
-      return { result: 500 };
+    const response = new _Response(requestId);
+    await callback(request, response);
+  }
+
+  class _Response {
+    constructor(requestId) {
+      this.requestId = requestId;
+      this.statusCode = 200;
+      this.sent = false;
+    }
+
+    status(code) {
+      if (!Number.isInteger(code) || code < 100 || code > 999) {
+        throw new TypeError('Invalid status, it must be a string between 100 and 999');
+      }
+
+      this.statusCode = code;
+      return this;
+    }
+
+    send(body) {
+      if (this.sent) {
+        throw new Error('Response was already sent');
+      }
+
+      console.log('sending', body);
+      $3.apply(null, [this.requestId, JSON.stringify(body)]);
+      this.sent = true;
     }
   }
 
@@ -139,6 +167,7 @@ module.exports = function setupNetworkServer({ context }) {
     ${_registerListener.toString()}; globalThis['_registerListener'] = _registerListener;
     ${_processRequest.toString()}; globalThis['_processRequest'] = _processRequest;
     ${_networkServerCall.toString()}; globalThis['_networkServerCall'] = _networkServerCall;
+    ${_Response.toString()}; globalThis['_Response'] = _Response;
     `,
     [
       new ivm.Reference((method, path) => {
@@ -159,6 +188,13 @@ module.exports = function setupNetworkServer({ context }) {
         if (listenerAdded) {
           process.removeListener('message', ipcMessageHandler);
         }
+      }),
+      new ivm.Reference((id, response) => {
+        process.send({
+          type: 'http-request-response',
+          id,
+          response: JSON.parse(response),
+        });
       }),
     ],
   );

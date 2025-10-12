@@ -20,6 +20,7 @@ import {
   SolutionOutlined,
   HomeOutlined,
   AppstoreOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 
@@ -103,16 +104,29 @@ const DashboardLayout = async ({
     activeEnvironment.spaceId,
     'process-automation',
   );
-  if (
-    msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
-    automationSettings.active !== false &&
-    automationSettings.tasklist?.active !== false
-  ) {
-    layoutMenuItems.push({
-      key: 'tasklist',
-      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
-      icon: <CheckSquareOutlined />,
-    });
+
+  if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && automationSettings.active !== false) {
+    let children: MenuProps['items'] = [
+      automationSettings.tasklist?.active !== false && {
+        key: 'tasklist',
+        label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>My Tasks</Link>,
+        icon: <UnorderedListOutlined />,
+      },
+      automationSettings.task_editor?.active !== false && {
+        key: 'task-editor',
+        label: <Link href={spaceURL(activeEnvironment, `/tasks`)}>Editor</Link>,
+        icon: <EditOutlined />,
+      },
+    ].filter(truthyFilter);
+
+    if (children.length) {
+      layoutMenuItems.push({
+        key: 'tasks',
+        label: 'Tasks',
+        icon: <CheckSquareOutlined />,
+        children,
+      });
+    }
   }
 
   if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && can('view', 'Process')) {

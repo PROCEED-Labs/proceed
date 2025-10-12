@@ -243,7 +243,7 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
           ref={builder}
           json={json}
           additionalElements={{ Milestones, Image: EditImage }}
-          additionalExportElements={{ ExportMilestones, Image: ExportImage }}
+          additionalExportElements={{ Milestones: ExportMilestones, Image: ExportImage }}
           toolboxExtension={[
             {
               title: 'Milestones',

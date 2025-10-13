@@ -16,7 +16,6 @@ let listeningOn = {
   put: new Map(),
   delete: new Map(),
   get: new Map(),
-  update: new Map(),
 };
 
 /**
@@ -130,7 +129,7 @@ module.exports = function setupNetworkServer({ context }) {
 
   /**
    * @param {{
-   * method: "post" | "put" | "delete" | "get" | "update";
+   * method: "post" | "put" | "delete" | "get";
    * path: string;
    * callback?: (arg: {res: any, req: any}) => void;
    * returnPromise?: boolean;
@@ -167,7 +166,7 @@ module.exports = function setupNetworkServer({ context }) {
 
     // Close server if there are no other listeners
     let otherListeners = false;
-    for (const method of ['post', 'put', 'delete', 'get', 'update']) {
+    for (const method of ['post', 'put', 'delete', 'get']) {
       if (_httpServerListeners[method].size > 0) {
         otherListeners = true;
         break;
@@ -188,7 +187,7 @@ module.exports = function setupNetworkServer({ context }) {
   /**
    * This function will be called from the main process to trigger a callback inside the isolate
    *
-   * @param {"post" | "put" | "delete" | "get" | "update" } method
+   * @param {"post" | "put" | "delete" | "get"} method
    * @param {string} path
    * @param {import('isolated-vm').ExternalCopy} req
    * @param {number} requestId
@@ -205,11 +204,11 @@ module.exports = function setupNetworkServer({ context }) {
 
   // This function is supposed to be accessed through getService('network-server') defined in ./service-calls.js
   function _networkServerCall(method, args) {
-    if (['post', 'put', 'delete', 'get', 'update'].includes(method)) {
+    if (['post', 'put', 'delete', 'get'].includes(method)) {
       return _registerListener({ method, path: args[0], callback: args[1] });
     }
 
-    if (['postAsync', 'putAsync', 'deleteAsync', 'getAsync', 'updateAsync'].includes(method)) {
+    if (['postAsync', 'putAsync', 'deleteAsync', 'getAsync'].includes(method)) {
       return _registerListener({
         method: method.substring(0, method.length - 5),
         path: args[0],
@@ -225,7 +224,7 @@ module.exports = function setupNetworkServer({ context }) {
         throw new Error("There are one-off routes that still haven't been resolved");
       }
 
-      for (const method of ['post', 'put', 'delete', 'get', 'update']) {
+      for (const method of ['post', 'put', 'delete', 'get']) {
         for (const path of _httpServerListeners[method].values()) {
           $removeRoute.applySync(null, [method, path]);
           _httpServerListeners[method].delete(path);
@@ -244,7 +243,6 @@ module.exports = function setupNetworkServer({ context }) {
       put: new Map(),
       delete: new Map(),
       get: new Map(),
-      update: new Map(),
     };
     ${_networkServerCall.toString()}; globalThis['_networkServerCall'] = _networkServerCall;
     ${_processRequest.toString()}; globalThis['_processRequest'] = _processRequest;

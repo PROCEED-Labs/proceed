@@ -44,7 +44,7 @@ class ScriptExecutor extends System {
   routerMiddleware(req) {
     const { processId, processInstanceId, scriptIdentifier } = req.params;
     const [process] = this.getProcess(processId, processInstanceId, scriptIdentifier);
-    if (process) return { statusCode: 404, response: {} };
+    if (!process) return { statusCode: 404, response: {} };
 
     const auth = req.headers.authorization;
     if (!auth || !auth.startsWith('Bearer ')) return { statusCode: 401, response: {} };

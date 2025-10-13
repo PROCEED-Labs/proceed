@@ -57,7 +57,7 @@ module.exports = function setupTimeouts({ context }) {
 
   context.evalSync(`
     let _interval_counter = 0;
-    const _activeIntervals = new Set();
+    const _active_intervals = new Set();
   `);
 
   context.evalClosureSync(
@@ -68,14 +68,14 @@ module.exports = function setupTimeouts({ context }) {
         try {
           await cb();
         } catch (e) {}
-      } while (_active_Intervals.has(intervalId));
+      } while (_active_intervals.has(intervalId));
     }.toString() + 'globalThis["_intervalExecutor"]=_intervalExecutor;',
   );
 
   context.evalClosureSync(
     function setInterval(cb, ms) {
       const intervalId = _interval_counter++;
-      _activeIntervals.add(intervalId);
+      _active_intervals.add(intervalId);
       _intervalExecutor(cb, ms, intervalId);
       return intervalId;
     }.toString() + 'globalThis["setInterval"]=setInterval;',
@@ -83,7 +83,7 @@ module.exports = function setupTimeouts({ context }) {
 
   context.evalClosureSync(
     function clearInterval(intervalId) {
-      return _activeIntervals.delete(intervalId);
+      return _active_intervals.delete(intervalId);
     }.toString() + 'globalThis["clearInterval"]=clearInterval;',
   );
 };

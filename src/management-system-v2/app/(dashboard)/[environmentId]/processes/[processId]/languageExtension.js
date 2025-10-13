@@ -125,7 +125,17 @@ declare class NetworkService {
   head(url: string, options?: RequestOptions): Promise<any>;
 }
 
-type Request = {};
+type Request = {
+  hostname: string;
+  ip: string;
+  method: string;
+  params: Record<string, string>;
+  query: Record<string, string>;
+  path: string;
+  body?: any;
+  headers: Record<string, string>;
+  // files?: { name: string; data: any };
+};
 
 class _Response {
   status(code: number): _Response;

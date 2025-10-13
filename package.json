@@ -55,6 +55,7 @@
     "docker:stop": "docker container stop engine",
     "docker:run-ms": "cd src/management-system-v2 && yarn docker:run",
     "docker:build-ms": "cd src/management-system-v2 && yarn docker:build",
+    "docker:build-ms-standalone": "docker build -t proceed/ms-server:standalone -f ./src/management-system-v2/Dockerfile-selfhost .",
     "test": "yarn test-engine",
     "test-engine": "cross-env USE_PROJECTS=\"capabilities helper-modules engine-unit-integration\" jest",
     "test-ms": "cd src/management-system && yarn test:unit",

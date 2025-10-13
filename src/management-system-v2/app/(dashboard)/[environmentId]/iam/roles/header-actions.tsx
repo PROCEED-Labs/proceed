@@ -1,15 +1,15 @@
 'use client';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Modal, DatePicker, App } from 'antd';
+import { Button, Form, Input, Modal, App } from 'antd';
 import { FC, ReactNode, useEffect, useState } from 'react';
-import dayjs from 'dayjs';
-import germanLocale from 'antd/es/date-picker/locale/de_DE';
+// import dayjs from 'dayjs';
+// import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { addRole as serverAddRoles } from '@/lib/data/roles';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
-type PostRoleKeys = 'name' | 'description' | 'expiration';
+type PostRoleKeys = 'name' | 'description'; //| 'expiration';
 
 const CreateRoleModal: FC<{
   modalOpen: boolean;
@@ -42,9 +42,9 @@ const CreateRoleModal: FC<{
   }, [form, modalOpen]);
 
   const submitData = async (values: Record<'name' | 'description' | 'expirationDayJs', 'post'>) => {
-    let expiration;
-    if (typeof values.expirationDayJs === 'object')
-      expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
+    // let expiration;
+    // if (typeof values.expirationDayJs === 'object')
+    //   expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
 
     await wrapServerCall({
       fn: () =>
@@ -81,7 +81,7 @@ const CreateRoleModal: FC<{
           <Input.TextArea />
         </Form.Item>
 
-        <Form.Item
+        {/**<Form.Item
           label="Expiration"
           name="expirationDayJs"
           help={formatError.expiration}
@@ -93,6 +93,7 @@ const CreateRoleModal: FC<{
             allowClear={true}
           />
         </Form.Item>
+        */}
 
         <Form.Item>
           <Button type="primary" htmlType="submit" disabled={!submittable}>

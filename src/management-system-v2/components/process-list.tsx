@@ -209,7 +209,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         if (permission) (actions as any)[permission] = true;
 
         return (
-          <AuthCan {...resource} {...actions}>
+          <AuthCan {...resource} {...(actions as any)}>
             <Tooltip placement="top" title={title}>
               <Button
                 className={classNames(styles.ActionButton)}

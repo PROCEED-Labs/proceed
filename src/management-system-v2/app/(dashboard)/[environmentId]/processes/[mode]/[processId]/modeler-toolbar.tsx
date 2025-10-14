@@ -104,7 +104,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
 
   const { isListView } = useProcessView();
   const isReadOnlyListView = isListView;
-  
+
   const processContextPath = pathname.split('/').slice(0, -1).join('/');
 
   const modeler = useModelerStateStore((state) => state.modeler);

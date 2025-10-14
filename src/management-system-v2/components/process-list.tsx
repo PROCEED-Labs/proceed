@@ -252,7 +252,12 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                   permission="update"
                 />
               )}
-              <ActionButton title={'Share'} action={share} icon={<ShareAltOutlined />} permission="view" />
+              <ActionButton
+                title={'Share'}
+                action={share}
+                icon={<ShareAltOutlined />}
+                permission="view"
+              />
             </>
           )}
         </>

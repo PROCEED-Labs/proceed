@@ -36,7 +36,7 @@ const ProcessesPage = async ({
   const folderContents = await getFolderContents(folder.id, ability);
 
   const isListView = params.mode === 'list';
-  
+
   const folderContentsFiltered = isListView
     ? folderContents.filter(
         (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
@@ -53,7 +53,9 @@ const ProcessesPage = async ({
   do {
     pathToFolder.push({
       title: (
-        <Link href={spaceURL(activeEnvironment, `/processes/${params.mode}/folder/${currentFolder.id}`)}>
+        <Link
+          href={spaceURL(activeEnvironment, `/processes/${params.mode}/folder/${currentFolder.id}`)}
+        >
           {currentFolder.parentId ? currentFolder.name : isListView ? 'List' : 'Editor'}
         </Link>
       ),
@@ -71,7 +73,10 @@ const ProcessesPage = async ({
           <Space>
             {folder.parentId && (
               <Link
-                href={spaceURL(activeEnvironment, `/processes/${params.mode}/folder/${folder.parentId}`)}
+                href={spaceURL(
+                  activeEnvironment,
+                  `/processes/${params.mode}/folder/${folder.parentId}`,
+                )}
               >
                 <Button icon={<LeftOutlined />} type="text">
                   Back

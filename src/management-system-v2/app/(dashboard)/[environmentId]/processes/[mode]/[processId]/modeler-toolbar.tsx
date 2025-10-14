@@ -17,7 +17,7 @@ import { PiDownloadSimple } from 'react-icons/pi';
 import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
@@ -29,15 +29,16 @@ import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserTaskBuilder, { canHaveForm } from './_user-task-builder';
-import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
+import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/script-editor';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
-import { handleOpenDocumentation } from '../processes-helper';
+import { handleOpenDocumentation } from '../../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getSpaceSettingsValues } from '@/lib/data/space-settings';
 import { Process } from '@/lib/data/process-schema';
 import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
 import { TimerEventButton, isTimerEvent } from './planned-duration-input';
 import XmlEditor from './xml-editor';
+import { useProcessView } from './process-view-context';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -51,6 +52,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const processId = process.id;
 
   const router = useRouter();
+  const pathname = usePathname();
   const environment = useEnvironment();
   const app = App.useApp();
   const message = app.message;
@@ -99,6 +101,11 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
+
+  const { isListView } = useProcessView();
+  const isReadOnlyListView = isListView;
+  
+  const processContextPath = pathname.split('/').slice(0, -1).join('/');
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -283,16 +290,18 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 router.push(
                   spaceURL(
                     environment,
-                    `/processes/${processId as string}${
+                    `${processContextPath}/${processId as string}${
                       searchParams.size ? '?' + searchParams.toString() : ''
                     }`,
                   ),
                 );
               }}
-              options={[LATEST_VERSION].concat(process.versions ?? []).map(({ id, name }) => ({
-                value: id,
-                label: name,
-              }))}
+              options={(isReadOnlyListView ? [] : [LATEST_VERSION])
+                .concat(process.versions ?? [])
+                .map(({ id, name }) => ({
+                  value: id,
+                  label: name,
+                }))}
             />
             {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>
@@ -300,6 +309,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                   <VersionCreationButton
                     icon={<PlusOutlined />}
                     createVersion={createProcessVersion}
+                    disabled={isReadOnlyListView}
                   ></VersionCreationButton>
                 </Tooltip>
                 <Tooltip title="Undo">
@@ -324,11 +334,13 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
           <ToolbarGroup>
             {selectedElementId &&
               selectedElement &&
-              ((env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && canHaveForm(selectedElement) && (
-                <Tooltip title={formEditorTitle}>
-                  <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
-                </Tooltip>
-              )) ||
+              ((env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+                canHaveForm(selectedElement) &&
+                !isReadOnlyListView && (
+                  <Tooltip title={formEditorTitle}>
+                    <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+                  </Tooltip>
+                )) ||
                 (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
                   <Tooltip title="Open Subprocess">
                     <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
@@ -337,7 +349,8 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                   </Tooltip>
                 )) ||
                 (env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
-                  bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
+                  bpmnIs(selectedElement, 'bpmn:ScriptTask') &&
+                  !isReadOnlyListView && (
                     <Tooltip title="Edit Script Task">
                       <Button
                         icon={<FormOutlined />}
@@ -426,19 +439,18 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 isOpen={showPropertiesPanel}
                 close={handlePropertiesPanelToggle}
                 selectedElement={selectedElement}
+                readOnly={isReadOnlyListView}
               />
             )}
           </Space>
         </Space>
       </Toolbar>
-
       <ShareModal
         processes={[process]}
         open={shareModalOpen}
         setOpen={setShareModalOpen}
         defaultOpenTab={shareModalDefaultOpenTab}
       />
-
       <XmlEditor
         bpmn={xmlEditorBpmn}
         canSave={!selectedVersionId}

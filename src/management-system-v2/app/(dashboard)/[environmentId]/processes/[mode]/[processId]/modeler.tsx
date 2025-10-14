@@ -32,6 +32,7 @@ import {
   updateFileDeletableStatus,
 } from '@/lib/data/file-manager-facade';
 import { Process } from '@/lib/data/process-schema';
+import { useProcessView } from './process-view-context';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -64,6 +65,16 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
 
+  const { isListView, isEditorView } = useProcessView();
+
+  /// Derived State
+  const minimized = !decodeURIComponent(pathname).includes(process.id);
+
+  const isReadOnlyListView = isListView;
+
+  // Determine the current context prefix for navigation
+  const contextPrefix = isReadOnlyListView ? '/list' : isEditorView ? '/editor' : '';
+
   /* Pressing ESC twice (in 500ms) lets user return to Process List */
   const escCounter = useRef(0);
   useAddControlCallback(
@@ -71,7 +82,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
     'esc',
     () => {
       if (escCounter.current == 1) {
-        router.push(spaceURL(environment, `/processes`));
+        router.push(spaceURL(environment, `/processes${contextPrefix}`));
       } else {
         escCounter.current++;
         const timer = setTimeout(() => {
@@ -85,18 +96,15 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
         };
       }
     },
-    { dependencies: [router] },
+    { dependencies: [router, contextPrefix] },
   );
-
-  /// Derived State
-  const minimized = !decodeURIComponent(pathname).includes(process.id);
 
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
 
   const showMobileView = useMobileModeler();
 
-  const canEdit = !selectedVersionId && !showMobileView;
+  const canEdit = !selectedVersionId && !showMobileView && !isReadOnlyListView;
 
   // We shouldn't get to a place where the event listener isn't removed, since the debounce will
   // always be fired, as it doesn't get cancelled when process.id changes
@@ -228,13 +236,13 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
           router.push(
             spaceURL(
               environment,
-              `/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
+              `/processes${contextPrefix}/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
             ),
           );
         }
       }
     },
-    [process.id, router, setRootElement],
+    [process.id, router, setRootElement, contextPrefix, environment, pathname],
   );
 
   const onUnload = useCallback<Required<BPMNCanvasProps>['onUnload']>(
@@ -350,7 +358,9 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
                 versionName={versionName}
               />
             )}
-            {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
+            {selectedVersionId && !showMobileView && (
+              <VersionToolbar processId={process.id} readOnly={isReadOnlyListView} />
+            )}
             <ModelerZoombar></ModelerZoombar>
           </>
         )}

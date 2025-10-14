@@ -18,15 +18,7 @@ let listeningOn = {
   get: new Map(),
 };
 
-/**
- * @param {{
- *  context: import('isolated-vm').Context
- *  callToExecutor: (endpoint: string, body: any) => Promise<any>
- *  processId: string,
- *  processInstanceId: string,
- *  tokenId: string
- * }} data
- * */
+/** @param {import('.').ScriptTaskSetupData} setupData */
 module.exports = function setupNetworkServer({ context }) {
   let listenerAdded = false;
   async function ipcMessageHandler(message) {

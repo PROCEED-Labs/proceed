@@ -2,15 +2,7 @@
 
 const ivm = require('isolated-vm');
 
-/**
- * @param {{
- *  context: import('isolated-vm').Context
- *  callToExecutor: (endpoint: string, body: any) => Promise<any>
- *  processId: string,
- *  processInstanceId: string,
- *  tokenId: string
- * }} data
- * */
+/** @param {import('.').ScriptTaskSetupData} setupData */
 module.exports = function setupSimpleFunctionCalls({ context, callToExecutor }) {
   const structure = {
     log: ['trace', 'debug', 'info', 'warn', 'error'],

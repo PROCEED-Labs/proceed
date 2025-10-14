@@ -6,15 +6,7 @@
 
 // TODO: consider what to do with errors thrown inside the callback (cb) functions
 
-/**
- * @param {{
- *  context: import('isolated-vm').Context
- *  callToExecutor: (endpoint: string, body: any) => Promise<any>
- *  processId: string,
- *  processInstanceId: string,
- *  tokenId: string
- * }} data
- * */
+/** @param {import('.').ScriptTaskSetupData} setupData */
 module.exports = function setupTimeouts({ context }) {
   // Timeouts
 

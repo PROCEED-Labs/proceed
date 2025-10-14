@@ -118,6 +118,17 @@ async function callToExecutor(endpoint, body) {
 // TODO: pass these in as a process argument
 // TODO: setProgress(<number between 0 - 100>)
 
+/**
+ * @typedef {{
+ *  context: import('isolated-vm').Context
+ *  callToExecutor: (endpoint: string, body: any) => Promise<any>
+ *  processId: string,
+ *  processInstanceId: string,
+ *  tokenId: string
+ * }} ScriptTaskSetupData
+ */
+
+/** @type {ScriptTaskSetupData} */
 const setupData = {
   context,
   callToExecutor,

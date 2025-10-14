@@ -16,7 +16,7 @@
  * }} data
  * */
 module.exports = function setupTimeouts({ context }) {
-  // Timoeouts
+  // Timeouts
 
   context.evalSync(`
     let _timeout_counter = 0;

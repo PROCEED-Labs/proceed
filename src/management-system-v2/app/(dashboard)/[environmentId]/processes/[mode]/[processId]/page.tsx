@@ -113,4 +113,3 @@ const Process = async (props: ProcessPageProps) => {
 };
 
 export default Process;
-export { ProcessComponent };

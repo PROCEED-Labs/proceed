@@ -25,7 +25,6 @@ module.exports = function setupTimeouts({ context }) {
 
   context.evalClosureSync(
     async function _timeoutExecutor(cb, ms, timeoutId) {
-      // @ts-expect-error $0 will be defined when running in the isolate
       await waitAsync(ms);
 
       if (!_active_timeouts.has(timeoutId)) return;

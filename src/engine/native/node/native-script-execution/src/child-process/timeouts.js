@@ -62,13 +62,15 @@ module.exports = function setupTimeouts({ context }) {
 
   context.evalClosureSync(
     async function _intervalExecutor(cb, ms, intervalId) {
-      do {
+      while (true) {
         await waitAsync(ms);
-        // NOTE: maybe this shouldn't be awaited
+
+        if (!_active_intervals.has(intervalId)) return;
+
         try {
           await cb();
         } catch (e) {}
-      } while (_active_intervals.has(intervalId));
+      }
     }.toString() + 'globalThis["_intervalExecutor"]=_intervalExecutor;',
   );
 

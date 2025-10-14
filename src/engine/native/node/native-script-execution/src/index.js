@@ -246,14 +246,21 @@ class SubprocesScriptExecution extends NativeModule {
     const outstandingRequest = this.outstandingRequests.get(message.id);
     if (!outstandingRequest) return;
 
-    outstandingRequest.responses.push(message.response);
     outstandingRequest.outstandingResponses--;
+    if (message.response.statusCode !== 404) {
+      outstandingRequest.responses.push(message.response);
+    }
 
     if (outstandingRequest.outstandingResponses > 0) return;
 
     // TODO: some better handling of this maybe??
     let response;
-    if (outstandingRequest.responses.length === 1) {
+    if (outstandingRequest.responses.length === 0) {
+      response = {
+        statusCode: 404,
+        response: 'No processes found',
+      };
+    } else if (outstandingRequest.responses.length === 1) {
       response = outstandingRequest.responses[0];
     } else {
       response = {

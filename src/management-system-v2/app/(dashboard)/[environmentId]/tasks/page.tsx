@@ -1,18 +1,12 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
-import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { Result, Space } from 'antd';
 import { notFound } from 'next/navigation';
 import FormList from './form-list';
 import { getHtmlForms } from '@/lib/data/html-forms';
 
 const FormsPage = async ({ params }: { params: { environmentId: string } }) => {
-  const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
-    return notFound();
-  }
-
   const {
     activeEnvironment: { spaceId },
   } = await getCurrentEnvironment(params.environmentId);

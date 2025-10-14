@@ -28,11 +28,13 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
   const { variables, updateVariables } = useEditorStateStore();
 
   useEffect(() => {
+    // initialize the variables in the editor
     updateVariables(JSON.parse(data.variables));
   }, []);
 
   useEffect(() => {
     if (variables) {
+      // store the variable changes made in the editor
       updateHtmlForm(data.id, { variables: JSON.stringify(variables) });
     }
   }, [variables]);

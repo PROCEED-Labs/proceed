@@ -2,7 +2,6 @@ import CheckBoxOrRadioGroup from './CheckboxOrRadioGroup';
 import Column from './Column';
 import Container from './Container';
 import Milestones, { ExportMilestones } from './Milestones';
-import { EditImage, ExportImage } from './Image';
 import Input, { ExportInput } from './Input';
 import Row from './Row';
 import SubmitButton from './SubmitButton';
@@ -22,4 +21,4 @@ export const defaultElements = {
 
 export const exportElements = { Input: ExportInput };
 
-export const specificElements = { EditImage, ExportImage, Milestones, ExportMilestones };
+export const specificElements = { Milestones, ExportMilestones };

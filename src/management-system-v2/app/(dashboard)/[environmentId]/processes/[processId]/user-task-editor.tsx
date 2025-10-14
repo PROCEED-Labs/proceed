@@ -173,11 +173,13 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
   const { variables, updateVariables, updateMilestones } = useEditorStateStore();
 
   useEffect(() => {
+    // (re-)initialize the variables known to the editor when it is opened
     if (open) updateVariables([...processVariables]);
   }, [open]);
 
   useEffect(() => {
     if (variables) {
+      // apply variables changes made in the editor to the process
       variables.forEach((variable) => {
         const oldVariable = processVariables.find((pV) => pV.name === variable.name);
 
@@ -192,6 +194,7 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
 
   useEffect(() => {
     if (open && selectedElementId && modeler) {
+      // (re-) initialize the milestones known to the editor when it is opened
       const selectedElement = modeler.getElement(selectedElementId);
 
       if (selectedElement)

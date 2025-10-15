@@ -136,7 +136,7 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
           onSuccess: () => {
             app.message.success('Form saved');
             queryClient.invalidateQueries({
-              queryKey: ['html-form-json', processId, filename, true],
+              queryKey: ['html-form-json', processId, filename],
             });
             setHasUnsavedChanges(false);
             onClose();
@@ -204,7 +204,7 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
 
   const { data: json } = useQuery({
     queryFn: async () => {
-      if (!processId || !filename || !open) return null;
+      if (!processId || !filename) return null;
       return wrapServerCall({
         fn: async () => {
           const json = await getProcessHtmlFormData(processId, filename, environment.spaceId);
@@ -215,7 +215,8 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
       });
     },
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: ['html-form-json', processId, filename, open],
+    queryKey: ['html-form-json', processId, filename],
+    enabled: open,
   });
 
   let title = 'Edit Form';

@@ -21,7 +21,7 @@ import { HtmlForm } from '@prisma/client';
 import {
   addHtmlForm,
   getHtmlFormHtml,
-  removeHtmlForm,
+  removeHtmlForms,
   updateHtmlForm,
 } from '@/lib/data/html-forms';
 import { defaultForm } from '@/components/html-form-editor/utils';
@@ -127,9 +127,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
   }, []);
 
   async function deleteItems(forms: ListForm[]) {
-    for (const form of forms) {
-      await removeHtmlForm(form.id);
-    }
+    await removeHtmlForms(forms.map((form) => form.id));
     setSelectedForms([]);
     router.refresh();
   }

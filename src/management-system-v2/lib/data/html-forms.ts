@@ -8,7 +8,7 @@ import {
   getHtmlFormJson as _getHtmlFormJson,
   addHtmlForm as _addHtmlForm,
   updateHtmlForm as _updateHtmlForm,
-  removeHtmlForm as _removeHtmlForm,
+  removeHtmlForms as _removeHtmlForms,
 } from './db/html-forms';
 import { getCurrentUser } from '@/components/auth';
 
@@ -37,8 +37,8 @@ export const updateHtmlForm = async (formId: string, newData: Partial<HtmlForm>)
   await _updateHtmlForm(formId, newData);
 };
 
-export const removeHtmlForm = async (formId: string) => {
-  await _removeHtmlForm(formId);
+export const removeHtmlForms = async (formIds: string[]) => {
+  await _removeHtmlForms(formIds);
 };
 
 export const getHtmlFormHtml = async (formId: string) => {

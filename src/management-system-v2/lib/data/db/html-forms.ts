@@ -106,17 +106,8 @@ export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlF
 }
 
 /** Removes an existing html form */
-export async function removeHtmlForm(formId: string) {
-  const existingForm = await db.htmlForm.findUnique({
-    where: {
-      id: formId,
-    },
-  });
-  if (!existingForm) {
-    throw new Error(`Html Form with id ${formId} does not exist!`);
-  }
-
-  await db.htmlForm.delete({ where: { id: formId } });
+export async function removeHtmlForms(formIds: string[]) {
+  await db.htmlForm.deleteMany({ where: { OR: formIds.map((id) => ({ id })) } });
 }
 
 /** Returns the html form html */

@@ -175,7 +175,7 @@ module.exports = (path, management) => {
         }
       }
 
-      return '';
+      return '{}';
     },
   );
 

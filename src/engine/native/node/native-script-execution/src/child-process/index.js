@@ -184,7 +184,7 @@ context
     if (typeof err === 'string') {
       try {
         result = JSON.parse(err);
-      } catch (_) { }
+      } catch (_) {}
     } else if (err instanceof Error) {
       result = {
         errorClass: '_javascript_error',

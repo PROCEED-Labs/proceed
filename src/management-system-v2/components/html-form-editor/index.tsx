@@ -179,80 +179,78 @@ const HtmlFormEditor = forwardRef<HtmlFormEditorRef, EditorProps>(
       ...toolboxExtension,
     ];
 
+    if (!json) return <></>;
+
     return (
       <>
-        {json && (
-          <Editor
-            resolver={{
-              ...defaultElements,
-              ...additionalElements,
-            }}
-            enabled={!isMobile}
-            handlers={(store: EditorStore) =>
-              new CustomEventhandlers({
-                store,
-                isMultiSelectEnabled: () => false,
-                removeHoverOnMouseleave: true,
-              })
-            }
-            onNodesChange={() => {
-              if (onChange && !importing.current) onChange();
-            }}
+        <Editor
+          resolver={{
+            ...defaultElements,
+            ...additionalElements,
+          }}
+          enabled={!isMobile}
+          handlers={(store: EditorStore) =>
+            new CustomEventhandlers({
+              store,
+              isMultiSelectEnabled: () => false,
+              removeHoverOnMouseleave: true,
+            })
+          }
+          onNodesChange={() => {
+            if (onChange && !importing.current) onChange();
+          }}
+        >
+          <EditorDnDHandler
+            iframeRef={iframeRef}
+            disabled={!iframeMounted || !editingEnabled}
+            mobileView={iframeLayout === 'mobile'}
           >
-            <EditorDnDHandler
-              iframeRef={iframeRef}
-              disabled={!iframeMounted || !editingEnabled}
-              mobileView={iframeLayout === 'mobile'}
-            >
-              <div className={styles.EditorUI}>
+            <div className={styles.EditorUI}>
+              {!isMobile && (
+                <Toolbar
+                  iframeMaxWidth={iframeMaxWidth}
+                  iframeLayout={iframeLayout}
+                  onLayoutChange={setIframeLayout}
+                />
+              )}
+              <AntRow className={styles.EditorBody}>
                 {!isMobile && (
-                  <Toolbar
-                    iframeMaxWidth={iframeMaxWidth}
-                    iframeLayout={iframeLayout}
-                    onLayoutChange={setIframeLayout}
-                  />
-                )}
-                <AntRow className={styles.EditorBody}>
-                  {!isMobile && (
-                    <Col style={{ height: '100%', overflow: 'auto' }} span={4}>
-                      <Sidebar toolbox={toolbox} />
-                    </Col>
-                  )}
-                  <Col
-                    style={{ border: '2px solid #d3d3d3', borderRadius: '8px' }}
-                    ref={(r) => {
-                      if (r && r != iframeContainer) {
-                        setIframeContainer(r);
-                      }
-                    }}
-                    className={styles.HtmlEditor}
-                    span={isMobile ? 24 : 20}
-                  >
-                    <IFrame
-                      id="html-form-editor-iframe"
-                      ref={iframeRef}
-                      width={
-                        iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'
-                      }
-                      height="100%"
-                      style={{ border: 0, margin: 'auto' }}
-                      initialContent={iframeDocument}
-                      mountTarget="#mountHere"
-                      contentDidMount={() => setIframeMounted(true)}
-                    >
-                      <ShortcutHandler onClose={onClose} />
-                      <EditorContent
-                        ref={content}
-                        json={json}
-                        onInit={() => (importing.current = false)}
-                      />
-                    </IFrame>
+                  <Col style={{ height: '100%', overflow: 'auto' }} span={4}>
+                    <Sidebar toolbox={toolbox} />
                   </Col>
-                </AntRow>
-              </div>
-            </EditorDnDHandler>
-          </Editor>
-        )}
+                )}
+                <Col
+                  style={{ border: '2px solid #d3d3d3', borderRadius: '8px' }}
+                  ref={(r) => {
+                    if (r && r != iframeContainer) {
+                      setIframeContainer(r);
+                    }
+                  }}
+                  className={styles.HtmlEditor}
+                  span={isMobile ? 24 : 20}
+                >
+                  <IFrame
+                    id="html-form-editor-iframe"
+                    ref={iframeRef}
+                    width={iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'}
+                    height="100%"
+                    style={{ border: 0, margin: 'auto' }}
+                    initialContent={iframeDocument}
+                    mountTarget="#mountHere"
+                    contentDidMount={() => setIframeMounted(true)}
+                  >
+                    <ShortcutHandler onClose={onClose} />
+                    <EditorContent
+                      ref={content}
+                      json={json}
+                      onInit={() => (importing.current = false)}
+                    />
+                  </IFrame>
+                </Col>
+              </AntRow>
+            </div>
+          </EditorDnDHandler>
+        </Editor>
       </>
     );
   },

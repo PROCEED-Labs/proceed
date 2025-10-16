@@ -48,16 +48,12 @@ module.exports = {
       startCapability: (_processId, _processInstanceId, _tokenId, capabilityName, args, callback) =>
         capabilities.startCapability.call(capabilities, capabilityName, args, callback),
     });
-    NeoEngine.provideService('network', {
+    NeoEngine.provideService('network-requests', {
       get: (_processId, _processInstanceId, _tokenId, url, options) => {
-        try {
-          return errorWrapper(system.http.request)(system.http, url, {
-            ...options,
-            method: 'GET',
-          });
-        } catch (e) {
-          console.error(e);
-        }
+        return errorWrapper(system.http.request)(system.http, url, {
+          ...options,
+          method: 'GET',
+        });
       },
       post: (
         _processId,

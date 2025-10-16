@@ -32,7 +32,7 @@
       <incoming>Flow_0xsb6pm</incoming>
       <outgoing>Flow_0ijy7a4</outgoing>
       <script>
-      return new Promise(res => setTimeoutAsync(res, 2_000));
+      return new Promise(res => setTimeout(res, 2_000));
       </script>
     </scriptTask>
   </process>

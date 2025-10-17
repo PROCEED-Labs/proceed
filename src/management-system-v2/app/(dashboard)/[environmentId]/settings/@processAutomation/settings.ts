@@ -25,6 +25,19 @@ export const settings: SettingGroup = {
       ],
     },
     {
+      key: 'task_editor',
+      name: 'Task Editor',
+      children: [
+        {
+          key: 'active',
+          name: 'Enabled',
+          type: 'boolean',
+          description: 'Controls whether this view is activated in this space.',
+          value: true,
+        },
+      ],
+    },
+    {
       key: 'dashboard',
       name: 'Dashboard',
       children: [

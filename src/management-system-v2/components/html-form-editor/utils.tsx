@@ -2,6 +2,7 @@ import { Editor, Frame, Resolver } from '@craftjs/core';
 import ReactDOMServer from 'react-dom/server';
 
 import { CanEditContext } from '@/lib/can-edit-context';
+import { EditorStoreProvider } from './use-editor-state-store';
 
 const styles = `
 body {
@@ -186,9 +187,11 @@ p, h1, h2, h3, h4, h5, th, td {
 export function toHtml(json: string, resolver: Resolver) {
   const markup = ReactDOMServer.renderToStaticMarkup(
     <CanEditContext.Provider value={true}>
-      <Editor enabled={false} resolver={resolver}>
-        <Frame data={json} />
-      </Editor>
+      <EditorStoreProvider>
+        <Editor enabled={false} resolver={resolver}>
+          <Frame data={json} />
+        </Editor>
+      </EditorStoreProvider>
       ,
     </CanEditContext.Provider>,
   );

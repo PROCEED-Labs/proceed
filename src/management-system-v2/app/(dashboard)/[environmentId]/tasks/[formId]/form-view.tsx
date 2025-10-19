@@ -6,14 +6,16 @@ import Content from '@/components/content';
 import { HtmlForm } from '@prisma/client';
 import { Space, Typography } from 'antd';
 import { updateHtmlForm } from '@/lib/data/html-forms';
-import useEditorStateStore from '@/components/html-form-editor/use-editor-state-store';
+import useEditorStateStore, {
+  EditorStoreProvider,
+} from '@/components/html-form-editor/use-editor-state-store';
 import HtmlFormEditor, { HtmlFormEditorRef } from '@/components/html-form-editor';
 
 type FormViewProps = {
   data: HtmlForm;
 };
 
-const FormView: React.FC<FormViewProps> = ({ data }) => {
+const FormEditor: React.FC<FormViewProps> = ({ data }) => {
   const builder = useRef<HtmlFormEditorRef | null>(null);
 
   const handleSave = () => {
@@ -25,7 +27,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
     }
   };
 
-  const { variables, updateVariables } = useEditorStateStore();
+  const { variables, updateVariables } = useEditorStateStore((state) => state);
 
   useEffect(() => {
     // initialize the variables in the editor
@@ -39,6 +41,10 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
     }
   }, [variables]);
 
+  return <HtmlFormEditor ref={builder} json={data.json} onChange={handleSave} />;
+};
+
+const FormView: React.FC<FormViewProps> = ({ data }) => {
   return (
     <Content
       headerLeft={
@@ -57,7 +63,9 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
         size="large"
         style={{ display: 'flex', height: '100%', rowGap: 0 }}
       >
-        <HtmlFormEditor ref={builder} json={data.json} onChange={handleSave} />
+        <EditorStoreProvider>
+          <FormEditor data={data} />
+        </EditorStoreProvider>
       </Space>
     </Content>
   );

@@ -143,7 +143,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   const [hoveredAction, setHoveredAction] = useState<EditAction>();
   const [currentValue, setCurrentValue] = useState('');
 
-  const { variables } = useEditorStateStore();
+  const variables = useEditorStateStore((state) => state.variables);
 
   const {
     connectors: { connect },

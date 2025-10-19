@@ -277,7 +277,7 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
 }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
-  const { variables, updateVariables } = useEditorStateStore();
+  const { variables, updateVariables } = useEditorStateStore((state) => state);
 
   if (!variables) return null;
 

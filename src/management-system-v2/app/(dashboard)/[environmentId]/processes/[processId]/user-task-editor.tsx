@@ -1,7 +1,9 @@
 import HtmlFormEditor, { HtmlFormEditorRef } from '@/components/html-form-editor';
-import useEditorStateStore from '@/components/html-form-editor/use-editor-state-store';
+import useEditorStateStore, {
+  EditorStoreProvider,
+} from '@/components/html-form-editor/use-editor-state-store';
 import { App, Grid, Modal } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LuImage, LuMilestone } from 'react-icons/lu';
 
@@ -32,12 +34,6 @@ const { Milestones, ExportMilestones } = specificElements;
 
 import { EditImage, ExportImage } from './user-task-image';
 
-type UserTaskEditorProps = {
-  processId: string;
-  open: boolean;
-  onClose: () => void;
-};
-
 export function canHaveForm(element?: Element) {
   if (!element) return false;
   if (bpmnIs(element, 'bpmn:UserTask')) return true;
@@ -48,7 +44,87 @@ export function canHaveForm(element?: Element) {
   return !element.businessObject.eventDefinitions?.length;
 }
 
-const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClose }) => {
+type UserTaskEditorProps = {
+  json: string;
+  onChange: () => void;
+};
+
+const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
+  ({ json, onChange }, ref) => {
+    const modeler = useModelerStateStore((state) => state.modeler);
+    const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+
+    const {
+      variables: processVariables,
+      addVariable: addProcessVariable,
+      updateVariable: updateProcessVariable,
+    } = useProcessVariables();
+
+    const { variables, updateVariables, updateMilestones } = useEditorStateStore((state) => state);
+
+    useEffect(() => {
+      // initialize the variables known to the editor when it is opened
+      updateVariables([...processVariables]);
+    }, []);
+
+    useEffect(() => {
+      if (variables) {
+        // apply variables changes made in the editor to the process
+        variables.forEach((variable) => {
+          const oldVariable = processVariables.find((pV) => pV.name === variable.name);
+
+          if (!oldVariable) {
+            addProcessVariable(variable);
+          } else if (!deepEquals(variable, oldVariable)) {
+            updateProcessVariable(variable, oldVariable);
+          }
+        });
+      }
+    }, [variables]);
+
+    useEffect(() => {
+      if (selectedElementId && modeler) {
+        // (re-) initialize the milestones known to the editor when it is opened
+        const selectedElement = modeler.getElement(selectedElementId);
+
+        if (selectedElement)
+          updateMilestones(getMilestonesFromElement(selectedElement.businessObject));
+      }
+    }, []);
+
+    return (
+      <EditorStoreProvider>
+        <HtmlFormEditor
+          ref={ref}
+          json={json}
+          additionalElements={{ Milestones, Image: EditImage }}
+          additionalExportElements={{ Milestones: ExportMilestones, Image: ExportImage }}
+          toolboxExtension={[
+            {
+              title: 'Milestones',
+              icon: <LuMilestone />,
+              element: <Milestones />,
+            },
+            {
+              title: 'Image',
+              icon: <LuImage />,
+              element: <EditImage />,
+            },
+          ]}
+          onChange={onChange}
+        />
+      </EditorStoreProvider>
+    );
+  },
+);
+
+type UserTaskEditorModalProps = {
+  processId: string;
+  open: boolean;
+  onClose: () => void;
+};
+
+const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, open, onClose }) => {
   const builder = useRef<HtmlFormEditorRef | null>(null);
 
   const environment = useEnvironment();
@@ -164,48 +240,10 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
     }
   };
 
-  const {
-    variables: processVariables,
-    addVariable: addProcessVariable,
-    updateVariable: updateProcessVariable,
-  } = useProcessVariables();
-
-  const { variables, updateVariables, updateMilestones } = useEditorStateStore();
-
-  useEffect(() => {
-    // (re-)initialize the variables known to the editor when it is opened
-    if (open) updateVariables([...processVariables]);
-  }, [open]);
-
-  useEffect(() => {
-    if (variables) {
-      // apply variables changes made in the editor to the process
-      variables.forEach((variable) => {
-        const oldVariable = processVariables.find((pV) => pV.name === variable.name);
-
-        if (!oldVariable) {
-          addProcessVariable(variable);
-        } else if (!deepEquals(variable, oldVariable)) {
-          updateProcessVariable(variable, oldVariable);
-        }
-      });
-    }
-  }, [variables]);
-
-  useEffect(() => {
-    if (open && selectedElementId && modeler) {
-      // (re-) initialize the milestones known to the editor when it is opened
-      const selectedElement = modeler.getElement(selectedElementId);
-
-      if (selectedElement)
-        updateMilestones(getMilestonesFromElement(selectedElement.businessObject));
-    }
-  }, [open]);
-
   const { data: json } = useQuery({
     queryFn: async () => {
       if (!processId || !filename) return null;
-      return wrapServerCall({
+      const res = await wrapServerCall({
         fn: async () => {
           const json = await getProcessHtmlFormData(processId, filename, environment.spaceId);
 
@@ -213,6 +251,8 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
         },
         onSuccess: false,
       });
+
+      return res || null;
     },
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: ['html-form-json', processId, filename],
@@ -242,30 +282,14 @@ const UserTaskEditor: React.FC<UserTaskEditorProps> = ({ processId, open, onClos
       onOk={handleSave}
       destroyOnClose
     >
-      {json && (
-        <HtmlFormEditor
-          ref={builder}
-          json={json}
-          additionalElements={{ Milestones, Image: EditImage }}
-          additionalExportElements={{ Milestones: ExportMilestones, Image: ExportImage }}
-          toolboxExtension={[
-            {
-              title: 'Milestones',
-              icon: <LuMilestone />,
-              element: <Milestones />,
-            },
-            {
-              title: 'Image',
-              icon: <LuImage />,
-              element: <EditImage />,
-            },
-          ]}
-          onChange={() => setHasUnsavedChanges(true)}
-        />
-      )}
+      <EditorStoreProvider>
+        {json && (
+          <UserTaskEditor json={json} onChange={() => setHasUnsavedChanges(true)} ref={builder} />
+        )}
+      </EditorStoreProvider>
       {modalElement}
     </Modal>
   );
 };
 
-export default UserTaskEditor;
+export default UserTaskEditorModal;

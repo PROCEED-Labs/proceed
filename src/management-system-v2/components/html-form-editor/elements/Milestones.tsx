@@ -31,7 +31,7 @@ const Milestones: UserComponent = () => {
     connectors: { connect },
   } = useNode();
 
-  const { milestones } = useEditorStateStore();
+  const milestones = useEditorStateStore((state) => state.milestones);
 
   return (
     <div

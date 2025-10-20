@@ -1,6 +1,6 @@
-import { ProcessVariable } from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-process-variables';
 import { StoreApi, createStore, useStore } from 'zustand';
 import { ReactNode, createContext, useContext, useRef } from 'react';
+import { ProcessVariable } from '@/lib/process-variable-schema';
 
 type Milestone = { id: string; name: string; description?: string };
 

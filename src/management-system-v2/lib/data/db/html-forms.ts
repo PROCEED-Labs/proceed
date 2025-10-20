@@ -1,7 +1,12 @@
 import Ability from '@/lib/ability/abilityHelper';
 import db from '@/lib/data/db';
-import { HtmlForm } from '@prisma/client';
 import logger from '../legacy/logging';
+import {
+  HtmlForm,
+  HtmlFormMetaData,
+  HtmlFormMetaDataSchema,
+  HtmlFormSchema,
+} from '@/lib/html-form-schema';
 
 /**
  * Returns all html forms in an environment
@@ -22,18 +27,16 @@ export async function getHtmlForms(environmentId: string, ability?: Ability, wit
       creatorId: true,
       milestones: true,
       variables: true,
-      html: withFormData,
-      json: withFormData,
     },
   });
 
   //TODO: use ability
   // return ability ? ability.filter('view', 'Html Form', spaceForms) : spaceForms;
 
-  return spaceForms;
+  return HtmlFormMetaDataSchema.array().parse(spaceForms);
 }
 
-export async function getHtmlForm(formId: string, withFormData = false) {
+export async function getHtmlForm(formId: string) {
   const form = await db.htmlForm.findUnique({
     where: {
       id: formId,
@@ -49,8 +52,8 @@ export async function getHtmlForm(formId: string, withFormData = false) {
       creatorId: true,
       milestones: true,
       variables: true,
-      html: withFormData,
-      json: withFormData,
+      html: true,
+      json: true,
     },
   });
 
@@ -58,15 +61,17 @@ export async function getHtmlForm(formId: string, withFormData = false) {
     throw new Error(`Html Form with id ${formId} could not be found!`);
   }
 
-  return form;
+  return HtmlFormSchema.parse(form);
 }
 
 /** Handles adding a html form */
 export async function addHtmlForm(formInput: HtmlForm) {
+  const form = HtmlFormSchema.parse(formInput);
+
   // check if there is an id collision
   const existingForm = await db.htmlForm.findUnique({
     where: {
-      id: formInput.id,
+      id: form.id,
     },
   });
   if (existingForm) {
@@ -76,7 +81,7 @@ export async function addHtmlForm(formInput: HtmlForm) {
   // save form info
   try {
     await db.htmlForm.create({
-      data: formInput,
+      data: form,
     });
   } catch (error) {
     console.error('Error adding new html form: ', error);
@@ -85,6 +90,8 @@ export async function addHtmlForm(formInput: HtmlForm) {
 
 /** Updates an existing form */
 export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlForm>) {
+  const formInput = HtmlFormSchema.partial().parse(newInfoInput);
+
   const existingForm = await db.htmlForm.findUnique({
     where: {
       id: formId,
@@ -98,7 +105,7 @@ export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlF
   try {
     await db.htmlForm.update({
       where: { id: formId },
-      data: newInfoInput,
+      data: formInput,
     });
   } catch (error) {
     console.error('Error updating html form: ', error);

@@ -1,6 +1,6 @@
 'use server';
 
-import { HtmlForm } from '@prisma/client';
+import { HtmlForm } from '../html-form-schema';
 import {
   getHtmlForms as _getHtmlForms,
   getHtmlForm as _getHtmlForm,
@@ -16,8 +16,8 @@ export const getHtmlForms = async (spaceId: string) => {
   return _getHtmlForms(spaceId);
 };
 
-export const getHtmlForm = async (formId: string, withFormData = false) => {
-  return _getHtmlForm(formId, withFormData);
+export const getHtmlForm = async (formId: string) => {
+  return _getHtmlForm(formId);
 };
 
 export const addHtmlForm = async (

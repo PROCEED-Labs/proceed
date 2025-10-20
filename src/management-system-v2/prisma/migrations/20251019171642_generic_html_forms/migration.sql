@@ -9,8 +9,8 @@ CREATE TABLE "html-form" (
     "environmentId" TEXT NOT NULL,
     "html" XML NOT NULL,
     "json" TEXT NOT NULL,
-    "milestones" TEXT NOT NULL DEFAULT '[]',
-    "variables" TEXT NOT NULL DEFAULT '[]',
+    "milestones" JSONB NOT NULL DEFAULT '[]',
+    "variables" JSONB NOT NULL DEFAULT '[]',
     "creatorId" TEXT NOT NULL,
 
     CONSTRAINT "html-form_pkey" PRIMARY KEY ("id")

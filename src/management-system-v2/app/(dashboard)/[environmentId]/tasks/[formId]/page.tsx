@@ -17,7 +17,7 @@ const FormPage = async ({ params }: { params: { environmentId: string; formId: s
     return notFound();
   }
 
-  const htmlForm = await getHtmlForm(params.formId, true);
+  const htmlForm = await getHtmlForm(params.formId);
 
   if ('error' in htmlForm) {
     return (

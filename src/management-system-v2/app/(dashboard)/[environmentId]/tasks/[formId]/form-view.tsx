@@ -3,13 +3,13 @@
 import React, { useEffect, useRef } from 'react';
 
 import Content from '@/components/content';
-import { HtmlForm } from '@prisma/client';
 import { Space, Typography } from 'antd';
 import { updateHtmlForm } from '@/lib/data/html-forms';
 import useEditorStateStore, {
   EditorStoreProvider,
 } from '@/components/html-form-editor/use-editor-state-store';
 import HtmlFormEditor, { HtmlFormEditorRef } from '@/components/html-form-editor';
+import { HtmlForm } from '@/lib/html-form-schema';
 
 type FormViewProps = {
   data: HtmlForm;
@@ -31,13 +31,13 @@ const FormEditor: React.FC<FormViewProps> = ({ data }) => {
 
   useEffect(() => {
     // initialize the variables in the editor
-    updateVariables(JSON.parse(data.variables));
+    updateVariables(data.variables);
   }, []);
 
   useEffect(() => {
     if (variables) {
       // store the variable changes made in the editor
-      updateHtmlForm(data.id, { variables: JSON.stringify(variables) });
+      updateHtmlForm(data.id, { variables: variables });
     }
   }, [variables]);
 

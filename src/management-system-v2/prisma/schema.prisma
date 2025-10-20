@@ -294,8 +294,8 @@ model HtmlForm {
   environmentId        String
   html                 String              @db.Xml
   json                 String
-  milestones           String              @default("[]")
-  variables            String              @default("[]")
+  milestones           Json                @default("[]")
+  variables            Json                @default("[]")
   creator              User?               @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   creatorId            String
   @@unique([name,environmentId,creatorId])

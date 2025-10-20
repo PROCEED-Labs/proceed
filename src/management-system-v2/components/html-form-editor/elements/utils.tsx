@@ -15,11 +15,8 @@ import { useDndContext } from '@dnd-kit/core';
 import { truthyFilter } from '@/lib/typescript-utils';
 import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[processId]/variable-definition/process-variable-form';
 import { useCanEdit } from '@/lib/can-edit-context';
-import {
-  ProcessVariable,
-  typeLabelMap,
-} from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-process-variables';
 import useEditorStateStore from '../use-editor-state-store';
+import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
 
 export const Setting: React.FC<{
   label: string;

@@ -17,7 +17,6 @@ import { UserOutlined } from '@ant-design/icons';
 
 import styles from '@/components/item-list-view.module.scss';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
-import { HtmlForm } from '@prisma/client';
 import {
   addHtmlForm,
   getHtmlFormHtml,
@@ -37,12 +36,13 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { inlineScript } from '@proceed/user-task-helper';
 import { LuNotebookPen } from 'react-icons/lu';
+import { HtmlFormMetaData } from '@/lib/html-form-schema';
 
 type FormListProps = {
-  data: HtmlForm[];
+  data: HtmlFormMetaData[];
 };
 
-export type ListForm = ReplaceKeysWithHighlighted<HtmlForm, 'name' | 'description'>;
+export type ListForm = ReplaceKeysWithHighlighted<HtmlFormMetaData, 'name' | 'description'>;
 type Column = Exclude<ComponentProps<typeof Table<ListForm>>['columns'], undefined>;
 
 const FormListEntryLink: React.FC<
@@ -66,7 +66,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
   const [selectedForms, setSelectedForms] = useState<ListForm[]>([]);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openCreateOrUpdateModal, setOpenCreateOrUpdateModal] = useState(false);
-  const [initialData, setInitialData] = useState<HtmlForm | undefined>();
+  const [initialData, setInitialData] = useState<HtmlFormMetaData | undefined>();
 
   const [openUserAssignmentModal, setOpenUserAssignmentModal] = useState(false);
 
@@ -161,7 +161,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
 
     const userTasks = await asyncMap(forms, async (task) => {
       let html = await getHtmlFormHtml(task.id);
-      html = inlineScript(html, '', '', JSON.parse(task.variables));
+      html = inlineScript(html, '', '', task.variables);
       return {
         id: v4(),
         name: task.name,
@@ -195,8 +195,8 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
         id: v4(),
         html: '<html><head></head> <body>Hello World</body> </html>',
         json: defaultForm,
-        variables: '[]',
-        milestones: '[]',
+        variables: [],
+        milestones: [],
         environmentId: space.spaceId,
         ...data,
       });

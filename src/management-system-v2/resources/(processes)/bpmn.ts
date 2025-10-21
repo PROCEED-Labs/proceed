@@ -1,5 +1,4 @@
-import { type InferSchema, type ResourceMetadata } from 'xmcp';
-import { z } from 'zod';
+import { type ResourceMetadata } from 'xmcp';
 
 export const metadata: ResourceMetadata = {
   name: 'process-bpmn',
@@ -7,11 +6,7 @@ export const metadata: ResourceMetadata = {
   description: 'Business Process Model and Notation',
 };
 
-export const schema = {
-  processId: z.string().describe('The ID of the process'),
-};
-
-export default function handler({ processId }: InferSchema<typeof schema>) {
+export default function handler() {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

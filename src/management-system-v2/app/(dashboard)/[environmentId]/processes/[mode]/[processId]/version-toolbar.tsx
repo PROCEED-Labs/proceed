@@ -65,7 +65,7 @@ const VersionToolbar = ({ processId, readOnly }: VersionToolbarProps) => {
           onConfirm={() =>
             wrapServerCall({
               fn: () => setVersionAsLatest(processId, selectedVersionId, environment.spaceId),
-              onSuccess: () => router.push(spaceURL(environment, `/processes/${processId}`)),
+              onSuccess: () => router.push(spaceURL(environment, `/processes/editor/${processId}`)),
               app,
             })
           }

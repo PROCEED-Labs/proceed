@@ -236,13 +236,13 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
           router.push(
             spaceURL(
               environment,
-              `/processes${contextPrefix}/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
+              `/processes/editor/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
             ),
           );
         }
       }
     },
-    [process.id, router, setRootElement, contextPrefix, environment, pathname],
+    [process.id, router, setRootElement],
   );
 
   const onUnload = useCallback<Required<BPMNCanvasProps>['onUnload']>(

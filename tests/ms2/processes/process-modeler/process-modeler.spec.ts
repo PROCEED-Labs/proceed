@@ -337,7 +337,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
-  const newProcessId = newPage.url().split('/processes/').pop();
+  const newProcessId = newPage.url().split('/editor/').pop();
 
   await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();

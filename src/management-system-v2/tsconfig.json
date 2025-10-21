@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -21,10 +25,25 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "FeatureFlags": ["../../FeatureFlags.js"]
+      "@/*": [
+        "./*"
+      ],
+      "FeatureFlags": [
+        "../../FeatureFlags.js"
+      ],
+      "@xmcp/*": [
+        "./.xmcp/*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "xmcp-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

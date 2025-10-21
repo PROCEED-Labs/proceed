@@ -85,6 +85,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
   const [selectedOwners, setSelectedOwners] = useState<string[][]>([]);
 
   const [adding, setAdding] = useState(false);
+  const [assigning, setAssigning] = useState(false);
 
   const { message } = App.useApp();
 
@@ -154,6 +155,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
   }
 
   async function handleTaskAssignment() {
+    setAssigning(true);
     const resourceIds = selectedOwners
       .map((v) => v[v.length - 1])
       .reduce(
@@ -212,6 +214,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
     } catch (err) {
       if (err instanceof Error) message.error(err.message);
     }
+    setAssigning(false);
   }
 
   async function handleCreateOrUpdateForm() {
@@ -314,6 +317,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
                       }}
                       onCancel={() => setOpenUserAssignmentModal(false)}
                       onClose={() => setOpenUserAssignmentModal(false)}
+                      okButtonProps={{ loading: assigning }}
                     >
                       <Cascader
                         options={options}

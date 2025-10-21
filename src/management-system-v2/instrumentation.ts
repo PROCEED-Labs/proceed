@@ -1,5 +1,7 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Importing env and using it here will ensure that env variables (msconfig) are verified at
+    // startup
     const { env } = await import('./lib/ms-config/env-vars');
 
     const { getMSConfigDBValuesAndEnsureDefaults } = await import('./lib/ms-config/ms-config');
@@ -53,5 +55,9 @@ export async function register() {
         process.exit(1);
       }
     }
+
+    // Start scheduler if necessary
+    const { restartInternalSchedulerWithCurrentConfigs } = await import('./lib/scheduler');
+    await restartInternalSchedulerWithCurrentConfigs();
   }
 }

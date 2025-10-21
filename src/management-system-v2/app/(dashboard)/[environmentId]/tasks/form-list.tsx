@@ -6,7 +6,19 @@ import ConfirmationButton from '@/components/confirmation-button';
 import ElementList, { ListEntryLink } from '@/components/item-list-view';
 import SelectionActions from '@/components/selection-actions';
 import { spaceURL } from '@/lib/utils';
-import { Button, Cascader, Divider, Form, Grid, Input, Modal, Space, Table, Tooltip } from 'antd';
+import {
+  App,
+  Button,
+  Cascader,
+  Divider,
+  Form,
+  Grid,
+  Input,
+  Modal,
+  Space,
+  Table,
+  Tooltip,
+} from 'antd';
 import { useRouter } from 'next/navigation';
 import { ComponentProps, useMemo, useState } from 'react';
 import { IoOpenOutline } from 'react-icons/io5';
@@ -72,6 +84,10 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
 
   const [selectedOwners, setSelectedOwners] = useState<string[][]>([]);
 
+  const [adding, setAdding] = useState(false);
+
+  const { message } = App.useApp();
+
   const { user, roles } = usePotentialOwnerStore();
   useInitialisePotentialOwnerStore();
 
@@ -127,9 +143,14 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
   }, []);
 
   async function deleteItems(forms: ListForm[]) {
-    await removeHtmlForms(forms.map((form) => form.id));
-    setSelectedForms([]);
-    router.refresh();
+    const res = await removeHtmlForms(forms.map((form) => form.id));
+
+    if (res && 'error' in res) {
+      message.error(res.error.message);
+    } else {
+      setSelectedForms([]);
+      router.refresh();
+    }
   }
 
   async function handleTaskAssignment() {
@@ -159,40 +180,53 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
       })
       .filter(truthyFilter);
 
-    const userTasks = await asyncMap(forms, async (task) => {
-      let html = await getHtmlFormHtml(task.id);
-      html = inlineScript(html, '', '', task.variables);
-      return {
-        id: v4(),
-        name: task.name,
-        taskId: '',
-        instanceID: '',
-        fileName: '',
-        state: 'READY',
-        machineId: 'ms-local',
-        actualOwner: [],
-        potentialOwners: resourceIds,
-        priority: 1,
-        progress: 0,
-        startTime: Date.now(),
-        html,
-        milestones: [],
-        initialVariables: {},
-      };
-    });
+    try {
+      const userTasks = await asyncMap(forms, async (task) => {
+        let html = await getHtmlFormHtml(task.id);
 
-    await addUserTasks(userTasks);
+        if (typeof html !== 'string') {
+          throw new Error(`Failed to get the html for ${task.name}.`);
+        }
+
+        html = inlineScript(html, '', '', task.variables);
+        return {
+          id: v4(),
+          name: task.name,
+          taskId: '',
+          instanceID: '',
+          fileName: '',
+          state: 'READY',
+          machineId: 'ms-local',
+          actualOwner: [],
+          potentialOwners: resourceIds,
+          priority: 1,
+          progress: 0,
+          startTime: Date.now(),
+          html,
+          milestones: [],
+          initialVariables: {},
+        };
+      });
+
+      await addUserTasks(userTasks);
+    } catch (err) {
+      if (err instanceof Error) message.error(err.message);
+    }
   }
 
   async function handleCreateOrUpdateForm() {
+    setAdding(true);
     const data: { name: string; description: string; userDefinedId: string } =
       await form.validateFields();
 
+    let newId = '';
     if (initialData) {
-      await updateHtmlForm(initialData.id, data);
+      const res = await updateHtmlForm(initialData.id, data);
+      if (res && 'error' in res) message.error(res.error.message);
     } else {
-      await addHtmlForm({
-        id: v4(),
+      newId = v4();
+      const res = await addHtmlForm({
+        id: newId,
         html: '<html><head></head> <body>Hello World</body> </html>',
         json: defaultForm,
         variables: [],
@@ -200,10 +234,21 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
         environmentId: space.spaceId,
         ...data,
       });
+
+      if (res && 'error' in res) {
+        message.error(res.error.message);
+        setAdding(false);
+        return;
+      }
     }
     setOpenCreateOrUpdateModal(false);
     setInitialData(undefined);
-    router.refresh();
+    setAdding(false);
+    if (newId) {
+      router.push(spaceURL(space, `/tasks/${newId}`));
+    } else {
+      router.refresh();
+    }
   }
 
   const handleCloseCreateOrUpdateModal = () => {
@@ -343,6 +388,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
         onClose={() => handleCloseCreateOrUpdateModal()}
         onCancel={() => handleCloseCreateOrUpdateModal()}
         onOk={handleCreateOrUpdateForm}
+        okButtonProps={{ loading: adding }}
         destroyOnClose
       >
         <Form

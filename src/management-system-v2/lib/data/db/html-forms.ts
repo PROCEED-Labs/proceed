@@ -1,17 +1,12 @@
 import Ability from '@/lib/ability/abilityHelper';
 import db from '@/lib/data/db';
-import logger from '../legacy/logging';
-import {
-  HtmlForm,
-  HtmlFormMetaData,
-  HtmlFormMetaDataSchema,
-  HtmlFormSchema,
-} from '@/lib/html-form-schema';
+import { HtmlForm, HtmlFormMetaDataSchema, HtmlFormSchema } from '@/lib/html-form-schema';
+import { UserFacingError } from '@/lib/user-error';
 
 /**
  * Returns all html forms in an environment
  * */
-export async function getHtmlForms(environmentId: string, ability?: Ability, withFormData = false) {
+export async function getHtmlForms(environmentId: string, ability?: Ability) {
   const spaceForms = await db.htmlForm.findMany({
     where: {
       environmentId,
@@ -58,7 +53,7 @@ export async function getHtmlForm(formId: string) {
   });
 
   if (!form) {
-    throw new Error(`Html Form with id ${formId} could not be found!`);
+    throw new UserFacingError(`Html form with id ${formId} does not exist!`);
   }
 
   return HtmlFormSchema.parse(form);
@@ -75,17 +70,13 @@ export async function addHtmlForm(formInput: HtmlForm) {
     },
   });
   if (existingForm) {
-    throw new Error(`Html Form with id ${formInput.id} already exists!`);
+    throw new Error(`Html form with id ${formInput.id} already exists!`);
   }
 
   // save form info
-  try {
-    await db.htmlForm.create({
-      data: form,
-    });
-  } catch (error) {
-    console.error('Error adding new html form: ', error);
-  }
+  await db.htmlForm.create({
+    data: form,
+  });
 }
 
 /** Updates an existing form */
@@ -99,17 +90,13 @@ export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlF
   });
 
   if (!existingForm) {
-    throw new Error(`Html Form with id ${formId} does not exist!`);
+    throw new UserFacingError(`Html form with id ${formId} does not exist!`);
   }
 
-  try {
-    await db.htmlForm.update({
-      where: { id: formId },
-      data: formInput,
-    });
-  } catch (error) {
-    console.error('Error updating html form: ', error);
-  }
+  await db.htmlForm.update({
+    where: { id: formId },
+    data: formInput,
+  });
 }
 
 /** Removes an existing html form */
@@ -119,46 +106,18 @@ export async function removeHtmlForms(formIds: string[]) {
 
 /** Returns the html form html */
 export async function getHtmlFormHtml(formId: string) {
-  try {
-    const form = await db.htmlForm.findUnique({
-      where: {
-        id: formId,
-      },
-      select: {
-        html: true,
-      },
-    });
+  const form = await db.htmlForm.findUnique({
+    where: {
+      id: formId,
+    },
+    select: {
+      html: true,
+    },
+  });
 
-    if (!form) {
-      throw new Error('Html form not found');
-    }
-
-    return form.html;
-  } catch (err) {
-    logger.debug(`Error reading html of html form. Reason:\n${err}`);
-    throw new Error('Unable to find html form html!');
+  if (!form) {
+    throw new UserFacingError(`Html form with id ${formId} does not exist!`);
   }
-}
 
-/** Returns the html form json */
-export async function getHtmlFormJson(formId: string) {
-  try {
-    const form = await db.htmlForm.findUnique({
-      where: {
-        id: formId,
-      },
-      select: {
-        json: true,
-      },
-    });
-
-    if (!form) {
-      throw new Error('Html form not found');
-    }
-
-    return form.json;
-  } catch (err) {
-    logger.debug(`Error reading json of html form. Reason:\n${err}`);
-    throw new Error('Unable to find html form json!');
-  }
+  return form.html;
 }

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 
 import Content from '@/components/content';
-import { Space, Typography } from 'antd';
+import { App, Space, Typography } from 'antd';
 import { updateHtmlForm } from '@/lib/data/html-forms';
 import useEditorStateStore, {
   EditorStoreProvider,
@@ -18,12 +18,15 @@ type FormViewProps = {
 const FormEditor: React.FC<FormViewProps> = ({ data }) => {
   const builder = useRef<HtmlFormEditorRef | null>(null);
 
-  const handleSave = () => {
+  const { message } = App.useApp();
+
+  const handleSave = async () => {
     const json = builder.current?.getJson();
     const html = builder.current?.getHtml();
 
     if (json && html) {
-      updateHtmlForm(data.id, { json, html });
+      const res = await updateHtmlForm(data.id, { json, html });
+      if (res && 'error' in res) message.error(res.error.message);
     }
   };
 
@@ -37,7 +40,9 @@ const FormEditor: React.FC<FormViewProps> = ({ data }) => {
   useEffect(() => {
     if (variables) {
       // store the variable changes made in the editor
-      updateHtmlForm(data.id, { variables: variables });
+      updateHtmlForm(data.id, { variables: variables }).then((res) => {
+        if (res && 'error' in res) message.error(res.error.message);
+      });
     }
   }, [variables]);
 

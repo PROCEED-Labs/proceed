@@ -22,7 +22,7 @@ const FormsPage = async ({ params }: { params: { environmentId: string } }) => {
   if ('error' in htmlForms) {
     return (
       <Content title="Forms">
-        <Result status="404" title="Could not load task list data" />
+        <Result status="404" title={htmlForms.error.message} />
       </Content>
     );
   }

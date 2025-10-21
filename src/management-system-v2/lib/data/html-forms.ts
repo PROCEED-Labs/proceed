@@ -1,11 +1,11 @@
 'use server';
 
 import { HtmlForm } from '../html-form-schema';
+import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
   getHtmlForms as _getHtmlForms,
   getHtmlForm as _getHtmlForm,
   getHtmlFormHtml as _getHtmlFormHtml,
-  getHtmlFormJson as _getHtmlFormJson,
   addHtmlForm as _addHtmlForm,
   updateHtmlForm as _updateHtmlForm,
   removeHtmlForms as _removeHtmlForms,
@@ -13,38 +13,80 @@ import {
 import { getCurrentUser } from '@/components/auth';
 
 export const getHtmlForms = async (spaceId: string) => {
-  return _getHtmlForms(spaceId);
+  try {
+    return await _getHtmlForms(spaceId);
+  } catch (err) {
+    console.error(`Unable to get html forms from the database. Reason: ${err}`);
+    return userError('Unable to get data of html forms.');
+  }
 };
 
 export const getHtmlForm = async (formId: string) => {
-  return _getHtmlForm(formId);
+  try {
+    return await _getHtmlForm(formId);
+  } catch (err) {
+    if (err instanceof UserFacingError) {
+      const message = getErrorMessage(err);
+      return userError(message);
+    }
+    console.error(`Unable to get html form (${formId}) from the database. Reason: ${err}`);
+    return userError('Unable to get data of html form.');
+  }
 };
 
 export const addHtmlForm = async (
   formData: Omit<HtmlForm, 'createdOn' | 'lastEditedOn' | 'creatorId'>,
 ) => {
-  const creationTime = new Date();
-  const { userId } = await getCurrentUser();
-  await _addHtmlForm({
-    ...formData,
-    createdOn: creationTime,
-    lastEditedOn: creationTime,
-    creatorId: userId,
-  });
+  try {
+    const creationTime = new Date();
+    const { userId } = await getCurrentUser();
+    await _addHtmlForm({
+      ...formData,
+      createdOn: creationTime,
+      lastEditedOn: creationTime,
+      creatorId: userId,
+    });
+  } catch (err) {
+    console.error(`Unable to add html form to the database. Reason: ${err}`);
+    return userError('Unable to add html form.');
+  }
 };
 
 export const updateHtmlForm = async (formId: string, newData: Partial<HtmlForm>) => {
-  await _updateHtmlForm(formId, newData);
+  try {
+    await _updateHtmlForm(formId, newData);
+  } catch (err) {
+    if (err instanceof UserFacingError) {
+      const message = getErrorMessage(err);
+      return userError(message);
+    }
+    console.error(`Unable to update html form ${formId} in the database. Reason: ${err}`);
+    return userError('Unable to update html form.');
+  }
 };
 
 export const removeHtmlForms = async (formIds: string[]) => {
-  await _removeHtmlForms(formIds);
+  try {
+    await _removeHtmlForms(formIds);
+  } catch (err) {
+    if (err instanceof UserFacingError) {
+      const message = getErrorMessage(err);
+      return userError(message);
+    }
+    console.error(`Unable to remove html forms from the database. Reason: ${err}`);
+    return userError('Unable to remove html forms.');
+  }
 };
 
 export const getHtmlFormHtml = async (formId: string) => {
-  return _getHtmlFormHtml(formId);
-};
-
-export const getHtmlFormJson = async (formId: string) => {
-  return _getHtmlFormJson(formId);
+  try {
+    return await _getHtmlFormHtml(formId);
+  } catch (err) {
+    if (err instanceof UserFacingError) {
+      const message = getErrorMessage(err);
+      return userError(message);
+    }
+    console.error(`Unable to get html form html data from the database. Reason: ${err}`);
+    return userError('Unable to get html form html data.');
+  }
 };

@@ -166,11 +166,9 @@ const Input: UserComponent<InputProps> = ({
 export const InputSettings = () => {
   const {
     actions: { setProp },
-    type,
     labelPosition,
     variable,
   } = useNode((node) => ({
-    type: node.data.props.type,
     labelPosition: node.data.props.labelPosition,
     variable: node.data.props.variable,
   }));

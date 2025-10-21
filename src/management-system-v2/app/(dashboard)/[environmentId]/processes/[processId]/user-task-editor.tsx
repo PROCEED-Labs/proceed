@@ -45,7 +45,7 @@ export function canHaveForm(element?: Element) {
 }
 
 type UserTaskEditorProps = {
-  json: string;
+  json?: string | null;
   onChange: () => void;
 };
 
@@ -64,8 +64,8 @@ const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
 
     useEffect(() => {
       // initialize the variables known to the editor when it is opened
-      updateVariables([...processVariables]);
-    }, []);
+      if (json) updateVariables([...processVariables]);
+    }, [json]);
 
     useEffect(() => {
       if (variables) {
@@ -93,27 +93,29 @@ const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
     }, []);
 
     return (
-      <EditorStoreProvider>
-        <HtmlFormEditor
-          ref={ref}
-          json={json}
-          additionalElements={{ Milestones, Image: EditImage }}
-          additionalExportElements={{ Milestones: ExportMilestones, Image: ExportImage }}
-          toolboxExtension={[
-            {
-              title: 'Milestones',
-              icon: <LuMilestone />,
-              element: <Milestones />,
-            },
-            {
-              title: 'Image',
-              icon: <LuImage />,
-              element: <EditImage />,
-            },
-          ]}
-          onChange={onChange}
-        />
-      </EditorStoreProvider>
+      <>
+        {json && (
+          <HtmlFormEditor
+            ref={ref}
+            json={json}
+            additionalElements={{ Milestones, Image: EditImage }}
+            additionalExportElements={{ Milestones: ExportMilestones, Image: ExportImage }}
+            toolboxExtension={[
+              {
+                title: 'Milestones',
+                icon: <LuMilestone />,
+                element: <Milestones />,
+              },
+              {
+                title: 'Image',
+                icon: <LuImage />,
+                element: <EditImage />,
+              },
+            ]}
+            onChange={onChange}
+          />
+        )}
+      </>
     );
   },
 );
@@ -283,9 +285,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       destroyOnClose
     >
       <EditorStoreProvider>
-        {json && (
-          <UserTaskEditor json={json} onChange={() => setHasUnsavedChanges(true)} ref={builder} />
-        )}
+        <UserTaskEditor json={json} onChange={() => setHasUnsavedChanges(true)} ref={builder} />
       </EditorStoreProvider>
       {modalElement}
     </Modal>

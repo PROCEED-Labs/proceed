@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --watch .env src/server.ts",
     "build": "tsc",
-    "production": "node dist/server.js",
-    "production:detached": "nohup node dist/server.js >/dev/null 2>&1 & echo $! > ./server.pid",
-    "production:stop": "if [ -f ./server.pid ]; then kill $(cat ./server.pid) && rm -f ./server.pid; else echo 'no pid file'; fi"
+    "production:start": "if [ -f ./server.pid ]; then PID=$(cat ./server.pid); if ps -p $PID > /dev/null 2>&1 && ps -p $PID -o args= | grep -q node; then echo \"Server already running (pid $PID)\"; exit 1; fi; fi; node dist/server.js",
+    "production:detached": "if [ -f ./server.pid ]; then PID=$(cat ./server.pid); if ps -p $PID > /dev/null 2>&1 && ps -p $PID -o args= | grep -q node; then echo \"Server already running (pid $PID)\"; exit 1; fi; fi; nohup node dist/server.js >/dev/null 2>&1 & echo $! > ./server.pid",
+    "production:stop": "if [ -f ./server.pid ]; then PID=$(cat ./server.pid); if ps -p $PID > /dev/null 2>&1; then kill $PID >/dev/null 2>&1 || true; sleep 1; fi; rm -f ./server.pid; else echo \"No server.pid file found\"; fi"
   },
   "repository": {
     "type": "git",

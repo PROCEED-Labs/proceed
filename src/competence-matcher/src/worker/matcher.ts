@@ -4,7 +4,7 @@ import { withJobUpdates, workerLogger, startHeartbeat } from '../utils/worker';
 import { addReason } from '../tasks/reason';
 import { Match, MatchingJob } from '../utils/types';
 import ZeroShot, { labels } from '../tasks/semantic-zeroshot';
-import CrossEncoder from '../tasks/cross-encode';
+// import CrossEncoder from '../tasks/cross-encode';
 import { config } from '../config';
 
 /**

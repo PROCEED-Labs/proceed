@@ -24,15 +24,15 @@ export async function ensureAllHuggingfaceModelsAreAvailable() {
     logger.debug('model', 'Initialising zero-shot semantic opposites model...');
     await ZeroShotSemanticOpposites.getInstance();
 
-    logger.debug('model', 'Initialising cross-encoder model...');
-    await CrossEncoder.getInstance();
+    // logger.debug('model', 'Initialising cross-encoder model...');
+    // await CrossEncoder.getInstance();
 
     logger.modelInfo('All HuggingFace models initialised successfully');
 
     // Delete instances to free up memory as they will be reloaded in worker threads
     Embedding.deleteInstance();
     ZeroShotSemanticOpposites.deleteInstance();
-    CrossEncoder.deleteInstance();
+    // CrossEncoder.deleteInstance();
   } catch (error) {
     throw new HuggingFaceModelError(
       'unknown', // We don't know which specific model failed - will maybe add later

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
-import { AreaChartOutlined, AppstoreOutlined, FileOutlined } from '@ant-design/icons';
+import { AreaChartOutlined, AppstoreOutlined, LeftSquareOutlined } from '@ant-design/icons';
 import { MdOutlineComputer } from 'react-icons/md';
 import { AiOutlineDatabase } from 'react-icons/ai';
 import { FaUsers } from 'react-icons/fa';
@@ -18,27 +18,27 @@ let adminViews = [
   },
   {
     key: 'spaces',
-    label: <Link href="/admin/spaces">Spaces</Link>,
+    label: <Link href="/admin/spaces">All Spaces</Link>,
     icon: <AppstoreOutlined />,
   },
   {
     key: 'users',
-    label: <Link href="/admin/users">Users</Link>,
+    label: <Link href="/admin/users">All Users</Link>,
     icon: <FaUsers />,
   },
   {
     key: 'systemadmins',
-    label: <Link href="/admin/systemadmins">Manage admins</Link>,
+    label: <Link href="/admin/systemadmins">System Admins</Link>,
     icon: <RiAdminFill />,
   },
   {
     key: 'engines',
-    label: <Link href="/admin/engines">Engines</Link>,
+    label: <Link href="/admin/engines">System Engines</Link>,
     icon: <MdOutlineComputer />,
   },
   {
     key: 'ms-config',
-    label: <Link href="/admin/ms-config">MS Config</Link>,
+    label: <Link href="/admin/ms-config">System Settings</Link>,
     icon: <FaGear />,
   },
 ];
@@ -61,18 +61,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       layoutMenuItems={[
         {
           type: 'group',
-          label: 'PROCEED',
+          label: '',
           children: [
             {
               key: 'back-to-proceed',
-              label: <Link href="/">Processes</Link>,
-              icon: <FileOutlined />,
+              label: <Link href="/">Back to Home</Link>,
+              icon: <LeftSquareOutlined />,
             },
           ],
         },
         {
           type: 'group',
-          label: 'System Admin views',
+          label: 'MS System Admin Views',
           children: adminViews,
         },
       ]}

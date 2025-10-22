@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --watch .env src/server.ts",
     "build": "tsc",
-    "production": "node dist/server.js"
+    "production": "node dist/server.js",
+    "production:detached": "nohup node dist/server.js >/dev/null 2>&1 & echo $! > ./server.pid",
+    "production:stop": "if [ -f ./server.pid ]; then kill $(cat ./server.pid) && rm -f ./server.pid; else echo 'no pid file'; fi"
   },
   "repository": {
     "type": "git",

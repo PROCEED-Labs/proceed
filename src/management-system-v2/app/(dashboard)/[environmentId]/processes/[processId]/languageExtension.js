@@ -96,11 +96,31 @@ declare class NetworkService {
   /**
    * Send GET-Request to given address
    **/
-  get(url: string, options?: RequestOptions): Promise<any>;
+  get(url: string, options?: RequestOptions): any;
   /**
    * Send POST-Request to given address
    **/
-  post(
+  post(url: string, body: any, contentType?: string, options?: Omit<RequestOptions, 'body'>): any;
+  /**
+   * Send PUT-Request to given address
+   **/
+  put(url: string, body: any, contentType?: string, options?: Omit<RequestOptions, 'body'>): any;
+  /**
+   * Send DELETE-Request to given address
+   **/
+  delete(url: string, options?: RequestOptions): any;
+  /**
+   * Send HEAD-Request to given address
+   **/
+  head(url: string, options?: RequestOptions): any;
+  /**
+   * Send GET-Request to given address
+   **/
+  getAsync(url: string, options?: RequestOptions): Promise<any>;
+  /**
+   * Send POST-Request to given address
+   **/
+  postAsync(
     url: string,
     body: any,
     contentType?: string,
@@ -109,7 +129,7 @@ declare class NetworkService {
   /**
    * Send PUT-Request to given address
    **/
-  put(
+  putAsync(
     url: string,
     body: any,
     contentType?: string,

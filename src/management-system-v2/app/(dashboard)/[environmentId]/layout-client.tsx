@@ -21,7 +21,7 @@ import { create } from 'zustand';
 import { Environment } from '@/lib/data/environment-schema';
 import UserAvatar from '@/components/user-avatar';
 import { spaceURL } from '@/lib/utils';
-import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
+import useModelerStateStore from './processes/[mode]/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
 import { useFileManager } from '@/lib/useFileManager';

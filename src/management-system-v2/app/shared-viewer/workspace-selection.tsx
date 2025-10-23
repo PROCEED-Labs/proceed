@@ -281,7 +281,7 @@ const WorkspaceSelectionModalButton: React.FC<WorkspaceSelectionProps> = ({
       message.success('Diagram has been successfully copied to your workspace');
       if (copiedProcesses.length === 1) {
         router.push(
-          `${selectedWorkspace.isOrganization ? selectedWorkspace.id : ''}/processes/${copiedProcesses[0].id}`,
+          `${selectedWorkspace.isOrganization ? selectedWorkspace.id : ''}/processes/editor/${copiedProcesses[0].id}`,
         );
       }
     }

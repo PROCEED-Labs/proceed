@@ -18,14 +18,15 @@ export type ProcessActions = {
 
 export type ContextActions = {
   viewDocumentation: (item: ProcessListProcess) => void;
+  openEditor: (item: ProcessListProcess) => void;
   changeMetaData: (item: ProcessListProcess) => void;
-  releaseProcess: (item: ProcessListProcess) => void;
+  releaseProcess?: (item: ProcessListProcess) => void;
   share: (item: ProcessListProcess) => void;
   // Download,
   exportProcess: (items: ProcessListProcess[]) => void;
-  moveItems: (items: ProcessListProcess[]) => void;
-  copyItems: (items: ProcessListProcess[]) => void;
-  deleteItems: (items: ProcessListProcess[]) => void;
+  moveItems?: (items: ProcessListProcess[]) => void;
+  copyItems?: (items: ProcessListProcess[]) => void;
+  deleteItems?: (items: ProcessListProcess[]) => void;
 };
 
 export type RowActions = {

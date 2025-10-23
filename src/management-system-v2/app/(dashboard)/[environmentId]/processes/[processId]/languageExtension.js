@@ -138,14 +138,14 @@ declare class NetworkService {
   /**
    * Send DELETE-Request to given address
    **/
-  delete(url: string, options?: RequestOptions): Promise<any>;
+  deleteAsync(url: string, options?: RequestOptions): Promise<any>;
   /**
    * Send HEAD-Request to given address
    **/
-  head(url: string, options?: RequestOptions): Promise<any>;
+  headAsync(url: string, options?: RequestOptions): Promise<any>;
 }
 
-type Request = {
+type _Request = {
   hostname: string;
   ip: string;
   method: string;
@@ -164,40 +164,40 @@ class _Response {
 
 declare class NetworkServer {
   /** Open a one-off POST route listener */
-  post(path: string): { req: Request; res: _Response };
+  post(path: string): { req: _Request; res: _Response };
 
   /** Open a one-off PUT route listener */
-  put(path: string): { req: Request; res: _Response };
+  put(path: string): { req: _Request; res: _Response };
 
   /** Open a one-off DELETE route listener */
-  delete(path: string): { req: Request; res: _Response };
+  delete(path: string): { req: _Request; res: _Response };
 
   /** Open a one-off GET route listener */
-  get(path: string): { req: Request; res: _Response };
+  get(path: string): { req: _Request; res: _Response };
 
   /** Open a one-off POST route listener */
-  postAsync(path: string): Promise<{ req: Request; res: _Response }>;
+  postAsync(path: string): Promise<{ req: _Request; res: _Response }>;
 
   /** Open a one-off PUT route listener */
-  putAsync(path: string): Promise<{ req: Request; res: _Response }>;
+  putAsync(path: string): Promise<{ req: _Request; res: _Response }>;
 
   /** Open a one-off DELETE route listener */
-  deleteAsync(path: string): Promise<{ req: Request; res: _Response }>;
+  deleteAsync(path: string): Promise<{ req: _Request; res: _Response }>;
 
   /** Open a one-off GET route listener */
-  getAsync(path: string): Promise<{ req: Request; res: _Response }>;
+  getAsync(path: string): Promise<{ req: _Request; res: _Response }>;
 
   /** Open a POST route listener */
-  post(path: string, callback: ({ req: Request, res: _Response }) => void): void;
+  post(path: string, callback: ({ req: _Request, res: _Response }) => void): void;
 
   /** Open a PUT route listener */
-  put(path: string, callback: ({ req: Request, res: _Response }) => void): void;
+  put(path: string, callback: ({ req: _Request, res: _Response }) => void): void;
 
   /** Open a DELETE route listener */
-  delete(path: string, callback: ({ req: Request, res: _Response }) => void): void;
+  delete(path: string, callback: ({ req: _Request, res: _Response }) => void): void;
 
   /** Open a GET route listener */
-  get(path: string, callback: ({ req: Request, res: _Response }) => void): void;
+  get(path: string, callback: ({ req: _Request, res: _Response }) => void): void;
 
   /**
    * Close the network server. This is necessary for the task script to stop, after a route handler
@@ -208,7 +208,7 @@ declare class NetworkServer {
   close(): void;
 }
 
-declare function getService(serviceName: 'network'): NetworkService;
+declare function getService(serviceName: 'network-requests'): NetworkService;
 declare function getService(serviceName: 'capabilities'): CapabilityService;
 declare function getService(serviceName: 'network-server'): NetworkServer;
 

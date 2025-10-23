@@ -15,31 +15,37 @@ let adminViews = [
     key: 'dashboard',
     label: <Link href="/admin">Dashboard</Link>,
     icon: <AreaChartOutlined />,
+    selectedRegex: '/admin$',
   },
   {
     key: 'spaces',
     label: <Link href="/admin/spaces">All Spaces</Link>,
     icon: <AppstoreOutlined />,
+    selectedRegex: '/admin/spaces($|/)',
   },
   {
     key: 'users',
     label: <Link href="/admin/users">All Users</Link>,
     icon: <FaUsers />,
+    selectedRegex: '/admin/users($|/)',
   },
   {
     key: 'systemadmins',
     label: <Link href="/admin/systemadmins">System Admins</Link>,
     icon: <RiAdminFill />,
+    selectedRegex: '/admin/systemadmins($|/)',
   },
   {
     key: 'engines',
     label: <Link href="/admin/engines">System Engines</Link>,
     icon: <MdOutlineComputer />,
+    selectedRegex: '/admin/engines($|/)',
   },
   {
     key: 'ms-config',
     label: <Link href="/admin/ms-config">System Settings</Link>,
     icon: <FaGear />,
+    selectedRegex: '/admin/ms-config($|/)',
   },
 ];
 

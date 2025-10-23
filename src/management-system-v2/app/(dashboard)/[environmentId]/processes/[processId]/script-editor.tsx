@@ -36,12 +36,12 @@ import {
 import { useEnvironment } from '@/components/auth-can';
 import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
 import { type BlocklyEditorRefType } from './blockly-editor';
-import { useCanEdit } from './modeler';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useProcessVariables from './use-process-variables';
 import ProcessVariableForm from './variable-definition/process-variable-form';
+import { useCanEdit } from '@/lib/can-edit-context';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 
 type ScriptEditorProps = {

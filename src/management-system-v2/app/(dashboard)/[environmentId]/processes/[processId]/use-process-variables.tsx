@@ -10,21 +10,7 @@ import { ElementLike } from 'diagram-js/lib/model/Types';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import useModelerStateStore from './use-modeler-state-store';
-import { Variable } from '@proceed/bpmn-helper/src/getters';
-
-const allowedTypes = ['string', 'number', 'boolean', 'object', 'array'] as const;
-type AllowedType = (typeof allowedTypes)[number];
-
-// maps from the data types to what we want to display to the user
-export const typeLabelMap: Record<AllowedType, string> = {
-  string: 'Text',
-  number: 'Number',
-  boolean: 'On/Off - True/False',
-  object: 'Combined Structure',
-  array: 'List',
-} as const;
-
-export type ProcessVariable = Omit<Variable, 'dataType'> & { dataType: AllowedType };
+import { ProcessVariable, ProcessVariableSchema } from '@/lib/process-variable-schema';
 
 export default function useProcessVariables() {
   const [variables, setVariables] = useState<ProcessVariable[]>([]);
@@ -39,7 +25,11 @@ export default function useProcessVariables() {
 
       if (processEl) {
         setProcessElement(processEl);
-        setVariables(getVariablesFromElement(processEl.businessObject) as ProcessVariable[]);
+        const variables = ProcessVariableSchema.array().safeParse(
+          getVariablesFromElement(processEl.businessObject),
+        );
+        if (variables.success) setVariables(variables.data);
+        // TODO: maybe handle failure as well
 
         // watch for updates in the bpmn and mirror them in this components state
         const onUpdate = (event: any) => {

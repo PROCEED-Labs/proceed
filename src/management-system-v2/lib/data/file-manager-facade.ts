@@ -16,7 +16,7 @@ import { Prisma } from '@prisma/client';
 import { use } from 'react';
 import { checkValidity } from './processes';
 import { env } from '@/lib/ms-config/env-vars';
-import { getUsedImagesFromJson } from '@/app/(dashboard)/[environmentId]/processes/[processId]/_user-task-builder/serialized-format-utils';
+import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';
 import { getErrorMessage, userError } from '../user-error';
 
 const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;

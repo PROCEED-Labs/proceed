@@ -85,7 +85,7 @@ import MoveToFolderModal from '../folder-move-modal';
 import { FolderTree } from '../FolderTree';
 import { ContextActions, RowActions } from './types';
 //import { canDoActionOnResource } from './helpers';
-import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-potentialOwner-store';
+import { useInitialisePotentialOwnerStore } from '@/components/competence/potential-owner/use-potentialOwner-store';
 import { useSession } from 'next-auth/react';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import Ability from '@/lib/ability/abilityHelper';

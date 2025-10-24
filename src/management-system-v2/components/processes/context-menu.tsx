@@ -46,8 +46,7 @@ const ContextMenuArea: FC<
   const selectedContextMenuItems = contextMenuStore((store) => store.selected);
   const ability = useAbilityStore((state) => state.ability);
 
-  const { isListView } = useProcessView();
-  const isReadOnlyListView = isListView;
+  const { isListView, processContextPath } = useProcessView();
 
   const contextMenuItems: MenuProps['items'] = [];
   if (selectedContextMenuItems.length > 0) {
@@ -70,10 +69,8 @@ const ContextMenuArea: FC<
           key: 'open-selected',
           icon: <PiNotePencil />,
           label: (
-            <SpaceLink
-              href={`/processes/${isReadOnlyListView ? 'list' : 'editor'}/${selectedContextMenuItems[0].id}`}
-            >
-              {isReadOnlyListView ? 'Open Viewer' : 'Open Editor'}
+            <SpaceLink href={`/processes${processContextPath}/${selectedContextMenuItems[0].id}`}>
+              {isListView ? 'Open Viewer' : 'Open Editor'}
             </SpaceLink>
           ),
         },
@@ -82,20 +79,20 @@ const ContextMenuArea: FC<
           icon: <IoOpenOutline />,
           label: (
             <SpaceLink
-              href={`/processes/${isReadOnlyListView ? 'list' : 'editor'}/${selectedContextMenuItems[0].id}`}
+              href={`/processes${processContextPath}/${selectedContextMenuItems[0].id}`}
               target="_blank"
             >
-              {isReadOnlyListView ? 'Open Viewer in new Tab' : 'Open Editor in new Tab'}
+              {isListView ? 'Open Viewer in new Tab' : 'Open Editor in new Tab'}
             </SpaceLink>
           ),
         },
         {
           key: 'change-meta-data',
           icon: <LuNotebookPen />,
-          label: isReadOnlyListView ? 'Show Meta Data' : 'Change Meta Data',
+          label: isListView ? 'Show Meta Data' : 'Change Meta Data',
           onClick: () => changeMetaData(selectedContextMenuItems[0]),
         },
-        ...(!isReadOnlyListView && releaseProcess
+        ...(!isListView && releaseProcess
           ? [
               {
                 key: 'release-process',
@@ -120,7 +117,7 @@ const ContextMenuArea: FC<
       selectedContextMenuItems.find((item) => item.type !== 'folder') &&
       ability.can('create', 'Process')
     ) {
-      if (!isReadOnlyListView && copyItem) {
+      if (!isListView && copyItem) {
         children.push({
           key: 'copy-selected',
           label: 'Copy',
@@ -138,7 +135,7 @@ const ContextMenuArea: FC<
 
     // Options when the right clicked item(s) can be updated
     if (
-      !isReadOnlyListView &&
+      !isListView &&
       canDoActionOnResource(selectedContextMenuItems, 'update', ability) &&
       moveItems
     )
@@ -149,7 +146,7 @@ const ContextMenuArea: FC<
         onClick: () => moveItems(selectedContextMenuItems),
       });
     if (
-      !isReadOnlyListView &&
+      !isListView &&
       canDoActionOnResource(selectedContextMenuItems, 'delete', ability) &&
       deleteItems
     )
@@ -183,7 +180,7 @@ const ContextMenuArea: FC<
     });
 
     // Horizontal Bar - only show when in Editor, as there is nothing below it in List
-    if (!isReadOnlyListView) {
+    if (!isListView) {
       contextMenuItems.push({
         key: 'item-divider-1',
         type: 'divider',

@@ -147,17 +147,16 @@ const Processes = ({
 
   const path = usePathname();
   const { isListView } = useProcessView();
-  const isReadOnlyListView = isListView;
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
   const canDeleteSelected =
     !!selectedRowElements.length &&
     canDoActionOnResource(selectedRowElements, 'delete', ability) &&
-    !isReadOnlyListView;
-  const canCreateProcess = ability.can('create', 'Process') && !isReadOnlyListView;
+    !isListView;
+  const canCreateProcess = ability.can('create', 'Process') && !isListView;
   const canEditSelected =
-    canDoActionOnResource(selectedRowElements, 'update', ability) && !isReadOnlyListView;
+    canDoActionOnResource(selectedRowElements, 'update', ability) && !isListView;
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
@@ -224,32 +223,32 @@ const Processes = ({
     'process-list',
     'del',
     () => {
-      if (canDeleteSelected && !isReadOnlyListView) {
+      if (canDeleteSelected && !isListView) {
         setOpenDeleteModal(true);
         /* Clear copy selection */
         setCopySelection([]);
       }
     },
-    { dependencies: [canDeleteSelected, isReadOnlyListView] },
+    { dependencies: [canDeleteSelected, isListView] },
   );
   useAddControlCallback(
     'process-list',
     'copy',
     () => {
-      if (!isReadOnlyListView) setCopySelection(selectedRowElements);
+      if (!isListView) setCopySelection(selectedRowElements);
     },
-    { dependencies: [selectedRowElements, isReadOnlyListView] },
+    { dependencies: [selectedRowElements, isListView] },
   );
 
   useAddControlCallback(
     'process-list',
     'paste',
     () => {
-      if (copySelection.length && !isReadOnlyListView) {
+      if (copySelection.length && !isListView) {
         setOpenCopyModal(true);
       }
     },
-    { dependencies: [copySelection, isReadOnlyListView] },
+    { dependencies: [copySelection, isListView] },
   );
   useAddControlCallback(
     'process-list',
@@ -272,7 +271,7 @@ const Processes = ({
 
   const defaultDropdownItems = [];
   // Create Process,
-  if (ability.can('create', 'Process') && !isReadOnlyListView)
+  if (ability.can('create', 'Process') && !isListView)
     defaultDropdownItems.push({
       key: 'create-process',
       label: 'Create Process',
@@ -280,7 +279,7 @@ const Processes = ({
       onClick: () => setOpenCreateProcessModal(true),
     });
   // Create Folder,
-  if (ability.can('create', 'Folder') && !isReadOnlyListView)
+  if (ability.can('create', 'Folder') && !isListView)
     defaultDropdownItems.push({
       key: 'create-folder',
       label: 'Create Folder',
@@ -288,7 +287,7 @@ const Processes = ({
       icon: <FolderOutlined />,
     });
   // Import Process
-  if (ability.can('create', 'Process') && !isReadOnlyListView)
+  if (ability.can('create', 'Process') && !isListView)
     defaultDropdownItems.push({
       key: 'import-process',
       label: (
@@ -307,7 +306,7 @@ const Processes = ({
     });
 
   const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
-    if (isReadOnlyListView || !values) return;
+    if (isListView || !values) return;
 
     startUpdatingFolderTransition(async () => {
       await wrapServerCall({
@@ -361,13 +360,13 @@ const Processes = ({
   }
 
   function copyItem(items: ProcessListProcess[]) {
-    if (isReadOnlyListView) return;
+    if (isListView) return;
     setOpenCopyModal(true);
     setCopySelection(items);
   }
 
   function closeCopyModal() {
-    if (isReadOnlyListView) return;
+    if (isListView) return;
     setOpenCopyModal(false);
     setCopyTargetFolderId(folder.id);
     setCopyExpandedTreeNodeIds(pathToFolder);
@@ -375,7 +374,7 @@ const Processes = ({
 
   function editItem(item: ProcessListProcess) {
     if (item.type === 'folder') {
-      if (isReadOnlyListView) return;
+      if (isListView) return;
       const folder = processes.find((process) => process.id === item.id) as Folder;
       setUpdateFolderModal(folder);
     } else {
@@ -385,7 +384,7 @@ const Processes = ({
   }
 
   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
-    if (isReadOnlyListView) return;
+    if (isListView) return;
     startMovingItemTransition(async () => {
       await wrapServerCall({
         fn: async () => {
@@ -424,9 +423,7 @@ const Processes = ({
   };
 
   const openEditor = (item: ProcessListProcess) => {
-    const urlPath = isReadOnlyListView
-      ? `/processes/list/${item.id}`
-      : `/processes/editor/${item.id}`;
+    const urlPath = isListView ? `/processes/list/${item.id}` : `/processes/editor/${item.id}`;
     const url = spaceURL(space, urlPath);
     router.push(url);
   };
@@ -436,7 +433,7 @@ const Processes = ({
   };
 
   const releaseProcess = (item: ProcessListProcess) => {
-    if (isReadOnlyListView) return;
+    if (isListView) return;
     setRowClickedProcess(item.id);
     setOpenVersionModal(true);
   };
@@ -446,7 +443,7 @@ const Processes = ({
     versionDescription: string;
     processId?: string;
   }) => {
-    if (isReadOnlyListView) return;
+    if (isListView) return;
     await createVersion(
       values.versionName,
       values.versionDescription,
@@ -462,14 +459,14 @@ const Processes = ({
   };
 
   const openMoveModal = (items: ProcessListProcess[]) => {
-    if (isReadOnlyListView) return;
+    if (isListView) return;
     setElementsToMove(items);
     setMoveTargetFolderId(rootFolder?.id);
     setOpenFolderMoveModal(true);
   };
 
   const closeFolderMoveModal = () => {
-    if (isReadOnlyListView) return;
+    if (isListView) return;
     setMoveTargetFolderId(undefined);
     setOpenFolderMoveModal(false);
   };
@@ -521,7 +518,7 @@ const Processes = ({
               leftNode={
                 <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    {!breakpoint.xs && !isReadOnlyListView && (
+                    {!breakpoint.xs && !isListView && (
                       <Space>
                         <Dropdown.Button
                           menu={{
@@ -547,7 +544,7 @@ const Processes = ({
                     )}
 
                     {/* DIVIDER BLOCK */}
-                    <SelectionActions count={selectedRowKeys.length} readOnly={isReadOnlyListView}>
+                    <SelectionActions count={selectedRowKeys.length} readOnly={isListView}>
                       <Space split={<Divider type="vertical" />}>
                         {selectedRowKeys.length === 1 &&
                           selectedRowElements[0].type == 'process' && (
@@ -564,7 +561,7 @@ const Processes = ({
                               </Tooltip>
                               <Tooltip
                                 placement="top"
-                                title={isReadOnlyListView ? 'Open Viewer' : 'Open Editor'}
+                                title={isListView ? 'Open Viewer' : 'Open Editor'}
                               >
                                 <Button
                                   type="text"
@@ -577,16 +574,14 @@ const Processes = ({
                               <Tooltip
                                 placement="top"
                                 title={
-                                  isReadOnlyListView
-                                    ? 'Open Viewer in new Tab'
-                                    : 'Open Editor in new Tab'
+                                  isListView ? 'Open Viewer in new Tab' : 'Open Editor in new Tab'
                                 }
                               >
                                 <Button
                                   type="text"
                                   icon={<IoOpenOutline className={styles.Icon} />}
                                   onClick={() => {
-                                    const urlPath = isReadOnlyListView
+                                    const urlPath = isListView
                                       ? `/processes/list/${selectedRowKeys[0]}`
                                       : `/processes/editor/${selectedRowKeys[0]}`;
                                     const url = spaceURL(space, urlPath);
@@ -596,7 +591,7 @@ const Processes = ({
                               </Tooltip>
                               <Tooltip
                                 placement="top"
-                                title={isReadOnlyListView ? 'Show Meta Data' : 'Change Meta Data'}
+                                title={isListView ? 'Show Meta Data' : 'Change Meta Data'}
                               >
                                 <Button
                                   type="text"
@@ -606,7 +601,7 @@ const Processes = ({
                                   }}
                                 />
                               </Tooltip>
-                              {!isReadOnlyListView && canCreateProcess && (
+                              {!isListView && canCreateProcess && (
                                 <Tooltip placement="top" title={'Release Process'}>
                                   <VersionCreationButton
                                     type="text"
@@ -618,7 +613,7 @@ const Processes = ({
                             </div>
                           )}
 
-                        {!isReadOnlyListView && (
+                        {!isListView && (
                           <div>
                             {canEditSelected && (
                               <Tooltip placement="top" title={'Move to Folder'}>
@@ -694,7 +689,7 @@ const Processes = ({
                       </Space>
                     </SelectionActions>
                     {/* Show message in top action bar in List-view when folder has no released processes */}
-                    {isReadOnlyListView && hasNoReleasedProcesses && (
+                    {isListView && hasNoReleasedProcesses && (
                       <div style={{ display: 'flex', alignItems: 'center', marginLeft: '16px' }}>
                         <InfoCircleOutlined style={{ color: '#3e93de', marginRight: '8px' }} />
                         <Typography.Text
@@ -790,7 +785,7 @@ const Processes = ({
                       setSelectionElements: setSelectedRowElements,
                     }}
                     setShowMobileMetaData={setShowMobileMetaData}
-                    isReadOnly={isReadOnlyListView}
+                    isReadOnly={isListView}
                   />
                 ) : (
                   <div
@@ -803,7 +798,7 @@ const Processes = ({
                     }}
                   >
                     <ProcessList
-                      isReadOnly={isReadOnlyListView}
+                      isReadOnly={isListView}
                       data={filteredData}
                       folder={folder}
                       selection={selectedRowKeys}
@@ -906,11 +901,11 @@ const Processes = ({
         open={openEditModal}
         mode="edit"
         title={
-          isReadOnlyListView
+          isListView
             ? 'View Process Meta Data'
             : `Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`
         }
-        readonly={isReadOnlyListView}
+        readonly={isListView}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData
           .filter((process) => selectedRowKeys.includes(process.id))
@@ -921,7 +916,7 @@ const Processes = ({
             userDefinedId: process.type === 'process' ? process.userDefinedId : '',
           }))}
         onSubmit={async (values) => {
-          if (isReadOnlyListView) {
+          if (isListView) {
             setOpenEditModal(false);
             return;
           }

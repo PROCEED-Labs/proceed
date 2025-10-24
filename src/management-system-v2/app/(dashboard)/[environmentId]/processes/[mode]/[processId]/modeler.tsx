@@ -65,15 +65,10 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
 
-  const { isListView, isEditorView } = useProcessView();
+  const { isListView, processContextPath } = useProcessView();
 
   /// Derived State
   const minimized = !decodeURIComponent(pathname).includes(process.id);
-
-  const isReadOnlyListView = isListView;
-
-  // Determine the current context prefix for navigation
-  const contextPrefix = isReadOnlyListView ? '/list' : isEditorView ? '/editor' : '';
 
   /* Pressing ESC twice (in 500ms) lets user return to Process List */
   const escCounter = useRef(0);
@@ -82,7 +77,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
     'esc',
     () => {
       if (escCounter.current == 1) {
-        router.push(spaceURL(environment, `/processes${contextPrefix}`));
+        router.push(spaceURL(environment, `/processes${processContextPath}`));
       } else {
         escCounter.current++;
         const timer = setTimeout(() => {
@@ -96,7 +91,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
         };
       }
     },
-    { dependencies: [router, contextPrefix] },
+    { dependencies: [router, processContextPath] },
   );
 
   const selectedVersionId = query.get('version');
@@ -104,7 +99,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
 
   const showMobileView = useMobileModeler();
 
-  const canEdit = !selectedVersionId && !showMobileView && !isReadOnlyListView;
+  const canEdit = !selectedVersionId && !showMobileView && !isListView;
 
   // We shouldn't get to a place where the event listener isn't removed, since the debounce will
   // always be fired, as it doesn't get cancelled when process.id changes
@@ -359,7 +354,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
               />
             )}
             {selectedVersionId && !showMobileView && (
-              <VersionToolbar processId={process.id} readOnly={isReadOnlyListView} />
+              <VersionToolbar processId={process.id} readOnly={isListView} />
             )}
             <ModelerZoombar></ModelerZoombar>
           </>

@@ -102,10 +102,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
 
-  const { isListView } = useProcessView();
-  const isReadOnlyListView = isListView;
-
-  const processContextPath = pathname.split('/').slice(0, -1).join('/');
+  const { isListView, processContextPath } = useProcessView();
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -290,13 +287,13 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 router.push(
                   spaceURL(
                     environment,
-                    `${processContextPath}/${processId as string}${
+                    `/processes${processContextPath}/${processId as string}${
                       searchParams.size ? '?' + searchParams.toString() : ''
                     }`,
                   ),
                 );
               }}
-              options={(isReadOnlyListView ? [] : [LATEST_VERSION])
+              options={(isListView ? [] : [LATEST_VERSION])
                 .concat(process.versions ?? [])
                 .map(({ id, name }) => ({
                   value: id,
@@ -309,7 +306,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                   <VersionCreationButton
                     icon={<PlusOutlined />}
                     createVersion={createProcessVersion}
-                    disabled={isReadOnlyListView}
+                    disabled={isListView}
                   ></VersionCreationButton>
                 </Tooltip>
                 <Tooltip title="Undo">
@@ -336,7 +333,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
               selectedElement &&
               ((env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
                 canHaveForm(selectedElement) &&
-                !isReadOnlyListView && (
+                !isListView && (
                   <Tooltip title={formEditorTitle}>
                     <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
                   </Tooltip>
@@ -350,7 +347,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 )) ||
                 (env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
                   bpmnIs(selectedElement, 'bpmn:ScriptTask') &&
-                  !isReadOnlyListView && (
+                  !isListView && (
                     <Tooltip title="Edit Script Task">
                       <Button
                         icon={<FormOutlined />}
@@ -439,7 +436,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 isOpen={showPropertiesPanel}
                 close={handlePropertiesPanelToggle}
                 selectedElement={selectedElement}
-                readOnly={isReadOnlyListView}
+                readOnly={isListView}
               />
             )}
           </Space>

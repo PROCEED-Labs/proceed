@@ -81,14 +81,10 @@ const Wrapper = ({
     token: { fontSizeHeading1 },
   } = theme.useToken();
 
-  const { isListView, isEditorView } = useProcessView();
+  const { isListView, processContextPath } = useProcessView();
 
   /// Derived State
   const minimized = !decodeURIComponent(pathname).includes(processId as string);
-  const isReadOnlyListView = isListView;
-
-  // Determine the current context prefix for navigation
-  const contextPrefix = isReadOnlyListView ? '/list' : isEditorView ? '/editor' : '';
 
   // update the subprocess breadcrumb information if the visible layer in the modeler is changed
   const subprocessChain = useMemo(() => {
@@ -150,7 +146,7 @@ const Wrapper = ({
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   // Filter processes for list view - only show processes with released versions
-  const filteredProcesses = isReadOnlyListView
+  const filteredProcesses = isListView
     ? processes.filter(
         (process) =>
           process.versions && Array.isArray(process.versions) && process.versions.length > 0,
@@ -176,12 +172,14 @@ const Wrapper = ({
               // prevents a warning caused by the label for the select element being different from the selected option (https://github.com/ant-design/ant-design/issues/34048#issuecomment-1225491622)
               optionLabelProp="children"
               onSelect={(_, option) => {
-                router.push(spaceURL(environment, `/processes${contextPrefix}/${option.value}`));
+                router.push(
+                  spaceURL(environment, `/processes${processContextPath}/${option.value}`),
+                );
               }}
               dropdownRender={(menu) => (
                 <>
                   {menu}
-                  {!isReadOnlyListView && (
+                  {!isListView && (
                     <AuthCan create Process>
                       <Divider style={{ margin: '4px 0' }} />
                       <Space style={{ display: 'flex', justifyContent: 'center' }}>
@@ -289,7 +287,7 @@ const Wrapper = ({
       canvas.setRootElement(canvas.findRoot(currentSubprocess.id) as Root);
       modeler.fitViewport();
     } else {
-      router.push(spaceURL(environment, `/processes${contextPrefix}`));
+      router.push(spaceURL(environment, `/processes${processContextPath}`));
     }
   };
 
@@ -335,16 +333,16 @@ const Wrapper = ({
             <span
               className={styles.Name}
               onClick={() => {
-                if (!isReadOnlyListView) {
+                if (!isListView) {
                   setEditingName(currentLayerName);
                 }
               }}
-              style={{ cursor: isReadOnlyListView ? 'default' : 'pointer' }}
+              style={{ cursor: isListView ? 'default' : 'pointer' }}
             >
               <Typography.Text strong style={{ marginRight: '0.25rem' }}>
                 {currentLayerName}
               </Typography.Text>
-              {!isReadOnlyListView && <EditOutlined></EditOutlined>}
+              {!isListView && <EditOutlined></EditOutlined>}
             </span>
           )}
         </div>

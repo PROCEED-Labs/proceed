@@ -4,7 +4,7 @@ import { createContext, useContext } from 'react';
 
 type ProcessViewContextType = {
   isListView: boolean;
-  isEditorView: boolean;
+  processContextPath: string;
 };
 
 const ProcessViewContext = createContext<ProcessViewContextType | undefined>(undefined);
@@ -12,7 +12,7 @@ const ProcessViewContext = createContext<ProcessViewContextType | undefined>(und
 export function useProcessView() {
   const context = useContext(ProcessViewContext);
   if (context === undefined) {
-    return { isListView: false, isEditorView: true };
+    return { isListView: false, processContextPath: '/editor' };
   }
   return context;
 }
@@ -25,10 +25,10 @@ export function ProcessViewProvider({
   mode: string;
 }) {
   const isListView = mode === 'list';
-  const isEditorView = mode === 'editor';
+  const processContextPath = isListView ? '/list' : '/editor';
 
   return (
-    <ProcessViewContext.Provider value={{ isListView, isEditorView }}>
+    <ProcessViewContext.Provider value={{ isListView, processContextPath }}>
       {children}
     </ProcessViewContext.Provider>
   );

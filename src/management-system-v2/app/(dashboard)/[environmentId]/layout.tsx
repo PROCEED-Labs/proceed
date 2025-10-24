@@ -20,6 +20,7 @@ import {
   SolutionOutlined,
   HomeOutlined,
   AppstoreOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons';
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 
@@ -252,6 +253,15 @@ const DashboardLayout = async ({
       });
     }
 
+    // TODO: Add proper authorization check for competences
+    if (can('manage', 'User')) {
+      children.push({
+        key: 'competences',
+        label: <Link href={spaceURL(activeEnvironment, `/iam/competences`)}>Competences</Link>,
+        icon: <TrophyOutlined />,
+      });
+    }
+
     layoutMenuItems.push({
       key: 'iam-group',
       label: 'Organization',
@@ -274,6 +284,15 @@ const DashboardLayout = async ({
             <SpaceLink href="/profile">My Profile</SpaceLink>
           ),
           icon: <TbUserEdit />,
+        },
+        {
+          key: 'personal-competence',
+          label: user?.isGuest ? (
+            <GuestWarningButton>My Competences</GuestWarningButton>
+          ) : (
+            <SpaceLink href="/user-competence">My Competences</SpaceLink>
+          ),
+          icon: <TrophyOutlined />,
         },
         {
           key: 'personal-spaces',

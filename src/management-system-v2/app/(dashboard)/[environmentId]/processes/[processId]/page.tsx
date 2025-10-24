@@ -9,7 +9,10 @@ import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
 import { getProcessBPMN } from '@/lib/data/processes';
 import BPMNTimeline from '@/components/bpmn-timeline';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { RoleType, UserType } from './use-potentialOwner-store';
+import {
+  RoleType,
+  UserType,
+} from '../../../../../components/competence/potential-owner/use-potentialOwner-store';
 import type { Process } from '@/lib/data/process-schema';
 
 type ProcessProps = {

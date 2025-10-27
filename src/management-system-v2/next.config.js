@@ -37,6 +37,7 @@ const nextConfig = {
   },
   rewrites: async () => {
     return [
+      'start',
       'processes',
       'spaces',
       'executions',

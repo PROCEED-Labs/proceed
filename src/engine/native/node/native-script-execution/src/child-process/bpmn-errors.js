@@ -5,15 +5,7 @@ const ivm = require('isolated-vm');
 const errorClasses = ['BpmnError', 'BpmnEscalation'];
 
 module.exports = {
-  /**
-   * @param {{
-   *  context: import('isolated-vm').Context
-   *  callToExecutor: (endpoint: string, body: any) => Promise<any>
-   *  processId: string,
-   *  processInstanceId: string,
-   *  tokenId: string
-   * }} data
-   * */
+  /** @param {import('.').ScriptTaskSetupData} setupData */
   setupBpmnErrors: function ({ context }) {
     for (const errorName of errorClasses)
       context.evalClosureSync(

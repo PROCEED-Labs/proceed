@@ -18,15 +18,7 @@ let listeningOn = {
   get: new Map(),
 };
 
-/**
- * @param {{
- *  context: import('isolated-vm').Context
- *  callToExecutor: (endpoint: string, body: any) => Promise<any>
- *  processId: string,
- *  processInstanceId: string,
- *  tokenId: string
- * }} data
- * */
+/** @param {import('.').ScriptTaskSetupData} setupData */
 module.exports = function setupNetworkServer({ context }) {
   let listenerAdded = false;
   async function ipcMessageHandler(message) {
@@ -195,7 +187,8 @@ module.exports = function setupNetworkServer({ context }) {
   async function _processRequest(method, path, req, requestId) {
     let callback = _httpServerListeners[method].get(path);
     if (!callback) {
-      return { result: 404 };
+      // This shouldn't happen, as the main node process also keeps record of the route handlers
+      throw new Error('No route handler found in script task');
     }
 
     const res = new _Response(requestId);

@@ -6,17 +6,9 @@
 
 // TODO: consider what to do with errors thrown inside the callback (cb) functions
 
-/**
- * @param {{
- *  context: import('isolated-vm').Context
- *  callToExecutor: (endpoint: string, body: any) => Promise<any>
- *  processId: string,
- *  processInstanceId: string,
- *  tokenId: string
- * }} data
- * */
+/** @param {import('.').ScriptTaskSetupData} setupData */
 module.exports = function setupTimeouts({ context }) {
-  // Timoeouts
+  // Timeouts
 
   context.evalSync(`
     let _timeout_counter = 0;
@@ -25,7 +17,6 @@ module.exports = function setupTimeouts({ context }) {
 
   context.evalClosureSync(
     async function _timeoutExecutor(cb, ms, timeoutId) {
-      // @ts-expect-error $0 will be defined when running in the isolate
       await waitAsync(ms);
 
       if (!_active_timeouts.has(timeoutId)) return;
@@ -62,13 +53,15 @@ module.exports = function setupTimeouts({ context }) {
 
   context.evalClosureSync(
     async function _intervalExecutor(cb, ms, intervalId) {
-      do {
+      while (true) {
         await waitAsync(ms);
-        // NOTE: maybe this shouldn't be awaited
+
+        if (!_active_intervals.has(intervalId)) return;
+
         try {
           await cb();
         } catch (e) {}
-      } while (_active_intervals.has(intervalId));
+      }
     }.toString() + 'globalThis["_intervalExecutor"]=_intervalExecutor;',
   );
 

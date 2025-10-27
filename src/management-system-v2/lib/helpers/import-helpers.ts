@@ -120,7 +120,7 @@ export async function checkIfAllReferencedArtefactsAreProvided(
     });
 
     const missingImages = referencedArtefacts.images.filter(
-      (image) => !importedArtefacts.images.includes(image),
+      (image) => !importedArtefacts.images.includes(image.split('/').pop()!),
     );
 
     const allArtefactsProvided =

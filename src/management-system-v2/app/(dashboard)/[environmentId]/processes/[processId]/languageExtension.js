@@ -199,4 +199,10 @@ declare class BpmnError extends Error {
 declare class BpmnEscalation {
   constructor(reference: string, explanation: string);
 }
+
+/** Stops the program execution for the given amount of milliseconds */
+declare function wait(ms: number): void;
+
+/** Returns a promise that is resolved after the given amount of milliseconds */
+declare function waitAsync(ms: number): Promise<void>;
 `;

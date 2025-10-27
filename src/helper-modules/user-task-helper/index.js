@@ -137,10 +137,10 @@ async function getCorrectMilestoneState(bpmn, userTask, instance) {
 }
 
 const script = `
-    const instanceID = '{{instanceId}}';
-    const userTaskID = '{{userTaskId}}';
+    const instanceID = '{%instanceId%}';
+    const userTaskID = '{%userTaskId%}';
 
-    const variableDefinitions = {{variableDefinitions}};
+    const variableDefinitions = {%variableDefinitions%};
 
     function getValueFromCheckbox(checkbox) {
       if (!checkbox.defaultValue) {

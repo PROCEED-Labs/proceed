@@ -8,6 +8,7 @@ const childProcess = require('node:child_process');
  * @typedef {{
  *      processId: string,
  *      processInstanceId: string,
+ *      tokenId: string,
  *      scriptIdentifier: string,
  *      process: import('node:child_process').ChildProcess,
  *      token: string,
@@ -125,6 +126,7 @@ class SubprocesScriptExecution extends NativeModule {
       processEntry = {
         processId,
         processInstanceId,
+        tokenId,
         scriptIdentifier,
         process: scriptTask,
         sendToUniversal,
@@ -174,24 +176,25 @@ class SubprocesScriptExecution extends NativeModule {
   /**
    * @param {string} processId
    * @param {string} processInstanceId
-   * @param {string} [scriptIdentifier]
+   * @param {string} [tokenId]
    */
-  stopSubprocess(processId, processInstanceId, scriptIdentifier) {
+  stopSubprocess(processId, processInstanceId, tokenId) {
     /** @type {Iterable<ChildProcessEntry>} */
     let toStop;
 
     if (processId === '*' && processInstanceId === '*') toStop = this.getAllProcesses();
     // @ts-ignore
-    else if (!scriptIdentifier) toStop = this.getProcess(processId, processInstanceId);
-    // @ts-ignore
-    else toStop = this.getProcess(processId, processInstanceId, scriptIdentifier);
+    else toStop = this.getProcess(processId, processInstanceId, undefined, tokenId);
 
     // NOTE: maybe give a warning?
     if (!toStop) return;
 
     for (const scriptTask of toStop) {
-      if (!scriptTask.process.kill())
+      // No further actions should be necessary, because the processes will end and the on 'close'
+      // event listener will do the cleanup
+      if (!scriptTask.process.kill()) {
         throw new Error(`Failed to kill subprocess ${scriptTask.process.pid}`);
+      }
     }
   }
 
@@ -301,12 +304,14 @@ class SubprocesScriptExecution extends NativeModule {
    * @param {string} [processId]
    * @param {string} [processInstanceId]
    * @param {string} [scriptIdentifier]
+   * @param {string} [tokenId]
    */
-  deleteProcess(processId, processInstanceId, scriptIdentifier) {
+  deleteProcess(processId, processInstanceId, scriptIdentifier, tokenId) {
     this.childProcesses = this.childProcesses.filter((childProcess) => {
       if (processId && childProcess.processId !== processId) return true;
       if (processInstanceId && childProcess.processInstanceId !== processInstanceId) return true;
       if (scriptIdentifier && childProcess.scriptIdentifier !== scriptIdentifier) return true;
+      if (tokenId && childProcess.tokenId !== tokenId) return true;
       return false;
     });
   }

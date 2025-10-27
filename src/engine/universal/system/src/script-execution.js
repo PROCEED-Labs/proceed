@@ -9,6 +9,7 @@ const Console = require('./console.ts').default;
  * @typedef {{
  *    processId: string,
  *    processInstanceId: string,
+ *    tokenId: string,
  *    scriptIdentifier: string,
  *    token: string,
  *    result?: Object
@@ -229,6 +230,7 @@ class ScriptExecutor extends System {
       const processEntry = {
         processId,
         processInstanceId,
+        tokenId,
         scriptIdentifier,
         token: crypto.randomUUID(),
         dependencies,
@@ -297,16 +299,16 @@ class ScriptExecutor extends System {
   /**
    * @param {string} processId
    * @param {string} processInstanceId
+   * @param {string} [tokenId]
    */
-  stop(processId, processInstanceId) {
+  stop(processId, processInstanceId, tokenId) {
     if (processId === '*' && processInstanceId === '*') {
       this.commandRequest(generateUniqueTaskID(), ['stop-child-process', ['*', '*']]);
       return;
     }
 
-    const scriptTask = this.getProcess(processId, processInstanceId);
-    // NOTE: maybe give a warning?
-    if (scriptTask.length === 0) return;
+    const scriptTask = this.getProcess(processId, processInstanceId, undefined, tokenId);
+    if (scriptTask.length === 0) throw new Error('No running script task found');
 
     this.commandRequest(generateUniqueTaskID(), [
       'stop-child-process',
@@ -331,12 +333,14 @@ class ScriptExecutor extends System {
    * @param {string} [processId]
    * @param {string} [processInstanceId]
    * @param {string} [scriptIdentifier]
+   * @param {string} [tokenId]
    */
-  getProcess(processId, processInstanceId, scriptIdentifier) {
+  getProcess(processId, processInstanceId, scriptIdentifier, tokenId) {
     return this.childProcesses.filter((childProcess) => {
       if (processId && childProcess.processId !== processId) return false;
       if (processInstanceId && childProcess.processInstanceId !== processInstanceId) return false;
       if (scriptIdentifier && childProcess.scriptIdentifier !== scriptIdentifier) return false;
+      if (tokenId && childProcess.tokenId !== tokenId) return false;
       return true;
     });
   }

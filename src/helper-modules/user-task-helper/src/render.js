@@ -99,7 +99,7 @@ function ifNodeToString(node, data, partial) {
   } else {
     // check if the condition is a valid comparison
     const compMatch = condition.match(
-      /^\s*((?:\S*)|(?:'.*?'))\s*((?:!|=)=)\s*((?:\S*)|(?:'.*?'))\s*$/,
+      /^\s*((?:\S*)|(?:'.*?'))\s*((?:==)|(?:!=)|(?:contains))\s*((?:\S*)|(?:'.*?'))\s*$/,
     );
     if (!compMatch) throw new Error(`Invalid condition in if block. ({%if ${condition}%})`);
 
@@ -112,8 +112,23 @@ function ifNodeToString(node, data, partial) {
       return `{%if ${condition}%}${nodesToString(node.children, {}, partial)}{%/if%}`;
     }
 
-    // if the comparison returns false exclude the if body from the output
-    if ((comp === '==' && lhs.value != rhs.value) || (comp === '!=' && lhs.value == rhs.value))
+    if (comp === 'contains') {
+      // consider nullish values to be empty arrays which cannot contain anything and therefore
+      // exclude the if body from the output
+      if (!lhs.value) return '';
+
+      if (!lhs.value || !Array.isArray(lhs.value)) {
+        throw new Error(`The value to check in is not an array. ({%if ${condition}%})`);
+      }
+
+      // if the array does not contain the value exclude the if body from the output
+      // the comparison in not strict to allow checks for numbers in string arrays
+      if (!lhs.value.includes(`${rhs.value}`)) return '';
+    } else if (
+      (comp === '==' && lhs.value != rhs.value) ||
+      (comp === '!=' && lhs.value == rhs.value)
+    )
+      // if the comparison returns false exclude the if body from the output
       return '';
   }
 

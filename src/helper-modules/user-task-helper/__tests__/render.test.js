@@ -211,6 +211,63 @@ describe('Tests for the render function of this library', () => {
       });
     });
 
+    describe('If blocks with a array value check as a condition', () => {
+      it('Will output the content of a conditional block if the array contains the given string literal', () => {
+        const input = "Here comes {%if Var1 contains 'Value'%}some text{%/if%}";
+        const res = render(input, { Var1: ['Test', 'Value', 'Other'], Var2: 123 });
+
+        expect(res).toEqual('Here comes some text');
+      });
+
+      it('Will output the content of a conditional block if the array contains the given variable value', () => {
+        const input = 'Here comes {%if Var1 contains Var2%}some text{%/if%}';
+        const res = render(input, { Var1: ['Test', 'Value', 'Other'], Var2: 'Other' });
+
+        expect(res).toEqual('Here comes some text');
+      });
+
+      it('Will omit the content of a conditional block if the array does not contain the given string literal', () => {
+        const input = "Here comes {%if Var1 contains 'Value'%}some text{%/if%}";
+        const res = render(input, { Var1: ['Test', 'Other'], Var2: 123 });
+
+        expect(res).toEqual('Here comes ');
+      });
+
+      it('Will omit the content of a conditional block if the array does not contain the given variable value', () => {
+        const input = 'Here comes {%if Var1 contains Var2%}some text{%/if%}';
+        const res = render(input, { Var1: ['Test', 'Value'], Var2: 'Other' });
+
+        expect(res).toEqual('Here comes ');
+      });
+
+      it('Will omit the content of the conditional block if one of the sides of the array check has no value', () => {
+        const input = 'Here comes {%if Var1 == Var2%}some text{%/if%}';
+        const res = render(input, { Var2: 'some value' });
+
+        expect(res).toEqual('Here comes ');
+      });
+
+      it('Will keep the conditional block placeholder if one of the sides of the array check has no value and the partial flag is set', () => {
+        const input = 'Here comes {%if Var1 == Var2%}some text{%/if%}';
+        const res = render(input, { Var2: 'some value' }, true);
+
+        expect(res).toEqual(input);
+
+        const res2 = render(input, {}, true);
+        expect(res2).toEqual(input);
+
+        const res3 = render(input, { Var1: ['Test', 'Value', 'Other'] }, true);
+        expect(res3).toEqual(input);
+      });
+
+      it('Will throw an error if the left hand operand is not an array', () => {
+        const input = 'Here comes {%if Var1 contains Var2%}some text{%/if%}';
+        expect(() => render(input, { Var1: 'wrong type', Var2: 'some value' })).toThrow(
+          'The value to check in is not an array. ({%if Var1 contains Var2%})',
+        );
+      });
+    });
+
     it('Will throw an error if an if block is missing a closing construct', () => {
       const input = 'Here comes {%if TrueVar%}some text. Something else';
       expect(() => render(input, { TrueVar: true })).toThrow(

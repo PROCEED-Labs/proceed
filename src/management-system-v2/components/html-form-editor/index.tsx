@@ -56,7 +56,7 @@ const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () =>
     useEffect(() => {
       actions.deserialize(json);
       onInit();
-    }, []);
+    }, [json]);
 
     useImperativeHandle(ref, () => ({
       getJson: () => {

@@ -11,6 +11,7 @@ import {
   Menu,
   MenuProps,
   Modal,
+  Popover,
   Tooltip,
 } from 'antd';
 import Image from 'next/image';
@@ -281,7 +282,24 @@ const Layout: FC<
                       style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
                       className={cn(styles.Footer)}
                     >
-                      PROCEED Labs GmbH
+                      <Popover
+                        title="PROCEED Labs GmbH"
+                        content={
+                          <div>
+                            <a href="https://proceed-labs.org" target="_blank">
+                              https://www.proceed-labs.org
+                            </a>
+                            <div>Tel.: +49 151 57425665</div>
+                            <div>
+                              Email:{' '}
+                              <a href="mailto:info@proceed-labs.org">info@proceed-labs.org</a>
+                            </div>
+                          </div>
+                        }
+                        placement="bottomLeft"
+                      >
+                        PROCEED Labs GmbH
+                      </Popover>
                     </AntLayout.Footer>
                   </div>
                 </div>

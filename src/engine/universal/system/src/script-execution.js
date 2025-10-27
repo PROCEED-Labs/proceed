@@ -7,6 +7,9 @@ const Console = require('./console.ts').default;
 
 /**
  * @typedef {{
+ *    processId: string,
+ *    processInstanceId: string,
+ *    scriptIdentifier: string,
  *    token: string,
  *    result?: Object
  *    dependencies?: Object
@@ -24,11 +27,8 @@ class ScriptExecutor extends System {
    * */
   constructor(options) {
     super();
-    /** @type{Map<
-     *  string,
-     *  Map<string, ChildProcessEntry>
-     * >} */
-    this.childProcesses = new Map();
+    /** @type{ChildProcessEntry[]} */
+    this.childProcesses = [];
 
     this.options = options;
   }
@@ -43,7 +43,7 @@ class ScriptExecutor extends System {
   /** @param {any} req  */
   routerMiddleware(req) {
     const { processId, processInstanceId, scriptIdentifier } = req.params;
-    const process = this.getProcess(processId, processInstanceId, scriptIdentifier);
+    const [process] = this.getProcess(processId, processInstanceId, scriptIdentifier);
     if (!process) return { statusCode: 404, response: {} };
 
     const auth = req.headers.authorization;
@@ -159,6 +159,61 @@ class ScriptExecutor extends System {
         }
       }.bind(this),
     );
+
+    function forwardRequestToChildProcesses(instanceId, req) {
+      const scriptTaskRequestId = generateUniqueTaskID();
+      this.commandRequest(scriptTaskRequestId, [
+        'forward-request-to-child-process',
+        [instanceId, req],
+      ]);
+
+      return new Promise((resolve, reject) => {
+        this.commandResponse(scriptTaskRequestId, (err, res) => {
+          if (err) {
+            // TODO: handle error
+            return reject(err);
+          }
+
+          // TODO: check response
+          resolve(res);
+        });
+      });
+    }
+
+    for (const method of ['post', 'put', 'get', 'delete']) {
+      this.options.network[method](
+        '/running-processes/:processId/latest/:pathForScriptTask(*)',
+        {},
+        async function (req) {
+          const processes = this.getProcess(req.params.processId, undefined, undefined);
+          if (processes.length === 0) {
+            return {
+              statusCode: 404,
+              response: 'No processes found',
+            };
+          }
+
+          req.path = '/' + req.path.split('/').splice(4).join('/');
+          return forwardRequestToChildProcesses.bind(this)(processes.at(-1).processInstanceId, req);
+        }.bind(this),
+      );
+      this.options.network[method](
+        '/running-processes/:instanceId/:pathForScriptTask(*)',
+        {},
+        async function (req) {
+          const processes = this.getProcess(undefined, req.params.instanceId, undefined);
+          if (processes.length === 0) {
+            return {
+              statusCode: 404,
+              response: 'No processes found',
+            };
+          }
+
+          req.path = '/' + req.path.split('/').splice(3).join('/');
+          return forwardRequestToChildProcesses.bind(this)(req.params.instanceId, req);
+        }.bind(this),
+      );
+    }
   }
 
   /**
@@ -172,10 +227,13 @@ class ScriptExecutor extends System {
     try {
       const scriptIdentifier = crypto.randomUUID();
       const processEntry = {
+        processId,
+        processInstanceId,
+        scriptIdentifier,
         token: crypto.randomUUID(),
         dependencies,
       };
-      this.setProcess(processId, processInstanceId, scriptIdentifier, processEntry);
+      this.addProcess(processEntry);
 
       // inline global variables
       for (const key in dependencies) {
@@ -207,7 +265,7 @@ class ScriptExecutor extends System {
           if (!response || typeof response !== 'object' || !('type' in response))
             rej(new Error('Invalid response from sub process module: ' + JSON.stringify(response)));
 
-          const processEntry = this.getProcess(processId, processInstanceId, scriptIdentifier);
+          const [processEntry] = this.getProcess(processId, processInstanceId, scriptIdentifier);
           if (!processEntry)
             rej(
               new Error(
@@ -248,7 +306,7 @@ class ScriptExecutor extends System {
 
     const scriptTask = this.getProcess(processId, processInstanceId);
     // NOTE: maybe give a warning?
-    if (!scriptTask) return;
+    if (scriptTask.length === 0) return;
 
     this.commandRequest(generateUniqueTaskID(), [
       'stop-child-process',
@@ -264,48 +322,46 @@ class ScriptExecutor extends System {
   // getters and setters
   // ----------------------------------------
 
-  /**
-   * @param {string} processId
-   * @param {string} processInstanceId
-   * @param {string} scriptIdentifier
-   * @param {ChildProcessEntry} processEntry
-   */
-  setProcess(processId, processInstanceId, scriptIdentifier, processEntry) {
-    const processIdentifier = JSON.stringify([processId, processInstanceId]);
-    let processInstanceScripts = this.childProcesses.get(processIdentifier);
-
-    if (!processInstanceScripts) {
-      processInstanceScripts = new Map();
-      this.childProcesses.set(processIdentifier, processInstanceScripts);
-    }
-
-    return processInstanceScripts.set(scriptIdentifier, processEntry);
+  /** @param {ChildProcessEntry} processEntry */
+  addProcess(processEntry) {
+    this.childProcesses.push(processEntry);
   }
 
   /**
-   * @param {string} processId
-   * @param {string} processInstanceId
+   * @param {string} [processId]
+   * @param {string} [processInstanceId]
    * @param {string} [scriptIdentifier]
    */
   getProcess(processId, processInstanceId, scriptIdentifier) {
-    const processScripts = this.childProcesses.get(JSON.stringify([processId, processInstanceId]));
+    return this.childProcesses.filter((childProcess) => {
+      if (processId && childProcess.processId !== processId) return false;
+      if (processInstanceId && childProcess.processInstanceId !== processInstanceId) return false;
+      if (scriptIdentifier && childProcess.scriptIdentifier !== scriptIdentifier) return false;
+      return true;
+    });
+  }
 
-    if (!processScripts) return undefined;
-    else if (scriptIdentifier) return processScripts.get(scriptIdentifier);
-    else return processScripts.values();
+  /** NOTE: Don't alter the returned array */
+  getAllProcesses() {
+    return this.childProcesses;
   }
 
   /**
-   * @param {string} processId
-   * @param {string} processInstanceId
+   * @param {string} [processId]
+   * @param {string} [processInstanceId]
    * @param {string} [scriptIdentifier]
    */
   deleteProcess(processId, processInstanceId, scriptIdentifier) {
-    const scriptParams = JSON.stringify([processId, processInstanceId]);
-    if (!scriptIdentifier) return this.childProcesses.delete(scriptParams);
+    this.childProcesses = this.childProcesses.filter((childProcess) => {
+      if (processId && childProcess.processId !== processId) return true;
+      if (processInstanceId && childProcess.processInstanceId !== processInstanceId) return true;
+      if (scriptIdentifier && childProcess.scriptIdentifier !== scriptIdentifier) return true;
+      return false;
+    });
+  }
 
-    const processScripts = this.childProcesses.get(scriptParams);
-    if (processScripts) return processScripts.delete(scriptIdentifier);
+  deleteAllProcess() {
+    this.childProcesses = [];
   }
 }
 

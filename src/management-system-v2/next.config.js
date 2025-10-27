@@ -40,8 +40,22 @@ const nextConfig = {
       // Redirect base /processes to editor mode
       {
         source: '/processes',
-        destination: '/processes/editor/',
+        destination: '/my/processes/editor/',
       },
+      {
+        source: '/processes/',
+        destination: '/my/processes/editor/',
+      },
+      // Redirect /:environmentId/processes routes
+      {
+        source: '/:environmentId/processes',
+        destination: '/:environmentId/processes/editor/',
+      },
+      {
+        source: '/:environmentId/processes/',
+        destination: '/:environmentId/processes/editor/',
+      },
+      // Catch-all rewrite for remaining paths (must be last)
       ...[
         'processes',
         'spaces',

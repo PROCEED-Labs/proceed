@@ -3,13 +3,14 @@
 import React, { useEffect, useRef } from 'react';
 
 import Content from '@/components/content';
-import { App, Space, Typography } from 'antd';
+import { Space, Typography } from 'antd';
 import { updateHtmlForm } from '@/lib/data/html-forms';
 import useEditorStateStore, {
   EditorStoreProvider,
 } from '@/components/html-form-editor/use-editor-state-store';
 import HtmlFormEditor, { HtmlFormEditorRef } from '@/components/html-form-editor';
 import { HtmlForm } from '@/lib/html-form-schema';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type FormViewProps = {
   data: HtmlForm;
@@ -18,15 +19,15 @@ type FormViewProps = {
 const FormEditor: React.FC<FormViewProps> = ({ data }) => {
   const builder = useRef<HtmlFormEditorRef | null>(null);
 
-  const { message } = App.useApp();
-
   const handleSave = async () => {
     const json = builder.current?.getJson();
     const html = builder.current?.getHtml();
 
     if (json && html) {
-      const res = await updateHtmlForm(data.id, { json, html });
-      if (res && 'error' in res) message.error(res.error.message);
+      await wrapServerCall({
+        fn: () => updateHtmlForm(data.id, { json, html }),
+        onSuccess: false,
+      });
     }
   };
 
@@ -40,8 +41,9 @@ const FormEditor: React.FC<FormViewProps> = ({ data }) => {
   useEffect(() => {
     if (variables) {
       // store the variable changes made in the editor
-      updateHtmlForm(data.id, { variables: variables }).then((res) => {
-        if (res && 'error' in res) message.error(res.error.message);
+      wrapServerCall({
+        fn: () => updateHtmlForm(data.id, { variables: variables }),
+        onSuccess: false,
       });
     }
   }, [variables]);

@@ -1,7 +1,7 @@
 import Ability from '@/lib/ability/abilityHelper';
 import db from '@/lib/data/db';
 import { HtmlForm, HtmlFormMetaDataSchema, HtmlFormSchema } from '@/lib/html-form-schema';
-import { UserFacingError } from '@/lib/user-error';
+import { UserErrorType, UserFacingError } from '@/lib/user-error';
 
 /**
  * Returns all html forms in an environment

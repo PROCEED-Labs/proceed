@@ -157,12 +157,12 @@ const DashboardLayout = async ({
       let children: MenuProps['items'] = [
         documentationSettings.list?.active !== false && {
           key: 'processes-list',
-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>List</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
           icon: <CopyOutlined />,
         },
         documentationSettings.editor?.active !== false && {
           key: 'processes-editor',
-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
           icon: <EditOutlined />,
         },
       ].filter(truthyFilter);

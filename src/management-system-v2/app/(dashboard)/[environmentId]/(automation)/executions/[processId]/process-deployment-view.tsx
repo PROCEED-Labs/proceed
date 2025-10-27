@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
-import toolbarStyles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
+import toolbarStyles from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/modeler-toolbar.module.scss';
 import styles from './process-deployment-view.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';

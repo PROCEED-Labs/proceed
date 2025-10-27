@@ -939,7 +939,7 @@ test('allow a different user that was given the share link to import the shared 
   await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
-  const newProcessId = newPage.url().split('/processes/').pop();
+  const newProcessId = newPage.url().split('/editor/').pop();
 
   await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();

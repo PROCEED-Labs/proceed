@@ -18,7 +18,7 @@ const Overlay: FC<OverlayProps> = ({ processId, onClose }) => {
   return (
     <div
       className={styles.Overlay}
-      onClick={() => router.push(spaceURL(environment, `/processes/${processId}`))}
+      onClick={() => router.push(spaceURL(environment, `/processes/editor/${processId}`))}
     >
       <CloseOutlined
         className={styles.Close}

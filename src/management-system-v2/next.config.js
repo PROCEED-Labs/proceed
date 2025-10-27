@@ -37,23 +37,44 @@ const nextConfig = {
   },
   rewrites: async () => {
     return [
-      'processes',
-      'spaces',
-      'executions',
-      'executions-dashboard',
-      'engines',
-      'tasklist',
-      'general-settings',
-      'iam',
-      'profile',
-      'projects',
-      'settings',
-    ].map((folder) => ({
-      // TODO: when building techserver separately, this can be set to rewrite
-      // all unused paths to /404.
-      source: `/${folder}/:path*`,
-      destination: `/my/${folder}/:path*`,
-    }));
+      // Redirect base /processes to editor mode
+      {
+        source: '/processes',
+        destination: '/my/processes/editor/',
+      },
+      {
+        source: '/processes/',
+        destination: '/my/processes/editor/',
+      },
+      // Redirect /:environmentId/processes routes
+      {
+        source: '/:environmentId/processes',
+        destination: '/:environmentId/processes/editor/',
+      },
+      {
+        source: '/:environmentId/processes/',
+        destination: '/:environmentId/processes/editor/',
+      },
+      // Catch-all rewrite for remaining paths (must be last)
+      ...[
+        'processes',
+        'spaces',
+        'executions',
+        'executions-dashboard',
+        'engines',
+        'tasklist',
+        'general-settings',
+        'iam',
+        'profile',
+        'projects',
+        'settings',
+      ].map((folder) => ({
+        // TODO: when building techserver separately, this can be set to rewrite
+        // all unused paths to /404.
+        source: `/${folder}/:path*`,
+        destination: `/my/${folder}/:path*`,
+      })),
+    ];
   },
 };
 

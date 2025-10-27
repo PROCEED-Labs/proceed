@@ -284,7 +284,7 @@ export const updateProcess = async (
   // cache here so that the old BPMN isn't reused within 30s. See:
   // https://nextjs.org/docs/app/building-your-application/caching#invalidation-1
   if (invalidate) {
-    revalidatePath(`/processes/${definitionsId}`);
+    revalidatePath(`/processes/editor/${definitionsId}`);
   }
 
   await _updateProcess(definitionsId, { bpmn: newBpmn });
@@ -303,7 +303,7 @@ export const updateProcessMetaData = async (
   await _updateProcessMetaData(definitionsId, metaChanges);
 
   if (invalidate) {
-    revalidatePath(`/processes/${definitionsId}`);
+    revalidatePath(`/processes/editor/${definitionsId}`);
   }
 };
 

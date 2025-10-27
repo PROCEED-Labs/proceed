@@ -90,7 +90,7 @@ const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
         if (selectedElement)
           updateMilestones(getMilestonesFromElement(selectedElement.businessObject));
       }
-    }, []);
+    }, [selectedElementId]);
 
     return (
       <>

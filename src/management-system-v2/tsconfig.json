@@ -22,9 +22,10 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "FeatureFlags": ["../../FeatureFlags.js"]
+      "FeatureFlags": ["../../FeatureFlags.js"],
+      "@xmcp/*": ["./.xmcp/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "xmcp-env.d.ts"],
   "exclude": ["node_modules"]
 }

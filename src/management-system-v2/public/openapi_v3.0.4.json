@@ -22,7 +22,7 @@
   "tags": [
     {
       "name": "Spaces",
-      "description": "Everything about your Pets",
+      "description": "Everything about Spaces",
       "externalDocs": {
         "description": "Find out more",
         "url": ""
@@ -30,7 +30,7 @@
     },
     {
       "name": "Configurations",
-      "description": "Access to Production Configurations",
+      "description": "Everything about Configurations",
       "externalDocs": {
         "description": "",
         "url": ""
@@ -119,9 +119,9 @@
         "description": "",
         "parameters": [
           {
-            "name": "short-name",
+            "name": "shortName",
             "in": "query",
-            "description": "Filter Configurations for `short-name`",
+            "description": "Filter Configurations for `shortName`",
             "required": false,
             "schema": {
               "type": "string"
@@ -147,14 +147,26 @@
       "post": {
         "tags": ["Configurations"],
         "summary": "Create a new Configuration Container",
-        "description": "Create a new Configuration Container with the same format as import.",
+        "description": "Create a new Configuration Container.",
+        "parameters": [
+          {
+            "name": "template",
+            "in": "query",
+            "description": "Create a new configuration based on a template. If not given, an empty Configuration will be generated.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["None", "TDS"]
+            }
+          }
+        ],
         "requestBody": {
-          "description": "New Configuration Container. There MUST be no `config-id` and the `short-name` MUST be unique.",
+          "description": "New Configuration Container. There MUST be no `id`. `shortName` is required and MUST be unique.",
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfigurationContainerWithoutId"
+                "$ref": "#/components/schemas/ConfigurationContainerMetaWithoutIdShort"
               }
             }
           }
@@ -180,12 +192,12 @@
             }
           },
           "409": {
-            "description": "Invalid input. Body contains the reason. For example, `config-id` was given, `short-name` already exists, syntax invalid, etc."
+            "description": "Invalid input. Body contains the reason. For example, `id` was given, `shortName` already exists, syntax invalid, etc."
           }
         }
       }
     },
-    "/spaces/{space-id}/configurations/{config-container-id}": {
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}": {
       "parameters": [
         {
           "name": "space-id",
@@ -197,9 +209,9 @@
           }
         },
         {
-          "name": "config-container-id",
+          "name": "config-container-id-or-shortName",
           "in": "path",
-          "description": "`id` of _Configuration Container_",
+          "description": "`id` or `shortName` of _Configuration Container_",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/ConfigurationContainerId"
@@ -226,6 +238,37 @@
           }
         }
       },
+      "put": {
+        "tags": ["Configurations"],
+        "summary": "Import an existing Configuration.",
+        "description": "Import an existing Configuration, if the Configuration `id` is not yet existing. Else it will return an error, because existing configurations must first be deleted.",
+        "requestBody": {
+          "description": "- if the Configuration `id` is not yet existing. Else it will return an error, because existing configurations must first be deleted.\n- all included Parameters can contain an `id`. This must not exist on the Server. If one parameter `id` exits, it will return an Error.\n- if a Parameter does not contain an `id`, a new one will be generated.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationContainer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration Container imported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigurationContainer"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invalid input. Body contains the reason. For example, `id` was given, `shortName` already exists, syntax invalid, etc."
+          }
+        }
+      },
       "delete": {
         "tags": ["Configurations"],
         "summary": "Delete a Configuration Container with all Versions",
@@ -240,7 +283,7 @@
         }
       }
     },
-    "/spaces/{space-id}/configurations/{config-container-id}/{version-id}": {
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/{version-id}": {
       "parameters": [
         {
           "name": "space-id",
@@ -252,91 +295,9 @@
           }
         },
         {
-          "name": "config-container-id",
+          "name": "config-container-id-or-shortName",
           "in": "path",
-          "description": "`id` of _Configuration Container_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationContainerId"
-          }
-        },
-        {
-          "name": "version-id",
-          "in": "path",
-          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationVersionId"
-          }
-        }
-      ],
-      "get": {
-        "tags": ["Configurations"],
-        "summary": "Read one specific Version of a Configuration Container",
-        "description": "Read one specific Version of a _Configuration Container_ by its `id` and `version-id`",
-
-        "responses": {
-          "200": {
-            "description": "one version of one configuration, same as export"
-          },
-          "404": {
-            "description": "Specified _Space, Configuration Container, Version_ not found"
-          }
-        }
-      },
-      "put": {
-        "tags": ["Configurations"],
-        "summary": "Modify/Override an existing Configuration Container",
-        "description": "Modify/Override an existing Configuration Container with the same format as import.",
-        "parameters": [
-          {
-            "name": "version-id",
-            "in": "path",
-            "description": " `latest`. No `id` of a specific _Version_  is allowed.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "latest",
-              "enum": ["latest"]
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Configuration Container. `config-id` MUST NOT be changed. If `short-name` is changed, it MUST be unique.",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConfigurationContainer"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Configuration Container updated"
-          },
-          "409": {
-            "description": "Invalid input. Body contains the reason. For example, `config-id` was changed, `short-name` already exists, syntax invalid, etc."
-          }
-        }
-      }
-    },
-    "/spaces/{space-id}/configurations/{config-container-id}/{version-id}/{parameter-id}": {
-      "parameters": [
-        {
-          "name": "space-id",
-          "in": "path",
-          "description": "`id` of _Space_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/SpaceId"
-          }
-        },
-        {
-          "name": "config-container-id",
-          "in": "path",
-          "description": "`id` of _Configuration Container_",
+          "description": "`id` or `shortName` of _Configuration Container_",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/ConfigurationContainerId"
@@ -353,19 +314,171 @@
         },
         {
           "name": "parameter-id",
-          "in": "path",
-          "description": "`id` of Parameter",
-          "required": true,
+          "in": "query",
+          "description": "For selecting a specific parameter with its `id` or `name`",
+          "required": false,
           "schema": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/ParameterId"
+          }
+        },
+        {
+          "name": "aas-format",
+          "in": "query",
+          "description": "For for retrieving the AAS serialization",
+          "required": false,
+          "schema": {
+            "type": "boolean"
           }
         }
       ],
       "get": {
         "tags": ["Configurations"],
-        "summary": "Read one specific Parameter inside a Configuration Container",
-        "description": "Read one specific Parameter of a _Version_ of a _Configuration Container_ by its `id`",
+        "summary": "Read one specific Version of a Configuration Container",
+        "description": "Read one specific Version of a _Configuration Container_ by its `id` and `version-id`",
+
+        "responses": {
+          "200": {
+            "description": "one version of one configuration, same as export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigurationContainer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Specified _Space, Configuration Container, Version_ not found"
+          }
+        }
+      }
+    },
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/latest-parameter": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        },
+        {
+          "name": "config-container-id-or-shortName",
+          "in": "path",
+          "description": "`id` or `shortName` of _Configuration Container_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ConfigurationContainerId"
+          }
+        },
+        {
+          "name": "aas-format",
+          "in": "query",
+          "description": "For for retrieving or setting as AAS serialization",
+          "required": false,
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "post": {
+        "tags": ["Configurations"],
+        "summary": "Create a new Parameter",
+        "description": "Create a new Parameter inside the given Configuration Set. Either as a root Parameter or, if the query parameter `asSubParameterOf` is given, as a Parameter nested under the given Parameter. Parameter-Id is not allowed in Body since it is generated by the Server.",
+        "parameters": [
+          {
+            "name": "asSubParameterOf",
+            "in": "query",
+            "description": "Adds the new Parameter nested under the given Parameter of `asSubParameterOf`",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ParameterId"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "- New Parameter without `id` (generated by the Server).\n- It is okay, if some properties of the Parameter structure are missing. Only `name` is required.\n- The following properties of are possible to set in the parameter structure: `name*, parameterType, structureVisible, displayName*, description*, value*, valueTemplateSource*, transformation*`\n  - `name`: if set, then it must be unique in the whole Configuration\n  - `displayName` and `description`: this does not add an entry, but it overrides the complete array\n  - `value`: can only be set if `transformation` is not existing OR `transformationType` is `none` or `manual`\n  - `valueTemplateSource`: references one of the four meta attributes from the Configuration - `shortName, name, description, categories`\n  - `transformation`: can be given if the following conditions are satisfied:\n    - type `none`: `linkedInputParameters` and `action` must be empty\n    - type `manual`: `linkedInputParameters` must have exactly one entry which exists as parameter in the same TDS set, and `action` must be empty\n    - type `linked`: `linkedInputParameters` must have exactly one entry which exists as parameter in the same TDS set, `value` must be empty, and `action` must be empty\n    - type `algorithm`: `linkedInputParameters` could have entries or none, `value` must be empty, and `action` must be set\n    - type `external`: `linkedInputParameters` must be empty, `value` must be empty, and `action` must be set\n- `changeableByUser`, `usedAsInputParameterIn`, `valueType`, `subParameters` can not be set",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParameterWithoutId"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New Parameter created.",
+            "headers": {
+              "Location": {
+                "description": "The generated `id` of the successfully created Parameter.",
+                "schema": {
+                  "$ref": "#/components/schemas/ParameterId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parameter"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invalid input. Body contains the reason. For example, `id` was given, `shortName` already exists, syntax invalid, etc."
+          }
+        }
+      }
+    },
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/latest-parameter/{parameter-id}": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        },
+        {
+          "name": "config-container-id-or-shortName",
+          "in": "path",
+          "description": "`id` or `shortName` of _Configuration Container_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ConfigurationContainerId"
+          }
+        },
+        {
+          "name": "parameter-id",
+          "in": "path",
+          "description": "`id` or `name` of Parameter",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "example": "6784df87-e74c-4282-9f09-6d9ee499b807"
+          }
+        },
+        {
+          "name": "aas-format",
+          "in": "query",
+          "description": "For for retrieving or setting as AAS serialization",
+          "required": false,
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Configurations"],
+        "summary": "Read the latest version of a specific Parameter inside a Configuration Container",
+        "description": "Read the latest version of a specific Parameter of a _Configuration Container_ by its `id` or `name`",
         "responses": {
           "200": {
             "description": "one parameter of a configuration container",
@@ -378,29 +491,16 @@
             }
           },
           "404": {
-            "description": "Specified _Space, Configuration Container, Version, Parameter_ not found"
+            "description": "Specified _Space, Configuration Container, Parameter_ not found"
           }
         }
       },
       "put": {
         "tags": ["Configurations"],
-        "summary": "Modify/Override an existing Parameter",
-        "description": "It will override a parameters existing content and not add values. so, if there are already multiple content entries in different languages existing for a parameter, they all must be given in the Array or else they are lost after the update.",
-        "parameters": [
-          {
-            "name": "version-id",
-            "in": "path",
-            "description": " `latest`. No `id` of a specific _Version_  is allowed.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "latest",
-              "enum": ["latest"]
-            }
-          }
-        ],
+        "summary": "Modify/Override the latest version of an existing Parameter",
+        "description": "Modify/Override the latest version of an existing Parameter",
         "requestBody": {
-          "description": "Parameter object. `id` MUST NOT be changed. If `key` is changed, it MUST be unique. child `parameters` MUST NOT be given",
+          "description": "- It is okay, if some properties of the Parameter structure are missing. The given properties update the existing ones and do not delete the others (exception: `displayName` and `description`: this does not add an entry, but it overrides the complete array)\n- The Parameter can only be changed with PUT, if `changeableByUser` attribute is `true` or non-existent (default=true).\n- `id` inside body can be missing. if `id` is included in body, it must be the same as in the REST path and already existing in the Configuration as a Parameter\n- The following properties of are possible to set in the parameter structure: `name*, parameterType, structureVisible, displayName*, description*, value*, valueTemplateSource*, transformation*`\n  - `name`: if set, then it must be unique in the whole Configuration\n  - `displayName` and `description`: this does not add an entry, but it overrides the complete array\n  - `value`: can only be set if `transformation` is not existing OR `transformationType` is `none` or `manual`\n  - `valueTemplateSource`: references one of the four meta attributes from the Configuration - `shortName, name, description, categories`\n  - `transformation`: can be given if the following conditions are satisfied:\n    - type `none`: `linkedInputParameters` and `action` must be empty\n    - type `manual`: `linkedInputParameters` must have exactly one entry which exists as parameter in the same TDS set, and `action` must be empty\n    - type `linked`: `linkedInputParameters` must have exactly one entry which exists as parameter in the same TDS set, `value` must be empty, and `action` must be empty\n    - type `algorithm`: `linkedInputParameters` could have entries or none, `value` must be empty, and `action` must be set\n    - type `external`: `linkedInputParameters` must be empty, `value` must be empty, and `action` must be set\n- `changeableByUser`, `usedAsInputParameterIn`, `valueType`, `subParameters` can not be changed",
           "required": true,
           "content": {
             "application/json": {
@@ -412,182 +512,28 @@
         },
         "responses": {
           "200": {
-            "description": "Configuration Container updated"
+            "description": "Parameter updated"
           },
           "409": {
-            "description": "Invalid input. Body contains the reason. For example, `id` was changed, `key` already exists, contains `parameters`, syntax invalid, etc."
-          }
-        }
-      }
-    },
-    "/spaces/{space-id}/configurations/{config-container-id}/{version-id}/target": {
-      "parameters": [
-        {
-          "name": "space-id",
-          "in": "path",
-          "description": "`id` of _Space_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/SpaceId"
-          }
-        },
-        {
-          "name": "config-container-id",
-          "in": "path",
-          "description": "`id` of _Configuration Container_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationContainerId"
-          }
-        },
-        {
-          "name": "version-id",
-          "in": "path",
-          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationVersionId"
-          }
-        }
-      ],
-      "get": {
-        "tags": ["Configurations"],
-        "summary": "Read the Target Data Set of a Configuration Container",
-
-        "responses": {
-          "200": {
-            "description": "the Target Data Set of a Configuration Container like in Export"
-          },
-          "404": {
-            "description": "Specified _Space, Configuration Container, Version, Target Data Set_ not found"
+            "description": "Invalid input. Body contains the reason. For example, syntax invalid, etc."
           }
         }
       },
-      "put": {
+      "delete": {
         "tags": ["Configurations"],
-        "summary": "Add/Modify/Override a Target Data Set in the latest version",
-        "description": "Add/Modify/Override a Target Data Set in the _latest_ version of a Configuration Container.",
-        "parameters": [
-          {
-            "name": "version-id",
-            "in": "path",
-            "description": " `latest`. No `id` of a specific _Version_  is allowed.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "latest",
-              "enum": ["latest"]
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Target Data Set. `id` MUST NOT be changed.",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/Parameter"
-                }
-              }
-            }
-          }
-        },
+        "summary": "Delete a Parameter from the latest version",
+        "description": "Delete a Parameter from the latest version",
         "responses": {
           "200": {
-            "description": "Configuration Container updated with Target Data Set"
-          },
-          "409": {
-            "description": "Invalid input. Body contains the reason. For example, `id` was changed, syntax invalid, etc."
-          }
-        }
-      }
-    },
-    "/spaces/{space-id}/configurations/{config-container-id}/{version-id}/reference": {
-      "parameters": [
-        {
-          "name": "space-id",
-          "in": "path",
-          "description": "`id` of _Space_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/SpaceId"
-          }
-        },
-        {
-          "name": "config-container-id",
-          "in": "path",
-          "description": "`id` of _Configuration Container_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationContainerId"
-          }
-        },
-        {
-          "name": "version-id",
-          "in": "path",
-          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationVersionId"
-          }
-        }
-      ],
-      "get": {
-        "tags": ["Configurations"],
-        "summary": "Read the Reference Data Set of a Configuration Container",
-        "responses": {
-          "200": {
-            "description": "the Reference Data Set of a Configuration Container like in Export"
+            "description": "successful operation"
           },
           "404": {
-            "description": "Specified _Space, Configuration Container, Version, Reference Data Set_ not found"
-          }
-        }
-      },
-      "put": {
-        "tags": ["Configurations"],
-        "summary": "Add/Modify/Override a Reference Data Set in the latest version",
-        "description": "Add/Modify/Override a Reference Data Set in the _latest_ version of a Configuration Container.",
-        "parameters": [
-          {
-            "name": "version-id",
-            "in": "path",
-            "description": " `latest`. No `id` of a specific _Version_  is allowed.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "latest",
-              "enum": ["latest"]
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Reference Data Set. `id` MUST NOT be changed.",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/Parameter"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Configuration Container updated with Reference Data Set"
-          },
-          "409": {
-            "description": "Invalid input. Body contains the reason. For example, `id` was changed, syntax invalid, etc."
+            "description": "Specified _Space, Configuration Container_ not found"
           }
         }
       }
     },
-    "/spaces/{space-id}/configurations/{config-container-id}/{version-id}/machine": {
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/{version-id}/machine/{machine-id}/feedback": {
       "parameters": [
         {
           "name": "space-id",
@@ -599,152 +545,9 @@
           }
         },
         {
-          "name": "config-container-id",
+          "name": "config-container-id-or-shortName",
           "in": "path",
-          "description": "`id` of _Configuration Container_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationContainerId"
-          }
-        },
-        {
-          "name": "version-id",
-          "in": "path",
-          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationVersionId"
-          }
-        }
-      ],
-      "get": {
-        "tags": ["Configurations"],
-        "summary": "List all Machine Data Sets of a Configuration Container",
-
-        "responses": {
-          "200": {
-            "description": "A list of Machine Data Set of a Configuration Container",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MachineConfigurationList"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Specified _Space, Configuration Container, Version_ not found"
-          }
-        }
-      }
-    },
-    "/spaces/{space-id}/configurations/{config-container-id}/{version-id}/machine/{machine-id}": {
-      "parameters": [
-        {
-          "name": "space-id",
-          "in": "path",
-          "description": "`id` of _Space_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/SpaceId"
-          }
-        },
-        {
-          "name": "config-container-id",
-          "in": "path",
-          "description": "`id` of _Configuration Container_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationContainerId"
-          }
-        },
-        {
-          "name": "version-id",
-          "in": "path",
-          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ConfigurationVersionId"
-          }
-        },
-        {
-          "name": "machine-id",
-          "in": "path",
-          "description": "The `id` of a specific _Machine Data Set_ of a Configuration Container",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/MachineConfigurationId"
-          }
-        }
-      ],
-      "get": {
-        "tags": ["Configurations"],
-        "summary": "Read one specific Machine Data Set of a Configuration Container",
-        "responses": {
-          "200": {
-            "description": "the Target Data Set of a Configuration Container like in Export"
-          },
-          "404": {
-            "description": "Specified _Space, Configuration Container, Version, Machine Data Set_ not found"
-          }
-        }
-      },
-      "put": {
-        "tags": ["Configurations"],
-        "summary": "Add/Modify/Override a Machine Data Set in the latest version",
-        "description": "Add/Modify/Override a Machine Data Set in the _latest_ version of a Configuration Container.",
-        "parameters": [
-          {
-            "name": "version-id",
-            "in": "path",
-            "description": " `latest`. No `id` of a specific _Version_  is allowed.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "latest",
-              "enum": ["latest"]
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Machine Data Set. `id` MUST NOT be changed.",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/Parameter"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Configuration Container updated with Machine Data Set"
-          },
-          "409": {
-            "description": "Invalid input. Body contains the reason. For example, `id` was changed, syntax invalid, etc."
-          }
-        }
-      }
-    },
-    "/spaces/{space-id}/configurations/{config-container-id}/{version-id}/machine/{machine-id}/feedback": {
-      "parameters": [
-        {
-          "name": "space-id",
-          "in": "path",
-          "description": "`id` of _Space_",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/SpaceId"
-          }
-        },
-        {
-          "name": "config-container-id",
-          "in": "path",
-          "description": "`id` of _Configuration Container_",
+          "description": "`id` or `shortName` of _Configuration Container_",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/ConfigurationContainerId"
@@ -790,7 +593,7 @@
         }
       }
     },
-    "/spaces/{space-id}/configurations/{config-container-id}/{version-id}/machine/{machine-id}/feedback/{feedback-time}": {
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/{version-id}/machine/{machine-id}/feedback/{feedback-time}": {
       "parameters": [
         {
           "name": "space-id",
@@ -802,9 +605,9 @@
           }
         },
         {
-          "name": "config-container-id",
+          "name": "config-container-id-or-shortName",
           "in": "path",
-          "description": "`id` of _Configuration Container_",
+          "description": "`id` or `shortName` of _Configuration Container_",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/ConfigurationContainerId"
@@ -914,65 +717,156 @@
         "required": ["id", "type"],
         "properties": {
           "id": {
-            "type": "string"
+            "$ref": "#/components/schemas/SpaceId"
           },
           "type": {
             "type": "string",
             "enum": ["personal", "organizational"]
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "example": "Mercedes Benz"
           }
         }
       },
       "SpaceId": {
         "type": "string",
-        "format": "uuid"
+        "format": "uuid",
+        "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
       },
       "ConfigurationContainerList": {
         "type": "array",
         "items": {
-          "type": "object",
-          "required": ["id"],
-          "properties": {
-            "id": {
-              "$ref": "#/components/schemas/ConfigurationContainerId"
-            },
-            "shortname": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "categories": {
-              "type": "array",
-              "items": {
-                "type": "string"
+          "$ref": "#/components/schemas/ConfigurationContainerMeta"
+        }
+      },
+      "ConfigurationContainerId": {
+        "type": "string",
+        "format": "uuid",
+        "example": "27efb505-4485-41fe-9b3d-5289853f5493"
+      },
+      "ConfigurationContainerMetaWithoutIdShort": {
+        "type": "object",
+        "properties": {
+          "shortName": {
+            "type": "string",
+            "example": "Rob001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Robot Config Set for Grinding"
+          },
+          "description": {
+            "type": "string",
+            "example": "This is the Robot Config Set for Grinding"
+          },
+          "categories": {
+            "type": "string",
+            "example": "Robot;Kuka"
+          }
+        }
+      },
+      "ConfigurationContainerMetaWithoutId": {
+        "type": "object",
+        "properties": {
+          "shortName": {
+            "type": "object",
+            "required": ["value"],
+            "properties": {
+              "value": {
+                "type": "string",
+                "example": "Rob001"
+              },
+              "linkValueToParameterValue": {
+                "type": "string",
+                "format": "uuid",
+                "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+              }
+            }
+          },
+          "name": {
+            "type": "object",
+            "required": ["value"],
+            "properties": {
+              "value": {
+                "type": "string",
+                "example": "Robot Config Set for Grinding"
+              },
+              "linkValueToParameterValue": {
+                "type": "string",
+                "format": "uuid",
+                "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+              }
+            }
+          },
+          "description": {
+            "type": "object",
+            "required": ["value"],
+            "properties": {
+              "value": {
+                "type": "string",
+                "example": "This is the Robot Config Set for Grinding"
+              },
+              "linkValueToParameterValue": {
+                "type": "string",
+                "format": "uuid",
+                "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+              }
+            }
+          },
+          "categories": {
+            "type": "object",
+            "required": ["value"],
+            "properties": {
+              "value": {
+                "type": "string",
+                "example": "Robot;Kuka"
+              },
+              "linkValueToParameterValue": {
+                "type": "string",
+                "format": "uuid",
+                "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
               }
             }
           }
         }
       },
-      "ConfigurationContainerId": {
-        "type": "string",
-        "format": "uuid"
+      "ConfigurationContainerMeta": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/ConfigurationContainerId"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/ConfigurationContainerMetaWithoutId"
+          }
+        ]
       },
       "ConfigurationContainerWithoutId": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ConfigurationContainerMetaWithoutId"
           },
-          "short-name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "...": {
-            "type": "string"
+          {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Parameter"
+                }
+              },
+              "...": {
+                "type": "string",
+                "example": "..."
+              }
+            }
           }
-        }
+        ]
       },
       "ConfigurationContainer": {
         "allOf": [
@@ -992,81 +886,161 @@
       "ConfigurationVersionList": {
         "type": "array",
         "items": {
-          "type": "object",
-          "required": ["id", "createdOn"],
-          "properties": {
-            "id": {
-              "$ref": "#/components/schemas/ConfigurationVersionId"
-            },
-            "name": {
-              "type": "string"
-            },
-            "description": {
-              "type": "string"
-            },
-            "createdOn": {
-              "type": "string"
-            },
-            "versionBasedOn": {
-              "type": "string"
-            }
-          }
-        }
+          "$ref": "#/components/schemas/ConfigurationVersionId"
+        },
+        "example": ["1", "2", "latest"]
       },
       "ConfigurationVersionId": {
-        "type": "string"
+        "type": "string",
+        "example": "latest"
       },
       "ParameterId": {
         "type": "string",
-        "format": "uuid"
+        "format": "uuid",
+        "example": "8cfaa2ba-119b-498f-98af-1404d709f786"
       },
-      "Parameter": {
+      "ParameterWithoutId": {
         "type": "object",
-        "required": ["id", "key", "content"],
+        "required": ["name"],
         "properties": {
-          "id": {
-            "$ref": "#/components/schemas/ParameterId"
+          "name": {
+            "type": "string",
+            "example": "CoordX"
           },
-          "key": {
-            "type": "string"
+          "parameterType": {
+            "type": "string",
+            "enum": ["none", "meta", "content"]
           },
-          "content": {
+          "structureVisible": {
+            "type": "boolean"
+          },
+          "displayName": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["value"],
               "properties": {
-                "displayName": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                },
-                "unit": {
-                  "type": "string"
+                "text": {
+                  "type": "string",
+                  "example": "Coordinate X"
                 },
                 "language": {
-                  "type": "string"
+                  "type": "string",
+                  "example": "en"
                 }
               }
             }
           },
-          "parentId": {
-            "$ref": "#/components/schemas/ParameterId"
-          },
-          "parameters": {
+          "description": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Parameter"
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "example": "Coordinate X for part 123"
+                },
+                "language": {
+                  "type": "string",
+                  "example": "en"
+                }
+              }
             }
           },
-          "linkedParameters": {
+          "changeableByUser": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "value": {
+            "type": "string",
+            "example": "3.12"
+          },
+          "valueType": {
+            "type": "string",
+            "readOnly": true,
+            "enum": ["xs:double", "xs:string"]
+          },
+          "valueTemplateSource": {
+            "type": "string",
+            "enum": ["shortName", "name", "description", "categories"]
+          },
+          "usedAsInputParameterIn": {
+            "readOnly": true,
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ParameterId"
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/ParameterId"
+                },
+                "path": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "example": ["Body", "MachineDatasets", "Machine1Dataset", "FullVersionNumber"]
+                }
+              }
+            }
+          },
+          "transformation": {
+            "type": "object",
+            "properties": {
+              "transformationType": {
+                "type": "string",
+                "enum": ["none", "manual", "linked", "algorithm", "external"]
+              },
+              "linkedInputParameters": {
+                "type": "object",
+                "properties": {
+                  "$IN1": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "$ref": "#/components/schemas/ParameterId"
+                      },
+                      "path": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "example": ["referenceConfig", "temperature"]
+                      }
+                    }
+                  }
+                }
+              },
+              "action": {
+                "type": "string"
+              }
+            }
+          },
+          "unitRef": {
+            "type": "string"
+          },
+          "subParameters": {
+            "type": "array",
+            "readOnly": true,
+            "items": {
+              "type": "string",
+              "example": "nested Parameters"
             }
           }
         }
+      },
+      "Parameter": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/ParameterId"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/ParameterWithoutId"
+          }
+        ]
       },
       "MachineConfigurationList": {
         "type": "array",
@@ -1082,7 +1056,8 @@
       },
       "MachineConfigurationId": {
         "type": "string",
-        "format": "uuid"
+        "format": "uuid",
+        "example": "a1d86731-d3a4-43f9-98e5-d23a27987f3a"
       },
       "FeedbackList": {
         "type": "array",
@@ -1092,7 +1067,8 @@
       },
       "FeedbackTime": {
         "type": "string",
-        "format": "date-time"
+        "format": "date-time",
+        "example": "2025-04-12T23:20:50.52Z, 2025-04-29T08:03:10.00Z, 2025-05-23T11:50:02.34Z"
       }
     },
     "responses": {},

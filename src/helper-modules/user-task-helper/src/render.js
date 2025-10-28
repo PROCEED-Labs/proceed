@@ -12,12 +12,12 @@ const { createAST } = require('./ast');
 /**
  * Returns the value of a variable from the input data
  *
- * @param {string} varPath a variable name or an access to a (nested) property in a variable
+ * @param {string} varName a string literal ('[string]'), variable name ([var-name]) or an access to a (nested) property in a variable ([var-name].[attribute]...)
  * @param {object} data the data to get the values from
  * @param {boolean} partial if true: keep placeholders that have no entry in data in the output
  *
- * @returns {{ value: any } | undefined} nothing if the variable does not exist or the respective
- * value
+ * @returns {{ value: any } | undefined} nothing if the variable does not exist and the partial flag
+ * is set or the respective value
  */
 function getVariableValue(varName, data, partial) {
   varName = varName.trim();
@@ -26,11 +26,15 @@ function getVariableValue(varName, data, partial) {
   const literalMatch = varName.match(/\s*'(.*)'\s*/);
   if (literalMatch) return { value: literalMatch[1] };
 
+  // the varName might define a nested access ([var-name].[attribute1].[attribute2]...)
   const varPath = varName.split('.');
 
+  // if the partial flag is set and the variable is not defined in the given data return nothing
   if (partial && !(varPath[0] in data)) return undefined;
 
   let index = 0;
+  // get the (nested) data using the variable path or undefined if the data cannot be completely
+  // resolved
   while (data && index < varPath.length) data = data[varPath[index++]];
 
   let value = data;
@@ -172,7 +176,7 @@ function forNodeToString(node, data, partial) {
 }
 
 /**
- * Converts a for-loop node back into a string
+ * Converts a list of nodes back into a single string
  *
  * @param {ASTNode[]} nodes a list of nodes to convert into a single string
  * @param {{ [key: string]: any }} data the values to insert into the html
@@ -202,8 +206,7 @@ function nodesToString(nodes, data, partial) {
 }
 
 /**
- * Replaces occurences of "{%[variable-name]%}" with occurences of "variable-name" in the given
- * object in the given string
+ * Replaces placeholders ({%[placeholder definition]%}) in a string with given data
  *
  * @param {string} html the html string to replace the placeholders in
  * @param {{ [key: string]: any }} data the values to insert into the html

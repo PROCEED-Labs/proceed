@@ -1,4 +1,4 @@
-import CheckBoxOrRadioGroup from './CheckboxOrRadioGroup';
+import CheckBoxOrRadioGroup, { ExportCheckboxOrRadioGroup } from './CheckboxOrRadioGroup';
 import Column from './Column';
 import Container from './Container';
 import Milestones, { ExportMilestones } from './Milestones';
@@ -19,6 +19,9 @@ export const defaultElements = {
   CheckBoxOrRadioGroup,
 };
 
-export const exportElements = { Input: ExportInput };
+export const exportElements = {
+  Input: ExportInput,
+  CheckBoxOrRadioGroup: ExportCheckboxOrRadioGroup,
+};
 
 export const specificElements = { Milestones, ExportMilestones };

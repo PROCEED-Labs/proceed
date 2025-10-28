@@ -204,7 +204,7 @@ export function toHtml(json: string, resolver: Resolver) {
       ${styles}
     </style>
     <script>
-      {{script}}
+      {%script%}
     </script>
   </head>
   <body>

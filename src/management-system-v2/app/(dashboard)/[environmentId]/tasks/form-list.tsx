@@ -49,6 +49,7 @@ import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { inlineScript } from '@proceed/user-task-helper';
 import { LuNotebookPen } from 'react-icons/lu';
 import { HtmlFormMetaData } from '@/lib/html-form-schema';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type FormListProps = {
   data: HtmlFormMetaData[];
@@ -144,14 +145,13 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
   }, []);
 
   async function deleteItems(forms: ListForm[]) {
-    const res = await removeHtmlForms(forms.map((form) => form.id));
-
-    if (res && 'error' in res) {
-      message.error(res.error.message);
-    } else {
-      setSelectedForms([]);
-      router.refresh();
-    }
+    await wrapServerCall({
+      fn: () => removeHtmlForms(forms.map((form) => form.id)),
+      onSuccess: () => {
+        setSelectedForms([]);
+        router.refresh();
+      },
+    });
   }
 
   async function handleTaskAssignment() {
@@ -182,14 +182,14 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
       })
       .filter(truthyFilter);
 
-    try {
-      const userTasks = await asyncMap(forms, async (task) => {
-        let html = await getHtmlFormHtml(task.id);
+    const userTasks = await asyncMap(forms, async (task) => {
+      let html = await wrapServerCall({
+        fn: () => getHtmlFormHtml(task.id),
+        onSuccess: false,
+        onError: false,
+      });
 
-        if (typeof html !== 'string') {
-          throw new Error(`Failed to get the html for ${task.name}.`);
-        }
-
+      if (html) {
         html = inlineScript(html, '', '', task.variables);
         return {
           id: v4(),
@@ -208,11 +208,17 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
           milestones: [],
           initialVariables: {},
         };
-      });
+      } else {
+        message.error(`Failed to get the form data for ${task.name}.`);
+      }
+    });
 
-      await addUserTasks(userTasks);
-    } catch (err) {
-      if (err instanceof Error) message.error(err.message);
+    const resolvedUserTasks = userTasks.filter(truthyFilter);
+    if (userTasks.length === resolvedUserTasks.length) {
+      message.success('Assigned the tasks to the selected users.');
+      await addUserTasks(resolvedUserTasks);
+    } else {
+      message.error('Encountered errors when trying to assign the tasks.');
     }
     setAssigning(false);
   }
@@ -223,35 +229,37 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
       await form.validateFields();
 
     let newId = '';
-    if (initialData) {
-      const res = await updateHtmlForm(initialData.id, data);
-      if (res && 'error' in res) message.error(res.error.message);
-    } else {
-      newId = v4();
-      const res = await addHtmlForm({
-        id: newId,
-        html: '<html><head></head> <body>Hello World</body> </html>',
-        json: defaultForm,
-        variables: [],
-        milestones: [],
-        environmentId: space.spaceId,
-        ...data,
-      });
 
-      if (res && 'error' in res) {
-        message.error(res.error.message);
-        setAdding(false);
-        return;
-      }
-    }
-    setOpenCreateOrUpdateModal(false);
-    setInitialData(undefined);
+    await wrapServerCall({
+      fn: async () => {
+        if (initialData) {
+          return updateHtmlForm(initialData.id, data);
+        } else {
+          newId = v4();
+
+          return addHtmlForm({
+            id: newId,
+            html: '<html><head></head> <body>Hello World</body> </html>',
+            json: defaultForm,
+            variables: [],
+            milestones: [],
+            environmentId: space.spaceId,
+            ...data,
+          });
+        }
+      },
+      onSuccess: () => {
+        setOpenCreateOrUpdateModal(false);
+        setInitialData(undefined);
+
+        router.refresh();
+        if (newId) {
+          router.push(spaceURL(space, `/tasks/${newId}`));
+        }
+      },
+    });
+
     setAdding(false);
-    if (newId) {
-      router.push(spaceURL(space, `/tasks/${newId}`));
-    } else {
-      router.refresh();
-    }
   }
 
   const handleCloseCreateOrUpdateModal = () => {

@@ -12,7 +12,7 @@
         <bpmn2:scriptTask id="Task_1y4wd2q" scriptFormat="Javascript">
             <bpmn2:incoming>SequenceFlow_14mwzvq</bpmn2:incoming>
             <bpmn2:outgoing>SequenceFlow_0jfbrh9</bpmn2:outgoing>
-            <bpmn2:script><![CDATA[getService('network').get('https://example.org/123', {}, () => {});]]></bpmn2:script>
+            <bpmn2:script><![CDATA[getService('network-requests').get('https://example.org/123', {}, () => {});]]></bpmn2:script>
         </bpmn2:scriptTask>
     </bpmn2:process>
 </bpmn2:definitions>

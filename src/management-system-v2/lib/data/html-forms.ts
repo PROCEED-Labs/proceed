@@ -25,11 +25,11 @@ export const getHtmlForm = async (formId: string) => {
   try {
     return await _getHtmlForm(formId);
   } catch (err) {
+    console.error(`Unable to get html form (${formId}) from the database. Reason: ${err}`);
     if (err instanceof UserFacingError) {
       const message = getErrorMessage(err);
       return userError(message);
     }
-    console.error(`Unable to get html form (${formId}) from the database. Reason: ${err}`);
     return userError('Unable to get data of html form.');
   }
 };
@@ -56,11 +56,11 @@ export const updateHtmlForm = async (formId: string, newData: Partial<HtmlForm>)
   try {
     await _updateHtmlForm(formId, newData);
   } catch (err) {
+    console.error(`Unable to update html form ${formId} in the database. Reason: ${err}`);
     if (err instanceof UserFacingError) {
       const message = getErrorMessage(err);
       return userError(message);
     }
-    console.error(`Unable to update html form ${formId} in the database. Reason: ${err}`);
     return userError('Unable to update html form.');
   }
 };
@@ -69,11 +69,11 @@ export const removeHtmlForms = async (formIds: string[]) => {
   try {
     await _removeHtmlForms(formIds);
   } catch (err) {
+    console.error(`Unable to remove html forms from the database. Reason: ${err}`);
     if (err instanceof UserFacingError) {
       const message = getErrorMessage(err);
       return userError(message);
     }
-    console.error(`Unable to remove html forms from the database. Reason: ${err}`);
     return userError('Unable to remove html forms.');
   }
 };
@@ -82,11 +82,11 @@ export const getHtmlFormHtml = async (formId: string) => {
   try {
     return await _getHtmlFormHtml(formId);
   } catch (err) {
+    console.error(`Unable to get html form html data from the database. Reason: ${err}`);
     if (err instanceof UserFacingError) {
       const message = getErrorMessage(err);
       return userError(message);
     }
-    console.error(`Unable to get html form html data from the database. Reason: ${err}`);
     return userError('Unable to get html form html data.');
   }
 };

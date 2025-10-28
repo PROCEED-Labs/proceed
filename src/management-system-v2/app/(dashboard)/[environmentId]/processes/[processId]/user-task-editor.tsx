@@ -90,7 +90,7 @@ const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
         if (selectedElement)
           updateMilestones(getMilestonesFromElement(selectedElement.businessObject));
       }
-    }, []);
+    }, [selectedElementId]);
 
     return (
       <>
@@ -193,13 +193,6 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       }
 
       if (fileNameAttribute) {
-        if (filename !== affectedElement.businessObject[fileNameAttribute]) {
-          modeler.getModeling().updateProperties(affectedElement as BpmnElement, {
-            [fileNameAttribute]: filename,
-            ...additionalChanges,
-          });
-        }
-
         await wrapServerCall({
           fn: async () => {
             const res = await saveProcessHtmlForm(
@@ -216,6 +209,14 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
             queryClient.invalidateQueries({
               queryKey: ['html-form-json', processId, filename],
             });
+
+            if (filename !== affectedElement.businessObject[fileNameAttribute]) {
+              modeler.getModeling().updateProperties(affectedElement as BpmnElement, {
+                [fileNameAttribute]: filename,
+                ...additionalChanges,
+              });
+            }
+
             setHasUnsavedChanges(false);
             onClose();
           },

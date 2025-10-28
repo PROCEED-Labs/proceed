@@ -324,7 +324,6 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
                         setOpenUserAssignmentModal(false);
                       }}
                       onCancel={() => setOpenUserAssignmentModal(false)}
-                      onClose={() => setOpenUserAssignmentModal(false)}
                       okButtonProps={{ loading: assigning }}
                     >
                       <Cascader
@@ -397,7 +396,6 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
       <Modal
         open={openCreateOrUpdateModal}
         title={initialData ? 'Update Html Form' : 'Create Html Form'}
-        onClose={() => handleCloseCreateOrUpdateModal()}
         onCancel={() => handleCloseCreateOrUpdateModal()}
         onOk={handleCreateOrUpdateForm}
         okButtonProps={{ loading: adding }}

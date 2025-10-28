@@ -113,7 +113,7 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
   //
   // For this reason we want the function only to be called when there has really been a change in
   // xml in the blockly editor
-  const onChangeFunc = useRef<OnChangeFunc | undefined>();
+  const onChangeFunc = useRef<OnChangeFunc | undefined>(undefined);
   useEffect(() => {
     onChangeFunc.current = onChange;
   }, [onChange]);

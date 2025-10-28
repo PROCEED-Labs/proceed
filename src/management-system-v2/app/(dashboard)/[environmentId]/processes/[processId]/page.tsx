@@ -13,11 +13,19 @@ import { RoleType, UserType } from './use-potentialOwner-store';
 import type { Process } from '@/lib/data/process-schema';
 
 type ProcessProps = {
-  params: { processId: string; environmentId: string };
-  searchParams: { version?: string };
+  params: Promise<{ processId: string; environmentId: string }>;
+  searchParams: Promise<{ version?: string }>;
 };
 
-const Process = async ({ params: { processId, environmentId }, searchParams }: ProcessProps) => {
+const Process = async (props: ProcessProps) => {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    processId,
+    environmentId
+  } = params;
+
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   //console.log('processId', processId);

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
 
   // Verify csrf token
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const csrfCookie = cookieStore.get('proceed.csrf-token');
   const verified = csrfCookie && csrfCookie.value === csrfToken;
 

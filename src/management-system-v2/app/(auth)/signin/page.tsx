@@ -9,7 +9,8 @@ import db from '@/lib/data/db';
 const dayInMS = 1000 * 60 * 60 * 24;
 
 // take in search query
-const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
+const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }> }) => {
+  const searchParams = await props.searchParams;
   const { session } = await getCurrentUser();
   const isGuest = session?.user.isGuest;
 

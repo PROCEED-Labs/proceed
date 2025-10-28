@@ -7,10 +7,15 @@ import { invalidRequest, readImage } from '../../../image-helpers';
 
 export async function GET(
   request: NextRequest,
-  {
-    params: { environmentId, processId },
-  }: { params: { environmentId: string; processId: string } },
+  props: { params: Promise<{ environmentId: string; processId: string }> }
 ) {
+  const params = await props.params;
+
+  const {
+    environmentId,
+    processId
+  } = params;
+
   const { ability } = await getCurrentEnvironment(environmentId);
 
   const process = await getProcess(processId, false);
@@ -36,10 +41,15 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  {
-    params: { environmentId, processId },
-  }: { params: { environmentId: string; processId: string } },
+  props: { params: Promise<{ environmentId: string; processId: string }> }
 ) {
+  const params = await props.params;
+
+  const {
+    environmentId,
+    processId
+  } = params;
+
   const isInvalidRequest = invalidRequest(request);
   if (isInvalidRequest) return isInvalidRequest;
 

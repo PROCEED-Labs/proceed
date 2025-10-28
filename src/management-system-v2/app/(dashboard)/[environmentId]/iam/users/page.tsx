@@ -7,7 +7,8 @@ import { getUserById } from '@/lib/data/db/iam/users';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
+const Page = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
   if (!ability.can('manage', 'User')) return <UnauthorizedFallback />;
 

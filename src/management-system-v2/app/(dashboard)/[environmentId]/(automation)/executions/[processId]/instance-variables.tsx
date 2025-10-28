@@ -120,7 +120,6 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
       <Modal
         open={!!variableToEdit}
         title={`Change value of ${variableToEdit?.name}`}
-        onClose={handleClose}
         onCancel={handleClose}
         destroyOnClose
         okButtonProps={{ loading: submitting }}

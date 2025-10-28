@@ -298,7 +298,7 @@ const SpaceCompetencesManagement: React.FC<SpaceCompetencesManagementProps> = ({
           columns={columns}
           dataSource={competences}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
+          pagination={{ pageSize: 10, position: ['bottomCenter'] }}
         />
 
         <SpaceCompetenceFormModal

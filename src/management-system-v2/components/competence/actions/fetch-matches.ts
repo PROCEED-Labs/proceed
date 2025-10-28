@@ -4,17 +4,13 @@ import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getAllSpaceCompetences } from '@/lib/data/competences';
 import { getUsersInSpace } from '@/lib/data/db/iam/memberships';
 import { getAllCompetencesOfUser as getUserCompetences } from '@/lib/data/db/competence';
-import { SCORE_THRESHOLDS } from './match-constants';
+import { API_URL, COMPETENCE_LIST_PATH, MATCH_PATH, SCORE_THRESHOLDS } from './match-constants';
 
-/* API Configuration */
-const API_URL = 'https://ai.raschke.cc/competence-matcher';
-const COMPETENCE_LIST_PATH = '/resource-competence-list/jobs';
-const MATCH_PATH = '/matching-task-to-resource/jobs';
 const POLL_INTERVAL_MS = 2000; // Poll every 2 seconds
 const MAX_POLL_ATTEMPTS = 120; // 4 minutes timeout
 
 /* Feature Flags */
-const ENABLE_OVERALL_COMPETENCE = false; // Set to true to include combined competence assessment
+const ADD_OVERALL_COMPETENCE = true;
 
 /* Debug Logging */
 const DEBUG = true; // Set to false to disable logs
@@ -264,8 +260,7 @@ export async function fetchUsersWithCompetences(environmentId: string): Promise<
   const resources: APIResource[] = Array.from(userCompetenceMap.entries()).map(
     ([userId, competencies]) => {
       // Create an "overall" competence by concatenating all competence descriptions
-      // Only if feature flag is enabled
-      if (ENABLE_OVERALL_COMPETENCE && competencies.length > 0) {
+      if (ADD_OVERALL_COMPETENCE && competencies.length > 0) {
         const overallDescription = competencies
           .map(
             (c) => `${c.name}:\n${c.description.split('\n').slice(1).join('\n') || c.description}`,

@@ -75,7 +75,7 @@ const FolderModal = ({
     <Modal
       title="Folder"
       closeIcon={null}
-      destroyOnClose
+      destroyOnHidden
       {...modalProps}
       open={open}
       onCancel={() => close()}

@@ -121,7 +121,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
         open={!!variableToEdit}
         title={`Change value of ${variableToEdit?.name}`}
         onCancel={handleClose}
-        destroyOnClose
+        destroyOnHidden
         okButtonProps={{ loading: submitting }}
         onOk={async () => {
           await form.validateFields();

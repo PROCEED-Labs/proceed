@@ -399,7 +399,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
         onCancel={() => handleCloseCreateOrUpdateModal()}
         onOk={handleCreateOrUpdateForm}
         okButtonProps={{ loading: adding }}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

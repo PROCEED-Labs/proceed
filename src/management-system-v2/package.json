@@ -33,6 +33,7 @@
     "@toast-ui/react-editor": "3.2.3",
     "@types/jsonwebtoken": "^9.0.6",
     "antd": "5.27.6",
+    "@ant-design/v5-patch-for-react-19": "1.0.3",
     "boring-avatars": "^1.10.2",
     "bpmn-js": "17.2.1",
     "bpmn-js-differ": "2.0.2",
@@ -95,7 +96,8 @@
     "typescript": "5.4.5",
     "@types/react-resizable": "^3.0.7",
     "execa": "9.5.2",
-    "@types/bcrypt": "6.0.0"
+    "@types/bcrypt": "6.0.0",
+    "minimatch": "10.1.1"
   },
   "resolutions": {
     "@types/react": "19.2.2",

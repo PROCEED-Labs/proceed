@@ -283,7 +283,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       onCancel={handleClose}
       okButtonProps={{ disabled: !editingEnabled }}
       onOk={handleSave}
-      destroyOnClose
+      destroyOnHidden
     >
       <EditorStoreProvider>
         <UserTaskEditor json={json} onChange={() => setHasUnsavedChanges(true)} ref={builder} />

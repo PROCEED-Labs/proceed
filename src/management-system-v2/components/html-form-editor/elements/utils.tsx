@@ -300,7 +300,7 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
               const variableType = variables.find((v) => v.name === val)?.dataType;
               onChange(val, variableType);
             }}
-            dropdownRender={(menu) => (
+            popupRender={(menu) => (
               <>
                 {menu}
                 <Space style={{ display: 'block', padding: '0 8px 4px' }}>

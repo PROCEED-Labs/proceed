@@ -136,7 +136,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
       onCancel={onCancel}
       okText={originalVariable ? 'Update' : 'Add'}
       onOk={handleSubmit}
-      destroyOnClose
+      destroyOnHidden
       maskClosable={false}
     >
       <Form layout="vertical" form={form} clearOnDestroy>

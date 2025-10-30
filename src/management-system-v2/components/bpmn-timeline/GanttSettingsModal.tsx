@@ -128,7 +128,7 @@ export const GanttSettingsModal: React.FC<GanttSettingsModalProps> = ({ onSettin
         onCancel={handleCancel}
         footer={null}
         width={600}
-        destroyOnClose
+        destroyOnHidden
       >
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '20px' }}>Loading settings...</div>

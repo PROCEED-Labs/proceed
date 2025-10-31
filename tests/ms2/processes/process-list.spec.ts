@@ -1482,7 +1482,7 @@ test.describe('Selecting Processes', () => {
     await expect(indicator).toContainText('1');
 
     /* Select all visible works as well */
-    await page.getByLabel('Select all').check();
+    await page.getByRole('checkbox', { name: 'Select all' }).check();
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(
@@ -1491,7 +1491,7 @@ test.describe('Selecting Processes', () => {
     await expect(indicator).toContainText(`${(await getNumberOfVisibleRows(page)) + 1}`);
 
     /* Deselect all visible */
-    await page.getByLabel('Select all').uncheck();
+    await page.getByRole('checkbox', { name: 'Select all' }).uncheck();
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
@@ -1520,7 +1520,7 @@ test.describe('Selecting Processes', () => {
     await expect(indicator).toContainText('1');
 
     /* Select all visible works as well */
-    await page.getByLabel('Select all').check();
+    await page.getByRole('checkbox', { name: 'Select all' }).check();
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(

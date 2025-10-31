@@ -13,17 +13,10 @@ import { AuthenticatedUser } from '@/lib/data/user-schema';
 import SpaceLink from '@/components/space-link';
 import { getFolderById } from '@/lib/data/db/folders';
 
-const Page = async (
-  props: {
-    params: Promise<{ roleId: string; environmentId: string }>;
-  }
-) => {
+const Page = async (props: { params: Promise<{ roleId: string; environmentId: string }> }) => {
   const params = await props.params;
 
-  const {
-    roleId,
-    environmentId
-  } = params;
+  const { roleId, environmentId } = params;
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
   const role = await getRoleWithMembersById(roleId, ability);

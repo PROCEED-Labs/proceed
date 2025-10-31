@@ -7,15 +7,11 @@ export async function GET(
   request: NextRequest,
   props: {
     params: Promise<{ environmentId: string; definitionId: string; fileName: string }>;
-  }
+  },
 ) {
   const params = await props.params;
 
-  const {
-    environmentId,
-    definitionId,
-    fileName
-  } = params;
+  const { environmentId, definitionId, fileName } = params;
 
   const session = await auth();
   if (!session) throw new UnauthorizedError();

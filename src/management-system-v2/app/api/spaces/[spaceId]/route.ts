@@ -5,9 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest, props: { params: Promise<{ spaceId: string }> }) {
   const params = await props.params;
 
-  const {
-    spaceId
-  } = params;
+  const { spaceId } = params;
 
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
     return NextResponse.json({

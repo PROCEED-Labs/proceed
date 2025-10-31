@@ -75,7 +75,9 @@ async function Executions({ environmentId }: { environmentId: string }) {
   );
 }
 
-export default async function ExecutionsPage(props: { params: Promise<{ environmentId: string }> }) {
+export default async function ExecutionsPage(props: {
+  params: Promise<{ environmentId: string }>;
+}) {
   const params = await props.params;
   return (
     <Content title="Executions">

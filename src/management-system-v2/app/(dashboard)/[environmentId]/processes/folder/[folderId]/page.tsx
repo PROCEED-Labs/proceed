@@ -20,11 +20,9 @@ import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { notFound } from 'next/navigation';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
-const ProcessesPage = async (
-  props: {
-    params: Promise<{ environmentId: string; folderId?: string }>;
-  }
-) => {
+const ProcessesPage = async (props: {
+  params: Promise<{ environmentId: string; folderId?: string }>;
+}) => {
   const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE) return notFound();

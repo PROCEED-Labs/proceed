@@ -7,14 +7,12 @@ import { redirect } from 'next/navigation';
 import ProcessTransferButtons from './transfer-processes-confirmation-buttons';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
 
-export default async function TransferProcessesPage(
-  props: {
-    searchParams: Promise<{
-      callbackUrl?: string;
-      referenceToken?: string;
-    }>;
-  }
-) {
+export default async function TransferProcessesPage(props: {
+  searchParams: Promise<{
+    callbackUrl?: string;
+    referenceToken?: string;
+  }>;
+}) {
   const searchParams = await props.searchParams;
   const { userId, session } = await getCurrentUser();
   if (!session) redirect('api/auth/signin');

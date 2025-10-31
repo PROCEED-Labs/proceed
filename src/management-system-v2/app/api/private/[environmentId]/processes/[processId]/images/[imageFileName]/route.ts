@@ -16,15 +16,11 @@ import { v4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
-  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> }
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
   const params = await props.params;
 
-  const {
-    environmentId,
-    processId,
-    imageFileName
-  } = params;
+  const { environmentId, processId, imageFileName } = params;
 
   const processMeta = await getProcess(processId, false);
 
@@ -84,15 +80,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> }
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
   const params = await props.params;
 
-  const {
-    environmentId,
-    processId,
-    imageFileName
-  } = params;
+  const { environmentId, processId, imageFileName } = params;
 
   const { ability } = await getCurrentEnvironment(environmentId);
 
@@ -127,15 +119,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> }
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
   const params = await props.params;
 
-  const {
-    environmentId,
-    processId,
-    imageFileName
-  } = params;
+  const { environmentId, processId, imageFileName } = params;
 
   const { ability } = await getCurrentEnvironment(environmentId);
 

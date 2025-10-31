@@ -21,10 +21,7 @@ const Process = async (props: ProcessProps) => {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    processId,
-    environmentId
-  } = params;
+  const { processId, environmentId } = params;
 
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?

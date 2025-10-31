@@ -43,12 +43,12 @@ import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
 
-const DashboardLayout = async (props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>) => {
+const DashboardLayout = async (
+  props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
+) => {
   const params = await props.params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const { userId, systemAdmin, user } = await getCurrentUser();
 

@@ -1,6 +1,6 @@
 import { Editor, EditorProps } from '@toast-ui/react-editor';
 import { Tabs } from 'antd';
-import React, { RefObject, useEffect } from 'react';
+import { RefObject, useEffect } from 'react';
 import styles from './text-editor.module.scss';
 
 // IMPORTANT: This component is a wrapper around the Viewer component from
@@ -18,7 +18,7 @@ const TextEditor = ({
   initialValue,
   editorRef,
   ...editorProps
-}: EditorProps & { editorRef: RefObject<Editor> }) => {
+}: EditorProps & { editorRef: RefObject<Editor | null> }) => {
   useEffect(() => {
     if (editorRef.current) {
       const editor = editorRef.current;

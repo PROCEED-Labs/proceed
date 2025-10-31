@@ -283,7 +283,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   //Open share modal
   const modal = await openModal(page, () =>
-    page.getByRole('button', { name: 'share-alt' }).click(),
+    page.getByRole('button', { name: 'share-alt', exact: true }).click(),
   );
 
   //await expect(page.getByText('Share', { exact: true })).toBeVisible();

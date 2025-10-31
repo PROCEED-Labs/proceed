@@ -1,5 +1,5 @@
-.Modeler :global {
-  .djs-palette {
+.Modeler {
+  :global(.djs-palette) {
     background-color: white !important;
     border: none !important;
     box-shadow:
@@ -13,11 +13,11 @@
     width: 94px;
   }
 
-  .bjs-breadcrumbs {
+  :global(.bjs-breadcrumbs) {
     display: none !important;
   }
 
-  .djs-overlays:not(.selected) .djs-overlay-drilldown {
+  :global(.djs-overlays:not(.selected) .djs-overlay-drilldown) {
     display: none !important;
   }
 }

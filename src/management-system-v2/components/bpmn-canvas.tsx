@@ -130,7 +130,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
   ) => {
     const canvas = useRef<HTMLDivElement>(null);
     const modeler = useRef<ModelerType | NavigatedViewerType | null>(null);
-    const unloadPromise = useRef<Promise<void> | undefined>();
+    const unloadPromise = useRef<Promise<void> | undefined>(undefined);
 
     const loadingXML = useRef(false);
 

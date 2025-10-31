@@ -17,7 +17,8 @@ function Error(props: ResultProps) {
   );
 }
 
-export default async function IvitationPage({ searchParams }: { searchParams: { token: string } }) {
+export default async function IvitationPage(props: { searchParams: Promise<{ token: string }> }) {
+  const searchParams = await props.searchParams;
   const { session } = await getCurrentUser();
   if (!session)
     redirect(

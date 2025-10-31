@@ -4,7 +4,8 @@ import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
 import RolesPage from './role-page';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
+const Page = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   // if (!ability.can('manage', 'Role')) return <UnauthorizedFallback />;

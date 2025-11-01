@@ -4,7 +4,7 @@
 
 /* Score Color Thresholds */
 export const SCORE_THRESHOLDS = {
-  HIGH: 40, // >= -> green
+  HIGH: 45, // >= -> green
   MEDIUM: 20, // >=  -> orange
   // <  -> red
 } as const;

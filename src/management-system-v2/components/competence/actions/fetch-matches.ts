@@ -4,21 +4,19 @@ import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getAllSpaceCompetences } from '@/lib/data/competences';
 import { getUsersInSpace } from '@/lib/data/db/iam/memberships';
 import { getAllCompetencesOfUser as getUserCompetences } from '@/lib/data/db/competence';
-import { API_URL, COMPETENCE_LIST_PATH, MATCH_PATH, SCORE_THRESHOLDS } from './match-constants';
+import {
+  API_URL,
+  COMPETENCE_LIST_PATH,
+  MATCH_PATH,
+  SCORE_THRESHOLDS,
+} from '../utils/match-constants';
+import { debugLog } from '../utils/debug';
 
 const POLL_INTERVAL_MS = 2_000; // Poll every 2 seconds
 const MAX_POLL_ATTEMPTS = 240; // 2_000 * 240 = 8 minutes max wait
 
 /* Feature Flags */
 const ADD_OVERALL_COMPETENCE = false;
-
-/* Debug Logging */
-const DEBUG = false; // Set to true to disable logs
-function debugLog(context: string, ...args: any[]) {
-  if (DEBUG) {
-    console.log(`[CompetenceMatching:${context}]`, ...args);
-  }
-}
 
 /* Types */
 export type TaskContextData = {
@@ -704,7 +702,7 @@ export async function createCompetenceList(
 
     return await createCompetenceListJob(environmentId, resources);
   } catch (error) {
-    console.error('[createCompetenceList] Error:', error);
+    debugLog('[createCompetenceList] Error:', error);
     return { success: false, reason: 'network' };
   }
 }
@@ -722,7 +720,7 @@ export async function createMatching(
     const task = formatUserTaskForAPI(taskContext);
     return await createMatchingJob(environmentId, competenceListId, task);
   } catch (error) {
-    console.error('[createMatching] Error:', error);
+    debugLog('[createMatching] Error:', error);
     return { success: false, reason: 'network' };
   }
 }
@@ -894,7 +892,7 @@ export async function transformMatchResults(
   const rankedUsers: RankedUser[] = matchResult.resourceRanking
     .map((resource) => {
       // Debug: Log the resource object to see actual structure
-      // console.log('[transformMatchResults] Processing resource:', {
+      // debugLog('[transformMatchResults] Processing resource:', {
       //   resourceId: resource.resourceId,
       //   avgTaskMatchProbability: resource.avgTaskMatchProbability,
       //   avgBestFitTaskMatchProbability: resource.avgBestFitTaskMatchProbability,
@@ -949,7 +947,7 @@ export async function transformMatchResults(
       const userScore = Math.round(resource.avgTaskMatchProbability * 100);
       const userBestFitScore = Math.round(resource.avgBestFitTaskMatchProbability * 100);
 
-      // console.log('[transformMatchResults] Calculated scores:', {
+      // debugLog('[transformMatchResults] Calculated scores:', {
       //   resourceId: resource.resourceId,
       //   rawAvgTaskMatchProbability: resource.avgTaskMatchProbability,
       //   rawAvgBestFitTaskMatchProbability: resource.avgBestFitTaskMatchProbability,

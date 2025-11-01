@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { debugLog } from '../utils/debug';
 import { Row, Col, Card, Typography, Empty, Space } from 'antd';
 import UserListSelector from './user-list-selector';
 import { User } from '@/lib/data/user-schema';
@@ -52,11 +53,11 @@ const UserCompetencesOverview: React.FC<UserCompetencesOverviewProps> = ({
       if (result.success && result.data) {
         setUserCompetences(result.data);
       } else if (!result.success) {
-        console.error('Error loading user competences:', result.message);
+        debugLog('Error loading user competences:', result.message);
         setUserCompetences([]);
       }
     } catch (error) {
-      console.error('Error loading user competences:', error);
+      debugLog('Error loading user competences:', error);
       setUserCompetences([]);
     } finally {
       if (showLoading) {

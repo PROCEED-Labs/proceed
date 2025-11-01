@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { debugLog } from '../utils/debug';
 import {
   getAllSpaceCompetences,
   addSpaceCompetence,
@@ -24,7 +25,7 @@ export async function getOrganizationSpaceCompetences(
     const competences = await getAllSpaceCompetences(spaceId);
     return { success: true, data: competences };
   } catch (error) {
-    console.error('Error fetching space competences:', error);
+    debugLog('Error fetching space competences:', error);
     return { success: false, message: 'Failed to fetch space competences' };
   }
 }
@@ -40,7 +41,7 @@ export async function getOrganizationMembers(
     const users = await getUsersInSpace(spaceId);
     return { success: true, data: users };
   } catch (error) {
-    console.error('Error fetching organization members:', error);
+    debugLog('Error fetching organization members:', error);
     return { success: false, message: 'Failed to fetch organization members' };
   }
 }
@@ -56,7 +57,7 @@ export async function getUserCompetences(
     const competences = await getAllCompetencesOfUser(userId);
     return { success: true, data: competences };
   } catch (error) {
-    console.error('Error fetching user competences:', error);
+    debugLog('Error fetching user competences:', error);
     return { success: false, message: 'Failed to fetch user competences' };
   }
 }
@@ -83,7 +84,7 @@ export async function createOrganizationSpaceCompetence(data: {
     revalidatePath(`/${data.spaceId}/iam/competences`);
     return { success: true, data: competence };
   } catch (error) {
-    console.error('Error creating space competence:', error);
+    debugLog('Error creating space competence:', error);
     return { success: false, message: 'Failed to create space competence' };
   }
 }
@@ -119,7 +120,7 @@ export async function updateOrganizationSpaceCompetence(data: {
     revalidatePath(`/${data.spaceId}/iam/competences`);
     return { success: true };
   } catch (error) {
-    console.error('Error updating space competence:', error);
+    debugLog('Error updating space competence:', error);
     return { success: false, message: 'Failed to update space competence' };
   }
 }
@@ -137,7 +138,7 @@ export async function deleteOrganizationSpaceCompetence(data: {
     revalidatePath(`/${data.spaceId}/iam/competences`);
     return { success: true };
   } catch (error) {
-    console.error('Error deleting space competence:', error);
+    debugLog('Error deleting space competence:', error);
     return { success: false, message: 'Failed to delete space competence' };
   }
 }

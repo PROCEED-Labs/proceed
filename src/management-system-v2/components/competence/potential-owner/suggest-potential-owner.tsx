@@ -19,6 +19,7 @@ import { useParams } from 'next/navigation';
 import RankedUserList from './ranked-user-list';
 import { useBPMNResources } from './potential-owner';
 import { Shape } from 'bpmn-js/lib/model/Types';
+import { debugLog } from '../utils/debug';
 
 const { Text } = Typography;
 
@@ -236,13 +237,13 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
 
   // Main matching function
   const runMatchingProcess = async (forceRefresh: boolean = false) => {
-    console.log('[SuggestPotentialOwner] Starting matching process, forceRefresh:', forceRefresh);
+    debugLog('SuggestPotentialOwner', 'Starting matching process, forceRefresh:', forceRefresh);
 
     // Check for cached results first (unless forcing refresh)
     if (!forceRefresh) {
       const cachedResults = getCachedMatchResults(environmentId, taskContext);
       if (cachedResults) {
-        console.log('[SuggestPotentialOwner] Using cached results:', cachedResults);
+        debugLog('SuggestPotentialOwner', 'Using cached results:', cachedResults);
         setRankedUsers(cachedResults.rankedUsers);
         setLoadingMatches(false);
         setProgressSteps([
@@ -293,13 +294,13 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
     try {
       // Check for cached competence list (unless forcing refresh)
       const cachedListId = forceRefresh ? null : getCachedCompetenceListId(environmentId);
-      console.log('[SuggestPotentialOwner] Cached competence list ID:', cachedListId);
+      debugLog('SuggestPotentialOwner', 'Cached competence list ID:', cachedListId);
 
       let competenceListId: string;
 
       // Step 1: Create or use cached competence list
       if (cachedListId) {
-        console.log('[SuggestPotentialOwner] Using cached competence list');
+        debugLog('SuggestPotentialOwner', 'Using cached competence list');
         competenceListId = cachedListId;
 
         // Mark step 1 as complete immediately
@@ -318,11 +319,11 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
         ]);
         setCurrentStep(1);
       } else {
-        console.log('[SuggestPotentialOwner] Creating new competence list...');
+        debugLog('SuggestPotentialOwner', 'Creating new competence list...');
         const listResult = await createCompetenceList(environmentId);
 
         if (!listResult.success) {
-          console.log('[SuggestPotentialOwner] Competence list creation failed:', listResult);
+          debugLog('SuggestPotentialOwner', 'Competence list creation failed:', listResult);
 
           // Handle specific error for no resources
           if (listResult.reason === 'no-resources') {
@@ -347,7 +348,7 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
         }
 
         competenceListId = listResult.competenceListId;
-        console.log('[SuggestPotentialOwner] Competence list created:', competenceListId);
+        debugLog('SuggestPotentialOwner', 'Competence list created:', competenceListId);
 
         // Cache the new competence list ID
         setCachedCompetenceListId(environmentId, competenceListId);
@@ -370,11 +371,11 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
       }
 
       // Step 2: Create matching job
-      console.log('[SuggestPotentialOwner] Creating matching job...');
+      debugLog('SuggestPotentialOwner', 'Creating matching job...');
       const matchResult = await createMatching(environmentId, taskContext, competenceListId);
 
       if (!matchResult.success) {
-        console.log('[SuggestPotentialOwner] Matching failed:', matchResult);
+        debugLog('SuggestPotentialOwner', 'Matching failed:', matchResult);
         setNotification({
           type: 'error',
           title: 'Matching Failed',
@@ -387,7 +388,7 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
         return;
       }
 
-      console.log('[SuggestPotentialOwner] Matching succeeded!');
+      debugLog('SuggestPotentialOwner', 'Matching succeeded!');
 
       // Update to step 3 (preparing results)
       setProgressSteps([
@@ -405,17 +406,17 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
       ]);
       setCurrentStep(2);
 
-      console.log('[SuggestPotentialOwner] Fetching competences for transformation...');
+      debugLog('SuggestPotentialOwner', 'Fetching competences for transformation...');
       const competenceMap = await getAllCompetencesMap(environmentId);
-      console.log('[SuggestPotentialOwner] Fetched', competenceMap.size, 'competences');
+      debugLog('SuggestPotentialOwner', 'Fetched', competenceMap.size, 'competences');
 
-      console.log('[SuggestPotentialOwner] Transforming results...');
+      debugLog('SuggestPotentialOwner', 'Transforming results...');
       const transformed = await transformMatchResults(
         matchResult.result,
         environmentId,
         competenceMap,
       );
-      console.log('[SuggestPotentialOwner] Transformed results:', transformed);
+      debugLog('SuggestPotentialOwner', 'Transformed results:', transformed);
       setRankedUsers(transformed);
 
       // Cache the results
@@ -437,7 +438,7 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
       ]);
       setCurrentStep(2);
     } catch (error: any) {
-      console.error('Error fetching matches:', error);
+      debugLog('Error fetching matches:', error);
 
       setProgressSteps((prev) =>
         prev.map((step, idx) => (idx === currentStep ? { ...step, status: 'error' } : step)),

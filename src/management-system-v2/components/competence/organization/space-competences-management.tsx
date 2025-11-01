@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { debugLog } from '../utils/debug';
 import {
   Table,
   Button,
@@ -49,7 +50,7 @@ const SpaceCompetencesManagement: React.FC<SpaceCompetencesManagementProps> = ({
           setCompetences(result.data);
         }
       } catch (error) {
-        console.error('Error polling space competences:', error);
+        debugLog('Error polling space competences:', error);
       }
     }, 5000);
 

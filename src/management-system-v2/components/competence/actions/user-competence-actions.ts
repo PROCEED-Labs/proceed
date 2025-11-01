@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { debugLog } from '../utils/debug';
 import {
   addUserCompetence,
   updateUserCompetence as dbUpdateUserCompetence,
@@ -49,7 +50,7 @@ export async function createUserCompetence(data: {
 
     return { success: true, data: userCompetence };
   } catch (error) {
-    console.error('Failed to create user competence:', error);
+    debugLog('Failed to create user competence:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to create competence',
@@ -93,7 +94,7 @@ export async function updateUserCompetence(data: {
 
     return { success: true, data: userCompetence };
   } catch (error) {
-    console.error('Failed to update user competence:', error);
+    debugLog('Failed to update user competence:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to update competence',
@@ -119,7 +120,7 @@ export async function deleteUserCompetence(data: {
 
     return { success: true, data: deletedCompetence };
   } catch (error) {
-    console.error('Failed to delete user competence:', error);
+    debugLog('Failed to delete user competence:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to delete competence',
@@ -152,7 +153,7 @@ export async function claimSpaceCompetence(data: {
 
     return { success: true, data: userCompetence };
   } catch (error) {
-    console.error('Failed to claim space competence:', error);
+    debugLog('Failed to claim space competence:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to claim competence',
@@ -178,7 +179,7 @@ export async function unclaimSpaceCompetence(data: {
 
     return { success: true, data: unclaimedCompetence };
   } catch (error) {
-    console.error('Failed to unclaim space competence:', error);
+    debugLog('Failed to unclaim space competence:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to unclaim competence',
@@ -198,7 +199,7 @@ export async function getUserCompetences(
     const competences = await getAllCompetencesOfUser(userId);
     return { success: true, data: competences };
   } catch (error) {
-    console.error('Failed to fetch user competences:', error);
+    debugLog('Failed to fetch user competences:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to fetch competences',

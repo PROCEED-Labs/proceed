@@ -9,6 +9,7 @@ import useModelerStateStore from '../../../app/(dashboard)/[environmentId]/proce
 import { Shape } from 'bpmn-js/lib/model/Types';
 import Modeler from 'bpmn-js/lib/Modeler';
 import { is, isAny } from 'bpmn-js/lib/util/ModelUtil';
+import { debugLog } from '../utils/debug';
 
 type PotentialOwnerProps = {
   selectedElement: ElementLike;
@@ -275,7 +276,7 @@ export function useBPMNResources(
               _user.forEach((id) => user.push(['all-user', `user|${id}`]));
               _roles.forEach((id) => roles.push(['all-roles', `roles|${id}`]));
             } catch {
-              // console.error('Error parsing expression body');
+              // debugLog('Error parsing expression body');
             }
           }
         });

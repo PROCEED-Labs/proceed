@@ -1,4 +1,4 @@
-import { SCORE_THRESHOLDS } from '../actions/match-constants';
+import { SCORE_THRESHOLDS } from './match-constants';
 
 /**
  * Returns the appropriate color for a match score based on thresholds

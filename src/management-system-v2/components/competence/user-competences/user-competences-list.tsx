@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { debugLog } from '../utils/debug';
 import {
   Table,
   Button,
@@ -73,7 +74,7 @@ const UserCompetencesList: React.FC<UserCompetencesListProps> = ({
           setUserCompetences(result.data);
         }
       } catch (error) {
-        console.error('Error polling user competences:', error);
+        debugLog('Error polling user competences:', error);
       }
     }, 5000);
 

@@ -18,7 +18,7 @@ async function ensureModelsInitialised() {
   try {
     await Embedding.getInstance();
     modelsInitialised = true;
-    workerLogger('system', 'debug', 'Embedder worker online', { threadId });
+    workerLogger('system', 'info', 'Embedder worker models loaded', { threadId });
   } catch (err) {
     throw err;
   }
@@ -26,6 +26,44 @@ async function ensureModelsInitialised() {
 
 // Start heartbeat immediately
 startHeartbeat('embedder', config.workerHeartbeatInterval);
+
+// Pre-load models on worker startup to avoid timeout on first job
+(async function initializeWorker() {
+  try {
+    workerLogger('system', 'info', 'Embedder worker initializing - loading models...', {
+      threadId,
+    });
+    await ensureModelsInitialised();
+
+    // Signal to main thread that worker is ready
+    parentPort!.postMessage({
+      type: 'ready',
+      threadId,
+      workerType: 'embedder',
+    });
+
+    workerLogger('system', 'info', 'Embedder worker fully initialized and ready for jobs', {
+      threadId,
+    });
+  } catch (error) {
+    workerLogger(
+      'system',
+      'error',
+      'Embedder worker failed to initialize',
+      { threadId },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+
+    parentPort!.postMessage({
+      type: 'initialization_failed',
+      threadId,
+      workerType: 'embedder',
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    process.exit(1);
+  }
+})();
 
 // Set up job message handler
 parentPort.on('message', async (message: any) => {
@@ -38,27 +76,7 @@ parentPort.on('message', async (message: any) => {
     taskCount: job.tasks?.length || 0,
   });
 
-  // ensure models are initialised (but do not run this for health_check)
-  try {
-    await ensureModelsInitialised();
-  } catch (err) {
-    workerLogger(
-      job.jobId || 'system',
-      'debug',
-      'Embedder worker failed to initialize models',
-      { threadId, jobId: job.jobId },
-      err instanceof Error ? err : new Error(String(err)),
-    );
-    // Notify parent and exit or mark job failed
-    parentPort!.postMessage({
-      type: 'error',
-      jobId: job.jobId,
-      error: `Model initialisation failed: ${err instanceof Error ? err.message : String(err)}`,
-    });
-    // still send job_completed so worker pool can continue
-    parentPort!.postMessage({ type: 'job_completed', jobId: job.jobId });
-    return;
-  }
+  // Models are already initialized on worker startup, so we skip ensureModelsInitialised here
 
   workerLogger(job.jobId, 'debug', `Starting embedding job with ${job.tasks.length} tasks`, {
     threadId,

@@ -22,7 +22,7 @@ export const config = {
   embeddingWorkers: parseInt(process.env.EMBEDDING_WORKERS || '1', 10), // Number of embedding workers to keep alive
   matchingWorkers: parseInt(process.env.MATCHING_WORKERS || '1', 10), // Number of matching workers to keep alive
   workerHeartbeatInterval: parseInt(process.env.WORKER_HEARTBEAT_INTERVAL || '30', 10) * 1_000, // Worker heartbeat interval in seconds (converted to ms) - how often workers send heartbeats
-  workerDeathTimeout: parseInt(process.env.WORKER_DEATH_TIMEOUT || '45', 10) * 1_000, // Worker death timeout in seconds (converted to ms) - how long to wait before considering worker dead
+  workerDeathTimeout: parseInt(process.env.WORKER_DEATH_TIMEOUT || '120', 10) * 1_000, // Worker death timeout in seconds (converted to ms) - how long to wait before considering worker dead (increased from 45s to 120s to accommodate model loading and job execution)
   maxJobTime: parseInt(process.env.MAX_JOB_TIME || '600', 10) * 1_000, // converted from seconds to milliseconds
   logLevel: process.env.LOG_LEVEL || 'INFO', // Levels: 'DEBUG', 'INFO', 'WARN', 'ERROR'
   logTypes: process.env.LOG_TYPES || 'server,request,worker,database,model,system',

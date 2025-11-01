@@ -78,12 +78,16 @@ class WorkerPool {
       busyWorkers: this.busyWorkers.size,
     });
 
-    // Set initial death timer
+    // Set initial death timer (longer timeout for initialization)
     const deathTimer = setTimeout(() => this.killWorker(worker), workerDeathTimeout);
     this.workerDeathTimers.set(worker, deathTimer);
 
     worker.on('message', (message: any) => {
-      if (message.type === 'heartbeat') {
+      if (message.type === 'ready') {
+        this.handleWorkerReady(worker);
+      } else if (message.type === 'initialization_failed') {
+        this.handleWorkerInitializationFailed(worker, message.error);
+      } else if (message.type === 'heartbeat') {
         this.handleHeartbeat(worker);
       } else if (message.type === 'log') {
         // Handle log messages from workers
@@ -93,6 +97,40 @@ class WorkerPool {
 
     worker.on('error', (error) => this.handleWorkerFailure(worker, error));
     worker.once('exit', () => this.handleWorkerFailure(worker, new Error('Worker exited')));
+  }
+
+  private handleWorkerReady(worker: Worker): void {
+    logger.info('worker', `${this.workerType} worker ready for jobs`, {
+      workerType: this.workerType,
+      threadId: worker.threadId,
+      totalWorkers: this.workers.length,
+      poolSize: this.poolSize,
+    });
+
+    // Add to available pool now that initialization is complete
+    this.availableWorkers.add(worker);
+
+    // Reset death timer to normal cadence
+    const existingTimer = this.workerDeathTimers.get(worker);
+    if (existingTimer) clearTimeout(existingTimer);
+
+    const newTimer = setTimeout(() => this.killWorker(worker), workerDeathTimeout);
+    this.workerDeathTimers.set(worker, newTimer);
+
+    // Try to process any queued jobs
+    this.processNextJob();
+  }
+
+  private handleWorkerInitializationFailed(worker: Worker, error: string): void {
+    logger.error('worker', `${this.workerType} worker initialization failed`, {
+      workerType: this.workerType,
+      threadId: worker.threadId,
+      error,
+    });
+
+    // Remove the failed worker and create a replacement
+    this.removeWorker(worker);
+    this.createWorker();
   }
 
   private handleHeartbeat(worker: Worker): void {
@@ -109,8 +147,9 @@ class WorkerPool {
     const newTimer = setTimeout(() => this.killWorker(worker), workerDeathTimeout);
     this.workerDeathTimers.set(worker, newTimer);
 
-    // Mark available if not busy
-    if (!this.busyWorkers.has(worker)) {
+    // Only mark as available if not busy (worker should already be in pool from 'ready' signal)
+    // This handles the case where a worker becomes available again after completing a job
+    if (!this.busyWorkers.has(worker) && !this.availableWorkers.has(worker)) {
       this.availableWorkers.add(worker);
       this.processNextJob();
     }

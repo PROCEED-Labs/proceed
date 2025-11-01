@@ -36,12 +36,12 @@ import {
 import { useEnvironment } from '@/components/auth-can';
 import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
 import { type BlocklyEditorRefType } from './blockly-editor';
-import { useCanEdit } from './modeler';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useProcessVariables from './use-process-variables';
 import ProcessVariableForm from './variable-definition/process-variable-form';
+import { useCanEdit } from '@/lib/can-edit-context';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 
 type ScriptEditorProps = {
@@ -94,7 +94,10 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       ]);
 
       const unsuccessful = +isUserErrorResponse(jsScript) + +isUserErrorResponse(blocklyScript);
+      // If both request failed, it means that we're storing blockly + typescript code ->
+      // inconsistent state
       if (unsuccessful === 0) throw new Error('Inconsistency in script storage');
+      // If the two requests failed, it means this script task has no code associated to it yet
       if (unsuccessful === 2) return ['', null] as const;
 
       const scriptType = isUserErrorResponse(jsScript) ? 'blockly' : 'JS';
@@ -257,7 +260,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       width="90vw"
       styles={{ body: { height: '85vh', marginTop: '0.5rem' }, header: { margin: 0 } }}
       title={
-        <span style={{ fontSize: '1.5rem' }}>{canEdit ? 'Edit Script Task' : 'Script Task'}</span>
+        <span style={{ fontSize: '1.5rem' }}>
+          {`${canEdit ? 'Edit Script Task' : 'Script Task'}: ${filename}`}
+        </span>
       }
       onCancel={handleClose}
       footer={

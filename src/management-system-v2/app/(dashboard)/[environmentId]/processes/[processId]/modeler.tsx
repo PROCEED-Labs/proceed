@@ -32,17 +32,12 @@ import {
   updateFileDeletableStatus,
 } from '@/lib/data/file-manager-facade';
 import { Process } from '@/lib/data/process-schema';
+import { CanEditContext } from '@/lib/can-edit-context';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: Process;
 };
-
-export const CanEditContext = createContext<boolean>(true);
-
-export function useCanEdit() {
-  return useContext(CanEditContext);
-}
 
 const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const pathname = usePathname();

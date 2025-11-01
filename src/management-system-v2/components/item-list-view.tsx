@@ -1,12 +1,13 @@
 'use client';
 
-import { Button, Checkbox, Dropdown, Grid, Table, TableProps } from 'antd';
+import { Button, Checkbox, Dropdown, Grid, Table, TableProps, Typography } from 'antd';
 import { PropsWithChildren, SetStateAction, useMemo, useRef } from 'react';
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
 import { ResizeableTitle } from '@/lib/useColumnWidth';
 import { getUniqueObjects } from '@/lib/utils';
+import SpaceLink from './space-link';
 
 type ElementListProps<T extends { id: string }> = PropsWithChildren<{
   data: T[];
@@ -29,6 +30,32 @@ const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
 
 // TODO: comprehensive documentation
+
+export const ListEntryLink: React.FC<
+  React.PropsWithChildren<{
+    path: string;
+    data: { id: string };
+    style?: React.CSSProperties;
+    className?: string;
+  }>
+> = ({ path, children, data, style, className }) => {
+  return (
+    <SpaceLink
+      href={path.endsWith('/') ? `${path}${data.id}` : `${path}/${data.id}`}
+      className={className}
+      style={{
+        color: 'inherit' /* or any color you want */,
+        textDecoration: 'none' /* removes underline */,
+        display: 'block',
+        padding: '5px 0px',
+      }}
+    >
+      <Typography.Text className={className} style={style} ellipsis={{ tooltip: <>{children}</> }}>
+        {children}
+      </Typography.Text>
+    </SpaceLink>
+  );
+};
 
 const ElementList = <T extends { id: string }>({
   data,

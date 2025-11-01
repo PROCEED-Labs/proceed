@@ -6,14 +6,14 @@ import { getUsersInSpace } from '@/lib/data/db/iam/memberships';
 import { getAllCompetencesOfUser as getUserCompetences } from '@/lib/data/db/competence';
 import { API_URL, COMPETENCE_LIST_PATH, MATCH_PATH, SCORE_THRESHOLDS } from './match-constants';
 
-const POLL_INTERVAL_MS = 2000; // Poll every 2 seconds
-const MAX_POLL_ATTEMPTS = 120; // 4 minutes timeout
+const POLL_INTERVAL_MS = 2_000; // Poll every 2 seconds
+const MAX_POLL_ATTEMPTS = 240; // 2_000 * 240 = 8 minutes max wait
 
 /* Feature Flags */
-const ADD_OVERALL_COMPETENCE = true;
+const ADD_OVERALL_COMPETENCE = false;
 
 /* Debug Logging */
-const DEBUG = true; // Set to false to disable logs
+const DEBUG = false; // Set to true to disable logs
 function debugLog(context: string, ...args: any[]) {
   if (DEBUG) {
     console.log(`[CompetenceMatching:${context}]`, ...args);

@@ -629,9 +629,9 @@ const systemIntermezzo: Message = {
   content: `
         Remember to base your reason on both the similarity score and the alignment label without mentioning them explicitly.
         Scores above 0.6 generally indicate a good up to perfect suitability.
-        Scores between 0.4 and 0.6 generally indicate some up to a good degree of suitability.
-        Scores between 0.2 and 0.4 generally indicate some degree of suitability.
-        Scores below or equal to 0.2 generally indicate little to no suitability.
+        Scores between 0.45 and 0.6 generally indicate some up to a good degree of suitability.
+        Scores between 0.25 and 0.45 generally indicate some degree of suitability.
+        Scores below or equal to 0.25 generally indicate little to no suitability.
     `,
 };
 

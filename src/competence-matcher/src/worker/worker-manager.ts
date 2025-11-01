@@ -122,10 +122,9 @@ class WorkerPool {
   }
 
   private handleWorkerInitializationFailed(worker: Worker, error: string): void {
-    logger.error('worker', `${this.workerType} worker initialization failed`, {
+    logger.error('worker', `${this.workerType} worker initialization failed`, new Error(error), {
       workerType: this.workerType,
       threadId: worker.threadId,
-      error,
     });
 
     // Remove the failed worker and create a replacement

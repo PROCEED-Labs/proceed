@@ -28,7 +28,6 @@ import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
-import UserTaskBuilder, { canHaveForm } from './_user-task-builder';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../processes-helper';
@@ -38,6 +37,7 @@ import { Process } from '@/lib/data/process-schema';
 import FlowConditionModal, { isConditionalFlow } from './flow-condition-modal';
 import { TimerEventButton, isTimerEvent } from './planned-duration-input';
 import XmlEditor from './xml-editor';
+import UserTaskEditor, { canHaveForm } from './user-task-editor';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -450,7 +450,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
 
       {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
         <>
-          <UserTaskBuilder
+          <UserTaskEditor
             processId={processId}
             open={showUserTaskEditor}
             onClose={() => setShowUserTaskEditor(false)}

@@ -43,6 +43,7 @@ const nextConfig = {
       'executions-dashboard',
       'engines',
       'tasklist',
+      'tasks',
       'general-settings',
       'iam',
       'profile',

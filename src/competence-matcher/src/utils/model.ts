@@ -48,12 +48,6 @@ export abstract class TransformerPipeline<PI> {
         progress_callback: options?.progress_callback,
       };
 
-      // onnxruntime-node (the default) has V8 API locking issues in worker threads
-      if (!isMainThread) {
-        // @ts-ignore - Setting backend preference for worker threads
-        opts.device = 'wasm';
-      }
-
       // actually load the pipeline
       this.instance = await pipeline(task as PipelineType, model, opts);
 

@@ -11,7 +11,7 @@ import {
 
 import useProcessVariables from '../use-process-variables';
 import ProcessVariableForm from './process-variable-form';
-import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
+import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
 type VariableDefinitionProps = {};
 
@@ -61,7 +61,13 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
               title: 'Data Type',
               dataIndex: 'dataType',
               key: 'type',
-              render: (_, record) => <Space>{typeLabelMap[record.dataType]}</Space>,
+              render: (_, record) => {
+                let label = typeLabelMap[record.dataType];
+                if (record.textFormat) {
+                  label += ` (${textFormatMap[record.textFormat]})`;
+                }
+                return <Space>{label}</Space>;
+              },
             },
             {
               title: 'Default Value',

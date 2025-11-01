@@ -1,8 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
-import * as os from 'node:os';
-
 export const config = {
   dbPath: process.env.DB_PATH || 'src/db/dbs/',
   embeddingModel: process.env.EMBEDDING_MODEL || 'onnx-community/Qwen3-Embedding-0.6B-ONNX',
@@ -44,4 +42,12 @@ export const config = {
   maxOllamaRetries: parseInt(process.env.MAX_OLLAMA_RETRIES || '5', 10), // Maximum model pull retry attempts
   ollamaRetryDelay: parseInt(process.env.OLLAMA_RETRY_DELAY || '30', 10) * 1_000, // Base delay between retries in seconds (converted to ms)
   ollamaRetryBackoff: parseFloat(process.env.OLLAMA_RETRY_BACKOFF || '1.5'), // Exponential backoff multiplier
+  // Matching algorithm scaling parameters
+  matchDistanceOffset: parseFloat(process.env.MATCH_DISTANCE_OFFSET || '0.45'), // Offset subtracted from match distance before scaling
+  matchDistanceMultiplier: parseFloat(process.env.MATCH_DISTANCE_MULTIPLIER || '2'), // Multiplier for distance after offset
+  contradictionThreshold: parseFloat(process.env.CONTRADICTION_THRESHOLD || '0.3'), // Threshold for contradiction detection
+  entailmentThreshold: parseFloat(process.env.ENTAILMENT_THRESHOLD || '0.55'), // Threshold for entailment detection
+  alignmentDistanceThreshold: parseFloat(process.env.ALIGNMENT_DISTANCE_THRESHOLD || '0.65'), // Minimum distance required for alignment boost
+  alignmentBoostMultiplier: parseFloat(process.env.ALIGNMENT_BOOST_MULTIPLIER || '1.2'), // Multiplier to boost distance for aligning matches
+  neutralReductionMultiplier: parseFloat(process.env.NEUTRAL_REDUCTION_MULTIPLIER || '0.65'), // Multiplier to reduce distance for neutral matches
 };

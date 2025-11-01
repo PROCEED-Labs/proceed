@@ -167,27 +167,7 @@ export const SEMANTIC_SPLITTER: Message[] = [
 //   },
 // ];
 
-const MATCH_REASON_INSTRUCT_OLD: Message = {
-  role: 'system',
-  content: `
-    You are an expert in generating reasons for matching scores and their alignment between tasks and competences.
-    Your task is to generate a reason for the matching score between a task and a competence.
-    In addition to the score - which is the normalized similarity score between the task and competence - you also receive an alignment label which can be one of 'aligning', 'neutral' or 'contradicting'.
-    The alignment label indicates whether the task and competence are well aligned ('aligning'), not really related, so do not match well nor badly ('neutral') or are in conflict with each other ('contradicting').
-    Generally speaking, a score of 0 means not suited, where not suited can either mean, not suited at all or just not really suited (i.e. the capability and task either contradict or are not overlapping in terms of competences, e.g. they are unrelated).
-    A score of 1 means perfectly suited (i.e. the capability fully covers the task).
-    Hence, everything larger than 0 already indicates some degree of suitability.
-    A match score of e.g. 0.15 is already slightly suited, 0.5 indicates that the resource is somewhat well suited to perform the task, 0.7 would indicate that the resource is quite well suited to perform the task, and everything above 0.85 and 1.0 means close to perfectly suited.
-    The reason should be one to three short, concise sentence that explain why the task and competence match as well as they did or why they did not match that well.
-    Do not mention the similarity score or alignment label in your response.
-    The reason should be based on the text of the task and the competence and their estimated normalized similarity score and alignment.
-    The similarity score is a number between 0 and 1, where 0 means no similarity and 1 means perfect similarity.
-    Do not mention the similarity score in your response.
-    Do not mention the alignment label in your response.
-    `,
-};
-
-const MATCH_REASON_EXAMPLES: Message[] = [
+let MATCH_REASON_EXAMPLES: Message[] = [
   {
     role: 'user',
     content: `
@@ -203,7 +183,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
         The statements match very well because the task requires operating CNC milling machines, which is exactly what the competence is about.
     `,
   },
-
   {
     role: 'user',
     content: `
@@ -224,8 +203,8 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     content: `
         Task: Assemble circuit boards according to schematic diagrams.
         Competence: Basic knowledge of electronics and soldering skills.
-        Similarity Score: 0.08
-        Alignment: aligning
+        Similarity Score: 0.18
+        Alignment: neutral
     `,
   },
   {
@@ -265,13 +244,12 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence directly covers leading Scrum teams and facilitating ceremonies, which matches the task's requirements precisely.
   `,
   },
-
   {
     role: 'user',
     content: `
     Task: Develop native iOS applications in Swift and ship to the App Store.
     Competence: Experienced Android engineer, Kotlin and Jetpack Compose.
-    Similarity Score: 0.25
+    Similarity Score: 0.40
     Alignment: neutral
   `,
   },
@@ -281,7 +259,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence demonstrates mobile-app development experience but on a different platform and language, so it provides some transferable skills but not a direct match.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -297,7 +274,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence combines native German proficiency with a legal translation credential, matching the task's need for accurate legal terminology.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -313,7 +289,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence includes both the certification and hands-on payroll experience required to perform payroll calculation and filings.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -329,7 +304,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     Both roles involve operating heavy equipment, but the specific machinery and skills differ, so the relevance is limited.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -345,7 +319,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence shows solid testing experience but in a different language and framework, making it partly relevant but not a perfect fit.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -361,7 +334,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence demonstrates customer-facing communication and support experience that transfers well to voice support, though the channel differs.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -377,7 +349,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence explicitly covers phlebotomy certification and clinical practice, which directly matches the task's duties.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -393,7 +364,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence shows the required safety certification and audit experience needed to perform hazard assessments and documentation.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -409,7 +379,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence provides valuable finance and data skills, but lacks the specific low-latency C++ systems expertise required for the task.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -425,7 +394,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence combines visual branding experience and leadership, which fits the task of leading designers to create brand assets.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -441,7 +409,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The task requires specialized medical knowledge and terminology that the competence does not provide.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -473,23 +440,21 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence explicitly covers Nginx configuration, TLS certificate handling, and reverse-proxy setups, which directly match the task. That operational experience maps to the task's technical requirements. Overall this is a strong, practical fit.
   `,
   },
-
   {
     role: 'user',
     content: `
     Task: Write automated end-to-end tests for a React web application using Playwright.
     Competence: Experienced in unit/integration testing in React and in end-to-end tests using Selenium.
-    Similarity Score: 0.46
-    Alignment: neutral
+    Similarity Score: 0.63
+    Alignment: aligning
   `,
   },
   {
     role: 'assistant',
     content: `
-    The competence shows solid testing experience and familiarity with React, which transfers to end-to-end testing concepts. However, the specific test framework differs and Selenium's patterns are not identical to Playwright's modern APIs. The fit is moderately useful but incomplete without Playwright-specific experience.
+    The competence shows solid testing experience and familiarity with React, which transfers to end-to-end testing concepts. While the specific test framework differs and Selenium's patterns are not identical to Playwright's modern APIs, the fit is definitely relevant although not a perfect match.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -535,52 +500,35 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence demonstrates direct experience implementing data-protection policies and performing impact assessments, which correspond to the task's key responsibilities. Those policy and assessment skills indicate strong familiarity with GDPR-related workflows and controls. The competence is therefore a very good fit for the task.
   `,
   },
-
   {
     role: 'user',
     content: `
     Task: Drive a passenger shuttle daily and secure vehicle inspections.
     Competence: Medical restriction explicitly prohibiting driving.
-    Similarity Score: 0.60
+    Similarity Score: 0.00
     Alignment: contradicting
   `,
   },
   {
     role: 'assistant',
     content: `
-    Although the numeric score suggests some overlap, the competence text explicitly prohibits driving while the task requires operating a vehicle. This direct conflict with the task's core requirement prevents the candidate from performing the role. The competence therefore does not meet the task.
+    The task requires driving a passenger shuttle, but the competence indicates a medical restriction against driving, creating a direct conflict.
   `,
   },
   /////////////////
   {
     role: 'user',
     content: `
-    Task: Assemble circuit boards according to schematic diagrams.
-    Competence: Basic knowledge of electronics and soldering skills.
-    Similarity Score: 0.08
+    Task: Translate engineering user manuals from Chinese to English, preserving technical terms and measurements.
+    Competence: Professional Chinese-to-English translator with experience in marketing and legal documents, no engineering background.
+    Similarity Score: 0.79
     Alignment: aligning
   `,
   },
   {
     role: 'assistant',
     content: `
-    The statements only slightly match because assembling circuit boards requires more specific hands-on PCB assembly experience than basic electronics knowledge. Basic soldering helps, but the competence doesn't explicitly show the detailed assembly practice the task expects. The overlap is therefore minimal.
-  `,
-  },
-
-  {
-    role: 'user',
-    content: `
-    Task: Translate engineering user manuals from Chinese to English, preserving technical terms and measurements.
-    Competence: Professional Chinese-to-English translator with experience in marketing and legal documents, no engineering background.
-    Similarity Score: 0.12
-    Alignment: neutral
-  `,
-  },
-  {
-    role: 'assistant',
-    content: `
-    The competence provides strong language and translation skills but lacks the technical engineering background needed to preserve specialized terminology and measurements. That domain gap limits suitability for technical manual translation without subject-matter support. The fit is therefore only slight.
+    The competence demonstrates strong translation skills between Chinese and English, which are essential for the task. However, the lack of engineering-specific experience means some technical terminology may require additional research. Overall, the candidate is quite well suited but may need to upskill on engineering concepts.
   `,
   },
   {
@@ -588,14 +536,14 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     content: `
     Task: Administer Microsoft SQL Server databases, tune queries and manage backups.
     Competence: Extensive experience with MySQL and PostgreSQL administration.
-    Similarity Score: 0.40
+    Similarity Score: 0.45
     Alignment: neutral
   `,
   },
   {
     role: 'assistant',
     content: `
-    The competence indicates strong database administration skills and general principles that transfer across systems, but it lacks direct experience with Microsoft SQL Server-specific tools and features. That gap will require adaptation to server-specific administration and tuning. The candidate is moderately relevant but not an immediate fit.
+    The competence shows strong database administration skills that transfer conceptually to SQL Server. However, the specific platform differences mean the candidate will need to learn SQL Server's unique features and tools. The fit is partial: good foundational skills but not yet complete for SQL Server-specific tasks.
   `,
   },
   {
@@ -613,7 +561,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence brings directly relevant front-end and React experience, including bundle optimization and component improvements. However, the candidate's limited exposure to advanced profiling workflows means they may need to upskill for deep-render hotspot analysis. Overall, they are reasonably well placed to improve performance but may require some additional profiling experience.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -629,7 +576,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence demonstrates solid SQL and ETL experience that transfers to analytics work, and understanding of query design is directly useful for Redshift. The lack of Redshift-specific tuning and cluster knowledge is a remaining gap that will affect large-scale optimizations. The candidate is generally well suited but will need platform-specific tuning skills.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -645,7 +591,6 @@ const MATCH_REASON_EXAMPLES: Message[] = [
     The competence shows relevant onboarding and customer engagement experience that transfers to SaaS adoption activities. However, the difference between on-premise manual onboarding and recurring SaaS flows means playbook-driven, product-led onboarding skills may be missing. The candidate can perform many onboarding tasks but will need to adapt to SaaS-specific tooling and processes.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -658,10 +603,9 @@ const MATCH_REASON_EXAMPLES: Message[] = [
   {
     role: 'assistant',
     content: `
-    The competence is strong on model development and evaluation, which covers a critical portion of the workflow. However, the task requires production deployment skills—CI/CD pipelines, containerization, and monitoring—that are not evident in the competence. The fit is partial: good for the modeling side but not yet complete for end-to-end deployment.
+    The competence demonstrates strong machine-learning model development skills, which are foundational for production deployment. However, the lack of DevOps and infrastructure experience means the candidate may struggle with CI/CD pipelines, containerization, and monitoring aspects. The fit is partial: good ML skills but significant gaps in deployment expertise.
   `,
   },
-
   {
     role: 'user',
     content: `
@@ -678,6 +622,23 @@ const MATCH_REASON_EXAMPLES: Message[] = [
   `,
   },
 ];
+
+// Add intermediate system instructions for more consistent reasoning
+const systemIntermezzo: Message = {
+  role: 'system',
+  content: `
+        Remember to base your reason on both the similarity score and the alignment label without mentioning them explicitly.
+        Scores above 0.6 generally indicate a good up to perfect suitability.
+        Scores between 0.4 and 0.6 generally indicate some up to a good degree of suitability.
+        Scores between 0.2 and 0.4 generally indicate some degree of suitability.
+        Scores below or equal to 0.2 generally indicate little to no suitability.
+    `,
+};
+
+// Add after every assistant message
+MATCH_REASON_EXAMPLES = MATCH_REASON_EXAMPLES.flatMap((msg) =>
+  msg.role === 'assistant' ? [msg, systemIntermezzo] : [msg],
+);
 
 const MATCH_REASON_INSTRUCT: Message = {
   role: 'system',
@@ -711,78 +672,6 @@ Output constraints:
 - Be specific: reference the precise skill, tool, domain, or limitation that explains the match degree.
 `,
 };
-
-// export const MATCH_REASON: Message[] = [MATCH_REASON_INTRUCT, ...MATCH_REASON_EXAMPLES];
-
-const MATCH_REASON_INTSRUCT_2: Message = {
-  role: 'system',
-  content: `
-    You are an expert in generating matching scores based on reason between tasks and competences.
-    Your task is to generate a score, how well the resource with the respective capability is suited to fulfill the given task.
-    The score should be a number (floating point) between 0 and 1, where 0 means either not suited (i.e. the capability and task either contradict or are not overlapping in terms of competences, e.g. they are unrelated) and 1 means perfectly suited (i.e. the capability fully covers the task).
-    So values larger than 0 already indicate some degree of suitability, while values close to 1 indicate a very good match.
-    Something that is neither well suited nor unsuited should still be rated with 0.
-    0.25 would indicate that the resource is only slightly suited to perform the task.
-    So 0.5 is not a neutral value, but rather indicates that the resource is somewhat well suited to perform the task, but not very well suited.
-    0.75 would indicate that the resource is quite well suited to perform the task, but not perfectly suited.
-    The reason should be one to three short, concise sentence that explain why the task and competence match as well as they did or why they did not match that well.
-    The reason should be based on the text of the task and the competence and their estimated normalized similarity score and alignment.
-    The similarity score is a number between 0 and 1.
-    Your response should be in the following format:
-    <score>
-    ${splittingSymbol}
-    <reason>
-    `,
-};
-
-const MATCH_REASON_EXAMPLES_2: Message[] = [
-  {
-    role: 'user',
-    content: `
-        Task: Operate CNC milling machines to produce precision metal parts.
-        Competence: Experience with CNC milling machines and precision machining.
-    `,
-  },
-  {
-    role: 'assistant',
-    content: `
-        0.95
-        ${splittingSymbol}
-        The statements match very well because the task requires operating CNC milling machines, which is exactly what the competence is about.
-    `,
-  },
-
-  {
-    role: 'user',
-    content: `
-        Task: Delivering packages to customers on time. Driving a delivery van safely through city traffic. Loading and unloading packages efficiently. Communicating with customers professionally. Planning optimal delivery routes using GPS technology.
-        Competence: Has no drivers license and cannot operate vehicles.
-    `,
-  },
-  {
-    role: 'assistant',
-    content: `
-        0.0
-        ${splittingSymbol}
-        The statements do not match. The task requires driving a delivery van, but the competence indicates that the person cannot operate vehicles at all.
-    `,
-  },
-  {
-    role: 'user',
-    content: `
-        Task: Prepare raw materials for production.
-        Competence: Experience with inventory management and supply chain logistics.
-    `,
-  },
-  {
-    role: 'assistant',
-    content: `
-        0.30
-        ${splittingSymbol}
-        The statements have a relativly low match because preparing raw materials is a basic task that does not require advanced inventory management or supply chain logistics skills.
-    `,
-  },
-];
 
 export const MATCH_REASON: Message[] = [MATCH_REASON_INSTRUCT, ...MATCH_REASON_EXAMPLES];
 

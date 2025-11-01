@@ -108,7 +108,11 @@ parentPort.on('message', async (message: any) => {
               let flag = 'neutral'; // Default flag
 
               // Balance distance
-              let newDistance = Math.min(1, Math.max(0, match.distance - 0.45) * 2);
+              let newDistance = Math.min(
+                1,
+                Math.max(0, match.distance - config.matchDistanceOffset) *
+                  config.matchDistanceMultiplier,
+              );
 
               // Get Alignment via Zero-Shot
               const sentiment = await ZeroShot.nliBiDirectional(description, match.text);
@@ -124,20 +128,24 @@ parentPort.on('message', async (message: any) => {
               // First: Contradicting?
               if (
                 sentiment.ranking[0] == 'contradict' ||
-                sentiment.contradict > 0.3 ||
+                sentiment.contradict > config.contradictionThreshold ||
                 contradiction.contradicting
               ) {
                 flag = 'contradicting';
                 newDistance = 0.0;
                 // Second: Aligning?
-              } else if (sentiment.entail > 0.55 && match.distance > 0.65 && alignment.aligning) {
+              } else if (
+                sentiment.entail > config.entailmentThreshold &&
+                match.distance > config.alignmentDistanceThreshold &&
+                alignment.aligning
+              ) {
                 flag = 'aligning';
                 // Boost similarity-based distance
-                newDistance = Math.min(1, newDistance * 1.5);
+                newDistance = Math.min(1, newDistance * config.alignmentBoostMultiplier);
               } else {
                 flag = 'neutral';
                 // Reduce distance for neutral
-                newDistance *= 0.65;
+                newDistance *= config.neutralReductionMultiplier;
               }
 
               // Store match result for reasoning workaround

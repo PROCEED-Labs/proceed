@@ -47,6 +47,7 @@ const nextConfig = {
       'general-settings',
       'iam',
       'profile',
+      'user-competence',
       'projects',
       'settings',
     ].map((folder) => ({

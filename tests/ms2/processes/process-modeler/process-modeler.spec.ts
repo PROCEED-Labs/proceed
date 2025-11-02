@@ -1,6 +1,6 @@
 import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from '../processes.fixtures';
-import { openModal, closeModal } from '../../testUtils';
+import { openModal, closeModal, waitForHydration } from '../../testUtils';
 
 test('process modeler', async ({ processModelerPage, processListPage }) => {
   test.slow();
@@ -321,6 +321,9 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
+
+  // Wait for hydration
+  await newPage.getByText('Loading process data').waitFor({ state: 'hidden' });
 
   // Add the shared process to the workspace
   await openModal(newPage, async () => {

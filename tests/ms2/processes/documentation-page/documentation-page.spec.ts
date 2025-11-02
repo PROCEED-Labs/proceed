@@ -897,6 +897,9 @@ test('allow a different user that was given the share link to import the shared 
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
+  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
+  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
+
   // check that the add to workspace button is visible since the user does not own the process
   await expect(newPage.getByRole('button', { name: 'Edit' })).toBeVisible();
 

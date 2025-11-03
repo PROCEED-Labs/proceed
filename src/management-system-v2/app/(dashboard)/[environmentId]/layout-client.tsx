@@ -11,6 +11,7 @@ import {
   Menu,
   MenuProps,
   Modal,
+  Popover,
   Tooltip,
 } from 'antd';
 import Image from 'next/image';
@@ -24,12 +25,11 @@ import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[mode]/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
-import { useFileManager } from '@/lib/useFileManager';
-import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useSession } from '@/components/auth-can';
 import ChangeUserPasswordModal from './profile/change-password-modal';
-import { EnvVarsContext } from '@/components/env-vars-context';
 import useMSLogo from '@/lib/use-ms-logo';
+import { usePathname } from 'next/navigation';
+import { MenuItemType } from 'antd/es/menu/interface';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -48,11 +48,19 @@ export const SpaceContext = createContext<{
   customLogo?: string;
 }>({ spaceId: '', isOrganization: false });
 
+type ExtendedMenuItem = NonNullable<MenuProps['items']>[number] & {
+  openRegex?: string;
+  selectedRegex?: string;
+  children?: ExtendedMenuItem[];
+};
+
+export type ExtendedMenuItems = ExtendedMenuItem[];
+
 const Layout: FC<
   PropsWithChildren<{
     loggedIn: boolean;
     userEnvironments?: Environment[];
-    layoutMenuItems: NonNullable<MenuProps['items']>;
+    layoutMenuItems: ExtendedMenuItems;
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;
     customLogo?: string;
@@ -98,12 +106,58 @@ const Layout: FC<
   // The space id needs to be set here, because the hook is outside of the SpaceContext.Provider
   const { imageSource } = useMSLogo(customLogo, { spaceId: activeSpace.spaceId });
 
+  const pathname = usePathname();
+
+  const [selected, setSelected] = useState<string[]>([]);
+  const [open, setOpen] = useState<string[]>([]);
+
+  useEffect(() => {
+    const sel: string[] = [];
+    const op: string[] = [];
+
+    function check(items: ExtendedMenuItems) {
+      for (const item of items) {
+        if (item.selectedRegex && pathname.match(item.selectedRegex)) {
+          sel.push(item.key as string);
+        }
+        if (item.openRegex && pathname.match(item.openRegex)) {
+          op.push(item.key as string);
+        }
+
+        if (item.children) check(item.children);
+      }
+    }
+
+    check(layoutMenuItems);
+
+    setSelected(sel);
+    setOpen(op);
+  }, [pathname]);
+
+  // remove the error message about the unknown item entries that is logged by ant-design
+  function toMenuItem(item: ExtendedMenuItem): MenuItemType {
+    const test = {
+      ...item,
+      children: item.children?.map(toMenuItem),
+    };
+
+    delete test.selectedRegex;
+    delete test.openRegex;
+
+    return test as MenuItemType;
+  }
+
+  const menuItems = layoutMenuItems.map(toMenuItem);
+
   const menu = (
     <Menu
       style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
       mode="inline"
-      items={layoutMenuItems}
+      selectedKeys={selected}
+      openKeys={open}
+      items={menuItems}
       onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
+      onOpenChange={(changed) => setOpen(changed)}
     />
   );
 
@@ -228,7 +282,24 @@ const Layout: FC<
                       style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
                       className={cn(styles.Footer)}
                     >
-                      PROCEED Labs GmbH
+                      <Popover
+                        title="PROCEED Labs GmbH"
+                        content={
+                          <div>
+                            <a href="https://proceed-labs.org" target="_blank">
+                              https://www.proceed-labs.org
+                            </a>
+                            <div>Tel.: +49 151 57425665</div>
+                            <div>
+                              Email:{' '}
+                              <a href="mailto:info@proceed-labs.org">info@proceed-labs.org</a>
+                            </div>
+                          </div>
+                        }
+                        placement="bottomLeft"
+                      >
+                        PROCEED Labs GmbH
+                      </Popover>
                     </AntLayout.Footer>
                   </div>
                 </div>

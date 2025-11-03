@@ -9,8 +9,9 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 
-import useProcessVariables, { ProcessVariable, typeLabelMap } from '../use-process-variables';
+import useProcessVariables from '../use-process-variables';
 import ProcessVariableForm from './process-variable-form';
+import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
 
 type VariableDefinitionProps = {
   readOnly?: boolean;

@@ -34,7 +34,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { ProcessListProcess, RowActions } from './processes/types';
 import { Folder } from '@/lib/data/folder-schema';
-import ElementList from './item-list-view';
+import ElementList, { ListEntryLink } from './item-list-view';
 import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
@@ -77,7 +77,7 @@ export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess
   return item.type === 'folder' ? <FolderFilled /> : '';
 }
 
-const ListEntryLink: React.FC<
+const ProcessListEntryLink: React.FC<
   React.PropsWithChildren<{
     data: ProcessListProcess;
     style?: React.CSSProperties;
@@ -85,26 +85,14 @@ const ListEntryLink: React.FC<
     isReadOnly?: boolean;
   }>
 > = ({ children, data, style, className, isReadOnly = false }) => {
-  const folderPath = isReadOnly
-    ? `/processes/list/folder/${data.id}`
-    : `/processes/editor/folder/${data.id}`;
-  const processPath = isReadOnly ? `/processes/list/${data.id}` : `/processes/editor/${data.id}`;
+  const folderPath = isReadOnly ? `/processes/list/folder/` : `/processes/editor/folder/`;
+  const processPath = isReadOnly ? `/processes/list/` : `/processes/editor/`;
+  const path = data.type === 'folder' ? folderPath : processPath;
 
   return (
-    <SpaceLink
-      href={data.type === 'folder' ? folderPath : processPath}
-      className={className}
-      style={{
-        color: 'inherit' /* or any color you want */,
-        textDecoration: 'none' /* removes underline */,
-        display: 'block',
-        padding: '5px 0px',
-      }}
-    >
-      <Typography.Text className={className} style={style} ellipsis={{ tooltip: <>{children}</> }}>
-        {children}
-      </Typography.Text>
-    </SpaceLink>
+    <ListEntryLink path={path} data={data} style={style} className={className}>
+      {children}
+    </ListEntryLink>
   );
 };
 
@@ -296,12 +284,12 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           (a, b) => (a.userDefinedId ?? '').localeCompare(b.userDefinedId ?? ''),
         ),
         render: (id, record) => (
-          <ListEntryLink
+          <ProcessListEntryLink
             data={record}
             isReadOnly={isReadOnly} /* className={styles.HoverableTableCell} */
           >
             {record.type === 'folder' ? '' : id}
-          </ListEntryLink>
+          </ProcessListEntryLink>
         ),
       },
       {
@@ -311,7 +299,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         ellipsis: true,
         sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
         render: (_, record) => (
-          <ListEntryLink
+          <ProcessListEntryLink
             data={record}
             isReadOnly={isReadOnly}
             style={{
@@ -320,7 +308,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
             }}
           >
             <ProcessListItemIcon item={record} /> {record.name.highlighted}
-          </ListEntryLink>
+          </ProcessListEntryLink>
         ),
         responsive: ['xs', 'sm'],
       },
@@ -329,14 +317,14 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         dataIndex: 'description',
         key: 'Description',
         render: (_, record) => (
-          <ListEntryLink data={record} isReadOnly={isReadOnly}>
+          <ProcessListEntryLink data={record} isReadOnly={isReadOnly}>
             {(record.description.value ?? '').length == 0 ? (
               <>&emsp;</>
             ) : (
               record.description.highlighted
             )}
             {/* Makes the link-cell clickable, when there is no description */}
-          </ListEntryLink>
+          </ProcessListEntryLink>
         ),
         responsive: ['sm'],
       },
@@ -346,11 +334,11 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         key: 'Last Edited',
         render: (date: string, record) => (
           <>
-            <ListEntryLink data={record} isReadOnly={isReadOnly}>
+            <ProcessListEntryLink data={record} isReadOnly={isReadOnly}>
               <Tooltip title={generateDateString(date, true)}>
                 {generateTableDateString(date)}
               </Tooltip>
-            </ListEntryLink>
+            </ProcessListEntryLink>
           </>
         ),
         sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
@@ -362,11 +350,11 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         key: 'Created On',
         render: (date: Date, record) => (
           <>
-            <ListEntryLink data={record} isReadOnly={isReadOnly}>
+            <ProcessListEntryLink data={record} isReadOnly={isReadOnly}>
               <Tooltip title={generateDateString(date, true)}>
                 {generateTableDateString(date)}
               </Tooltip>
-            </ListEntryLink>
+            </ProcessListEntryLink>
           </>
         ),
         defaultSortOrder: 'descend',
@@ -384,9 +372,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               : mapIdToUsername(item.creatorId);
           return (
             <>
-              <ListEntryLink data={item} isReadOnly={isReadOnly}>
+              <ProcessListEntryLink data={item} isReadOnly={isReadOnly}>
                 {name}
-              </ListEntryLink>
+              </ProcessListEntryLink>
             </>
           );
         },
@@ -406,9 +394,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
 
           return (
             <>
-              <ListEntryLink data={item} isReadOnly={isReadOnly}>
+              <ProcessListEntryLink data={item} isReadOnly={isReadOnly}>
                 {name}
-              </ListEntryLink>
+              </ProcessListEntryLink>
             </>
           );
         },

@@ -25,7 +25,7 @@ import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { copyFile, retrieveFile } from '../file-manager/file-manager';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
-import { getUsedImagesFromJson } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/_user-task-builder/serialized-format-utils';
+import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';
 
 /**
  * Returns all processes in an environment

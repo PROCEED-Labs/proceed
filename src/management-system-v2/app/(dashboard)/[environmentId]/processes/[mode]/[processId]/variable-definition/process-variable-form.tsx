@@ -12,8 +12,7 @@ import {
 } from 'antd';
 
 import { FaRegQuestionCircle } from 'react-icons/fa';
-
-import { ProcessVariable, typeLabelMap } from '../use-process-variables';
+import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
 
 type ProcessVariableFormProps = {
   open?: boolean;

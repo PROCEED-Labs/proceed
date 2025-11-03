@@ -144,12 +144,13 @@ const DashboardLayout = async ({
           key: 'processes-list',
           label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
           icon: <CopyOutlined />,
+          selectedRegex: '/processes/list($|/)',
         },
         documentationSettings.editor?.active !== false && {
           key: 'processes-editor',
           label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
           icon: <EditOutlined />,
-          selectedRegex: processRegex,
+          selectedRegex: '/processes/editor($|/)',
         },
       ].filter(truthyFilter);
 

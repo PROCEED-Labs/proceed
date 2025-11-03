@@ -8,8 +8,8 @@ import { updateVariables } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import TextArea from 'antd/es/input/TextArea';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { typeLabelMap } from '../../../processes/[processId]/use-process-variables';
 import useInstanceVariables, { Variable } from './use-instance-variables';
+import { typeLabelMap } from '@/lib/process-variable-schema';
 
 type InstanceVariableProps = {
   info: RelevantInstanceInfo;

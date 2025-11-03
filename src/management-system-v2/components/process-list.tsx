@@ -34,7 +34,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan } from '@/components/auth-can';
 import { ProcessListProcess, RowActions } from './processes/types';
 import { Folder } from '@/lib/data/folder-schema';
-import ElementList from './item-list-view';
+import ElementList, { ListEntryLink } from './item-list-view';
 import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
@@ -74,28 +74,19 @@ export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess
   return item.type === 'folder' ? <FolderFilled /> : '';
 }
 
-const ListEntryLink: React.FC<
+const ProcessListEntryLink: React.FC<
   React.PropsWithChildren<{
     data: ProcessListProcess;
     style?: React.CSSProperties;
     className?: string;
   }>
 > = ({ children, data, style, className }) => {
+  const path = data.type === 'folder' ? `/processes/folder/` : `/processes/`;
+
   return (
-    <SpaceLink
-      href={data.type === 'folder' ? `/processes/folder/${data.id}` : `/processes/${data.id}`}
-      className={className}
-      style={{
-        color: 'inherit' /* or any color you want */,
-        textDecoration: 'none' /* removes underline */,
-        display: 'block',
-        padding: '5px 0px',
-      }}
-    >
-      <Typography.Text className={className} style={style} ellipsis={{ tooltip: <>{children}</> }}>
-        {children}
-      </Typography.Text>
-    </SpaceLink>
+    <ListEntryLink path={path} data={data} style={style} className={className}>
+      {children}
+    </ListEntryLink>
   );
 };
 
@@ -267,9 +258,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           (a, b) => (a.userDefinedId ?? '').localeCompare(b.userDefinedId ?? ''),
         ),
         render: (id, record) => (
-          <ListEntryLink data={record} /* className={styles.HoverableTableCell} */>
+          <ProcessListEntryLink data={record} /* className={styles.HoverableTableCell} */>
             {record.type === 'folder' ? '' : id}
-          </ListEntryLink>
+          </ProcessListEntryLink>
         ),
       },
       {
@@ -279,7 +270,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         ellipsis: true,
         sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
         render: (_, record) => (
-          <ListEntryLink
+          <ProcessListEntryLink
             data={record}
             style={{
               color: record.id === folder.parentId ? 'grey' : undefined,
@@ -287,7 +278,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
             }}
           >
             <ProcessListItemIcon item={record} /> {record.name.highlighted}
-          </ListEntryLink>
+          </ProcessListEntryLink>
         ),
         responsive: ['xs', 'sm'],
       },
@@ -296,14 +287,14 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         dataIndex: 'description',
         key: 'Description',
         render: (_, record) => (
-          <ListEntryLink data={record}>
+          <ProcessListEntryLink data={record}>
             {(record.description.value ?? '').length == 0 ? (
               <>&emsp;</>
             ) : (
               record.description.highlighted
             )}
             {/* Makes the link-cell clickable, when there is no description */}
-          </ListEntryLink>
+          </ProcessListEntryLink>
         ),
         responsive: ['sm'],
       },
@@ -313,11 +304,11 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         key: 'Last Edited',
         render: (date: string, record) => (
           <>
-            <ListEntryLink data={record}>
+            <ProcessListEntryLink data={record}>
               <Tooltip title={generateDateString(date, true)}>
                 {generateTableDateString(date)}
               </Tooltip>
-            </ListEntryLink>
+            </ProcessListEntryLink>
           </>
         ),
         sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
@@ -329,11 +320,11 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         key: 'Created On',
         render: (date: Date, record) => (
           <>
-            <ListEntryLink data={record}>
+            <ProcessListEntryLink data={record}>
               <Tooltip title={generateDateString(date, true)}>
                 {generateTableDateString(date)}
               </Tooltip>
-            </ListEntryLink>
+            </ProcessListEntryLink>
           </>
         ),
         defaultSortOrder: 'descend',
@@ -351,7 +342,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               : mapIdToUsername(item.creatorId);
           return (
             <>
-              <ListEntryLink data={item}>{name}</ListEntryLink>
+              <ProcessListEntryLink data={item}>{name}</ProcessListEntryLink>
             </>
           );
         },
@@ -371,7 +362,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
 
           return (
             <>
-              <ListEntryLink data={item}>{name}</ListEntryLink>
+              <ProcessListEntryLink data={item}>{name}</ProcessListEntryLink>
             </>
           );
         },

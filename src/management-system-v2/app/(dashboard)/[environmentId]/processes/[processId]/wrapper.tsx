@@ -163,7 +163,7 @@ const Wrapper = ({
               onSelect={(_, option) => {
                 router.push(spaceURL(environment, `/processes/${option.value}`));
               }}
-              dropdownRender={(menu) => (
+              popupRender={(menu) => (
                 <>
                   {menu}
                   <AuthCan create Process>

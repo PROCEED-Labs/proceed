@@ -10,7 +10,8 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getUsersInSpace } from '@/lib/data/db/iam/memberships';
 
-const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
+const TasklistPage = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     return notFound();

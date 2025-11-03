@@ -28,7 +28,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   const dragBlockers = useEditorStateStore((state) => state.dragBlockers);
   const editingEnabled = useCanEdit();
 
-  const ref = useRef<HTMLDivElement>();
+  const ref = useRef<HTMLDivElement>(undefined);
   const frame = useFrame();
 
   const {

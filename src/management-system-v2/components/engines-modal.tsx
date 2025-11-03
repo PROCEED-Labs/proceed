@@ -56,7 +56,7 @@ const EnginesModal = ({
       title={title}
       onOk={() => form.submit()}
       // This destroy is important so that the initialValues are applied when the modal is reopened
-      destroyOnClose={true}
+      destroyOnHidden={true}
       {...modalProps}
     >
       <Form

@@ -4,10 +4,14 @@ import { notFound } from 'next/navigation';
 import { getCurrentEnvironment } from '@/components/auth';
 
 type DocumentationLayoutProps = {
-  params: { environmentId: string };
+  params: Promise<{ environmentId: string }>;
 } & React.PropsWithChildren;
 
-const DocumentationLayout: React.FC<DocumentationLayoutProps> = async ({ params, children }) => {
+const DocumentationLayout: React.FC<DocumentationLayoutProps> = async (props) => {
+  const params = await props.params;
+
+  const { children } = props;
+
   const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   const documentationSettings = await getSpaceSettingsValues(

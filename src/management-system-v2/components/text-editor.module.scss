@@ -9,36 +9,42 @@
   }
 }
 
-.EditorContainer :global {
-  .toastui-editor-defaultUI .toastui-editor-mode-switch {
+.EditorContainer {
+  :global(.toastui-editor-defaultUI .toastui-editor-mode-switch) {
     display: none !important;
     padding: 0 !important;
   }
 
-  .toastui-editor-defaultUI .toastui-editor .ProseMirror {
+  :global(.toastui-editor-defaultUI .toastui-editor .ProseMirror) {
     height: 100% !important;
   }
 
   /* Hide Toolbar for Write/Preview Toggle in Markdown view*/
-  .toastui-editor-defaultUI
-    .toastui-editor-toolbar
-    .toastui-editor-md-tab-container {
+  :global(
+      .toastui-editor-defaultUI
+        .toastui-editor-toolbar
+        .toastui-editor-md-tab-container
+    ) {
     display: none !important;
   }
 
-  .toastui-editor-defaultUI
-    .toastui-editor-toolbar
-    .toastui-editor-defaultUI-toolbar {
+  :global(
+      .toastui-editor-defaultUI
+        .toastui-editor-toolbar
+        .toastui-editor-defaultUI-toolbar
+    ) {
     padding: 0 14px !important;
   }
 
-  .toastui-editor-defaultUI
-    .toastui-editor-toolbar
-    .toastui-editor-popup.toastui-editor-popup-add-heading {
+  :global(
+      .toastui-editor-defaultUI
+        .toastui-editor-toolbar
+        .toastui-editor-popup.toastui-editor-popup-add-heading
+    ) {
     margin-left: 0 !important;
   }
 
-  .toastui-editor-contents table {
+  :global(.toastui-editor-contents table) {
     width: 100% !important;
   }
 }

@@ -37,27 +37,20 @@ const nextConfig = {
   },
   rewrites: async () => {
     return [
-      // Redirect base /processes to editor mode
       {
         source: '/processes',
-        destination: '/my/processes/editor/',
+        destination: '/my/processes/editor',
       },
       {
-        source: '/processes/',
-        destination: '/my/processes/editor/',
+        source: '/processes/:mode/:path*',
+        destination: '/my/processes/:mode/:path*',
       },
-      // Redirect /:environmentId/processes routes
       {
         source: '/:environmentId/processes',
         destination: '/:environmentId/processes/editor/',
       },
-      {
-        source: '/:environmentId/processes/',
-        destination: '/:environmentId/processes/editor/',
-      },
       // Catch-all rewrite for remaining paths (must be last)
       ...[
-        'processes',
         'spaces',
         'executions',
         'executions-dashboard',

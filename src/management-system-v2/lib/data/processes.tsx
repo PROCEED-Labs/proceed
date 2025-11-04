@@ -17,7 +17,7 @@ import {
   updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
@@ -640,17 +640,22 @@ export const saveProcessHtmlForm = async (
   html: string,
   spaceId: string,
 ) => {
-  const error = await checkValidity(definitionId, 'update', spaceId);
+  try {
+    const error = await checkValidity(definitionId, 'update', spaceId);
 
-  if (error) return error;
+    if (error) return error;
 
-  if (/-\d+$/.test(fileName))
-    return userError(
-      'Illegal attempt to overwrite a html form version!',
-      UserErrorType.ConstraintError,
-    );
+    if (/-\d+$/.test(fileName))
+      return userError(
+        'Illegal attempt to overwrite a html form version!',
+        UserErrorType.ConstraintError,
+      );
 
-  _saveProcessHtmlForm(definitionId, fileName, json, html, undefined, true);
+    await _saveProcessHtmlForm(definitionId, fileName, json, html, undefined, true);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 };
 
 export const getProcessScriptTaskData = async (

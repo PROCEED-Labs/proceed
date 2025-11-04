@@ -33,20 +33,20 @@ const AutomationsSection = () => {
   ];
 
   return (
-    <div>
+    <div style={{ marginBottom: '1.5rem' }}>
       <h2>
         <PlaySquareOutlined style={{ marginRight: '8px' }} />
         Automations
       </h2>
-      <h4>
+      <p>
         Short description goes here explaining what this section is for and what you can do here and
         so on and so forth. <br></br>There could be further links for the most regularly used
         sub-views within here.
-      </h4>
+      </p>
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
           gap: '16px',
         }}
       >

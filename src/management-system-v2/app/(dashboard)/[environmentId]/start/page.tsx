@@ -5,13 +5,34 @@ import ProcessesSection from './processes-section';
 import AutomationsSection from './automations-section';
 import PersonalSection from './personal-section';
 import HomeSection from './home-section';
+import FavoriteProcessesSection from './favorite-processes-section';
+import { getCurrentEnvironment } from '@/components/auth';
+import { getUsersFavourites } from '@/lib/data/users';
+import { getProcesses } from '@/lib/data/db/process';
 
-const StartPage = async () => {
+const StartPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
+
+  // Get favorite processes if process documentation is active
+  let favoriteProcesses: { id: string; name: string }[] = [];
+  if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE) {
+    const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+    const favs = await getUsersFavourites();
+
+    if (favs && favs.length > 0) {
+      const allProcesses = await getProcesses(activeEnvironment.spaceId, ability, false);
+      favoriteProcesses = allProcesses
+        .filter((process) => favs.includes(process.id))
+        .map((process) => ({ id: process.id, name: process.name }));
+    }
+  }
 
   return (
     <Content>
-      <h1>Welcome to Proceed</h1>
+      <h1>Welcome to PROCEED</h1>
+      {msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && favoriteProcesses.length > 0 && (
+        <FavoriteProcessesSection processes={favoriteProcesses} />
+      )}
       {msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && <MyTasksSection />}
       {msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && <ProcessesSection />}
       {msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && <AutomationsSection />}

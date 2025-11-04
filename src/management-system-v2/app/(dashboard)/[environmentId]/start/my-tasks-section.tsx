@@ -3,10 +3,7 @@
 import Link from 'next/link';
 import { Card } from 'antd';
 import { useParams } from 'next/navigation';
-import {
-  CheckSquareOutlined,
-  EditOutlined,
-} from '@ant-design/icons';
+import { CheckSquareOutlined, EditOutlined } from '@ant-design/icons';
 
 const MyTasksSection = () => {
   const params = useParams();
@@ -26,19 +23,19 @@ const MyTasksSection = () => {
   ];
 
   return (
-    <div>
+    <div style={{ marginBottom: '1.5rem' }}>
       <h2>
         <CheckSquareOutlined style={{ marginRight: '8px' }} />
         My Tasks
       </h2>
-      <h4>
+      <p>
         Short description goes here explaining what this section is for and what you can do here and
         so on and so forth.
-      </h4>
+      </p>
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
           gap: '16px',
         }}
       >

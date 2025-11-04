@@ -367,8 +367,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 undefined,
                 oldName
                   ? {
-                    name: oldName,
-                  }
+                      name: oldName,
+                    }
                   : undefined,
               );
             }}
@@ -420,37 +420,37 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             'bpmn:TextAnnotation',
             'proceed:GenericResource',
           ]) && (
-              <Space direction="vertical">
-                <Divider style={{ fontSize: '0.85rem' }}>
-                  Dimensions{' '}
-                  <Tooltip title="It is only possible to change the size of Tasks and Text Annotations. Please note: changing the dimensions of an element does not automatically trigger a redesign and may therefore disrupt existing layouts and connections.">
-                    <ExclamationCircleOutlined style={{ paddingRight: '3px', color: 'orange' }} />
-                  </Tooltip>
-                </Divider>
-                <Space>
-                  <InputNumber
-                    name="Width"
-                    placeholder="Element Width"
-                    style={{ fontSize: '0.85rem' }}
-                    addonBefore="Width"
-                    value={elementWidth}
-                    onChange={(val) => setElementWidth(val || 0)}
-                    onBlur={handleWidthChange}
-                  />
-                </Space>
-                <Space>
-                  <InputNumber
-                    name="Height"
-                    placeholder="Element Height"
-                    style={{ fontSize: '0.85rem' }}
-                    addonBefore="Height"
-                    value={elementHeight}
-                    onChange={(val) => setElementHeight(val || 0)}
-                    onBlur={handleHeightChange}
-                  />
-                </Space>
+            <Space direction="vertical">
+              <Divider style={{ fontSize: '0.85rem' }}>
+                Dimensions{' '}
+                <Tooltip title="It is only possible to change the size of Tasks and Text Annotations. Please note: changing the dimensions of an element does not automatically trigger a redesign and may therefore disrupt existing layouts and connections.">
+                  <ExclamationCircleOutlined style={{ paddingRight: '3px', color: 'orange' }} />
+                </Tooltip>
+              </Divider>
+              <Space>
+                <InputNumber
+                  name="Width"
+                  placeholder="Element Width"
+                  style={{ fontSize: '0.85rem' }}
+                  addonBefore="Width"
+                  value={elementWidth}
+                  onChange={(val) => setElementWidth(val || 0)}
+                  onBlur={handleWidthChange}
+                />
               </Space>
-            )}
+              <Space>
+                <InputNumber
+                  name="Height"
+                  placeholder="Element Height"
+                  style={{ fontSize: '0.85rem' }}
+                  addonBefore="Height"
+                  value={elementHeight}
+                  onChange={(val) => setElementHeight(val || 0)}
+                  onBlur={handleHeightChange}
+                />
+              </Space>
+            </Space>
+          )}
         </>
       ),
     },

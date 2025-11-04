@@ -14,7 +14,6 @@ import {
   Tabs,
   message,
   InputNumber,
-  Collapse,
   Tooltip,
 } from 'antd';
 import type { TabsProps } from 'antd';
@@ -25,7 +24,6 @@ import {
   getMetaDataFromElement,
   setProceedElement,
   deepCopyElementById,
-  setDefinitionsName,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -41,13 +39,12 @@ import { useEnvironment } from '@/components/auth-can';
 import { PotentialOwner, ResponsibleParty } from './potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
-import { Element, Shape } from 'bpmn-js/lib/model/Types';
+import { Shape } from 'bpmn-js/lib/model/Types';
 import { isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import VariableDefinition from './variable-definition';
-import { truthyFilter } from '@/lib/typescript-utils';
 
 // Elements that should not display the planned duration field
 // These are non-executable elements that don't have execution time

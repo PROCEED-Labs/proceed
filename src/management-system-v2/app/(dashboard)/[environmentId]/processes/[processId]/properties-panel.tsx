@@ -426,10 +426,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               <Space direction="vertical">
                 <Divider style={{ fontSize: '0.85rem' }}>
                   Dimensions{' '}
-                  <Tooltip
-                    open
-                    title="It is only possible to change the size of Tasks and Text Annotations. Please note: changing the dimensions of an element does not automatically trigger a redesign and may therefore disrupt existing layouts and connections."
-                  >
+                  <Tooltip title="It is only possible to change the size of Tasks and Text Annotations. Please note: changing the dimensions of an element does not automatically trigger a redesign and may therefore disrupt existing layouts and connections.">
                     <ExclamationCircleOutlined style={{ paddingRight: '3px', color: 'orange' }} />
                   </Tooltip>
                 </Divider>

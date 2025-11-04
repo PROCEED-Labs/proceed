@@ -269,51 +269,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     setActiveTab(key);
   };
 
-  const advanced = [
-    bpmnIsAny(selectedElement, [
-      'bpmn:Activity',
-      'bpmn:Participant',
-      'bpmn:TextAnnotation',
-      'proceed:GenericResource',
-    ]) && {
-      key: 'size',
-      title: (
-        <span style={{ lineHeight: '1.5rem' }}>
-          Size
-          <Tooltip title="Resized elements might not fit your layout.">
-            <ExclamationCircleOutlined style={{ paddingRight: '3px', color: 'orange' }} />
-          </Tooltip>
-        </span>
-      ),
-      children: (
-        <>
-          <Space>
-            <InputNumber
-              name="Width"
-              placeholder="Element Width"
-              style={{ fontSize: '0.85rem' }}
-              addonBefore="Width"
-              value={elementWidth}
-              onChange={(val) => setElementWidth(val || 0)}
-              onBlur={handleWidthChange}
-            />
-          </Space>
-          <Space>
-            <InputNumber
-              name="Height"
-              placeholder="Element Height"
-              style={{ fontSize: '0.85rem' }}
-              addonBefore="Height"
-              value={elementHeight}
-              onChange={(val) => setElementHeight(val || 0)}
-              onBlur={handleHeightChange}
-            />
-          </Space>
-        </>
-      ),
-    },
-  ].filter(truthyFilter);
-
   const tabs: TabsProps['items'] = [
     {
       key: 'Property-Panel-General',
@@ -462,17 +417,46 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               </Space>
             )}
 
-          {!!advanced.length && (
-            <Space className={styles.AdvancedSection} direction="vertical">
-              <Divider className={styles.AdvancedTitle}>Advanced</Divider>
-              {advanced.map((entry) => (
-                <Space key={entry.key} className={styles.AdvancedEntry} direction="vertical">
-                  <Divider className={styles.AdvancedEntryTitle}>{entry.title}</Divider>
-                  {entry.children}
+          {bpmnIsAny(selectedElement, [
+            'bpmn:Activity',
+            'bpmn:Participant',
+            'bpmn:TextAnnotation',
+            'proceed:GenericResource',
+          ]) && (
+              <Space direction="vertical">
+                <Divider style={{ fontSize: '0.85rem' }}>
+                  Dimensions{' '}
+                  <Tooltip
+                    open
+                    title="It is only possible to change the size of Tasks and Text Annotations. Please note: changing the dimensions of an element does not automatically trigger a redesign and may therefore disrupt existing layouts and connections."
+                  >
+                    <ExclamationCircleOutlined style={{ paddingRight: '3px', color: 'orange' }} />
+                  </Tooltip>
+                </Divider>
+                <Space>
+                  <InputNumber
+                    name="Width"
+                    placeholder="Element Width"
+                    style={{ fontSize: '0.85rem' }}
+                    addonBefore="Width"
+                    value={elementWidth}
+                    onChange={(val) => setElementWidth(val || 0)}
+                    onBlur={handleWidthChange}
+                  />
                 </Space>
-              ))}
-            </Space>
-          )}
+                <Space>
+                  <InputNumber
+                    name="Height"
+                    placeholder="Element Height"
+                    style={{ fontSize: '0.85rem' }}
+                    addonBefore="Height"
+                    value={elementHeight}
+                    onChange={(val) => setElementHeight(val || 0)}
+                    onBlur={handleHeightChange}
+                  />
+                </Space>
+              </Space>
+            )}
         </>
       ),
     },

@@ -36,24 +36,8 @@
 }
 
 .PropertiesPanel {
-  .AdvancedSection {
-    width: 100%;
-
-    .AdvancedTitle {
-      font-size: 0.85rem;
-      margin-bottom: 0;
-    }
-
-    .AdvancedEntry {
-      width: 80%;
-      position: relative;
-      left: 50%;
-      transform: translate(-50%);
-
-      .AdvancedEntryTitle {
-        font-size: 0.85rem;
-      }
-    }
+  .SizeSectionTitle {
+    font-size: 0.85rem;
   }
 }
 

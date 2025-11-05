@@ -19,9 +19,10 @@ import cn from 'classnames';
 
 import EditableText from '../_utils/EditableText';
 import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from './utils';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useCanEdit } from '@/lib/can-edit-context';
+import { DragPreviewContext } from './Column';
 
 const defaultHeaderContent =
   '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Header Cell</strong></b>';
@@ -161,6 +162,10 @@ const Table: UserComponent<TableProps> = ({
 
   const [targetCell, setTargetCell] = useState<{ row: number; col: number }>();
   const [hoveredAction, setHoveredAction] = useState<CellAction>();
+
+  // prevent that a drag preview interacts with the drag and drop functionality of the original
+  // object
+  const isDragPreview = useContext(DragPreviewContext);
 
   useEffect(() => {
     if (!isSelected) {
@@ -431,7 +436,7 @@ const Table: UserComponent<TableProps> = ({
       <table
         className="user-task-form-table"
         ref={(r) => {
-          r && connect(r);
+          !isDragPreview && r && connect(r);
         }}
       >
         <thead>

@@ -216,7 +216,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const handleWidthChange = async () => {
     const modeling = modeler!.getModeling();
 
-    modeling.resizeShape(selectedElement, {
+    modeling.resizeShape(selectedElement as Shape, {
       height: selectedElement.height,
       width: elementWidth,
       x: selectedElement.x,
@@ -227,7 +227,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const handleHeightChange = async () => {
     const modeling = modeler!.getModeling();
 
-    modeling.resizeShape(selectedElement, {
+    modeling.resizeShape(selectedElement as Shape, {
       width: selectedElement.width,
       height: elementHeight,
       x: selectedElement.x,

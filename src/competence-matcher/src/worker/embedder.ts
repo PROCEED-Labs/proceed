@@ -4,6 +4,7 @@ import { withJobUpdates, workerLogger, startHeartbeat, sendHeartbeat } from '../
 import { EmbeddingJob, ResourceEmbeddingJob, TaskEmbeddingJob } from '../utils/types';
 import { getDB } from '../utils/db';
 import { config } from '../config';
+import { withOnnxLock } from '../utils/onnx-lock';
 
 /**
  * New embedder worker that stays alive and processes jobs sequentially
@@ -16,7 +17,7 @@ let modelsInitialised = false;
 async function ensureModelsInitialised() {
   if (modelsInitialised) return;
   try {
-    await Embedding.getInstance();
+    await withOnnxLock(() => Embedding.getInstance());
     modelsInitialised = true;
     workerLogger('system', 'debug', 'Embedder worker online', { threadId });
   } catch (err) {
@@ -116,7 +117,8 @@ async function processResourceEmbeddingJob(job: ResourceEmbeddingJob): Promise<v
     for (const { listId, resourceId, competenceId, text, type } of work) {
       sendHeartbeat('embedder');
       try {
-        const [vector] = await Embedding.embed(text);
+        const vectors = await withOnnxLock(() => Embedding.embed(text));
+        const [vector] = vectors;
 
         sendHeartbeat('embedder');
 
@@ -183,7 +185,8 @@ async function processTaskEmbeddingJob(job: TaskEmbeddingJob): Promise<void> {
         sendHeartbeat('embedder');
 
         try {
-          const [vector] = await Embedding.embed(description);
+          const vectors = await withOnnxLock(() => Embedding.embed(description));
+          const [vector] = vectors;
 
           sendHeartbeat('embedder');
 

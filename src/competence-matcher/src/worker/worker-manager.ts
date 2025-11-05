@@ -30,11 +30,13 @@ class WorkerPool {
   private readonly workerType: workerTypes;
   private readonly poolSize: number;
   private readonly maxJobRetries: number;
+  private readonly workerInitData?: Record<string, unknown>;
 
-  constructor(workerType: workerTypes, poolSize: number) {
+  constructor(workerType: workerTypes, poolSize: number, workerInitData?: Record<string, unknown>) {
     this.workerType = workerType;
     this.poolSize = poolSize;
     this.maxJobRetries = Math.max(0, jobMaxRetries);
+    this.workerInitData = workerInitData;
 
     logger.info('worker', `Initializing ${workerType} pool with ${poolSize} workers`, {
       workerType,
@@ -74,7 +76,7 @@ class WorkerPool {
   }
 
   private createWorker(): void {
-    const worker = createWorker(this.workerType);
+    const worker = createWorker(this.workerType, this.workerInitData);
     this.workers.push(worker);
 
     logger.debug('worker', `Created new ${this.workerType} worker`, {
@@ -515,8 +517,14 @@ class WorkerManager {
       matchingWorkers,
     });
 
-    this.embeddingPool = new WorkerPool('embedder', embeddingWorkers);
-    this.matchingPool = new WorkerPool('matcher', matchingWorkers);
+    const onnxLockBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+    const onnxLockView = new Int32Array(onnxLockBuffer);
+    Atomics.store(onnxLockView, 0, 0);
+
+    const sharedWorkerData = { onnxLock: onnxLockBuffer } as Record<string, unknown>;
+
+    this.embeddingPool = new WorkerPool('embedder', embeddingWorkers, sharedWorkerData);
+    this.matchingPool = new WorkerPool('matcher', matchingWorkers, sharedWorkerData);
   }
 
   public async enqueue(job: EmbeddingJob | MatchingJob, workerType: workerTypes): Promise<any> {

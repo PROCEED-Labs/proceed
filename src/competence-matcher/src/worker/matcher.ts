@@ -6,6 +6,7 @@ import ZeroShot, { labels } from '../tasks/semantic-zeroshot';
 // import CrossEncoder from '../tasks/cross-encode';
 import { config } from '../config';
 import { getDB } from '../utils/db';
+import { withOnnxLock } from '../utils/onnx-lock';
 
 /**
  * New matcher worker that stays alive and processes jobs sequentially
@@ -18,7 +19,7 @@ let modelsInitialised = false;
 async function ensureModelsInitialised() {
   if (modelsInitialised) return;
   try {
-    await ZeroShot.getInstance();
+    await withOnnxLock(() => ZeroShot.getInstance());
     modelsInitialised = true;
     workerLogger('system', 'debug', 'Matcher worker online', { threadId });
   } catch (err) {
@@ -124,12 +125,18 @@ parentPort.on('message', async (message: any) => {
                   config.matchDistanceMultiplier,
               );
 
-              const sentiment = await ZeroShot.nliBiDirectional(description, match.text);
+              const sentiment = await withOnnxLock(() =>
+                ZeroShot.nliBiDirectional(description, match.text),
+              );
 
               sendHeartbeat('matcher');
 
-              const contradiction = await ZeroShot.contradictionCheck(description, match.text);
-              const alignment = await ZeroShot.alignmentCheck(description, match.text);
+              const contradiction = await withOnnxLock(() =>
+                ZeroShot.contradictionCheck(description, match.text),
+              );
+              const alignment = await withOnnxLock(() =>
+                ZeroShot.alignmentCheck(description, match.text),
+              );
 
               sendHeartbeat('matcher');
 

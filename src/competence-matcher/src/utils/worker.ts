@@ -7,7 +7,7 @@ import { config } from '../config';
 
 const {} = config;
 
-export function createWorker(filename: string): Worker {
+export function createWorker(filename: string, workerData?: any): Worker {
   const tsPath = path.resolve(__dirname, `../worker/${filename}.ts`);
   const jsPath = path.resolve(__dirname, `../worker/${filename}.js`);
   const isTs = fs.existsSync(tsPath);
@@ -18,7 +18,9 @@ export function createWorker(filename: string): Worker {
     ? [...process.execArgv, '-r', 'ts-node/register/transpile-only']
     : process.execArgv;
 
-  const worker = new Worker(workerFile, { execArgv });
+  const options = workerData ? { execArgv, workerData } : { execArgv };
+
+  const worker = new Worker(workerFile, options);
 
   return worker;
 }

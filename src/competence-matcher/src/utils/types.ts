@@ -119,14 +119,23 @@ export interface Job {
   dbName: string;
 }
 
-export interface EmbeddingJob extends Job {
+export interface ResourceEmbeddingJob extends Job {
+  mode?: 'resource';
   tasks: EmbeddingTask[];
 }
+
+export interface TaskEmbeddingJob extends Job {
+  mode: 'task';
+  tasks: MatchingTask[];
+}
+
+export type EmbeddingJob = ResourceEmbeddingJob | TaskEmbeddingJob;
 
 export interface MatchingJob extends Job {
   listId?: string; // Which List to match against
   resourceId?: string; // Optional: If matching against a single resource
   tasks: MatchingTask[]; // Tasks to match
+  taskEmbeddings?: Record<string, number[]>; // Optional precomputed task embeddings keyed by taskId
 }
 
 export type ResourceRanking = {

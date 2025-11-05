@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PATHS } from '../server';
 import { getDB } from '../utils/db';
-import workerManager from '../worker/worker-manager';
 import {
   CompetenceInput,
   GroupedMatchResults,
@@ -19,6 +18,7 @@ import {
   CompetenceMatcherError,
 } from '../utils/errors';
 import { getLogger } from '../utils/logger';
+import { scheduleMatchingPipeline } from '../tasks/matching-pipeline';
 
 const logger = getLogger();
 
@@ -130,6 +130,16 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
         );
       }
 
+      try {
+        db.updateJobStatus(jobId, 'preprocessing');
+      } catch (error) {
+        throw new DatabaseError(
+          'updateJobStatus',
+          error instanceof Error ? error : new Error(String(error)),
+          requestId,
+        );
+      }
+
       const job: MatchingJob = {
         jobId,
         dbName: req.dbName!,
@@ -160,7 +170,7 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
       };
 
       try {
-        workerManager.enqueue(job, 'matcher');
+        scheduleMatchingPipeline(job, job.tasks, requestId);
       } catch (error) {
         throw new CompetenceMatcherError(
           `Failed to enqueue matching job: ${error instanceof Error ? error.message : String(error)}`,
@@ -176,7 +186,7 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
         .setHeader('Location', `${PATHS.match}/jobs/${jobId}`)
         // Accepted response
         .status(202)
-        .json({ jobId, status: 'pending' });
+        .json({ jobId, status: 'preprocessing' });
       return;
     }
 
@@ -218,19 +228,6 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
       // Chain the matching job to start after embedding completes
       embeddingResult.promise
         .then(() => {
-          // Embedding is done, now update matching job status and start it
-          try {
-            db.updateJobStatus(matchingJobId, 'pending');
-          } catch (error) {
-            logger.error(
-              'system',
-              'Failed to update matching job status to pending',
-              error instanceof Error ? error : new Error(String(error)),
-              {},
-              requestId,
-            );
-          }
-
           const matchingJob: MatchingJob = {
             jobId: matchingJobId,
             dbName: req.dbName!,
@@ -260,7 +257,7 @@ export function matchCompetenceList(req: Request, res: Response, next: NextFunct
             }),
           };
 
-          workerManager.enqueue(matchingJob, 'matcher');
+          scheduleMatchingPipeline(matchingJob, matchingJob.tasks, requestId);
         })
         .catch((error) => {
           // Embedding failed, mark matching job as failed too

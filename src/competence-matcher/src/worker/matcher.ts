@@ -1,11 +1,12 @@
 import { parentPort, threadId } from 'worker_threads';
-import Embedding from '../tasks/embedding';
 import { withJobUpdates, workerLogger, startHeartbeat, sendHeartbeat } from '../utils/worker';
 import { addReason } from '../tasks/reason';
 import { Match, MatchingJob } from '../utils/types';
 import ZeroShot, { labels } from '../tasks/semantic-zeroshot';
 // import CrossEncoder from '../tasks/cross-encode';
 import { config } from '../config';
+import { getDB } from '../utils/db';
+import Embedding from '../tasks/embedding';
 
 /**
  * New matcher worker that stays alive and processes jobs sequentially
@@ -18,7 +19,6 @@ let modelsInitialised = false;
 async function ensureModelsInitialised() {
   if (modelsInitialised) return;
   try {
-    await Embedding.getInstance();
     await ZeroShot.getInstance();
     modelsInitialised = true;
     workerLogger('system', 'debug', 'Matcher worker online', { threadId });
@@ -93,23 +93,32 @@ parentPort.on('message', async (message: any) => {
           sendHeartbeat('matcher');
 
           try {
-            // Generate embedding for the task description
-            // Todo: Handle embedding via the dedicated embedding worker
-            const [vector] = await Embedding.embed(description);
+            // Retrieve stored embedding for the task
+            let vector = job.taskEmbeddings?.[taskId] ?? db.getTaskEmbedding(jobId, taskId);
+
+            if (!vector) {
+              workerLogger(jobId, 'warn', 'Task embedding missing, computing on matcher worker', {
+                threadId,
+                taskId,
+              });
+
+              const [fallback] = await Embedding.embed(description);
+              vector = fallback;
+            }
+
+            if (!vector) {
+              throw new Error(`Unable to obtain embedding for task ${taskId}`);
+            }
 
             sendHeartbeat('matcher');
 
             // Search for matches in the competence database
-            let matches: Match[] = db.searchEmbedding(vector, {
+            const matches: Match[] = db.searchEmbedding(vector, {
               filter: {
                 listId: listIdFilter,
                 resourceId: resourceIdFilter, // Optional: If matching against a single resource
               },
             });
-
-            sendHeartbeat('matcher');
-
-            // Process each match
             for (const match of matches) {
               let flag = 'neutral'; // Default flag
 
@@ -120,7 +129,6 @@ parentPort.on('message', async (message: any) => {
                   config.matchDistanceMultiplier,
               );
 
-              // Get Alignment via Zero-Shot
               const sentiment = await ZeroShot.nliBiDirectional(description, match.text);
 
               sendHeartbeat('matcher');
@@ -130,12 +138,6 @@ parentPort.on('message', async (message: any) => {
 
               sendHeartbeat('matcher');
 
-              // console.log('task: ', description);
-              // console.log('capability: ', match.text);
-              // console.log('alignment: ', alignment);
-              // console.log('________________________________________');
-
-              // First: Contradicting?
               if (
                 sentiment.ranking[0] == 'contradict' ||
                 sentiment.contradict > config.contradictionThreshold ||
@@ -143,22 +145,18 @@ parentPort.on('message', async (message: any) => {
               ) {
                 flag = 'contradicting';
                 newDistance = 0.0;
-                // Second: Aligning?
               } else if (
                 sentiment.entail > config.entailmentThreshold &&
                 match.distance > config.alignmentDistanceThreshold &&
                 alignment.aligning
               ) {
                 flag = 'aligning';
-                // Boost similarity-based distance
                 newDistance = Math.min(1, newDistance * config.alignmentBoostMultiplier);
               } else {
                 flag = 'neutral';
-                // Reduce distance for neutral
                 newDistance *= config.neutralReductionMultiplier;
               }
 
-              // Store match result for reasoning workaround
               matchResults[description].push({
                 jobId,
                 taskId,
@@ -224,6 +222,21 @@ parentPort.on('message', async (message: any) => {
       error instanceof Error ? error : new Error(String(error)),
     );
   } finally {
+    try {
+      const cleanupDb = getDB(job.dbName);
+      cleanupDb.deleteTaskEmbeddings(job.jobId);
+    } catch (error) {
+      workerLogger(
+        job.jobId,
+        'warn',
+        'Failed to clean up task embeddings after matching job',
+        {
+          threadId,
+        },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+    }
+
     // Always notify job completion so worker can process next job
     parentPort!.postMessage({
       type: 'job_completed',

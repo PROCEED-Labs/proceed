@@ -1,8 +1,8 @@
 import { parentPort, threadId } from 'worker_threads';
 import Embedding from '../tasks/embedding';
-import { splitSemantically } from '../tasks/semantic-split';
 import { withJobUpdates, workerLogger, startHeartbeat, sendHeartbeat } from '../utils/worker';
-import { EmbeddingJob } from '../utils/types';
+import { EmbeddingJob, ResourceEmbeddingJob, TaskEmbeddingJob } from '../utils/types';
+import { getDB } from '../utils/db';
 import { config } from '../config';
 
 /**
@@ -36,6 +36,7 @@ parentPort.on('message', async (message: any) => {
     threadId,
     jobId: job.jobId,
     taskCount: job.tasks?.length || 0,
+    mode: job.mode ?? 'resource',
   });
 
   // ensure models are initialised (but do not run this for health_check)
@@ -60,89 +61,30 @@ parentPort.on('message', async (message: any) => {
     return;
   }
 
-  workerLogger(job.jobId, 'debug', `Starting embedding job with ${job.tasks.length} tasks`, {
-    threadId,
-    taskCount: job.tasks.length,
-  });
-
   try {
-    await withJobUpdates<EmbeddingJob>(job, async (db, { tasks, jobId }) => {
-      let work = tasks;
+    if (job.mode === 'task') {
+      await processTaskEmbeddingJob(job as TaskEmbeddingJob);
+    } else {
+      await processResourceEmbeddingJob(job as ResourceEmbeddingJob);
+    }
 
-      // TODO: Re-enable semantic splitting once the worker crash issue is resolved
-      // Split tasks semantically
-      // work = await splitSemantically(tasks);
-
-      // Process each embedding task
-      for (const { listId, resourceId, competenceId, text, type } of work) {
-        sendHeartbeat('embedder');
-        try {
-          // Generate embedding for the text
-          const [vector] = await Embedding.embed(text);
-
-          sendHeartbeat('embedder');
-
-          workerLogger(jobId, 'debug', `Generated embedding for ${type} text`, {
-            threadId,
-            competenceId,
-            textLength: text.length,
-          });
-
-          // Store embedding in database
-          db.upsertEmbedding({
-            listId,
-            resourceId,
-            competenceId,
-            text,
-            type,
-            embedding: vector,
-          });
-
-          sendHeartbeat('embedder');
-        } catch (error) {
-          // Log the error but continue with other tasks
-          workerLogger(
-            jobId,
-            'error',
-            `Failed to process embedding task`,
-            {
-              threadId,
-              competenceId,
-              type,
-            },
-            error instanceof Error ? error : new Error(String(error)),
-          );
-
-          // Individual task errors don't fail the entire job
-          // Send error notification but continue processing
-          parentPort!.postMessage({
-            type: 'error',
-            jobId,
-            error: `Failed to process embedding task: ${error instanceof Error ? error.message : String(error)}`,
-          });
-        }
-      }
-    });
-
-    // Job completed successfully
     workerLogger(job.jobId, 'debug', `Embedding job completed`, {
       threadId,
       taskCount: job.tasks.length,
+      mode: job.mode ?? 'resource',
     });
   } catch (error) {
-    // Job-level error - already handled by withJobUpdates
-    // Just log it for worker context
     workerLogger(
       job.jobId,
       'debug',
       `Embedding job failed`,
       {
         threadId,
+        mode: job.mode ?? 'resource',
       },
       error instanceof Error ? error : new Error(String(error)),
     );
   } finally {
-    // Always notify job completion so worker can process next job
     parentPort!.postMessage({
       type: 'job_completed',
       jobId: job.jobId,
@@ -153,3 +95,144 @@ parentPort.on('message', async (message: any) => {
 workerLogger('system', 'debug', `Embedder worker thread ready`, {
   threadId,
 });
+
+async function processResourceEmbeddingJob(job: ResourceEmbeddingJob): Promise<void> {
+  workerLogger(
+    job.jobId,
+    'debug',
+    `Starting resource embedding job with ${job.tasks.length} tasks`,
+    {
+      threadId,
+      taskCount: job.tasks.length,
+    },
+  );
+
+  await withJobUpdates<ResourceEmbeddingJob>(job, async (db, { tasks, jobId }) => {
+    let work = tasks;
+
+    // TODO: Re-enable semantic splitting once the worker crash issue is resolved
+    // work = await splitSemantically(tasks);
+
+    for (const { listId, resourceId, competenceId, text, type } of work) {
+      sendHeartbeat('embedder');
+      try {
+        const [vector] = await Embedding.embed(text);
+
+        sendHeartbeat('embedder');
+
+        workerLogger(jobId, 'debug', `Generated embedding for ${type} text`, {
+          threadId,
+          competenceId,
+          textLength: text.length,
+        });
+
+        db.upsertEmbedding({
+          listId,
+          resourceId,
+          competenceId,
+          text,
+          type,
+          embedding: vector,
+        });
+
+        sendHeartbeat('embedder');
+      } catch (error) {
+        workerLogger(
+          jobId,
+          'error',
+          `Failed to process embedding task`,
+          {
+            threadId,
+            competenceId,
+            type,
+          },
+          error instanceof Error ? error : new Error(String(error)),
+        );
+
+        parentPort!.postMessage({
+          type: 'error',
+          jobId,
+          error: `Failed to process embedding task: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      }
+    }
+  });
+}
+
+async function processTaskEmbeddingJob(job: TaskEmbeddingJob): Promise<void> {
+  workerLogger(job.jobId, 'debug', `Starting task embedding job with ${job.tasks.length} tasks`, {
+    threadId,
+    taskCount: job.tasks.length,
+  });
+
+  const dbInstance = getDB(job.dbName);
+
+  await withJobUpdates<TaskEmbeddingJob>(
+    job,
+    async (db, { tasks, jobId }) => {
+      for (const task of tasks) {
+        const { taskId, description } = task;
+        if (!description) {
+          workerLogger(jobId, 'warn', 'Skipping task without description for embedding', {
+            threadId,
+            taskId,
+          });
+          continue;
+        }
+
+        sendHeartbeat('embedder');
+
+        try {
+          const [vector] = await Embedding.embed(description);
+
+          sendHeartbeat('embedder');
+
+          workerLogger(jobId, 'debug', 'Generated task embedding', {
+            threadId,
+            taskId,
+            textLength: description.length,
+          });
+
+          db.upsertTaskEmbedding(jobId, taskId, vector);
+
+          sendHeartbeat('embedder');
+        } catch (error) {
+          workerLogger(
+            jobId,
+            'error',
+            'Failed to generate task embedding',
+            {
+              threadId,
+              taskId,
+            },
+            error instanceof Error ? error : new Error(String(error)),
+          );
+
+          parentPort!.postMessage({
+            type: 'error',
+            jobId,
+            error: `Failed to process task ${taskId}: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      }
+    },
+    {
+      onStart: () => {
+        dbInstance.updateJobStatus(job.jobId, 'preprocessing');
+        parentPort!.postMessage({
+          type: 'status',
+          jobId: job.jobId,
+          status: 'preprocessing',
+        });
+      },
+      onDone: () => {
+        dbInstance.updateJobStatus(job.jobId, 'pending');
+        parentPort!.postMessage({
+          type: 'status',
+          jobId: job.jobId,
+          status: 'pending',
+        });
+      },
+    },
+  );
+}

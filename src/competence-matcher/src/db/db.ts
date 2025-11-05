@@ -81,6 +81,16 @@ class VectorDataBase {
       ON match_results(job_id);
     `);
 
+    // task embeddings per job (transient, cleared after matching)
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS task_embedding (
+        job_id   TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+        task_id  TEXT NOT NULL,
+        embedding FLOAT32[${this.embeddingDim}],
+        PRIMARY KEY (job_id, task_id)
+      );
+    `);
+
     // resource_list
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS resource_list (
@@ -862,6 +872,51 @@ class VectorDataBase {
       distance: 1 - row.distance, // Convert distance to similarity
     }));
     return result;
+  }
+
+  /**
+   * Store or update the embedding vector for a specific task within a job.
+   */
+  public upsertTaskEmbedding(jobId: string, taskId: string, embedding: number[]): void {
+    if (embedding.length !== this.embeddingDim) {
+      throw new Error(`Task embedding must have length ${this.embeddingDim}`);
+    }
+
+    this.db
+      .prepare(
+        `
+        INSERT INTO task_embedding (job_id, task_id, embedding)
+        VALUES (?, ?, vec_f32(?))
+        ON CONFLICT(job_id, task_id)
+        DO UPDATE SET embedding = excluded.embedding
+      `,
+      )
+      .run(jobId, taskId, new Float32Array(embedding));
+  }
+
+  /**
+   * Retrieve the embedding for a given task within a job.
+   */
+  public getTaskEmbedding(jobId: string, taskId: string): number[] | null {
+    const row = this.db
+      .prepare(
+        `
+        SELECT embedding
+        FROM task_embedding
+        WHERE job_id = ? AND task_id = ?
+      `,
+      )
+      .get(jobId, taskId) as { embedding: Float32Array } | undefined;
+
+    if (!row) return null;
+    return Array.from(row.embedding);
+  }
+
+  /**
+   * Remove all task embeddings associated with a job.
+   */
+  public deleteTaskEmbeddings(jobId: string): void {
+    this.db.prepare(`DELETE FROM task_embedding WHERE job_id = ?`).run(jobId);
   }
 }
 

@@ -1,7 +1,7 @@
 import { parentPort, threadId } from 'worker_threads';
 import Embedding from '../tasks/embedding';
 import { splitSemantically } from '../tasks/semantic-split';
-import { withJobUpdates, workerLogger, startHeartbeat } from '../utils/worker';
+import { withJobUpdates, workerLogger, startHeartbeat, sendHeartbeat } from '../utils/worker';
 import { EmbeddingJob } from '../utils/types';
 import { config } from '../config';
 
@@ -75,9 +75,12 @@ parentPort.on('message', async (message: any) => {
 
       // Process each embedding task
       for (const { listId, resourceId, competenceId, text, type } of work) {
+        sendHeartbeat('embedder');
         try {
           // Generate embedding for the text
           const [vector] = await Embedding.embed(text);
+
+          sendHeartbeat('embedder');
 
           workerLogger(jobId, 'debug', `Generated embedding for ${type} text`, {
             threadId,
@@ -94,6 +97,8 @@ parentPort.on('message', async (message: any) => {
             type,
             embedding: vector,
           });
+
+          sendHeartbeat('embedder');
         } catch (error) {
           // Log the error but continue with other tasks
           workerLogger(

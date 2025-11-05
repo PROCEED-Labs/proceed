@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { Worker, parentPort } from 'worker_threads';
+import { Worker, parentPort, threadId } from 'worker_threads';
 import VectorDataBase from '../db/db';
 import { getDB } from './db';
 import { config } from '../config';
@@ -122,8 +122,6 @@ export function startHeartbeat(workerType: string, intervalMs: number = 20000): 
     throw new Error('startHeartbeat can only be called from worker threads');
   }
 
-  const { threadId } = require('worker_threads');
-
   const sendHeartbeat = () => {
     workerLogger('system', 'debug', `${workerType} worker sending heartbeat`, {
       workerType,
@@ -148,4 +146,18 @@ export function startHeartbeat(workerType: string, intervalMs: number = 20000): 
   return () => {
     clearInterval(heartbeatInterval);
   };
+}
+
+export function sendHeartbeat(workerType: string): void {
+  if (!parentPort) {
+    throw new Error('sendHeartbeat can only be called from worker threads');
+  }
+
+  parentPort.postMessage({
+    type: 'heartbeat',
+    workerType,
+    threadId,
+    timestamp: Date.now(),
+    source: 'manual',
+  });
 }

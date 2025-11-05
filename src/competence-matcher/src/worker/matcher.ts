@@ -1,6 +1,6 @@
 import { parentPort, threadId } from 'worker_threads';
 import Embedding from '../tasks/embedding';
-import { withJobUpdates, workerLogger, startHeartbeat } from '../utils/worker';
+import { withJobUpdates, workerLogger, startHeartbeat, sendHeartbeat } from '../utils/worker';
 import { addReason } from '../tasks/reason';
 import { Match, MatchingJob } from '../utils/types';
 import ZeroShot, { labels } from '../tasks/semantic-zeroshot';
@@ -90,10 +90,14 @@ parentPort.on('message', async (message: any) => {
             continue; // Skip tasks without description
           }
 
+          sendHeartbeat('matcher');
+
           try {
             // Generate embedding for the task description
             // Todo: Handle embedding via the dedicated embedding worker
             const [vector] = await Embedding.embed(description);
+
+            sendHeartbeat('matcher');
 
             // Search for matches in the competence database
             let matches: Match[] = db.searchEmbedding(vector, {
@@ -102,6 +106,8 @@ parentPort.on('message', async (message: any) => {
                 resourceId: resourceIdFilter, // Optional: If matching against a single resource
               },
             });
+
+            sendHeartbeat('matcher');
 
             // Process each match
             for (const match of matches) {
@@ -117,8 +123,12 @@ parentPort.on('message', async (message: any) => {
               // Get Alignment via Zero-Shot
               const sentiment = await ZeroShot.nliBiDirectional(description, match.text);
 
+              sendHeartbeat('matcher');
+
               const contradiction = await ZeroShot.contradictionCheck(description, match.text);
               const alignment = await ZeroShot.alignmentCheck(description, match.text);
+
+              sendHeartbeat('matcher');
 
               // console.log('task: ', description);
               // console.log('capability: ', match.text);

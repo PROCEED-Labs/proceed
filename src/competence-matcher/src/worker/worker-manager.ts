@@ -7,7 +7,13 @@ import { getLogger } from '../utils/logger';
 import { addReason } from '../tasks/reason';
 import { getDB } from '../utils/db';
 
-const { embeddingWorkers, matchingWorkers, workerHeartbeatInterval, workerDeathTimeout } = config;
+const {
+  embeddingWorkers,
+  matchingWorkers,
+  workerHeartbeatInterval,
+  workerDeathTimeout,
+  jobMaxRetries,
+} = config;
 const logger = getLogger();
 
 /**
@@ -23,10 +29,12 @@ class WorkerPool {
   private workersBeingReplaced: Set<number> = new Set(); // Prevent double replacement using threadId
   private readonly workerType: workerTypes;
   private readonly poolSize: number;
+  private readonly maxJobRetries: number;
 
   constructor(workerType: workerTypes, poolSize: number) {
     this.workerType = workerType;
     this.poolSize = poolSize;
+    this.maxJobRetries = Math.max(0, jobMaxRetries);
 
     logger.info('worker', `Initializing ${workerType} pool with ${poolSize} workers`, {
       workerType,
@@ -160,6 +168,21 @@ class WorkerPool {
       busyWorkersBefore: this.busyWorkers.size,
     });
 
+    const activeJob = this.activeJobs.get(worker);
+    if (activeJob) {
+      this.activeJobs.delete(worker);
+      this.busyWorkers.delete(worker);
+
+      logger.warn('worker', `Recovering job from unresponsive ${this.workerType} worker`, {
+        workerType: this.workerType,
+        threadId: worker.threadId,
+        jobId: activeJob.job.jobId,
+        retryCount: activeJob.retryCount,
+      });
+
+      this.handleJobFailure(activeJob, new Error('Worker heartbeat timeout'));
+    }
+
     this.removeWorker(worker);
 
     logger.info('worker', `Creating replacement ${this.workerType} worker after timeout`, {
@@ -180,6 +203,8 @@ class WorkerPool {
     });
 
     this.workersBeingReplaced.delete(worker.threadId);
+
+    this.processNextJob();
   }
 
   private handleWorkerFailure(worker: Worker, error: Error): void {
@@ -215,6 +240,7 @@ class WorkerPool {
     if (activeJob) {
       // Recover the job that was being processed
       this.activeJobs.delete(worker);
+      this.busyWorkers.delete(worker);
       logger.warn('worker', `Recovering job from failed ${this.workerType} worker`, {
         workerType: this.workerType,
         threadId: worker.threadId,
@@ -248,6 +274,10 @@ class WorkerPool {
     );
 
     this.workersBeingReplaced.delete(worker.threadId);
+
+    if (activeJob) {
+      this.processNextJob();
+    }
   }
 
   private removeWorker(worker: Worker): void {
@@ -383,13 +413,13 @@ class WorkerPool {
   private handleJobFailure(queueItem: JobQueueItem, error: Error): void {
     const { job, resolve, reject, retryCount } = queueItem;
 
-    if (retryCount < 2) {
+    if (retryCount < this.maxJobRetries) {
       // Requeue job with incremented retry count
       logger.info('worker', `Retrying ${this.workerType} job`, {
         workerType: this.workerType,
         jobId: job.jobId,
         retryCount: retryCount + 1,
-        maxRetries: 2,
+        maxRetries: this.maxJobRetries,
         error: error.message,
       });
 
@@ -400,7 +430,7 @@ class WorkerPool {
         retryCount: retryCount + 1,
       });
     } else {
-      // Final failure after 2 retries
+      // Final failure after reaching retry limit
       logger.error(
         'worker',
         `${this.workerType} job failed permanently after max retries`,

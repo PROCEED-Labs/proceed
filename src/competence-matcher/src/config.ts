@@ -21,8 +21,8 @@ export const config = {
   splittingSymbol: process.env.SPLITTING_SYMBOL || '<SPLITTING_SYMBOL>',
   embeddingWorkers: parseInt(process.env.EMBEDDING_WORKERS || '1', 10), // Number of embedding workers to keep alive
   matchingWorkers: parseInt(process.env.MATCHING_WORKERS || '1', 10), // Number of matching workers to keep alive
-  workerHeartbeatInterval: parseInt(process.env.WORKER_HEARTBEAT_INTERVAL || '30', 10) * 1_000, // Worker heartbeat interval in seconds (converted to ms) - how often workers send heartbeats
-  workerDeathTimeout: parseInt(process.env.WORKER_DEATH_TIMEOUT || '45', 10) * 1_000, // Worker death timeout in seconds (converted to ms) - how long to wait before considering worker dead
+  workerHeartbeatInterval: parseInt(process.env.WORKER_HEARTBEAT_INTERVAL || '60', 10) * 1_000, // Worker heartbeat interval in seconds (converted to ms) - how often workers send heartbeats
+  workerDeathTimeout: parseInt(process.env.WORKER_DEATH_TIMEOUT || '240', 10) * 1_000, // Worker death timeout in seconds (converted to ms) - how long to wait before considering worker dead
   maxJobTime: parseInt(process.env.MAX_JOB_TIME || '600', 10) * 1_000, // converted from seconds to milliseconds
   logLevel: process.env.LOG_LEVEL || 'INFO', // Levels: 'DEBUG', 'INFO', 'WARN', 'ERROR'
   logTypes: process.env.LOG_TYPES || 'server,request,worker,database,model,system',
@@ -39,6 +39,7 @@ export const config = {
     1_000, // Maximum time to wait for all worker pools to become ready at startup (seconds to ms)
   maxWorkerRetries: parseInt(process.env.MAX_WORKER_RETRIES || '3', 10), // Maximum worker restart attempts before escalating to ERROR
   workerRetryWindow: parseInt(process.env.WORKER_RETRY_WINDOW || '300', 10) * 1_000, // Time window in seconds to reset retry count (converted to ms)
+  jobMaxRetries: parseInt(process.env.JOB_MAX_RETRIES || '3', 10), // Maximum number of retries for a job before failing it
   maxOllamaRetries: parseInt(process.env.MAX_OLLAMA_RETRIES || '5', 10), // Maximum model pull retry attempts
   ollamaRetryDelay: parseInt(process.env.OLLAMA_RETRY_DELAY || '30', 10) * 1_000, // Base delay between retries in seconds (converted to ms)
   ollamaRetryBackoff: parseFloat(process.env.OLLAMA_RETRY_BACKOFF || '1.5'), // Exponential backoff multiplier

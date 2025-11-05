@@ -38,6 +38,7 @@ import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import VariableDefinition from './variable-definition';
 import SuggestPotentialOwner from '@/components/competence/potential-owner/suggest-potential-owner';
+import { enableCompetenceMatching } from 'FeatureFlags';
 
 // Elements that should not display the planned duration field
 // These are non-executable elements that don't have execution time
@@ -393,7 +394,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             {selectedElement.type === 'bpmn:UserTask' && (
               <>
                 <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
-                {env.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE && (
+                {(enableCompetenceMatching || env.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE) && (
                   <SuggestPotentialOwner selectedElement={selectedElement} modeler={modeler} />
                 )}
                 <Divider />

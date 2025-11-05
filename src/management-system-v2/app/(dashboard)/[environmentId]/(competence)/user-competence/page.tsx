@@ -13,7 +13,7 @@ const UserCompetencePage = async () => {
   if (user?.isGuest) return <UnauthorizedFallback />;
 
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) return notFound();
-  
+
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE) return notFound();
 

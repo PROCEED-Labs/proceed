@@ -6,8 +6,8 @@ import { getMSConfig } from '@/lib/ms-config/ms-config';
 export async function GET(request: NextRequest, { params }: { params: { spaceId: string } }) {
   try {
     const msConfig = await getMSConfig();
-    
-    // Check if competence matching is enabled
+
+    // Check if competence matching is enabled via environment variable
     if (!msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE) {
       return NextResponse.json({ error: 'Competence matching is not enabled' }, { status: 404 });
     }

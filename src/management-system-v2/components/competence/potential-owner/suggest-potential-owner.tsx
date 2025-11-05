@@ -159,6 +159,17 @@ function clearCachedMatchResults(environmentId: string, taskContext: TaskContext
   sessionStorage.removeItem(cacheKey);
 }
 
+// Little helper function to get rid of all potential '\', '\n', '\t', etc
+function createDisplayString(text: string): string {
+  // remove backslashes entirely, replace newlines/tabs/etc with a single space,
+  // collapse consecutive whitespace and trim
+  return text
+    .replace(/\\/g, '')
+    .replace(/[\n\r\t\f\v]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 type NotificationState = {
   type: 'info' | 'warning' | 'error';
   title: string;
@@ -213,25 +224,25 @@ export const SuggestPotentialOwner: FC<SuggestPotentialOwnerProps> = ({
     {
       label: 'Process:',
       span: 1,
-      children: taskContext.processName,
+      children: createDisplayString(taskContext.processName),
     },
     // Process Description
     {
       label: 'Process Description:',
       span: 2,
-      children: taskContext.processDescription,
+      children: createDisplayString(taskContext.processDescription),
     },
     // Task Name
     {
       label: 'Task:',
       span: 1,
-      children: taskContext.taskName,
+      children: createDisplayString(taskContext.taskName),
     },
     // Task Description
     {
       label: 'Task Description:',
       span: 2,
-      children: taskContext.taskDescription,
+      children: createDisplayString(taskContext.taskDescription),
     },
   ];
 

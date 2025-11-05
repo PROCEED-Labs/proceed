@@ -41,17 +41,6 @@ export default class Embedding extends TransformerPipeline<FeatureExtractionPipe
       if (vec.length !== config.embeddingDim) {
         throw new Error(`Expected embeddingDim=${config.embeddingDim}, got ${vec.length}`);
       }
-
-      // This prevents memory leaks and handle exhaustion that cause crashes on subsequent jobs
-      if (tensor && typeof (tensor as any).dispose === 'function') {
-        try {
-          (tensor as any).dispose();
-        } catch (err) {
-          // Log but don't fail if disposal fails
-          console.warn('Failed to dispose tensor:', err);
-        }
-      }
-
       return vec;
     }) as number[][];
     return arrs;

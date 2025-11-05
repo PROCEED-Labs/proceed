@@ -137,10 +137,10 @@ async function getCorrectMilestoneState(bpmn, userTask, instance) {
 }
 
 const script = `
-    const instanceID = '{{instanceId}}';
-    const userTaskID = '{{userTaskId}}';
+    const instanceID = '{%instanceId%}';
+    const userTaskID = '{%userTaskId%}';
 
-    const variableDefinitions = {{variableDefinitions}};
+    const variableDefinitions = {%variableDefinitions%};
 
     function getValueFromCheckbox(checkbox) {
       if (!checkbox.defaultValue) {
@@ -150,7 +150,7 @@ const script = `
       }
     }
 
-    function getValueFromVariableElement(element) {
+    function getValueFromVariableElement(variableName, element) {
       let value;
       if (element.tagName === 'INPUT') {
         if (element.type === 'number') {
@@ -174,6 +174,11 @@ const script = `
           } else if (radios.length) {
             const checked = radios.find(r => r.checked === true);
             value = checked.value;
+
+            const definition = variableDefinitions[variableName];
+            if (definition && definition.dataType === 'number') {
+              value = value && parseFloat(value);
+            }
           }
         }
       }
@@ -218,7 +223,7 @@ const script = `
       variableElements.forEach(el => {
         const key = Array.from(el.classList.values()).find(c => c.startsWith('variable-')).split('variable-')[1];
         try {
-          const value = getValueFromVariableElement(el);
+          const value = getValueFromVariableElement(key, el);
           validateValue(key, value);
           updateValidationErrorMessage(key);
           variables[key] = value;
@@ -277,40 +282,55 @@ const script = `
         });
       });
 
+      // get all input(-group)s that can be used to set the value of an input
       const variableInputs = document.querySelectorAll(
-        'input[class^="variable-"]'
+        '[class*="variable-"]'
       );
-      Array.from(variableInputs).filter(input => input.tagName === 'INPUT').forEach((variableInput) => {
+      Array.from(variableInputs).forEach((variableInput) => {
         let variableInputTimer;
 
-        variableInput.addEventListener('input', (event) => {
-          const variableName = Array.from(event.target.classList)
+        // a single input or all inputs in the group
+        let inputs;
+        if (variableInput.tagName === 'INPUT') inputs = [variableInput];
+        else {
+          inputs = Array.from(variableInput.getElementsByTagName('input'));
+        }
+
+        // the name of the variable assigned to the input/group
+        const variableName = Array.from(variableInput.classList)
           .find((className) => className.includes('variable-'))
           .split('variable-')
           .slice(1)
           .join('');
 
-          clearTimeout(variableInputTimer);
+        // add a handler that will save intermediate changes when a user interacts with the
+        // input/group (with a debounce)
+        inputs.forEach((input) => {
+          input.addEventListener('input', (event) => {
+            // cancel pending updates
+            clearTimeout(variableInputTimer);
 
-          variableInputTimer = setTimeout(() => {
-            try {
-              const value = getValueFromVariableElement(event.target);
+            // trigger a timeout for an update to commit
+            variableInputTimer = setTimeout(() => {
+              try {
+                const value = getValueFromVariableElement(variableName, variableInput);
 
-              validateValue(variableName, value);
-              updateValidationErrorMessage(variableName);
+                validateValue(variableName, value);
+                updateValidationErrorMessage(variableName);
 
-              window.PROCEED_DATA.put(
-                '/tasklist/api/variable',
-                { [variableName]: value },
-                {
-                  instanceID,
-                  userTaskID,
-                }
-              );
-            } catch (err) {
-              updateValidationErrorMessage(variableName, err.message);
-            }
-          }, 2000)
+                window.PROCEED_DATA.put(
+                  '/tasklist/api/variable',
+                  { [variableName]: value },
+                  {
+                    instanceID,
+                    userTaskID,
+                  }
+                );
+              } catch (err) {
+                updateValidationErrorMessage(variableName, err.message);
+              }
+            }, 2000)
+          });
         });
       });
     })

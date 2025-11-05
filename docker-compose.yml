@@ -31,7 +31,7 @@ services:
       POSTGRES_USER: proceed
       POSTGRES_PASSWORD: proceed
     volumes:
-      - proceed_standalone_postgres_db:/var/lib/postgresql/data
+      - proceed_standalone_postgres_db:/var/lib/postgresql
     networks:
       - proceed-standalone-network
 

@@ -906,10 +906,46 @@ class VectorDataBase {
         WHERE job_id = ? AND task_id = ?
       `,
       )
-      .get(jobId, taskId) as { embedding: Float32Array } | undefined;
+      .get(jobId, taskId) as { embedding: unknown } | undefined;
 
-    if (!row) return null;
-    return Array.from(row.embedding);
+    if (!row || row.embedding == null) return null;
+
+    let vector: number[] | null = null;
+    const raw = row.embedding as any;
+
+    if (raw instanceof Float32Array) {
+      vector = Array.from(raw);
+    } else if (Buffer.isBuffer(raw)) {
+      // sqlite-vec returns the FLOAT32 column as a Buffer; reinterpret it as Float32 values
+      const floatView = new Float32Array(
+        raw.buffer,
+        raw.byteOffset,
+        raw.byteLength / Float32Array.BYTES_PER_ELEMENT,
+      );
+      vector = Array.from(floatView);
+    } else if (ArrayBuffer.isView(raw)) {
+      const view = raw as ArrayBufferView;
+      const floatView = new Float32Array(
+        view.buffer,
+        view.byteOffset,
+        view.byteLength / Float32Array.BYTES_PER_ELEMENT,
+      );
+      vector = Array.from(floatView);
+    } else if (raw instanceof ArrayBuffer) {
+      vector = Array.from(new Float32Array(raw));
+    }
+
+    if (!vector) {
+      throw new Error('Unsupported embedding format fetched from task_embedding table');
+    }
+
+    if (vector.length !== this.embeddingDim) {
+      throw new Error(
+        `Task embedding length mismatch: expected ${this.embeddingDim}, received ${vector.length}`,
+      );
+    }
+
+    return vector;
   }
 
   /**

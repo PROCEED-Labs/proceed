@@ -6,7 +6,6 @@ import ZeroShot, { labels } from '../tasks/semantic-zeroshot';
 // import CrossEncoder from '../tasks/cross-encode';
 import { config } from '../config';
 import { getDB } from '../utils/db';
-import Embedding from '../tasks/embedding';
 
 /**
  * New matcher worker that stays alive and processes jobs sequentially
@@ -94,20 +93,16 @@ parentPort.on('message', async (message: any) => {
 
           try {
             // Retrieve stored embedding for the task
-            let vector = job.taskEmbeddings?.[taskId] ?? db.getTaskEmbedding(jobId, taskId);
+            const vector = job.taskEmbeddings?.[taskId] ?? db.getTaskEmbedding(jobId, taskId);
 
             if (!vector) {
-              workerLogger(jobId, 'warn', 'Task embedding missing, computing on matcher worker', {
-                threadId,
-                taskId,
-              });
-
-              const [fallback] = await Embedding.embed(description);
-              vector = fallback;
+              throw new Error(`No embedding stored for task ${taskId}`);
             }
 
-            if (!vector) {
-              throw new Error(`Unable to obtain embedding for task ${taskId}`);
+            if (vector.length !== config.embeddingDim) {
+              throw new Error(
+                `Embedding length mismatch for task ${taskId}: expected ${config.embeddingDim}, received ${vector.length}`,
+              );
             }
 
             sendHeartbeat('matcher');

@@ -272,6 +272,18 @@ async function ConfigPage() {
       ],
     },
     {
+      name: 'Competence Matching',
+      key: 'msconfig-competence-matching',
+      children: [
+        {
+          type: 'boolean',
+          name: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE',
+          key: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE',
+          value: msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE,
+        },
+      ],
+    },
+    {
       name: 'Scheduler',
       key: 'msconfig-scheduler',
       children: [

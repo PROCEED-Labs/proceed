@@ -307,7 +307,7 @@ const DashboardLayout = async ({
     }
 
     // TODO: Add proper authorization check for competences
-    if (can('manage', 'User')) {
+    if (can('manage', 'User') && msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE) {
       children.push({
         key: 'competences',
         label: <Link href={spaceURL(activeEnvironment, `/iam/competences`)}>Competences</Link>,
@@ -346,15 +346,19 @@ const DashboardLayout = async ({
           icon: <TbUserEdit />,
           selectedRegex: profileRegex,
         },
-        {
-          key: 'personal-competence',
-          label: user?.isGuest ? (
-            <GuestWarningButton>My Competences</GuestWarningButton>
-          ) : (
-            <SpaceLink href="/user-competence">My Competences</SpaceLink>
-          ),
-          icon: <TrophyOutlined />,
-        },
+        ...(msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE
+          ? [
+              {
+                key: 'personal-competence',
+                label: user?.isGuest ? (
+                  <GuestWarningButton>My Competences</GuestWarningButton>
+                ) : (
+                  <SpaceLink href="/user-competence">My Competences</SpaceLink>
+                ),
+                icon: <TrophyOutlined />,
+              },
+            ]
+          : []),
         {
           key: 'personal-spaces',
           label: user?.isGuest ? (

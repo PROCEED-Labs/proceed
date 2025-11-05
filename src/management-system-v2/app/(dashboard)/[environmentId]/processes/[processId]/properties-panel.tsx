@@ -393,7 +393,9 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             {selectedElement.type === 'bpmn:UserTask' && (
               <>
                 <PotentialOwner selectedElement={selectedElement} modeler={modeler} />
-                <SuggestPotentialOwner selectedElement={selectedElement} modeler={modeler} />
+                {env.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE && (
+                  <SuggestPotentialOwner selectedElement={selectedElement} modeler={modeler} />
+                )}
                 <Divider />
               </>
             )}

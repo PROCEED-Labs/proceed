@@ -61,6 +61,14 @@ export const msConfigSchema = {
       }),
     PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE: z.string().default('FALSE').transform(boolParser),
     PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE: z
+      .string()
+      .default('TRUE')
+      .transform(boolParser)
+      .refine(
+        (value) => !value || boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE),
+        'To use PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE you need to set PROCEED_PUBLIC_IAM_ACTIVE to true',
+      ),
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 

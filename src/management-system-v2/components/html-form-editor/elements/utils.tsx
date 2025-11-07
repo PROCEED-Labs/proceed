@@ -267,12 +267,9 @@ type VariableSettingProps = {
   onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
 };
 
-export const VariableSelection: React.FC<VariableSettingProps & { style: React.CSSProperties }> = ({
-  variable,
-  allowedTypes,
-  onChange,
-  style,
-}) => {
+export const VariableSelection: React.FC<
+  VariableSettingProps & { style?: React.CSSProperties }
+> = ({ variable, allowedTypes, onChange, style = {} }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
   const editingEnabled = useCanEdit();

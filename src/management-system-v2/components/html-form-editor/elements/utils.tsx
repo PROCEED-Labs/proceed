@@ -267,10 +267,11 @@ type VariableSettingProps = {
   onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
 };
 
-export const VariableSetting: React.FC<VariableSettingProps> = ({
+export const VariableSelection: React.FC<VariableSettingProps & { style: React.CSSProperties }> = ({
   variable,
   allowedTypes,
   onChange,
+  style,
 }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
@@ -283,46 +284,56 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
   );
 
   return (
+    <>
+      <Select
+        value={variable}
+        style={{ display: 'block', ...style }}
+        title={getVariableTooltip(variables, variable)}
+        options={validVariables.map((v) => ({
+          label: v.name,
+          title: getVariableTooltip(variables, v.name),
+          value: v.name,
+        }))}
+        onChange={(val) => {
+          const variableType = variables.find((v) => v.name === val)?.dataType;
+          onChange(val, variableType);
+        }}
+        dropdownRender={(menu) => (
+          <>
+            {menu}
+            <Space style={{ display: 'block', padding: '0 8px 4px' }}>
+              <Button block onClick={() => setShowVariableForm(true)}>
+                Add Variable
+              </Button>
+            </Space>
+          </>
+        )}
+      />
+      <ProcessVariableForm
+        open={showVariableForm}
+        variables={variables}
+        allowedTypes={allowedTypes}
+        onSubmit={(newVar) => {
+          updateVariables([...variables, newVar]);
+          setShowVariableForm(false);
+          onChange(newVar.name, newVar.dataType);
+        }}
+        onCancel={() => setShowVariableForm(false)}
+      />
+    </>
+  );
+};
+
+export const VariableSetting: React.FC<VariableSettingProps> = ({
+  variable,
+  allowedTypes,
+  onChange,
+}) => {
+  return (
     <Setting
       label="Variable"
       control={
-        <>
-          <Select
-            value={variable}
-            style={{ display: 'block' }}
-            title={getVariableTooltip(variables, variable)}
-            options={validVariables.map((v) => ({
-              label: v.name,
-              title: getVariableTooltip(variables, v.name),
-              value: v.name,
-            }))}
-            onChange={(val) => {
-              const variableType = variables.find((v) => v.name === val)?.dataType;
-              onChange(val, variableType);
-            }}
-            dropdownRender={(menu) => (
-              <>
-                {menu}
-                <Space style={{ display: 'block', padding: '0 8px 4px' }}>
-                  <Button block onClick={() => setShowVariableForm(true)}>
-                    Add Variable
-                  </Button>
-                </Space>
-              </>
-            )}
-          />
-          <ProcessVariableForm
-            open={showVariableForm}
-            variables={variables}
-            allowedTypes={allowedTypes}
-            onSubmit={(newVar) => {
-              updateVariables([...variables, newVar]);
-              setShowVariableForm(false);
-              onChange(newVar.name, newVar.dataType);
-            }}
-            onCancel={() => setShowVariableForm(false)}
-          />
-        </>
+        <VariableSelection variable={variable} allowedTypes={allowedTypes} onChange={onChange} />
       }
     />
   );

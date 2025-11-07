@@ -10,7 +10,7 @@ import { getSpaceSettingsValues } from '@/lib/data/space-settings';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { useEnvironment } from '@/components/auth-can';
 import { moddle } from '@proceed/bpmn-helper';
-import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
+import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-modeler-state-store';
 
 // Import our separated modules
 import type {

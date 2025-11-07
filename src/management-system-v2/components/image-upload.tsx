@@ -29,6 +29,7 @@ interface ImageUploadProps {
     dontUpdateProcessArtifactsReferences?: boolean;
   };
   fileManagerErrorToasts?: boolean;
+  disabled?: boolean;
   imageProps?: ImageProps;
   uploadProps?: UploadProps;
   basicLoadingFeedback?: boolean;
@@ -47,6 +48,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   initialFileName,
   deletable = true,
   fileManagerErrorToasts = true,
+  disabled = false,
   basicLoadingFeedback = false,
   ...props
 }) => {
@@ -218,6 +220,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       <Upload
         accept={'.jpeg,.jpg,.png,.webp,.svg'}
         showUploadList={false}
+        disabled={disabled}
         customRequest={customUploadRequest}
         {...uploadProps}
       >
@@ -262,7 +265,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           }}
         >
           <div style={{ display: 'flex', gap: '.5rem' }}>
-            <Button type="default" ghost>
+            <Button type="default" ghost disabled={disabled}>
               {imageExists ? <EditOutlined /> : 'Add Image'}
             </Button>
 
@@ -283,6 +286,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 }}
                 type="default"
                 ghost
+                disabled={disabled}
               >
                 <DeleteOutlined />
               </Button>

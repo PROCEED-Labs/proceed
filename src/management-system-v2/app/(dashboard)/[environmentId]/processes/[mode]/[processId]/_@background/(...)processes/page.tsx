@@ -1,4 +1,4 @@
-import Processes from '@/app/(dashboard)/[environmentId]/processes/page';
+import Processes from '@/app/(dashboard)/[environmentId]/processes/[mode]/page';
 
 // Display same page on intercept as hard navigation.
 //export default Processes;

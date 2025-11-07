@@ -10,7 +10,7 @@ import {
 } from '@/app/shared-viewer/settings-modal';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
+import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-modeler-state-store';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import useProcessVersion from './use-process-version';

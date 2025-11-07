@@ -21,12 +21,15 @@ export const fallbackImage =
 
 type ImageUploadData = {
   onImageUpdate?: (imageFileName?: string) => void;
-  fileManagerErrorToasts?: boolean;
   config: {
     entityType: EntityType; // to decide where to save the file
     entityId: string; // needed for folder hierarchy
     dontUpdateProcessArtifactsReferences?: boolean;
   };
+  fileManagerErrorToasts?: boolean;
+  imageProps?: ImageProps;
+  uploadProps?: UploadProps;
+  basicLoadingFeedback?: boolean;
   // Managed
   fileName?: string;
 };
@@ -119,6 +122,7 @@ export const useImageUpload = ({
 type ImageUploadProps = ImageUploadData & {
   onUploadFail?: () => void;
   deletable?: boolean;
+  disabled?: boolean;
   imageProps?: ImageProps;
   uploadProps?: UploadProps;
   basicLoadingFeedback?: boolean;
@@ -133,6 +137,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   uploadProps,
   config,
   initialFileName,
+  disabled = false,
   deletable = true,
   fileManagerErrorToasts = true,
   basicLoadingFeedback = false,
@@ -242,6 +247,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       <Upload
         accept={'.jpeg,.jpg,.png,.webp,.svg'}
         showUploadList={false}
+        disabled={disabled}
         customRequest={customUploadRequest}
         {...uploadProps}
       >
@@ -286,7 +292,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           }}
         >
           <div style={{ display: 'flex', gap: '.5rem' }}>
-            <Button type="default" ghost>
+            <Button type="default" ghost disabled={disabled}>
               {imageExists ? <EditOutlined /> : 'Add Image'}
             </Button>
 
@@ -307,6 +313,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 }}
                 type="default"
                 ghost
+                disabled={disabled}
               >
                 <DeleteOutlined />
               </Button>

@@ -13,9 +13,11 @@ import useProcessVariables from '../use-process-variables';
 import ProcessVariableForm from './process-variable-form';
 import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
-type VariableDefinitionProps = {};
+type VariableDefinitionProps = {
+  readOnly?: boolean;
+};
 
-const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
+const VariableDefinition: React.FC<VariableDefinitionProps> = ({ readOnly = false }) => {
   const [showVariableModal, setShowVariableModal] = useState(false);
   // the original variable that is currently being edited
   // (when a user clicked the edit button of an existing variable)
@@ -112,16 +114,22 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
               key: 'edit',
               render: (_, record) => (
                 <Space size="small">
-                  <EditOutlined
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
                     onClick={() => {
                       setShowVariableModal(true);
                       setEditVariable(record);
                     }}
+                    disabled={readOnly}
                   />
-                  <DeleteOutlined
+                  <Button
+                    type="text"
+                    icon={<DeleteOutlined />}
                     onClick={() => {
                       removeVariable(record.name);
                     }}
+                    disabled={readOnly}
                   />
                 </Space>
               ),
@@ -139,6 +147,7 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = () => {
           size="small"
           style={{ fontSize: '0.75rem' }}
           icon={<PlusOutlined />}
+          disabled={readOnly}
         >
           <span>Add Variable</span>
         </Button>

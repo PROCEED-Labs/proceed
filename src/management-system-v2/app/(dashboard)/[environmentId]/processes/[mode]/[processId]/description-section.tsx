@@ -3,13 +3,17 @@ import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as EditorClass, Viewer as ViewerClass } from '@toast-ui/react-editor';
 import React, { useEffect, useState } from 'react';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Divider, Grid, Modal, Space } from 'antd';
+import { Button, Divider, Grid, Modal, Space, theme } from 'antd';
 import dynamic from 'next/dynamic';
 import ScrollBar from '@/components/scrollbar';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 const TextEditor = dynamic(() => import('@/components/text-editor'), { ssr: false });
 
-const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
+const DescriptionSection: React.FC<{ selectedElement: any; readOnly?: boolean }> = ({
+  selectedElement,
+  readOnly = false,
+}) => {
+  const { token } = theme.useToken();
   const [description, setDescription] = useState('');
 
   useEffect(() => {
@@ -65,27 +69,36 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
       {description ? (
         <div
           style={{
-            backgroundColor: '#fafafa',
-            border: '1px solid #f0f0f0',
+            backgroundColor: readOnly ? token.colorBgContainerDisabled : '#fafafa',
+            border: `1px solid ${readOnly ? token.colorBorder : '#f0f0f0'}`,
             borderRadius: '0.5rem',
             padding: '0.5rem',
-            cursor: 'pointer',
+            cursor: readOnly ? 'not-allowed' : 'pointer',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <EditOutlined
+            <Button
+              style={{ fontSize: '0.75rem' }}
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
               onClick={() => {
-                setShowPopupEditor(true);
+                if (!readOnly) setShowPopupEditor(true);
               }}
-            ></EditOutlined>
+              disabled={readOnly}
+            ></Button>
           </div>
           <ScrollBar>
             <div
-              style={{ maxHeight: '40vh' }}
+              style={{
+                maxHeight: '40vh',
+                opacity: readOnly ? 0.25 : 1,
+                pointerEvents: readOnly ? 'none' : 'auto',
+              }}
               role="textbox"
               aria-label="description-viewer"
               onClick={() => {
-                setShowPopupEditor(true);
+                if (!readOnly) setShowPopupEditor(true);
               }}
             >
               <TextViewer initialValue={description}></TextViewer>
@@ -102,6 +115,7 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
             onClick={() => {
               setShowPopupEditor(true);
             }}
+            disabled={readOnly}
           >
             Add Description
           </Button>

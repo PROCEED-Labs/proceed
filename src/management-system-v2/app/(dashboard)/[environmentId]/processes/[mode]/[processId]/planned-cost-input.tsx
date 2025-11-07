@@ -8,11 +8,13 @@ import worldCurrencies from '@/lib/worldCurrencies';
 type PlannedCostInputProperties = {
   costsPlanned: { value?: number; currency?: string };
   onInput: (costsPlanned: { value?: number; currency: string }) => void;
+  readOnly?: boolean;
 };
 
 const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
   costsPlanned: { value, currency = 'EUR' },
   onInput,
+  readOnly = false,
 }) => {
   const [costsPlanned, setCostsPlanned] = useState<{ value?: number; currency: string }>({
     value,
@@ -47,6 +49,7 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
             }
           }}
           dropdownStyle={{ width: '7rem' }}
+          disabled={readOnly}
         ></Select>
       }
       placeholder="Planned Cost"
@@ -69,6 +72,7 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
             }).format(costsPlanned.value)
           : costsPlanned.value
       }
+      disabled={readOnly}
     />
   );
 };

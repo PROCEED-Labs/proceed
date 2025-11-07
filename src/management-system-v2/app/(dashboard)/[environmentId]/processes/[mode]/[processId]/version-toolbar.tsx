@@ -10,9 +10,9 @@ import { copyProcesses, setVersionAsLatest } from '@/lib/data/processes';
 import { spaceURL } from '@/lib/utils';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
-type VersionToolbarProps = { processId: string };
+type VersionToolbarProps = { processId: string; readOnly?: boolean };
 
-const VersionToolbar = ({ processId }: VersionToolbarProps) => {
+const VersionToolbar = ({ processId, readOnly }: VersionToolbarProps) => {
   const router = useRouter();
   const query = useSearchParams();
   const environment = useEnvironment();
@@ -54,6 +54,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
                   return result;
                 }
               }}
+              disabled={readOnly}
             ></ProcessCreationButton>
           </Tooltip>
         </AuthCan>
@@ -64,7 +65,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
           onConfirm={() =>
             wrapServerCall({
               fn: () => setVersionAsLatest(processId, selectedVersionId, environment.spaceId),
-              onSuccess: () => router.push(spaceURL(environment, `/processes/${processId}`)),
+              onSuccess: () => router.push(spaceURL(environment, `/processes/editor/${processId}`)),
               app,
             })
           }
@@ -76,6 +77,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
           }}
           buttonProps={{
             icon: <FormOutlined />,
+            disabled: readOnly,
           }}
         />
       </Space.Compact>

@@ -275,6 +275,8 @@ export const VariableSelection: React.FC<VariableSettingProps & { style: React.C
 }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
+  const editingEnabled = useCanEdit();
+
   const { variables, updateVariables } = useEditorStateStore((state) => state);
 
   if (!variables) return null;
@@ -294,6 +296,7 @@ export const VariableSelection: React.FC<VariableSettingProps & { style: React.C
           title: getVariableTooltip(variables, v.name),
           value: v.name,
         }))}
+        disabled={!editingEnabled}
         onChange={(val) => {
           const variableType = variables.find((v) => v.name === val)?.dataType;
           onChange(val, variableType);

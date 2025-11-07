@@ -10,7 +10,7 @@ import {
   Setting,
   VariableSelection,
 } from '@/components/html-form-editor/elements/utils';
-import ImageUpload, { fallbackImage, useImageUpload } from '@/components/image-upload';
+import { fallbackImage, useImageUpload } from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { useCanEdit } from '@/lib/can-edit-context';
@@ -240,6 +240,8 @@ export const ImageSettings = () => {
     dom: node.dom,
   }));
 
+  const editingEnabled = useCanEdit();
+
   const [currentWidth, setCurrentWidth] = useState<number | null>(null);
 
   useEffect(() => {
@@ -299,6 +301,7 @@ export const ImageSettings = () => {
       <Upload
         accept={'.jpeg,.jpg,.png,.webp,.svg'}
         showUploadList={false}
+        disabled={!editingEnabled}
         customRequest={customUploadRequest}
       >
         <Button>{src?.startsWith('processes-artifacts') ? 'Change Image' : 'Upload Image'}</Button>
@@ -307,6 +310,7 @@ export const ImageSettings = () => {
     url: (
       <Input
         value={onlineImageUrl}
+        disabled={!editingEnabled}
         onChange={(e) => setOnlineImageUrl(e.target.value)}
         onBlur={() => setProp((props: ImageProps) => (props.src = onlineImageUrl))}
       />
@@ -352,6 +356,7 @@ export const ImageSettings = () => {
                 { value: 'variable', label: 'Variable' },
               ]}
               value={sourceType}
+              disabled={!editingEnabled}
               onChange={(newValue) => setSourceType(newValue)}
             />
             {sourceInput[sourceType]}

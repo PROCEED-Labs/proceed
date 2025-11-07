@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Variable as ProcessVariable } from '@proceed/bpmn-helper/src/getters';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
+import {
+  ProcessVariable,
+  ProcessVariableSchema,
+  textFormatMap,
+} from '@/lib/process-variable-schema';
 
 export type Variable = {
   name: string;
   type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'unknown';
+  format?: 'email' | 'url';
   allowed?: string;
   value: any;
 };
@@ -22,8 +27,10 @@ const useInstanceVariables = (info: DeploymentInfo) => {
   useEffect(() => {
     const initVariables = async (version: VersionInfo) => {
       const [processId] = await getProcessIds(version.bpmn);
-      const variables = await getVariablesFromElementById(version.bpmn, processId);
-      setVariableDefinitions(variables);
+      const variables = ProcessVariableSchema.array().safeParse(
+        await getVariablesFromElementById(version.bpmn, processId),
+      );
+      if (variables.success) setVariableDefinitions(variables.data);
     };
     if (info.version) initVariables(info.version);
 
@@ -72,6 +79,9 @@ const useInstanceVariables = (info: DeploymentInfo) => {
       }
       if (variables[def.name].type === 'unknown') {
         variables[def.name].type = def.dataType as Variable['type'];
+      }
+      if (def.textFormat) {
+        variables[def.name].format = def.textFormat;
       }
       if (!instance && def.defaultValue) {
         switch (def.dataType) {

@@ -10,6 +10,7 @@ const Parser = require('@proceed/constraint-parser-xml-json/parser.js');
 const Engine = require('./engine/engine.js');
 const APIError = require('@proceed/distribution/src/routes/ApiError');
 const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
+const { script } = require('@proceed/ui/src/uiHTML.js');
 
 /**
  * @memberof module:@proceed/core
@@ -49,7 +50,7 @@ const Management = {
    *
    * @param {String} definitionId
    * @param {Number} version
-   * @returns {Engine} the instance of
+   * @returns {Promise<Engine>} the instance of
    */
   async ensureProcessEngineWithVersion(definitionId, version) {
     const engine = this.ensureProcessEngine(definitionId);
@@ -282,14 +283,20 @@ const Management = {
   async resumeInstance(definitionId, instanceId) {
     let instanceInformation;
     let userTasks = [];
+    const scriptTaskTokens = [];
 
+    /** @type {ReturnType<Engine['getInstance'] | undefined>} */
+    let bpmnProcessInstance = undefined;
+    /** @type {InstanceType<typeof Engine> | undefined} */
     const existingEngine = this.getEngineWithID(instanceId);
+
     if (existingEngine) {
       instanceInformation = existingEngine.getInstanceInformation(instanceId);
       userTasks = existingEngine.userTasks.filter(
-        (userTask) => userTask.processInstance.id === instanceID,
+        (userTask) => userTask.processInstance.id === instanceId,
       );
-      this.removeInstance(instanceId);
+
+      bpmnProcessInstance = existingEngine.getInstance(instanceId);
     } else {
       instanceInformation = (await distribution.db.getArchivedInstances(definitionId))[instanceId];
       userTasks = instanceInformation.userTasks;
@@ -300,16 +307,50 @@ const Management = {
       }
     }
 
+    if (!instanceInformation) throw new Error("Couldn't find instance information");
+
+    const bpmn = await distribution.db.getProcessVersion(
+      definitionId,
+      instanceInformation.processVersion,
+    );
+    const bpmnObj = await toBpmnObject(bpmn);
+
+    for (const token of instanceInformation.tokens) {
+      const currentFlowElement = getElementById(bpmnObj, token.currentFlowElementId);
+      if (currentFlowElement.$type === 'bpmn:ScriptTask' && token.state == 'PAUSED') {
+        scriptTaskTokens.push(token);
+      }
+    }
+
+    if (existingEngine && scriptTaskTokens.length == 0) {
+      this.removeInstance(instanceId);
+      bpmnProcessInstance = undefined;
+    }
+
+    // If a script task was paused on a scriptTask and the instance doesn't exist anymore, than the
+    // script probably also doesn't exist on the script executor, thus we can't resume process.
+    if (scriptTaskTokens.length > 0 && !bpmnProcessInstance) {
+      // TODO: maybe handle this case better
+      throw new Error(
+        'Trying to resume an instance which was stopped on a script task, but the instance was deleted.',
+      );
+    }
+
     const resumedTokens = instanceInformation.tokens.map((token) => {
       const tokenActive =
         token.state === 'RUNNING' ||
         token.state === 'READY' ||
         token.state === 'DEPLOYMENT-WAITING' ||
         token.state === 'PAUSED';
+      const isScriptTask = scriptTaskTokens.includes(token);
+
+      let tokenState = token.state;
+      if (isScriptTask) tokenState = 'RUNNING';
+      else if (tokenActive) tokenState = 'READY';
 
       return {
         tokenId: token.tokenId,
-        state: tokenActive ? 'READY' : token.state,
+        state: tokenState,
         currentFlowElementId: token.currentFlowElementId,
         deciderStorageRounds: token.deciderStorageRounds,
         deciderStorageTime: token.deciderStorageTime,
@@ -317,36 +358,57 @@ const Management = {
       };
     });
 
-    const resumedInstanceInformation = {
-      ...instanceInformation,
-      tokens: resumedTokens,
-    };
+    if (scriptTaskTokens.length > 0) {
+      bpmnProcessInstance.resume();
 
-    const { processVersion, importedInstance } = this.importInstance(resumedInstanceInformation);
+      for (const resumedToken of resumedTokens) {
+        bpmnProcessInstance.updateToken(resumedToken.tokenId, resumedToken);
+      }
 
-    const engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
+      for (const resumedToken of resumedTokens) {
+        bpmnProcessInstance.continueToken(resumedToken.tokenId);
+      }
 
-    engine.startProcessVersion(
-      processVersion,
-      importedInstance.variables,
-      importedInstance,
-      (newInstance) => {
-        engine.userTasks.push(
-          ...userTasks
-            .filter((userTask) => userTask.state !== 'PAUSED')
-            .map((userTask) => ({
-              ...userTask,
-              processInstance: newInstance,
-            })),
+      for (const scriptTaskToken of scriptTaskTokens) {
+        bpmnProcessInstance.resumeFlowNode(
+          scriptTaskToken.tokenId,
+          scriptTaskToken.currentFlowElementId,
         );
-        engine._log.info({
-          msg: `Resuming process instance. Id = ${resumedInstanceInformation.processInstanceId}`,
-          instanceId: resumedInstanceInformation.instanceId,
-        });
-      },
-    );
+      }
 
-    return engine;
+      return existingEngine;
+    } else {
+      const resumedInstanceInformation = {
+        ...instanceInformation,
+        tokens: resumedTokens,
+      };
+
+      const { processVersion, importedInstance } = this.importInstance(resumedInstanceInformation);
+      /** @type {Engine} */
+      const engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
+
+      engine.startProcessVersion(
+        processVersion,
+        importedInstance.variables,
+        importedInstance,
+        (newInstance) => {
+          engine.userTasks.push(
+            ...userTasks
+              .filter((userTask) => userTask.state !== 'PAUSED')
+              .map((userTask) => ({
+                ...userTask,
+                processInstance: newInstance,
+              })),
+          );
+          engine._log.info({
+            msg: `Resuming process instance. Id = ${resumedInstanceInformation.processInstanceId}`,
+            instanceId: resumedInstanceInformation.instanceId,
+          });
+        },
+      );
+
+      return engine;
+    }
   },
 
   /**
@@ -378,6 +440,7 @@ const Management = {
       }
     }
 
+    /** @type {Engine} */
     const engine = await this.ensureProcessEngineWithVersion(definitionId, instance.processVersion);
     // transform instance information into the form used by the neo-engine
     const { processVersion, importedInstance } = this.importInstance(instance);
@@ -389,7 +452,7 @@ const Management = {
     const interruptedTokens = [];
 
     importedInstance.tokens = importedInstance.tokens.map((token) => {
-      // get the element the token was interrupted on
+      // get the element the tokefn was interrupted on
       const currentFlowElement = getElementById(bpmnObj, token.currentFlowElementId);
 
       const needTokenRestart =
@@ -500,7 +563,7 @@ const Management = {
   /**
    * Return the engine with the given instance id.
    * @param {string} instanceID The id of an instance the engine is executing
-   * @returns {module:@proceed/core.ProceedEngine}
+   * @returns {module: proceed/core.ProceedEngine}
    */
   getEngineWithID(instanceID) {
     return this._engines.find((engine) => engine.instanceIDs.includes(instanceID));
@@ -510,7 +573,7 @@ const Management = {
    * Return the engine running a process that is defined in the file with the given definitionId
    *
    * @param {String} definitionId name of the file the process description is stored in
-   * @returns {Engine|undefined} - the engine running instances of the process with the given id
+   * @returns {Engine | undefined} -he engine running instances of the process with the given id
    */
   getEngineWithDefinitionId(definitionId) {
     return this._engines.find((engine) => engine.definitionId === definitionId);

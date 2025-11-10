@@ -19,13 +19,16 @@ let listeningOn = {
 };
 
 /** @param {import('.').ScriptTaskSetupData} setupData */
-module.exports = function setupNetworkServer({ context }) {
+module.exports = function setupNetworkServer({ context, waitUntilResumed }) {
   let listenerAdded = false;
+  /** @param {any} message */
   async function ipcMessageHandler(message) {
     try {
       // TODO: check structure of message
 
       if (message.type !== 'http-request') return;
+
+      await waitUntilResumed();
 
       const method = message.request.method.toLowerCase();
       const listeners = listeningOn[method];

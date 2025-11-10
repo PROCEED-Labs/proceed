@@ -312,7 +312,35 @@ class ScriptExecutor extends System {
 
     this.commandRequest(generateUniqueTaskID(), [
       'stop-child-process',
-      [processId, processInstanceId],
+      [processId, processInstanceId, tokenId],
+    ]);
+  }
+
+  /**
+   * @param {string} processId
+   * @param {string} processInstanceId
+   * @param {string} [tokenId]
+   */
+  pause(processId, processInstanceId, tokenId) {
+    try {
+      this.commandRequest(generateUniqueTaskID(), [
+        'pause-child-process',
+        [processId, processInstanceId, tokenId],
+      ]);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  /**
+   * @param {string} processId
+   * @param {string} processInstanceId
+   * @param {string} [tokenId]
+   */
+  resume(processId, processInstanceId, tokenId) {
+    this.commandRequest(generateUniqueTaskID(), [
+      'resume-child-process',
+      [processId, processInstanceId, tokenId],
     ]);
   }
 

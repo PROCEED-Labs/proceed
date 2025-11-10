@@ -34,6 +34,8 @@ class SubprocesScriptExecution extends NativeModule {
     this.commands = [
       'launch-child-process',
       'stop-child-process',
+      'pause-child-process',
+      'resume-child-process',
       'forward-request-to-child-process',
     ];
 
@@ -67,6 +69,14 @@ class SubprocesScriptExecution extends NativeModule {
       case 'stop-child-process':
         // @ts-ignore
         this.stopSubprocess(...args);
+        break;
+      case 'pause-child-process':
+        // @ts-ignore
+        this.pauseSubprocess(...args);
+        break;
+      case 'resume-child-process':
+        // @ts-ignore
+        this.resumeSubprocess(...args);
         break;
       case 'forward-request-to-child-process':
         // @ts-ignore
@@ -199,6 +209,37 @@ class SubprocesScriptExecution extends NativeModule {
   }
 
   /**
+   * @param {string} processId
+   * @param {string} processInstanceId
+   * @param {string} [tokenId]
+   */
+  pauseSubprocess(processId, processInstanceId, tokenId) {
+    const toPause = this.getProcess(processId, processInstanceId, undefined, tokenId);
+
+    // NOTE: maybe give a warning?
+    if (!toPause) return;
+
+    for (const process of toPause) {
+      process.process.send({ type: 'pause-execution' });
+    }
+  }
+  /**
+   * @param {string} processId
+   * @param {string} processInstanceId
+   * @param {string} [tokenId]
+   */
+  resumeSubprocess(processId, processInstanceId, tokenId) {
+    const toResume = this.getProcess(processId, processInstanceId, undefined, tokenId);
+
+    // NOTE: maybe give a warning?
+    if (!toResume) return;
+
+    for (const process of toResume) {
+      process.process.send({ type: 'resume-execution' });
+    }
+  }
+
+  /**
    * @param {string} processInstanceId
    * @param {any} request
    * @param { (error: any, response: any) => void} sendReply
@@ -207,7 +248,7 @@ class SubprocesScriptExecution extends NativeModule {
   forwardRequestToChildProcess(processInstanceId, request, sendReply) {
     const processes = this.getProcess(undefined, processInstanceId, undefined);
     if (processes.length === 0) {
-      return sendReply({
+      return sendReply(undefined, {
         statusCode: 404,
         response: 'No processes found',
       });
@@ -292,12 +333,14 @@ class SubprocesScriptExecution extends NativeModule {
    * @param {string} [processId]
    * @param {string} [processInstanceId]
    * @param {string} [scriptIdentifier]
+   * @param {string} [tokenId]
    */
-  getProcess(processId, processInstanceId, scriptIdentifier) {
+  getProcess(processId, processInstanceId, scriptIdentifier, tokenId) {
     return this.childProcesses.filter((childProcess) => {
       if (processId && childProcess.processId !== processId) return false;
       if (processInstanceId && childProcess.processInstanceId !== processInstanceId) return false;
       if (scriptIdentifier && childProcess.scriptIdentifier !== scriptIdentifier) return false;
+      if (tokenId && childProcess.tokenId !== tokenId) return false;
       return true;
     });
   }

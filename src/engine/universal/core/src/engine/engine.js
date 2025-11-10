@@ -53,17 +53,20 @@ class Engine {
     /**
      * A mapping from the version of a process to the Neo Engine Process it is deployed as
      * @private
+     * @type {Record<string, NeoEngine.BpmnProcess>}
      */
     this._versionProcessMapping = {};
 
     /**
      * A mapping from the version of a process to its bpmn
+     * @type {Record<string, NeoEngine.BpmnProcess>}
      * @private
      */
     this._versionBpmnMapping = {};
 
     /**
      * A mapping from an instance to the Neo Engine Process it is currently being executed in
+     * @type {Record<string, NeoEngine.BpmnProcess>}
      * @private
      */
     this._instanceIdProcessMapping = {};
@@ -398,7 +401,7 @@ class Engine {
    * Returns the instance with the given id
    *
    * @param {string} instanceID id of the instance we want to get
-   * @returns {object} - the requested process instance
+   * @returns {NeoEngine.BpmnProcessInstance} - the requested process instance
    */
   getInstance(instanceID) {
     if (this._instanceIdProcessMapping[instanceID]) {
@@ -438,6 +441,10 @@ class Engine {
     );
   }
 
+  /**
+   * @param {string} instanceID
+   * @returns {{ processId: string; processVersion: string; adaptationLog: any } & ReturnType<NeoEngine.BpmnProcessInstance['getState']> }
+   */
   getInstanceInformation(instanceID) {
     const instance = this.getInstance(instanceID);
 
@@ -726,6 +733,8 @@ class Engine {
       const tokens = this.getAllInstanceTokens(instanceID);
 
       let tokensRunning = false;
+      let scriptTasksRunning = false;
+
       // pause flowNode execution of tokens with state READY and DEPLOYMENT-WAITING
       tokens.forEach((token) => {
         const userTaskIndex = this.userTasks.findIndex(
@@ -744,14 +753,20 @@ class Engine {
               state: 'PAUSED',
             });
           }
-        }
-        if (token.state === 'RUNNING') {
+        } else if (token.state === 'RUNNING') {
           if (userTaskIndex !== -1) {
             // pause userTask immediately
             instance.pauseToken(token.tokenId);
             this.updateToken(instanceID, token.tokenId, { state: 'PAUSED' });
             const newUserTask = { ...this.userTasks[userTaskIndex], state: 'PAUSED' };
             this.userTasks.splice(userTaskIndex, 1, newUserTask);
+          } else if (
+            instance.getFlowElement(token.currentFlowElementId).$type === 'bpmn:ScriptTask'
+          ) {
+            // pause script task immediately
+            instance.pauseToken(token.tokenId);
+            this.updateToken(instanceID, token.tokenId, { state: 'PAUSED' });
+            scriptTasksRunning = true;
           } else {
             tokensRunning = true;
           }
@@ -786,8 +801,10 @@ class Engine {
             await publishCurrentInstanceState(this, instance);
           }
 
-          this.archiveInstance(instance.id);
-          this.deleteInstance(instance.id);
+          if (!scriptTasksRunning) {
+            this.archiveInstance(instance.id);
+            this.deleteInstance(instance.id);
+          }
         })
         .catch(() => {});
     }

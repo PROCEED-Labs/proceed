@@ -122,7 +122,7 @@ const setupData = {
 };
 
 const setupPauseAndResumeLayer = require('./pause-resume-layer');
-const { waitUntilResumed, addClosePauseListenerString } = setupPauseAndResumeLayer(setupData);
+const { waitUntilResumed, unmountPauseResumeListener } = setupPauseAndResumeLayer(setupData);
 setupData.waitUntilResumed = waitUntilResumed;
 
 const wait = new ivm.Reference(async (ms) => {
@@ -171,7 +171,7 @@ function wrapScriptInAsyncFunction(script) {
 }
 
 const isolateCode = wrapScriptInAsyncFunction(
-  addClosePauseListenerString(wrapScriptWithErrorHandling(scriptString)),
+  wrapScriptWithErrorHandling(scriptString, unmountPauseResumeListener),
 );
 
 // After .eval is done, there may still be code running inside the isolate, that the .eval returns

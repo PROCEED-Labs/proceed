@@ -55,9 +55,6 @@ module.exports = function setupPauseAndResumeLayer({ context }) {
         await executionPausedPromise.promise;
       }
     },
-    /** @param {string} script */
-    addClosePauseListenerString(script) {
-      return script + '\n_unmountPauseListener();';
-    },
+    unmountPauseResumeListener: '\n_unmountPauseListener();',
   };
 };

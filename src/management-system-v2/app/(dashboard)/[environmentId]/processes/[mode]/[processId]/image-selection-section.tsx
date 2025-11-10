@@ -1,0 +1,45 @@
+'use client';
+
+import React from 'react';
+
+import { useParams } from 'next/navigation';
+import ImageUpload from '@/components/image-upload';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+
+type ImageSelectionSectionProperties = {
+  imageFilePath?: string;
+  onImageUpdate: (imageFilePath?: string) => void;
+  disabled?: boolean;
+};
+
+const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
+  imageFilePath: imageFileName,
+  onImageUpdate,
+  disabled = false,
+}) => {
+  const { processId } = useParams();
+
+  return (
+    <ImageUpload
+      config={{
+        entityType: EntityType.PROCESS,
+        entityId: processId as string,
+      }}
+      onImageUpdate={onImageUpdate}
+      fileName={imageFileName}
+      fileManagerErrorToasts={false}
+      disabled={disabled}
+      imageProps={{
+        alt: 'Image',
+        style: {
+          width: '100%',
+          height: '100%',
+          borderRadius: '6px',
+          border: '1px solid #d9d9d9',
+        },
+      }}
+    />
+  );
+};
+
+export default ImageSelectionSection;

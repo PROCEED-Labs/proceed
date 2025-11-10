@@ -347,13 +347,22 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
         }
       />
 
-      {selectedVariable?.textFormat && (
-        <Setting
-          disabled
-          label="Format"
-          control={<Input value={textFormatMap[selectedVariable.textFormat]} />}
-        />
-      )}
+      {selectedVariable ? (
+        <>
+          <Setting
+            disabled
+            label="Format"
+            control={<Input value={typeLabelMap[selectedVariable.dataType]} />}
+          />
+          {!!selectedVariable.textFormat && (
+            <Setting
+              disabled
+              label="Format"
+              control={<Input value={textFormatMap[selectedVariable.textFormat]} />}
+            />
+          )}
+        </>
+      ) : null}
     </>
   );
 };

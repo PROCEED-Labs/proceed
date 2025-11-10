@@ -9,7 +9,7 @@ import { useEnvironment } from '@/components/auth-can';
 import TextArea from 'antd/es/input/TextArea';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useInstanceVariables, { Variable } from './use-instance-variables';
-import { typeLabelMap } from '@/lib/process-variable-schema';
+import { textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
 type InstanceVariableProps = {
   info: RelevantInstanceInfo;
@@ -30,7 +30,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
 
   const [variableToEdit, setVariableToEdit] = useState<Variable | undefined>(undefined);
 
-  const columns: React.ComponentProps<typeof Table>['columns'] = [
+  const columns: React.ComponentProps<typeof Table<Variable>>['columns'] = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
     {
       title: 'Value',
@@ -48,7 +48,11 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
-      render: (type: Variable['type']) => (type === 'unknown' ? '' : typeLabelMap[type]),
+      render: (type: Variable['type'], variable: Variable) => {
+        let label = type === 'unknown' ? '' : typeLabelMap[type];
+        if (variable.format) label += ` (${textFormatMap[variable.format]})`;
+        return label;
+      },
     },
   ];
 

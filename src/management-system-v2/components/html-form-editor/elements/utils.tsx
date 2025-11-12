@@ -19,11 +19,12 @@ import useEditorStateStore from '../use-editor-state-store';
 import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
 export const Setting: React.FC<{
-  label: string;
+  label?: string;
   control: ReactElement;
   style?: React.CSSProperties;
   disabled?: boolean;
-}> = ({ label, control, style = {}, disabled = false }) => {
+  compact?: boolean;
+}> = ({ label, control, style = {}, disabled = false, compact = false }) => {
   const id = useId();
 
   const editingEnabled = useCanEdit();
@@ -31,10 +32,12 @@ export const Setting: React.FC<{
   const clonedControl = React.cloneElement(control, { id, disabled: disabled || !editingEnabled });
 
   return (
-    <div style={{ margin: '5px', ...style }}>
-      <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
-        {label}:
-      </label>
+    <div style={{ margin: compact ? undefined : '5px', ...style }}>
+      {label && (
+        <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
+          {label}:
+        </label>
+      )}
       {clonedControl}
     </div>
   );
@@ -329,10 +332,11 @@ export const VariableSelection: React.FC<
   );
 };
 
-export const VariableSetting: React.FC<VariableSettingProps> = ({
+export const VariableSetting: React.FC<VariableSettingProps & { compact?: boolean }> = ({
   variable,
   allowedTypes,
   onChange,
+  compact = false,
 }) => {
   const { variables } = useEditorStateStore((state) => state);
 
@@ -341,13 +345,14 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
   return (
     <>
       <Setting
-        label="Variable"
+        label={compact ? undefined : 'Variable'}
+        compact={compact}
         control={
           <VariableSelection variable={variable} allowedTypes={allowedTypes} onChange={onChange} />
         }
       />
 
-      {selectedVariable ? (
+      {!compact && selectedVariable ? (
         <>
           <Setting
             disabled

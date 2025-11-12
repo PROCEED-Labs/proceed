@@ -319,6 +319,7 @@ export const ImageSettings = () => {
       <VariableSelection
         style={{ flex: '1 0 0' }}
         variable={variableName || ''}
+        allowedTypes={['string', 'file']}
         onChange={(newVarName) => setProp((props: ImageProps) => (props.src = `{%${newVarName}%}`))}
       />
     ),

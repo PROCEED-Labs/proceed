@@ -12,7 +12,7 @@ import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import {
   RoleType,
   UserType,
-} from '../../../../../components/competence/potential-owner/use-potentialOwner-store';
+} from '@/components/competence/potential-owner/use-potentialOwner-store';
 import type { Process } from '@/lib/data/process-schema';
 import { redirect } from 'next/navigation';
 import { spaceURL } from '@/lib/utils';

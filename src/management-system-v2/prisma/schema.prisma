@@ -354,7 +354,7 @@ model Competence {
   space      Space?       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   creatorUserId String?                 // Nullable, if the user is deleted, i.e. the user no longer exists
-  user        User?        @relation(fields: [creatorUserId], references: [id], onDelete: SetNull)   // Check: only eihter is nullable: spaceId or creatorUserId
+  user        User?        @relation(fields: [creatorUserId], references: [id], onDelete: SetNull)   // Check: only either is nullable: spaceId or creatorUserId
 
   name         String       @default("")  // Should this be nullable?
   description  String       @default("")  // Should this be nullable?

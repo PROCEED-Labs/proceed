@@ -68,6 +68,34 @@ export const msConfigSchema = {
       .refine(
         (value) => !value || boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE),
         'To use PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE you need to set PROCEED_PUBLIC_IAM_ACTIVE to true',
+      )
+      .refine(
+        (value) =>
+          !value ||
+          (process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL &&
+            process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL !== ''),
+        'To use PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE you need to set PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL',
+      ),
+    PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL: z.string().url().or(z.literal('')).default(''),
+    PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH: z
+      .string()
+      .default('')
+      .refine(
+        (value) =>
+          !process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL ||
+          process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL === '' ||
+          value !== '',
+        'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH is required when PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL is set',
+      ),
+    PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH: z
+      .string()
+      .default('')
+      .refine(
+        (value) =>
+          !process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL ||
+          process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL === '' ||
+          value !== '',
+        'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH is required when PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL is set',
       ),
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

@@ -281,6 +281,30 @@ async function ConfigPage() {
           key: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE',
           value: msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE,
         },
+        {
+          name: 'Competence Matching Service API',
+          key: 'msconfig-competence-matching-service-api',
+          children: [
+            {
+              type: 'string',
+              name: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL',
+              key: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL',
+              value: msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL,
+            },
+            {
+              type: 'string',
+              name: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH',
+              key: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH',
+              value: msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH,
+            },
+            {
+              type: 'string',
+              name: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH',
+              key: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH',
+              value: msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH,
+            },
+          ],
+        },
       ],
     },
     {
@@ -341,6 +365,10 @@ async function ConfigPage() {
         {
           groupKey: 'PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE',
           disablerKey: 'PROCEED_PUBLIC_MAILSERVER_ACTIVE',
+        },
+        {
+          groupKey: 'msconfig-competence-matching-service-api',
+          disablerKey: 'PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE',
         },
       ]}
     />

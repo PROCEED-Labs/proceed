@@ -4,12 +4,7 @@ import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getAllSpaceCompetences } from '@/lib/data/competences';
 import { getUsersInSpace } from '@/lib/data/db/iam/memberships';
 import { getAllCompetencesOfUser as getUserCompetences } from '@/lib/data/db/competence';
-import {
-  API_URL,
-  COMPETENCE_LIST_PATH,
-  MATCH_PATH,
-  SCORE_THRESHOLDS,
-} from '../utils/match-constants';
+import { getCompetenceMatchingAPIConfig, SCORE_THRESHOLDS } from '../utils/match-constants';
 import { debugLog } from '../utils/debug';
 
 const POLL_INTERVAL_MS = 2_000; // Poll every 2 seconds
@@ -456,6 +451,7 @@ async function createCompetenceListJob(
   try {
     debugLog('createCompetenceListJob', 'Starting competence list job creation');
 
+    const { API_URL, COMPETENCE_LIST_PATH } = await getCompetenceMatchingAPIConfig();
     const headers = await createHeaders(environmentId);
     debugLog('createCompetenceListJob', 'Headers created:', headers);
 
@@ -522,6 +518,7 @@ async function createMatchingJob(
   try {
     debugLog('createMatchingJob', 'Starting matching job with competenceListId:', competenceListId);
 
+    const { API_URL, MATCH_PATH } = await getCompetenceMatchingAPIConfig();
     const headers = await createHeaders(environmentId);
     debugLog('createMatchingJob', 'Headers created:', headers);
 

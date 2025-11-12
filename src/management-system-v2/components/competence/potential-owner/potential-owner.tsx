@@ -5,7 +5,7 @@ import { UserOutlined, TeamOutlined, QuestionCircleOutlined } from '@ant-design/
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import type { CascaderProps, GetProp } from 'antd';
 import usePotentialOwnerStore, { RoleType, UserType } from './use-potentialOwner-store';
-import useModelerStateStore from '../../../app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
+import useModelerStateStore from '../../../app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-modeler-state-store';
 import { Shape } from 'bpmn-js/lib/model/Types';
 import { is, isAny } from 'bpmn-js/lib/util/ModelUtil';
 import { debugLog } from '../utils/debug';
@@ -13,6 +13,7 @@ import { debugLog } from '../utils/debug';
 type PotentialOwnerProps = {
   selectedElement: ElementLike;
   modeler: BPMNCanvasRef | null;
+  readOnly?: boolean;
 };
 
 export type Option = {
@@ -108,7 +109,11 @@ function updateResource(
 const filter = (inputValue: string, path: DefaultOptionType[]) =>
   path.some((option) => `${option?.value}`.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
 
-export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) => {
+export const PotentialOwner: FC<PotentialOwnerProps> = ({
+  selectedElement,
+  modeler,
+  readOnly = false,
+}) => {
   const { user, roles } = usePotentialOwnerStore();
 
   const { user: selectedUser, roles: selectedRoles } = useBPMNResources(
@@ -165,6 +170,7 @@ export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, model
               // @ts-ignore
               onChange={setPotentialOwner}
               value={[...selectedUser, ...selectedRoles]}
+              disabled={readOnly}
             />
           </>
         )}
@@ -176,9 +182,14 @@ export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, model
 type ResponsibilityProps = {
   selectedElement: ElementLike;
   modeler: BPMNCanvasRef | null;
+  readOnly?: boolean;
 };
 
-export const ResponsibleParty: FC<ResponsibilityProps> = ({ selectedElement, modeler }) => {
+export const ResponsibleParty: FC<ResponsibilityProps> = ({
+  selectedElement,
+  modeler,
+  readOnly = false,
+}) => {
   const { user, roles } = usePotentialOwnerStore();
 
   const { user: selectedUser, roles: selectedRoles } = useBPMNResources(
@@ -237,6 +248,7 @@ export const ResponsibleParty: FC<ResponsibilityProps> = ({ selectedElement, mod
             // @ts-ignore
             onChange={setResponsible}
             value={[...selectedUser, ...selectedRoles]}
+            disabled={readOnly}
           />
         </>
       </Space>

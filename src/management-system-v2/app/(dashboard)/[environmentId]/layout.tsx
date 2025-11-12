@@ -144,14 +144,15 @@ const DashboardLayout = async ({
       let children: ExtendedMenuItems = [
         documentationSettings.list?.active !== false && {
           key: 'processes-list',
-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>List</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
           icon: <CopyOutlined />,
+          selectedRegex: '/processes/list($|/)',
         },
         documentationSettings.editor?.active !== false && {
           key: 'processes-editor',
-          label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Editor</Link>,
+          label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
           icon: <EditOutlined />,
-          selectedRegex: processRegex,
+          selectedRegex: '/processes/editor($|/)',
         },
       ].filter(truthyFilter);
 

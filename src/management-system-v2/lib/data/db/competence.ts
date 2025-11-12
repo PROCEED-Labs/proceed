@@ -412,11 +412,11 @@ export async function unclaimSpaceCompetence(
       },
     })),
     competence:
-      (await db.competence.findUnique({
+      ((await db.competence.findUnique({
         where: {
           id: competenceId,
         },
-      })) || ({} as Competence),
+      })) as UserCompetence['competence']) || ({} as UserCompetence['competence']),
   };
 }
 
@@ -455,7 +455,7 @@ export async function addUserCompetence(
 
   return {
     ..._userCompetence,
-    competence: newCompetence,
+    competence: newCompetence as UserCompetence['competence'],
   };
 }
 
@@ -498,7 +498,7 @@ export async function updateUserCompetence(
 
   return {
     ...updatedUserCompetence,
-    competence,
+    competence: competence as UserCompetence['competence'],
   };
 }
 
@@ -523,12 +523,12 @@ export async function deleteUserCompetence(
       },
     })),
     /* Delete competence */
-    competence: await db.competence.delete({
+    competence: (await db.competence.delete({
       where: {
         id: competenceId,
         type: CompetenceTypes.enum.USER,
       },
-    }),
+    })) as UserCompetence['competence'],
   };
 
   if (!result) {

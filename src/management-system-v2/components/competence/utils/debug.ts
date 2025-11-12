@@ -12,6 +12,6 @@ const DEBUG = false; // Set to true to enable debug logs
 
 export function debugLog(context: string, ...args: any[]) {
   if (DEBUG) {
-    debugLog(`[Competence:${context}]`, ...args);
+    console.log(`[Competence:${context}]`, ...args);
   }
 }

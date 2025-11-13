@@ -3,12 +3,13 @@ import { useNode, UserComponent, useEditor } from '@craftjs/core';
 import { EditOutlined } from '@ant-design/icons';
 
 import EditableText from '../_utils/EditableText';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Overlay, Setting } from './utils';
 
 import cn from 'classnames';
 import { Checkbox, Select } from 'antd';
 import { useCanEdit } from '@/lib/can-edit-context';
+import { DragPreviewContext } from './Column';
 
 type SubmitButtonProps = React.PropsWithChildren & {
   title?: string;
@@ -31,6 +32,10 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
 
   const editingEnabled = useCanEdit();
 
+  // prevent that a drag preview interacts with the drag and drop functionality of the original
+  // object
+  const isDragPreview = useContext(DragPreviewContext);
+
   return (
     <div>
       <button
@@ -39,7 +44,7 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
         onMouseEnter={() => setHovered(true)}
         className={cn('user-task-form-button', { 'primary-button': type == 'primary' })}
         ref={(r) => {
-          r && connect(r);
+          !isDragPreview && r && connect(r);
         }}
       >
         <Overlay

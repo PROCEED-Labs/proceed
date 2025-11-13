@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useContext, useEffect, useId, useState } from 'react';
 
 import { Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
@@ -9,6 +9,7 @@ import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
 import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
+import { DragPreviewContext } from './Column';
 
 type InputProps = {
   label?: string;
@@ -86,6 +87,10 @@ const Input: UserComponent<InputProps> = ({
   const [textEditing, setTextEditing] = useState(false);
   const [editingDefault, setEditingDefault] = useState(false);
 
+  // prevent that a drag preview interacts with the drag and drop functionality of the original
+  // object
+  const isDragPreview = useContext(DragPreviewContext);
+
   const blockDragging = useEditorStateStore((state) => state.blockDragging);
   const unblockDragging = useEditorStateStore((state) => state.unblockDragging);
   useEffect(() => {
@@ -102,7 +107,7 @@ const Input: UserComponent<InputProps> = ({
     <ContextMenu menu={[]}>
       <div
         ref={(r) => {
-          r && connect(r);
+          !isDragPreview && r && connect(r);
         }}
         className="user-task-form-input"
         style={{

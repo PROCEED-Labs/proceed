@@ -33,6 +33,7 @@ export async function httpRequest(
   ) {
     return await response.text();
   } else if (
+    contentType.includes('application/pdf') ||
     contentType.includes('image/') ||
     contentType.includes('audio/') ||
     contentType.includes('video/')

@@ -44,7 +44,8 @@
     "/process/:definitionId/script-tasks": {},
     "/status/": {},
     "/resources/process/:definitionId/images/:fileName": {},
-    "/resources/process/:definitionId/images/": {}
+    "/resources/process/:definitionId/images/": {},
+    "/resources/process/:definitionId/instance/:instanceId/file/:fileName": {}
   },
   "post": {
     "/capabilities/execute": {},
@@ -90,7 +91,12 @@
     "/process/:definitionId/versions/:version/start-form": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/script-tasks/:fileName": {},
-    "/resources/process/:definitionId/images/:fileName": {}
+    "/resources/process/:definitionId/images/:fileName": {},
+    "/resources/process/:definitionId/instance/:instanceId/file/:fileName": {
+      "queryParams": {
+        "mimeType": true
+      }
+    }
   },
   "delete": {
     "/configuration/": {},

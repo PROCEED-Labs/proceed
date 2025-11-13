@@ -72,7 +72,13 @@ module.exports = (path) => {
 
       const file = Buffer.from(body);
 
-      return await db.saveInstanceFile(definitionId, instanceId, fileName, mimeType, file);
+      const path = await db.saveInstanceFile(definitionId, instanceId, fileName, mimeType, file);
+
+      return {
+        statusCode: 200,
+        mimeType: 'text',
+        response: path,
+      };
     },
   );
 

@@ -612,7 +612,7 @@ export async function submitFile(
 
     if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
 
-    return await submitFileToMachine(
+    const res = await submitFileToMachine(
       definitionId,
       instanceId,
       engines[0],
@@ -620,6 +620,8 @@ export async function submitFile(
       fileType,
       file,
     );
+
+    return res;
   } catch (err) {
     const message = getErrorMessage(err);
     return userError(message);

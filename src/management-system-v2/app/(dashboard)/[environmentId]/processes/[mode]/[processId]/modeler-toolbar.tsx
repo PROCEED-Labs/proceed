@@ -39,6 +39,7 @@ import { TimerEventButton, isTimerEvent } from './planned-duration-input';
 import XmlEditor from './xml-editor';
 import UserTaskEditor, { canHaveForm } from './user-task-editor';
 import { useProcessView } from './process-view-context';
+import { useCanEdit } from '@/lib/can-edit-context';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -71,6 +72,8 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
 
   const [ganttEnabled, setGanttEnabled] = useState<boolean | null>(null);
+
+  const editingEnabled = useCanEdit();
 
   // Fetch gantt view settings
   useEffect(() => {
@@ -436,7 +439,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 isOpen={showPropertiesPanel}
                 close={handlePropertiesPanelToggle}
                 selectedElement={selectedElement}
-                readOnly={isListView}
+                readOnly={isListView || !editingEnabled}
               />
             )}
           </Space>

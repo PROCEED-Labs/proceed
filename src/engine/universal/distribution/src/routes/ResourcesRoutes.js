@@ -47,17 +47,17 @@ module.exports = (path) => {
   });
 
   network.get(
-    `${path}/process/:definitionId/instance/:instanceId/files/:fileName`,
+    `${path}/process/:definitionId/instance/:instanceId/file/:fileName`,
     { cors: true },
     async (req) => {
       const { definitionId, instanceId, fileName } = req.params;
 
-      const file = await db.getInstanceFile(definitionId, instanceId, fileName);
+      const { mimeType, data } = await db.getInstanceFile(definitionId, instanceId, fileName);
 
       return {
         statusCode: 200,
-        mimeType: 'image/png image/svg+xml image/jpeg',
-        response: file,
+        mimeType,
+        response: data,
       };
     },
   );
@@ -78,22 +78,6 @@ module.exports = (path) => {
         statusCode: 200,
         mimeType: 'text',
         response: path,
-      };
-    },
-  );
-
-  network.get(
-    `${path}/process/:definitionId/instance/:instanceId/file/:fileName`,
-    { cors: true },
-    async (req) => {
-      const { definitionId, instanceId, fileName } = req.params;
-
-      const { mimeType, data } = await db.getInstanceFile(definitionId, instanceId, fileName);
-
-      return {
-        statusCode: 200,
-        mimeType,
-        response: data,
       };
     },
   );

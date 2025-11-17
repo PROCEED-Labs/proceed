@@ -68,35 +68,10 @@ export const msConfigSchema = {
       .refine(
         (value) => !value || boolParser(process.env.PROCEED_PUBLIC_IAM_ACTIVE),
         'To use PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE you need to set PROCEED_PUBLIC_IAM_ACTIVE to true',
-      )
-      .refine(
-        (value) =>
-          !value ||
-          (process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL &&
-            process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL !== ''),
-        'To use PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE you need to set PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL',
       ),
     PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL: z.string().url().or(z.literal('')).default(''),
-    PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH: z
-      .string()
-      .default('')
-      .refine(
-        (value) =>
-          !process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL ||
-          process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL === '' ||
-          value !== '',
-        'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH is required when PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL is set',
-      ),
-    PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH: z
-      .string()
-      .default('')
-      .refine(
-        (value) =>
-          !process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL ||
-          process.env.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL === '' ||
-          value !== '',
-        'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH is required when PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL is set',
-      ),
+    PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH: z.string().default(''),
+    PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH: z.string().default(''),
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
@@ -248,7 +223,49 @@ export const mergedMSConfigSchemaKeys = {
   ...msConfigSchema.all,
   ...(msConfigSchema[mode] ?? {}),
 } as MergedSchemas;
-export const environmentSpecificMSConfigSchema = z.object(mergedMSConfigSchemaKeys);
+export const environmentSpecificMSConfigSchema = z
+  .object(mergedMSConfigSchemaKeys)
+  .superRefine((data, ctx) => {
+    // Validate competence matching service configuration
+    const serviceUrl = data.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL;
+    const competenceActive = data.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE;
+
+    // If competence matching is active, require service URL
+    if (competenceActive && (!serviceUrl || serviceUrl === '')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL'],
+        message:
+          'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL is required when PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE is enabled',
+      });
+    }
+
+    // If service URL is set, require both paths
+    if (serviceUrl && serviceUrl !== '') {
+      if (
+        !data.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH ||
+        data.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH === ''
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH'],
+          message:
+            'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH is required when PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL is set',
+        });
+      }
+      if (
+        !data.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH ||
+        data.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH === ''
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH'],
+          message:
+            'PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH is required when PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL is set',
+        });
+      }
+    }
+  });
 
 export const msConfigConfigurableKeys = Object.keys(mergedMSConfigSchemaKeys).filter(
   (key) => !mSConfigEnvironmentOnlyKeys.includes(key as any),

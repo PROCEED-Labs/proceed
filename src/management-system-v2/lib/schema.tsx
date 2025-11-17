@@ -193,6 +193,11 @@ export const schema = {
           type: 'String',
         },
         {
+          name: 'textFormat',
+          isAttr: true,
+          type: 'String',
+        },
+        {
           name: 'description',
           isAttr: true,
           type: 'String',

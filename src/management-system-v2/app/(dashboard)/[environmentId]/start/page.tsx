@@ -1,10 +1,6 @@
 import Content from '@/components/content';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import MyTasksSection from './my-tasks-section';
-import ProcessesSection from './processes-section';
-import AutomationsSection from './automations-section';
-import PersonalSection from './personal-section';
-import HomeSection from './home-section';
+import { MyTasksSection, ProcessesSection, AutomationsSection, PersonalSection, HomeSection } from './sections';
 import FavoriteProcessesSection from './favorite-processes-section';
 import { getCurrentEnvironment } from '@/components/auth';
 import { getUsersFavourites } from '@/lib/data/users';

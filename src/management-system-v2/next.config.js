@@ -62,6 +62,7 @@ const nextConfig = {
         'profile',
         'projects',
         'settings',
+        'start',
       ].map((folder) => ({
         // TODO: when building techserver separately, this can be set to rewrite
         // all unused paths to /404.

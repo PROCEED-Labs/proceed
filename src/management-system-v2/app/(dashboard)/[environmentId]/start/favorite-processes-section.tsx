@@ -48,7 +48,7 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
           <Card
             key={process.id}
             hoverable
-            style={{ height: '240px', minWidth: '200px', flexShrink: 0 }}
+            style={{ height: '255px', flexShrink: 0 }}
             title={
               <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
                 <OverflowTooltipTitle>{process.name}</OverflowTooltipTitle>

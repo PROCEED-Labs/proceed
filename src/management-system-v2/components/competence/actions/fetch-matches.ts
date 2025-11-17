@@ -4,8 +4,21 @@ import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getAllSpaceCompetences } from '@/lib/data/competences';
 import { getUsersInSpace } from '@/lib/data/db/iam/memberships';
 import { getAllCompetencesOfUser as getUserCompetences } from '@/lib/data/db/competence';
-import { getCompetenceMatchingAPIConfig, SCORE_THRESHOLDS } from '../utils/match-constants';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { SCORE_THRESHOLDS } from '../utils/match-constants';
 import { debugLog } from '../utils/debug';
+
+/**
+ * Get competence matching API configuration from MS config
+ */
+async function getCompetenceMatchingAPIConfig() {
+  const config = await getMSConfig();
+  return {
+    API_URL: config.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_URL,
+    COMPETENCE_LIST_PATH: config.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_COMPETENCE_LIST_PATH,
+    MATCH_PATH: config.PROCEED_PUBLIC_COMPETENCE_MATCHING_SERVICE_MATCH_PATH,
+  };
+}
 
 const POLL_INTERVAL_MS = 2_000; // Poll every 2 seconds
 const MAX_POLL_ATTEMPTS = 240; // 2_000 * 240 = 8 minutes max wait

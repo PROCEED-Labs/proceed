@@ -142,6 +142,9 @@ const script = `
 
     const variableDefinitions = {%variableDefinitions%};
 
+    let submitting = false;
+    const variableSubmitTimeouts = {};
+
     function getValueFromCheckbox(checkbox) {
       if (!checkbox.defaultValue) {
         return !!checkbox.checked;
@@ -266,14 +269,17 @@ const script = `
           }
         }
 
+        submitting = true;
+        Object.values(variableSubmitTimeouts).forEach(timeout => clearTimeout(timeout));
         window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
             instanceID,
             userTaskID,
-        }).then(() => {
-          window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
+        }).then(async () => {
+          await window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
             instanceID,
             userTaskID,
           });
+          submitting = false;
         });
       }
 
@@ -312,22 +318,24 @@ const script = `
           milestoneInput.nextElementSibling.value = milestoneInput.value + '%'
         });
 
-        milestoneInput.addEventListener('click', (event) => {
-          const milestoneName = Array.from(event.target.classList)
-          .find((className) => className.includes('milestone-'))
-          .split('milestone-')
-          .slice(1)
-          .join('');
+        if (!submitting) {
+          milestoneInput.addEventListener('click', (event) => {
+            const milestoneName = Array.from(event.target.classList)
+            .find((className) => className.includes('milestone-'))
+            .split('milestone-')
+            .slice(1)
+            .join('');
 
-          window.PROCEED_DATA.put(
-            '/tasklist/api/milestone',
-            { [milestoneName]: parseInt(event.target.value) },
-            {
-              instanceID,
-              userTaskID,
-            }
-          );
-        });
+            window.PROCEED_DATA.put(
+              '/tasklist/api/milestone',
+              { [milestoneName]: parseInt(event.target.value) },
+              {
+                instanceID,
+                userTaskID,
+              }
+            );
+          });
+        }
       });
 
       // get all input(-group)s that can be used to set the value of an input
@@ -358,31 +366,34 @@ const script = `
             // cancel pending updates
             clearTimeout(variableInputTimer);
 
-            if (event.target.type === 'file') {
-              updateUploadInfo(event.target);
-              return;
-            }
-
-            // trigger a timeout for an update to commit
-            variableInputTimer = setTimeout(() => {
-              try {
-                const value = getValueFromVariableElement(variableName, variableInput);
-
-                validateValue(variableName, value);
-                updateValidationErrorMessage(variableName);
-
-                window.PROCEED_DATA.put(
-                  '/tasklist/api/variable',
-                  { [variableName]: value },
-                  {
-                    instanceID,
-                    userTaskID,
-                  }
-                );
-              } catch (err) {
-                updateValidationErrorMessage(variableName, err.message);
+            if (!submitting) {
+              if (event.target.type === 'file') {
+                updateUploadInfo(event.target);
+                return;
               }
-            }, 2000)
+
+              // trigger a timeout for an update to commit
+              variableInputTimer = setTimeout(() => {
+                try {
+                  const value = getValueFromVariableElement(variableName, variableInput);
+
+                  validateValue(variableName, value);
+                  updateValidationErrorMessage(variableName);
+
+                  window.PROCEED_DATA.put(
+                    '/tasklist/api/variable',
+                    { [variableName]: value },
+                    {
+                      instanceID,
+                      userTaskID,
+                    }
+                  );
+                } catch (err) {
+                  updateValidationErrorMessage(variableName, err.message);
+                }
+              }, 2000)
+              variableSubmitTimeouts[variableName] = variableInputTimer;
+            }
           });
         });
       });

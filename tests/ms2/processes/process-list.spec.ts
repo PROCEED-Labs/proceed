@@ -605,6 +605,8 @@ test.describe('shortcuts in process-list', () => {
     /* Save Process-ID*/
     const processID = page.url().split('/').pop();
 
+    await page.locator('.bjs-container').waitFor({ state: 'visible' });
+
     await waitForHydration(page);
 
     /* Wait for modeler to load */

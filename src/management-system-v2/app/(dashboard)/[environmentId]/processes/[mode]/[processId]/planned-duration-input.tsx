@@ -112,11 +112,13 @@ export const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
 type PlannedDurationInputProperties = {
   timePlannedDuration: string;
   onChange: (changedTimePlannedDuration: string) => void;
+  readOnly?: boolean;
 };
 
 const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
   timePlannedDuration,
   onChange,
+  readOnly = false,
 }) => {
   const [isPlannedDurationModalOpen, setIsPlannedDurationModalOpen] = useState(false);
 
@@ -160,6 +162,7 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
         value={durationString}
         placeholder="Planned Duration"
         onClick={() => setIsPlannedDurationModalOpen(true)}
+        disabled={readOnly}
       />
       <PlannedDurationModal
         durationValues={durationValues}

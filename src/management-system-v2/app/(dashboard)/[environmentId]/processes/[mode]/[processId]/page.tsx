@@ -11,13 +11,19 @@ import BPMNTimeline from '@/components/bpmn-timeline';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { RoleType, UserType } from './use-potentialOwner-store';
 import type { Process } from '@/lib/data/process-schema';
+import { redirect } from 'next/navigation';
+import { spaceURL } from '@/lib/utils';
 
-type ProcessProps = {
-  params: Promise<{ processId: string; environmentId: string }>;
+type ProcessPageProps = {
+  params: Promise<{ processId: string; environmentId: string; mode: string }>;
   searchParams: Promise<{ version?: string }>;
 };
 
-const Process = async (props: ProcessProps) => {
+type ProcessComponentProps = ProcessPageProps & {
+  isListView?: boolean;
+};
+
+const ProcessComponent = async (props: ProcessComponentProps) => {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
@@ -27,10 +33,22 @@ const Process = async (props: ProcessProps) => {
   // refresh in processes.tsx anymore?
   //console.log('processId', processId);
   //console.log('query', searchParams);
-  const selectedVersionId = searchParams.version ? searchParams.version : undefined;
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-  // Only load bpmn if no version selected.
+
+  const selectedVersionId = searchParams.version;
+  // Only load BPMN if no version selected (for latest version)
   const process = await getProcess(processId, !selectedVersionId);
+
+  // For list view: check for redirect
+  if (props.isListView) {
+    // If no version specified but released versions exist, redirect to last released version
+    if (!searchParams.version && process.versions.length > 0) {
+      const lastVersionId = process.versions[process.versions.length - 1].id;
+      const currentPath = `/processes/list/${processId}`;
+      const redirectUrl = spaceURL(activeEnvironment, `${currentPath}?version=${lastVersionId}`);
+      redirect(redirectUrl);
+    }
+  }
   const processes = await getProcesses(activeEnvironment.spaceId, ability, false);
 
   // const rawRoles = activeEnvironment.isOrganization
@@ -88,6 +106,12 @@ const Process = async (props: ProcessProps) => {
       <AddUserControls name={'modeler'} />
     </>
   );
+};
+
+const Process = async (props: ProcessPageProps) => {
+  const params = await props.params;
+  const isListView = params.mode === 'list';
+  return <ProcessComponent {...props} isListView={isListView} />;
 };
 
 export default Process;

@@ -16,16 +16,12 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
-import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { notFound } from 'next/navigation';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async (props: {
-  params: Promise<{ environmentId: string; folderId?: string }>;
+  params: Promise<{ environmentId: string; folderId?: string; mode: string }>;
 }) => {
   const params = await props.params;
-  const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE) return notFound();
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
@@ -39,14 +35,28 @@ const ProcessesPage = async (props: {
 
   const folderContents = await getFolderContents(folder.id, ability);
 
+  const isListView = params.mode === 'list';
+
+  const folderContentsFiltered = isListView
+    ? folderContents.filter(
+        (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
+      )
+    : folderContents;
+
+  const hasNoReleasedProcesses = isListView
+    ? folderContentsFiltered.every((item) => item.type === 'folder')
+    : undefined;
+
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   const wrappingFolderIds = [] as string[];
   let currentFolder: Folder | null = folder;
   do {
     pathToFolder.push({
       title: (
-        <Link href={spaceURL(activeEnvironment, `/processes/folder/${currentFolder.id}`)}>
-          {currentFolder.parentId ? currentFolder.name : 'Processes'}
+        <Link
+          href={spaceURL(activeEnvironment, `/processes/${params.mode}/folder/${currentFolder.id}`)}
+        >
+          {currentFolder.parentId ? currentFolder.name : isListView ? 'List' : 'Editor'}
         </Link>
       ),
     });
@@ -62,7 +72,12 @@ const ProcessesPage = async (props: {
         title={
           <Space>
             {folder.parentId && (
-              <Link href={spaceURL(activeEnvironment, `/processes/folder/${folder.parentId}`)}>
+              <Link
+                href={spaceURL(
+                  activeEnvironment,
+                  `/processes/${params.mode}/folder/${folder.parentId}`,
+                )}
+              >
                 <Button icon={<LeftOutlined />} type="text">
                   Back
                 </Button>
@@ -74,8 +89,9 @@ const ProcessesPage = async (props: {
       >
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
           <Processes
+            {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
             rootFolder={rootFolder}
-            processes={folderContents}
+            processes={folderContentsFiltered}
             favourites={favs as string[]}
             folder={folder}
             pathToFolder={wrappingFolderIds}

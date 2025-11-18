@@ -165,8 +165,12 @@ export async function addEnvironment(
   return newEnvironmentWithId;
 }
 
-export async function deleteEnvironment(environmentId: string, ability?: Ability) {
-  const environment = await getEnvironmentById(environmentId);
+export async function deleteEnvironment(
+  environmentId: string,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  const environment = await getEnvironmentById(environmentId, undefined, undefined, tx);
   if (!environment) throw new Error('Environment not found');
 
   if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE && environment.isOrganization) {
@@ -176,7 +180,9 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
   }
 
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
-  await db.space.delete({
+
+  const dbMutator = tx ?? db;
+  await dbMutator.space.delete({
     where: { id: environmentId },
   });
 }
@@ -259,4 +265,27 @@ export async function deleteSpaceLogo(organizationId: string) {
   //if (!hasLogo(organizationId)) throw new Error("Organization doesn't have a logo");
 
   //deleteLogo(organizationId);
+}
+
+export async function removeInactiveSpaces(
+  inactiveTimeInMS: number,
+  tx?: Prisma.TransactionClient,
+): Promise<{ count: number }> {
+  if (!tx) {
+    return db.$transaction((trx) => removeInactiveSpaces(inactiveTimeInMS, trx));
+  }
+
+  const cutoff = new Date(Date.now() - inactiveTimeInMS);
+
+  const deletableSpaces = await tx.space.findMany({
+    where: {
+      isActive: false,
+      createdOn: { lte: cutoff },
+    },
+  });
+
+  if (deletableSpaces.length > 0) {
+    await Promise.all(deletableSpaces.map((space) => deleteEnvironment(space.id, undefined, tx)));
+  }
+  return { count: deletableSpaces.length };
 }

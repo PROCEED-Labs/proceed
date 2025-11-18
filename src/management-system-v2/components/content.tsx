@@ -8,7 +8,7 @@ import cn from 'classnames';
 import HeaderActions from './header-actions';
 import { useLayoutMobileDrawer } from '@/app/(dashboard)/[environmentId]/layout-client';
 import SpaceLink from './space-link';
-import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
+import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-modeler-state-store';
 import { useEnvironment } from './auth-can';
 import Image from 'next/image';
 

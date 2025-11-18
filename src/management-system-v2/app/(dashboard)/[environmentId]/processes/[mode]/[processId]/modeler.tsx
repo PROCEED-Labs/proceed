@@ -32,6 +32,7 @@ import {
   updateFileDeletableStatus,
 } from '@/lib/data/file-manager-facade';
 import { Process } from '@/lib/data/process-schema';
+import { useProcessView } from './process-view-context';
 import { CanEditContext } from '@/lib/can-edit-context';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -59,6 +60,11 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
 
+  const { isListView, processContextPath } = useProcessView();
+
+  /// Derived State
+  const minimized = !decodeURIComponent(pathname).includes(process.id);
+
   /* Pressing ESC twice (in 500ms) lets user return to Process List */
   const escCounter = useRef(0);
   useAddControlCallback(
@@ -66,7 +72,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
     'esc',
     () => {
       if (escCounter.current == 1) {
-        router.push(spaceURL(environment, `/processes`));
+        router.push(spaceURL(environment, `/processes${processContextPath}`));
       } else {
         escCounter.current++;
         const timer = setTimeout(() => {
@@ -80,18 +86,15 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
         };
       }
     },
-    { dependencies: [router] },
+    { dependencies: [router, processContextPath] },
   );
-
-  /// Derived State
-  const minimized = !decodeURIComponent(pathname).includes(process.id);
 
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
 
   const showMobileView = useMobileModeler();
 
-  const canEdit = !selectedVersionId && !showMobileView;
+  const canEdit = !selectedVersionId && !showMobileView && !isListView;
 
   // We shouldn't get to a place where the event listener isn't removed, since the debounce will
   // always be fired, as it doesn't get cancelled when process.id changes
@@ -223,7 +226,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
           router.push(
             spaceURL(
               environment,
-              `/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
+              `/processes/editor/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
             ),
           );
         }
@@ -345,7 +348,9 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
                 versionName={versionName}
               />
             )}
-            {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
+            {selectedVersionId && !showMobileView && (
+              <VersionToolbar processId={process.id} readOnly={isListView} />
+            )}
             <ModelerZoombar></ModelerZoombar>
           </>
         )}

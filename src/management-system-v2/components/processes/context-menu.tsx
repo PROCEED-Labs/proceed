@@ -14,6 +14,7 @@ import { BsFileEarmarkCheck } from 'react-icons/bs';
 import { RiFolderTransferLine } from 'react-icons/ri';
 import { IoMdCopy } from 'react-icons/io';
 import { canDoActionOnResource } from './helpers';
+import { useProcessView } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/process-view-context';
 
 export const contextMenuStore = create<{
   setSelected: (id: ProcessListProcess[]) => void;
@@ -30,9 +31,8 @@ const ContextMenuArea: FC<
     prefix?: MenuProps['items'];
     suffix?: MenuProps['items'];
   }>
-> = ({
-  children,
-  processActions: {
+> = ({ children, processActions, folder, prefix, suffix }) => {
+  const {
     viewDocumentation,
     changeMetaData,
     releaseProcess,
@@ -41,14 +41,12 @@ const ContextMenuArea: FC<
     moveItems,
     copyItems: copyItem,
     deleteItems,
-  },
-  folder,
-  prefix,
-  suffix,
-}) => {
+  } = processActions;
   const setSelectedContextMenuItem = contextMenuStore((store) => store.setSelected);
   const selectedContextMenuItems = contextMenuStore((store) => store.selected);
   const ability = useAbilityStore((state) => state.ability);
+
+  const { isListView, processContextPath } = useProcessView();
 
   const contextMenuItems: MenuProps['items'] = [];
   if (selectedContextMenuItems.length > 0) {
@@ -71,30 +69,39 @@ const ContextMenuArea: FC<
           key: 'open-selected',
           icon: <PiNotePencil />,
           label: (
-            <SpaceLink href={`/processes/${selectedContextMenuItems[0].id}`}>Open Editor</SpaceLink>
+            <SpaceLink href={`/processes${processContextPath}/${selectedContextMenuItems[0].id}`}>
+              {isListView ? 'Open Viewer' : 'Open Editor'}
+            </SpaceLink>
           ),
         },
         {
           key: 'open-selected-new-tab',
           icon: <IoOpenOutline />,
           label: (
-            <SpaceLink href={`/processes/${selectedContextMenuItems[0].id}`} target="_blank">
-              Open Editor in new Tab
+            <SpaceLink
+              href={`/processes${processContextPath}/${selectedContextMenuItems[0].id}`}
+              target="_blank"
+            >
+              {isListView ? 'Open Viewer in new Tab' : 'Open Editor in new Tab'}
             </SpaceLink>
           ),
         },
         {
           key: 'change-meta-data',
           icon: <LuNotebookPen />,
-          label: 'Change Meta Data',
+          label: isListView ? 'Show Meta Data' : 'Change Meta Data',
           onClick: () => changeMetaData(selectedContextMenuItems[0]),
         },
-        {
-          key: 'release-process',
-          icon: <BsFileEarmarkCheck />,
-          label: 'Release Process',
-          onClick: () => releaseProcess(selectedContextMenuItems[0]),
-        },
+        ...(!isListView && releaseProcess
+          ? [
+              {
+                key: 'release-process',
+                icon: <BsFileEarmarkCheck />,
+                label: 'Release Process',
+                onClick: () => releaseProcess(selectedContextMenuItems[0]),
+              },
+            ]
+          : []),
         {
           key: 'share',
           icon: <ShareAltOutlined />,
@@ -110,12 +117,14 @@ const ContextMenuArea: FC<
       selectedContextMenuItems.find((item) => item.type !== 'folder') &&
       ability.can('create', 'Process')
     ) {
-      children.push({
-        key: 'copy-selected',
-        label: 'Copy',
-        icon: <IoMdCopy />,
-        onClick: () => copyItem(selectedContextMenuItems),
-      });
+      if (!isListView && copyItem) {
+        children.push({
+          key: 'copy-selected',
+          label: 'Copy',
+          icon: <IoMdCopy />,
+          onClick: () => copyItem(selectedContextMenuItems),
+        });
+      }
       children.push({
         key: 'export-selected',
         label: 'Download',
@@ -125,14 +134,22 @@ const ContextMenuArea: FC<
     }
 
     // Options when the right clicked item(s) can be updated
-    if (canDoActionOnResource(selectedContextMenuItems, 'update', ability))
+    if (
+      !isListView &&
+      canDoActionOnResource(selectedContextMenuItems, 'update', ability) &&
+      moveItems
+    )
       children.push({
         key: 'move-selected',
         label: 'Move to Folder',
         icon: <RiFolderTransferLine />,
         onClick: () => moveItems(selectedContextMenuItems),
       });
-    if (canDoActionOnResource(selectedContextMenuItems, 'delete', ability))
+    if (
+      !isListView &&
+      canDoActionOnResource(selectedContextMenuItems, 'delete', ability) &&
+      deleteItems
+    )
       children.push({
         key: 'delete-selected',
         label: 'Delete',
@@ -141,34 +158,34 @@ const ContextMenuArea: FC<
       });
 
     // Options that should always be shown
-    contextMenuItems.push(
-      {
-        type: 'group',
-        label: (
-          <span
-            style={{
-              display: 'block',
-              textOverflow: 'ellipsis',
-              overflow: 'hidden',
-            }}
-          >
-            {selectedContextMenuItems.length > 1
-              ? `${selectedContextMenuItems.length} selected`
-              : selectedContextMenuItems[0].name.value}
-          </span>
-        ),
-        children,
-        style: {
-          textOverflow: 'ellipsis',
-        },
+    contextMenuItems.push({
+      type: 'group',
+      label: (
+        <span
+          style={{
+            display: 'block',
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+          }}
+        >
+          {selectedContextMenuItems.length > 1
+            ? `${selectedContextMenuItems.length} selected`
+            : selectedContextMenuItems[0].name.value}
+        </span>
+      ),
+      children,
+      style: {
+        textOverflow: 'ellipsis',
       },
-      // Horizontal Bar,
+    });
 
-      {
+    // Horizontal Bar - only show when in Editor, as there is nothing below it in List
+    if (!isListView) {
+      contextMenuItems.push({
         key: 'item-divider-1',
         type: 'divider',
-      },
-    );
+      });
+    }
   }
 
   return (

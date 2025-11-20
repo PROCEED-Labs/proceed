@@ -322,14 +322,10 @@ class ScriptExecutor extends System {
    * @param {string} [tokenId]
    */
   pause(processId, processInstanceId, tokenId) {
-    try {
-      this.commandRequest(generateUniqueTaskID(), [
-        'pause-child-process',
-        [processId, processInstanceId, tokenId],
-      ]);
-    } catch (e) {
-      console.error(e);
-    }
+    this.commandRequest(generateUniqueTaskID(), [
+      'pause-child-process',
+      [processId, processInstanceId, tokenId],
+    ]);
   }
 
   /**

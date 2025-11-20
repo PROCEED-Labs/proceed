@@ -10,7 +10,6 @@ const Parser = require('@proceed/constraint-parser-xml-json/parser.js');
 const Engine = require('./engine/engine.js');
 const APIError = require('@proceed/distribution/src/routes/ApiError');
 const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
-const { script } = require('@proceed/ui/src/uiHTML.js');
 
 /**
  * @memberof module:@proceed/core
@@ -327,7 +326,7 @@ const Management = {
       bpmnProcessInstance = undefined;
     }
 
-    // If a script task was paused on a scriptTask and the instance doesn't exist anymore, than the
+    // If a token was paused on a scriptTask and the instance doesn't exist anymore, than the
     // script probably also doesn't exist on the script executor, thus we can't resume process.
     if (scriptTaskTokens.length > 0 && !bpmnProcessInstance) {
       // TODO: maybe handle this case better
@@ -452,7 +451,7 @@ const Management = {
     const interruptedTokens = [];
 
     importedInstance.tokens = importedInstance.tokens.map((token) => {
-      // get the element the tokefn was interrupted on
+      // get the element the toke was interrupted on
       const currentFlowElement = getElementById(bpmnObj, token.currentFlowElementId);
 
       const needTokenRestart =
@@ -563,7 +562,7 @@ const Management = {
   /**
    * Return the engine with the given instance id.
    * @param {string} instanceID The id of an instance the engine is executing
-   * @returns {module: proceed/core.ProceedEngine}
+   * @returns {module:@proceed/core.ProceedEngine}
    */
   getEngineWithID(instanceID) {
     return this._engines.find((engine) => engine.instanceIDs.includes(instanceID));
@@ -573,7 +572,7 @@ const Management = {
    * Return the engine running a process that is defined in the file with the given definitionId
    *
    * @param {String} definitionId name of the file the process description is stored in
-   * @returns {Engine | undefined} -he engine running instances of the process with the given id
+   * @returns {Engine | undefined} The engine running instances of the process with the given id
    */
   getEngineWithDefinitionId(definitionId) {
     return this._engines.find((engine) => engine.definitionId === definitionId);

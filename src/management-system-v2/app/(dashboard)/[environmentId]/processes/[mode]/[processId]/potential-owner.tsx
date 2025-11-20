@@ -12,6 +12,7 @@ import { is, isAny } from 'bpmn-js/lib/util/ModelUtil';
 type PotentialOwnerProps = {
   selectedElement: ElementLike;
   modeler: BPMNCanvasRef | null;
+  readOnly?: boolean;
 };
 
 export type Option = {
@@ -107,7 +108,11 @@ function updateResource(
 const filter = (inputValue: string, path: DefaultOptionType[]) =>
   path.some((option) => `${option?.value}`.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
 
-export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, modeler }) => {
+export const PotentialOwner: FC<PotentialOwnerProps> = ({
+  selectedElement,
+  modeler,
+  readOnly = false,
+}) => {
   const { user, roles } = usePotentialOwnerStore();
 
   const { user: selectedUser, roles: selectedRoles } = useBPMNResources(
@@ -164,6 +169,7 @@ export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, model
               // @ts-ignore
               onChange={setPotentialOwner}
               value={[...selectedUser, ...selectedRoles]}
+              disabled={readOnly}
             />
           </>
         )}
@@ -175,9 +181,14 @@ export const PotentialOwner: FC<PotentialOwnerProps> = ({ selectedElement, model
 type ResponsibilityProps = {
   selectedElement: ElementLike;
   modeler: BPMNCanvasRef | null;
+  readOnly?: boolean;
 };
 
-export const ResponsibleParty: FC<ResponsibilityProps> = ({ selectedElement, modeler }) => {
+export const ResponsibleParty: FC<ResponsibilityProps> = ({
+  selectedElement,
+  modeler,
+  readOnly = false,
+}) => {
   const { user, roles } = usePotentialOwnerStore();
 
   const { user: selectedUser, roles: selectedRoles } = useBPMNResources(
@@ -236,6 +247,7 @@ export const ResponsibleParty: FC<ResponsibilityProps> = ({ selectedElement, mod
             // @ts-ignore
             onChange={setResponsible}
             value={[...selectedUser, ...selectedRoles]}
+            disabled={readOnly}
           />
         </>
       </Space>

@@ -29,9 +29,9 @@ import {
   ShareAltOutlined,
 } from '@ant-design/icons';
 import styles from './item-list-view.module.scss';
-import { generateDateString, generateTableDateString } from '@/lib/utils';
+import { generateDateString, generateTableDateString, spaceURL } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { ProcessListProcess, RowActions } from './processes/types';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList, { ListEntryLink } from './item-list-view';
@@ -46,7 +46,10 @@ import { GrDocumentUser } from 'react-icons/gr';
 import { PiNotePencil } from 'react-icons/pi';
 import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
-import usePotentialOwnerStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-potentialOwner-store';
+import usePotentialOwnerStore from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
+import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { isReadable } from 'stream';
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -79,9 +82,12 @@ const ProcessListEntryLink: React.FC<
     data: ProcessListProcess;
     style?: React.CSSProperties;
     className?: string;
+    isReadOnly?: boolean;
   }>
-> = ({ children, data, style, className }) => {
-  const path = data.type === 'folder' ? `/processes/folder/` : `/processes/`;
+> = ({ children, data, style, className, isReadOnly = false }) => {
+  const folderPath = isReadOnly ? `/processes/list/folder/` : `/processes/editor/folder/`;
+  const processPath = isReadOnly ? `/processes/list/` : `/processes/editor/`;
+  const path = data.type === 'folder' ? folderPath : processPath;
 
   return (
     <ListEntryLink path={path} data={data} style={style} className={className}>
@@ -104,6 +110,7 @@ type BaseProcessListProps = PropsWithChildren<{
   columnCustomRenderer?: {
     [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => JSX.Element;
   };
+  isReadOnly: boolean;
 }>;
 
 const BaseProcessList: FC<BaseProcessListProps> = ({
@@ -112,6 +119,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   elementSelection,
   onExportProcess = () => {},
   tableProps,
+  isReadOnly,
   processActions: { viewDocumentation, openEditor, changeMetaData, releaseProcess, share } = {
     viewDocumentation: () => {},
     openEditor: () => {},
@@ -176,11 +184,20 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         title: string;
         action: (record: ProcessListProcess) => void;
         icon: React.ReactNode;
-      } & ({ view: true } | { update: true });
+        permission?: 'view' | 'update';
+      } & ({ view?: true } | { update?: true });
 
-      const ActionButton: React.FC<ActionButtonProps> = ({ title, action, icon, ...actions }) => {
+      const ActionButton: React.FC<ActionButtonProps> = ({
+        title,
+        action,
+        icon,
+        permission,
+        ...actions
+      }) => {
+        if (permission) (actions as any)[permission] = true;
+
         return (
-          <AuthCan {...resource} {...actions}>
+          <AuthCan {...resource} {...(actions as any)}>
             <Tooltip placement="top" title={title}>
               <Button
                 className={classNames(styles.ActionButton)}
@@ -201,27 +218,34 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                 title={'View Documentation'}
                 action={viewDocumentation}
                 icon={<GrDocumentUser />}
-                view
+                permission="view"
               />
               <ActionButton
-                title={'Open Editor'}
+                title={isReadOnly ? 'Open Viewer' : 'Open Editor'}
                 action={openEditor}
                 icon={<PiNotePencil />}
-                update
+                permission={isReadOnly ? 'view' : 'update'}
               />
               <ActionButton
-                title={'Change Meta Data'}
+                title={isReadOnly ? 'Show Meta Data' : 'Change Meta Data'}
                 action={changeMetaData}
                 icon={<LuNotebookPen />}
-                update
+                permission={isReadOnly ? 'view' : 'update'}
               />
+              {!isReadOnly && (
+                <ActionButton
+                  title={'Release Process'}
+                  action={releaseProcess}
+                  icon={<BsFileEarmarkCheck />}
+                  permission="update"
+                />
+              )}
               <ActionButton
-                title={'Release Process'}
-                action={releaseProcess}
-                icon={<BsFileEarmarkCheck />}
-                update
+                title={'Share'}
+                action={share}
+                icon={<ShareAltOutlined />}
+                permission="view"
               />
-              <ActionButton title={'Share'} action={share} icon={<ShareAltOutlined />} update />
             </>
           )}
         </>
@@ -240,7 +264,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         key: 'Favorites',
         width: '40px',
         render: (id, _, index) =>
-          id !== folder.parentId && <FavouriteStar id={id} className={styles.HoverableTableCell} />,
+          id !== folder.parentId && (
+            <FavouriteStar id={id} viewOnly={isReadOnly} className={styles.HoverableTableCell} />
+          ),
         sorter: folderAwareSort((a, b) =>
           favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
             ? 0
@@ -258,7 +284,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
           (a, b) => (a.userDefinedId ?? '').localeCompare(b.userDefinedId ?? ''),
         ),
         render: (id, record) => (
-          <ProcessListEntryLink data={record} /* className={styles.HoverableTableCell} */>
+          <ProcessListEntryLink
+            data={record}
+            isReadOnly={isReadOnly} /* className={styles.HoverableTableCell} */
+          >
             {record.type === 'folder' ? '' : id}
           </ProcessListEntryLink>
         ),
@@ -272,6 +301,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         render: (_, record) => (
           <ProcessListEntryLink
             data={record}
+            isReadOnly={isReadOnly}
             style={{
               color: record.id === folder.parentId ? 'grey' : undefined,
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
@@ -287,7 +317,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         dataIndex: 'description',
         key: 'Description',
         render: (_, record) => (
-          <ProcessListEntryLink data={record}>
+          <ProcessListEntryLink data={record} isReadOnly={isReadOnly}>
             {(record.description.value ?? '').length == 0 ? (
               <>&emsp;</>
             ) : (
@@ -304,7 +334,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         key: 'Last Edited',
         render: (date: string, record) => (
           <>
-            <ProcessListEntryLink data={record}>
+            <ProcessListEntryLink data={record} isReadOnly={isReadOnly}>
               <Tooltip title={generateDateString(date, true)}>
                 {generateTableDateString(date)}
               </Tooltip>
@@ -320,7 +350,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         key: 'Created On',
         render: (date: Date, record) => (
           <>
-            <ProcessListEntryLink data={record}>
+            <ProcessListEntryLink data={record} isReadOnly={isReadOnly}>
               <Tooltip title={generateDateString(date, true)}>
                 {generateTableDateString(date)}
               </Tooltip>
@@ -342,7 +372,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               : mapIdToUsername(item.creatorId);
           return (
             <>
-              <ProcessListEntryLink data={item}>{name}</ProcessListEntryLink>
+              <ProcessListEntryLink data={item} isReadOnly={isReadOnly}>
+                {name}
+              </ProcessListEntryLink>
             </>
           );
         },
@@ -362,7 +394,9 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
 
           return (
             <>
-              <ProcessListEntryLink data={item}>{name}</ProcessListEntryLink>
+              <ProcessListEntryLink data={item} isReadOnly={isReadOnly}>
+                {name}
+              </ProcessListEntryLink>
             </>
           );
         },
@@ -471,6 +505,7 @@ type ProcessManagementListProps = PropsWithChildren<{
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
   processActions: RowActions;
+  isReadOnly: boolean;
 }>;
 
 const ProcessManagementList: FC<ProcessManagementListProps> = ({
@@ -482,6 +517,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
   onExportProcess,
   processActions,
   setShowMobileMetaData,
+  isReadOnly,
 }) => {
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
 
@@ -521,6 +557,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
           },
         },
       }}
+      isReadOnly={isReadOnly}
     ></BaseProcessList>
   );
 };
@@ -530,6 +567,7 @@ type ProcessDeploymentListProps = PropsWithChildren<{
   folder: Folder;
   openFolder: (id: string) => void;
   deploymentButtons: (additionalProps: { process: ProcessListProcess }) => ReactElement;
+  isReadOnly: boolean;
 }>;
 
 const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
@@ -537,6 +575,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
   folder,
   openFolder,
   deploymentButtons,
+  isReadOnly,
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
@@ -597,6 +636,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
           return record.type !== 'folder' ? <>{deploymentButtons({ process: record })}</> : <></>;
         },
       }}
+      isReadOnly={isReadOnly}
     ></BaseProcessList>
   );
 };

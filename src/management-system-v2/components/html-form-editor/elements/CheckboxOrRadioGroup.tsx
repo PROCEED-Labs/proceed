@@ -58,6 +58,63 @@ const getNewElementLabel = (type: CheckBoxOrRadioButtonProps['type']) => {
   else return 'New Radio Button';
 };
 
+const ExportCheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
+  type,
+  variable,
+  label,
+  value,
+  checked,
+}) => {
+  const id = useId();
+
+  let checkOrPlaceholder = checked ? 'checked' : '';
+  if (!checked) {
+    if (value && type === 'radio') {
+      checkOrPlaceholder = `{%if ${variable} == '${value}'%}checked{%/if%}`;
+    } else if (value && type === 'checkbox') {
+      checkOrPlaceholder = `{%if ${variable} contains '${value}'%}checked{%/if%}`;
+    } else {
+      checkOrPlaceholder = `{%if ${variable}%}checked{%/if%}`;
+    }
+  }
+
+  // use inner html to allow the inclusion of our placeholders in the output which would be excluded
+  // when using regular react input components
+  return (
+    <div
+      className="user-task-form-input-group-member"
+      dangerouslySetInnerHTML={{
+        __html: `
+<input id="${id}" type="${type}" value="${value || ''}" name="${variable}" ${checkOrPlaceholder}/>
+<span style="position: relative; width: 100%"><label for="${id}">${label}</span></span>
+`,
+      }}
+    />
+  );
+};
+
+export const ExportCheckboxOrRadioGroup: React.FC<CheckBoxOrRadioGroupProps> = ({
+  type,
+  variable = '',
+  data,
+}) => {
+  return (
+    <div className={`user-task-form-input-group variable-${variable}`}>
+      {data.map((entry) => (
+        <ExportCheckboxOrRadioButton
+          type={type}
+          variable={variable}
+          label={entry.label}
+          value={entry.value}
+          checked={entry.checked}
+          onChange={() => {}}
+          onLabelChange={() => {}}
+        />
+      ))}
+    </div>
+  );
+};
+
 const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   type,
   variable,

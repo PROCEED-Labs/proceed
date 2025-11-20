@@ -9,11 +9,13 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 type ImageSelectionSectionProperties = {
   imageFilePath?: string;
   onImageUpdate: (imageFilePath?: string) => void;
+  disabled?: boolean;
 };
 
 const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   imageFilePath: imageFileName,
   onImageUpdate,
+  disabled = false,
 }) => {
   const { processId } = useParams();
 
@@ -26,6 +28,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
       onImageUpdate={onImageUpdate}
       fileName={imageFileName}
       fileManagerErrorToasts={false}
+      disabled={disabled}
       imageProps={{
         alt: 'Image',
         style: {

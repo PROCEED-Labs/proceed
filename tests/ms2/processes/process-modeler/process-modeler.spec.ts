@@ -68,7 +68,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(page.getByRole('option', { name: 'Version 1' })).toBeVisible();
   await page.getByRole('option', { name: 'Version 1' }).click();
   const expectedURLWithVersion = new RegExp(
-    `\\/processes\\/${definitionId}\\?version=[a-zA-Z0-9-_]+$`,
+    `\\/processes\\/editor\\/${definitionId}\\?version=[a-zA-Z0-9-_]+$`,
   );
   await page.waitForURL(expectedURLWithVersion);
   expect(expectedURLWithVersion.test(page.url())).toBeTruthy();
@@ -113,12 +113,12 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await closeModal(processCreationDialog, () =>
     processCreationDialog.getByRole('button', { name: 'Create' }).click(),
   );
-  const expectedURLNewProcess = new RegExp(`\\/processes\\/[a-zA-Z0-9-_]+`);
+  const expectedURLNewProcess = new RegExp(`\\/processes\\/editor\\/[a-zA-Z0-9-_]+`);
   await page.waitForURL((url) => {
     return url.pathname.match(expectedURLNewProcess) && !url.pathname.includes(definitionId);
   });
   expect(expectedURLNewProcess.test(page.url())).toBeTruthy();
-  const newDefinitionID = page.url().split('/processes/').pop();
+  const newDefinitionID = page.url().split('/processes/editor/').pop();
   expect(newDefinitionID).not.toEqual(definitionId);
 
   // Not only wait for URL change, but also new content to be loaded.
@@ -130,11 +130,11 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(openSubprocessButton).toBeVisible();
   await openSubprocessButton.click();
   const expectedURLSubprocess = new RegExp(
-    `\\/processes\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
+    `\\/processes\\/editor\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
   );
   await page.waitForURL(expectedURLSubprocess);
   expect(expectedURLSubprocess.test(page.url())).toBeTruthy();
-  const newSubprocessDefinitionID = page.url().split('/processes/').pop();
+  const newSubprocessDefinitionID = page.url().split('/processes/editor/').pop();
   expect(newSubprocessDefinitionID).not.toEqual(definitionId);
 });
 
@@ -151,7 +151,7 @@ test.describe('Shortcuts in Modeler', () => {
     await page.getByRole('main').press('Escape');
 
     /* Wait for navigation change */
-    await page.waitForURL(/\/processes$/);
+    await page.waitForURL(/\/processes\/editor$/);
 
     // await processModelerPage.waitForHydration();
 
@@ -261,7 +261,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${process1Id}"]>td:nth-child(3)`).click();
 
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await page.waitForURL(/processes\/editor\/[a-z0-9-_]+/);
 
   // create new process version - Needed for embed
   const openVersionCreationDialog = page
@@ -337,7 +337,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
-  const newProcessId = newPage.url().split('/processes/').pop();
+  const newProcessId = newPage.url().split('/editor/').pop();
 
   await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();

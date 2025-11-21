@@ -3,7 +3,6 @@
 import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
   DeployedProcessInfo,
-  InstanceInfo,
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
   getProcessImageFromMachine,
@@ -393,27 +392,31 @@ export async function setTasklistEntryVariableValues(
       throw new Error('Failed to get stored user task data.');
     }
 
-    const [taskId, instanceId] = userTaskId.split('|');
-
     await updateUserTask(userTaskId, {
       variableChanges: { ...storedUserTask.variableChanges, ...variables },
     });
 
-    // find the engine the user task is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
+    if (storedUserTask.machineId !== 'ms-local') {
+      const [taskId, instanceId] = userTaskId.split('|');
 
-      const instance = deployments
-        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
-        ?.instances.find((i) => i.processInstanceId === instanceId);
+      // find the engine the user task is running on
+      const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+        const deployments = await fetchDeployments([engine]);
 
-      if (!instance) return false;
+        const instance = deployments
+          .find((deployment) =>
+            deployment.instances.some((i) => i.processInstanceId === instanceId),
+          )
+          ?.instances.find((i) => i.processInstanceId === instanceId);
 
-      return instance.tokens.some((token) => token.currentFlowElementId === taskId);
-    });
+        if (!instance) return false;
 
-    if (engines.length) {
-      await setTasklistEntryVariableValuesOnMachine(engines[0], instanceId, taskId, variables);
+        return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+      });
+
+      if (engines.length) {
+        await setTasklistEntryVariableValuesOnMachine(engines[0], instanceId, taskId, variables);
+      }
     }
   } catch (e) {
     const message = getErrorMessage(e);
@@ -436,27 +439,31 @@ export async function setTasklistMilestoneValues(
       throw new Error('Failed to get stored user task data.');
     }
 
-    const [taskId, instanceId] = userTaskId.split('|');
-
     await updateUserTask(userTaskId, {
       milestonesChanges: { ...storedUserTask.milestonesChanges, ...milestones },
     });
 
-    // find the engine the user task is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
+    if (storedUserTask.machineId !== 'ms-local') {
+      const [taskId, instanceId] = userTaskId.split('|');
 
-      const instance = deployments
-        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
-        ?.instances.find((i) => i.processInstanceId === instanceId);
+      // find the engine the user task is running on
+      const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+        const deployments = await fetchDeployments([engine]);
 
-      if (!instance) return false;
+        const instance = deployments
+          .find((deployment) =>
+            deployment.instances.some((i) => i.processInstanceId === instanceId),
+          )
+          ?.instances.find((i) => i.processInstanceId === instanceId);
 
-      return instance.tokens.some((token) => token.currentFlowElementId === taskId);
-    });
+        if (!instance) return false;
 
-    if (engines.length) {
-      await setTasklistEntryMilestoneValuesOnMachine(engines[0], instanceId, taskId, milestones);
+        return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+      });
+
+      if (engines.length) {
+        await setTasklistEntryMilestoneValuesOnMachine(engines[0], instanceId, taskId, milestones);
+      }
     }
   } catch (e) {
     const message = getErrorMessage(e);
@@ -473,47 +480,57 @@ export async function completeTasklistEntry(
     if (!enableUseDB)
       throw new Error('getAvailableTaskListEntries only available with enableUseDB');
 
-    const [taskId, instanceId] = userTaskId.split('|');
-
-    // find the engine the user task is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
-
-      const instance = deployments
-        .find((deployment) => deployment.instances.some((i) => i.processInstanceId === instanceId))
-        ?.instances.find((i) => i.processInstanceId === instanceId);
-
-      if (!instance) return false;
-
-      return instance.tokens.some((token) => token.currentFlowElementId === taskId);
-    });
-
-    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
-
     const storedUserTask = await getUserTaskById(userTaskId);
 
     if (!storedUserTask || 'error' in storedUserTask) {
       throw new Error('Failed to get stored user task data.');
     }
 
-    const { variableChanges, milestonesChanges } = storedUserTask;
+    const { variableChanges, milestonesChanges, machineId } = storedUserTask;
 
-    // push the values from the database to the engine so the instance state is correctly updated
-    // when the user task is completed as the next step
-    await setTasklistEntryVariableValuesOnMachine(
-      engines[0],
-      instanceId,
-      taskId,
-      variableChanges || {},
-    );
-    await setTasklistEntryMilestoneValuesOnMachine(
-      engines[0],
-      instanceId,
-      taskId,
-      milestonesChanges || {},
-    );
+    if (machineId !== 'ms-local') {
+      const [taskId, instanceId] = userTaskId.split('|');
 
-    await completeTasklistEntryOnMachine(engines[0], instanceId, taskId, variables);
+      // find the engine the user task is running on
+      const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+        const deployments = await fetchDeployments([engine]);
+
+        const instance = deployments
+          .find((deployment) =>
+            deployment.instances.some((i) => i.processInstanceId === instanceId),
+          )
+          ?.instances.find((i) => i.processInstanceId === instanceId);
+
+        if (!instance) return false;
+
+        return instance.tokens.some((token) => token.currentFlowElementId === taskId);
+      });
+
+      if (!engines.length)
+        throw new Error('Failed to find the engine the user task is running on!');
+
+      // push the values from the database to the engine so the instance state is correctly updated
+      // when the user task is completed as the next step
+      await setTasklistEntryVariableValuesOnMachine(
+        engines[0],
+        instanceId,
+        taskId,
+        variableChanges || {},
+      );
+      await setTasklistEntryMilestoneValuesOnMachine(
+        engines[0],
+        instanceId,
+        taskId,
+        milestonesChanges || {},
+      );
+
+      await completeTasklistEntryOnMachine(engines[0], instanceId, taskId, variables);
+    }
+
+    await updateUserTask(userTaskId, {
+      variableChanges: { ...variableChanges, ...variables },
+      state: 'COMPLETED',
+    });
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

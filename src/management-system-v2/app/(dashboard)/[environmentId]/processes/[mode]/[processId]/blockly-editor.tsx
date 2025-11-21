@@ -6,13 +6,14 @@ import React, {
   useLayoutEffect,
   useRef,
 } from 'react';
-import { INITIAL_TOOLBOX_JSON, javascriptGenerator } from './blockly-editor-config';
+import { INITIAL_TOOLBOX_JSON } from './blockly-editor-config';
+import * as BlocklyJavaScript from 'blockly/javascript';
+const { javascriptGenerator } = BlocklyJavaScript;
 import './blockly-editor.css';
-import * as Blockly from 'blockly/core';
-import { WorkspaceSvg, Xml } from 'blockly';
+import * as Blockly from 'blockly';
 import { debounce } from '@/lib/utils';
 
-function validateBlockScript(workspace: WorkspaceSvg) {
+function validateBlockScript(workspace: Blockly.WorkspaceSvg) {
   const topBlocks = workspace.getTopBlocks();
 
   const topBlocksWithoutPreviousBlock = topBlocks.filter(
@@ -56,7 +57,7 @@ const BlocklyEditor = ({
   readOnly = false,
 }: BlocklyEditorProps) => {
   const blocklyDivRef = useRef<HTMLDivElement | null>(null);
-  const blocklyWorkspaceRef = useRef<WorkspaceSvg>();
+  const blocklyWorkspaceRef = useRef<Blockly.WorkspaceSvg>();
   const blocklyPrevXml = useRef<Element | undefined>();
   const onChangeFunc = useRef<OnChangeFunc | undefined>();
 

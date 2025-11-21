@@ -1,6 +1,6 @@
 import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
-import * as Blockly from 'blockly/core';
+import * as Blockly from 'blockly';
 
 type BlockDeclaration = Partial<Blockly.Block> & ThisType<Blockly.Block>;
 const Blocks = Blockly.Blocks as Record<string, BlockDeclaration>;

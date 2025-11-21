@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 
 import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -29,7 +29,6 @@ import { EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
-import { DragPreviewContext } from './Column';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
@@ -214,10 +213,6 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
       isSelected: !!parent && parent.events.selected,
     };
   });
-
-  // prevent that a drag preview interacts with the drag and drop functionality of the original
-  // object
-  const isDragPreview = useContext(DragPreviewContext);
 
   useEffect(() => {
     if (!isSelected) {
@@ -424,7 +419,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     >
       <div
         ref={(r) => {
-          !isDragPreview && r && connect(r);
+          r && connect(r);
         }}
       >
         <div className={`user-task-form-input-group variable-${variable}`}>

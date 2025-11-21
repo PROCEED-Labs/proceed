@@ -4,10 +4,9 @@ import { EditOutlined } from '@ant-design/icons';
 
 import EditableText from '../_utils/EditableText';
 import { ContextMenu, Overlay } from './utils';
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
-import { DragPreviewContext } from './Column';
 
 type TextProps = {
   text?: string;
@@ -23,16 +22,12 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
 
   const editingEnabled = useCanEdit();
 
-  // prevent that a drag preview interacts with the drag and drop functionality of the original
-  // object
-  const isDragPreview = useContext(DragPreviewContext);
-
   return (
     <ContextMenu menu={[]}>
       <div
         onMouseEnter={() => setHovered(true)}
         ref={(r) => {
-          !isDragPreview && r && connect(r);
+          r && connect(r);
         }}
       >
         <Overlay

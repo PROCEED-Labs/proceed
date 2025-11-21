@@ -1,7 +1,5 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import useEditorStateStore from '../use-editor-state-store';
-import { useContext } from 'react';
-import { DragPreviewContext } from './Column';
 
 export const ExportMilestones: UserComponent = () => {
   return (
@@ -35,14 +33,10 @@ const Milestones: UserComponent = () => {
 
   const milestones = useEditorStateStore((state) => state.milestones);
 
-  // prevent that a drag preview interacts with the drag and drop functionality of the original
-  // object
-  const isDragPreview = useContext(DragPreviewContext);
-
   return (
     <div
       ref={(r) => {
-        !isDragPreview && r && connect(r);
+        r && connect(r);
       }}
       className="user-task-form-milestones"
     >

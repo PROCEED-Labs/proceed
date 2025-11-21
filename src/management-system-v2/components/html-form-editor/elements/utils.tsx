@@ -272,12 +272,12 @@ type VariableSettingProps = {
   ) => void;
 };
 
-export const VariableSetting: React.FC<VariableSettingProps> = ({
-  variable,
-  allowedTypes,
-  onChange,
-}) => {
+export const VariableSelection: React.FC<
+  VariableSettingProps & { style?: React.CSSProperties }
+> = ({ variable, allowedTypes, onChange, style = {} }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
+
+  const editingEnabled = useCanEdit();
 
   const { variables, updateVariables } = useEditorStateStore((state) => state);
 
@@ -287,60 +287,82 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
     (variable) => !allowedTypes || allowedTypes.includes(variable.dataType),
   );
 
-  const selectedVariable = validVariables.find((v) => v.name === variable);
+  return (
+    <>
+      <Select
+        value={variable}
+        style={{ display: 'block', ...style }}
+        title={getVariableTooltip(variables, variable)}
+        options={validVariables.map((v) => ({
+          label: v.name,
+          title: getVariableTooltip(variables, v.name),
+          value: v.name,
+        }))}
+        disabled={!editingEnabled}
+        onChange={(val) => {
+          const variable = variables.find((v) => v.name === val);
+          onChange(val, variable?.dataType, variable?.textFormat);
+        }}
+        dropdownRender={(menu) => (
+          <>
+            {menu}
+            <Space style={{ display: 'block', padding: '0 8px 4px' }}>
+              <Button block onClick={() => setShowVariableForm(true)}>
+                Add Variable
+              </Button>
+            </Space>
+          </>
+        )}
+      />
+      <ProcessVariableForm
+        open={showVariableForm}
+        variables={variables}
+        allowedTypes={allowedTypes}
+        onSubmit={(newVar) => {
+          updateVariables([...variables, newVar]);
+          setShowVariableForm(false);
+          onChange(newVar.name, newVar.dataType, newVar.textFormat);
+        }}
+        onCancel={() => setShowVariableForm(false)}
+      />
+    </>
+  );
+};
+
+export const VariableSetting: React.FC<VariableSettingProps> = ({
+  variable,
+  allowedTypes,
+  onChange,
+}) => {
+  const { variables } = useEditorStateStore((state) => state);
+
+  const selectedVariable = variables?.find((v) => v.name === variable);
 
   return (
     <>
       <Setting
         label="Variable"
         control={
-          <>
-            <Select
-              value={variable}
-              style={{ display: 'block' }}
-              title={getVariableTooltip(variables, variable)}
-              options={validVariables.map((v) => ({
-                label: v.name,
-                title: getVariableTooltip(variables, v.name),
-                value: v.name,
-              }))}
-              onChange={(val) => {
-                const variable = variables.find((v) => v.name === val);
-                onChange(val, variable?.dataType, variable?.textFormat);
-              }}
-              dropdownRender={(menu) => (
-                <>
-                  {menu}
-                  <Space style={{ display: 'block', padding: '0 8px 4px' }}>
-                    <Button block onClick={() => setShowVariableForm(true)}>
-                      Add Variable
-                    </Button>
-                  </Space>
-                </>
-              )}
-            />
-            <ProcessVariableForm
-              open={showVariableForm}
-              variables={variables}
-              allowedTypes={allowedTypes}
-              onSubmit={(newVar) => {
-                updateVariables([...variables, newVar]);
-                setShowVariableForm(false);
-                onChange(newVar.name, newVar.dataType, newVar.textFormat);
-              }}
-              onCancel={() => setShowVariableForm(false)}
-            />
-          </>
+          <VariableSelection variable={variable} allowedTypes={allowedTypes} onChange={onChange} />
         }
       />
 
-      {selectedVariable?.textFormat && (
-        <Setting
-          disabled
-          label="Format"
-          control={<Input value={textFormatMap[selectedVariable.textFormat]} />}
-        />
-      )}
+      {selectedVariable ? (
+        <>
+          <Setting
+            disabled
+            label="Type"
+            control={<Input value={typeLabelMap[selectedVariable.dataType]} />}
+          />
+          {selectedVariable.textFormat && (
+            <Setting
+              disabled
+              label="Format"
+              control={<Input value={textFormatMap[selectedVariable.textFormat]} />}
+            />
+          )}
+        </>
+      ) : null}
     </>
   );
 };

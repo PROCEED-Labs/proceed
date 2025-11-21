@@ -788,6 +788,8 @@ async function getMilestonesFromElementById(bpmn, elementId) {
  * @property {string} name - variable name
  * @property {string} [description] - a description of the variable
  * @property {string} dataType - the type of the value of the variable
+ * @property {string} [textFormat] - expected formatting for variables with type text (e.g. url,
+ * email, ...)
  * @property {string} [defaultValue] - the value that the variable should have when none is manually set at startup
  * @property {boolean} [requiredAtInstanceStartup] - if the variable has to be initialized when an instance is started
  * @property {string} [enum] - enumeration of the values that the variable is allowed to have (a string with values separated by ';')
@@ -812,6 +814,7 @@ function getVariablesFromElement(element) {
           name,
           description,
           dataType,
+          textFormat,
           defaultValue,
           requiredAtInstanceStartup,
           enum: e,
@@ -820,6 +823,7 @@ function getVariablesFromElement(element) {
           name,
           description,
           dataType,
+          textFormat,
           defaultValue,
           requiredAtInstanceStartup,
           enum: e,

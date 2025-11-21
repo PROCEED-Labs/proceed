@@ -888,7 +888,7 @@ test('allow a different user that was given the share link to import the shared 
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
-  await expect(documentationPage.getByText('Loading process data')).toBeHidden();
+  await expect(newPage.getByText('Loading process data')).toBeHidden();
 
   // check that the add to workspace button is visible since the user does not own the process
   await expect(newPage.getByRole('button', { name: 'Edit' })).toBeVisible();
@@ -907,9 +907,9 @@ test('allow a different user that was given the share link to import the shared 
 
   const newProcessId = newPage.url().split('/editor/').pop();
 
-  await newPage.getByRole('menuitem', { name: 'Processes' }).click();
-  await newPage.getByRole('link', { name: 'Editor' }).click();
-  await newPage.waitForURL(/processes/);
+  await newPage.goto('/processes/editor');
+  await newPage.waitForURL('/processes/editor');
+  await waitForHydration(newPage);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 
   // cleanup the process added by the guest user

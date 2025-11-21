@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { useEffect } from 'react';
-import { fetchPotentialOwner } from './potentialOwner-server-action';
+import { fetchPotentialOwner } from '@/components/competence/actions/potentialOwner-server-action';
 import { useEnvironment } from '@/components/auth-can';
 
 export type UserType = {

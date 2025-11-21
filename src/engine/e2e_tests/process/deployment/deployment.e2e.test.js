@@ -3806,15 +3806,20 @@ describe('Test deploying a process', () => {
             {
               tokenId: expect.any(String),
               state: 'PAUSED',
-              currentFlowElementId: 'Flow_1t4tcmh',
+              currentFlowElementId: 'Activity_1m0u15u',
               currentFlowElementStartTime: expect.any(Number),
-              previousFlowElementId: 'Activity_1m0u15u',
+              previousFlowElementId: 'Flow_0n4ueli',
+              currentFlowNodeProgress: {
+                manual: false,
+                value: expect.any(Number),
+              },
+              currentFlowNodeState: 'ACTIVE',
               localStartTime: expect.any(Number),
               localExecutionTime: expect.any(Number),
               machineHops: 0,
               deciderStorageRounds: 0,
               deciderStorageTime: 0,
-              intermediateVariablesState: null,
+              intermediateVariablesState: expect.any(Object),
             },
           ]);
           expect(instanceInfo.log).toEqual([
@@ -3830,20 +3835,6 @@ describe('Test deploying a process', () => {
                 name: 'machine1',
                 port: 33020,
               },
-            },
-            {
-              tokenId: expect.any(String),
-              flowElementId: 'Activity_1m0u15u',
-              executionState: 'COMPLETED',
-              startTime: expect.any(Number),
-              endTime: expect.any(Number),
-              machine: {
-                id: 'machineId1',
-                ip: expect.any(String),
-                name: 'machine1',
-                port: 33020,
-              },
-              progress: { value: 100, manual: false },
             },
           ]);
 

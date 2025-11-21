@@ -500,9 +500,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
                       setIsScriptValid(isScriptValid);
                     }}
-                    blocklyOptions={{
-                      readOnly: !canEdit,
-                    }}
+                    readOnly={!canEdit}
                   />
                 )}
               </Col>

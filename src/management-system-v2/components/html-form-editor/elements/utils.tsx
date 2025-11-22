@@ -27,7 +27,7 @@ export const Setting: React.FC<{
 
   const editingEnabled = useCanEdit();
 
-  const clonedControl = React.cloneElement(control, { id, disabled: !editingEnabled });
+  const clonedControl = React.cloneElement<any>(control, { id, disabled: !editingEnabled });
 
   return (
     <div style={{ margin: '5px', ...style }}>

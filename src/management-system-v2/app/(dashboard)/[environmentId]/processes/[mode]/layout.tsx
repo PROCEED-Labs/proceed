@@ -1,11 +1,9 @@
 import { ProcessViewProvider } from './[processId]/process-view-context';
 
-export default function ModeLayout({
-  children,
-  params,
-}: {
+export default async function ModeLayout(props: {
   children: React.ReactNode;
-  params: { mode: string };
+  params: Promise<{ mode: string }>;
 }) {
-  return <ProcessViewProvider mode={params.mode}>{children}</ProcessViewProvider>;
+  const params = await props.params;
+  return <ProcessViewProvider mode={params.mode}>{props.children}</ProcessViewProvider>;
 }

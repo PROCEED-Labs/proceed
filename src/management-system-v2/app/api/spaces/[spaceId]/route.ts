@@ -2,10 +2,11 @@ import db from '@/lib/data/db';
 import { env } from '@/lib/ms-config/env-vars';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  { params: { spaceId } }: { params: { spaceId: string } },
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ spaceId: string }> }) {
+  const params = await props.params;
+
+  const { spaceId } = params;
+
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
     return NextResponse.json({
       id: 'proceed-default-no-iam-user',

@@ -9,7 +9,6 @@ import React, {
 import { INITIAL_TOOLBOX_JSON } from './blockly-editor-config';
 import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
-import './blockly-editor.css';
 import * as Blockly from 'blockly';
 import { debounce } from '@/lib/utils';
 

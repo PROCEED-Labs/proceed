@@ -562,17 +562,18 @@ export const INITIAL_TOOLBOX_JSON = {
         },
       ],
     },
-    {
-      kind: 'category',
-      name: 'Progress',
-      colour: 290,
-      contents: [
-        {
-          kind: 'block',
-          type: 'progress',
-        },
-      ],
-    },
+    // NOTE: not implemented in script task yet
+    // {
+    //   kind: 'category',
+    //   name: 'Progress',
+    //   colour: 290,
+    //   contents: [
+    //     {
+    //       kind: 'block',
+    //       type: 'progress',
+    //     },
+    //   ],
+    // },
   ],
 };
 
@@ -984,28 +985,29 @@ javascriptGenerator.forBlock['wait'] = function (block) {
 // Progress
 // --------------------------------------------
 
-Blocks['progress'] = {
-  init: function () {
-    this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
-    this.setInputsInline(true);
-    this.setTooltip('');
-    this.setHelpUrl(
-      'https://docs.proceed-labs.org/developer/script-task-api#setprogressnumber-between-0---100',
-    );
-    this.setColour(75);
-    this.setPreviousStatement(true);
-    this.setNextStatement(true);
-  },
-};
-
-javascriptGenerator.forBlock['progress'] = function (block) {
-  const progressValue =
-    javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC) || 0;
-
-  // Generierten Code zurückgeben
-  const code = `setProgress(${progressValue});\n`;
-  return code;
-};
+// NOTE: not implemented in script task yet
+// Blocks['progress'] = {
+//   init: function () {
+//     this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
+//     this.setInputsInline(true);
+//     this.setTooltip('');
+//     this.setHelpUrl(
+//       'https://docs.proceed-labs.org/developer/script-task-api#setprogressnumber-between-0---100',
+//     );
+//     this.setColour(75);
+//     this.setPreviousStatement(true);
+//     this.setNextStatement(true);
+//   },
+// };
+//
+// javascriptGenerator.forBlock['progress'] = function (block) {
+//   const progressValue =
+//     javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC) || 0;
+//
+//   // Generierten Code zurückgeben
+//   const code = `setProgress(${progressValue});\n`;
+//   return code;
+// };
 
 // --------------------------------------------
 // Errors

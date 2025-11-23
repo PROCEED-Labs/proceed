@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Modal,
@@ -26,8 +26,8 @@ const { Search } = Input;
 
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import languageExtension from './languageExtension.js';
-import useModelerStateStore from './use-modeler-state-store';
+import languageExtension from '../monaco-typescript-language-extension.js';
+import useModelerStateStore from '../use-modeler-state-store';
 import {
   getProcessScriptTaskData,
   saveProcessScriptTask,
@@ -39,8 +39,8 @@ import { type BlocklyEditorRefType } from './blockly-editor';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import useProcessVariables from './use-process-variables';
-import ProcessVariableForm from './variable-definition/process-variable-form';
+import useProcessVariables from '../use-process-variables';
+import ProcessVariableForm from '../variable-definition/process-variable-form';
 import { useCanEdit } from '@/lib/can-edit-context';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 
@@ -112,9 +112,8 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
   useEffect(() => {
     setHasUnsavedChanges(false);
-    setInitialScript('');
-    setSelectedEditor(null);
     setIsScriptValid(true);
+
     setInitialScript(data?.[0] ?? '');
     setSelectedEditor(data?.[1] ?? null);
   }, [data]);
@@ -246,11 +245,11 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   };
 
   const transformToCode = async () => {
-    if (blocklyRef.current) {
-      const blocklyCode = blocklyRef.current.getCode();
-      setInitialScript(blocklyCode.js);
-      setSelectedEditor('JS');
-    }
+    if (selectedEditor !== 'blockly' || !blocklyRef.current) return;
+
+    const blocklyCode = blocklyRef.current.getCode();
+    setInitialScript(blocklyCode.js);
+    setSelectedEditor('JS');
   };
 
   return (

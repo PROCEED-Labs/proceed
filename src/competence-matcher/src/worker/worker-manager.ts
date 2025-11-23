@@ -54,29 +54,12 @@ class WorkerPool {
   }
 
   private initialiseWorkers(): void {
-    logger.debug('worker', `Initializing ${this.poolSize} ${this.workerType} workers`, {
-      workerType: this.workerType,
-      poolSize: this.poolSize,
-    });
-
-    for (let i = 0; i < this.poolSize; i++) {
-      logger.debug('worker', `Creating ${this.workerType} worker ${i + 1}/${this.poolSize}`, {
-        workerType: this.workerType,
-        workerIndex: i + 1,
-        totalToCreate: this.poolSize,
-      });
-      this.createWorker();
-    }
-
-    logger.debug('worker', `Finished initializing ${this.workerType} workers`, {
-      workerType: this.workerType,
-      workersCreated: this.workers.length,
-      expectedWorkers: this.poolSize,
-    });
+    for (let i = 0; i < this.poolSize; i++) this.createWorker();
   }
 
   private createWorker(): void {
-    const worker = createWorker(this.workerType, this.workerInitData);
+    const script = this.workerType === 'inference' ? 'inference' : this.workerType;
+    const worker = createWorker(script, this.workerInitData);
     this.workers.push(worker);
 
     logger.debug('worker', `Created new ${this.workerType} worker`, {
@@ -508,50 +491,24 @@ class WorkerPool {
  * WorkerManager - High-level interface for managing worker pools
  */
 class WorkerManager {
-  private embeddingPool: WorkerPool;
-  private matchingPool: WorkerPool;
-
+  private inferencePool: WorkerPool;
   constructor() {
-    logger.info('worker', 'Initializing WorkerManager', {
+    logger.info('worker', 'Initialising Monolithic WorkerManager (inference)', {
       embeddingWorkers,
       matchingWorkers,
     });
-
-    const onnxLockBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
-    const onnxLockView = new Int32Array(onnxLockBuffer);
-    Atomics.store(onnxLockView, 0, 0);
-
-    const sharedWorkerData = { onnxLock: onnxLockBuffer } as Record<string, unknown>;
-
-    this.embeddingPool = new WorkerPool('embedder', embeddingWorkers, sharedWorkerData);
-    this.matchingPool = new WorkerPool('matcher', matchingWorkers, sharedWorkerData);
+    this.inferencePool = new WorkerPool('inference', 1);
   }
-
   public async enqueue(job: EmbeddingJob | MatchingJob, workerType: workerTypes): Promise<any> {
-    logger.info('worker', `Enqueuing job to ${workerType} pool`, {
+    logger.info('worker', `Enqueuing ${workerType} job (routed to inference)`, {
       workerType,
       jobId: job.jobId,
     });
-
-    if (workerType === 'embedder') {
-      return this.embeddingPool.executeJob(job);
-    } else if (workerType === 'matcher') {
-      return this.matchingPool.executeJob(job);
-    } else {
-      const error = new Error(`Unknown worker type: ${workerType}`);
-      logger.error('worker', 'Unknown worker type requested', error, {
-        workerType,
-        jobId: job.jobId,
-      });
-      throw error;
-    }
+    return this.inferencePool.executeJob(job);
   }
-
   public async shutdown(): Promise<void> {
-    await Promise.all([this.embeddingPool.shutdown(), this.matchingPool.shutdown()]);
+    await this.inferencePool.shutdown();
   }
 }
-
-// Export singleton instance
 const manager = new WorkerManager();
 export default manager;

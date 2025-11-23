@@ -177,7 +177,7 @@ export type GroupedMatchResults = {
   resourceRanking: ResourceRanking;
 };
 
-export type workerTypes = 'embedder' | 'matcher';
+export type workerTypes = 'embedder' | 'matcher' | 'inference';
 
 export interface WorkerQueue {
   job: any;

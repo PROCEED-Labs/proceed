@@ -531,17 +531,6 @@ export const INITIAL_TOOLBOX_JSON = {
             '      </value>\n' +
             '    </block>\n',
         },
-        {
-          kind: 'block',
-          blockxml:
-            '    <block type="network_Head">\n' +
-            '      <value name="url">\n' +
-            '        <shadow type="text">\n' +
-            '          <field name="TEXT">http://localhost</field>\n' +
-            '        </shadow>\n' +
-            '      </value>\n' +
-            '    </block>\n',
-        },
       ],
     },
     {
@@ -1180,7 +1169,7 @@ javascriptGenerator.forBlock['throw_error'] = function (block) {
 // Services
 // --------------------------------------------
 const methodsWithBody = ['Post', 'Put'];
-for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
+for (const method of ['Get', 'Post', 'Put', 'Delete']) {
   const methodName = `network_${method}`;
   const hasBody = methodsWithBody.includes(method);
 
@@ -1197,18 +1186,26 @@ for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
     },
   ];
 
-  if (hasBody)
-    args.push({
-      type: 'input_value',
-      name: 'body',
-      check: null,
-    });
+  if (hasBody) {
+    args.push(
+      {
+        type: 'input_value',
+        name: 'body',
+        check: null,
+      },
+      {
+        type: 'input_value',
+        name: 'content_type',
+        check: 'String',
+      },
+    );
+  }
 
   Blocks[methodName] = {
     init: function () {
       this.jsonInit({
         type: methodName,
-        message0: `${method} url %1\n${hasBody ? 'Body %3\n' : ''}Options %2`,
+        message0: `${method} url %1\n${hasBody ? 'Body %3\nContent Type %4\n' : ''}Options %2`,
         args0: args,
         output: null,
         colour: 75,
@@ -1224,17 +1221,22 @@ for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
       javascriptGenerator.valueToCode(block, 'options', BlocklyJavaScript.Order.COMMA) ||
       'undefined';
 
-    let body = '';
+    let additionalArguments = '';
     if (hasBody) {
-      body =
+      const body =
         javascriptGenerator.valueToCode(block, 'body', BlocklyJavaScript.Order.COMMA) ||
         'undefined';
-      body += ',';
+      additionalArguments += body + ',';
+
+      const contentType =
+        javascriptGenerator.valueToCode(block, 'content_type', BlocklyJavaScript.Order.COMMA) ||
+        'undefined';
+      additionalArguments += contentType + ',';
     }
 
     return [
-      `await getService('network').${method.toLowerCase()}(${url}, ${body}${options})`,
-      BlocklyJavaScript.Order.AWAIT,
+      `getService('network-requests').${method.toLowerCase()}(${url}, ${additionalArguments}${options})`,
+      BlocklyJavaScript.Order.FUNCTION_CALL,
     ];
   };
 }

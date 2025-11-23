@@ -538,8 +538,17 @@ export const INITIAL_TOOLBOX_JSON = {
       name: 'Timeouts',
       colour: 290,
       contents: [
-        { kind: 'block', type: 'interval_async' },
-        { kind: 'block', type: 'timeout_async' },
+        {
+          kind: 'block',
+          blockxml:
+            '<block type="wait">\n' +
+            '      <value name="delay">\n' +
+            '        <shadow type="math_number">\n' +
+            '          <field name="NUM">100</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>',
+        },
       ],
     },
     {
@@ -979,25 +988,21 @@ for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', '
 // Timeouts
 // --------------------------------------------
 
-Blocks['interval_async'] = {
+Blocks['wait'] = {
   init: function (this: Blockly.Block) {
     this.jsonInit({
-      message0: 'Async interval %1 ms\nCallback function%2',
+      message0: 'Wait %1 ms\n',
       args0: [
         {
           type: 'input_value',
           name: 'delay',
           check: 'Number',
         },
-        {
-          type: 'input_value',
-          name: 'callback',
-          check: 'PROCEDURE',
-        },
       ],
-      tooltip: 'An interval function which repeatedly calls a callback function after a timeout.',
-      helpUrl:
-        'https://docs.proceed-labs.org/developer/script-task-api#await-setintervalasync-clb-number-in-milliseconds-',
+      tooltip: 'Stops the program execution for the given amount of milliseconds',
+      // TODO:
+      // helpUrl:
+      // 'https://docs.proceed-labs.org/developer/script-task-api#await-setintervalasync-clb-number-in-milliseconds-',
       nextStatement: true,
       previousStatement: true,
       colour: 75,
@@ -1005,82 +1010,12 @@ Blocks['interval_async'] = {
   },
 };
 
-javascriptGenerator.forBlock['interval_async'] = function (block) {
-  const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
-  const callback = javascriptGenerator.valueToCode(
-    block,
-    'callback',
-    BlocklyJavaScript.Order.COMMA,
-  );
+javascriptGenerator.forBlock['wait'] = function (block) {
+  const delay =
+    javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC) || 0;
 
-  return `setIntervalAsync(async () => ${callback}, ${delay});\n`;
+  return `wait(${delay})\n`;
 };
-
-Blocks['timeout_async'] = {
-  init: function (this: Blockly.Block) {
-    this.jsonInit({
-      message0: 'Async Timeout %1 ms\nCallback function%2',
-      args0: [
-        {
-          type: 'input_value',
-          name: 'delay',
-          check: 'Number',
-        },
-        {
-          type: 'input_statement',
-          name: 'callback',
-          check: 'PROCEDURE',
-        },
-      ],
-      tooltip: 'A timeout function which executes a callback function after a timeout expired.',
-      helpUrl:
-        'https://docs.proceed-labs.org/developer/script-task-api#await-settimeoutasync-clb-number-in-milliseconds-',
-      nextStatement: true,
-      previousStatement: true,
-      colour: 75,
-    });
-  },
-};
-
-javascriptGenerator.forBlock['timeout_async'] = function (block) {
-  const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
-  const callback = javascriptGenerator.statementToCode(block, 'callback');
-
-  return `await setTimeoutAsync(async () => {${callback}}, ${delay});\n`;
-};
-
-function isTimeoutCallbackConnection(connection: Blockly.Connection) {
-  const blockType = connection.getSourceBlock().type;
-  const parentInput = connection.getParentInput();
-
-  return (
-    (blockType === 'interval_async' || blockType === 'timeout_async') &&
-    (connection.type === Blockly.ConnectionType.INPUT_VALUE ||
-      connection.type === Blockly.ConnectionType.NEXT_STATEMENT) &&
-    parentInput &&
-    parentInput.name === 'callback'
-  );
-}
-function timeoutsConnectionChecker(a: Blockly.Connection, b: Blockly.Connection) {
-  // Check for connections to the callback input of interval_async and timeout_async
-  let timeout, otherConnection;
-  if (isTimeoutCallbackConnection(a)) {
-    timeout = a;
-    otherConnection = b;
-  }
-  if (isTimeoutCallbackConnection(b)) {
-    timeout = b;
-    otherConnection = a;
-  } else return null;
-
-  const inputType = otherConnection.getSourceBlock().type;
-
-  if (timeout.getSourceBlock().type === 'timeout_async')
-    return inputType === 'procedures_callnoreturn';
-
-  return inputType === 'procedures_callreturn';
-}
-connectionTypeCheckers.push(timeoutsConnectionChecker);
 
 // --------------------------------------------
 // Progress

@@ -1,443 +1,277 @@
 import { Worker } from 'worker_threads';
 import { config } from '../config';
 import { createWorker } from '../utils/worker';
-import { EmbeddingJob, JobQueueItem, MatchingJob, workerTypes } from '../utils/types';
+import { EmbeddingJob, MatchingJob, JobQueueItem, workerTypes } from '../utils/types';
 import { WorkerError } from '../utils/errors';
 import { getLogger } from '../utils/logger';
 import { addReason } from '../tasks/reason';
 import { getDB } from '../utils/db';
 
-const {
-  embeddingWorkers,
-  matchingWorkers,
-  workerHeartbeatInterval,
-  workerDeathTimeout,
-  jobMaxRetries,
-} = config;
+const { workerHeartbeatInterval, workerDeathTimeout, jobMaxRetries } = config;
 const logger = getLogger();
 
+// Recommended heartbeat strategy values (can be tuned via env):
+// heartbeat interval: workerHeartbeatInterval (e.g. 30-60s)
+// death timeout: workerDeathTimeout (e.g. 240s) => ~4-8x interval
+
+interface SingleJobItem extends JobQueueItem {
+  startedAt?: number;
+  queueDepthAtStart?: number;
+  meta?: {
+    kind: 'embedding' | 'matching';
+    subtaskErrors: number;
+    reasonMatches: number;
+    reasonedCount: number;
+  };
+}
+
 /**
- * WorkerPool - Manages workers for a specific task type
+ * SingleWorkerManager - streamlined mono-worker queue for inference.
+ * Keeps public API: enqueue(job, type) + shutdown(). All computation lives in one worker.
  */
-class WorkerPool {
-  private workers: Worker[] = [];
-  private availableWorkers: Set<Worker> = new Set();
-  private busyWorkers: Map<Worker, string> = new Map();
-  private activeJobs: Map<Worker, JobQueueItem> = new Map(); // Track jobs being processed
-  private jobQueue: JobQueueItem[] = [];
-  private workerDeathTimers: Map<Worker, NodeJS.Timeout> = new Map();
-  private workersBeingReplaced: Set<number> = new Set(); // Prevent double replacement using threadId
-  private readonly workerType: workerTypes;
-  private readonly poolSize: number;
-  private readonly maxJobRetries: number;
-  private readonly workerInitData?: Record<string, unknown>;
+class WorkerManager {
+  private worker: Worker | null = null;
+  private queue: SingleJobItem[] = [];
+  private current: SingleJobItem | null = null;
+  private lastHeartbeat = Date.now();
+  private heartbeatMonitor: NodeJS.Timeout | null = null;
+  private shuttingDown = false;
 
-  constructor(workerType: workerTypes, poolSize: number, workerInitData?: Record<string, unknown>) {
-    this.workerType = workerType;
-    this.poolSize = poolSize;
-    this.maxJobRetries = Math.max(0, jobMaxRetries);
-    this.workerInitData = workerInitData;
-
-    logger.info('worker', `Initializing ${workerType} pool with ${poolSize} workers`, {
-      workerType,
-      poolSize,
+  constructor() {
+    logger.info('worker', 'Initialising SingleWorkerManager (inference)', {
+      workerHeartbeatInterval,
+      workerDeathTimeout,
+      jobMaxRetries,
     });
+    this.spawnWorker();
+    this.startHeartbeatMonitor();
+  }
 
-    this.initialiseWorkers();
+  private spawnWorker(): void {
+    this.worker = createWorker('inference');
+    const threadId = this.worker.threadId;
+    logger.info('worker', 'Spawned inference worker', { threadId });
 
-    logger.debug('worker', `${workerType} pool initialization completed`, {
-      workerType,
-      totalWorkers: this.workers.length,
-      availableWorkers: this.availableWorkers.size,
-      busyWorkers: this.busyWorkers.size,
+    this.worker.on('message', (msg: any) => this.handleMessage(msg));
+    this.worker.on('error', (err) => this.handleWorkerCrash(err));
+    this.worker.on('exit', (code) => {
+      this.handleWorkerCrash(new Error(`Worker exited with code ${code}`));
     });
   }
 
-  private initialiseWorkers(): void {
-    for (let i = 0; i < this.poolSize; i++) this.createWorker();
-  }
-
-  private createWorker(): void {
-    const script = this.workerType === 'inference' ? 'inference' : this.workerType;
-    const worker = createWorker(script, this.workerInitData);
-    this.workers.push(worker);
-
-    logger.debug('worker', `Created new ${this.workerType} worker`, {
-      workerType: this.workerType,
-      threadId: worker.threadId,
-      totalWorkers: this.workers.length,
-      poolSize: this.poolSize,
-      availableWorkers: this.availableWorkers.size,
-      busyWorkers: this.busyWorkers.size,
-    });
-
-    // Set initial death timer
-    const deathTimer = setTimeout(() => this.killWorker(worker), workerDeathTimeout);
-    this.workerDeathTimers.set(worker, deathTimer);
-
-    worker.on('message', (message: any) => {
-      if (message.type === 'heartbeat') {
-        this.handleHeartbeat(worker);
-      } else if (message.type === 'log') {
-        // Handle log messages from workers
-        this.handleWorkerLog(message);
-      }
-    });
-
-    worker.on('error', (error) => this.handleWorkerFailure(worker, error));
-    worker.once('exit', () => this.handleWorkerFailure(worker, new Error('Worker exited')));
-  }
-
-  private handleHeartbeat(worker: Worker): void {
-    logger.debug('worker', `Heartbeat received from ${this.workerType} worker`, {
-      workerType: this.workerType,
-      threadId: worker.threadId,
-      isBusy: this.busyWorkers.has(worker),
-    });
-
-    // Reset death timer
-    const existingTimer = this.workerDeathTimers.get(worker);
-    if (existingTimer) clearTimeout(existingTimer);
-
-    const newTimer = setTimeout(() => this.killWorker(worker), workerDeathTimeout);
-    this.workerDeathTimers.set(worker, newTimer);
-
-    // Mark available if not busy
-    if (!this.busyWorkers.has(worker)) {
-      this.availableWorkers.add(worker);
-      this.processNextJob();
-    }
-  }
-
-  private handleWorkerLog(message: any): void {
-    // Forward worker logs to the main logger
-    const { level, logType, message: logMessage, data, error } = message;
-
-    if (error) {
-      const reconstructedError = new Error(error.message);
-      reconstructedError.stack = error.stack;
-      reconstructedError.name = error.name;
-      logger[level as 'debug' | 'info' | 'warn' | 'error'](
-        logType,
-        logMessage,
-        reconstructedError,
-        data,
-      );
-    } else {
-      logger[level as 'debug' | 'info' | 'warn' | 'error'](logType, logMessage, data);
-    }
-  }
-
-  private killWorker(worker: Worker): void {
-    // Prevent double replacement if worker is already being replaced
-    if (this.workersBeingReplaced.has(worker.threadId)) {
-      logger.debug(
-        'worker',
-        `Skipping replacement for ${this.workerType} worker - already being replaced`,
-        {
-          workerType: this.workerType,
-          threadId: worker.threadId,
-        },
-      );
-      return;
-    }
-
-    this.workersBeingReplaced.add(worker.threadId);
-
-    logger.warn('worker', `Killing unresponsive ${this.workerType} worker (heartbeat timeout)`, {
-      workerType: this.workerType,
-      threadId: worker.threadId,
-      reason: 'heartbeat_timeout',
-      totalWorkersBefore: this.workers.length,
-      availableWorkersBefore: this.availableWorkers.size,
-      busyWorkersBefore: this.busyWorkers.size,
-    });
-
-    const activeJob = this.activeJobs.get(worker);
-    if (activeJob) {
-      this.activeJobs.delete(worker);
-      this.busyWorkers.delete(worker);
-
-      logger.warn('worker', `Recovering job from unresponsive ${this.workerType} worker`, {
-        workerType: this.workerType,
-        threadId: worker.threadId,
-        jobId: activeJob.job.jobId,
-        retryCount: activeJob.retryCount,
-      });
-
-      this.handleJobFailure(activeJob, new Error('Worker heartbeat timeout'));
-    }
-
-    this.removeWorker(worker);
-
-    logger.info('worker', `Creating replacement ${this.workerType} worker after timeout`, {
-      workerType: this.workerType,
-      killedThreadId: worker.threadId,
-      totalWorkersAfterRemoval: this.workers.length,
-      poolSize: this.poolSize,
-    });
-
-    this.createWorker();
-
-    logger.debug('worker', `Replacement ${this.workerType} worker creation completed`, {
-      workerType: this.workerType,
-      totalWorkersAfterReplacement: this.workers.length,
-      availableWorkersAfterReplacement: this.availableWorkers.size,
-      busyWorkersAfterReplacement: this.busyWorkers.size,
-      poolSize: this.poolSize,
-    });
-
-    this.workersBeingReplaced.delete(worker.threadId);
-
-    this.processNextJob();
-  }
-
-  private handleWorkerFailure(worker: Worker, error: Error): void {
-    // Prevent double replacement if worker is already being replaced
-    if (this.workersBeingReplaced.has(worker.threadId)) {
-      logger.debug(
-        'worker',
-        `Skipping replacement for failed ${this.workerType} worker - already being replaced`,
-        {
-          workerType: this.workerType,
-          threadId: worker.threadId,
-          error: error.message,
-        },
-      );
-      return;
-    }
-
-    this.workersBeingReplaced.add(worker.threadId);
-
-    logger.error('worker', `${this.workerType} worker failed, replacing worker`, {
-      // @ts-ignore
-      workerType: this.workerType,
-      threadId: worker.threadId,
-      error: error.message,
-      stack: error.stack,
-      totalWorkersBefore: this.workers.length,
-      availableWorkersBefore: this.availableWorkers.size,
-      busyWorkersBefore: this.busyWorkers.size,
-      hasActiveJob: this.activeJobs.has(worker),
-    });
-
-    const activeJob = this.activeJobs.get(worker);
-    if (activeJob) {
-      // Recover the job that was being processed
-      this.activeJobs.delete(worker);
-      this.busyWorkers.delete(worker);
-      logger.warn('worker', `Recovering job from failed ${this.workerType} worker`, {
-        workerType: this.workerType,
-        threadId: worker.threadId,
-        jobId: activeJob.job.jobId,
-        retryCount: activeJob.retryCount,
-      });
-      this.handleJobFailure(activeJob, error);
-    }
-
-    this.removeWorker(worker);
-
-    logger.info('worker', `Creating replacement ${this.workerType} worker after failure`, {
-      workerType: this.workerType,
-      failedThreadId: worker.threadId,
-      totalWorkersAfterRemoval: this.workers.length,
-      poolSize: this.poolSize,
-    });
-
-    this.createWorker();
-
-    logger.debug(
-      'worker',
-      `Replacement ${this.workerType} worker creation completed after failure`,
-      {
-        workerType: this.workerType,
-        totalWorkersAfterReplacement: this.workers.length,
-        availableWorkersAfterReplacement: this.availableWorkers.size,
-        busyWorkersAfterReplacement: this.busyWorkers.size,
-        poolSize: this.poolSize,
+  private startHeartbeatMonitor(): void {
+    if (this.heartbeatMonitor) clearInterval(this.heartbeatMonitor);
+    this.heartbeatMonitor = setInterval(
+      () => {
+        if (!this.worker) return;
+        const silenceMs = Date.now() - this.lastHeartbeat;
+        if (silenceMs > workerDeathTimeout) {
+          const activeJobId = this.current?.job.jobId;
+          logger.warn('worker', 'Heartbeat timeout – restarting worker', {
+            silenceMs,
+            workerDeathTimeout,
+            activeJobId,
+            queueLength: this.queue.length,
+            retryCount: this.current?.retryCount,
+          });
+          this.respawnWorker(true);
+        }
       },
+      Math.max(10_000, workerHeartbeatInterval / 2),
     );
+  }
 
-    this.workersBeingReplaced.delete(worker.threadId);
-
-    if (activeJob) {
-      this.processNextJob();
+  private respawnWorker(dueToTimeoutOrCrash = false): void {
+    if (this.worker) {
+      this.worker.removeAllListeners();
+      try {
+        this.worker.terminate();
+      } catch {}
     }
-  }
-
-  private removeWorker(worker: Worker): void {
-    logger.debug('worker', `Removing ${this.workerType} worker from pool`, {
-      workerType: this.workerType,
-      threadId: worker.threadId,
-      wasAvailable: this.availableWorkers.has(worker),
-      wasBusy: this.busyWorkers.has(worker),
-      hadActiveJob: this.activeJobs.has(worker),
-      totalWorkersBefore: this.workers.length,
-    });
-
-    this.availableWorkers.delete(worker);
-    this.busyWorkers.delete(worker);
-    this.activeJobs.delete(worker); // Clean up active job tracking
-
-    const timer = this.workerDeathTimers.get(worker);
-    if (timer) {
-      clearTimeout(timer);
-      this.workerDeathTimers.delete(worker);
+    this.worker = null;
+    // Requeue current job if any (unless shutting down)
+    if (dueToTimeoutOrCrash && this.current && !this.shuttingDown) {
+      const item = this.current;
+      this.current = null;
+      this.retryOrFail(item, new Error('Worker unresponsive / crashed'));
+    } else {
+      this.current = null;
     }
-
-    const index = this.workers.indexOf(worker);
-    if (index > -1) this.workers.splice(index, 1);
-
-    // Remove all event listeners to prevent exit event from firing
-    worker.removeAllListeners();
-
-    // Clean up replacement tracking
-    this.workersBeingReplaced.delete(worker.threadId);
-
-    worker.terminate();
-
-    logger.debug('worker', `Removed ${this.workerType} worker from pool`, {
-      workerType: this.workerType,
-      threadId: worker.threadId,
-      totalWorkersAfter: this.workers.length,
-      availableWorkersAfter: this.availableWorkers.size,
-      busyWorkersAfter: this.busyWorkers.size,
-    });
+    this.spawnWorker();
+    // Continue processing remaining queue
+    this.processNext();
   }
 
-  public async executeJob(job: EmbeddingJob | MatchingJob): Promise<any> {
-    logger.info('worker', `Received ${this.workerType} job for queuing`, {
-      workerType: this.workerType,
-      jobId: job.jobId,
-      queueLength: this.jobQueue.length,
-      availableWorkers: this.availableWorkers.size,
-    });
-
-    return new Promise((resolve, reject) => {
-      this.jobQueue.push({ job, resolve, reject, retryCount: 0 });
-      this.processNextJob();
-    });
-  }
-
-  private processing = false;
-
-  private processNextJob(): void {
-    if (this.processing) return; // Prevent race conditions
-    if (this.jobQueue.length === 0 || this.availableWorkers.size === 0) return;
-
-    this.processing = true;
-    const worker = this.availableWorkers.values().next().value as Worker;
-    const queueItem = this.jobQueue.shift()!;
-
-    logger.debug('worker', `Processing next job in queue`, {
-      workerType: this.workerType,
-      queueLength: this.jobQueue.length,
-      availableWorkers: this.availableWorkers.size,
-    });
-
-    this.assignJobToWorker(worker, queueItem);
-    this.processing = false;
-  }
-
-  private assignJobToWorker(worker: Worker, queueItem: JobQueueItem): void {
-    const { job, resolve, reject, retryCount } = queueItem;
-    this.availableWorkers.delete(worker);
-    this.busyWorkers.set(worker, job.jobId);
-    this.activeJobs.set(worker, queueItem); // Track the active job
-
-    logger.info('worker', `Starting ${this.workerType} job on worker`, {
-      workerType: this.workerType,
-      jobId: job.jobId,
-      threadId: worker.threadId,
-      retryCount,
-      queueLength: this.jobQueue.length,
-    });
-
-    const messageHandler = (message: any) => {
-      if (message.type === 'job_completed' && message.jobId === job.jobId) {
-        worker.removeListener('message', messageHandler);
-        this.activeJobs.delete(worker); // Remove from active tracking
-        this.markWorkerAvailable(worker);
-
-        logger.info('worker', `${this.workerType} job completed successfully`, {
-          workerType: this.workerType,
-          jobId: job.jobId,
-          threadId: worker.threadId,
-        });
-
-        resolve(message.result || 'Job completed');
-        this.processNextJob();
-      } else if (message.type === 'error' && message.jobId === job.jobId) {
-        worker.removeListener('message', messageHandler);
-        this.activeJobs.delete(worker); // Remove from active tracking
-        this.markWorkerAvailable(worker);
-
-        logger.info('worker', `${this.workerType} job failed, handling failure`, {
-          workerType: this.workerType,
-          jobId: job.jobId,
-          threadId: worker.threadId,
-          error: message.error,
-        });
-
-        this.handleJobFailure(queueItem, new Error(message.error));
-        this.processNextJob();
-      } else if (message.type === 'job' && message.job === 'reason') {
-        this.handleReasoning(job, message);
+  private handleMessage(msg: any): void {
+    // Any message counts as liveness indicator
+    this.lastHeartbeat = Date.now();
+    if (msg.type === 'heartbeat') {
+      logger.debug('worker', 'Heartbeat received', { threadId: this.worker?.threadId });
+      return; // already updated timestamp
+    }
+    if (msg.type === 'log') {
+      // Forward log (avoid duplicating error stack later)
+      const { level, logType, message, data, error } = msg;
+      const logFn =
+        typeof level === 'string' && ['debug', 'info', 'warn', 'error'].includes(level)
+          ? (logger as any)[level].bind(logger)
+          : (logger as any).info.bind(logger);
+      if (error) {
+        const e = new Error(error.message);
+        e.stack = error.stack;
+        e.name = error.name;
+        logFn(logType, message, e, data);
+      } else {
+        logFn(logType, message, data);
       }
-    };
+      return;
+    }
+    if (!this.current) return; // Ignore job-specific messages if no active job
+    const jobId = this.current.job.jobId;
 
-    worker.on('message', messageHandler);
-    worker.postMessage(job);
-  }
-
-  private markWorkerAvailable(worker: Worker): void {
-    this.busyWorkers.delete(worker);
-    this.availableWorkers.add(worker);
-  }
-
-  private handleJobFailure(queueItem: JobQueueItem, error: Error): void {
-    const { job, resolve, reject, retryCount } = queueItem;
-
-    if (retryCount < this.maxJobRetries) {
-      // Requeue job with incremented retry count
-      logger.info('worker', `Retrying ${this.workerType} job`, {
-        workerType: this.workerType,
-        jobId: job.jobId,
-        retryCount: retryCount + 1,
-        maxRetries: this.maxJobRetries,
-        error: error.message,
+    if (msg.type === 'error' && msg.jobId === jobId) {
+      // Worker reported a job-level error
+      logger.info('worker', 'Job error received', { jobId, message: msg.error });
+      this.retryOrFail(this.current, new Error(msg.error));
+      return;
+    }
+    if (msg.type === 'job' && msg.job === 'reason') {
+      this.handleReasoning(this.current.job, msg.workload).catch((err) => {
+        logger.error('worker', 'Reasoning handling failed', err, { jobId });
       });
+      return;
+    }
+    if (msg.type === 'job_completed' && msg.jobId === jobId) {
+      const finished = this.current;
+      this.current = null;
+      const durationMs = Date.now() - (finished.startedAt || Date.now());
+      logger.info('worker', 'Job completed', {
+        jobId,
+        durationMs,
+        retries: finished.retryCount,
+      });
+      const summary = this.buildSummary(finished, durationMs);
+      finished.resolve(summary);
+      this.processNext();
+      return;
+    }
+  }
 
-      this.jobQueue.unshift({
+  private buildSummary(item: SingleJobItem, durationMs: number) {
+    const kind = item.meta?.kind;
+    return {
+      jobId: item.job.jobId,
+      kind,
+      retries: item.retryCount,
+      durationMs,
+      queueDepthAtStart: item.queueDepthAtStart,
+      workerThreadId: this.worker?.threadId,
+      matchStats:
+        kind === 'matching'
+          ? {
+              reasonedCount: item.meta?.reasonedCount || 0,
+              totalMatchesSeen: item.meta?.reasonMatches || 0,
+            }
+          : undefined,
+      embeddingStats:
+        kind === 'embedding' ? { tasks: (item.job as EmbeddingJob).tasks.length } : undefined,
+      subtaskErrors: item.meta?.subtaskErrors || 0,
+      completedAt: new Date().toISOString(),
+    };
+  }
+
+  private processNext(): void {
+    if (this.current || this.shuttingDown) return;
+    if (!this.worker) return; // will resume after respawn
+    const next = this.queue.shift();
+    if (!next) return;
+    this.current = next;
+    next.startedAt = Date.now();
+    next.meta = next.meta || {
+      kind: this.detectKind(next.job),
+      subtaskErrors: 0,
+      reasonMatches: 0,
+      reasonedCount: 0,
+    };
+    logger.info('worker', 'Starting job', {
+      jobId: next.job.jobId,
+      kind: next.meta.kind,
+      retryCount: next.retryCount,
+      queueRemaining: this.queue.length,
+    });
+    try {
+      this.worker.postMessage(next.job);
+    } catch (err) {
+      logger.error('worker', 'Failed to post job to worker (will retry)', err as Error, {
+        jobId: next.job.jobId,
+      });
+      this.retryOrFail(next, err instanceof Error ? err : new Error(String(err)));
+    }
+  }
+
+  private detectKind(job: EmbeddingJob | MatchingJob): 'embedding' | 'matching' {
+    const maybeEmbedding = job as EmbeddingJob;
+    return (maybeEmbedding as EmbeddingJob).tasks && (maybeEmbedding as any).mode !== undefined
+      ? 'embedding'
+      : 'matching';
+  }
+
+  public async enqueue(job: EmbeddingJob | MatchingJob, workerType: workerTypes): Promise<any> {
+    if (this.shuttingDown) throw new Error('WorkerManager shutting down');
+    const kind = this.detectKind(job);
+    logger.info('worker', 'Enqueue job', {
+      jobId: job.jobId,
+      workerType,
+      kind,
+      queueLengthBefore: this.queue.length,
+    });
+    return new Promise((resolve, reject) => {
+      const item: SingleJobItem = {
         job,
         resolve,
         reject,
-        retryCount: retryCount + 1,
-      });
-    } else {
-      // Final failure after reaching retry limit
-      logger.error(
-        'worker',
-        `${this.workerType} job failed permanently after max retries`,
-        new WorkerError(this.workerType, job.jobId, error),
-      );
+        retryCount: 0,
+        queueDepthAtStart: this.queue.length,
+      };
+      this.queue.push(item);
+      this.processNext();
+    });
+  }
 
-      reject(new WorkerError(this.workerType, job.jobId, error));
+  private retryOrFail(item: SingleJobItem, err: Error): void {
+    const jobId = item.job.jobId;
+    if (item.retryCount < jobMaxRetries) {
+      item.retryCount += 1;
+      logger.info('worker', 'Retrying job', { jobId, retryCount: item.retryCount });
+      // Put at front of queue
+      this.queue.unshift(item);
+      if (this.current === item) this.current = null; // ensure freed
+      this.processNext();
+    } else {
+      logger.error('worker', 'Job failed permanently', new WorkerError('inference', jobId, err), {
+        jobId,
+        retries: item.retryCount,
+      });
+      if (this.current === item) this.current = null;
+      item.reject(new WorkerError('inference', jobId, err));
+      this.processNext();
     }
   }
 
-  private async handleReasoning(job: any, message: any): Promise<void> {
-    const finalMatches = [];
-
-    for (const [task, matches] of Object.entries(message.workload)) {
+  private async handleReasoning(job: EmbeddingJob | MatchingJob, workload: Record<string, any[]>) {
+    const finalMatches: any[] = [];
+    for (const [taskText, matches] of Object.entries(workload)) {
       try {
-        const taskMatches = await addReason(matches as any[], task);
-        finalMatches.push(...taskMatches);
-      } catch (error) {
+        const enriched = await addReason(matches as any[], taskText);
+        finalMatches.push(...enriched);
+        if (this.current?.meta) {
+          this.current.meta.reasonMatches += (matches as any[]).length;
+          this.current.meta.reasonedCount += enriched.filter((m) => m.reason).length;
+        }
+      } catch {
         finalMatches.push(...(matches as any[]));
       }
     }
-
     const db = getDB(job.dbName);
     for (const match of finalMatches) {
       try {
@@ -453,62 +287,47 @@ class WorkerPool {
           alignment: match.alignment,
           reason: match.reason,
         });
-      } catch (error) {
-        // Continue on individual match save failure
-      }
+      } catch {}
     }
-
     try {
       db.updateJobStatus(job.jobId, 'completed');
-    } catch (error) {
-      // Log but don't fail
-    }
-  }
-
-  public async shutdown(): Promise<void> {
-    logger.info('worker', `Shutting down ${this.workerType} pool`, {
-      workerType: this.workerType,
-      activeJobs: this.activeJobs.size,
-      queuedJobs: this.jobQueue.length,
-      totalWorkers: this.workers.length,
-    });
-
-    this.jobQueue.forEach((item) => item.reject(new Error('Shutting down')));
-    this.activeJobs.forEach((item) => item.reject(new Error('Shutting down'))); // Reject active jobs too
-    this.workerDeathTimers.forEach((timer) => clearTimeout(timer));
-    this.workers.forEach((worker) => worker.terminate());
-
-    this.jobQueue.length = 0;
-    this.activeJobs.clear();
-    this.workerDeathTimers.clear();
-    this.workers.length = 0;
-    this.availableWorkers.clear();
-    this.busyWorkers.clear();
-  }
-}
-
-/**
- * WorkerManager - High-level interface for managing worker pools
- */
-class WorkerManager {
-  private inferencePool: WorkerPool;
-  constructor() {
-    logger.info('worker', 'Initialising Monolithic WorkerManager (inference)', {
-      embeddingWorkers,
-      matchingWorkers,
-    });
-    this.inferencePool = new WorkerPool('inference', 1);
-  }
-  public async enqueue(job: EmbeddingJob | MatchingJob, workerType: workerTypes): Promise<any> {
-    logger.info('worker', `Enqueuing ${workerType} job (routed to inference)`, {
-      workerType,
+    } catch {}
+    logger.info('worker', 'Reasoning stored', {
       jobId: job.jobId,
+      matchCount: finalMatches.length,
     });
-    return this.inferencePool.executeJob(job);
   }
+
+  private handleWorkerCrash(error: Error): void {
+    logger.error('worker', 'Worker crash detected – respawning', error, {
+      activeJobId: this.current?.job.jobId,
+    });
+    this.respawnWorker(true);
+  }
+
   public async shutdown(): Promise<void> {
-    await this.inferencePool.shutdown();
+    this.shuttingDown = true;
+    logger.info('worker', 'Shutting down worker manager', {
+      inFlight: this.current?.job.jobId,
+      queueLength: this.queue.length,
+    });
+    // Reject queued jobs
+    for (const item of this.queue) item.reject(new Error('Shutting down'));
+    this.queue.length = 0;
+    if (this.current) {
+      this.current.reject(new Error('Shutting down'));
+      this.current = null;
+    }
+    if (this.worker) {
+      this.worker.removeAllListeners();
+      try {
+        await this.worker.terminate();
+      } catch {}
+      this.worker = null;
+    }
+    if (this.heartbeatMonitor) clearInterval(this.heartbeatMonitor);
   }
 }
+
 const manager = new WorkerManager();
 export default manager;

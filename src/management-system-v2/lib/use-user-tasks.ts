@@ -144,13 +144,16 @@ function useUserTasks(
     return await getTasklistEntryHTML(space.spaceId, taskId, fileName, machine);
   }
 
-  async function submitFile(taskId: string, fileName: string, fileType: string, file: Buffer) {
+  async function submitFile(taskId: string, file: File) {
     const machine = getTaskEngine(taskId);
 
     if (machine === undefined)
       return { error: 'Could not find the machine the task is running on' };
 
-    return await _submitFile(machine, taskId, fileName, fileType, file);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return await _submitFile(machine, taskId, formData);
   }
 
   return {

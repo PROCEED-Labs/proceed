@@ -33,7 +33,7 @@ export async function wrapServerCall<Return>(args: {
    * - string: the wrapper displays the string as an error message
    * - function: the wrapper calls the function with either a userError or an Error
    * */
-  onError?: string | ((error: Error | UserError) => void) | false;
+  onError?: string | ((error: Error | UserError, message: useAppProps['message']) => void) | false;
   /**
    * Choose which one of antDesign's data displays to use. This only does something,
    * when `onError` is either undefined or a string
@@ -68,7 +68,7 @@ export async function wrapServerCall<Return>(args: {
     return response as Exclude<Return, ReturnType<typeof userError>>;
   } catch (error) {
     if (typeof args.onError === 'function') {
-      args.onError(error as UserError | Error);
+      args.onError(error as UserError | Error, message);
       return;
     }
 

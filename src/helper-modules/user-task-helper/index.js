@@ -254,10 +254,9 @@ const script = `
           // if the value set for a variable is a file => upload the file and replace the variable
           // with a reference to the stored file
           if (value instanceof File) {
-            const buffer = await value.arrayBuffer();
-            const { path } = await window.PROCEED_DATA.post(
+            const { path } = await window.PROCEED_DATA.submit(
               '/tasklist/api/variable-file',
-              Array.from(new Uint8Array(buffer)),
+              value,
               {
                 instanceID,
                 userTaskID,

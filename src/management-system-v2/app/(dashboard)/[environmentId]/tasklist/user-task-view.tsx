@@ -21,7 +21,7 @@ type UserTaskFormProps = {
   isPaused?: boolean;
   onMilestoneUpdate?: (milestones: { [key: string]: any }) => Promise<void>;
   onVariablesUpdate?: (variables: { [key: string]: any }) => Promise<void>;
-  onFileSubmit?: (data: any, fileName: string, fileType: string) => Promise<{ path: string }>;
+  onFileSubmit?: (data: File) => Promise<{ path: string }>;
   onSubmit?: (variables: { [key: string]: any }) => Promise<void>;
 };
 
@@ -61,18 +61,17 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
               }
 
               (iframe.contentWindow as any).PROCEED_DATA = {
-                post: async (
-                  path: string,
-                  body: { [key: string]: any },
-                  fileInfo?: { type: string; name: string },
-                ) => {
+                post: async (path: string, body: { [key: string]: any }) => {
                   if (path === '/tasklist/api/userTask') await onSubmit?.(body);
-                  if (path === '/tasklist/api/variable-file')
-                    return await onFileSubmit?.(body, fileInfo!.name, fileInfo!.type);
                 },
                 put: async (path: string, body: { [key: string]: any }) => {
                   if (path === '/tasklist/api/milestone') await onMilestoneUpdate?.(body);
                   else if (path === '/tasklist/api/variable') await onVariablesUpdate?.(body);
+                },
+                submit: async (path: string, body: File) => {
+                  if (path === '/tasklist/api/variable-file') {
+                    return await onFileSubmit?.(body);
+                  }
                 },
               };
             }}
@@ -177,8 +176,18 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
             onSuccess: () => {},
           });
         }}
-        onFileSubmit={async (file, fileName, fileType) => {
-          const path = await submitFile(task.id, fileName, fileType, file);
+        onFileSubmit={async (file) => {
+          const path = await wrapServerCall({
+            fn: async () => submitFile(task.id, file),
+            onSuccess: false,
+            onError: (error, message) =>
+              message.error(
+                `Failed to upload a file (${file.name}). Check that it is not too large.`,
+              ),
+          });
+
+          if (!path) throw new Error(`Failed to upload a file (${file.name})`);
+
           return { path };
         }}
       />

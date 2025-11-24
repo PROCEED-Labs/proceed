@@ -548,15 +548,14 @@ export async function updateVariables(
   }
 }
 
-export async function submitFile(
-  engine: Engine | null,
-  userTaskId: string,
-  fileName: string,
-  fileType: string,
-  file: Buffer,
-) {
+export async function submitFile(engine: Engine | null, userTaskId: string, formData: FormData) {
   try {
     if (!enableUseDB) throw new Error('submitFile only available with enableUseDB');
+
+    const file = formData.get('file') as File;
+
+    const fileName = file.name;
+    const fileType = file.type;
 
     const [_, instanceId] = userTaskId.split('|');
     const [definitionId] = instanceId.split('-_');
@@ -571,7 +570,7 @@ export async function submitFile(
       engine,
       fileName,
       fileType,
-      file,
+      Array.from(new Uint8Array(await file.arrayBuffer())),
     );
 
     return res;

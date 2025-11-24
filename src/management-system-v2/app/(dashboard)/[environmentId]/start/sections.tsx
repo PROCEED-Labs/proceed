@@ -41,8 +41,7 @@ const MyTasksSection = () => {
         My Tasks
       </h2>
       <p>
-        Short description goes here explaining what this section is for and what you can do here and
-        so on and so forth.
+        Manage your running or planned tasks in the Task List or edit them using the Task Editor.
       </p>
       <div
         style={{
@@ -88,9 +87,8 @@ const ProcessesSection = () => {
         My Processes
       </h2>
       <p>
-        Short description goes here explaining what this section is for and what you can do here and
-        so on and so forth. <br></br>There could be further links for the most regularly used
-        sub-views within here.
+        Create, edit and organize your BPMN processes with the Process Editor. <br></br>
+        Browse already versioned, released processes in the Process List
       </p>
       <div
         style={{
@@ -141,9 +139,9 @@ const AutomationsSection = () => {
         Automations
       </h2>
       <p>
-        Short description goes here explaining what this section is for and what you can do here and
-        so on and so forth. <br></br>There could be further links for the most regularly used
-        sub-views within here.
+        Observe your running automations on the Dashboard, deploy your automation processes in the
+        Executions tab, <br></br>
+        and manage your connected engines in Process Engines.
       </p>
       <div
         style={{
@@ -188,11 +186,7 @@ const PersonalSection = () => {
         <TbUser style={{ marginRight: '8px' }} />
         Personal
       </h2>
-      <p>
-        Short description goes here explaining what this section is for and what you can do here and
-        so on and so forth. <br></br>There could be further links for the most regularly used
-        sub-views within here.
-      </p>
+      <p>Change your user profile information and manage your personal spaces.</p>
       <div
         style={{
           display: 'grid',
@@ -232,9 +226,8 @@ const HomeSection = () => {
         Home
       </h2>
       <p>
-        Short description goes here explaining what this section is for and what you can do here and
-        so on and so forth. <br></br>There could be further links for the most regularly used
-        sub-views within here.
+        Adjust the settings of your space to only display the views you need <br></br>
+        and create custom navigation links for easier access.
       </p>
       <div
         style={{

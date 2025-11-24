@@ -1,0 +1,13 @@
+.wrapper {
+  h1 {
+    margin-bottom: 1.5rem;
+  }
+
+  :global(.ant-layout-content) {
+    background-color: white;
+  }
+
+  :global(.ant-card) {
+    border: 1px solid #999;
+  }
+}

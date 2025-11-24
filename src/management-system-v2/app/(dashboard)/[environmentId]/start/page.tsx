@@ -5,12 +5,13 @@ import FavoriteProcessesSection from './favorite-processes-section';
 import { getCurrentEnvironment } from '@/components/auth';
 import { getUsersFavourites } from '@/lib/data/users';
 import { getProcesses } from '@/lib/data/db/process';
+import styles from './page.module.scss';
 
 const StartPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
 
   // Get favorite processes if process documentation is active
-  let favoriteProcesses: { id: string; name: string }[] = [];
+  let favoriteProcesses: { id: string; name: string; lastEditedOn: Date }[] = [];
   if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE) {
     const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
     const favs = await getUsersFavourites();
@@ -19,12 +20,12 @@ const StartPage = async ({ params }: { params: { environmentId: string } }) => {
       const allProcesses = await getProcesses(activeEnvironment.spaceId, ability, false);
       favoriteProcesses = allProcesses
         .filter((process) => favs.includes(process.id))
-        .map((process) => ({ id: process.id, name: process.name }));
+        .map((process) => ({ id: process.id, name: process.name, lastEditedOn: process.lastEditedOn }));
     }
   }
 
   return (
-    <Content>
+    <Content wrapperClass={styles.wrapper}>
       <h1>Welcome to PROCEED</h1>
       {msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && favoriteProcesses.length > 0 && (
         <FavoriteProcessesSection processes={favoriteProcesses} />

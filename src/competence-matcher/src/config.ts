@@ -38,4 +38,9 @@ export const config = {
   alignmentDistanceThreshold: parseFloat(process.env.ALIGNMENT_DISTANCE_THRESHOLD || '0.65'), // Minimum distance required for alignment boost
   alignmentBoostMultiplier: parseFloat(process.env.ALIGNMENT_BOOST_MULTIPLIER || '1.2'), // Multiplier to boost distance for aligning matches
   neutralReductionMultiplier: parseFloat(process.env.NEUTRAL_REDUCTION_MULTIPLIER || '0.65'), // Multiplier to reduce distance for neutral matches
+
+  // Deprecated settings
+  /* For multiworker part, can be removed, if we actually settle for  */
+  embeddingWorkers: parseInt(process.env.EMBEDDING_WORKERS || '1', 10), // Number of embedding workers
+  matchingWorkers: parseInt(process.env.MATCHING_WORKERS || '1', 10), // Number of matching workers
 };

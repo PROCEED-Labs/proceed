@@ -38,28 +38,30 @@ const useInstanceVariables = (info: DeploymentInfo) => {
     if (instance) {
       const instanceVariables = instance.variables as Record<string, { value: any }>;
 
-      Object.entries(instanceVariables).forEach(([name, { value }]) => {
-        let type: Variable['type'] = 'unknown';
-        const valueType = typeof value;
-        switch (valueType) {
-          case 'number':
-          case 'boolean':
-          case 'string':
-            type = valueType;
-            break;
-          case 'object': {
-            if (Array.isArray(value)) {
-              type = 'array';
+      Object.entries(instanceVariables)
+        .filter(([name]) => !/^__anonymous_variable_/.test(name))
+        .forEach(([name, { value }]) => {
+          let type: Variable['type'] = 'unknown';
+          const valueType = typeof value;
+          switch (valueType) {
+            case 'number':
+            case 'boolean':
+            case 'string':
+              type = valueType;
               break;
-            } else if (value) {
-              type = 'object';
-              break;
+            case 'object': {
+              if (Array.isArray(value)) {
+                type = 'array';
+                break;
+              } else if (value) {
+                type = 'object';
+                break;
+              }
             }
           }
-        }
 
-        variables[name] = { name, type, value };
-      });
+          variables[name] = { name, type, value };
+        });
     }
 
     variableDefinitions.forEach((def) => {

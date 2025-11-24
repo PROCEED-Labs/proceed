@@ -27,7 +27,9 @@ export const ExportInput: UserComponent<InputProps> = ({
 }) => {
   const inputId = useId();
 
-  const value = defaultValue || (variable && `{%${variable}%}`);
+  if (!variable) variable = `__anonymous_variable_${inputId}__`;
+
+  const value = defaultValue || `{%${variable}%}`;
 
   return (
     <ContextMenu menu={[]}>

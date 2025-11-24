@@ -67,6 +67,8 @@ const ExportCheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
 }) => {
   const id = useId();
 
+  if (!variable) variable = `__anonymous_variable_${id}__`;
+
   let checkOrPlaceholder = checked ? 'checked' : '';
   if (!checked) {
     if (value && type === 'radio') {

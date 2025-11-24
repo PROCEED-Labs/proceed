@@ -34,14 +34,20 @@ startHeartbeat('inference', config.workerHeartbeatInterval);
 
 parentPort.on('message', async (raw: any) => {
   const possible = raw as EmbeddingJob & MatchingJob;
+  const tasks: any[] | undefined = (possible as any).tasks;
+  const mode = (possible as any).mode;
+  // Classification logic: explicit mode or task shape for embedding
   const isEmbeddingJob =
-    (possible as EmbeddingJob).tasks && (possible as EmbeddingJob).mode !== undefined;
+    mode === 'task' ||
+    mode === 'resource' ||
+    (Array.isArray(tasks) && tasks.length > 0 && 'competenceId' in tasks[0] && 'text' in tasks[0]);
   const jobId = possible.jobId;
   workerLogger(jobId || 'system', 'debug', 'Inference worker received job', {
     threadId,
     jobId,
+    inferredMode: mode || null,
     kind: isEmbeddingJob ? 'embedding' : 'matching',
-    taskCount: possible.tasks?.length || 0,
+    taskCount: tasks?.length || 0,
   });
   try {
     if (isEmbeddingJob) await ensureEmbeddingInitialised();

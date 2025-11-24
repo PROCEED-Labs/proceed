@@ -210,10 +210,18 @@ class WorkerManager {
   }
 
   private detectKind(job: EmbeddingJob | MatchingJob): 'embedding' | 'matching' {
-    const maybeEmbedding = job as EmbeddingJob;
-    return (maybeEmbedding as EmbeddingJob).tasks && (maybeEmbedding as any).mode !== undefined
-      ? 'embedding'
-      : 'matching';
+    // Explicit mode wins
+    const mode = (job as any).mode;
+    if (mode === 'task' || mode === 'resource') return 'embedding';
+    // Heuristic: resource embedding tasks have competenceId & text
+    const tasks: any[] | undefined = (job as any).tasks;
+    if (Array.isArray(tasks) && tasks.length) {
+      const sample = tasks[0];
+      if (sample && 'competenceId' in sample && 'text' in sample && 'type' in sample) {
+        return 'embedding';
+      }
+    }
+    return 'matching';
   }
 
   public async enqueue(job: EmbeddingJob | MatchingJob, workerType: workerTypes): Promise<any> {
@@ -260,6 +268,11 @@ class WorkerManager {
 
   private async handleReasoning(job: EmbeddingJob | MatchingJob, workload: Record<string, any[]>) {
     const finalMatches: any[] = [];
+    const taskCount = Object.keys(workload).length;
+    logger.debug('worker', 'Reasoning workload received', {
+      jobId: job.jobId,
+      taskCount,
+    });
     for (const [taskText, matches] of Object.entries(workload)) {
       try {
         const enriched = await addReason(matches as any[], taskText);
@@ -294,7 +307,10 @@ class WorkerManager {
     } catch {}
     logger.info('worker', 'Reasoning stored', {
       jobId: job.jobId,
+      taskCount,
+      rawMatchGroups: Object.values(workload).reduce((sum, arr) => sum + (arr as any[]).length, 0),
       matchCount: finalMatches.length,
+      reasonedCount: finalMatches.filter((m) => m.reason).length,
     });
   }
 

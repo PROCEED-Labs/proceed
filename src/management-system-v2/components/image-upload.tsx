@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import {
   Button,
   Image,
@@ -126,6 +126,7 @@ type ImageUploadProps = ImageUploadData & {
   imageProps?: ImageProps;
   uploadProps?: UploadProps;
   basicLoadingFeedback?: boolean;
+  imagePreview?: ReactNode | ((fileUrl: string | undefined) => ReactNode);
   // Unmanaged
   initialFileName?: string;
 };
@@ -141,6 +142,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   deletable = true,
   fileManagerErrorToasts = true,
   basicLoadingFeedback = false,
+  imagePreview,
   ...props
 }) => {
   // The component has a `fileName` (which can be either managed from within the component, or
@@ -250,27 +252,35 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         customRequest={customUploadRequest}
         {...uploadProps}
       >
-        <Image
-          src={fileUrl || fallbackImage}
-          fallback={fallbackImage}
-          // TODO
-          // alt={organization.name}
-          preview={{
-            visible: false,
-            mask: false,
-          }}
-          role="group"
-          alt="Image"
-          {...imageProps}
-          style={{
-            width: '100%',
-            maxHeight: '7.5rem',
-            borderRadius: '6px',
-            display: 'block',
-            border: '1px solid #d9d9d9',
-            ...imageProps?.style,
-          }}
-        />
+        {imagePreview ? (
+          typeof imagePreview === 'function' ? (
+            imagePreview(fileUrl)
+          ) : (
+            imagePreview
+          )
+        ) : (
+          <Image
+            src={fileUrl || fallbackImage}
+            fallback={fallbackImage}
+            // TODO
+            // alt={organization.name}
+            preview={{
+              visible: false,
+              mask: false,
+            }}
+            role="group"
+            alt="Image"
+            {...imageProps}
+            style={{
+              width: '100%',
+              maxHeight: '7.5rem',
+              borderRadius: '6px',
+              display: 'block',
+              border: '1px solid #d9d9d9',
+              ...imageProps?.style,
+            }}
+          />
+        )}
 
         <div
           style={{

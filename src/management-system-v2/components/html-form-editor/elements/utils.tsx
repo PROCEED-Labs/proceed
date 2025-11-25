@@ -324,7 +324,7 @@ export const VariableSelection: React.FC<
         onSubmit={(newVar) => {
           updateVariables([...variables, newVar]);
           setShowVariableForm(false);
-          onChange(newVar.name, newVar.dataType);
+          onChange(newVar.name, newVar.dataType, newVar.textFormat);
         }}
         onCancel={() => setShowVariableForm(false)}
       />

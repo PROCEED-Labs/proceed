@@ -17,7 +17,7 @@ import {
 import './blockly-editor.css';
 
 export type BlocklyEditorRefType = {
-  getCode: () => { js: string; xml: string };
+  getCode: () => { js: string; xml: string; ts: false } | undefined;
   fillContainer: () => void;
   reset: () => void;
 };
@@ -82,9 +82,8 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
               Blockly.Xml.workspaceToDom(blocklyEditorRef.current),
             );
             const javascriptCode = javascriptGenerator.workspaceToCode(blocklyEditorRef.current);
-            return { xml: xmlText, js: javascriptCode };
+            return { xml: xmlText, js: javascriptCode, ts: false };
           }
-          return { xml: '', js: '' };
         },
         fillContainer: () => {
           if (!blocklyEditorRef.current) return;

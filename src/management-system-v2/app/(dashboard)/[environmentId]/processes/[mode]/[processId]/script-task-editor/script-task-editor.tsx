@@ -24,9 +24,6 @@ import { IoExtensionPuzzleOutline } from 'react-icons/io5';
 
 const { Search } = Input;
 
-import Editor, { Monaco } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-import languageExtension from '../monaco-typescript-language-extension.js';
 import useModelerStateStore from '../use-modeler-state-store';
 import {
   getProcessScriptTaskData,
@@ -43,6 +40,7 @@ import useProcessVariables from '../use-process-variables';
 import ProcessVariableForm from '../variable-definition/process-variable-form';
 import { useCanEdit } from '@/lib/can-edit-context';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
+import MonacoEditor, { MonacoEditorRef } from './monaco-editor';
 
 type ScriptEditorProps = {
   processId: string;
@@ -58,9 +56,6 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const monacoEditorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
-  const monacoRef = useRef<null | Monaco>(null);
-
   const modeler = useModelerStateStore((state) => state.modeler);
   const canEdit = useCanEdit();
 
@@ -68,6 +63,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const app = App.useApp();
 
   const blocklyRef = useRef<BlocklyEditorRefType>(null);
+  const monacoEditorRef = useRef<MonacoEditorRef>(null);
 
   const { variables, addVariable } = useProcessVariables();
   const [showVariableForm, setShowVariableForm] = useState(false);
@@ -118,33 +114,6 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     setSelectedEditor(data?.[1] ?? null);
   }, [data]);
 
-  const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
-    monacoEditorRef.current = editor;
-    monacoRef.current = monaco;
-
-    const defaultOptions =
-      monacoRef.current.languages.typescript.javascriptDefaults.getCompilerOptions();
-
-    monacoRef.current.languages.typescript.javascriptDefaults.setCompilerOptions({
-      ...defaultOptions,
-      target: monacoRef.current.languages.typescript.ScriptTarget.ES2017,
-      lib: ['es2017'],
-    });
-
-    monacoRef.current.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: false,
-      noSyntaxValidation: false,
-      diagnosticCodesToIgnore: [
-        1108, //return not inside function,
-        1375, //'await' expressions are only allowed at the top level of a file when that file is a module
-        1378, //Top-level 'await' expressions are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher
-      ],
-    });
-
-    monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(languageExtension);
-    monacoRef.current.editor.createModel(languageExtension, 'typescript');
-  };
-
   const handleSave = async () => {
     if (saving || !modeler || !filename || !selectedElement || !selectedEditor) return;
 
@@ -155,11 +124,28 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     setSaving(true);
     await wrapServerCall({
       fn: async () => {
-        const responses = await (selectedEditor === 'JS' ? storeJSScript() : storeBlocklyScript());
-        if (!responses) return userError('Invalid script, please try again');
+        const code = await (selectedEditor === 'JS'
+          ? monacoEditorRef.current?.getCode()
+          : blocklyRef.current?.getCode());
+        if (!code) return userError('Invalid script, please try again');
+
+        const promises = [];
+        for (const [type, value] of Object.entries(code)) {
+          if (value === false) {
+            promises.push(
+              deleteProcessScriptTask(processId, filename, type as any, environment.spaceId),
+            );
+          } else {
+            promises.push(
+              saveProcessScriptTask(processId, filename, type as any, value, environment.spaceId),
+            );
+          }
+        }
+
+        const results = await Promise.all(promises);
 
         // just use first error
-        return responses.find(isUserErrorResponse);
+        return results.find(isUserErrorResponse);
       },
       onSuccess: () => {
         app.message.success('Script saved');
@@ -170,39 +156,6 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
     setHasUnsavedChanges(false);
     setSaving(false);
-  };
-
-  const storeJSScript = async () => {
-    if (!filename || !monacoEditorRef.current || !monacoRef.current) return;
-    const typescriptCode = monacoEditorRef.current.getValue();
-
-    // Transpile TS code to JS
-    const typescriptWorker = await monacoRef.current.languages.typescript.getTypeScriptWorker();
-    const editorModel = monacoEditorRef.current.getModel();
-    if (!editorModel) {
-      throw new Error('Could not get model from editor to transpile TypeScript code to JavaScript');
-    }
-    const client = await typescriptWorker(editorModel.uri);
-    const emitOutput = await client.getEmitOutput(editorModel.uri.toString());
-    const javascriptCode = emitOutput.outputFiles[0].text;
-
-    return await Promise.all([
-      deleteProcessScriptTask(processId, filename, 'xml', environment.spaceId),
-      saveProcessScriptTask(processId, filename, 'ts', typescriptCode, environment.spaceId),
-      saveProcessScriptTask(processId, filename, 'js', javascriptCode, environment.spaceId),
-    ]);
-  };
-
-  const storeBlocklyScript = async () => {
-    if (!filename || !isScriptValid || !blocklyRef.current) return;
-
-    const blocklyCode = blocklyRef.current.getCode();
-
-    return await Promise.all([
-      deleteProcessScriptTask(processId, filename, 'ts', environment.spaceId),
-      saveProcessScriptTask(processId, filename, 'xml', blocklyCode.xml, environment.spaceId),
-      saveProcessScriptTask(processId, filename, 'js', blocklyCode.js, environment.spaceId),
-    ]);
   };
 
   const handleClose = () => {
@@ -220,7 +173,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
           // discard changes
           // no change was saved to the script -> script is opened again -> no props change -> Editors keep changes
           // (if changes where made, the props of the editors would change and the editors would reset)
-          if (selectedEditor === 'JS') monacoEditorRef.current?.setValue(initialScript);
+          if (selectedEditor === 'JS') monacoEditorRef.current?.reset();
           if (selectedEditor === 'blockly') blocklyRef.current?.reset();
 
           setHasUnsavedChanges(false);
@@ -229,27 +182,16 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     }
   };
 
-  const getEditorPositionRange = () => {
-    if (monacoEditorRef.current && monacoRef.current) {
-      const position = monacoEditorRef.current.getPosition();
-      if (position) {
-        return new monacoRef.current.Range(
-          position.lineNumber,
-          position.column,
-          position.lineNumber,
-          position.column,
-        );
-      }
-    }
-    return null;
-  };
-
   const transformToCode = async () => {
     if (selectedEditor !== 'blockly' || !blocklyRef.current) return;
 
     const blocklyCode = blocklyRef.current.getCode();
-    setInitialScript(blocklyCode.js);
-    setSelectedEditor('JS');
+    if (!blocklyCode) {
+      app.message.error('Something went wrong!');
+    } else {
+      setInitialScript(blocklyCode.js);
+      setSelectedEditor('JS');
+    }
   };
 
   return (
@@ -423,34 +365,22 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                             <Space.Compact size="small">
                               <Button
                                 icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
-                                onClick={() => {
-                                  const editorPositionRange = getEditorPositionRange();
-                                  if (editorPositionRange && monacoEditorRef.current) {
-                                    monacoEditorRef.current.executeEdits('', [
-                                      {
-                                        range: editorPositionRange,
-                                        text: `variable.set('${item.name}', );\n`,
-                                      },
-                                    ]);
-                                  }
-                                }}
+                                onClick={() =>
+                                  monacoEditorRef.current?.insertTextOnCursor(
+                                    `variable.set('${item.name}', );\n`,
+                                  )
+                                }
                                 disabled={!canEdit}
                               >
                                 SET
                               </Button>
                               <Button
                                 icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
-                                onClick={() => {
-                                  const editorPositionRange = getEditorPositionRange();
-                                  if (editorPositionRange && monacoEditorRef.current) {
-                                    monacoEditorRef.current.executeEdits('', [
-                                      {
-                                        range: editorPositionRange,
-                                        text: `variable.get('${item.name}')\n`,
-                                      },
-                                    ]);
-                                  }
-                                }}
+                                onClick={() =>
+                                  monacoEditorRef.current?.insertTextOnCursor(
+                                    `variable.get('${item.name}')\n`,
+                                  )
+                                }
                                 disabled={!canEdit}
                               >
                                 GET
@@ -477,18 +407,11 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
               <Col span={20}>
                 {selectedEditor === 'JS' ? (
-                  <Editor
-                    defaultLanguage="typescript"
-                    value={initialScript}
-                    options={{
-                      wordWrap: 'on',
-                      wrappingStrategy: 'advanced',
-                      wrappingIndent: 'same',
-                      readOnly: !canEdit,
-                    }}
-                    onMount={handleEditorMount}
+                  <MonacoEditor
+                    ref={monacoEditorRef}
+                    initialScript={initialScript}
                     onChange={() => setHasUnsavedChanges(true)}
-                    className="Hide-Scroll-Bar"
+                    disabled={!canEdit}
                   />
                 ) : (
                   <BlocklyEditor

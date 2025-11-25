@@ -29,10 +29,9 @@ import { z } from 'zod';
 import { requestEmailChange as serverRequestEmailChange } from '@/lib/email-verification-tokens/server-actions';
 import Link from 'next/link';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import ImageUpload from '@/components/image-upload';
+import ImageUpload, { fallbackImage } from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
-import { fallbackImage } from '../processes/[processId]/image-selection-section';
 import ChangeUserPasswordModal from './change-password-modal';
 import { isUserErrorResponse } from '@/lib/user-error';
 
@@ -206,43 +205,31 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
               alignItems: 'center',
             }}
           >
-            <Image
-              alt="Profile picture"
-              src={avatarUrl || fallbackImage}
-              fallback={fallbackImage}
-              style={{
-                maxHeight: '120px',
-                maxWidth: '120px',
+            <ImageUpload
+              config={{
+                entityType: EntityType.PROFILE_PICTURE,
+                entityId: userData.id,
               }}
-              preview={{
-                visible: false,
-                mask: (
-                  <ImageUpload
-                    config={{
-                      entityType: EntityType.PROFILE_PICTURE,
-                      entityId: userData.id,
-                      useDefaultRemoveFunction: true,
-                      fileName: '',
-                    }}
-                    imageExists={!!avatarUrl}
-                    onImageUpdate={async (newFilePath) => {
-                      session.update(null);
-                      if (newFilePath) {
-                        messageApi.success({ content: 'Profile picture updated' });
-                        getProfileUrl({ entityId: userData.id, filePath: newFilePath });
-                      } else {
-                        // Image was removed
-                        messageApi.success({ content: 'Profile picture was deleted' });
-                        setAvatarURl(undefined);
-                      }
-                    }}
-                    onUploadFail={() => messageApi.error('Error uploading image')}
-                  />
-                ),
+              initialFileName={(!userData.isGuest && userData.profileImage) || undefined}
+              onImageUpdate={async (newFilePath) => {
+                session.update(null);
+                if (newFilePath) {
+                  messageApi.success({ content: 'Profile picture updated' });
+                  getProfileUrl({ entityId: userData.id, filePath: newFilePath });
+                } else {
+                  // Image was removed
+                  messageApi.success({ content: 'Profile picture was deleted' });
+                  setAvatarURl(undefined);
+                }
               }}
-            >
-              <UserAvatar user={userData} size={90} style={{ marginBottom: '1rem' }} />
-            </Image>
+              imagePreview={(fileUrl) => (
+                <UserAvatar user={{ ...userData, profileImage: fileUrl }} size={90} />
+              )}
+              onUploadFail={() => messageApi.error('Error uploading image')}
+              imageProps={{
+                alt: 'Profile Picture',
+              }}
+            />
           </div>
 
           <div

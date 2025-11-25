@@ -12,7 +12,7 @@ import useEditorStateStore from '../use-editor-state-store';
 
 type InputProps = {
   label?: string;
-  type?: 'text' | 'number' | 'email';
+  type?: 'text' | 'number' | 'email' | 'url';
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
@@ -200,10 +200,13 @@ export const InputSettings = () => {
       <VariableSetting
         variable={variable}
         allowedTypes={['string', 'number']}
-        onChange={(newVariable, newVariableType) =>
+        onChange={(newVariable, newVariableType, newVariableTextFormat) =>
           setProp((props: InputProps) => {
             props.variable = newVariable;
-            props.type = newVariableType && newVariableType === 'string' ? 'text' : 'number';
+            if (newVariableTextFormat) props.type = newVariableTextFormat;
+            else {
+              props.type = newVariableType && newVariableType === 'string' ? 'text' : 'number';
+            }
           })
         }
       />

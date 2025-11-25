@@ -118,3 +118,29 @@ export const FilterOrSortButton: React.FC<FilterOrSortButtonProps> = ({ type, it
     </Dropdown>
   );
 };
+
+export const OwnerSelection = ({
+  selectedValues,
+  onSelectionChange,
+}: {
+  selectedValues: string[];
+  onSelectionChange: (selectedValues: string[]) => void;
+}) => {
+  return (
+    <Checkbox.Group
+      style={{
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+      value={selectedValues}
+      onChange={(checkedValues: string[]) => {
+        onSelectionChange(checkedValues);
+      }}
+    >
+      <Checkbox value="unassigned" style={{ marginBottom: '0.25rem' }}>
+        Show Unassigned Tasks
+      </Checkbox>
+    </Checkbox.Group>
+  );
+};

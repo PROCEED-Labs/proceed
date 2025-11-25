@@ -9,10 +9,11 @@ import {
 import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
 import { getProcessHtmlFormJSON } from './db/process';
-import { asyncMap, findKey } from '../helpers/javascriptHelpers';
+import { asyncMap } from '../helpers/javascriptHelpers';
 import { Prisma } from '@prisma/client';
 import { checkValidity } from './processes';
-import { UserFacingError, userError, getErrorMessage } from '../user-error';
+import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';
+import { UserFacingError, getErrorMessage, userError } from '../user-error';
 
 // Allowed content types for files
 const ALLOWED_CONTENT_TYPES = [
@@ -31,7 +32,7 @@ const isContentTypeAllowed = (mimeType: string): boolean => {
 };
 
 interface SaveArtifactOptions {
-  versionCreatedOn?: string;
+  saveWithoutSavingReference?: boolean;
   processId: string;
 }
 
@@ -42,13 +43,16 @@ export const saveArtifactToDB = async (
   options: SaveArtifactOptions,
 ) => {
   try {
-    const { versionCreatedOn, processId } = options;
-    const data = {
+    const { saveWithoutSavingReference, processId } = options;
+    const data: Prisma.ArtifactCreateArgs['data'] = {
       fileName,
       filePath,
       artifactType,
-      ...(versionCreatedOn ? undefined : { processReferences: { create: { processId } } }),
     };
+
+    if (!saveWithoutSavingReference) {
+      data['processReferences'] = { create: { processId } };
+    }
 
     const artifact = await db.artifact.create({ data });
 
@@ -113,13 +117,17 @@ export async function getArtifactMetaData(fileNameOrPath: string, isFilePath: bo
   });
 }
 
+type SaveEntityFileOrGetPresignedUrlOptions = {
+  saveWithoutSavingReference: boolean;
+};
 // Save a file associated with an entity (process, organization, etc.)
-export async function saveEntityFile(
+export async function saveEntityFileOrGetPresignedUrl(
   entityType: EntityType,
   entityId: string,
   mimeType: string,
   fileName: string,
   fileContent?: Buffer | Uint8Array,
+  options?: SaveEntityFileOrGetPresignedUrlOptions,
 ) {
   try {
     if (!isContentTypeAllowed(mimeType)) {
@@ -128,7 +136,7 @@ export async function saveEntityFile(
 
     switch (entityType) {
       case EntityType.PROCESS:
-        return saveProcessArtifact(entityId, fileName, mimeType, fileContent);
+        return saveProcessArtifact(entityId, fileName, mimeType, fileContent, options);
       case EntityType.ORGANIZATION:
         return saveSpaceLogo(entityId, fileName, mimeType, fileContent);
       case EntityType.PROFILE_PICTURE:
@@ -189,6 +197,7 @@ interface SaveProcessArtifactOptions {
   versionCreatedOn?: string;
   replaceFileContentOnly?: boolean;
   context?: ArtifactType; // option to override the file category in case of collision ( eg: xml extension is used for usertask and bpmn both)
+  saveWithoutSavingReference?: boolean;
 }
 
 // Functionality for handling process artifact files
@@ -205,6 +214,7 @@ export async function saveProcessArtifact(
     versionCreatedOn,
     replaceFileContentOnly = false,
     context,
+    saveWithoutSavingReference = false,
   } = options;
 
   const newFileName = generateNewFileName ? getNewFileName(fileName) : fileName;
@@ -237,7 +247,7 @@ export async function saveProcessArtifact(
     if (useDefaultArtifactsTable) {
       await saveArtifactToDB(newFileName, filePath, artifactType, {
         processId,
-        versionCreatedOn,
+        saveWithoutSavingReference: saveWithoutSavingReference || !!versionCreatedOn,
       });
     }
 
@@ -339,7 +349,7 @@ export async function deleteSpaceLogo(organizationId: string): Promise<boolean> 
     select: { spaceLogo: true },
   });
 
-  if (result?.spaceLogo) {
+  if (result?.spaceLogo && !result.spaceLogo.startsWith('public')) {
     const isDeleted = await deleteFile(result.spaceLogo);
     if (isDeleted) {
       await db.space.update({
@@ -427,7 +437,7 @@ export async function updateFileDeletableStatus(
   //spaceId: string,
   //userId: string,
   filePath: string,
-  status: boolean,
+  deleteReference: boolean,
   processId: string,
 ) {
   // if (!userId) {
@@ -449,7 +459,7 @@ export async function updateFileDeletableStatus(
     throw new Error(`Artifact with fileName "${filePath}" not found.`);
   }
 
-  if (!status) {
+  if (!deleteReference) {
     // Add a new reference
     try {
       await db.artifactProcessReference.create({
@@ -473,41 +483,39 @@ export async function updateFileDeletableStatus(
   }
 }
 
-async function getArtifactReference(artifactId: string, processId: string) {
-  const res = await db.artifactProcessReference.findUnique({
-    where: {
-      artifactId_processId: {
-        artifactId,
-        processId,
-      },
-    },
-  });
-  return res;
-}
-
 // Soft delete a user task and its associated artifacts
 export async function softDeleteProcessUserTask(processId: string, userTaskFilename: string) {
-  const res = await getProcessHtmlFormJSON(processId, userTaskFilename);
-  if (res) {
-    const userTaskJson = JSON.parse(res);
-    const referencedArtifactFilenames = findKey(userTaskJson, 'src');
-    referencedArtifactFilenames.push(`${userTaskFilename}.json`);
-    referencedArtifactFilenames.push(`${userTaskFilename}.html`);
+  try {
+    const userTaskJson = await getProcessHtmlFormJSON(processId, userTaskFilename);
+    if (userTaskJson) {
+      const artifactsPromises = [];
 
-    const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
-      getArtifactMetaData(filename, false),
-    );
+      artifactsPromises.push(getArtifactMetaData(`${userTaskFilename}.json`, false));
+      artifactsPromises.push(getArtifactMetaData(`${userTaskFilename}.html`, false));
 
-    for (const artifact of artifacts) {
-      if (artifact) {
-        await db.artifactProcessReference.deleteMany({
-          where: {
-            artifactId: artifact.id,
-            processId,
-          },
-        });
+      const referencedArtifactFilePaths = getUsedImagesFromJson(JSON.parse(userTaskJson));
+      for (const referencedArtifactFilePath of referencedArtifactFilePaths) {
+        artifactsPromises.push(getArtifactMetaData(referencedArtifactFilePath, true));
       }
+
+      const artifacts = await Promise.all(artifactsPromises);
+
+      await db.$transaction(async (tx) => {
+        for (const artifact of artifacts) {
+          if (artifact) {
+            await tx.artifactProcessReference.deleteMany({
+              where: {
+                artifactId: artifact.id,
+                processId,
+              },
+            });
+          }
+        }
+      });
     }
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
@@ -520,7 +528,7 @@ export async function softDeleteProcessScriptTask(processId: string, scriptTaskF
   ];
 
   const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
-    getArtifactMetaData(filename, false),
+    getArtifactMetaData(filename, true),
   );
 
   for (const artifact of artifacts) {
@@ -537,27 +545,37 @@ export async function softDeleteProcessScriptTask(processId: string, scriptTaskF
 
 // Revert soft deletion of a user task and restore its artifacts
 export async function revertSoftDeleteProcessUserTask(processId: string, userTaskFilename: string) {
-  const res = await getProcessHtmlFormJSON(processId, userTaskFilename);
-  if (res) {
-    const userTaskJson = JSON.parse(res);
-    const referencedArtifactFilenames = findKey(userTaskJson, 'src');
-    referencedArtifactFilenames.push(`${userTaskFilename}.json`);
-    referencedArtifactFilenames.push(`${userTaskFilename}.html`);
+  try {
+    const userTaskJson = await getProcessHtmlFormJSON(processId, userTaskFilename, true);
+    if (userTaskJson) {
+      const artifactsPromises = [];
 
-    const artifacts = await asyncMap(referencedArtifactFilenames, (filename) =>
-      getArtifactMetaData(filename, false),
-    );
+      artifactsPromises.push(getArtifactMetaData(`${userTaskFilename}.json`, false));
+      artifactsPromises.push(getArtifactMetaData(`${userTaskFilename}.html`, false));
 
-    for (const artifact of artifacts) {
-      if (artifact) {
-        await db.artifactProcessReference.create({
-          data: {
-            artifactId: artifact.id,
-            processId,
-          },
-        });
+      const referencedArtifactFilePaths = getUsedImagesFromJson(JSON.parse(userTaskJson));
+      for (const referencedArtifactFilePath of referencedArtifactFilePaths) {
+        artifactsPromises.push(getArtifactMetaData(referencedArtifactFilePath, true));
       }
+
+      const artifacts = await Promise.all(artifactsPromises);
+
+      await db.$transaction(async (tx) => {
+        for (const artifact of artifacts) {
+          if (artifact) {
+            await tx.artifactProcessReference.create({
+              data: {
+                artifactId: artifact.id,
+                processId,
+              },
+            });
+          }
+        }
+      });
     }
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 

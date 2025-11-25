@@ -6,7 +6,7 @@ import { getUserOrganizationEnvironments, isMember } from '@/lib/data/db/iam/mem
 import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import Ability from '@/lib/ability/abilityHelper';
 import {
-  adminRules,
+  packedAdminRules,
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
@@ -15,6 +15,8 @@ import * as noIamUser from '@/lib/no-iam-user';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { cookies } from 'next/headers';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { UIError as UserUIError } from '@/lib/ui-error';
+import { packedStaticRules } from '@/lib/authorization/caslRules';
 
 export const getCurrentUser = cache(async () => {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
@@ -41,10 +43,36 @@ export const getCurrentUser = cache(async () => {
   if (userId !== '' && !user) {
     const cookieStore = cookies();
     const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
-    redirect(`/api/private/signout?csrfToken=${csrfToken}`);
+
+    const searchParams = new URLSearchParams({ csrfToken });
+
+    if (session?.user.isGuest) {
+      searchParams.append(
+        'callbackUrl',
+        `/signin?error=${encodeURIComponent('$info You have previously used PROCEED as a Guest. This account and your data have been deleted due to discontinued use. If you want to avoid this, please log in as a user.')}`,
+      );
+    }
+
+    redirect(`/api/private/signout?${searchParams}`);
   }
 
   return { session, userId, systemAdmin, user };
+});
+
+const systemAdminRulesForOrganizations = packedAdminRules
+  .concat(packedGlobalOrganizationRules)
+  .concat(packedStaticRules);
+
+const systemAdminRulesForPersonalSpaces = packedAdminRules
+  .concat(packedGlobalUserRules)
+  .concat(packedStaticRules);
+
+export const getSystemAdminRules = cache((isOrganization: boolean) => {
+  if (isOrganization) {
+    return systemAdminRulesForOrganizations;
+  } else {
+    return systemAdminRulesForPersonalSpaces;
+  }
 });
 
 // TODO: To enable PPR move the session redirect into this function, so it will
@@ -65,28 +93,37 @@ export const getCurrentEnvironment = cache(
     const msConfig = await getMSConfig();
 
     if (
+      // userId && // first of all, only do this for users that are signed in
       spaceIdParam === 'my' || // Use hardcoded environment /my/processes for personal spaces.
       !msConfig.PROCEED_PUBLIC_IAM_ACTIVE // when iam isn't active we hardcode the space to be the no-iam user's personal space
     ) {
-      if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
-        // Note: will be undefined for not logged in users
-        spaceIdParam = userId;
-      } else {
-        const userOrgs = await getUserOrganizationEnvironments(userId);
-        if (userOrgs.length === 0) return redirect(`/create-organization`);
-        spaceIdParam = userOrgs[0];
-      }
+      spaceIdParam = userId;
     }
 
-    const activeSpace = decodeURIComponent(spaceIdParam);
-    const isOrganization = activeSpace !== userId;
+    let activeSpace = decodeURIComponent(spaceIdParam);
+    let isOrganization = activeSpace !== userId;
+
+    // When trying to access a personal space
+    if (userId && !isOrganization && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+      // Note: will be undefined for not logged in users
+      const userOrgs = await getUserOrganizationEnvironments(userId);
+
+      if (userOrgs.length === 0) {
+        if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
+          throw new UserUIError('You are not part of an organization.');
+        } else {
+          return redirect(`/create-organization`);
+        }
+      }
+
+      activeSpace = userOrgs[0];
+      isOrganization = true;
+    }
 
     // TODO: account for bought resources
 
     if (systemAdmin || !msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
-      let rules;
-      if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
-      else rules = adminRules.concat(packedGlobalUserRules);
+      const rules = getSystemAdminRules(isOrganization);
 
       return {
         ability: new Ability(rules, activeSpace),

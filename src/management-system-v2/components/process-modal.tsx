@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Form,
@@ -15,6 +15,7 @@ import {
   Collapse,
   Divider,
   CollapseProps,
+  Skeleton,
 } from 'antd';
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
@@ -25,6 +26,14 @@ import { useSession } from 'next-auth/react';
 import { LazyBPMNViewer } from '@/components/bpmn-viewer';
 import { usePathname } from 'next/navigation';
 import styles from './process-modal-carousel.module.scss';
+import dynamic from 'next/dynamic';
+
+import '@toast-ui/editor/dist/toastui-editor.css';
+import type { Editor as EditorClass } from '@toast-ui/react-editor';
+const TextEditor = dynamic(() => import('@/components/text-editor'), {
+  ssr: false,
+  loading: () => <Skeleton.Input size="large" />,
+});
 
 export type ProcessModalMode = 'create' | 'edit' | 'copy' | 'import';
 
@@ -37,6 +46,7 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
   initialData?: T[];
   modalProps?: ModalProps;
   mode: ProcessModalMode;
+  readonly?: boolean;
 };
 
 const ProcessModal = <
@@ -58,6 +68,7 @@ const ProcessModal = <
   initialData,
   modalProps,
   mode = 'create',
+  readonly = false,
   children,
 }: React.PropsWithChildren<ProcessModalProps<T>>) => {
   const [form] = Form.useForm();
@@ -77,7 +88,7 @@ const ProcessModal = <
   useEffect(() => {
     if (initialData) {
       // form.resetFields is not working, because initialData has not been
-      // updated in the internal form store, eventhough the prop has.
+      // updated in the internal form store, even though the prop has.
       form.setFieldsValue(initialData);
     }
   }, [form, initialData]);
@@ -159,7 +170,7 @@ const ProcessModal = <
         setCarouselIndex(1);
         setNameCollisions([]);
       } catch (e) {
-        // Unkown server error or was not sent from server (e.g. network error)
+        // Unknown server error or was not sent from server (e.g. network error)
         message.open({
           type: 'error',
           content: 'Something went wrong while submitting the data',
@@ -202,14 +213,16 @@ const ProcessModal = <
 
   const renderFormContent = () => {
     if (!initialData) {
-      return <ProcessInputs index={0} />;
+      return <ProcessInputs index={0} readonly={readonly} />;
     }
     if (initialData.length === 1 && mode === 'edit') {
-      return <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} />;
+      return (
+        <ProcessInputs key={0} index={0} initialName={initialData?.[0]?.name} readonly={readonly} />
+      );
     }
 
     if (initialData.length === 1 && mode === 'copy') {
-      return <ProcessInputs key={0} index={0} />;
+      return <ProcessInputs key={0} index={0} readonly={readonly} />;
     }
 
     if (initialData.length > 1 && mode === 'copy') {
@@ -217,7 +230,7 @@ const ProcessModal = <
         (initialData?.length ?? 0) > 1
           ? initialData?.map((data, index) => ({
               label: data.name,
-              children: <ProcessInputs index={index} />,
+              children: <ProcessInputs index={index} readonly={readonly} />,
             }))
           : undefined;
       return (
@@ -245,7 +258,7 @@ const ProcessModal = <
                   <Divider style={{ width: '100%', marginLeft: '-20%' }} />
                 </>
               )}
-              <ProcessInputsImport key={index} index={index} />
+              <ProcessInputsImport key={index} index={index} readonly={readonly} />
             </Card>
           ))}
         </Carousel>
@@ -272,7 +285,7 @@ const ProcessModal = <
         // IMPORTANT: This prevents a modal being stored for every row in the
         // table.
         destroyOnClose
-        okButtonProps={{ loading: submitting }}
+        okButtonProps={{ loading: submitting, style: readonly ? { display: 'none' } : {} }}
         okText={okText}
         wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}
         {...modalProps}
@@ -345,12 +358,41 @@ const ProcessModal = <
   );
 };
 
+function ProcessDescription({
+  value,
+  defaultValue,
+  onChange,
+}: {
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}) {
+  const editorRef = useRef<EditorClass>(null);
+
+  return (
+    <div style={{ height: 400 }}>
+      <TextEditor
+        editorRef={editorRef}
+        initialValue={value || defaultValue}
+        onKeyup={() => {
+          if (!editorRef.current) return;
+
+          const editorInstance = editorRef.current.getInstance();
+          const content = editorInstance.getMarkdown();
+          onChange?.(content);
+        }}
+      />
+    </div>
+  );
+}
+
 type ProcessInputsProps = {
   index: number;
   initialName?: string;
+  readonly?: boolean;
 };
 
-const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
+const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsProps) => {
   const environment = useEnvironment();
   const session = useSession();
   const path = usePathname();
@@ -405,7 +447,7 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
           },
         ]}
       >
-        <Input />
+        <Input disabled={readonly} />
       </Form.Item>
       <Form.Item
         name={[index, 'userDefinedId']}
@@ -418,7 +460,7 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
           },
         ]}
       >
-        <Input />
+        <Input disabled={readonly} />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
@@ -428,16 +470,16 @@ const ProcessInputs = ({ index, initialName }: ProcessInputsProps) => {
           { required: false, message: 'Please fill out the Process description' },
         ]}
       >
-        <Input.TextArea showCount rows={4} maxLength={1000} />
+        <Input.TextArea showCount rows={4} maxLength={1000} disabled={readonly} />
       </Form.Item>
     </>
   );
 };
 
-const ProcessInputsImport = ({ index }: ProcessInputsProps) => {
+const ProcessInputsImport = ({ index, readonly = false }: ProcessInputsProps) => {
   return (
     <>
-      <ProcessInputs index={index} />
+      <ProcessInputs index={index} readonly={readonly} />
       <Form.Item name={[index, 'creator']} label="Original Creator" rules={[{ required: false }]}>
         <Input disabled />
       </Form.Item>

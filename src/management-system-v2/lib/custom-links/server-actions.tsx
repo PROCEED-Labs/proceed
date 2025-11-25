@@ -11,7 +11,7 @@ export async function getCustomLinksStatus(spaceId: string) {
   getCurrentEnvironment(spaceId);
 
   const generalSettings = await getSpaceSettingsValues(spaceId, 'general-settings');
-  const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks || [];
+  const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks?.links || [];
 
   return await asyncMap(customNavLinks, async (link) => {
     return {

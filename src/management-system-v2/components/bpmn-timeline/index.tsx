@@ -10,7 +10,7 @@ import { getSpaceSettingsValues } from '@/lib/data/space-settings';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { useEnvironment } from '@/components/auth-can';
 import { moddle } from '@proceed/bpmn-helper';
-import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
+import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-modeler-state-store';
 
 // Import our separated modules
 import type {
@@ -27,6 +27,8 @@ import styles from './styles/BPMNTimeline.module.scss';
 const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const disableTimelineView = useTimelineViewStore((state) => state.disableTimelineView);
   const isUnmountingRef = useRef(false);
+  // Track the last transformation parameters to prevent duplicate processing in React strict mode
+  const lastTransformRef = useRef<string>('');
   const modeler = useModelerStateStore((state) => state.modeler);
   const changeCounter = useModelerStateStore((state) => state.changeCounter);
 
@@ -38,6 +40,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
   const [errors, setErrors] = useState<TransformationError[]>([]);
   const [warnings, setWarnings] = useState<TransformationIssue[]>([]);
   const [defaultDurations, setDefaultDurations] = useState<DefaultDurationInfo[]>([]);
+  const [informationalArtifacts, setInformationalArtifacts] = useState<
+    import('./types/types').BPMNInformationalArtifactWithAssociations[]
+  >([]);
   const [hasInclusiveGateways, setHasInclusiveGateways] = useState<boolean>(false);
   const [hasComplexGateways, setHasComplexGateways] = useState<boolean>(false);
   const [hasEventBasedGateways, setHasEventBasedGateways] = useState<boolean>(false);
@@ -100,13 +105,14 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           showGhostDependencies:
             showGhostElements && (ganttViewSettings?.['show-ghost-dependencies'] ?? false),
         };
+
         setGanttSettings(newSettings);
       } catch (error) {
         console.warn('Failed to fetch gantt view settings, using defaults:', error);
         const defaultShowGhostElements = false;
-        setGanttSettings({
+        const defaultSettings = {
           enabled: true,
-          positioningLogic: 'earliest-occurrence',
+          positioningLogic: 'earliest-occurrence' as const,
           loopDepth: 1,
           chronologicalSorting: false,
           showLoopIcons: true,
@@ -115,7 +121,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           showGhostElements: defaultShowGhostElements,
           // Ghost dependencies can only be enabled if ghost elements are enabled
           showGhostDependencies: defaultShowGhostElements && false,
-        });
+        };
+
+        setGanttSettings(defaultSettings);
       }
     };
 
@@ -148,6 +156,24 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           }
         }
 
+        // Create a key to detect duplicate calls (React strict mode prevention)
+        const transformKey = JSON.stringify({
+          bpmnLength: bpmnXml.length,
+          positioningLogic: ganttSettings.positioningLogic,
+          loopDepth: ganttSettings.loopDepth,
+          chronologicalSorting: ganttSettings.chronologicalSorting,
+          renderGateways: ganttSettings.renderGateways,
+          showGhostElements: ganttSettings.showGhostElements,
+          showGhostDependencies: ganttSettings.showGhostDependencies,
+          changeCounter,
+        });
+
+        // Prevent duplicate processing in React strict mode
+        if (lastTransformRef.current === transformKey) {
+          return;
+        }
+        lastTransformRef.current = transformKey;
+
         // Parse BPMN XML using moddle
         const { rootElement: definitions } = await moddle.fromXML(bpmnXml);
 
@@ -157,7 +183,14 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         }
 
         // Check for special gateways in the process
-        const bpmnProcess = (definitions as BPMNDefinitions).rootElements?.[0];
+        // Handle different BPMN definition structures
+        let bpmnProcess = null;
+        if (definitions.$type === 'bpmn:Definitions' && definitions.rootElements) {
+          bpmnProcess = definitions.rootElements.find((el: any) => el.$type === 'bpmn:Process');
+        } else if (definitions.$type === 'bpmn:Process') {
+          bpmnProcess = definitions;
+        }
+
         const hasInclusive =
           bpmnProcess?.flowElements?.some(
             (element: any) => element.$type === 'bpmn:InclusiveGateway',
@@ -174,8 +207,9 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         setHasComplexGateways(hasComplex);
         setHasEventBasedGateways(hasEventBased);
 
-        // Use a single timestamp for both transformation and red line marker
-        const transformationTimestamp = Date.now();
+        // Use a fixed debug timestamp for both transformation and red line marker
+        // 25.07.2025 12:00 UTC for debugging purposes
+        const transformationTimestamp = new Date('2025-07-25T12:00:00.000Z').getTime();
         setNowTimestamp(transformationTimestamp);
 
         const transformationResult = transformBPMNToGantt(
@@ -203,6 +237,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
           transformationResult.issues?.filter((issue) => issue.severity === 'warning') || [],
         );
         setDefaultDurations(transformationResult.defaultDurations);
+        setInformationalArtifacts(transformationResult.informationalArtifacts || []);
         setIsLoading(false);
       } catch (error) {
         // Check if component is still mounted
@@ -312,7 +347,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                   label: (
                     <div className={styles.issuesHeader}>
                       <WarningOutlined className={styles.warningIcon} />
-                      Process Issues ({errors.length + warnings.length})
+                      Process Issues
                     </div>
                   ),
                   children: (
@@ -382,7 +417,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
         {(defaultDurations.length > 0 ||
           hasInclusiveGateways ||
           hasComplexGateways ||
-          hasEventBasedGateways) && (
+          hasEventBasedGateways ||
+          informationalArtifacts.length > 0) && (
           <div
             className={`${styles.defaultDurationSection} ${errors.length > 0 || warnings.length > 0 ? styles.afterErrors : ''}`}
           >
@@ -395,12 +431,7 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                   label: (
                     <div className={styles.defaultDurationLabel}>
                       <span className={styles.infoIconInline}>ℹ</span>
-                      Process Information (
-                      {(defaultDurations.length > 0 ? 1 : 0) +
-                        (hasInclusiveGateways ? 1 : 0) +
-                        (hasComplexGateways ? 1 : 0) +
-                        (hasEventBasedGateways ? 1 : 0)}{' '}
-                      items)
+                      Process Information
                     </div>
                   ),
                   children: (
@@ -455,7 +486,17 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                           className={`${styles.processInfoSection} ${hasInclusiveGateways || hasComplexGateways || hasEventBasedGateways ? styles.sectionSpacing : ''}`}
                         >
                           <div className={styles.processInfoHeader}>
-                            <strong>Tasks with Default Duration ({defaultDurations.length})</strong>
+                            <strong>
+                              Tasks with Default Duration (
+                              {
+                                Array.from(
+                                  new Map(
+                                    defaultDurations.map((item) => [item.elementId, item]),
+                                  ).values(),
+                                ).length
+                              }
+                              )
+                            </strong>
                           </div>
                           <div className={styles.defaultDurationDescription}>
                             The following tasks did not have explicit durations and received the
@@ -470,6 +511,67 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
                               <li key={index}>
                                 <strong>{item.elementName || item.elementId}</strong> (
                                 {item.elementType}): 1 hour
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {informationalArtifacts.length > 0 && (
+                        <div
+                          className={`${styles.processInfoSection} ${hasInclusiveGateways || hasComplexGateways || hasEventBasedGateways || defaultDurations.length > 0 ? styles.sectionSpacing : ''}`}
+                        >
+                          <div className={styles.processInfoHeader}>
+                            <strong>Process Artifacts ({informationalArtifacts.length})</strong>
+                          </div>
+                          <div className={styles.processInfoDescription}>
+                            The following informational artifacts were found in the process and are
+                            not displayed in the timeline:
+                          </div>
+                          <ul className={styles.defaultDurationList}>
+                            {informationalArtifacts.map((artifact, index) => (
+                              <li key={index}>
+                                <strong>{artifact.name || artifact.id}</strong> (
+                                {artifact.$type === 'bpmn:TextAnnotation' && 'Text Annotation'}
+                                {artifact.$type === 'bpmn:DataObject' && 'Data Object'}
+                                {artifact.$type === 'bpmn:DataObjectReference' &&
+                                  'Data Object Reference'}
+                                {artifact.$type === 'bpmn:DataStore' && 'Data Store'}
+                                {artifact.$type === 'bpmn:DataStoreReference' &&
+                                  'Data Store Reference'}
+                                {artifact.$type === 'bpmn:Group' && 'Group'}
+                                {(artifact.$type === 'proceed:genericResource' ||
+                                  artifact.$type === 'proceed:GenericResource') &&
+                                  `Generic Resource${(artifact as any).resourceType ? ` - ${(artifact as any).resourceType}` : ''}`}
+                                )
+                                {artifact.$type === 'bpmn:TextAnnotation' &&
+                                  (artifact as any).text &&
+                                  `: "${(artifact as any).text}"`}
+                                {artifact.$type === 'bpmn:DataObjectReference' &&
+                                  (artifact as any).dataObjectRef &&
+                                  ` → ${typeof (artifact as any).dataObjectRef === 'string' ? (artifact as any).dataObjectRef : (artifact as any).dataObjectRef?.id || ''}`}
+                                {artifact.$type === 'bpmn:DataStoreReference' &&
+                                  (artifact as any).dataStoreRef &&
+                                  ` → ${typeof (artifact as any).dataStoreRef === 'string' ? (artifact as any).dataStoreRef : (artifact as any).dataStoreRef?.id || ''}`}
+                                {artifact._associatedElements &&
+                                  artifact._associatedElements.length > 0 && (
+                                    <div
+                                      style={{ fontSize: '0.9em', color: '#666', marginTop: '4px' }}
+                                    >
+                                      Associated with:{' '}
+                                      {artifact._associatedElements.map(
+                                        (assocElement, assocIndex) => (
+                                          <span key={assocIndex}>
+                                            {assocIndex > 0 && ', '}
+                                            <strong>
+                                              {assocElement.elementName || assocElement.elementId}
+                                            </strong>{' '}
+                                            ({assocElement.elementType.replace('bpmn:', '')})
+                                          </span>
+                                        ),
+                                      )}
+                                    </div>
+                                  )}
                               </li>
                             ))}
                           </ul>
@@ -494,7 +596,8 @@ const BPMNTimeline = ({ process, ...props }: BPMNTimelineProps) => {
               showInstanceColumn={ganttSettings.positioningLogic === 'every-occurrence'}
               showLoopColumn={
                 ganttSettings.positioningLogic === 'every-occurrence' ||
-                ganttSettings.positioningLogic === 'latest-occurrence'
+                ganttSettings.positioningLogic === 'latest-occurrence' ||
+                ganttSettings.positioningLogic === 'earliest-occurrence'
               }
               options={{
                 showControls: true,

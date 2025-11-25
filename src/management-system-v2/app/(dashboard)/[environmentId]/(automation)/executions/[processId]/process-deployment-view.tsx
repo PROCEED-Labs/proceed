@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
-import toolbarStyles from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler-toolbar.module.scss';
+import toolbarStyles from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/modeler-toolbar.module.scss';
 import styles from './process-deployment-view.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
@@ -23,7 +23,6 @@ import { MdOutlineColorLens } from 'react-icons/md';
 import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useDeployment from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
@@ -32,6 +31,8 @@ import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import StartFormModal from './start-form-modal';
+import useInstanceVariables from './use-instance-variables';
+import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
 export default function ProcessDeploymentView({
   processId,
@@ -54,8 +55,6 @@ export default function ProcessDeploymentView({
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
-
-  const { spaceId } = useEnvironment();
 
   const {
     data: deploymentInfo,
@@ -117,6 +116,11 @@ export default function ProcessDeploymentView({
       instanceIsPaused,
     };
   }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
+
+  const { variableDefinitions, variables } = useInstanceVariables({
+    process: deploymentInfo,
+    version: currentVersion,
+  });
 
   const selectedBpmn = useMemo(() => {
     return { bpmn: currentVersion?.bpmn || '' };
@@ -181,15 +185,32 @@ export default function ProcessDeploymentView({
                     setStartingInstance(true);
                     await wrapServerCall({
                       fn: async () => {
-                        const versionId = getLatestDeployment(deploymentInfo).versionId;
+                        const latestDeployment = getLatestDeployment(deploymentInfo);
+                        const versionId = latestDeployment.versionId;
 
-                        const startForm = await getStartForm(versionId);
+                        let startForm = await getStartForm(versionId);
 
                         if (typeof startForm !== 'string') return startForm;
 
                         if (startForm) {
+                          const mappedVariables = Object.fromEntries(
+                            variables
+                              .filter((variable) => variable.value !== undefined)
+                              .map((variable) => [variable.name, variable.value]),
+                          );
+                          startForm = inlineScript(startForm, '', '', variableDefinitions);
+                          startForm = inlineUserTaskData(startForm, mappedVariables, []);
+
                           setStartForm(startForm);
-                        } else return startInstance(versionId);
+                        } else {
+                          const mappedVariables = Object.fromEntries(
+                            variables
+                              .filter((variable) => variable.value !== undefined)
+                              .map((variable) => [variable.name, { value: variable.value }]),
+                          );
+
+                          return startInstance(versionId, mappedVariables);
+                        }
                       },
                       onSuccess: async (instanceId) => {
                         await refetch();
@@ -335,10 +356,11 @@ export default function ProcessDeploymentView({
                     instance: selectedInstance,
                     element: selectedElement!,
                     process: deploymentInfo,
-                    version: selectedVersion!,
+                    version: currentVersion!,
                   }}
                   open={infoPanelOpen}
                   close={() => setInfoPanelOpen(false)}
+                  refetch={refetch}
                 />
               </div>
             </Space>
@@ -347,12 +369,24 @@ export default function ProcessDeploymentView({
 
         <StartFormModal
           html={startForm}
-          onSubmit={(variables) => {
+          onSubmit={(submitVariables) => {
             const versionId = getLatestDeployment(deploymentInfo).versionId;
 
-            const mappedVariables = Object.fromEntries(
-              Object.entries(variables).map(([key, value]) => [key, { value }]),
+            const mappedVariables: Record<string, { value: any }> = {};
+
+            // set the default values for variables in the format expected by the engine
+            variables.forEach((variable) => {
+              if (variable.value !== undefined) {
+                mappedVariables[variable.name] = { value: variable.value };
+              }
+            });
+
+            // set/override the values of variables with the ones coming from the start form
+            Object.entries(submitVariables).forEach(
+              ([key, value]) => (mappedVariables[key] = { value }),
             );
+            // start the instance with the initial variable values from the variable definitions and
+            // from the start form
             wrapServerCall({
               fn: () => startInstance(versionId, mappedVariables),
 

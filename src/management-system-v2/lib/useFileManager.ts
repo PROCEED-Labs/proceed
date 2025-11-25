@@ -1,23 +1,23 @@
-import { use, useState } from 'react';
+import { use, useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
 import {
   cleanUpFailedUploadEntry,
   deleteEntityFile,
   retrieveEntityFile,
-  saveEntityFile,
+  saveEntityFileOrGetPresignedUrl,
   updateFileDeletableStatus,
 } from './data/file-manager-facade';
-import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { EntityType, getNewFileName } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import { isUserError, userError } from './user-error';
 
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
 
 interface FileManagerHookProps {
   entityType: EntityType;
   errorToasts?: boolean;
+  dontUpdateProcessArtifactsReferences?: boolean;
 }
 
 interface FileOperationResult {
@@ -26,12 +26,56 @@ interface FileOperationResult {
   fileUrl?: string;
 }
 
-export function useFileManager({ entityType, errorToasts = true }: FileManagerHookProps) {
+export function useFileManager({
+  entityType,
+  errorToasts = true,
+  dontUpdateProcessArtifactsReferences = false,
+}: FileManagerHookProps) {
   const queryClient = useQueryClient();
   const { spaceId } = useEnvironment();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const env = use(EnvVarsContext);
   const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
+
+  // This function returns an endpoint to which we upload the file
+  const getUploadUrl = useMutation<
+    { uploadUrl: string; filePath?: string },
+    Error,
+    { fileType: string; entityId: string; filePath: string }
+  >({
+    mutationFn: async ({ fileType, entityId, filePath }) => {
+      if (DEPLOYMENT_ENV === 'cloud') {
+        // Get presigned url to upload to an S3 bucket
+        const result = await saveEntityFileOrGetPresignedUrl(
+          entityType,
+          entityId,
+          fileType,
+          filePath,
+          undefined,
+          {
+            saveWithoutSavingReference: dontUpdateProcessArtifactsReferences,
+          },
+        );
+        if (!('presignedUrl' in result) || !result.presignedUrl)
+          throw new Error('Failed to get presignedUrl');
+
+        return { uploadUrl: result.presignedUrl, filePath: result.filePath };
+      } else {
+        const uploadUrl = `/api/private/file-manager?${new URLSearchParams({
+          environmentId: spaceId,
+          entityId,
+          entityType,
+          ...(dontUpdateProcessArtifactsReferences ? { saveWithoutSavingReference: 'true' } : {}),
+          ...(filePath ? { filePath } : {}),
+        })}`;
+
+        return { uploadUrl };
+      }
+    },
+    onError: (error) => {
+      if (errorToasts) message.error(error.message || 'Upload failed');
+    },
+  });
 
   // Upload Mutation
   const uploadMutation = useMutation<
@@ -46,37 +90,37 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
     }
   >({
     mutationFn: async ({ file, entityId, filePath }) => {
-      if (DEPLOYMENT_ENV === 'cloud') {
-        const response = await saveEntityFile(
-          entityType,
-          entityId,
-          file.type,
-          filePath || (file instanceof File ? file.name : ''),
-        );
+      const uploadResults = await getUploadUrl.mutateAsync({
+        fileType: file.type,
+        entityId,
+        filePath: filePath || (file instanceof File ? file.name : ''),
+      });
 
-        if ('error' in response) throw response.error;
+      const fetchParams: RequestInit = {
+        method: 'PUT',
+        body: file,
+      };
 
-        if (!response.presignedUrl) {
-          // This should be an impossible state, if the server fails to generate the presigned url
-          // then the response would be a user error
-          throw new Error('Failed to get presignedUrl');
-        }
+      if (DEPLOYMENT_ENV === 'cloud')
+        fetchParams.headers = {
+          'Content-Type': file.type,
+          'x-goog-content-length-range': `0,${MAX_CONTENT_LENGTH}`,
+        };
 
-        try {
-          await uploadToCloud(file, response.presignedUrl);
-        } catch (e) {
-          //if upload fails, delete the artifact from the database
-          console.error('Failed to upload file to cloud', e);
+      try {
+        const response = await fetch(uploadResults.uploadUrl, fetchParams);
+        if (!response.ok) throw new Error(`Upload failed! Status: ${response.status}`);
+
+        if (DEPLOYMENT_ENV === 'cloud') return { filePath: uploadResults.filePath! };
+        else return { filePath: await response.text() };
+      } catch (e) {
+        console.error('Failed to upload file', e);
+
+        //if upload fails, delete the artifact from the database
+        if (DEPLOYMENT_ENV === 'cloud')
           await cleanUpFailedUploadEntry(spaceId, entityId, entityType, filePath!);
-        }
 
-        return { filePath: response.filePath };
-      } else {
-        return await handleLocalUpload(
-          entityId,
-          file,
-          filePath || (file instanceof File ? file.name : undefined),
-        );
+        throw e;
       }
     },
     onSuccess: (data, variables) => {
@@ -110,15 +154,8 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
   >({
     mutationFn: async ({ entityId, filePath, shareToken }) => {
       if (DEPLOYMENT_ENV === 'cloud') {
-        try {
-          const presignedUrl = await retrieveEntityFile(entityType, entityId, filePath);
-          return { fileUrl: presignedUrl as string };
-        } catch (error) {
-          console.error(
-            `Failed to retrieve file: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          );
-          return { fileUrl: undefined };
-        }
+        const presignedUrl = await retrieveEntityFile(entityType, entityId, filePath);
+        return { fileUrl: presignedUrl as string };
       } else {
         const fileUrl = `/api/private/file-manager?${new URLSearchParams({
           environmentId: spaceId,
@@ -150,10 +187,13 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
     mutationFn: async ({ entityId, filePath }) => {
       if (entityType === EntityType.PROCESS) {
         if (!filePath) throw new Error('File name is required when deleting process entity type');
-        await updateFileDeletableStatus(filePath, true, entityId);
+        if (!dontUpdateProcessArtifactsReferences) {
+          await updateFileDeletableStatus(filePath, true, entityId);
+        }
       } else {
         await deleteEntityFile(entityType, entityId, filePath);
       }
+
       return true;
     },
     onSuccess: () => {
@@ -209,53 +249,18 @@ export function useFileManager({ entityType, errorToasts = true }: FileManagerHo
     },
   });
 
-  // Cloud upload helper
-  const uploadToCloud = async (file: File | Blob, presignedUrl: string) => {
-    const response = await fetch(presignedUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-        'x-goog-content-length-range': `0,${MAX_CONTENT_LENGTH}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Upload failed! Status: ${response.status}`);
-    }
-  };
-
-  // Local upload helper
-  const handleLocalUpload = async (entityId: string, file: File | Blob, filePath?: string) => {
-    const url = `/api/private/file-manager?${new URLSearchParams({
-      environmentId: spaceId,
-      entityId,
-      entityType,
-      ...(filePath ? { filePath } : {}),
-    })}`;
-
-    const response = await fetch(url, {
-      method: 'PUT',
-      body: file,
-    });
-
-    if (response.status === 200) {
-      return { filePath: await response.text() };
-    } else {
-      throw new Error('Local upload failed');
-    }
-  };
-
   return {
     upload: uploadMutation.mutateAsync,
     download: downloadMutation.mutateAsync,
     remove: removeMutation.mutateAsync,
     replace: replaceMutation.mutateAsync,
+    getUploadUrl: getUploadUrl.mutateAsync,
     isLoading:
       uploadMutation.isPending ||
       downloadMutation.isPending ||
       removeMutation.isPending ||
-      replaceMutation.isPending,
+      replaceMutation.isPending ||
+      getUploadUrl.isPending,
     error:
       uploadMutation.error ||
       downloadMutation.error ||

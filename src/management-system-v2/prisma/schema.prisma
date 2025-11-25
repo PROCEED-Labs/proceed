@@ -37,6 +37,7 @@ model User {
   profileImage    String?
   favourites      String[]
   processes       Process[]
+  htmlForms       HtmlForm[]
   ownedSpaces     Space[]        @relation("spaceOwner")
   memberIn        Membership[]
   folders         Folder[]
@@ -154,6 +155,7 @@ model Space {
   members            Membership[]
   folders            Folder[]
   processes          Process[]
+  htmlForms          HtmlForm[]
   roles              Role[]
   engines            Engine[]
   settings           SpaceSettings? @relation("spaceSettings")
@@ -264,7 +266,7 @@ model EmailVerificationToken {
   token        String   @id /// Hashed UUID + Salt (the Auth secret is used as salt)
   type         String
   identifier   String /// Stores an email (it's named this way because of NextAuth)
-  expiresAt      DateTime 
+  expires      DateTime 
   user         User?     @relation(name: "verificationToken", fields: [userId], references: [id])
   userId       String? /// If this is set, then the token is for an email change: userId is the user who wants to change his email and the idenrtifier is the new email
   username     String?
@@ -279,6 +281,25 @@ model SpaceSettings {
   settings      Json
 
   @@map("space_settings")
+}
+
+model HtmlForm {
+  id                   String              @id @default(uuid())
+  userDefinedId        String?             
+  name                 String            
+  description          String
+  createdOn            DateTime
+  lastEditedOn         DateTime            @updatedAt
+  space                Space               @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId        String
+  html                 String              @db.Xml
+  json                 String
+  milestones           Json                @default("[]")
+  variables            Json                @default("[]")
+  creator              User?               @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId            String
+  @@unique([name,environmentId,creatorId])
+  @@map("html-form")
 }
 
 model UserTask {
@@ -298,6 +319,8 @@ model UserTask {
  milestones            Json?
  milestonesChanges     Json?
  machineId             String
+ actualOwner           String[]
+ potentialOwners       Json
 
  @@map("userTask")
 }
@@ -306,4 +329,10 @@ model UserTask {
 model MSConfig { 
   id      Int   @id @default(0) 
   config  Json
+}
+
+// Last seed version written to db, this table should only have one entry
+model SeedVersion { 
+  id      Int   @id @default(0) 
+  version DateTime
 }

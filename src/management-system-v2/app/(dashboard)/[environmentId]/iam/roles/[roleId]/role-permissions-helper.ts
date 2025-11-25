@@ -42,8 +42,8 @@ export function switchChecked(
     const permissionNumber = permissions[resource]!;
 
     if (action === 'admin' && permissionNumber !== ResourceActionsMapping.admin) return false;
-    // disable all other actions if admin is checked
-    else if (permissionNumber === ResourceActionsMapping.admin) return false;
+    // If admin is checked all other permissions are checked
+    else if (action !== 'admin' && permissionNumber === ResourceActionsMapping.admin) continue;
 
     // bit check
     if (!(ResourceActionsMapping[action] & permissionNumber)) return false;

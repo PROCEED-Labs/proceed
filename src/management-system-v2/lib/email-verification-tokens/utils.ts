@@ -32,7 +32,7 @@ export async function createChangeEmailVerificationToken({
   const verificationToken = {
     type: 'change_email',
     token: await getTokenHash(token),
-    expiresAt: expires,
+    expires,
     identifier,
     userId,
   } satisfies EmailVerificationToken;
@@ -49,26 +49,29 @@ export async function createChangeEmailVerificationToken({
   return { verificationToken, redirectUrl };
 }
 
-export async function createUserRegistrationToken({
-  identifier,
-  username,
-  firstName,
-  lastName,
-  passwordHash,
-}: {
-  identifier: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  passwordHash?: string;
-}) {
+export async function createUserRegistrationToken(
+  {
+    identifier,
+    username,
+    firstName,
+    lastName,
+    passwordHash,
+  }: {
+    identifier: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    passwordHash?: string;
+  },
+  callbackUrl?: string,
+) {
   const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
   const verificationToken = {
     type: 'register_new_user',
     token: await getTokenHash(token),
-    expiresAt,
+    expires,
     identifier,
     username,
     firstName,
@@ -79,11 +82,14 @@ export async function createUserRegistrationToken({
   const redirectUrl = new URL(`/api/register-new-user`, env.NEXTAUTH_URL);
   redirectUrl.searchParams.set('token', token);
   redirectUrl.searchParams.set('email', identifier);
+  if (callbackUrl) {
+    redirectUrl.searchParams.set('callbackUrl', callbackUrl);
+  }
 
   return { verificationToken, redirectUrl: redirectUrl.toString() };
 }
 
-export async function notExpired(verificationToken: { expiresAt: Date }) {
-  if (verificationToken.expiresAt.valueOf() < Date.now()) return false;
+export async function notExpired(verificationToken: { expires: Date }) {
+  if (verificationToken.expires.valueOf() < Date.now()) return false;
   return true;
 }

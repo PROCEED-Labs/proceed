@@ -45,9 +45,10 @@ module.exports = {
               retain: true,
             },
           );
+          logger.info(`Connected to the messaging server: ${serverAddress}`);
         } catch (err) {
           logger.debug(
-            `Failed to publish the engine status to the messaging server defined in the config. ${err}`,
+            `Failed to publish the engine status to the messaging server defined in the config:\n${err} \n\n`,
           );
         }
       });
@@ -55,7 +56,9 @@ module.exports = {
       try {
         await messaging.connect(serverAddress, options);
       } catch (err) {
-        logger.debug(`Failed to connect to the messaging server defined in the config. ${err}`);
+        logger.info(
+          `Failed to connect to the messaging server ${serverAddress} defined in the config.\n${err} \n\n`,
+        );
       }
     }
 

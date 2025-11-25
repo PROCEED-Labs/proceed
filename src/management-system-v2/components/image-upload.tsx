@@ -173,7 +173,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       // "loading" state
       setFileUrl(undefined);
 
-      if (!fileName) {
+      if (fileName === undefined) {
         return;
       }
 

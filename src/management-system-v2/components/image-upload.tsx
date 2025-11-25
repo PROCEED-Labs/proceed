@@ -164,7 +164,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       fileManagerErrorToasts,
       onImageUpdate: (imageFileName) => {
         setComponentManagedFileName(imageFileName);
-        setFileUrl(imageFileName);
         onImageUpdate?.(imageFileName);
       },
     });

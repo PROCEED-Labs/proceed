@@ -9,7 +9,7 @@ services:
     ports:
       - '5433:5432'
     volumes:
-      - postgres_data_volume_proceed_development:/var/lib/postgresql/data
+      - postgres_data_volume_proceed_development:/var/lib/postgresql
     networks:
       - pg_network
 

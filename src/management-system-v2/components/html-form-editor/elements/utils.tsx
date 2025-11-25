@@ -324,7 +324,7 @@ export const VariableSelection: React.FC<
         onSubmit={(newVar) => {
           updateVariables([...variables, newVar]);
           setShowVariableForm(false);
-          onChange(newVar.name, newVar.dataType);
+          onChange(newVar.name, newVar.dataType, newVar.textFormat);
         }}
         onCancel={() => setShowVariableForm(false)}
       />
@@ -356,7 +356,7 @@ export const VariableSetting: React.FC<VariableSettingProps & { compact?: boolea
         <>
           <Setting
             disabled
-            label="Format"
+            label="Type"
             control={<Input value={typeLabelMap[selectedVariable.dataType]} />}
           />
           {!!selectedVariable.textFormat && (

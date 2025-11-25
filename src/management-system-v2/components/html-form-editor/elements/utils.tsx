@@ -356,7 +356,7 @@ export const VariableSetting: React.FC<VariableSettingProps & { compact?: boolea
         <>
           <Setting
             disabled
-            label="Format"
+            label="Type"
             control={<Input value={typeLabelMap[selectedVariable.dataType]} />}
           />
           {!!selectedVariable.textFormat && (

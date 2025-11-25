@@ -9,25 +9,26 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Menu, MenuProps, Select, Space } from 'antd';
+import { Button, Input, Menu, MenuProps, Select, Space } from 'antd';
 import { useDndContext } from '@dnd-kit/core';
 
 import { truthyFilter } from '@/lib/typescript-utils';
 import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/variable-definition/process-variable-form';
 import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
-import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
+import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
 export const Setting: React.FC<{
   label: string;
   control: ReactElement;
   style?: React.CSSProperties;
-}> = ({ label, control, style = {} }) => {
+  disabled?: boolean;
+}> = ({ label, control, style = {}, disabled = false }) => {
   const id = useId();
 
   const editingEnabled = useCanEdit();
 
-  const clonedControl = React.cloneElement<any>(control, { id, disabled: !editingEnabled });
+  const clonedControl = React.cloneElement(control, { id, disabled: disabled || !editingEnabled });
 
   return (
     <div style={{ margin: '5px', ...style }}>
@@ -264,7 +265,11 @@ type AllowedTypes = React.ComponentProps<typeof ProcessVariableForm>['allowedTyp
 type VariableSettingProps = {
   variable?: string;
   allowedTypes?: AllowedTypes;
-  onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
+  onChange: (
+    newVariableName?: string,
+    newVariableType?: NonNullable<AllowedTypes>[number],
+    newVariableFormat?: keyof typeof textFormatMap,
+  ) => void;
 };
 
 export const VariableSelection: React.FC<
@@ -295,8 +300,8 @@ export const VariableSelection: React.FC<
         }))}
         disabled={!editingEnabled}
         onChange={(val) => {
-          const variableType = variables.find((v) => v.name === val)?.dataType;
-          onChange(val, variableType);
+          const variable = variables.find((v) => v.name === val);
+          onChange(val, variable?.dataType, variable?.textFormat);
         }}
         dropdownRender={(menu) => (
           <>
@@ -316,7 +321,7 @@ export const VariableSelection: React.FC<
         onSubmit={(newVar) => {
           updateVariables([...variables, newVar]);
           setShowVariableForm(false);
-          onChange(newVar.name, newVar.dataType);
+          onChange(newVar.name, newVar.dataType, newVar.textFormat);
         }}
         onCancel={() => setShowVariableForm(false)}
       />
@@ -329,12 +334,35 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
   allowedTypes,
   onChange,
 }) => {
+  const { variables } = useEditorStateStore((state) => state);
+
+  const selectedVariable = variables?.find((v) => v.name === variable);
+
   return (
-    <Setting
-      label="Variable"
-      control={
-        <VariableSelection variable={variable} allowedTypes={allowedTypes} onChange={onChange} />
-      }
-    />
+    <>
+      <Setting
+        label="Variable"
+        control={
+          <VariableSelection variable={variable} allowedTypes={allowedTypes} onChange={onChange} />
+        }
+      />
+
+      {selectedVariable ? (
+        <>
+          <Setting
+            disabled
+            label="Type"
+            control={<Input value={typeLabelMap[selectedVariable.dataType]} />}
+          />
+          {selectedVariable.textFormat && (
+            <Setting
+              disabled
+              label="Format"
+              control={<Input value={textFormatMap[selectedVariable.textFormat]} />}
+            />
+          )}
+        </>
+      ) : null}
+    </>
   );
 };

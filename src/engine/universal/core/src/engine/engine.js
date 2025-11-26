@@ -6,7 +6,7 @@ const { setupNeoEngine } = require('./neoEngineSetup.js');
 const { getNewInstanceHandler } = require('./hookCallbacks.js');
 const { getShouldPassToken } = require('./shouldPassToken.js');
 const { getShouldActivateFlowNode } = require('./shouldActivateFlowNode.js');
-const { getProcessIds } = require('@proceed/bpmn-helper');
+const { getProcessIds, getVariablesFromElementById } = require('@proceed/bpmn-helper');
 
 const { enableMessaging } = require('../../../../../../FeatureFlags.js');
 const { publishCurrentInstanceState } = require('./publishStateUtils');
@@ -63,6 +63,12 @@ class Engine {
     this._versionBpmnMapping = {};
 
     /**
+     * A mapping from the version of a process to the default values of its defined variables
+     * @private
+     */
+    this._versionDefaultVariableValueMapping = {};
+
+    /**
      * A mapping from an instance to the Neo Engine Process it is currently being executed in
      * @private
      */
@@ -116,6 +122,30 @@ class Engine {
           `Process version ${versionId} for process ${processId} with definitionId ${definitionId} is invalid. It can't be deployed.`,
         );
       }
+
+      const variables = await getVariablesFromElementById(bpmn, processId);
+      const defaultValues = Object.fromEntries(
+        variables
+          .filter((variable) => variable.defaultValue !== undefined)
+          .map((variable) => {
+            // map the default values that are stored as strings to the correct types
+            let { defaultValue } = variable;
+            switch (variable.dataType) {
+              case 'string':
+                defaultValue = variable.defaultValue;
+                break;
+              case 'number':
+                defaultValue = parseFloat(variable.defaultValue);
+                break;
+              case 'boolean':
+                defaultValue = variable.defaultValue === 'true' ? true : false;
+                break;
+            }
+
+            return [variable.name, { value: defaultValue }];
+          }),
+      );
+      this._versionDefaultVariableValueMapping[versionId] = defaultValues;
 
       const log = logging.getLogger({
         moduleName: 'CORE',
@@ -209,6 +239,8 @@ class Engine {
       onTokenEnded,
     };
 
+    const defaultVariableValues = this._versionDefaultVariableValueMapping[version];
+
     try {
       if (activityId !== undefined) {
         // start at the specified activity
@@ -235,7 +267,7 @@ class Engine {
       } else {
         // start the process at a its start event
         this._versionProcessMapping[version].start({
-          variables: processVariables,
+          variables: { ...defaultVariableValues, ...processVariables },
           token: { machineHops: 0, deciderStorageTime: 0, deciderStorageRounds: 0 },
         });
       }

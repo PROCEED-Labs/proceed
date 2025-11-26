@@ -13,6 +13,7 @@ const { publishCurrentInstanceState } = require('./publishStateUtils');
 // const Separator = require('./separator.js').default;
 
 const { teardownEngineStatusInformationPublishing } = require('./publishStateUtils');
+const APIError = require('@proceed/distribution/src/routes/ApiError.js');
 
 setupNeoEngine();
 
@@ -67,6 +68,12 @@ class Engine {
      * @private
      */
     this._versionDefaultVariableValueMapping = {};
+
+    /**
+     * A mapping from the version of a process to variables that require variables at instance start
+     * @private
+     */
+    this._versionRequiredVariablesMapping = {};
 
     /**
      * A mapping from an instance to the Neo Engine Process it is currently being executed in
@@ -124,6 +131,8 @@ class Engine {
       }
 
       const variables = await getVariablesFromElementById(bpmn, processId);
+
+      // get the default values for the variables that are defined for this version
       const defaultValues = Object.fromEntries(
         variables
           .filter((variable) => variable.defaultValue !== undefined)
@@ -146,6 +155,12 @@ class Engine {
           }),
       );
       this._versionDefaultVariableValueMapping[versionId] = defaultValues;
+
+      // get the variables that have to be set at the start of each instance of this version
+      const requiredVariables = variables
+        .filter((variable) => variable.requiredAtInstanceStartup)
+        .map((variable) => variable.name);
+      this._versionRequiredVariablesMapping[versionId] = requiredVariables;
 
       const log = logging.getLogger({
         moduleName: 'CORE',
@@ -239,8 +254,6 @@ class Engine {
       onTokenEnded,
     };
 
-    const defaultVariableValues = this._versionDefaultVariableValueMapping[version];
-
     try {
       if (activityId !== undefined) {
         // start at the specified activity
@@ -265,14 +278,29 @@ class Engine {
           adaptationLog: instance.adaptationLog,
         });
       } else {
+        const defaultVariableValues = this._versionDefaultVariableValueMapping[version];
+        const requiredVariables = this._versionRequiredVariablesMapping[version];
+
+        const variables = { ...defaultVariableValues, ...processVariables };
+
+        const missingVariables = requiredVariables.filter((req) => !(req in variables));
+
+        if (missingVariables.length) {
+          throw new APIError(
+            400,
+            `Unable to start instance. Some variables that require a value at instance start were not provided values (${missingVariables.join(', ')}).`,
+          );
+        }
+
         // start the process at a its start event
         this._versionProcessMapping[version].start({
-          variables: { ...defaultVariableValues, ...processVariables },
+          variables,
           token: { machineHops: 0, deciderStorageTime: 0, deciderStorageRounds: 0 },
         });
       }
     } catch (error) {
-      this._log.error(error);
+      this._log.error(error.message);
+      throw error;
     }
 
     return instanceCreatedPromise;

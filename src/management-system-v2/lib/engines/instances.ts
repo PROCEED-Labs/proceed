@@ -21,13 +21,19 @@ export async function startInstanceOnMachine(
 
     return response.instanceId as string;
   } catch (err) {
-    const error = err as Error;
+    let message = '';
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (typeof err === 'string') {
+      message = err;
+    }
+
     if (
-      error.message.includes(
+      message?.includes(
         'Some variables that require a value at instance start were not provided value',
       )
     ) {
-      const missingVariables = error.message.replace(/^.*\((.*)\).*/g, '$1');
+      const missingVariables = message.replace(/^.*\((.*)\).*/g, '$1');
       return userError(
         `The instance could not be started due to missing values for required variables (${missingVariables}).`,
       );

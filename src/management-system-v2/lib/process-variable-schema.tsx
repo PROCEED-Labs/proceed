@@ -12,10 +12,18 @@ export const typeLabelMap: Record<AllowedType, string> = {
   array: 'List',
 } as const;
 
+const allowedFormats = ['email', 'url'] as const;
+type AllowedFormat = (typeof allowedFormats)[number];
+export const textFormatMap: Record<AllowedFormat, string> = {
+  email: 'E-Mail',
+  url: 'URL',
+} as const;
+
 export const ProcessVariableSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   dataType: z.enum(allowedTypes),
+  textFormat: z.enum(allowedFormats).optional(),
   defaultValue: z.string().optional(),
   requiredAtInstanceStartup: z.boolean().optional(),
   enum: z.string().optional(),

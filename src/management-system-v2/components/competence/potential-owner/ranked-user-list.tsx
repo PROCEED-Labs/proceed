@@ -14,6 +14,8 @@ import { getScoreColor } from '../utils/score-helpers';
 
 const { Text, Paragraph } = Typography;
 
+const indicateContradictions = false; // Toggle to enable/disable contradiction indicators
+
 type RankedUserListProps = {
   rankedUsers: RankedUser[];
   currentPerformers: Set<string>; // Set of user IDs who are already performers
@@ -28,7 +30,7 @@ const CompetenceMatchItem: FC<{
 }> = ({ competence, rank, useBestFit }) => {
   const displayScore = useBestFit ? competence.bestFitScore : competence.score;
   const scoreColor = getScoreColor(displayScore);
-  const isContradicting = competence.alignment === 'contradicting';
+  const isContradicting = competence.alignment === 'contradicting' && indicateContradictions; // Disabled for now
   const isOverall = isOverallCompetence(competence.competenceId);
 
   // Override display values for overall competence
@@ -174,7 +176,7 @@ export const RankedUserList: FC<RankedUserListProps> = ({
                 <Text strong style={{ fontSize: '1rem' }}>
                   {user.userName}
                 </Text>
-                {user.contradicting && (
+                {user.contradicting && indicateContradictions && (
                   <Tooltip title="Some competences might contradict the task requirements">
                     <WarningOutlined style={{ color: '#faad14', fontSize: '1rem' }} />
                   </Tooltip>

@@ -221,6 +221,20 @@ const ui = {
                   xhr.setRequestHeader('Content-Type', 'application/json');
                   xhr.send(JSON.stringify(body));
                 });
+              },
+              submit: async (path, body, query) => {
+                ${validateEndpointArgs.name}('post', path, body, query);
+                return new Promise(async (resolve, reject) => {
+                  const xhr = new XMLHttpRequest();
+                  xhr.addEventListener('loadend', (req) => {resolve(JSON.parse(req.target.responseText)); });
+                  const url = query ? path + '?' + Object.entries(query).map(([key, value]) => key + '=' + encodeURIComponent(value)).join('&') : path;
+                  xhr.open('POST', url, true);
+                  xhr.setRequestHeader('Content-Type', 'application/json');
+
+                  const buffer = await body.arrayBuffer();
+
+                  xhr.send(JSON.stringify(Array.from(new Uint8Array(buffer))));
+                });
               }
             };
           </script>

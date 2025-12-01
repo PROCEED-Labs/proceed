@@ -9,6 +9,7 @@ import {
   addRole as _addRole,
   updateRole as _updateRole,
   getRoles as _getRoles,
+  getUserRoles as _getUserRoles,
 } from '@/lib/data/db/iam/roles';
 import { UnauthorizedError } from '../ability/abilityHelper';
 
@@ -70,5 +71,15 @@ export async function getRoles(environmentId: string) {
     return await _getRoles(environmentId, ability);
   } catch (_) {
     return userError("Something wen't wrong");
+  }
+}
+
+export async function getUserRoles(environmentId: string, userId: string) {
+  try {
+    return _getUserRoles(userId, environmentId);
+  } catch (e) {
+    if (e instanceof UnauthorizedError)
+      return userError('Permission denied', UserErrorType.PermissionError);
+    else return userError('Error getting user roles');
   }
 }

@@ -18,7 +18,7 @@ module.exports = {
    * Checks if the file with process information exists
    *
    * @param {String} definitionId name of the file the definition of the process is stored in
-   * @returns {Boolean} - indicates if the file exists or not
+   * @returns {Promise<Boolean>} - indicates if the file exists or not
    */
   async isProcessExisting(definitionId) {
     const processInfo = await data.read(`processes.json/${definitionId}`);
@@ -368,6 +368,45 @@ module.exports = {
     }
 
     return images;
+  },
+
+  /**
+   * Saves a file related to an instance
+   * e.g. a file is uploaded in a user task and assigned to a variable
+   *
+   * @param {string} definitionId the id of the process for which the instance was created
+   * @param {string} instanceId the id of the instance the file is assigned to
+   * @param {string} fileName the name of the file to store
+   * @param {string} fileType the mime type of the file
+   * @param {Buffer} file the file to store
+   *
+   * @returns {Promise<string>} the path which can be used to request the file through the api
+   */
+  async saveInstanceFile(definitionId, instanceId, fileName, fileType, file) {
+    if (!(await this.isProcessExisting(definitionId))) {
+      throw new Error('Process with given ID does not exist');
+    }
+
+    return await data.writeInstanceFile(definitionId, instanceId, fileName, fileType, file);
+  },
+
+  /**
+   * Returns the content and type of a file that was stored for an instance
+   *
+   * @param {string} definitionId the id of the process for which the instance was created
+   * @param {string} instanceId the id of the instance the file is assigned to
+   * @param {string} fileName the name of the file
+   *
+   * @returns {Promise<{ mimeType: string, data: Buffer }>} the type and data of the file
+   */
+  async getInstanceFile(definitionId, instanceId, fileName) {
+    const { mimeType, data: fileData } = await data.readInstanceFile(
+      definitionId,
+      instanceId,
+      fileName,
+    );
+
+    return { mimeType, data: fileData };
   },
 
   /**

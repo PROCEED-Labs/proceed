@@ -1,13 +1,18 @@
 import { getFolderById } from './folders';
 import eventHandler from '../legacy/eventHandler.js';
-import logger from '../legacy/logging.js';
+// import logger from '../legacy/logging.js';
 import {
   getProcessInfo,
   getDefaultProcessMetaInfo,
   BpmnAttributeType,
   transformBpmnAttributes,
 } from '../../helpers/processHelpers';
-import { getDefinitionsVersionInformation, generateBpmnId } from '@proceed/bpmn-helper';
+import {
+  getAllElements,
+  getDefinitionsVersionInformation,
+  generateBpmnId,
+  toBpmnObject,
+} from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
@@ -652,7 +657,7 @@ export async function getProcessBpmn(processDefinitionsId: string) {
     );
     return bpmnWithDBValue;
   } catch (err) {
-    logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
+    // logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
     throw new Error('Unable to find process bpmn!');
   }
 }
@@ -662,6 +667,47 @@ export async function getProcessBpmn(processDefinitionsId: string) {
 /** Returns the filenames of the data for all user tasks in the given process */
 export async function getProcessUserTasks(processDefinitionsId: string) {
   // TODO
+}
+
+/*
+ * Returns the id, name and list of scriptTask filenames of all processes with scriptTasks.
+ */
+export async function getEnvironmentScriptTasks(spaceId: string, ability?: Ability) {
+  const processes = await db.process.findMany({
+    where: {
+      environmentId: spaceId,
+    },
+    select: {
+      id: true,
+      name: true,
+      bpmn: true,
+    },
+  });
+
+  const processesWithScriptTaskFileNames: { id: string; name: string; scriptTasks: string[] }[] =
+    [];
+
+  for (const process of processes) {
+    if (!ability?.can('view', toCaslResource('Process', process), { environmentId: spaceId })) {
+      continue;
+    }
+
+    const bpmnObj = await toBpmnObject(process.bpmn);
+    const allElements = getAllElements(bpmnObj);
+    const scriptTaskFileNames = allElements
+      .filter((el) => el.$type === 'bpmn:ScriptTask' && typeof el.fileName === 'string')
+      .map((el) => el.fileName);
+
+    if (scriptTaskFileNames.length > 0) {
+      processesWithScriptTaskFileNames.push({
+        id: process.id,
+        name: process.name,
+        scriptTasks: scriptTaskFileNames,
+      });
+    }
+  }
+
+  return processesWithScriptTaskFileNames;
 }
 
 /** Returns the filenames of the data for all script tasks in the given process */
@@ -704,7 +750,7 @@ export async function getProcessHtmlFormJSON(
       return jsonAsBuffer.toString('utf8');
     }
   } catch (err) {
-    logger.debug(`Error getting data of process html form ${fileName}. Reason\n${err}`);
+    // logger.debug(`Error getting data of process html form ${fileName}. Reason\n${err}`);
     throw new Error(`Unable to get data for process html form ${fileName}!`);
   }
 }
@@ -794,7 +840,7 @@ export async function getHtmlForm(processDefinitionsId: string, fileName: string
     const html = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return html;
   } catch (err) {
-    logger.debug(`Error getting html for ${fileName} from the database. Reason:\n${err}`);
+    // logger.debug(`Error getting html for ${fileName} from the database. Reason:\n${err}`);
     throw new Error('Unable to get html for start form!');
   }
 }
@@ -832,7 +878,7 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
     const script = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return script;
   } catch (err) {
-    logger.debug(`Error getting script of script task. Reason:\n${err}`);
+    // logger.debug(`Error getting script of script task. Reason:\n${err}`);
     throw new Error('Unable to get script for script task!');
   }
 }
@@ -908,7 +954,7 @@ export async function saveProcessHtmlForm(
 
     return filePath;
   } catch (err) {
-    logger.debug(`Error storing html form data for ${fileName}. Reason:\n${err}`);
+    // logger.debug(`Error storing html form data for ${fileName}. Reason:\n${err}`);
     throw new Error('Failed to store the html form data.');
   }
 }
@@ -937,7 +983,7 @@ export async function saveProcessScriptTask(
     );
     return filenameWithExtension;
   } catch (err) {
-    logger.debug(`Error storing script task data. Reason:\n${err}`);
+    // logger.debug(`Error storing script task data. Reason:\n${err}`);
     throw new Error('Failed to store the script task data');
   }
 }
@@ -959,7 +1005,7 @@ export async function deleteHtmlForm(processDefinitionsId: string, fileName: str
 
     return isDeleted;
   } catch (err) {
-    logger.debug(`Error removing html form data. Reason:\n${err}`);
+    // logger.debug(`Error removing html form data. Reason:\n${err}`);
   }
 }
 
@@ -975,7 +1021,7 @@ export async function deleteProcessScriptTask(
       return await deleteProcessArtifact(res.filePath, true);
     }
   } catch (err) {
-    logger.debug(`Error removing script task file. Reason:\n${err}`);
+    // logger.debug(`Error removing script task file. Reason:\n${err}`);
   }
 }
 
@@ -1111,7 +1157,7 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
     const image = (await retrieveFile(res?.filePath, false)) as Buffer;
     return image;
   } catch (err) {
-    logger.debug(`Error getting image. Reason:\n${err}`);
+    // logger.debug(`Error getting image. Reason:\n${err}`);
     throw new Error(`Unable to get image : ${imageFileName}`);
   }
 }

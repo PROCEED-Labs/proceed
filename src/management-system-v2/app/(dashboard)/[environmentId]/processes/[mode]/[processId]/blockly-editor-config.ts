@@ -1,6 +1,6 @@
 import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
-import * as Blockly from 'blockly/core';
+import * as Blockly from 'blockly';
 
 type BlockDeclaration = Partial<Blockly.Block> & ThisType<Blockly.Block>;
 const Blocks = Blockly.Blocks as Record<string, BlockDeclaration>;
@@ -531,17 +531,6 @@ export const INITIAL_TOOLBOX_JSON = {
             '      </value>\n' +
             '    </block>\n',
         },
-        {
-          kind: 'block',
-          blockxml:
-            '    <block type="network_Head">\n' +
-            '      <value name="url">\n' +
-            '        <shadow type="text">\n' +
-            '          <field name="TEXT">http://localhost</field>\n' +
-            '        </shadow>\n' +
-            '      </value>\n' +
-            '    </block>\n',
-        },
       ],
     },
     {
@@ -549,8 +538,17 @@ export const INITIAL_TOOLBOX_JSON = {
       name: 'Timeouts',
       colour: 290,
       contents: [
-        { kind: 'block', type: 'interval_async' },
-        { kind: 'block', type: 'timeout_async' },
+        {
+          kind: 'block',
+          blockxml:
+            '<block type="wait">\n' +
+            '      <value name="delay">\n' +
+            '        <shadow type="math_number">\n' +
+            '          <field name="NUM">100</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>',
+        },
       ],
     },
     {
@@ -564,17 +562,18 @@ export const INITIAL_TOOLBOX_JSON = {
         },
       ],
     },
-    {
-      kind: 'category',
-      name: 'Progress',
-      colour: 290,
-      contents: [
-        {
-          kind: 'block',
-          type: 'progress',
-        },
-      ],
-    },
+    // NOTE: not implemented in script task yet
+    // {
+    //   kind: 'category',
+    //   name: 'Progress',
+    //   colour: 290,
+    //   contents: [
+    //     {
+    //       kind: 'block',
+    //       type: 'progress',
+    //     },
+    //   ],
+    // },
   ],
 };
 
@@ -613,43 +612,6 @@ const registrationName = 'ObjectsConnectionChecker';
 Blockly.registry.register(registrationType, registrationName, ObjectsConnectionChecker);
 export const connectionCheckerPlugin = {
   [registrationType.toString()]: registrationName,
-};
-
-// --------------------------------------------
-// Functions
-// Make every function async and await calls to them
-// --------------------------------------------
-
-type Generator = Exclude<BlocklyJavaScript.JavascriptGenerator['forBlock'][string], null>;
-
-for (const type of ['return', 'noreturn']) {
-  const defName = `procedures_def${type}`;
-  const defGenerator: Generator = javascriptGenerator.forBlock[defName];
-  javascriptGenerator.forBlock[defName] = function (block, generator) {
-    // this is necessary, otherwise the generated code will start with a comment and the await on front will be wrong
-    block.setCommentText(null);
-    defGenerator(block, generator);
-
-    const funcName = generator.getProcedureName(block.getFieldValue('NAME'));
-    // grab the generated code
-    const code = (generator as any).definitions_['%' + funcName];
-    (generator as any).definitions_['%' + funcName] = 'async ' + code;
-
-    return null;
-  };
-}
-
-// call no return uses callreturn so we only have to apply await here
-const callGenerator: Generator = javascriptGenerator.forBlock['procedures_callreturn'];
-javascriptGenerator.forBlock['procedures_callreturn'] = function (block, generator) {
-  const code = callGenerator(block, generator);
-
-  if (!code) return code;
-  else if (Array.isArray(code)) {
-    code[0] = 'await ' + code[0];
-    return code;
-  }
-  return 'await ' + code;
 };
 
 // --------------------------------------------
@@ -990,25 +952,21 @@ for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', '
 // Timeouts
 // --------------------------------------------
 
-Blocks['interval_async'] = {
+Blocks['wait'] = {
   init: function (this: Blockly.Block) {
     this.jsonInit({
-      message0: 'Async interval %1 ms\nCallback function%2',
+      message0: 'Wait %1 ms\n',
       args0: [
         {
           type: 'input_value',
           name: 'delay',
           check: 'Number',
         },
-        {
-          type: 'input_value',
-          name: 'callback',
-          check: 'PROCEDURE',
-        },
       ],
-      tooltip: 'An interval function which repeatedly calls a callback function after a timeout.',
-      helpUrl:
-        'https://docs.proceed-labs.org/developer/script-task-api#await-setintervalasync-clb-number-in-milliseconds-',
+      tooltip: 'Stops the program execution for the given amount of milliseconds',
+      // TODO:
+      // helpUrl:
+      // 'https://docs.proceed-labs.org/developer/script-task-api#await-setintervalasync-clb-number-in-milliseconds-',
       nextStatement: true,
       previousStatement: true,
       colour: 75,
@@ -1016,109 +974,40 @@ Blocks['interval_async'] = {
   },
 };
 
-javascriptGenerator.forBlock['interval_async'] = function (block) {
-  const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
-  const callback = javascriptGenerator.valueToCode(
-    block,
-    'callback',
-    BlocklyJavaScript.Order.COMMA,
-  );
+javascriptGenerator.forBlock['wait'] = function (block) {
+  const delay =
+    javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC) || 0;
 
-  return `setIntervalAsync(async () => ${callback}, ${delay});\n`;
+  return `wait(${delay})\n`;
 };
-
-Blocks['timeout_async'] = {
-  init: function (this: Blockly.Block) {
-    this.jsonInit({
-      message0: 'Async Timeout %1 ms\nCallback function%2',
-      args0: [
-        {
-          type: 'input_value',
-          name: 'delay',
-          check: 'Number',
-        },
-        {
-          type: 'input_statement',
-          name: 'callback',
-          check: 'PROCEDURE',
-        },
-      ],
-      tooltip: 'A timeout function which executes a callback function after a timeout expired.',
-      helpUrl:
-        'https://docs.proceed-labs.org/developer/script-task-api#await-settimeoutasync-clb-number-in-milliseconds-',
-      nextStatement: true,
-      previousStatement: true,
-      colour: 75,
-    });
-  },
-};
-
-javascriptGenerator.forBlock['timeout_async'] = function (block) {
-  const delay = javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC);
-  const callback = javascriptGenerator.statementToCode(block, 'callback');
-
-  return `await setTimeoutAsync(async () => {${callback}}, ${delay});\n`;
-};
-
-function isTimeoutCallbackConnection(connection: Blockly.Connection) {
-  const blockType = connection.getSourceBlock().type;
-  const parentInput = connection.getParentInput();
-
-  return (
-    (blockType === 'interval_async' || blockType === 'timeout_async') &&
-    (connection.type === Blockly.ConnectionType.INPUT_VALUE ||
-      connection.type === Blockly.ConnectionType.NEXT_STATEMENT) &&
-    parentInput &&
-    parentInput.name === 'callback'
-  );
-}
-function timeoutsConnectionChecker(a: Blockly.Connection, b: Blockly.Connection) {
-  // Check for connections to the callback input of interval_async and timeout_async
-  let timeout, otherConnection;
-  if (isTimeoutCallbackConnection(a)) {
-    timeout = a;
-    otherConnection = b;
-  }
-  if (isTimeoutCallbackConnection(b)) {
-    timeout = b;
-    otherConnection = a;
-  } else return null;
-
-  const inputType = otherConnection.getSourceBlock().type;
-
-  if (timeout.getSourceBlock().type === 'timeout_async')
-    return inputType === 'procedures_callnoreturn';
-
-  return inputType === 'procedures_callreturn';
-}
-connectionTypeCheckers.push(timeoutsConnectionChecker);
 
 // --------------------------------------------
 // Progress
 // --------------------------------------------
 
-Blocks['progress'] = {
-  init: function () {
-    this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
-    this.setInputsInline(true);
-    this.setTooltip('');
-    this.setHelpUrl(
-      'https://docs.proceed-labs.org/developer/script-task-api#setprogressnumber-between-0---100',
-    );
-    this.setColour(75);
-    this.setPreviousStatement(true);
-    this.setNextStatement(true);
-  },
-};
-
-javascriptGenerator.forBlock['progress'] = function (block) {
-  const progressValue =
-    javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC) || 0;
-
-  // Generierten Code zurückgeben
-  const code = `setProgress(${progressValue});\n`;
-  return code;
-};
+// NOTE: not implemented in script task yet
+// Blocks['progress'] = {
+//   init: function () {
+//     this.appendValueInput('value').setCheck('Number').appendField('Set progress to');
+//     this.setInputsInline(true);
+//     this.setTooltip('');
+//     this.setHelpUrl(
+//       'https://docs.proceed-labs.org/developer/script-task-api#setprogressnumber-between-0---100',
+//     );
+//     this.setColour(75);
+//     this.setPreviousStatement(true);
+//     this.setNextStatement(true);
+//   },
+// };
+//
+// javascriptGenerator.forBlock['progress'] = function (block) {
+//   const progressValue =
+//     javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC) || 0;
+//
+//   // Generierten Code zurückgeben
+//   const code = `setProgress(${progressValue});\n`;
+//   return code;
+// };
 
 // --------------------------------------------
 // Errors
@@ -1180,7 +1069,7 @@ javascriptGenerator.forBlock['throw_error'] = function (block) {
 // Services
 // --------------------------------------------
 const methodsWithBody = ['Post', 'Put'];
-for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
+for (const method of ['Get', 'Post', 'Put', 'Delete']) {
   const methodName = `network_${method}`;
   const hasBody = methodsWithBody.includes(method);
 
@@ -1197,18 +1086,26 @@ for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
     },
   ];
 
-  if (hasBody)
-    args.push({
-      type: 'input_value',
-      name: 'body',
-      check: null,
-    });
+  if (hasBody) {
+    args.push(
+      {
+        type: 'input_value',
+        name: 'body',
+        check: null,
+      },
+      {
+        type: 'input_value',
+        name: 'content_type',
+        check: 'String',
+      },
+    );
+  }
 
   Blocks[methodName] = {
     init: function () {
       this.jsonInit({
         type: methodName,
-        message0: `${method} url %1\n${hasBody ? 'Body %3\n' : ''}Options %2`,
+        message0: `${method} url %1\n${hasBody ? 'Body %3\nContent Type %4\n' : ''}Options %2`,
         args0: args,
         output: null,
         colour: 75,
@@ -1224,17 +1121,22 @@ for (const method of ['Get', 'Post', 'Put', 'Delete', 'Head']) {
       javascriptGenerator.valueToCode(block, 'options', BlocklyJavaScript.Order.COMMA) ||
       'undefined';
 
-    let body = '';
+    let additionalArguments = '';
     if (hasBody) {
-      body =
+      const body =
         javascriptGenerator.valueToCode(block, 'body', BlocklyJavaScript.Order.COMMA) ||
         'undefined';
-      body += ',';
+      additionalArguments += body + ',';
+
+      const contentType =
+        javascriptGenerator.valueToCode(block, 'content_type', BlocklyJavaScript.Order.COMMA) ||
+        'undefined';
+      additionalArguments += contentType + ',';
     }
 
     return [
-      `await getService('network').${method.toLowerCase()}(${url}, ${body}${options})`,
-      BlocklyJavaScript.Order.AWAIT,
+      `getService('network-requests').${method.toLowerCase()}(${url}, ${additionalArguments}${options})`,
+      BlocklyJavaScript.Order.FUNCTION_CALL,
     ];
   };
 }

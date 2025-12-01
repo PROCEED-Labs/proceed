@@ -181,9 +181,8 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
     <div
       style={{
         marginBottom: '1.5rem',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        textAlign: 'left',
+        paddingLeft: '70px',
       }}
     >
       <div style={{ maxWidth: '1430px', width: 'fit-content', position: 'relative' }}>
@@ -197,7 +196,7 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
         >
           <h2 style={{ margin: 0 }}>
             <StarOutlined style={{ marginRight: '8px' }} />
-            Favorite Processes
+            My Favorite Processes
           </h2>
           <Space size="small">
             <Button

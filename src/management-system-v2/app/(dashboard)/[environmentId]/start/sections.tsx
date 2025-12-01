@@ -14,7 +14,7 @@ import {
   FormOutlined,
 } from '@ant-design/icons';
 import { AppstoreOutlined } from '@ant-design/icons';
-import { TbUser, TbUserEdit } from 'react-icons/tb';
+import { UserOutlined } from '@ant-design/icons';
 import { HomeOutlined, SettingOutlined } from '@ant-design/icons';
 
 const MyTasksSection = () => {
@@ -25,17 +25,17 @@ const MyTasksSection = () => {
     {
       title: 'Task List',
       href: `/${environmentId}/tasklist`,
-      icon: <CheckSquareOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <CheckSquareOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
     {
       title: 'Task Editor',
       href: `/${environmentId}/tasklist`,
-      icon: <FormOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <FormOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
       <h2>
         <CheckSquareOutlined style={{ marginRight: '8px' }} />
         My Tasks
@@ -47,16 +47,16 @@ const MyTasksSection = () => {
       <div
         style={{
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: '26px',
         }}
       >
         {tiles.map((tile) => (
           <Link
             key={tile.title}
             href={tile.href}
-            style={{ textDecoration: 'none', width: '250px' }}
+            style={{ textDecoration: 'none', width: '200px' }}
           >
             <Card hoverable style={{ textAlign: 'center' }}>
               {tile.icon}
@@ -77,17 +77,17 @@ const ProcessesSection = () => {
     {
       title: 'Process Editor',
       href: `/${environmentId}/processes`,
-      icon: <EditOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <EditOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
     {
       title: 'Process List',
       href: `/${environmentId}/processes`,
-      icon: <CopyOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <CopyOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
       <h2>
         <PartitionOutlined style={{ marginRight: '8px' }} />
         My Processes
@@ -99,16 +99,16 @@ const ProcessesSection = () => {
       <div
         style={{
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: '26px',
         }}
       >
         {tiles.map((tile) => (
           <Link
             key={tile.title}
             href={tile.href}
-            style={{ textDecoration: 'none', width: '250px' }}
+            style={{ textDecoration: 'none', width: '200px' }}
           >
             <Card hoverable style={{ textAlign: 'center' }}>
               {tile.icon}
@@ -129,22 +129,22 @@ const AutomationsSection = () => {
     {
       title: 'Dashboard',
       href: `/${environmentId}/executions-dashboard`,
-      icon: <BarChartOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <BarChartOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
     {
       title: 'Executions',
       href: `/${environmentId}/executions`,
-      icon: <NodeExpandOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <NodeExpandOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
     {
       title: 'Process Engines',
       href: `/${environmentId}/engines`,
-      icon: <LaptopOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <LaptopOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
       <h2>
         <PlaySquareOutlined style={{ marginRight: '8px' }} />
         Automations
@@ -156,16 +156,16 @@ const AutomationsSection = () => {
       <div
         style={{
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: '26px',
         }}
       >
         {tiles.map((tile) => (
           <Link
             key={tile.title}
             href={tile.href}
-            style={{ textDecoration: 'none', width: '250px' }}
+            style={{ textDecoration: 'none', width: '200px' }}
           >
             <Card hoverable style={{ textAlign: 'center' }}>
               {tile.icon}
@@ -186,19 +186,19 @@ const PersonalSection = () => {
     {
       title: 'My Profile',
       href: `/${environmentId}/profile`,
-      icon: <TbUserEdit style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <UserOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
     {
       title: 'My Spaces',
       href: `/${environmentId}/spaces`,
-      icon: <AppstoreOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <AppstoreOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
       <h2>
-        <TbUser style={{ marginRight: '8px' }} />
+        <UserOutlined style={{ marginRight: '8px' }} />
         Personal
       </h2>
       <p>
@@ -208,16 +208,16 @@ const PersonalSection = () => {
       <div
         style={{
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: '26px',
         }}
       >
         {tiles.map((tile) => (
           <Link
             key={tile.title}
             href={tile.href}
-            style={{ textDecoration: 'none', width: '250px' }}
+            style={{ textDecoration: 'none', width: '200px' }}
           >
             <Card hoverable style={{ textAlign: 'center' }}>
               {tile.icon}
@@ -238,12 +238,12 @@ const HomeSection = () => {
     {
       title: 'Settings',
       href: `/${environmentId}/settings`,
-      icon: <SettingOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />,
+      icon: <SettingOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
       <h2>
         <HomeOutlined style={{ marginRight: '8px' }} />
         Home
@@ -255,16 +255,16 @@ const HomeSection = () => {
       <div
         style={{
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: '26px',
         }}
       >
         {tiles.map((tile) => (
           <Link
             key={tile.title}
             href={tile.href}
-            style={{ textDecoration: 'none', width: '250px' }}
+            style={{ textDecoration: 'none', width: '200px' }}
           >
             <Card hoverable style={{ textAlign: 'center' }}>
               {tile.icon}

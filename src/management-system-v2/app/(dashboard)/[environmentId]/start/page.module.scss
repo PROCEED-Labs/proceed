@@ -1,7 +1,8 @@
 .wrapper {
   h1 {
     margin-bottom: 1.5rem;
-    text-align: center;
+    text-align: left;
+    padding-left: 70px;
   }
 
   :global(.ant-layout-content) {
@@ -10,23 +11,22 @@
     z-index: 0;
   }
 
-  /* :global(.ant-layout-content)::after {
+  :global(.ant-layout-content)::after {
     content: '';
-    position: absolute;
-    top: 50%;
+    position: fixed;
+    top: 55%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 10%;
-    height: 8%;
+    width: 9%;
+    height: 7%;
     background-image: url('/proceed-icon.png');
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
-    opacity: 0.5;
+    opacity: 0.3;
     z-index: -1;
     pointer-events: none;
   }
-  */
 
   :global(.ant-card) {
     border: 1px solid #999;
@@ -37,8 +37,4 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-
-  > :last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
 }

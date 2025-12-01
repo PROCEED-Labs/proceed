@@ -46,7 +46,7 @@ import { GrDocumentUser } from 'react-icons/gr';
 import { PiNotePencil } from 'react-icons/pi';
 import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
-import usePotentialOwnerStore from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
+import usePotentialOwnerStore from '@/components/competence/potential-owner/use-potentialOwner-store';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { isReadable } from 'stream';

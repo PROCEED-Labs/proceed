@@ -20,7 +20,7 @@ import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-vari
 
 export const Setting: React.FC<{
   label: string;
-  control: ReactElement;
+  control: ReactElement<any>;
   style?: React.CSSProperties;
   disabled?: boolean;
 }> = ({ label, control, style = {}, disabled = false }) => {

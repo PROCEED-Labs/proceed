@@ -25,7 +25,7 @@ type CollisionFuncType = {
 
 type EditorDnDHandlerProps = React.PropsWithChildren & {
   disabled: boolean;
-  iframeRef: React.RefObject<HTMLIFrameElement>;
+  iframeRef: React.RefObject<HTMLIFrameElement | null>;
   mobileView: boolean;
 };
 

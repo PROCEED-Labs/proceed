@@ -202,7 +202,7 @@ export class ProcessListPage {
         );
 
         // remove all processes
-        await page.getByLabel('Select all').check();
+        await page.getByRole('checkbox', { name: 'Select all' }).check();
 
         const modal = await openModal(this.page, () =>
           page.getByRole('button', { name: 'delete' }).click(),

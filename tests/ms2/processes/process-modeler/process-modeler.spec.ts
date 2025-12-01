@@ -1,6 +1,6 @@
 import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from '../processes.fixtures';
-import { openModal, closeModal } from '../../testUtils';
+import { openModal, closeModal, waitForHydration } from '../../testUtils';
 
 test('process modeler', async ({ processModelerPage, processListPage }) => {
   test.slow();
@@ -283,7 +283,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   //Open share modal
   const modal = await openModal(page, () =>
-    page.getByRole('button', { name: 'share-alt' }).click(),
+    page.getByRole('button', { name: 'share-alt', exact: true }).click(),
   );
 
   //await expect(page.getByText('Share', { exact: true })).toBeVisible();
@@ -322,6 +322,9 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
+  // Wait for hydration
+  await newPage.getByText('Loading process data').waitFor({ state: 'hidden' });
+
   // Add the shared process to the workspace
   await openModal(newPage, async () => {
     await newPage.getByRole('button', { name: 'edit' }).click();
@@ -339,8 +342,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   const newProcessId = newPage.url().split('/editor/').pop();
 
-  await newPage.getByRole('menuitem', { name: 'Processes' }).click();
-  await newPage.getByRole('link', { name: 'Editor' }).click();
-  await newPage.waitForURL(/processes/);
+  await newPage.goto('/processes/editor');
+  await newPage.waitForURL('/processes/editor');
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });

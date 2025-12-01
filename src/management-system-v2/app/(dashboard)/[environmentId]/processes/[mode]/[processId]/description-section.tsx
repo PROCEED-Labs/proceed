@@ -1,6 +1,6 @@
 import useModelerStateStore from './use-modeler-state-store';
 import '@toast-ui/editor/dist/toastui-editor.css';
-import type { Editor as EditorClass, Viewer as ViewerClass } from '@toast-ui/react-editor';
+import type { Editor as EditorClass } from '@toast-ui/react-editor';
 import React, { useEffect, useState } from 'react';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Divider, Grid, Modal, Space, theme } from 'antd';
@@ -29,8 +29,7 @@ const DescriptionSection: React.FC<{ selectedElement: any; readOnly?: boolean }>
   const [showPopupEditor, setShowPopupEditor] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
-  const onSubmit = (editorRef: React.RefObject<EditorClass>) => {
-    const editor = editorRef.current as EditorClass;
+  const onSubmit = (editor: EditorClass) => {
     const editorInstance = editor.getInstance();
     const content = editorInstance.getMarkdown();
     updateDescription(content);
@@ -131,7 +130,11 @@ const DescriptionSection: React.FC<{ selectedElement: any; readOnly?: boolean }>
         open={showPopupEditor}
         title="Edit Description"
         okText="Save"
-        onOk={() => onSubmit(modalEditorRef)}
+        onOk={() => {
+          if (modalEditorRef.current) {
+            onSubmit(modalEditorRef.current);
+          }
+        }}
         onCancel={() => setShowPopupEditor(false)}
       >
         <TextEditor editorRef={modalEditorRef} initialValue={description}></TextEditor>

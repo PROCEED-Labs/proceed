@@ -139,7 +139,7 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
         closeIcon={null}
         onCancel={() => setChangeEmailModalOpen(false)}
         onOk={changeEmailForm.submit}
-        destroyOnClose
+        destroyOnHidden
       >
         <Alert
           type="info"

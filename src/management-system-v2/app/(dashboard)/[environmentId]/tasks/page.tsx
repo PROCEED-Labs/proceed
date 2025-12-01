@@ -6,7 +6,8 @@ import { notFound } from 'next/navigation';
 import FormList from './form-list';
 import { getHtmlForms } from '@/lib/data/html-forms';
 
-const FormsPage = async ({ params }: { params: { environmentId: string } }) => {
+const FormsPage = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const {
     activeEnvironment: { spaceId },
   } = await getCurrentEnvironment(params.environmentId);

@@ -1,9 +1,8 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import { redirect } from 'next/navigation';
+import { RedirectType, redirect } from 'next/navigation';
 import { UserErrorType, userError } from '../user-error';
-import { RedirectType } from 'next/dist/client/components/redirect';
 import {
   deleteRole,
   addRole as _addRole,

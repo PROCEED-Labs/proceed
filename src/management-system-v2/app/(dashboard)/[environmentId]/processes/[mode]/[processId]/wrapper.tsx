@@ -176,7 +176,7 @@ const Wrapper = ({
                   spaceURL(environment, `/processes${processContextPath}/${option.value}`),
                 );
               }}
-              dropdownRender={(menu) => (
+              popupRender={(menu) => (
                 <>
                   {menu}
                   {!isListView && (

@@ -139,7 +139,7 @@ export async function mqttRequest(
     )
       return;
 
-    if ('error' in message) return rej(message.error);
+    if ('error' in message) return rej(new Error(message.error));
 
     let result: string | object;
 

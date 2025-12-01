@@ -2,6 +2,7 @@
 
 import { Engine } from './machines';
 import { engineRequest } from './endpoints/index';
+import { userError } from '../user-error';
 
 export async function startInstanceOnMachine(
   definitionId: string,
@@ -9,15 +10,31 @@ export async function startInstanceOnMachine(
   machine: Engine,
   variables: { [key: string]: any } = {},
 ) {
-  const response = await engineRequest({
-    method: 'post',
-    endpoint: '/process/:definitionId/versions/:version/instance',
-    engine: machine,
-    pathParams: { definitionId, version: versionId },
-    body: { variables },
-  });
+  try {
+    const response = await engineRequest({
+      method: 'post',
+      endpoint: '/process/:definitionId/versions/:version/instance',
+      engine: machine,
+      pathParams: { definitionId, version: versionId },
+      body: { variables },
+    });
 
-  return response.instanceId as string;
+    return response.instanceId as string;
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      err.message.includes(
+        'Some variables that require a value at instance start were not provided value',
+      )
+    ) {
+      const missingVariables = err.message.replace(/^.*\((.*)\).*/g, '$1');
+      return userError(
+        `The instance could not be started due to missing values for required variables (${missingVariables}).`,
+      );
+    }
+
+    return userError('Failed to start the instance.');
+  }
 }
 
 export async function resumeInstanceOnMachine(

@@ -1,13 +1,44 @@
 .wrapper {
   h1 {
     margin-bottom: 1.5rem;
+    text-align: center;
   }
 
   :global(.ant-layout-content) {
     background-color: white;
+    position: relative;
+    z-index: 0;
   }
+
+  /* :global(.ant-layout-content)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10%;
+    height: 8%;
+    background-image: url('/proceed-icon.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    opacity: 0.5;
+    z-index: -1;
+    pointer-events: none;
+  }
+  */
 
   :global(.ant-card) {
     border: 1px solid #999;
+  }
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+
+  > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }

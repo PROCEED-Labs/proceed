@@ -73,7 +73,7 @@ export const LazyBPMNViewer: FC<LazyLoadingBPMNViewerProps> = ({
 
   return (
     <>
-      <div ref={ViewerContainerRef}>
+      <div ref={ViewerContainerRef} style={{ height: '100%', width: '100%' }}>
         {visible /* This ensures, that only elements, that are visible or close to beeing visible are rendered -> reduces requests for bpmn/xml */ ? (
           <Suspense fallback={fallback}>
             {/* Prevent sequential rendering/ get from showing the Icon-list */}

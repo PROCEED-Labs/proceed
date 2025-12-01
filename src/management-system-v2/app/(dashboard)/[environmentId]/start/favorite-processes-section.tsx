@@ -52,13 +52,46 @@ const ProcessCard = ({
     return () => observer.disconnect();
   }, []);
 
+  const loader = (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%',
+        width: '100%',
+      }}
+    >
+      <div style={{ transform: 'scale(0.8)' }}>
+        <ProceedLoadingIndicator />
+      </div>
+    </div>
+  );
+
   return (
     <div ref={cardRef}>
       <Card
         hoverable
-        style={{ height: '255px', width: '300px', flexShrink: 0 }}
+        style={{
+          height: '191px',
+          width: '225px',
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        styles={{
+          body: { padding: '12px', flex: 1, overflow: 'hidden' },
+          header: { padding: '0 10px', minHeight: '38px', fontSize: '14px' },
+        }}
         title={
-          <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              width: '100%',
+              fontSize: '0.9em',
+            }}
+          >
             <OverflowTooltipTitle>{process.name}</OverflowTooltipTitle>
           </div>
         }
@@ -68,11 +101,16 @@ const ProcessCard = ({
         }}
       >
         {isVisible ? (
-          <Suspense fallback={<ProceedLoadingIndicator scale="100%" />}>
-            <LazyBPMNViewer definitionId={process.id} reduceLogo={true} />
+          <Suspense fallback={loader}>
+            <LazyBPMNViewer
+              definitionId={process.id}
+              reduceLogo={true}
+              fitOnResize={true}
+              fallback={loader}
+            />
           </Suspense>
         ) : (
-          <ProceedLoadingIndicator scale="100%" />
+          loader
         )}
       </Card>
     </div>
@@ -104,41 +142,56 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
   }
 
   return (
-    <div style={{ marginBottom: '1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0 }}>
-          <StarOutlined style={{ marginRight: '8px' }} />
-          Favorite Processes
-        </h2>
-        <Space size="small">
-          <Button
-            type={sortType === 'lastEdited' ? 'primary' : 'default'}
-            onClick={() => setSortType('lastEdited')}
-            size="small"
-          >
-            Last Edited
-          </Button>
-          <Button
-            type={sortType === 'alphabetical' ? 'primary' : 'default'}
-            onClick={() => setSortType('alphabetical')}
-            size="small"
-          >
-            Alphabetical
-          </Button>
-        </Space>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          gap: '16px',
-          overflowX: 'auto',
-          paddingBottom: '8px',
-          maxWidth: '1565px',
-        }}
-      >
-        {displayedProcesses.map((process) => (
-          <ProcessCard key={process.id} process={process} space={space} router={router} />
-        ))}
+    <div
+      style={{
+        marginBottom: '1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+    >
+      <div style={{ maxWidth: '1430px', width: 'fit-content' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem',
+          }}
+        >
+          <h2 style={{ margin: 0 }}>
+            <StarOutlined style={{ marginRight: '8px' }} />
+            Favorite Processes
+          </h2>
+          <Space size="small">
+            <Button
+              type={sortType === 'lastEdited' ? 'primary' : 'default'}
+              onClick={() => setSortType('lastEdited')}
+              size="small"
+            >
+              Last Edited
+            </Button>
+            <Button
+              type={sortType === 'alphabetical' ? 'primary' : 'default'}
+              onClick={() => setSortType('alphabetical')}
+              size="small"
+            >
+              Alphabetical
+            </Button>
+          </Space>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: '16px',
+            overflowX: 'auto',
+            paddingBottom: '8px',
+          }}
+        >
+          {displayedProcesses.map((process) => (
+            <ProcessCard key={process.id} process={process} space={space} router={router} />
+          ))}
+        </div>
       </div>
     </div>
   );

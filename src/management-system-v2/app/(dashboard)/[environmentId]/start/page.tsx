@@ -30,11 +30,13 @@ const StartPage = async ({ params }: { params: { environmentId: string } }) => {
       {msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && favoriteProcesses.length > 0 && (
         <FavoriteProcessesSection processes={favoriteProcesses} />
       )}
-      {msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && <MyTasksSection />}
-      {msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && <ProcessesSection />}
-      {msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && <AutomationsSection />}
-      <PersonalSection />
-      <HomeSection />
+      <div className={styles.gridContainer}>
+        {msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && <MyTasksSection />}
+        {msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && <ProcessesSection />}
+        {msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && <AutomationsSection />}
+        <PersonalSection />
+        <HomeSection />
+      </div>
     </Content>
   );
 };

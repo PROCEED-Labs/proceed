@@ -282,7 +282,7 @@ export async function addProcess(
         //departments: { set: metadata.departments },
         //variables: { set: metadata.variables },
         bpmn: bpmnWithPlaceholders,
-        executable: false,
+        executable: metadata.executable || false,
       },
     });
   } catch (error) {

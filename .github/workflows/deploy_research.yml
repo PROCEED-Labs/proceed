@@ -12,7 +12,7 @@ jobs:
         # Run a job each for the engine and MS server images
         include:
           # - serviceName: engine
-          - serviceName: management_system
+          - serviceName: proceed_research_management_system
     env:
       ENV: Research
       ENGINE_TAG: ${{ vars.IMAGE_TAG }}

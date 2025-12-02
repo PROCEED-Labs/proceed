@@ -2,7 +2,7 @@
 
 import { FC, useState, useTransition } from 'react';
 import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { Tooltip, App, Grid, Button, Space } from 'antd';
+import { Tooltip, App, Grid, Button, Space, Popover } from 'antd';
 import InviteUserButton, { FloatButtonActions } from './invite-users';
 import UserList, { ListUser } from '@/components/user-list';
 import ConfirmationButton from '@/components/confirmation-button';
@@ -17,6 +17,8 @@ import type { Role } from '@prisma/client';
 import { CreateUsersModal } from './create-users';
 import ResetUserPasswordButton from '@/components/reset-user-password-button';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
+import { userRepresentation } from '@/lib/utils';
+import SpaceLink from '@/components/space-link';
 
 const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
   const app = App.useApp();
@@ -65,12 +67,33 @@ const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
                 dataIndex: 'roles',
                 key: 'roles',
                 title: 'Roles',
-                render: (_, user: any) =>
-                  user.roles && (
-                    <Tooltip title={user.roles.map((r: Role) => r.name).join(', ')}>
+                render: (_, _user) => {
+                  const user = _user as typeof _user & { roles: Role[] };
+                  if (!user.roles) return;
+                  return (
+                    <Popover
+                      title={`${userRepresentation({
+                        firstName: user.firstName.value,
+                        lastName: user.lastName.value,
+                        username: user.username.value,
+                      })}'s roles`}
+                      content={
+                        <div>
+                          <ul style={{ padding: 0, listStylePosition: 'inside' }}>
+                            {user.roles.map((role) => (
+                              <li key={role.id}>
+                                <SpaceLink href={`/iam/roles/${role.id}`}>{role.name}</SpaceLink>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      }
+                      trigger="hover"
+                    >
                       {user.roles.length}
-                    </Tooltip>
-                  ),
+                    </Popover>
+                  );
+                },
               },
               {
                 dataIndex: 'id',

@@ -1,8 +1,12 @@
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Checkbox, Divider, Space } from 'antd';
 import { useEffect, useState } from 'react';
-import { is } from 'bpmn-js/lib/util/ModelUtil';
+import { is, isAny } from 'bpmn-js/lib/util/ModelUtil';
 import type { Element } from 'bpmn-js/lib/model/Types';
+import { updateProcessMetaData } from '@/lib/data/processes';
+import { useParams, useRouter } from 'next/navigation';
+import { useEnvironment } from '@/components/auth-can';
+import useModelerStateStore from './use-modeler-state-store';
 
 type IsExecutableSectionProps = {
   modeler: BPMNCanvasRef | null;
@@ -10,43 +14,17 @@ type IsExecutableSectionProps = {
 };
 
 const IsExecutableSection: React.FC<IsExecutableSectionProps> = ({ modeler, readOnly }) => {
-  const [isExecutable, setIsExecutable] = useState(false);
-  const [processEl, setProcessEl] = useState<Element | undefined>(undefined);
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
 
-  useEffect(() => {
+  const { processId } = useParams();
+  const { spaceId } = useEnvironment();
+  const router = useRouter();
+
+  const changeIsExecutable = async (value: boolean) => {
     if (modeler) {
-      const processes = modeler.getAllElements().filter((el) => is(el, 'bpmn:Process'));
-
-      if (processes.length) {
-        const [process] = processes;
-        setProcessEl(process as Element);
-        setIsExecutable(!!process.businessObject.isExecutable);
-
-        const onUpdate = (event: any) => {
-          if (
-            event.context?.element?.id === process.id &&
-            event.context?.properties &&
-            'isExecutable' in event.context.properties
-          ) {
-            setIsExecutable(event.context.properties.isExecutable);
-          }
-        };
-
-        const eventBus = modeler.getEventBus();
-
-        eventBus.on('commandStack.element.updateProperties.postExecuted', onUpdate);
-
-        return () => {
-          setProcessEl(undefined);
-          eventBus.off('commandStack.element.updateProperties.postExecuted', onUpdate);
-        };
-      }
-    }
-  }, [modeler]);
-
-  const changeIsExecutable = (value: boolean) => {
-    if (processEl) {
-      modeler?.getModeling().updateProperties(processEl, { isExecutable: value });
+      // update the executable value in the database
+      await updateProcessMetaData(processId as string, spaceId, { executable: value });
+      router.refresh();
     }
   };
 
@@ -61,7 +39,7 @@ const IsExecutableSection: React.FC<IsExecutableSectionProps> = ({ modeler, read
         checked={isExecutable}
         onChange={(e) => changeIsExecutable(e.target.checked)}
       >
-        Is Executable
+        Activate Automation for the entire Process
       </Checkbox>
     </Space>
   );

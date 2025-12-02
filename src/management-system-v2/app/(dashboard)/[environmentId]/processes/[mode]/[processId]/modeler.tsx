@@ -17,7 +17,7 @@ import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
 import { App } from 'antd';
-import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
+import { is as bpmnIs, isAny as bpmnIsAny, is } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
 import styles from './modeler.module.scss';
@@ -59,6 +59,11 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
+  const setIsExecutable = useModelerStateStore((state) => state.setIsExecutable);
+
+  useEffect(() => {
+    setIsExecutable(process.executable || false);
+  }, [process]);
 
   const { isListView, processContextPath } = useProcessView();
 
@@ -332,7 +337,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [process.id, selectedVersionId],
+    [process.id, selectedVersionId, process.executable],
   );
 
   return (

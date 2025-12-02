@@ -1,14 +1,6 @@
 'use client';
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  createContext,
-  useContext,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ModelerToolbar from './modeler-toolbar';
 import useModelerStateStore from './use-modeler-state-store';
@@ -17,7 +9,7 @@ import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
 import { App } from 'antd';
-import { is as bpmnIs, isAny as bpmnIsAny, is } from 'bpmn-js/lib/util/ModelUtil';
+import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
 import styles from './modeler.module.scss';
@@ -43,7 +35,6 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
-  const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
   const { message: messageApi } = App.useApp();
@@ -129,7 +120,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
     }
     const debouncedSaveXmlFn = debounce(saveXml, 2000);
 
-    const wrappedDebouncedSaveFuncion = function (xml?: string, invalidate: boolean = false) {
+    const wrappedDebouncedSaveFuncion = function(xml?: string, invalidate: boolean = false) {
       if (!xml) return;
 
       if (!beforeWindowUnloadEventHandler.current) {
@@ -251,7 +242,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
         // or uses the new instance.
         const { xml } = await oldInstance.saveXML({ format: true });
         // Last save before unloading, so invalidate the client router cache.
-        await saveDebounced.asyncImmediate(xml, true).catch((err) => {});
+        await saveDebounced.asyncImmediate(xml, true).catch((err) => { });
       } catch (err) {
         // Most likely called before the modeler loaded anything. Can ignore.
       }

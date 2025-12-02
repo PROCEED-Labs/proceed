@@ -17,6 +17,7 @@ import {
   App,
   Spin,
   Result,
+  Alert,
 } from 'antd';
 import { FaArrowRight } from 'react-icons/fa';
 import { CheckCircleOutlined, ExclamationCircleOutlined, FormOutlined } from '@ant-design/icons';
@@ -63,7 +64,8 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
   const { modeler, isExecutable } = useModelerStateStore();
 
-  const canEdit = useCanEdit() && isExecutable;
+  const editingEnabled = useCanEdit();
+  const canEdit = editingEnabled && isExecutable;
 
   const environment = useEnvironment();
   const app = App.useApp();
@@ -254,17 +256,30 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     }
   };
 
+  let title = <span style={{ fontSize: '1.5rem' }}>Script Task: {filename}</span>;
+
+  if (canEdit) title = <span style={{ fontSize: '1.5rem' }}>Edit {title}</span>;
+
+  if (editingEnabled && !isExecutable) {
+    title = (
+      <div style={{ display: 'flex' }}>
+        {title}{' '}
+        <Alert
+          style={{ margin: '0 5px' }}
+          type="warning"
+          message="You cannot edit the script since the process is not executable."
+        />
+      </div>
+    );
+  }
+
   return (
     <Modal
       open={open}
       centered
       width="90vw"
       styles={{ body: { height: '85vh', marginTop: '0.5rem' }, header: { margin: 0 } }}
-      title={
-        <span style={{ fontSize: '1.5rem' }}>
-          {`${canEdit ? 'Edit Script Task' : 'Script Task'}: ${filename}`}
-        </span>
-      }
+      title={title}
       onCancel={handleClose}
       footer={
         <Space>

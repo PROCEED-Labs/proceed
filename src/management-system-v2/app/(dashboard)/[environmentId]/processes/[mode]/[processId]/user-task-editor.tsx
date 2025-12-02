@@ -2,7 +2,7 @@ import HtmlFormEditor, { HtmlFormEditorRef } from '@/components/html-form-editor
 import useEditorStateStore, {
   EditorStoreProvider,
 } from '@/components/html-form-editor/use-editor-state-store';
-import { App, Grid, Modal } from 'antd';
+import { Alert, App, Grid, Modal } from 'antd';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LuImage, LuMilestone } from 'react-icons/lu';
@@ -270,12 +270,29 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
     enabled: open,
   });
 
-  let title = 'Edit Form';
+  const canEdit = editingEnabled && isExecutable;
+
+  let title = <div>Html Form</div>;
 
   if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
-    title = 'Edit User Task Form';
+    title = <div>User Task Form</div>;
   } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
-    title = 'Edit Process Start Form';
+    title = <div>Process Start Form</div>;
+  }
+
+  if (canEdit) title = <div>Edit {title}</div>;
+
+  if (editingEnabled && !isExecutable) {
+    title = (
+      <div style={{ display: 'flex' }}>
+        {title}{' '}
+        <Alert
+          style={{ margin: '0 5px' }}
+          type="warning"
+          message="You cannot edit the form since the process is not executable."
+        />
+      </div>
+    );
   }
 
   return (
@@ -289,7 +306,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       okText="Save"
       cancelText={hasUnsavedChanges ? 'Cancel' : 'Close'}
       onCancel={handleClose}
-      okButtonProps={{ disabled: !editingEnabled || !isExecutable }}
+      okButtonProps={{ disabled: !canEdit }}
       onOk={handleSave}
       destroyOnClose
     >

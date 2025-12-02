@@ -3,10 +3,6 @@
  */
 
 /**
- * @typedef ASTNode
- */
-
-/**
  * Node representing the root of the html
  *
  * @typedef RootNode
@@ -86,6 +82,7 @@ class TreeBuilder {
    **/
   getIfNode() {
     const ifToken = this.tokens[this.currentToken - 1];
+    /** @type {IfNode} */
     const node = { type: 'if', condition: ifToken.condition };
 
     node.children = [];
@@ -127,6 +124,7 @@ class TreeBuilder {
    **/
   getForNode() {
     const forToken = this.tokens[this.currentToken - 1];
+    /** @type {ForNode} */
     const node = { type: 'for', loopVar: forToken.loopVar, sourceVar: forToken.sourceVar };
 
     node.children = [];
@@ -169,6 +167,7 @@ class TreeBuilder {
    * @returns {RootNode}
    **/
   getTree() {
+    /** @type {RootNode} */
     const root = { type: 'root', children: [] };
 
     root.children = [];

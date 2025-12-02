@@ -104,6 +104,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const [name, setName] = useState('');
   const [userDefinedId, setUserDefinedId] = useState(metaData.userDefinedId);
 
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
+
   const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
   const timePlannedDuration: string | undefined = metaData.timePlannedDuration;
 
@@ -341,8 +343,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 undefined,
                 oldName
                   ? {
-                    name: oldName,
-                  }
+                      name: oldName,
+                    }
                   : undefined,
               );
             }}
@@ -414,11 +416,11 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 <PotentialOwner
                   selectedElement={selectedElement}
                   modeler={modeler}
-                  readOnly={readOnly}
+                  readOnly={readOnly || !isExecutable}
                 />
               </>
             )}
-            <VariableDefinition readOnly={readOnly} />
+            <VariableDefinition readOnly={readOnly || !isExecutable} />
           </Space>
         </>
       ),

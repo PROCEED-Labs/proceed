@@ -3,7 +3,6 @@ import { useDraggable } from '@dnd-kit/core';
 import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
-import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
 
 /**
@@ -26,7 +25,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   }));
 
   const dragBlockers = useEditorStateStore((state) => state.dragBlockers);
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const ref = useRef<HTMLDivElement>();
   const frame = useFrame();

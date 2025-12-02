@@ -60,7 +60,16 @@ const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
       updateVariable: updateProcessVariable,
     } = useProcessVariables();
 
-    const { variables, updateVariables, updateMilestones } = useEditorStateStore((state) => state);
+    const editingEnabled = useCanEdit();
+    const isExecutable = useModelerStateStore((state) => state.isExecutable);
+
+    const { variables, updateVariables, updateMilestones, setEditingEnabled } = useEditorStateStore(
+      (state) => state,
+    );
+
+    useEffect(() => {
+      setEditingEnabled(editingEnabled && isExecutable);
+    }, [editingEnabled, isExecutable]);
 
     useEffect(() => {
       // initialize the variables known to the editor when it is opened
@@ -139,8 +148,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
 
   const isMobile = breakpoint.xs;
 
-  const modeler = useModelerStateStore((state) => state.modeler);
-  const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+  const { modeler, selectedElementId, isExecutable } = useModelerStateStore();
 
   const selectedElement = modeler && selectedElementId && modeler.getElement(selectedElementId);
 
@@ -281,7 +289,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       okText="Save"
       cancelText={hasUnsavedChanges ? 'Cancel' : 'Close'}
       onCancel={handleClose}
-      okButtonProps={{ disabled: !editingEnabled }}
+      okButtonProps={{ disabled: !editingEnabled || !isExecutable }}
       onOk={handleSave}
       destroyOnClose
     >

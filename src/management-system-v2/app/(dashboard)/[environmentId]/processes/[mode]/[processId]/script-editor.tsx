@@ -61,8 +61,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const monacoEditorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
 
-  const modeler = useModelerStateStore((state) => state.modeler);
-  const canEdit = useCanEdit();
+  const { modeler, isExecutable } = useModelerStateStore();
+
+  const canEdit = useCanEdit() && isExecutable;
 
   const environment = useEnvironment();
   const app = App.useApp();
@@ -460,7 +461,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                           </List.Item>
                         )}
                       />
-                      <Button onClick={() => setShowVariableForm(true)}>Add Variable</Button>
+                      <Button onClick={() => setShowVariableForm(true)} disabled={!canEdit}>
+                        Add Variable
+                      </Button>
                     </div>
                   )}
                 </Col>

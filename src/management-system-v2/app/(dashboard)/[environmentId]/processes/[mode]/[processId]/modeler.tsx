@@ -120,7 +120,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
     }
     const debouncedSaveXmlFn = debounce(saveXml, 2000);
 
-    const wrappedDebouncedSaveFuncion = function(xml?: string, invalidate: boolean = false) {
+    const wrappedDebouncedSaveFuncion = function (xml?: string, invalidate: boolean = false) {
       if (!xml) return;
 
       if (!beforeWindowUnloadEventHandler.current) {
@@ -242,7 +242,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
         // or uses the new instance.
         const { xml } = await oldInstance.saveXML({ format: true });
         // Last save before unloading, so invalidate the client router cache.
-        await saveDebounced.asyncImmediate(xml, true).catch((err) => { });
+        await saveDebounced.asyncImmediate(xml, true).catch((err) => {});
       } catch (err) {
         // Most likely called before the modeler loaded anything. Can ignore.
       }

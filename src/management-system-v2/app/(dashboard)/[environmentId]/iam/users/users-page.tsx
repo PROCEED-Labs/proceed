@@ -8,15 +8,17 @@ import UserList, { ListUser } from '@/components/user-list';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserSidePanel from './user-side-panel';
 import { useRouter } from 'next/navigation';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
+import { User } from '@prisma/client';
 import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { Role } from '@/lib/data/role-schema';
+import type { Role } from '@prisma/client';
+
 import { CreateUsersModal } from './create-users';
 import ResetUserPasswordButton from '@/components/reset-user-password-button';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 
-const UsersPage: FC<{ users: (AuthenticatedUser & { roles?: Role[] })[] }> = ({ users }) => {
+const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
@@ -57,7 +59,7 @@ const UsersPage: FC<{ users: (AuthenticatedUser & { roles?: Role[] })[] }> = ({ 
           {!breakpoint.md && <FloatButtonActions />}
 
           <UserList
-            users={users}
+            users={users as AuthenticatedUser[]}
             columns={(clearSelected, hoveredId, selectedRowKeys) => [
               {
                 dataIndex: 'roles',

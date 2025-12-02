@@ -93,6 +93,19 @@ async function setProcessId(bpmn, id) {
 }
 
 /**
+ * Sets the executable property of the processes in the bpmn to the given value
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {boolean | string} executable if the processes are executable or not
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
+ */
+async function setExecutableProperties(bpmn, executable) {
+  return await manipulateElementsByTagName(bpmn, 'bpmn:Process', (process) => {
+    process.isExecutable = `${executable}`;
+  });
+}
+
+/**
  *  Sets templateId in definitions element
  *
  * @param {string} bpmn the xml we want to update
@@ -684,6 +697,7 @@ module.exports = {
   setDefinitionsName,
   setDefinitionsVersionInformation,
   setProcessId,
+  setExecutableProperties,
   setStartFormFileName,
   setTemplateId,
   setTargetNamespace,

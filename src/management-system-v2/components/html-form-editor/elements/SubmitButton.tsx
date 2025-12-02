@@ -8,7 +8,7 @@ import { Overlay, Setting } from './utils';
 
 import cn from 'classnames';
 import { Checkbox, Select } from 'antd';
-import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from '../use-editor-state-store';
 
 type SubmitButtonProps = React.PropsWithChildren & {
   title?: string;
@@ -29,7 +29,7 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
   const [textEditing, setTextEditing] = useState(false);
   const [hovered, setHovered] = useState(false);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   return (
     <div>

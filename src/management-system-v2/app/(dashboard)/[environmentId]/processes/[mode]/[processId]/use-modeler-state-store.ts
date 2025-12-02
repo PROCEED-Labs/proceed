@@ -19,12 +19,14 @@ type ModelerStateStore = {
   zoomLevel: number;
   rootElement: Root | null;
   isFullScreen: boolean;
+  isExecutable: boolean;
   setModeler: (newModeler: BPMNCanvasRef | null) => void;
   setSelectedElementId: (newId: null | string) => void;
   setZoomLevel: (newZoomLevel: number) => void;
   setRootElement: (newRoot: Root | null) => void;
   incrementChangeCounter: () => void;
   setFullScreen: (isFullScreen: boolean) => void;
+  setIsExecutable: (executable: boolean) => void;
 };
 
 const useModelerStateStore = create<ModelerStateStore>()(
@@ -35,6 +37,7 @@ const useModelerStateStore = create<ModelerStateStore>()(
     zoomLevel: 1,
     rootElement: null,
     isFullScreen: false,
+    isExecutable: false,
     setModeler: (newModeler) =>
       set((state) => {
         state.modeler = newModeler;
@@ -58,6 +61,10 @@ const useModelerStateStore = create<ModelerStateStore>()(
     setFullScreen: (isFullScreen) =>
       set((state) => {
         state.isFullScreen = isFullScreen;
+      }),
+    setIsExecutable: (executable) =>
+      set((state) => {
+        state.isExecutable = executable;
       }),
   })),
 );

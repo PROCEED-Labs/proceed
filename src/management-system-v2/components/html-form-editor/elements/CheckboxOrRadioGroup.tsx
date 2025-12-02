@@ -27,7 +27,6 @@ import { WithRequired } from '@/lib/typescript-utils';
 
 import { EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
-import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
 
 const checkboxValueHint =
@@ -129,7 +128,8 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
+
   return (
     <>
       <input
@@ -222,7 +222,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     }
   }, [isSelected]);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const handleLabelEdit = (index: number, text: string) => {
     if (!editingEnabled) return;

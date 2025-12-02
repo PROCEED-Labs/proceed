@@ -7,7 +7,6 @@ import { UserComponent, useNode } from '@craftjs/core';
 
 import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
-import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
 
 type InputProps = {
@@ -78,7 +77,8 @@ const Input: UserComponent<InputProps> = ({
     connectors: { connect },
     actions: { setProp },
   } = useNode();
-  const editingEnabled = useCanEdit();
+
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const inputId = useId();
 

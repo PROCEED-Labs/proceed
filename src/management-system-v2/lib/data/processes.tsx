@@ -10,6 +10,7 @@ import {
   generateUserTaskFileName,
   getDefinitionsId,
   getDefinitionsVersionInformation,
+  getElementsByTagName,
   setDefinitionsName,
   setDefinitionsVersionInformation,
   toBpmnObject,
@@ -177,6 +178,7 @@ export const addProcesses = async (
     folderId?: string;
     userDefinedId?: string;
     id?: string;
+    executable?: boolean;
   }[],
   spaceId: string,
   generateNewId: boolean = false,
@@ -215,6 +217,7 @@ export const addProcesses = async (
       creatorId: userId,
       environmentId: activeEnvironment.spaceId,
       folderId: value.folderId,
+      executable: value.executable,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -463,6 +466,9 @@ export const copyProcesses = async (
     // TODO: Does createProcess() do the same as this function?
     let newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
 
+    const bpmnObj = await toBpmnObject(newBpmn);
+    const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
+
     // TODO: include variables in copy?
     const newProcess = {
       creatorId: userId,
@@ -470,6 +476,7 @@ export const copyProcesses = async (
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,
       folderId: destinationfolderId,
+      executable: !!processObj.isExecutable,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {

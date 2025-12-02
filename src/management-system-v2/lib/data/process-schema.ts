@@ -9,6 +9,7 @@ export const ProcessInputSchema = z.object({
   originalId: z.string().optional(),
   folderId: z.string().optional(),
   userDefinedId: z.string().optional(),
+  executable: z.boolean().optional(),
 });
 
 export type ProcessInput = z.infer<typeof ProcessInputSchema>;

@@ -121,7 +121,7 @@ function initXml(
       xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
       xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
   >
-    <Process id="${processId}" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <Process id="${processId}" name="PROCEED Main Process" processType="Private" isExecutable="false">
       <startEvent id="${startEventId}"/>
     </Process>
     <bpmndi:BPMNDiagram id="BPMNDiagram_1">

@@ -13,7 +13,7 @@ import {
 import { fallbackImage, useImageUpload } from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
-import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from '@/components/html-form-editor/use-editor-state-store';
 
 type ImageProps = {
   src?: string;
@@ -68,7 +68,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
     if (!definitionId) setProp((props: ImageProps) => (props.definitionId = processId));
   }, []);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const { download: getImageUrl } = useFileManager({
     entityType: EntityType.PROCESS,
@@ -240,7 +240,7 @@ export const ImageSettings = () => {
     dom: node.dom,
   }));
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const [currentWidth, setCurrentWidth] = useState<number | null>(null);
 
@@ -304,7 +304,9 @@ export const ImageSettings = () => {
         disabled={!editingEnabled}
         customRequest={customUploadRequest}
       >
-        <Button>{src?.startsWith('processes-artifacts') ? 'Change Image' : 'Upload Image'}</Button>
+        <Button disabled={!editingEnabled}>
+          {src?.startsWith('processes-artifacts') ? 'Change Image' : 'Upload Image'}
+        </Button>
       </Upload>
     ),
     url: (

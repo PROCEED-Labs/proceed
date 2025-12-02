@@ -1,14 +1,6 @@
 'use client';
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  createContext,
-  useContext,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ModelerToolbar from './modeler-toolbar';
 import useModelerStateStore from './use-modeler-state-store';
@@ -43,7 +35,6 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
-  const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
   const { message: messageApi } = App.useApp();
@@ -59,6 +50,11 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
+  const setIsExecutable = useModelerStateStore((state) => state.setIsExecutable);
+
+  useEffect(() => {
+    setIsExecutable(process.executable || false);
+  }, [process]);
 
   const { isListView, processContextPath } = useProcessView();
 
@@ -332,7 +328,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [process.id, selectedVersionId],
+    [process.id, selectedVersionId, process.executable],
   );
 
   return (

@@ -9,7 +9,7 @@ import styles from './index.module.scss';
 import Column from '../elements/Column';
 
 import { createPortal } from 'react-dom';
-import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from '../use-editor-state-store';
 
 type CreationButtonProps = React.PropsWithChildren<{
   title: string;
@@ -28,7 +28,7 @@ export type ToolboxProps = {
 };
 
 const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }) => {
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const id = `create-${title}-button`;
 

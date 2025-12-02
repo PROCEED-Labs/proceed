@@ -19,7 +19,6 @@ import useBoundingClientRect from '@/lib/useBoundingClientRect';
 import EditorDnDHandler from './DragAndDropHandler';
 
 import ShortcutHandler from './shortcut-handler';
-import { useCanEdit } from '@/lib/can-edit-context';
 import { ToolboxEntries } from './_sidebar/Toolbox';
 
 import { LuTextCursorInput, LuTable, LuText } from 'react-icons/lu';
@@ -29,6 +28,7 @@ import { RxGroup } from 'react-icons/rx';
 import { Element } from '@craftjs/core';
 
 import { defaultElements, exportElements } from './elements';
+import useEditorStateStore from './use-editor-state-store';
 
 const { Text, SubmitButton, Table, CheckBoxOrRadioGroup, Input, Container } = defaultElements;
 
@@ -110,7 +110,7 @@ const HtmlFormEditor = forwardRef<HtmlFormEditorRef, EditorProps>(
 
     const isMobile = breakpoint.xs;
 
-    const editingEnabled = useCanEdit();
+    const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [iframeMounted, setIframeMounted] = useState(false);

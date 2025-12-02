@@ -13,7 +13,7 @@ import {
 import styles from './index.module.scss';
 
 import useEditorControls from './use-editor-controls';
-import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from './use-editor-state-store';
 
 export type EditorLayout = 'computer' | 'mobile';
 
@@ -30,7 +30,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 }) => {
   const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   return (
     <Row className={styles.EditorHeader}>

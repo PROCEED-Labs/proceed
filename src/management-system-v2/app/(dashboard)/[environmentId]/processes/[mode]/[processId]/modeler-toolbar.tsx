@@ -40,6 +40,7 @@ import XmlEditor from './xml-editor';
 import UserTaskEditor, { canHaveForm } from './user-task-editor';
 import { useProcessView } from './process-view-context';
 import { useCanEdit } from '@/lib/can-edit-context';
+import { deployProcess } from '@/lib/engines/server-actions';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -74,6 +75,8 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const [ganttEnabled, setGanttEnabled] = useState<boolean | null>(null);
 
   const editingEnabled = useCanEdit();
+
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
 
   // Fetch gantt view settings
   useEffect(() => {
@@ -161,27 +164,27 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
 
   const selectedVersionId = query.get('version');
 
-  const createProcessVersion = async (values: {
-    versionName: string;
-    versionDescription: string;
-  }) => {
+  const createProcessVersion = async (
+    values: {
+      versionName: string;
+      versionDescription: string;
+    },
+    deploy?: boolean,
+  ) => {
     try {
       // Ensure latest BPMN on server.
       const xml = (await modeler?.getXML()) as string;
       if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
         throw new Error();
 
-      if (
-        isUserErrorResponse(
-          await createVersion(
-            values.versionName,
-            values.versionDescription,
-            processId,
-            environment.spaceId,
-          ),
-        )
-      )
-        throw new Error();
+      const newVersion = await createVersion(
+        values.versionName,
+        values.versionDescription,
+        processId,
+        environment.spaceId,
+      );
+
+      if (isUserErrorResponse(newVersion)) throw new Error();
 
       // reimport the new version since the backend has added versionBasedOn information that would
       // be overwritten by following changes
@@ -192,6 +195,12 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
 
       router.refresh();
       message.success('Version Created');
+
+      if (deploy && newVersion) {
+        await deployProcess(process.id, newVersion, environment.spaceId, 'dynamic');
+        message.success('Process Deployed');
+        router.push(spaceURL(environment, `/executions/${process.id}`));
+      }
     } catch (_) {
       message.error('Something went wrong');
     }
@@ -290,8 +299,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 router.push(
                   spaceURL(
                     environment,
-                    `/processes${processContextPath}/${processId as string}${
-                      searchParams.size ? '?' + searchParams.toString() : ''
+                    `/processes${processContextPath}/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
                     }`,
                   ),
                 );
@@ -310,6 +318,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     icon={<PlusOutlined />}
                     createVersion={createProcessVersion}
                     disabled={isListView}
+                    isExecutable={isExecutable}
                   ></VersionCreationButton>
                 </Tooltip>
                 <Tooltip title="Undo">

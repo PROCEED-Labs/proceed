@@ -275,9 +275,9 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
   let title = <div>Html Form</div>;
 
   if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
-    title = <div>User Task Form</div>;
+    title = <span>User Task Form</span>;
   } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
-    title = <div>Process Start Form</div>;
+    title = <span>Process Start Form</span>;
   }
 
   if (canEdit) title = <div>Edit {title}</div>;

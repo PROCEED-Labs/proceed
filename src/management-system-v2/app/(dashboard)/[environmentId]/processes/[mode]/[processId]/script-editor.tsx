@@ -344,10 +344,15 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
             <Button
               icon={<IoExtensionPuzzleOutline style={{ transform: 'translateY(2px)' }} size={15} />}
               onClick={() => setSelectedEditor('blockly')}
+              disabled={!canEdit}
             >
               No-Code Block Editor
             </Button>
-            <Button icon={<FormOutlined size={15} />} onClick={() => setSelectedEditor('JS')}>
+            <Button
+              icon={<FormOutlined size={15} />}
+              onClick={() => setSelectedEditor('JS')}
+              disabled={!canEdit}
+            >
               JavaScript Editor
             </Button>
           </Space>

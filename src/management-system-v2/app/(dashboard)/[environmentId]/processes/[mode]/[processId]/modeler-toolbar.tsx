@@ -167,39 +167,45 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const [versionToDeploy, setVersionToDeploy] = useState('');
 
   const createProcessVersion = async (
-    values: {
+    values?: {
       versionName: string;
       versionDescription: string;
     },
-    deploy?: boolean,
+    deploy?: boolean | string,
   ) => {
     try {
-      // Ensure latest BPMN on server.
-      const xml = (await modeler?.getXML()) as string;
-      if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
-        throw new Error();
+      let toDeploy = deploy;
 
-      const newVersion = await createVersion(
-        values.versionName,
-        values.versionDescription,
-        processId,
-        environment.spaceId,
-      );
+      if (values) {
+        // Ensure latest BPMN on server.
+        const xml = (await modeler?.getXML()) as string;
+        if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
+          throw new Error();
 
-      if (isUserErrorResponse(newVersion)) throw new Error();
+        const newVersion = await createVersion(
+          values.versionName,
+          values.versionDescription,
+          processId,
+          environment.spaceId,
+        );
 
-      // reimport the new version since the backend has added versionBasedOn information that would
-      // be overwritten by following changes
-      const newBpmn = await getProcessBPMN(processId, environment.spaceId);
-      if (newBpmn && typeof newBpmn === 'string') {
-        await modeler?.loadBPMN(newBpmn);
+        if (isUserErrorResponse(newVersion)) throw new Error();
+
+        toDeploy = newVersion || false;
+
+        // reimport the new version since the backend has added versionBasedOn information that would
+        // be overwritten by following changes
+        const newBpmn = await getProcessBPMN(processId, environment.spaceId);
+        if (newBpmn && typeof newBpmn === 'string') {
+          await modeler?.loadBPMN(newBpmn);
+        }
+
+        router.refresh();
+        message.success('Version Created');
       }
 
-      router.refresh();
-      message.success('Version Created');
-
-      if (deploy && newVersion) {
-        setVersionToDeploy(newVersion);
+      if (typeof toDeploy === 'string') {
+        setVersionToDeploy(toDeploy);
       }
     } catch (_) {
       message.error('Something went wrong');
@@ -323,6 +329,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
               <>
                 <Tooltip title="Create New Version">
                   <VersionCreationButton
+                    processId={processId}
                     icon={<PlusOutlined />}
                     createVersion={createProcessVersion}
                     disabled={isListView}

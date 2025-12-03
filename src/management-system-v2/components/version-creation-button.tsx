@@ -76,7 +76,7 @@ export const VersionModal: React.FC<VersionModalProps> = ({
             disabled={!canSubmit}
             onClick={() => handleSubmit(true)}
           >
-            Create Version
+            Version and Deploy
           </Button>
         ),
       ]}

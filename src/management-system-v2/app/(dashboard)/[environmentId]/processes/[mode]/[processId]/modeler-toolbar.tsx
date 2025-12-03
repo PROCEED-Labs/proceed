@@ -17,7 +17,7 @@ import { PiDownloadSimple } from 'react-icons/pi';
 import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
@@ -26,7 +26,6 @@ import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/script-editor';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
@@ -41,6 +40,8 @@ import UserTaskEditor, { canHaveForm } from './user-task-editor';
 import { useProcessView } from './process-view-context';
 import { useCanEdit } from '@/lib/can-edit-context';
 import { deployProcess } from '@/lib/engines/server-actions';
+import { Engine } from '@/lib/engines/machines';
+import EngineSelection from '@/components/engine-selection';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -54,7 +55,6 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const processId = process.id;
 
   const router = useRouter();
-  const pathname = usePathname();
   const environment = useEnvironment();
   const app = App.useApp();
   const message = app.message;
@@ -164,6 +164,8 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
 
   const selectedVersionId = query.get('version');
 
+  const [versionToDeploy, setVersionToDeploy] = useState('');
+
   const createProcessVersion = async (
     values: {
       versionName: string;
@@ -197,14 +199,20 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
       message.success('Version Created');
 
       if (deploy && newVersion) {
-        await deployProcess(process.id, newVersion, environment.spaceId, 'dynamic');
-        message.success('Process Deployed');
-        router.push(spaceURL(environment, `/executions/${process.id}`));
+        setVersionToDeploy(newVersion);
       }
     } catch (_) {
       message.error('Something went wrong');
     }
   };
+
+  const deployVersion = async (engine: Engine | undefined) => {
+    await deployProcess(process.id, versionToDeploy, environment.spaceId, 'dynamic', engine);
+    setVersionToDeploy('');
+    message.success('Process Deployed');
+    router.push(spaceURL(environment, `/executions/${process.id}`));
+  };
+
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
@@ -319,8 +327,13 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     createVersion={createProcessVersion}
                     disabled={isListView}
                     isExecutable={isExecutable}
-                  ></VersionCreationButton>
+                  />
                 </Tooltip>
+                <EngineSelection
+                  open={!!versionToDeploy}
+                  onClose={() => setVersionToDeploy('')}
+                  onSubmit={deployVersion}
+                />
                 <Tooltip title="Undo">
                   <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
                 </Tooltip>

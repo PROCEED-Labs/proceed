@@ -3,7 +3,7 @@
 const ivm = require('isolated-vm');
 
 /** @param {import('.').ScriptTaskSetupData} setupData */
-module.exports = function setupSimpleFunctionCalls({ context, callToExecutor }) {
+module.exports = function setupSimpleFunctionCalls({ context, callToExecutor, waitUntilResumed }) {
   const structure = {
     log: ['trace', 'debug', 'info', 'warn', 'error'],
     console: ['trace', 'debug', 'info', 'warn', 'error', 'log', 'time', 'timeEnd'],
@@ -35,6 +35,8 @@ module.exports = function setupSimpleFunctionCalls({ context, callToExecutor }) 
       }`,
         [
           new ivm.Reference(async function (args) {
+            await waitUntilResumed();
+
             const result = await callToExecutor('call', {
               functionName: `${objName}.${functionName}`,
               args: JSON.parse(args),

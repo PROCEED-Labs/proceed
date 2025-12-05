@@ -26,37 +26,6 @@ if (
   );
 
 /* -------------------------------------------------------------------------------------------------
- * Basic isolated vm setup
- * -----------------------------------------------------------------------------------------------*/
-
-const isolate = new ivm.Isolate({ memoryLimit: 128 });
-const context = isolate.createContextSync();
-
-context.global.setSync('global', context.global.derefInto());
-
-context.global.setSync('_stdout_log', function (...args) {
-  console.log(...args);
-});
-
-const wait = new ivm.Reference((ms) => new Promise((res) => setTimeout(res, ms)));
-
-context.evalClosureSync(
-  function wait(ms) {
-    $0.applySyncPromise(null, [ms], {});
-  }.toString() + `globalThis["wait"] = wait;`,
-  [wait],
-);
-
-context.evalClosureSync(
-  async function waitAsync(ms) {
-    await $0.apply(null, [ms], {
-      result: { promise: true },
-    });
-  }.toString() + `globalThis["waitAsync"] = waitAsync;`,
-  [wait],
-);
-
-/* -------------------------------------------------------------------------------------------------
  * Function for communication with universal part
  * -----------------------------------------------------------------------------------------------*/
 
@@ -108,6 +77,19 @@ async function callToExecutor(endpoint, body) {
 }
 
 /* -------------------------------------------------------------------------------------------------
+ * Basic isolated vm setup
+ * -----------------------------------------------------------------------------------------------*/
+
+const isolate = new ivm.Isolate({ memoryLimit: 128 });
+const context = isolate.createContextSync();
+
+context.global.setSync('global', context.global.derefInto());
+
+context.global.setSync('_stdout_log', function (...args) {
+  console.log(...args);
+});
+
+/* -------------------------------------------------------------------------------------------------
  * Setup PROCEED's api for script task
  *
  * All the functions that aren't defined in V8's isolates and that we have to provide.
@@ -125,6 +107,7 @@ async function callToExecutor(endpoint, body) {
  *  processId: string,
  *  processInstanceId: string,
  *  tokenId: string
+ *  waitUntilResumed: () => Promise<void>
  * }} ScriptTaskSetupData
  */
 
@@ -135,7 +118,33 @@ const setupData = {
   processId,
   processInstanceId,
   tokenId,
+  waitUntilResumed: () => Promise.resolve(),
 };
+
+const setupPauseAndResumeLayer = require('./pause-resume-layer');
+const { waitUntilResumed, unmountPauseResumeListener } = setupPauseAndResumeLayer(setupData);
+setupData.waitUntilResumed = waitUntilResumed;
+
+const wait = new ivm.Reference(async (ms) => {
+  await new Promise((res) => setTimeout(res, ms));
+  await waitUntilResumed();
+});
+
+context.evalClosureSync(
+  function wait(ms) {
+    $0.applySyncPromise(null, [ms], {});
+  }.toString() + `globalThis["wait"] = wait;`,
+  [wait],
+);
+
+context.evalClosureSync(
+  async function waitAsync(ms) {
+    await $0.apply(null, [ms], {
+      result: { promise: true },
+    });
+  }.toString() + `globalThis["waitAsync"] = waitAsync;`,
+  [wait],
+);
 
 const setupSimpleFunctionCalls = require('./simple-function-calls');
 setupSimpleFunctionCalls(setupData);
@@ -156,11 +165,14 @@ setupNetworkServer(setupData);
  * Execute script
  * -----------------------------------------------------------------------------------------------*/
 
+/** @param {string} script */
 function wrapScriptInAsyncFunction(script) {
   return `async function main() { ${script} }; main();`;
 }
 
-const isolateCode = wrapScriptInAsyncFunction(wrapScriptWithErrorHandling(scriptString));
+const isolateCode = wrapScriptInAsyncFunction(
+  wrapScriptWithErrorHandling(scriptString, unmountPauseResumeListener),
+);
 
 // After .eval is done, there may still be code running inside the isolate, that the .eval returns
 // means just that the code the user wrote returned a value, the process will remain open until the

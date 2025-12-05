@@ -19,15 +19,25 @@ module.exports = {
   `,
       );
   },
-  /** @param {string} script */
-  wrapScriptWithErrorHandling: function (script) {
-    return `try {
+  /**
+   * @param {string} script
+   * @param {string} [finallyCode]
+   * */
+  wrapScriptWithErrorHandling: function (script, finallyCode) {
+    let code = `try {
     ${script}
   } catch(e){
     if(${errorClasses.map((error) => 'e instanceof ' + error).join(' || ')})
       throw JSON.stringify(e);
     else throw e;
-  }
-  `;
+  }`;
+
+    if (finallyCode) {
+      code += `finally {
+        ${finallyCode}
+      }`;
+    }
+
+    return code;
   },
 };

@@ -6,6 +6,7 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { getUsersFavourites } from '@/lib/data/users';
 import { getProcesses } from '@/lib/data/db/process';
 import styles from './page.module.scss';
+import ResponsiveGrid from './responsive-grid';
 
 const StartPage = async ({ params }: { params: { environmentId: string } }) => {
   const msConfig = await getMSConfig();
@@ -30,13 +31,13 @@ const StartPage = async ({ params }: { params: { environmentId: string } }) => {
       {msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && favoriteProcesses.length > 0 && (
         <FavoriteProcessesSection processes={favoriteProcesses} />
       )}
-      <div className={styles.gridContainer}>
+      <ResponsiveGrid>
         {msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && <MyTasksSection />}
         {msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && <ProcessesSection />}
         {msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && <AutomationsSection />}
         <PersonalSection />
         <HomeSection />
-      </div>
+      </ResponsiveGrid>
     </Content>
   );
 };

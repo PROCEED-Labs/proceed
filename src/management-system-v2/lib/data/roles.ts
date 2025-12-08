@@ -2,7 +2,7 @@
 
 import { getCurrentEnvironment } from '@/components/auth';
 import { redirect } from 'next/navigation';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, userError } from '../server-error-handling/user-error';
 import { RedirectType } from 'next/dist/client/components/redirect';
 import {
   deleteRole,

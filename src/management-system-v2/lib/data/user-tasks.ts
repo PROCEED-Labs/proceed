@@ -10,7 +10,7 @@ import {
   deleteUserTask as _deleteUserTask,
 } from './db/user-tasks';
 import { UnauthorizedError } from '../ability/abilityHelper';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, userError } from '../server-error-handling/user-error';
 import { UserTaskInput } from '../user-task-schema';
 
 export async function getUserTasks() {

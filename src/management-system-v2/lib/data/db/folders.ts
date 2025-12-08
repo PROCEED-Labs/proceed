@@ -1,8 +1,9 @@
+import { ok, err, Result } from 'neverthrow';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { Folder, FolderInput, FolderSchema, FolderUserInput } from '../folder-schema';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
-import { Process, ProcessMetadata } from '../process-schema';
+import { ProcessMetadata } from '../process-schema';
 import db from '@/lib/data/db';
 import { getProcess } from './process';
 import { Prisma } from '@prisma/client';
@@ -16,14 +17,14 @@ export async function getRootFolder(environmentId: string, ability?: Ability) {
   });
 
   if (!rootFolder) {
-    throw new Error(`MS Error: environment ${environmentId} has no root folder`);
+    return err(new Error(`MS Error: environment ${environmentId} has no root folder`));
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', rootFolder))) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
-  return rootFolder;
+  return ok(rootFolder);
 }
 
 export async function getFolderById(folderId: string, ability?: Ability) {
@@ -37,21 +38,21 @@ export async function getFolderById(folderId: string, ability?: Ability) {
   });
 
   if (!folder) {
-    throw new Error('Folder not found');
+    return err(new Error('Folder not found'));
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
-  return folder;
+  return ok(folder);
 }
 
 export async function getFolders(spaceId?: string) {
   const selection = await db.folder.findMany({
     where: { environmentId: spaceId },
   });
-  return selection;
+  return ok(selection);
 }
 
 export async function getFolderChildren(folderId: string, ability?: Ability) {
@@ -66,59 +67,64 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
   });
 
   if (!folder) {
-    throw new Error('Folder not found');
+    return err(new Error('Folder not found'));
   }
 
   if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
   const combinedResults = [
     ...folder.childrenFolder.map((child) => ({ ...child, type: 'folder' })),
     ...folder.processes.map((process) => ({ ...process, type: process.type.toLowerCase() })),
   ];
-  return combinedResults;
+  return ok(combinedResults);
 }
 
 export async function getFolderContents(folderId: string, ability?: Ability) {
   const folderChildren = await getFolderChildren(folderId, ability);
+  if (folderChildren.isErr()) return folderChildren;
+
   const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
 
-  for (let i = 0; i < folderChildren.length; i++) {
+  for (let i = 0; i < folderChildren.value.length; i++) {
     try {
-      const child = folderChildren[i];
+      const child = folderChildren.value[i];
 
       if (child.type !== 'folder') {
-        const process = (await getProcess(child.id)) as unknown as Process;
+        const process = await getProcess(child.id);
+        if (process.isErr()) return process;
+
         // NOTE: this check should probably done inside inside getprocess
-        if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
-        folderContent.push(process);
+        if (ability && !ability.can('view', toCaslResource('Process', process.value))) continue;
+        folderContent.push(process.value as ProcessMetadata);
       } else {
-        folderContent.push({ ...(await getFolderById(child.id, ability)), type: 'folder' });
+        const folder = await getFolderById(child.id, ability);
+        if (folder.isErr()) return folder;
+
+        folderContent.push({ ...folder.value, type: 'folder' });
       }
     } catch (e) {}
   }
 
-  return folderContent;
+  return ok(folderContent);
 }
 
-export async function createFolder(
+// This is needed to inferr the return type
+async function _createFolder(
   folderInput: FolderInput,
-  ability?: Ability,
-  tx?: Prisma.TransactionClient,
-): Promise<Folder> {
-  if (!tx) {
-    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
-      return await createFolder(folderInput, ability, trx);
-    });
-  }
+  ability: Ability | undefined,
+  tx: Prisma.TransactionClient,
+) {
+  const folderParseResult = FolderSchema.safeParse(folderInput);
+  if (!folderParseResult.success) return err(folderParseResult.error);
 
-  const folder = FolderSchema.parse(folderInput);
+  const folder = folderParseResult.data;
   if (!folder.id) folder.id = v4();
 
   // Checks
   if (ability && !ability.can('create', toCaslResource('Folder', folder)))
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
   const existingFolder = await db.folder.findUnique({
     where: {
@@ -126,7 +132,7 @@ export async function createFolder(
     },
   });
   if (existingFolder) {
-    throw new Error('Folder already exists');
+    return err(new Error('Folder already exists'));
   }
 
   if (folder.parentId) {
@@ -137,12 +143,13 @@ export async function createFolder(
     });
 
     if (!parentFolder) {
-      throw new Error('Parent folder does not exist');
+      return err(new Error('Parent folder does not exist'));
     }
 
     if (parentFolder.environmentId !== folder.environmentId) {
-      throw new Error('Parent folder is in a different environment');
+      return err(new Error('Parent folder is in a different environment'));
     }
+
     await tx.folder.update({
       where: {
         id: folder.parentId,
@@ -160,7 +167,7 @@ export async function createFolder(
     });
 
     if (rootFolder) {
-      throw new Error(`Environment ${folder.environmentId} already has a root folder`);
+      return err(new Error(`Environment ${folder.environmentId} already has a root folder`));
     }
   }
 
@@ -176,7 +183,20 @@ export async function createFolder(
     },
   });
 
-  return createdFolder;
+  return ok(createdFolder);
+}
+export async function createFolder(
+  folderInput: FolderInput,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  if (!tx) {
+    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
+      return await _createFolder(folderInput, ability, trx);
+    });
+  } else {
+    return _createFolder(folderInput, ability, tx);
+  }
 }
 
 /** Deletes a folder and every child recursively */
@@ -187,18 +207,18 @@ export async function deleteFolder(folderId: string, ability?: Ability) {
   });
 
   if (!folderToDelete) {
-    throw new Error('Folder not found');
+    return err(new Error('Folder not found'));
   }
 
   if (ability && !ability.can('delete', toCaslResource('Folder', folderToDelete))) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
   await db.folder.delete({
     where: { id: folderId },
   });
 
-  return { success: true };
+  return ok();
 }
 
 export async function updateFolderMetaData(
@@ -211,15 +231,15 @@ export async function updateFolderMetaData(
   });
 
   if (!folder) {
-    throw new Error('Folder not found');
+    return err(new Error('Folder not found'));
   }
 
   if (ability && !ability.can('update', toCaslResource('Folder', folder))) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
   if (newMetaDataInput.environmentId && newMetaDataInput.environmentId !== folder.environmentId) {
-    throw new Error('environmentId cannot be changed');
+    return err(new Error('environmentId cannot be changed'));
   }
 
   const updatedFolder = await db.folder.update({
@@ -227,17 +247,17 @@ export async function updateFolderMetaData(
     data: { ...newMetaDataInput, lastEditedOn: new Date() },
   });
 
-  return updatedFolder;
+  return ok(updatedFolder);
 }
 
-async function isInSubtree(rootId: string, nodeId: string) {
+async function isInSubtree(rootId: string, nodeId: string): Promise<Result<boolean, Error>> {
   const folderData = await db.folder.findUnique({
     where: { id: rootId },
     include: { childrenFolder: true },
   });
 
   if (!folderData) {
-    throw new Error('RootId not found');
+    return err(new Error('RootId not found'));
   }
 
   const nodeFolder = await db.folder.findUnique({
@@ -245,16 +265,20 @@ async function isInSubtree(rootId: string, nodeId: string) {
   });
 
   if (!nodeFolder) {
-    throw new Error('NodeId not found');
+    return err(new Error('NodeId not found'));
   }
 
   if (rootId === nodeId) {
-    return true;
+    return ok(true);
   }
+
   for (const child of folderData.childrenFolder) {
-    if (await isInSubtree(child.id, nodeId)) return true;
+    const recursiveCallResult = await isInSubtree(child.id, nodeId);
+    if (recursiveCallResult.isErr()) return recursiveCallResult;
+
+    if (recursiveCallResult.value) return ok(true);
   }
-  return false;
+  return ok(false);
 }
 
 export async function moveFolder(folderId: string, newParentId: string, ability?: Ability) {
@@ -264,11 +288,11 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
   });
 
   if (!folder) {
-    throw new Error('Folder not found');
+    return err(new Error('Folder not found'));
   }
 
   if (!folder.parentId) {
-    throw new Error('Root folders cannot be moved');
+    return err(new Error('Root folders cannot be moved'));
   }
 
   if (folder.parentId === newParentId) {
@@ -280,11 +304,11 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
   });
 
   if (!newParentFolder) {
-    throw new Error('New parent folder not found');
+    return err(new Error('New parent folder not found'));
   }
 
   if (newParentFolder.environmentId !== folder.environmentId) {
-    throw new Error('Cannot move folder to a different environment');
+    return err(new Error('Cannot move folder to a different environment'));
   }
 
   // Check permissions
@@ -296,12 +320,12 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
       ability.can('update', toCaslResource('Folder', folder.parentFolder!))
     )
   ) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
   // Check if moving to its own subtree
   if (await isInSubtree(folderId, newParentId)) {
-    throw new Error('Folder cannot be moved to its children');
+    return err(new Error('Folder cannot be moved to its children'));
   }
 
   // Update folder
@@ -321,9 +345,9 @@ export async function moveProcess(processId: string, newParentId: string, abilit
     where: { id: processId },
   });
 
-  if (!process) throw new Error('Folder not found');
+  if (!process) return err(new Error('Folder not found'));
 
-  if (process.folderId === newParentId) return;
+  if (process.folderId === newParentId) return ok();
 
   const [oldParentFolder, newParentFolder] = await Promise.all([
     db.folder.findUnique({
@@ -335,10 +359,10 @@ export async function moveProcess(processId: string, newParentId: string, abilit
     }),
   ]);
 
-  if (!newParentFolder) throw new Error('New parent folder not found');
+  if (!newParentFolder) return err(new Error('New parent folder not found'));
 
   if (newParentFolder.environmentId !== process.environmentId)
-    throw new Error('Cannot move folder to a different environment');
+    return err(new Error('Cannot move folder to a different environment'));
 
   // Check permissions
   if (
@@ -349,7 +373,7 @@ export async function moveProcess(processId: string, newParentId: string, abilit
       ability.can('update', toCaslResource('Folder', oldParentFolder!))
     )
   ) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
   // Update process

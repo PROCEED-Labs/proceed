@@ -4,7 +4,7 @@ import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import { deleteUser, getUsers } from '@/lib/data/db/iam/users';
 import { notFound, redirect } from 'next/navigation';
 import UserTable from './user-table';
-import { UserErrorType, userError } from '@/lib/user-error';
+import { UserErrorType, userError } from '@/lib/server-error-handling/user-error';
 import Content from '@/components/content';
 import { UserHasToDeleteOrganizationsError } from '@/lib/data/db/iam/users';
 import { env } from '@/lib/ms-config/env-vars';

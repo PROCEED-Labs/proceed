@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getMSConfig, updateMSConfig, writeDefaultMSConfig } from '@/lib/ms-config/ms-config';
 import MSConfigForm from './ms-config-form';
-import { userError } from '@/lib/user-error';
+import { userError } from '@/lib/server-error-handling/user-error';
 import { SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';
 
 async function saveConfig(newConfig: Record<string, string>) {

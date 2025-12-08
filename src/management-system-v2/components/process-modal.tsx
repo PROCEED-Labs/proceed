@@ -18,7 +18,7 @@ import {
   Skeleton,
 } from 'antd';
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
-import { UserError } from '@/lib/user-error';
+import { UserError } from '@/lib/server-error-handling/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { checkIfProcessExistsByName } from '@/lib/data/processes';
 import { useEnvironment } from './auth-can';

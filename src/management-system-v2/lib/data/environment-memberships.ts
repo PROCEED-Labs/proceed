@@ -1,7 +1,7 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../server-error-handling/user-error';
 import { z } from 'zod';
 import { sendEmail } from '../email/mailer';
 import renderOrganizationInviteEmail from '../organization-invite-email';

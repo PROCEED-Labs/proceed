@@ -1,7 +1,7 @@
 'use server';
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../server-error-handling/user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
 import { OrganizationEnvironment } from './environment-schema';

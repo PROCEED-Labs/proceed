@@ -7,7 +7,7 @@ import { getProcesses, updateProcess } from '@/lib/data/db/process';
 import { getUserById, deleteUser } from '@/lib/data/db/iam/users';
 import { Process } from '@/lib/data/process-schema';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
-import { UserErrorType, userError } from '@/lib/user-error';
+import { UserErrorType, userError } from '@/lib/server-error-handling/user-error';
 import { redirect } from 'next/navigation';
 
 export async function transferProcesses(referenceToken: string, callbackUrl: string = '/') {

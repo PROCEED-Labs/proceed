@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { userError } from '../user-error';
+import { userError } from '../server-error-handling/user-error';
 import { createChangeEmailVerificationToken, getTokenHash, notExpired } from './utils';
 import { getCurrentUser } from '@/components/auth';
 import {

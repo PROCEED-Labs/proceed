@@ -3,8 +3,8 @@
 import Content from '@/components/content';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { SpaceNotFoundError } from '@/lib/errors';
-import { UIError } from '@/lib/ui-error';
+import { SpaceNotFoundError } from '@/lib/server-error-handling/errors';
+// import { UIError } from '@/lib/ui-error';
 import { Button, Result } from 'antd';
 
 export default function Error({
@@ -17,8 +17,8 @@ export default function Error({
   let title = 'Something went wrong!';
   if (error.message.startsWith(UnauthorizedError.prefix)) {
     return <UnauthorizedFallback />;
-  } else if (error.message.startsWith(UIError.prefix)) {
-    title = error.message.substring(UIError.prefix.length + 2);
+    // } else if (error.message.startsWith(UIError.prefix)) {
+    //   title = error.message.substring(UIError.prefix.length + 2);
   }
 
   const retryButton = (
@@ -36,9 +36,9 @@ export default function Error({
     />
   );
 
-  if (error.message.startsWith(SpaceNotFoundError.prefix)) {
-    <Result status="404" title="Space not found" subTitle={`Digest: ${error.digest}`} />;
-  }
+  // if (error.message.startsWith(SpaceNotFoundError.prefix)) {
+  //   <Result status="404" title="Space not found" subTitle={`Digest: ${error.digest}`} />;
+  // }
 
   return <Content>{feedback}</Content>;
 }

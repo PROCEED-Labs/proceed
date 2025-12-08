@@ -1,7 +1,7 @@
 'use server';
 
 import { HtmlForm } from '../html-form-schema';
-import { UserFacingError, getErrorMessage, userError } from '../user-error';
+import { UserFacingError, getErrorMessage, userError } from '../server-error-handling/user-error';
 import {
   getHtmlForms as _getHtmlForms,
   getHtmlForm as _getHtmlForm,

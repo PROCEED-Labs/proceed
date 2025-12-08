@@ -2,7 +2,7 @@
 import * as util from 'util';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { FolderUserInput, FolderUserInputSchema } from './folder-schema';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, userError } from '../server-error-handling/user-error';
 import { TreeMap, toCaslResource } from '../ability/caslAbility';
 
 import Ability, { UnauthorizedError } from '../ability/abilityHelper';

@@ -6,7 +6,7 @@ import {
   addRoleMappings as _addRoleMappings,
   RoleMappingInput,
 } from '@/lib/data/db/iam/role-mappings';
-import { getErrorMessage, userError } from '../user-error';
+import { getErrorMessage, userError } from '../server-error-handling/user-error';
 
 export async function addRoleMappings(
   environmentId: string,

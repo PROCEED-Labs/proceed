@@ -17,7 +17,7 @@ import {
   updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../server-error-handling/user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,

@@ -3,7 +3,7 @@ import CreateOrganizationPage from './client-page';
 import { getProviders } from '@/lib/auth';
 import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema';
 import { addEnvironment } from '@/lib/data/db/iam/environments';
-import { getErrorMessage, userError } from '@/lib/user-error';
+import { getErrorMessage, userError } from '@/lib/server-error-handling/user-error';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { notFound } from 'next/navigation';
 import { env } from '@/lib/ms-config/env-vars';

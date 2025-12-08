@@ -7,7 +7,7 @@ import { GanttChartCanvas } from '@/components/gantt-chart-canvas';
 import type { GanttElementType, GanttDependency } from '@/components/gantt-chart-canvas/types';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { getSpaceSettingsValues } from '@/lib/data/space-settings';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import { useEnvironment } from '@/components/auth-can';
 import { moddle } from '@proceed/bpmn-helper';
 import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-modeler-state-store';

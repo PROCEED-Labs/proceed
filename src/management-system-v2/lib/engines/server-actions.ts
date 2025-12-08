@@ -1,6 +1,6 @@
 'use server';
 
-import { UserFacingError, getErrorMessage, userError } from '../user-error';
+import { UserFacingError, getErrorMessage, userError } from '../server-error-handling/user-error';
 import {
   DeployedProcessInfo,
   deployProcess as _deployProcess,

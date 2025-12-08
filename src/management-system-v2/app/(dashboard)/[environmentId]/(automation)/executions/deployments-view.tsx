@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import { deployProcess as serverDeployProcess } from '@/lib/engines/server-actions';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { SpaceEngine } from '@/lib/engines/machines';
-import { userError } from '@/lib/user-error';
+import { userError } from '@/lib/server-error-handling/user-error';
 import { removeDeployment as serverRemoveDeployment } from '@/lib/engines/server-actions';
 import { useQueryClient } from '@tanstack/react-query';
 

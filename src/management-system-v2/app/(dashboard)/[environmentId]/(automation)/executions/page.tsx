@@ -5,7 +5,7 @@ import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/f
 import { getUsersFavourites } from '@/lib/data/users';
 import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engines-helpers';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import { Skeleton } from 'antd';
 import { Suspense } from 'react';
 import { getDbEngines } from '@/lib/data/db/engines';

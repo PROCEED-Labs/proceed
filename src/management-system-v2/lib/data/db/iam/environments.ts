@@ -1,3 +1,4 @@
+import { ok, err } from 'neverthrow';
 import { v4 } from 'uuid';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { addRole, getRoleByName } from './roles';
@@ -13,16 +14,16 @@ import {
 } from '../../environment-schema';
 import { createFolder } from '../folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 import { env } from '@/lib/ms-config/env-vars';
+import { ensureTransactionWrapper } from '../util';
 
 export async function getEnvironments() {
   //TODO : Ability check
 
   const environments = await db.space.findMany({});
-  return environments;
+  return ok(environments);
 }
 export async function getEnvironmentById(
   id: string,
@@ -42,20 +43,30 @@ export async function getEnvironmentById(
   if (!env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE && !environment?.isOrganization)
     environment = null;
 
-  if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
+  if (!environment && opts && opts.throwOnNotFound) return err(new Error('Environment not found'));
 
-  return environment as Environment;
+  return ok(environment as Environment);
 }
 
 /** Sets an environment to active, and adds the given user as an admin */
 export async function activateEnvrionment(environmentId: string, userId: string) {
-  const environment = await getEnvironmentById(environmentId);
-  if (!environment) throw new Error("Environment doesn't exist");
-  if (!environment.isOrganization) throw new Error('Environment is a personal environment');
-  if (environment.isActive) throw new Error('Environment is already active');
+  const environmentResult = await getEnvironmentById(environmentId);
+  if (environmentResult.isErr()) {
+    return environmentResult;
+  }
+  const environment = environmentResult.value;
+
+  if (!environment) return err(new Error("Environment doesn't exist"));
+  if (!environment.isOrganization) return err(new Error('Environment is a personal environment'));
+  if (environment.isActive) return err(new Error('Environment is already active'));
 
   const adminRole = await getRoleByName(environmentId, '@admin');
-  if (!adminRole) throw new Error(`Consistency error: admin role of ${environmentId} not found`);
+  if (adminRole.isErr()) {
+    return adminRole;
+  }
+  if (!adminRole.value) {
+    return err(new Error(`Consistency error: admin role of ${environmentId} not found`));
+  }
 
   await db.$transaction(async (tx) => {
     await tx.space.update({
@@ -69,7 +80,7 @@ export async function activateEnvrionment(environmentId: string, userId: string)
       [
         {
           environmentId,
-          roleId: adminRole.id,
+          roleId: adminRole.value.id,
           userId,
         },
       ],
@@ -79,27 +90,32 @@ export async function activateEnvrionment(environmentId: string, userId: string)
   });
 }
 
-export async function addEnvironment(
+export const addEnvironment = ensureTransactionWrapper(_addEnvironment, 2);
+async function _addEnvironment(
   environmentInput: EnvironmentInput,
   ability?: Ability,
-  tx?: Prisma.TransactionClient,
-): Promise<Environment> {
-  // If `tx` is provided, use it; otherwise, start a new transaction
-  if (!tx) {
-    return db.$transaction(async (trx) => {
-      return await addEnvironment(environmentInput, ability, trx);
-    });
+  _tx?: Prisma.TransactionClient,
+) {
+  const tx = _tx!;
+
+  const parseResult = environmentSchema.safeParse(environmentInput);
+  if (!parseResult.success) {
+    return err(parseResult.error);
   }
+  const newEnvironment = parseResult.data;
 
-  const dbMutator = tx;
-
-  const newEnvironment = environmentSchema.parse(environmentInput);
   const id = newEnvironment.isOrganization ? newEnvironment.id ?? v4() : newEnvironment.ownerId;
 
-  if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
+  const existingEnvironment = await getEnvironmentById(id);
+  if (existingEnvironment.isErr()) {
+    return existingEnvironment;
+  }
+  if (existingEnvironment.value) {
+    return err(new Error('Environment id already exists'));
+  }
 
   const newEnvironmentWithId = { ...newEnvironment, id };
-  await dbMutator.space.create({ data: { ...newEnvironmentWithId } });
+  await tx.space.create({ data: { ...newEnvironmentWithId } });
 
   if (newEnvironment.isOrganization) {
     const adminRole = await addRole(
@@ -112,7 +128,9 @@ export async function addEnvironment(
       undefined,
       tx,
     );
-    await addRole(
+    if (adminRole.isErr()) return adminRole;
+
+    const guestRole = await addRole(
       {
         environmentId: id,
         name: '@guest',
@@ -122,7 +140,9 @@ export async function addEnvironment(
       undefined,
       tx,
     );
-    await addRole(
+    if (guestRole.isErr()) return guestRole;
+
+    const everyoneRole = await addRole(
       {
         environmentId: id,
         name: '@everyone',
@@ -132,26 +152,29 @@ export async function addEnvironment(
       undefined,
       tx,
     );
+    if (everyoneRole.isErr()) return everyoneRole;
 
     if (newEnvironment.isActive) {
-      await addMember(id, newEnvironment.ownerId, undefined, tx);
+      const ownerAdded = await addMember(id, newEnvironment.ownerId, undefined, tx);
+      if (ownerAdded?.isErr()) return ownerAdded;
 
-      await addRoleMappings(
+      const adminRoleMapping = await addRoleMappings(
         [
           {
             environmentId: id,
-            roleId: adminRole.id,
+            roleId: adminRole.value.id,
             userId: newEnvironment.ownerId,
           },
         ],
         undefined,
         tx,
       );
+      if (adminRoleMapping?.isErr()) return adminRoleMapping;
     }
   }
 
   // add root folder
-  await createFolder(
+  const rootFolder = await createFolder(
     {
       environmentId: id,
       name: '',
@@ -161,21 +184,24 @@ export async function addEnvironment(
     undefined,
     tx,
   );
+  if (rootFolder.isErr()) return rootFolder;
 
-  return newEnvironmentWithId;
+  return ok(newEnvironmentWithId);
 }
 
 export async function deleteEnvironment(environmentId: string, ability?: Ability) {
   const environment = await getEnvironmentById(environmentId);
-  if (!environment) throw new Error('Environment not found');
+  if (environment.isErr() || !environment.value) return err(new Error('Environment not found'));
 
-  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE && environment.isOrganization) {
-    throw new Error(
-      'Organizations cannot be deleted when PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is true',
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE && environment.value.isOrganization) {
+    return err(
+      new Error(
+        'Organizations cannot be deleted when PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is true',
+      ),
     );
   }
 
-  if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
+  if (ability && !ability.can('delete', 'Environment')) return err(new UnauthorizedError());
   await db.space.delete({
     where: { id: environmentId },
   });
@@ -189,25 +215,36 @@ export async function updateOrganization(
   ability?: Ability,
 ) {
   const environment = await getEnvironmentById(environmentId, ability, { throwOnNotFound: true });
-
-  if (!environment) {
-    throw new Error('Environment not found');
+  if (environment.isErr()) {
+    return environment;
+  }
+  if (!environment.value) {
+    return err(new Error('Environment not found'));
   }
 
   if (
     ability &&
     !ability.can('update', toCaslResource('Environment', environment), { environmentId })
   )
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
-  if (!environment.isOrganization) throw new Error('Environment is not an organization');
+  if (!environment.value.isOrganization)
+    return err(new Error('Environment is not an organization'));
 
-  const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
-  const newEnvironmentData: Environment = { ...environment, ...update } as Environment;
+  const updateParseResult =
+    UserOrganizationEnvironmentInputSchema.partial().safeParse(environmentInput);
+  if (!updateParseResult.success) {
+    return err(updateParseResult.error);
+  }
 
-  await db.space.update({ where: { id: environment.id }, data: { ...newEnvironmentData } });
+  const newEnvironmentData: Environment = {
+    ...environment.value,
+    ...updateParseResult.data,
+  } as Environment;
 
-  return newEnvironmentData;
+  await db.space.update({ where: { id: environment.value.id }, data: { ...newEnvironmentData } });
+
+  return ok(newEnvironmentData);
 }
 
 // TODO below: implement db logic
@@ -216,27 +253,32 @@ export async function saveSpaceLogo(organizationId: string, image: Buffer, abili
   const organization = await getEnvironmentById(organizationId, undefined, {
     throwOnNotFound: true,
   });
-  if (!organization?.isOrganization)
-    throw new Error("You can't save a logo for a personal environment");
+  if (organization.isErr()) {
+    return organization;
+  }
+  if (!organization.value?.isOrganization)
+    return err(new Error("You can't save a logo for a personal environment"));
 
   if (ability && ability.can('update', 'Environment', { environmentId: organizationId }))
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
   try {
     //saveLogo(organizationId, image);
-  } catch (err) {
-    throw new Error('Failed to store image');
+  } catch (error) {
+    return err(new Error('Failed to store image'));
   }
 }
 
 export async function getSpaceLogo(organizationId: string) {
   try {
-    return await db.space.findUnique({
-      where: { id: organizationId },
-      select: { spaceLogo: true },
-    });
-  } catch (err) {
-    return undefined;
+    return ok(
+      await db.space.findUnique({
+        where: { id: organizationId },
+        select: { spaceLogo: true },
+      }),
+    );
+  } catch (error) {
+    return err(error);
   }
 }
 
@@ -246,9 +288,10 @@ export async function spaceHasLogo(organizationId: string) {
     select: { spaceLogo: true },
   });
   if (res?.spaceLogo) {
-    return true;
+    return ok(true);
   }
-  return false;
+
+  return ok(false);
 }
 
 export async function deleteSpaceLogo(organizationId: string) {

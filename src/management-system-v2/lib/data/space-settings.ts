@@ -2,7 +2,7 @@
 
 import { SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';
 import { getCurrentEnvironment } from '@/components/auth';
-import { UserErrorType, getErrorMessage, userError } from '@/lib/user-error';
+import { UserErrorType, getErrorMessage, userError } from '@/lib/server-error-handling/user-error';
 import { Record } from '@prisma/client/runtime/library';
 import {
   getSpaceSettingsValues as _getSpaceSettingsValues,

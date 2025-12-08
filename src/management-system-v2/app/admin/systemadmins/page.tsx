@@ -9,7 +9,7 @@ import {
 } from '@/lib/data/db/iam/system-admins';
 import { getUserById, getUsers } from '@/lib/data/db/iam/users';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
-import { UserErrorType, userError } from '@/lib/user-error';
+import { UserErrorType, userError } from '@/lib/server-error-handling/user-error';
 import { notFound, redirect } from 'next/navigation';
 import SystemAdminsTable from './admins-table';
 import { SystemAdminCreationInput } from '@/lib/data/system-admin-schema';

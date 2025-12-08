@@ -8,7 +8,7 @@ import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import Ability from '../ability/abilityHelper';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, userError } from '../server-error-handling/user-error';
 import { env } from '../ms-config/env-vars';
 
 export interface TokenPayload {

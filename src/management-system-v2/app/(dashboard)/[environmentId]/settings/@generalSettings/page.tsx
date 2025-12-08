@@ -4,8 +4,7 @@ import SettingsInjector from '../settings-injector';
 import { SettingGroup } from '../type-util';
 import Wrapper from './wrapper';
 import db from '@/lib/data/db';
-import { SpaceNotFoundError } from '@/lib/errors';
-import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { SpaceNotFoundError } from '@/lib/server-error-handling/errors';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
   const {

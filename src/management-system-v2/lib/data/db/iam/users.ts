@@ -1,3 +1,4 @@
+import { ok, err } from 'neverthrow';
 import { v4 } from 'uuid';
 import {
   User,
@@ -13,9 +14,10 @@ import { getUserOrganizationEnvironments } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import db from '@/lib/data/db';
 import { Prisma, PasswordAccount } from '@prisma/client';
-import { UserFacingError } from '@/lib/user-error';
+import { UserFacingError } from '@/lib/server-error-handling/user-error';
 import { env } from '@/lib/ms-config/env-vars';
 import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from '@/lib/authjs-error-message';
+import { ensureTransactionWrapper } from '../util';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -28,7 +30,7 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
   const totalUsers = await db.user.count();
   const totalPages = Math.ceil(totalUsers / pageSize);
 
-  return {
+  return ok({
     users,
     pagination: {
       currentPage: page,
@@ -36,7 +38,7 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
       totalUsers,
       totalPages,
     },
-  };
+  });
 }
 
 export async function getUserById(
@@ -48,36 +50,39 @@ export async function getUserById(
 
   const user = await dbMutator.user.findUnique({ where: { id: id } });
 
-  if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
+  if (!user && opts && opts.throwIfNotFound) return err(new Error('User not found'));
 
-  return user as User;
+  return ok(user as User);
 }
 
-export async function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
+export async function getUserByEmail(email: string) {
   const user = await db.user.findUnique({ where: { email: email } });
 
-  if (!user && opts?.throwIfNotFound) throw new Error('User not found');
+  if (!user) return err(new Error('User not found'));
 
-  return user as User;
+  return ok(user as User);
 }
 
 export async function getUserByUsername(username: string, opts?: { throwIfNotFound?: boolean }) {
   const user = await db.user.findUnique({ where: { username } });
 
-  if (!user && opts?.throwIfNotFound) throw new Error('User not found');
+  if (!user && opts?.throwIfNotFound) return err(new Error('User not found'));
 
-  return user as User;
+  return ok(user as User);
 }
 
-export async function addUser(
+export const addUser = ensureTransactionWrapper(_addUser, 1);
+export async function _addUser(
   inputUser: OptionalKeys<User, 'id'>,
-  tx?: Prisma.TransactionClient,
-): Promise<User> {
-  if (!tx) {
-    return await db.$transaction(async (trx: Prisma.TransactionClient) => addUser(inputUser, trx));
-  }
+  _tx?: Prisma.TransactionClient,
+) {
+  const tx = _tx!;
 
-  const user = UserSchema.parse(inputUser);
+  const parseResult = UserSchema.safeParse(inputUser);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
+  const user = parseResult.data;
 
   if (!user.isGuest) {
     const checks = [];
@@ -87,10 +92,10 @@ export async function addUser(
     const [usernameRes, emailRes] = await Promise.all(checks);
 
     if (usernameRes) {
-      throw new NextAuthUsernameTakenError();
+      return err(new NextAuthUsernameTakenError());
     }
     if (emailRes) {
-      throw new NextAuthEmailTakenError();
+      return err(new NextAuthEmailTakenError());
     }
   }
 
@@ -98,7 +103,7 @@ export async function addUser(
 
   try {
     const userExists = await tx.user.findUnique({ where: { id: user.id } });
-    if (userExists) throw new Error('User already exists');
+    if (userExists) return err(new Error('User already exists'));
 
     await tx.user.create({
       data: {
@@ -107,8 +112,16 @@ export async function addUser(
       },
     });
 
-    if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
-      await addEnvironment({ ownerId: user.id!, isOrganization: false }, undefined, tx);
+    if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+      const personalSpace = await addEnvironment(
+        { ownerId: user.id!, isOrganization: false },
+        undefined,
+        tx,
+      );
+      if (personalSpace.isErr()) {
+        return personalSpace;
+      }
+    }
 
     if (user.isGuest) {
       await tx.guestSignin.create({
@@ -121,7 +134,7 @@ export async function addUser(
     console.error('Error adding new user: ', error);
   }
 
-  return user as User;
+  return ok(user as User);
 }
 
 export class UserHasToDeleteOrganizationsError extends Error {
@@ -134,35 +147,38 @@ export class UserHasToDeleteOrganizationsError extends Error {
   }
 }
 
-export async function deleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<User> {
-  // if no tx, start own transaction
-  if (!tx) {
-    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
-      return await deleteUser(userId, trx);
-    });
-  }
-
-  const dbMutator = tx;
+export const deleteUser = ensureTransactionWrapper(_deleteUser, 1);
+export async function _deleteUser(userId: string, tx?: Prisma.TransactionClient) {
+  const dbMutator = tx!;
   const user = await db.user.findUnique({ where: { id: userId } });
-  if (!user) throw new Error("User doesn't exist");
+  if (!user) return err(new Error("User doesn't exist"));
 
   if (user.username === 'admin') {
-    throw new UserFacingError('The user "admin" cannot be deleted');
+    return err(new UserFacingError('The user "admin" cannot be deleted'));
   }
 
   const userOrganizations = await getUserOrganizationEnvironments(userId);
-  const orgsWithNoNextAdmin: string[] = [];
-  for (const environmentId of userOrganizations) {
-    const userRoles = await getRoleMappingByUserId(userId, environmentId);
+  if (userOrganizations.isErr()) {
+    return userOrganizations;
+  }
 
-    if (!userRoles.find((role) => role.roleName === '@admin')) continue;
+  const orgsWithNoNextAdmin: string[] = [];
+  for (const environmentId of userOrganizations.value) {
+    const userRoles = await getRoleMappingByUserId(userId, environmentId);
+    if (userRoles.isErr()) {
+      return userRoles;
+    }
+
+    if (!userRoles.value.find((role) => role.roleName === '@admin')) continue;
 
     const adminRole = await db.role.findFirst({
       where: { name: '@admin', environmentId: environmentId },
       include: { members: true },
     });
     if (!adminRole)
-      throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
+      return err(
+        new Error(`Consistency error: admin role of environment ${environmentId} not found`),
+      );
 
     if (adminRole.members.length === 1) {
       orgsWithNoNextAdmin.push(environmentId);
@@ -177,7 +193,7 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
   }
 
   if (orgsWithNoNextAdmin.length > 0)
-    throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
+    return err(new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin));
 
   if (user.isGuest) {
     await dbMutator.guestSignin.delete({ where: { userId: userId } });
@@ -185,7 +201,7 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
 
   await dbMutator.user.delete({ where: { id: userId } });
 
-  return user as User;
+  return ok(user as User);
 }
 
 export async function updateUser(
@@ -194,37 +210,47 @@ export async function updateUser(
   tx?: Prisma.TransactionClient,
 ) {
   const dbMutator = tx || db;
+
   const user = await getUserById(userId, { throwIfNotFound: true });
-  const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user?.isGuest;
+  if (user.isErr()) {
+    return user;
+  }
+
+  const isGoingToBeGuest =
+    inputUser.isGuest !== undefined ? inputUser.isGuest : user.value?.isGuest;
   let updatedUser: Prisma.UserUpdateInput;
   if (isGoingToBeGuest) {
     if (inputUser.username || inputUser.lastName || inputUser.firstName || inputUser.email) {
-      throw new Error('Guest users cannot update their user data');
+      return err(new Error('Guest users cannot update their user data'));
     }
     updatedUser = { isGuest: true };
   } else {
-    const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
+    const parseResult = AuthenticatedUserSchema.partial().safeParse(inputUser);
+    if (!parseResult.success) {
+      return err(parseResult.error);
+    }
+    const newUserData = parseResult.data;
 
     if (newUserData.username && newUserData.username === 'admin') {
-      throw new UserFacingError('The username is already taken');
+      return err(new UserFacingError('The username is already taken'));
     }
 
-    if (!user.isGuest && user.username === 'admin' && 'username' in newUserData) {
-      throw new UserFacingError('The username "admin" cannot be changed');
+    if (!user.value.isGuest && user.value.username === 'admin' && 'username' in newUserData) {
+      return err(new UserFacingError('The username "admin" cannot be changed'));
     }
 
     if (newUserData.email) {
       const existingUser = await db.user.findUnique({ where: { email: newUserData.email } });
 
       if (existingUser && existingUser.id !== userId)
-        throw new UserFacingError('User with this email or username already exists');
+        return err(new UserFacingError('User with this email or username already exists'));
     }
 
     if (newUserData.username) {
       const existingUser = await db.user.findUnique({ where: { username: newUserData.username } });
 
       if (existingUser && existingUser.id !== userId)
-        throw new UserFacingError('The username is already taken');
+        return err(new UserFacingError('The username is already taken'));
     }
 
     updatedUser = { ...user, ...newUserData };
@@ -235,15 +261,16 @@ export async function updateUser(
     data: updatedUser,
   });
 
-  return updatedUserFromDB;
+  return ok(updatedUserFromDB);
 }
 
 export async function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
   const newAccount = OauthAccountSchema.parse(accountInput);
 
   const user = await getUserById(newAccount.userId);
-  if (!user) throw new Error('User not found');
-  if (user.isGuest) throw new Error('Guest users cannot have oauth accounts');
+  if (user.isErr()) return user;
+  if (!user.value) return err(new Error('User not found'));
+  if (user.value.isGuest) return err(new Error('Guest users cannot have oauth accounts'));
 
   const id = v4();
 
@@ -251,7 +278,7 @@ export async function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
 
   await db.oauthAccount.create({ data: account });
 
-  return account;
+  return ok(account);
 }
 
 export async function deleteOauthAccount(id: string) {
@@ -262,12 +289,14 @@ export async function deleteOauthAccount(id: string) {
   });
 }
 export async function getOauthAccountByProviderId(provider: string, providerAccountId: string) {
-  return await db.oauthAccount.findUnique({
-    where: {
-      provider: provider,
-      providerAccountId: providerAccountId,
-    },
-  });
+  return ok(
+    await db.oauthAccount.findUnique({
+      where: {
+        provider: provider,
+        providerAccountId: providerAccountId,
+      },
+    }),
+  );
 }
 
 export async function updateGuestUserLastSigninTime(
@@ -276,25 +305,28 @@ export async function updateGuestUserLastSigninTime(
   tx?: Prisma.TransactionClient,
 ) {
   const dbMutator = tx || db;
-  const user = await getUserById(userId, { throwIfNotFound: true });
-  if (!user.isGuest) throw new Error('User is not a guest user');
-
-  return await dbMutator.guestSignin.update({
-    where: { userId: userId },
-    data: { lastSigninAt: date },
+  const user = await dbMutator.user.findUnique({
+    where: { id: userId },
+    select: { isGuest: true },
   });
+
+  if (!user) return err(new Error('User does not exist'));
+  if (!user.isGuest) return err(new Error('User is not a guest user'));
+
+  return ok(
+    await dbMutator.guestSignin.update({
+      where: { userId: userId },
+      data: { lastSigninAt: date },
+    }),
+  );
 }
 
-export async function deleteInactiveGuestUsers(
+export const deleteInactiveGuestUsers = ensureTransactionWrapper(_deleteInactiveGuestUsers, 1);
+export async function _deleteInactiveGuestUsers(
   inactiveTimeInMS: number,
-  tx?: Prisma.TransactionClient,
-): Promise<{ count: number }> {
-  // if no tx, start own transaction
-  if (!tx) {
-    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
-      return await deleteInactiveGuestUsers(inactiveTimeInMS, trx);
-    });
-  }
+  _tx?: Prisma.TransactionClient,
+) {
+  const tx = _tx!;
 
   const cutoff = new Date(Date.now() - inactiveTimeInMS);
   const staleSignins = await tx.guestSignin.findMany({
@@ -303,7 +335,7 @@ export async function deleteInactiveGuestUsers(
     },
     select: { userId: true },
   });
-  if (staleSignins.length === 0) return { count: 0 };
+  if (staleSignins.length === 0) return ok({ count: 0 });
 
   const userIds = staleSignins.map((s) => s.userId);
 
@@ -313,12 +345,14 @@ export async function deleteInactiveGuestUsers(
     },
   });
 
-  return await tx.user.deleteMany({
-    where: {
-      id: { in: userIds },
-      isGuest: true,
-    },
-  });
+  return ok(
+    await tx.user.deleteMany({
+      where: {
+        id: { in: userIds },
+        isGuest: true,
+      },
+    }),
+  );
 }
 
 /** Note: make sure to save a salted hash of the password */
@@ -334,7 +368,7 @@ export async function setUserPassword(
     where: { id: userId },
     include: { passwordAccount: true },
   });
-  if (!user) throw new Error('User not found');
+  if (!user) return err(new Error('User not found'));
 
   if (user.passwordAccount) {
     await dbMutator.passwordAccount.update({
@@ -346,14 +380,17 @@ export async function setUserPassword(
       data: { userId, password: passwordHash, isTemporaryPassword },
     });
   }
+  return ok();
 }
 
 export async function getUserPassword(userId: string, tx?: Prisma.TransactionClient) {
   const dbMutator = tx || db;
 
-  return await dbMutator.passwordAccount.findUnique({
-    where: { userId },
-  });
+  return ok(
+    await dbMutator.passwordAccount.findUnique({
+      where: { userId },
+    }),
+  );
 }
 
 /** returns null if the user exists but has no password */
@@ -368,7 +405,7 @@ export async function getUserAndPasswordByUsername(
     include: { passwordAccount: true },
   });
 
-  if (!userAndPassword) return null;
-  if (!userAndPassword.passwordAccount) return null;
-  return userAndPassword as typeof userAndPassword & { passwordAccount: PasswordAccount };
+  if (!userAndPassword) return ok(null);
+  if (!userAndPassword.passwordAccount) return ok(null);
+  return ok(userAndPassword as typeof userAndPassword & { passwordAccount: PasswordAccount });
 }

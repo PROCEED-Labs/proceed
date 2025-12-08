@@ -3,6 +3,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
 import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-schema';
 import { SystemAdmin } from '@prisma/client';
+import { ok, err } from 'neverthrow';
 
 export async function getDbEngines(
   environmentId: string | null,
@@ -11,13 +12,13 @@ export async function getDbEngines(
 ) {
   // engines without an environmentId are PROCEED engines
   if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
   const engines = await db.engine.findMany({
     where: { environmentId: environmentId },
   });
 
-  return ability ? ability.filter('view', 'Machine', engines) : engines;
+  return ok(ability ? ability.filter('view', 'Machine', engines) : engines);
 }
 
 export async function getDbEngineById(
@@ -28,7 +29,7 @@ export async function getDbEngineById(
 ) {
   // engines without an environmentId are PROCEED engines
   if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
   const engine = await db.engine.findUnique({
     where: {
@@ -37,16 +38,16 @@ export async function getDbEngineById(
     },
   });
 
-  if (!engine) return undefined;
+  if (!engine) return ok(undefined);
 
   if (
     ability &&
     !ability.can('view', toCaslResource('Machine', engine), { environmentId: environmentId! })
   ) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
-  return engine;
+  return ok(engine);
 }
 
 export async function getDbEngineByAddress(
@@ -57,7 +58,7 @@ export async function getDbEngineByAddress(
 ) {
   // engines without an environmentId are PROCEED engines
   if (spaceId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
   const engine = await db.engine.findFirst({
     where: {
@@ -67,17 +68,17 @@ export async function getDbEngineByAddress(
   });
 
   if (!engine) {
-    if (ability && !ability.can('view', 'Machine')) throw new UnauthorizedError();
-    return undefined;
+    if (ability && !ability.can('view', 'Machine')) return err(new UnauthorizedError());
+    return ok(undefined);
   }
 
   if (
     ability &&
     !ability.can('view', toCaslResource('Machine', engine), { environmentId: spaceId! })
   )
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
-  return engine;
+  return ok(engine);
 }
 
 const SpaceEngineArraySchema = SpaceEngineInputSchema.array();
@@ -89,15 +90,17 @@ export async function addDbEngines(
 ) {
   // engines without an environmentId are PROCEED engines
   if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
   const newEngines = SpaceEngineArraySchema.parse(enginesInput);
 
-  if (ability && !ability.can('create', 'Machine')) throw new UnauthorizedError();
+  if (ability && !ability.can('create', 'Machine')) return err(new UnauthorizedError());
 
-  return db.engine.createMany({
-    data: newEngines.map((e) => ({ ...e, environmentId: environmentId ?? null })),
-  });
+  return ok(
+    db.engine.createMany({
+      data: newEngines.map((e) => ({ ...e, environmentId: environmentId ?? null })),
+    }),
+  );
 }
 
 const PartialSpaceEngineInputSchema = SpaceEngineInputSchema.partial();
@@ -110,26 +113,28 @@ export async function updateDbEngine(
 ) {
   // engines without an environmentId are PROCEED engines
   if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
   const newEngineData = PartialSpaceEngineInputSchema.parse(engineInput);
 
   if (ability) {
     const engine = await getDbEngineById(engineId, environmentId, ability, systemAdmin);
-    if (!engine) throw new Error('Engine not found');
+    if (!engine) return err(new Error('Engine not found'));
     if (
       !ability.can('update', toCaslResource('Machine', engine), { environmentId: environmentId! })
     )
-      throw new UnauthorizedError();
+      return err(new UnauthorizedError());
   }
 
-  return await db.engine.update({
-    data: newEngineData,
-    where: {
-      environmentId,
-      id: engineId,
-    },
-  });
+  return ok(
+    await db.engine.update({
+      data: newEngineData,
+      where: {
+        environmentId,
+        id: engineId,
+      },
+    }),
+  );
 }
 
 export async function deleteSpaceEngine(
@@ -140,21 +145,23 @@ export async function deleteSpaceEngine(
 ) {
   // engines without an environmentId are PROCEED engines
   if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
   if (ability) {
     const engine = await getDbEngineById(engineId, environmentId, ability, systemAdmin);
-    if (!engine) throw new Error('Engine not found');
+    if (!engine) return err(new Error('Engine not found'));
     if (
       !ability.can('delete', toCaslResource('Machine', engine), { environmentId: environmentId! })
     )
-      throw new UnauthorizedError();
+      return err(new UnauthorizedError());
   }
 
-  return await db.engine.delete({
-    where: {
-      environmentId: environmentId,
-      id: engineId,
-    },
-  });
+  return ok(
+    await db.engine.delete({
+      where: {
+        environmentId: environmentId,
+        id: engineId,
+      },
+    }),
+  );
 }

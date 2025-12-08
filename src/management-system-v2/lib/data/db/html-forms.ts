@@ -1,7 +1,8 @@
+import { ok, err } from 'neverthrow';
 import Ability from '@/lib/ability/abilityHelper';
 import db from '@/lib/data/db';
 import { HtmlForm, HtmlFormMetaDataSchema, HtmlFormSchema } from '@/lib/html-form-schema';
-import { UserFacingError } from '@/lib/user-error';
+import { UserFacingError } from '@/lib/server-error-handling/user-error';
 
 /**
  * Returns all html forms in an environment
@@ -27,8 +28,13 @@ export async function getHtmlForms(environmentId: string, ability?: Ability) {
 
   //TODO: use ability
   // return ability ? ability.filter('view', 'Html Form', spaceForms) : spaceForms;
+  const parseResult = HtmlFormMetaDataSchema.array().safeParse(spaceForms);
 
-  return HtmlFormMetaDataSchema.array().parse(spaceForms);
+  if (parseResult.success) {
+    return ok(parseResult.data);
+  } else {
+    return err(parseResult.error);
+  }
 }
 
 export async function getHtmlForm(formId: string) {
@@ -53,15 +59,26 @@ export async function getHtmlForm(formId: string) {
   });
 
   if (!form) {
-    throw new UserFacingError(`Html form with id ${formId} does not exist!`);
+    return err(new UserFacingError(`Html form with id ${formId} does not exist!`));
   }
 
-  return HtmlFormSchema.parse(form);
+  const parseResult = HtmlFormSchema.safeParse(form);
+
+  if (parseResult.success) {
+    return ok(parseResult.data);
+  } else {
+    return err(parseResult.error);
+  }
 }
 
 /** Handles adding a html form */
 export async function addHtmlForm(formInput: HtmlForm) {
-  const form = HtmlFormSchema.parse(formInput);
+  const parseResult = HtmlFormSchema.safeParse(formInput);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
+
+  const form = parseResult.data;
 
   // check if there is an id collision
   const existingForm = await db.htmlForm.findUnique({
@@ -70,7 +87,7 @@ export async function addHtmlForm(formInput: HtmlForm) {
     },
   });
   if (existingForm) {
-    throw new Error(`Html form with id ${formInput.id} already exists!`);
+    return err(new Error(`Html form with id ${formInput.id} already exists!`));
   }
 
   // save form info
@@ -81,7 +98,12 @@ export async function addHtmlForm(formInput: HtmlForm) {
 
 /** Updates an existing form */
 export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlForm>) {
-  const formInput = HtmlFormSchema.partial().parse(newInfoInput);
+  const parseResult = HtmlFormSchema.partial().safeParse(newInfoInput);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
+
+  const formInput = parseResult.data;
 
   const existingForm = await db.htmlForm.findUnique({
     where: {
@@ -90,7 +112,7 @@ export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlF
   });
 
   if (!existingForm) {
-    throw new UserFacingError(`Html form with id ${formId} does not exist!`);
+    return err(new UserFacingError(`Html form with id ${formId} does not exist!`));
   }
 
   await db.htmlForm.update({
@@ -116,8 +138,8 @@ export async function getHtmlFormHtml(formId: string) {
   });
 
   if (!form) {
-    throw new UserFacingError(`Html form with id ${formId} does not exist!`);
+    return err(new UserFacingError(`Html form with id ${formId} does not exist!`));
   }
 
-  return form.html;
+  return ok(form.html);
 }

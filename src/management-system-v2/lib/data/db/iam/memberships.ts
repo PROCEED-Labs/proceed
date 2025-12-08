@@ -1,11 +1,13 @@
+import { ok, err } from 'neverthrow';
 import { z } from 'zod';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { getEnvironmentById } from './environments';
 import { v4 } from 'uuid';
-import { ActiveOrganizationEnvironment, Environment } from '../../environment-schema.js';
+import { ActiveOrganizationEnvironment } from '../../environment-schema.js';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 import { UserHasToDeleteOrganizationsError } from './users';
+import { ensureTransactionWrapper } from '../util';
 
 const MembershipInputSchema = z.object({
   userId: z.string(),
@@ -19,36 +21,25 @@ export type Membership = MembershipInput & {
   createdOn: string;
 };
 
-function isOrganization(environment: Environment, opts: { throwIfNotFound?: boolean } = {}) {
-  if (!environment)
-    if (opts.throwIfNotFound) throw new Error('Environment not found');
-    else return false;
-
-  if (!environment.isOrganization)
-    if (opts.throwIfNotFound)
-      throw new Error("Environment isn't  an organization, it can't have members");
-    else return false;
-
-  return true;
-}
-
 export async function getUserOrganizationEnvironments(userId: string) {
-  return (
-    await db.space.findMany({
-      where: {
-        isOrganization: true,
-        //ownerId: userId,
-        members: {
-          some: {
-            userId: userId,
+  return ok(
+    (
+      await db.space.findMany({
+        where: {
+          isOrganization: true,
+          //ownerId: userId,
+          members: {
+            some: {
+              userId: userId,
+            },
           },
         },
-      },
-      select: {
-        id: true,
-      },
-    })
-  ).map((workspace) => workspace.id);
+        select: {
+          id: true,
+        },
+      })
+    ).map((workspace) => workspace.id),
+  );
 }
 
 export async function getMembers(environmentId: string, ability?: Ability) {
@@ -64,8 +55,8 @@ export async function getMembers(environmentId: string, ability?: Ability) {
       members: true,
     },
   });
-  if (!workspace) throw new Error('Environment not found');
-  return workspace.members;
+  if (!workspace) return err(new Error('Environment not found'));
+  return ok(workspace.members);
 }
 
 export async function getFullMembersWithRoles(environmentId: string, ability?: Ability) {
@@ -126,7 +117,7 @@ export async function getUsersInSpace(spaceId: string, ability?: Ability) {
     },
   });
 
-  return users;
+  return ok(users);
 }
 
 export async function isMember(
@@ -134,11 +125,14 @@ export async function isMember(
   userId: string,
   tx?: Prisma.TransactionClient,
 ) {
-  const dbMutator = tx || db;
+  const dbMutator = tx!;
 
   const environment = await getEnvironmentById(environmentId, undefined, undefined, tx);
-  if (!environment?.isOrganization) {
-    return userId === environmentId;
+  if (environment.isErr()) {
+    return environment;
+  }
+  if (!environment.value?.isOrganization) {
+    return ok(userId === environmentId);
   }
   const membership = await dbMutator.membership.findFirst({
     where: {
@@ -146,7 +140,7 @@ export async function isMember(
       userId: userId,
     },
   });
-  return membership ? true : false;
+  return ok(membership ? true : false);
 }
 
 export async function addMember(
@@ -172,8 +166,8 @@ export async function addMember(
     where: { id: userId },
   });
 
-  if (!user) throw new Error('User not found');
-  if (user.isGuest) throw new Error('Guest users cannot be added to environments');
+  if (!user) return err(new Error('User not found'));
+  if (user.isGuest) return err(new Error('Guest users cannot be added to environments'));
 
   await dbMutator.membership.create({
     data: {
@@ -185,18 +179,13 @@ export async function addMember(
   });
 }
 
-export async function removeMember(
+export const removeMember = ensureTransactionWrapper(_removeMember, 2);
+async function _removeMember(
   environmentId: string,
   userId: string,
   ability?: Ability,
   _tx?: Prisma.TransactionClient,
-): Promise<void> {
-  if (!_tx) {
-    return db.$transaction(async (tx) => {
-      await removeMember(environmentId, userId, ability, tx);
-    });
-  }
-
+) {
   const tx = _tx!;
 
   const environment = await tx.space.findUnique({
@@ -205,7 +194,7 @@ export async function removeMember(
   });
 
   if (!environment) {
-    throw new Error('Environment not found');
+    return err(new Error('Environment not found'));
   }
   const organization = environment as ActiveOrganizationEnvironment;
 
@@ -213,8 +202,11 @@ export async function removeMember(
   if (ability) ability;
 
   const memberExists = await isMember(environmentId, userId, tx);
-  if (!memberExists) {
-    throw new Error('User is not a member of this environment');
+  if (memberExists.isErr()) {
+    return memberExists;
+  }
+  if (!memberExists.value) {
+    return err(new Error('User is not a member of this environment'));
   }
 
   const adminRole = await tx.role.findFirst({
@@ -231,11 +223,13 @@ export async function removeMember(
     },
   });
   if (!adminRole)
-    throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
+    return err(
+      new Error(`Consistency error: admin role of environment ${environmentId} not found`),
+    );
 
   if (adminRole.members.find((role) => role.userId === userId)) {
     if (adminRole.members.length === 1) {
-      throw new UserHasToDeleteOrganizationsError([environmentId]);
+      return err(new UserHasToDeleteOrganizationsError([environmentId]));
     }
 
     if (organization.ownerId === userId) {
@@ -253,4 +247,6 @@ export async function removeMember(
       userId: userId,
     },
   });
+
+  return ok();
 }

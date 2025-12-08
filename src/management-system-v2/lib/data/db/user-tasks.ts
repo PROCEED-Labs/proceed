@@ -1,3 +1,4 @@
+import { err, ok } from 'neverthrow';
 import db from '@/lib/data/db';
 import { z } from 'zod';
 import { UserTask, UserTaskInput, UserTaskInputSchema } from '@/lib/user-task-schema';
@@ -5,10 +6,12 @@ import { UserTask, UserTaskInput, UserTaskInputSchema } from '@/lib/user-task-sc
 export async function getUserTasks() {
   const userTasks = await db.userTask.findMany();
 
-  return userTasks.map((userTask) => ({
-    ...userTask,
-    offline: userTask.machineId !== 'ms-local',
-  })) as unknown as UserTask[];
+  return ok(
+    userTasks.map((userTask) => ({
+      ...userTask,
+      offline: userTask.machineId !== 'ms-local',
+    })) as unknown as UserTask[],
+  );
 }
 
 export async function getUserTaskById(userTaskId: string) {
@@ -18,26 +21,32 @@ export async function getUserTaskById(userTaskId: string) {
     },
   });
 
-  if (!userTask) return undefined;
+  if (!userTask) return ok(undefined);
 
   // TODO: maybe handle view capability for specific user tasks
 
-  return { ...userTask, offline: true } as unknown as UserTask;
+  return ok({ ...userTask, offline: true } as unknown as UserTask);
 }
 
 const UserTaskArraySchema = UserTaskInputSchema.array();
 export async function addUserTasks(userTaskInput: UserTaskInput[]) {
-  const newUserTasks = UserTaskArraySchema.parse(userTaskInput);
+  const parseResult = UserTaskArraySchema.safeParse(userTaskInput);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
+  const newUserTasks = parseResult.data;
 
   // TODO: maybe check if the user can work on/add user tasks
 
-  return await db.userTask.createMany({
-    data: newUserTasks.map((task) => ({
-      ...task,
-      startTime: new Date(task.startTime),
-      endTime: typeof task.endTime !== 'number' ? undefined : new Date(task.endTime),
-    })),
-  });
+  return ok(
+    await db.userTask.createMany({
+      data: newUserTasks.map((task) => ({
+        ...task,
+        startTime: new Date(task.startTime),
+        endTime: typeof task.endTime !== 'number' ? undefined : new Date(task.endTime),
+      })),
+    }),
+  );
 }
 
 const PartialUserTaskInputSchema = UserTaskInputSchema.partial();
@@ -49,7 +58,11 @@ type PartialDatabaseUserTaskInput = Omit<
   endTime?: Date;
 };
 export async function updateUserTask(userTaskId: string, userTaskInput: Partial<UserTaskInput>) {
-  const newUserTaskData = PartialUserTaskInputSchema.parse(userTaskInput);
+  const parseResult = PartialUserTaskInputSchema.safeParse(userTaskInput);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
+  const newUserTaskData = parseResult.data;
 
   const updateData: PartialDatabaseUserTaskInput = {
     ...newUserTaskData,
@@ -68,19 +81,23 @@ export async function updateUserTask(userTaskId: string, userTaskInput: Partial<
 
   // TODO: maybe check if a user is allowed to edit a user task
 
-  return await db.userTask.update({
-    data: updateData,
-    where: {
-      id: userTaskId,
-    },
-  });
+  return ok(
+    await db.userTask.update({
+      data: updateData,
+      where: {
+        id: userTaskId,
+      },
+    }),
+  );
 }
 
 export async function deleteUserTask(userTaskId: string) {
   // TODO: check if a user is allowed to delete a user task
-  return await db.userTask.delete({
-    where: {
-      id: userTaskId,
-    },
-  });
+  return ok(
+    await db.userTask.delete({
+      where: {
+        id: userTaskId,
+      },
+    }),
+  );
 }

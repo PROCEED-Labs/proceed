@@ -7,7 +7,7 @@ import {
 import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import { redirect } from 'next/navigation';
 import SpacesTable from './spaces-table';
-import { UserErrorType, userError } from '@/lib/user-error';
+import { UserErrorType, userError } from '@/lib/server-error-handling/user-error';
 import Content from '@/components/content';
 import { getSpaceRepresentation, getUserName } from './space-representation';
 import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';

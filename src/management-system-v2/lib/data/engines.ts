@@ -10,7 +10,7 @@ import {
   deleteSpaceEngine as _deleteDbEngine,
 } from '@/lib/data/db/engines';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, userError } from '../server-error-handling/user-error';
 import { z } from 'zod';
 import { enableUseDB } from 'FeatureFlags';
 
@@ -100,7 +100,7 @@ export async function deleteSpaceEngine(engineId: string, environmentId: string 
   const systemAdmin = (await getCurrentUser()).systemAdmin;
 
   try {
-    return await _deleteDbEngine(engineId, environmentId ?? null, ability, systemAdmin);
+    const result = await _deleteDbEngine(engineId, environmentId ?? null, ability, systemAdmin);
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);

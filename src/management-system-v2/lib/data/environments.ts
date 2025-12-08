@@ -5,7 +5,7 @@ import {
   UserOrganizationEnvironmentInput,
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../server-error-handling/user-error';
 import { UnauthorizedError } from '../ability/abilityHelper';
 import {
   addEnvironment,
@@ -31,12 +31,20 @@ export async function addOrganizationEnvironment(
   try {
     const environmentData = UserOrganizationEnvironmentInputSchema.parse(environmentInput);
 
-    return await addEnvironment({
+    const result = await addEnvironment({
       ownerId: userId,
       isActive: true,
       isOrganization: true,
       ...environmentData,
     });
+
+    if (result.isOk()) {
+      result.value;
+    }
+    if (result.isErr()) {
+      // Handle error
+      result.error;
+    }
   } catch (e) {
     console.error(e);
     return userError('Error adding environment');

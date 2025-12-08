@@ -203,13 +203,7 @@ export default function ProcessDeploymentView({
 
                           setStartForm(startForm);
                         } else {
-                          const mappedVariables = Object.fromEntries(
-                            variables
-                              .filter((variable) => variable.value !== undefined)
-                              .map((variable) => [variable.name, { value: variable.value }]),
-                          );
-
-                          return startInstance(versionId, mappedVariables);
+                          return startInstance(versionId);
                         }
                       },
                       onSuccess: async (instanceId) => {
@@ -374,19 +368,12 @@ export default function ProcessDeploymentView({
 
             const mappedVariables: Record<string, { value: any }> = {};
 
-            // set the default values for variables in the format expected by the engine
-            variables.forEach((variable) => {
-              if (variable.value !== undefined) {
-                mappedVariables[variable.name] = { value: variable.value };
-              }
-            });
-
-            // set/override the values of variables with the ones coming from the start form
+            // set the values of variables to the ones coming from the start form
             Object.entries(submitVariables).forEach(
               ([key, value]) => (mappedVariables[key] = { value }),
             );
-            // start the instance with the initial variable values from the variable definitions and
-            // from the start form
+
+            // start the instance with the initial variable values from the start form
             wrapServerCall({
               fn: () => startInstance(versionId, mappedVariables),
 

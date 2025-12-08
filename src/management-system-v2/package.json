@@ -52,7 +52,7 @@
     "libphonenumber-js": "^1.11.1",
     "lru-cache": "^10.1.0",
     "monaco-editor": "0.47.0",
-    "next": "16.0.0",
+    "next": "^16.0.7",
     "next-auth": "5.0.0-beta.25",
     "node-cron": "^3.0.3",
     "nodemailer": "6.9.13",

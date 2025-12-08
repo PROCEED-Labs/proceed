@@ -4,16 +4,26 @@ import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, use, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
-import { Input, ColorPicker, Space, Grid, Divider, Modal, Tabs, message } from 'antd';
+import {
+  Input,
+  ColorPicker,
+  Space,
+  Grid,
+  Divider,
+  Modal,
+  Tabs,
+  message,
+  InputNumber,
+  Tooltip,
+} from 'antd';
 import type { TabsProps } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
-import { CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import {
   getMetaDataFromElement,
   setProceedElement,
   deepCopyElementById,
-  setDefinitionsName,
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -32,7 +42,8 @@ import {
 } from '@/components/competence/potential-owner/potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
-import { Element, Shape } from 'bpmn-js/lib/model/Types';
+import { Shape } from 'bpmn-js/lib/model/Types';
+import { isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
@@ -106,6 +117,9 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const borderColor = getBorderColor(selectedElement as Shape);
 
   const [name, setName] = useState('');
+  const [elementWidth, setElementWidth] = useState(0);
+  const [elementHeight, setElementHeight] = useState(0);
+
   const [userDefinedId, setUserDefinedId] = useState(metaData.userDefinedId);
 
   const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
@@ -146,6 +160,14 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         setUserDefinedId(definitions.userDefinedId);
       } else {
         setName(selectedElement.businessObject.name);
+
+        setElementWidth(selectedElement.width);
+        setElementHeight(selectedElement.height);
+
+        return () => {
+          setElementWidth(0);
+          setElementHeight(0);
+        };
       }
     }
   }, [selectedElement]);
@@ -196,6 +218,28 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       );
       definitions.userDefinedId = event.target.value;
     }
+  };
+
+  const handleWidthChange = async () => {
+    const modeling = modeler!.getModeling();
+
+    modeling.resizeShape(selectedElement as Shape, {
+      height: selectedElement.height,
+      width: elementWidth,
+      x: selectedElement.x,
+      y: selectedElement.y,
+    });
+  };
+
+  const handleHeightChange = async () => {
+    const modeling = modeler!.getModeling();
+
+    modeling.resizeShape(selectedElement as Shape, {
+      width: selectedElement.width,
+      height: elementHeight,
+      x: selectedElement.x,
+      y: selectedElement.y,
+    });
   };
 
   const updateBackgroundColor = (backgroundColor: string) => {
@@ -395,6 +439,46 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 )}
               </Space>
             )}
+
+          {bpmnIsAny(selectedElement, [
+            'bpmn:Activity',
+            'bpmn:Participant',
+            'bpmn:TextAnnotation',
+            'proceed:GenericResource',
+          ]) && (
+            <Space direction="vertical">
+              <Divider style={{ fontSize: '0.85rem' }}>
+                Dimensions{' '}
+                <Tooltip title="It is only possible to change the size of Tasks and Text Annotations. Please note: changing the dimensions of an element does not automatically trigger a redesign and may therefore disrupt existing layouts and connections.">
+                  <ExclamationCircleOutlined style={{ paddingRight: '3px', color: 'orange' }} />
+                </Tooltip>
+              </Divider>
+              <Space>
+                <InputNumber
+                  name="Width"
+                  placeholder="Element Width"
+                  style={{ fontSize: '0.85rem' }}
+                  addonBefore="Width"
+                  value={elementWidth}
+                  disabled={readOnly}
+                  onChange={(val) => setElementWidth(val || 0)}
+                  onBlur={handleWidthChange}
+                />
+              </Space>
+              <Space>
+                <InputNumber
+                  name="Height"
+                  placeholder="Element Height"
+                  style={{ fontSize: '0.85rem' }}
+                  addonBefore="Height"
+                  value={elementHeight}
+                  disabled={readOnly}
+                  onChange={(val) => setElementHeight(val || 0)}
+                  onBlur={handleHeightChange}
+                />
+              </Space>
+            </Space>
+          )}
         </>
       ),
     },

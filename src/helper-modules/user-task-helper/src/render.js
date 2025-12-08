@@ -121,7 +121,7 @@ function ifNodeToString(node, data, partial) {
       // exclude the if body from the output
       if (!lhs.value) return '';
 
-      if (!lhs.value || !Array.isArray(lhs.value)) {
+      if (!Array.isArray(lhs.value)) {
         throw new Error(`The value to check in is not an array. ({%if ${condition}%})`);
       }
 
@@ -160,7 +160,7 @@ function forNodeToString(node, data, partial) {
     return out;
   }
 
-  if (!value || !value.value) return '';
+  if (!value.value) return '';
 
   if (!Array.isArray(value.value))
     throw new Error(

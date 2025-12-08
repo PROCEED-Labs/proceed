@@ -154,7 +154,7 @@ export const VersionModal: React.FC<VersionModalProps> = ({
         ),
       ]}
     >
-      {!!unchangedVersion && (
+      {!!completelyUnchanged && (
         <Alert
           style={{ marginBottom: '10px' }}
           type="warning"

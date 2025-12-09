@@ -11,6 +11,7 @@ import Icon, {
   ArrowUpOutlined,
   FormOutlined,
   ShareAltOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiDownloadSimple } from 'react-icons/pi';
@@ -42,6 +43,7 @@ import { useCanEdit } from '@/lib/can-edit-context';
 import { deployProcess } from '@/lib/engines/server-actions';
 import { Engine } from '@/lib/engines/machines';
 import EngineSelection from '@/components/engine-selection';
+import { startInstanceOnMachine } from '@/lib/engines/instances';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -212,11 +214,22 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
     }
   };
 
-  const deployVersion = async (engine: Engine | undefined) => {
-    await deployProcess(process.id, versionToDeploy, environment.spaceId, 'dynamic', engine);
+  const deployVersion = async (engine: Engine) => {
+    await deployProcess(
+      process.id,
+      versionToDeploy === 'latest' ? '' : versionToDeploy,
+      environment.spaceId,
+      'dynamic',
+      engine,
+    );
     setVersionToDeploy('');
     message.success('Process Deployed');
-    router.push(spaceURL(environment, `/executions/${process.id}`));
+    let path = `/executions/${process.id}`;
+    if (versionToDeploy === 'latest') {
+      const instanceId = await startInstanceOnMachine(process.id, '_latest', engine);
+      path += `?instance=${instanceId}`;
+    }
+    router.push(spaceURL(environment, path));
   };
 
   const handlePropertiesPanelToggle = () => {
@@ -334,6 +347,12 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     createVersion={createProcessVersion}
                     disabled={isListView}
                     isExecutable={isExecutable}
+                  />
+                </Tooltip>
+                <Tooltip title="Test Deploy and Start">
+                  <Button
+                    icon={<ExperimentOutlined />}
+                    onClick={() => setVersionToDeploy('latest')}
                   />
                 </Tooltip>
                 <EngineSelection

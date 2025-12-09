@@ -8,7 +8,7 @@ import { useState } from 'react';
 type EngineSelectionProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (engine: Engine | undefined) => Promise<void>;
+  onSubmit: (engine: Engine) => Promise<void>;
 };
 
 const automaticDeploymentId = '__automatic_engine_selection__';
@@ -46,7 +46,7 @@ const EngineSelection: React.FC<EngineSelectionProps> = ({ open, onClose, onSubm
       if (target) {
         setLoading(true);
         if ('isAutomaticDeployment' in target) {
-          await onSubmit(undefined);
+          await onSubmit(data.find((e) => e.id !== automaticDeploymentId) as Engine);
         } else {
           await onSubmit(target);
         }
@@ -62,7 +62,7 @@ const EngineSelection: React.FC<EngineSelectionProps> = ({ open, onClose, onSubm
     // the data includes no entry except the "Automatic Entry" so there are no engines to deploy to
     if (data.length === 1) {
       content = (
-        <Alert type="warning" message="Could not find an engine to deploy the version to." />
+        <Alert type="warning" message="Could not find an engine to deploy the process to." />
       );
     } else {
       content = (

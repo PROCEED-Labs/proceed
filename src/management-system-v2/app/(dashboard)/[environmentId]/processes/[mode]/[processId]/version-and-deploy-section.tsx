@@ -25,7 +25,6 @@ import { deployProcess } from '@/lib/engines/server-actions';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import StartFormModal from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/start-form-modal';
 import { getStartFormFileNameMapping } from '@proceed/bpmn-helper';
-import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 import useProcessVariables from './use-process-variables';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 
@@ -114,18 +113,9 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
 
   const [deployTo, setDeployTo] = useState<Engine | undefined>();
 
-  const startInstance = async (variables?: Record<string, any>) => {
+  const startInstance = async (variables?: Record<string, { value: any }>) => {
     if (deployTo) {
-      const mappedVariables = Object.fromEntries(
-        Object.entries(variables || {}).map(([key, value]) => [key, { value }]),
-      );
-
-      const instanceId = await startInstanceOnMachine(
-        process.id,
-        '_latest',
-        deployTo,
-        mappedVariables,
-      );
+      const instanceId = await startInstanceOnMachine(process.id, '_latest', deployTo, variables);
       router.push(spaceURL(environment, `/executions/${process.id}?instance=${instanceId}`));
     }
     setStartForm('');
@@ -168,29 +158,6 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
                 return;
               }
 
-              const mappedVariables = Object.fromEntries(
-                variables
-                  .filter((variable) => variable.defaultValue !== undefined)
-                  .map((variable) => {
-                    let value: string | number | boolean | undefined = variable.defaultValue;
-
-                    if (value) {
-                      switch (variable.dataType) {
-                        case 'number':
-                          value = parseFloat(value);
-                          break;
-                        case 'boolean':
-                          value = value === 'true' ? true : false;
-                          break;
-                      }
-                    }
-
-                    return [variable.name, value];
-                  }),
-              );
-              startForm = inlineScript(startForm, '', '', variables);
-              startForm = inlineUserTaskData(startForm, mappedVariables, []);
-
               setStartForm(startForm);
               setDeployTo(engine);
               return;
@@ -223,7 +190,8 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
           router.push(
             spaceURL(
               environment,
-              `/processes${processContextPath}/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
+              `/processes${processContextPath}/${processId as string}${
+                searchParams.size ? '?' + searchParams.toString() : ''
               }`,
             ),
           );
@@ -261,6 +229,7 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
               />
               <StartFormModal
                 html={startForm}
+                variableDefinitions={variables}
                 onSubmit={(variables) => startInstance(variables)}
                 onCancel={() => cancelStartForm()}
               />

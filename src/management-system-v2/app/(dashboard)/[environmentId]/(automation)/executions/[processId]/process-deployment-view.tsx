@@ -193,14 +193,6 @@ export default function ProcessDeploymentView({
                         if (typeof startForm !== 'string') return startForm;
 
                         if (startForm) {
-                          const mappedVariables = Object.fromEntries(
-                            variables
-                              .filter((variable) => variable.value !== undefined)
-                              .map((variable) => [variable.name, variable.value]),
-                          );
-                          startForm = inlineScript(startForm, '', '', variableDefinitions);
-                          startForm = inlineUserTaskData(startForm, mappedVariables, []);
-
                           setStartForm(startForm);
                         } else {
                           return startInstance(versionId);
@@ -363,19 +355,13 @@ export default function ProcessDeploymentView({
 
         <StartFormModal
           html={startForm}
+          variableDefinitions={variableDefinitions}
           onSubmit={(submitVariables) => {
             const versionId = getLatestDeployment(deploymentInfo).versionId;
 
-            const mappedVariables: Record<string, { value: any }> = {};
-
-            // set the values of variables to the ones coming from the start form
-            Object.entries(submitVariables).forEach(
-              ([key, value]) => (mappedVariables[key] = { value }),
-            );
-
             // start the instance with the initial variable values from the start form
             wrapServerCall({
-              fn: () => startInstance(versionId, mappedVariables),
+              fn: () => startInstance(versionId, submitVariables),
 
               onSuccess: async (instanceId) => {
                 await refetch();

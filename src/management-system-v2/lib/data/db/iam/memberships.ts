@@ -60,7 +60,7 @@ export async function getMembers(environmentId: string, ability?: Ability) {
 }
 
 export async function getFullMembersWithRoles(environmentId: string, ability?: Ability) {
-  if (ability && !ability.can('admin', 'User')) throw new UnauthorizedError();
+  if (ability && !ability.can('admin', 'User')) err(new UnauthorizedError());
 
   const usersWithRoles = await db.user.findMany({
     where: {
@@ -95,7 +95,8 @@ export async function getFullMembersWithRoles(environmentId: string, ability?: A
     roles: User['roleMembers'][number]['role'][];
     isGuest: false;
   };
-  return usersWithRoles as unknown as TransformedUserType[];
+
+  return ok(usersWithRoles as unknown as TransformedUserType[]);
 }
 
 /**

@@ -158,7 +158,7 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionCrea
       return bpmn;
     }
 
-    const processWithBPMN = { ...processMetaObj, bpmn: bpmn };
+    const processWithBPMN = { ...processMetaObj.value, bpmn: bpmn };
     return processWithBPMN;
   }
 

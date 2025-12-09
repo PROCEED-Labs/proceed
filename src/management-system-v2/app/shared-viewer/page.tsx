@@ -22,8 +22,15 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
-import { getErrorMessage, userError } from '@/lib/server-error-handling/user-error';
+import {
+  UserError,
+  getErrorMessage,
+  isUserErrorResponse,
+  userError,
+} from '@/lib/server-error-handling/user-error';
 import { Result } from 'neverthrow';
+import { ReactNode } from 'react';
+import { undefined } from 'zod';
 
 interface PageProps {
   searchParams: {
@@ -49,27 +56,23 @@ const getProcessInfo = async (
   versionId?: string,
 ) => {
   const currentUser = await getCurrentUser();
-  if (currentUser.isErr()) {
-    return errorResponse(currentUser);
-  }
-  const { session, userId } = currentUser.value;
+  if (currentUser.isErr()) return userError(getErrorMessage(currentUser.error));
+  const { session } = currentUser.value;
+
   let spaceId;
   let isOwner = false;
   let processData;
   // check if there is a session (=> the user is already logged in)
   if (session) {
     const currentSpace = await getCurrentEnvironment(session?.user.id);
-    if (currentSpace.isErr()) {
-      return errorResponse(currentSpace);
-    }
+    if (currentSpace.isErr()) return userError(getErrorMessage(currentSpace.error));
+
     const { ability, activeEnvironment } = currentSpace.value;
 
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
     const ownedProcesses = await getProcesses(spaceId, ability);
-    if (ownedProcesses.isErr()) {
-      return userError(getErrorMessage(ownedProcesses.error));
-    }
+    if (ownedProcesses.isErr()) return userError(getErrorMessage(ownedProcesses.error));
 
     // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
     isOwner = ownedProcesses.value.some((process) => process.id === definitionId);
@@ -93,19 +96,17 @@ const getProcessInfo = async (
   } else {
     // the user has no regular access to the process so get the process data from the sharing api
     const res = await getSharedProcessWithBpmn(definitionId, versionId);
-    if ('error' in res) {
-      return <ErrorMessage message={res.error.message as string} />;
-    } else {
-      processData = res;
+    if ('error' in res) return res;
 
-      if (
-        // bypass the timestamp check for imports
-        !isImport &&
-        ((embeddedMode && timestamp !== processData.value.allowIframeTimestamp) ||
-          (!embeddedMode && timestamp !== processData.value.shareTimestamp))
-      ) {
-        return <ErrorMessage message="Token expired" />;
-      }
+    processData = res;
+
+    if (
+      // bypass the timestamp check for imports
+      !isImport &&
+      ((embeddedMode && timestamp !== processData.allowIframeTimestamp) ||
+        (!embeddedMode && timestamp !== processData.shareTimestamp))
+    ) {
+      return userError('Token expired');
     }
   }
 
@@ -118,7 +119,10 @@ const getProcessInfo = async (
  * @param bpmn the bpmn of the process to get the imports for
  * @param knownInfos the object to put the bpmns into
  */
-const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
+const getImportInfos = async (
+  bpmn: string,
+  knownInfos: ImportsInfo,
+): Promise<{ error: UserError } | undefined> => {
   // information which tasks reference which processes
   const taskImportMap = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
 
@@ -127,17 +131,15 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
 
     if (!(knownInfos[definitionId] && knownInfos[definitionId][versionId])) {
       const processInfo = await getProcessInfo(definitionId, 0, false, true, versionId);
+      if (isUserErrorResponse(processInfo)) return processInfo;
 
-      // check if the return value is a valid process info (might also be a react component that signals an error => no isOwner)
-      if ('isOwner' in processInfo && processInfo.processData) {
-        const { bpmn: importBpmn } = processInfo.processData;
+      const { bpmn: importBpmn } = processInfo.processData;
 
-        if (!knownInfos[definitionId]) knownInfos[definitionId] = {};
-        knownInfos[definitionId][versionId] = importBpmn as string;
+      if (!knownInfos[definitionId]) knownInfos[definitionId] = {};
+      knownInfos[definitionId][versionId] = importBpmn as string;
 
-        // recursively get the imports of the imports
-        await getImportInfos(importBpmn as string, knownInfos);
-      }
+      // recursively get the imports of the imports
+      return await getImportInfos(importBpmn as string, knownInfos);
     }
   }
 };
@@ -191,9 +193,11 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     );
 
     // the return value of getProcessInfo might be an error that should just be returned to the user
-    if (!('isOwner' in processInfo)) {
-      return processInfo;
+    if (isUserErrorResponse(processInfo)) {
+      return <ErrorMessage message={processInfo.error.message} />;
     }
+
+    console.log('processData', processData);
 
     ({ isOwner, processData } = processInfo);
 
@@ -208,10 +212,17 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
 
   let availableImports: ImportsInfo = {};
   if (!iframeMode) {
+    let errorMessage: ReactNode;
     try {
-      await getImportInfos(processData.bpmn, availableImports);
-    } catch (err) {
-      console.error('Failed to resolve the information for process imports: ', err);
+      const error = await getImportInfos(processData.bpmn, availableImports);
+      if (isUserErrorResponse(error)) errorMessage = error.error.message;
+    } catch (error) {
+      errorMessage = getErrorMessage(error);
+      console.error('Failed to resolve the information for process imports: ', error);
+    }
+
+    if (errorMessage) {
+      return <ErrorMessage message={errorMessage} />;
     }
   }
 
@@ -244,7 +255,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
               <BPMNSharedViewer
                 isOwner={isOwner}
                 userWorkspaces={userEnvironments}
-                processData={processData as any}
+                processData={processData}
                 defaultSettings={defaultSettings}
                 availableImports={availableImports}
               />

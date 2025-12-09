@@ -1,5 +1,4 @@
 export type Token = import('./tokenize.js').Token;
-export type ASTNode = any;
 /**
  * Node representing the root of the html
  */
@@ -71,6 +70,10 @@ export type ForNode = {
    */
   children: ASTNode[];
 };
+/**
+ * Representation of a section of html
+ */
+export type ASTNode = RootNode | TextNode | VariableNode | ForNode;
 /**
  * Creates an abstract syntax from a list of tokens
  *

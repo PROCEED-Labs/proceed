@@ -7,6 +7,7 @@ import { getMSConfig, updateMSConfig, writeDefaultMSConfig } from '@/lib/ms-conf
 import MSConfigForm from './ms-config-form';
 import { userError } from '@/lib/server-error-handling/user-error';
 import { SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 async function saveConfig(newConfig: Record<string, string>) {
   'use server';
@@ -30,7 +31,10 @@ export type restoreDefaultValues = typeof restoreDefaultValues;
 
 async function ConfigPage() {
   const user = await getCurrentUser();
-  if (!user.session || !user.systemAdmin) redirect('/');
+  if (user.isErr()) {
+    return errorResponse(user);
+  }
+  if (!user.value.session || !user.value.systemAdmin) redirect('/');
 
   const _msConfig = await getMSConfig();
 

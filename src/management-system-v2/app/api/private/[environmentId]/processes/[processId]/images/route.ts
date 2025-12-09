@@ -4,6 +4,8 @@ import { getProcess, getProcessImageFileNames, saveProcessImage } from '@/lib/da
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 } from 'uuid';
 import { invalidRequest, readImage } from '../../../image-helpers';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
+import { getErrorMessage } from '@/lib/server-error-handling/user-error';
 
 export async function GET(
   request: NextRequest,
@@ -11,27 +13,36 @@ export async function GET(
     params: { environmentId, processId },
   }: { params: { environmentId: string; processId: string } },
 ) {
-  const { ability } = await getCurrentEnvironment(environmentId);
+  try {
+    const currentSpace = await getCurrentEnvironment(environmentId);
+    if (currentSpace.isErr()) throw currentSpace.error;
 
-  const process = await getProcess(processId, false);
+    const process = await getProcess(processId, false);
+    if (process.isErr()) throw process.error;
 
-  if (!process) {
+    if (!process.value) {
+      return new NextResponse(null, {
+        status: 404,
+        statusText: 'Process with this id does not exist.',
+      });
+    }
+
+    if (!currentSpace.value.ability.can('view', toCaslResource('Process', process.value))) {
+      return new NextResponse(null, {
+        status: 403,
+        statusText: 'Not allowed to view image filenames in this process',
+      });
+    }
+
+    const fileNames = await getProcessImageFileNames(processId);
+
+    return NextResponse.json(fileNames);
+  } catch (error) {
     return new NextResponse(null, {
-      status: 404,
-      statusText: 'Process with this id does not exist.',
+      status: 500,
+      statusText: getErrorMessage(error),
     });
   }
-
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return new NextResponse(null, {
-      status: 403,
-      statusText: 'Not allowed to view image filenames in this process',
-    });
-  }
-
-  const fileNames = await getProcessImageFileNames(processId);
-
-  return NextResponse.json(fileNames);
 }
 
 export async function POST(
@@ -40,33 +51,43 @@ export async function POST(
     params: { environmentId, processId },
   }: { params: { environmentId: string; processId: string } },
 ) {
-  const isInvalidRequest = invalidRequest(request);
-  if (isInvalidRequest) return isInvalidRequest;
+  try {
+    const isInvalidRequest = invalidRequest(request);
+    if (isInvalidRequest) return isInvalidRequest;
 
-  const { ability } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) throw currentEnvironment.error;
+    const ability = currentEnvironment.value.ability;
 
-  const process = await getProcess(processId, false);
+    const process = await getProcess(processId, false);
+    if (process.isErr()) throw process.error;
 
-  if (!process) {
+    if (!process.value) {
+      return new NextResponse(null, {
+        status: 404,
+        statusText: 'Process with this id does not exist.',
+      });
+    }
+
+    if (!ability.can('view', toCaslResource('Process', process.value))) {
+      return new NextResponse(null, {
+        status: 403,
+        statusText: 'Not allowed to view image in this process',
+      });
+    }
+
+    const readImageResult = await readImage(request);
+    if (readImageResult.error) return readImageResult.error;
+
+    const imageFileName = `_image${v4()}.${readImageResult.fileType.ext}`;
+
+    await saveProcessImage(processId, imageFileName, readImageResult.buffer);
+
+    return new NextResponse(imageFileName, { status: 201, statusText: 'Created' });
+  } catch (error) {
     return new NextResponse(null, {
-      status: 404,
-      statusText: 'Process with this id does not exist.',
+      status: 500,
+      statusText: getErrorMessage(error),
     });
   }
-
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return new NextResponse(null, {
-      status: 403,
-      statusText: 'Not allowed to view image in this process',
-    });
-  }
-
-  const readImageResult = await readImage(request);
-  if (readImageResult.error) return readImageResult.error;
-
-  const imageFileName = `_image${v4()}.${readImageResult.fileType.ext}`;
-
-  await saveProcessImage(processId, imageFileName, readImageResult.buffer);
-
-  return new NextResponse(imageFileName, { status: 201, statusText: 'Created' });
 }

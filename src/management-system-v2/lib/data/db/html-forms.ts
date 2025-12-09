@@ -94,6 +94,8 @@ export async function addHtmlForm(formInput: HtmlForm) {
   await db.htmlForm.create({
     data: form,
   });
+
+  return ok();
 }
 
 /** Updates an existing form */
@@ -124,6 +126,7 @@ export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlF
 /** Removes an existing html form */
 export async function removeHtmlForms(formIds: string[]) {
   await db.htmlForm.deleteMany({ where: { OR: formIds.map((id) => ({ id })) } });
+  return ok();
 }
 
 /** Returns the html form html */

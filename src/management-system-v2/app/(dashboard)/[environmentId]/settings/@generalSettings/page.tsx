@@ -5,12 +5,17 @@ import { SettingGroup } from '../type-util';
 import Wrapper from './wrapper';
 import db from '@/lib/data/db';
 import { SpaceNotFoundError } from '@/lib/server-error-handling/errors';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
   const {
     ability,
     activeEnvironment: { spaceId },
-  } = await getCurrentEnvironment(params.environmentId);
+  } = currentSpace.value;
   //if (!ability.can('update', 'Environment')) return null;
 
   const spaceLogo = await db.space.findUnique({

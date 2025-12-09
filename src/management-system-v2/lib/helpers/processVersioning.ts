@@ -28,6 +28,7 @@ import {
   getHtmlForm,
 } from '@/lib/data/db/process';
 import { getProcessHtmlFormHTML } from '../data/processes';
+import { getErrorMessage, userError } from '../server-error-handling/user-error';
 const { diff } = require('bpmn-js-differ');
 
 // TODO: This used to be a helper file in the old management system. It used
@@ -159,12 +160,16 @@ export async function versionStartForm(
 
       if (!dryRun) {
         const startFormHtml = await getHtmlForm(processInfo.id, fileName);
+        if (startFormHtml.isErr()) return userError(getErrorMessage(startFormHtml.error));
+
         const startFormData = await getProcessHtmlFormJSON(processInfo.id, fileName);
+        if (startFormData.isErr()) return userError(getErrorMessage(startFormData.error));
+
         await saveProcessHtmlForm(
           processInfo.id,
           versionFileName,
-          startFormData!,
-          startFormHtml!,
+          startFormData.value!,
+          startFormHtml.value!,
           versionCreatedOn,
         );
       }
@@ -204,12 +209,16 @@ export async function versionUserTasks(
 
       if (!dryRun) {
         const userTaskHtml = await getHtmlForm(processInfo.id, fileName);
+        if (userTaskHtml.isErr()) return userError(getErrorMessage(userTaskHtml.error));
+
         const userTaskData = await getProcessHtmlFormJSON(processInfo.id, fileName);
+        if (userTaskData.isErr()) return userError(getErrorMessage(userTaskData.error));
+
         await saveProcessHtmlForm(
           processInfo.id,
           versionFileName,
-          userTaskData!,
-          userTaskHtml!,
+          userTaskData.value!,
+          userTaskHtml.value!,
           versionCreatedOn,
         );
       }
@@ -247,33 +256,36 @@ export async function versionScriptTasks(
       if (!dryRun) {
         try {
           const scriptTaskJS = await getProcessScriptTaskScript(processInfo.id, fileName + '.js');
+          if (scriptTaskJS.isErr()) return userError(getErrorMessage(scriptTaskJS.error));
 
           await saveProcessScriptTask(
             processInfo.id,
             versionFileName + '.js',
-            scriptTaskJS,
+            scriptTaskJS.value,
             versionCreatedOn,
           );
         } catch (err) {}
 
         try {
           const scriptTaskTS = await getProcessScriptTaskScript(processInfo.id, fileName + '.ts');
+          if (scriptTaskTS.isErr()) return userError(getErrorMessage(scriptTaskTS.error));
 
           await saveProcessScriptTask(
             processInfo.id,
             versionFileName + '.ts',
-            scriptTaskTS,
+            scriptTaskTS.value,
             versionCreatedOn,
           );
         } catch (err) {}
 
         try {
           const scriptTaskXML = await getProcessScriptTaskScript(processInfo.id, fileName + '.xml');
+          if (scriptTaskXML.isErr()) return userError(getErrorMessage(scriptTaskXML.error));
 
           await saveProcessScriptTask(
             processInfo.id,
             versionFileName + '.xml',
-            scriptTaskXML,
+            scriptTaskXML.value,
             versionCreatedOn,
           );
         } catch (err) {}
@@ -346,18 +358,20 @@ const getUsedStartFormFileNames = async (bpmn: string) => {
 };
 
 export async function selectAsLatestVersion(processId: string, versionId: string) {
-  const versionBpmn = (await getProcessVersionBpmn(processId, versionId)) as string;
+  const versionBpmn = await getProcessVersionBpmn(processId, versionId);
+  if (versionBpmn.isErr()) return userError(getErrorMessage(versionBpmn.error));
 
   const {
     bpmn: convertedBpmn,
     changedStartFormTaskFileNames,
     changedScriptTaskFileNames,
     changedUserTaskFileNames,
-  } = await convertToEditableBpmn(versionBpmn);
+  } = await convertToEditableBpmn(versionBpmn.value);
 
-  const editableBpmn = (await getProcessBpmn(processId)) as string;
+  const editableBpmn = await getProcessBpmn(processId);
+  if (editableBpmn.isErr()) return userError(getErrorMessage(editableBpmn.error));
 
-  const startFormFileNameInEditableVersion = await getUsedStartFormFileNames(editableBpmn);
+  const startFormFileNameInEditableVersion = await getUsedStartFormFileNames(editableBpmn.value);
 
   await asyncForEach(startFormFileNameInEditableVersion, async (processFileName) => {
     await deleteHtmlForm(processId, processFileName);
@@ -365,12 +379,16 @@ export async function selectAsLatestVersion(processId: string, versionId: string
 
   await asyncForEach(Object.entries(changedStartFormTaskFileNames), async ([oldName, newName]) => {
     const json = await getProcessHtmlFormJSON(processId, oldName);
-    const html = await getHtmlForm(processId, oldName);
+    if (json.isErr()) return;
 
-    if (json && html) await saveProcessHtmlForm(processId, newName, json, html);
+    const html = await getHtmlForm(processId, oldName);
+    if (html.isErr()) return;
+
+    if (json.value && html.value)
+      await saveProcessHtmlForm(processId, newName, json.value, html.value);
   });
 
-  const scriptFileNamesinEditableVersion = await getUsedScriptTaskFileNames(editableBpmn);
+  const scriptFileNamesinEditableVersion = await getUsedScriptTaskFileNames(editableBpmn.value);
 
   // delete scripts stored for latest version
   await asyncForEach(scriptFileNamesinEditableVersion, async (taskFileName) => {
@@ -384,12 +402,14 @@ export async function selectAsLatestVersion(processId: string, versionId: string
     for (const type of ['js', 'ts', 'xml']) {
       try {
         const fileContent = await getProcessScriptTaskScript(processId, oldName + '.' + type);
-        await saveProcessScriptTask(processId, newName + '.' + type, fileContent);
+        if (fileContent.isErr()) return;
+
+        await saveProcessScriptTask(processId, newName + '.' + type, fileContent.value);
       } catch (err) {}
     }
   });
 
-  const userTaskFileNamesinEditableVersion = await getUsedUserTaskFileNames(editableBpmn);
+  const userTaskFileNamesinEditableVersion = await getUsedUserTaskFileNames(editableBpmn.value);
 
   // Delete UserTasks stored for latest version
   await asyncForEach(userTaskFileNamesinEditableVersion, async (taskFileName) => {
@@ -399,9 +419,13 @@ export async function selectAsLatestVersion(processId: string, versionId: string
   // Store UserTasks from this version as UserTasks from latest version
   await asyncForEach(Object.entries(changedUserTaskFileNames), async ([oldName, newName]) => {
     const json = await getProcessHtmlFormJSON(processId, oldName);
-    const html = await getHtmlForm(processId, oldName);
+    if (json.isErr()) return;
 
-    if (json && html) await saveProcessHtmlForm(processId, newName, json, html);
+    const html = await getHtmlForm(processId, oldName);
+    if (html.isErr()) return;
+
+    if (json.value && html.value)
+      await saveProcessHtmlForm(processId, newName, json.value, html.value);
   });
 
   // Store bpmn from this version as latest version

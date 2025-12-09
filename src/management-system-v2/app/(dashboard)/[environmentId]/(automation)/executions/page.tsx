@@ -6,9 +6,9 @@ import { getUsersFavourites } from '@/lib/data/users';
 import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engines-helpers';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
-import { Skeleton } from 'antd';
-import { Suspense } from 'react';
 import { getDbEngines } from '@/lib/data/db/engines';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
+import { Result, err, ok } from 'neverthrow';
 
 function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
   deployments: T[],
@@ -29,30 +29,56 @@ function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'
 }
 
 async function Executions({ environmentId }: { environmentId: string }) {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+  const currentSpace = await getCurrentEnvironment(environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { ability, activeEnvironment } = currentSpace.value;
 
   // TODO: check ability
 
   // TODO: once the legacy storage is dropped, it would be better to do one db transaction
-  let [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] =
-    await Promise.all([
-      getUsersFavourites(),
-      (async () => {
-        const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
-        const folder = await getFolderById(rootFolder.id);
-        const folderContents = await getFolderContents(folder.id, ability);
-        return [folder, folderContents];
-      })(),
-      (async () => {
-        const engines = await getDbEngines(null, ability, 'dont-check');
-        return await getDeployedProcessesFromSavedEngines(engines);
-      })(),
-      (async () => {
-        const spaceEngines = await getDbEngines(activeEnvironment.spaceId, ability);
-        if (isUserErrorResponse(spaceEngines)) return [];
-        return await getDeployedProcessesFromSavedEngines(spaceEngines);
-      })(),
-    ]);
+  let promises = await Promise.all([
+    (async () => {
+      const favorites = await getUsersFavourites();
+      if (isUserErrorResponse(favorites)) return err(favorites);
+
+      return ok(favorites);
+    })(),
+    (async () => {
+      const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+      if (rootFolder.isErr()) return rootFolder;
+
+      const folder = await getFolderById(rootFolder.value.id);
+      if (folder.isErr()) return folder;
+
+      const folderContents = await getFolderContents(folder.value.id, ability);
+      if (folderContents.isErr()) {
+        return folderContents;
+      }
+
+      return ok([folder.value, folderContents.value] as const);
+    })(),
+    (async () => {
+      const engines = await getDbEngines(null, ability, 'dont-check');
+      if (engines.isErr()) return engines;
+
+      return ok(await getDeployedProcessesFromSavedEngines(engines.value));
+    })(),
+    (async () => {
+      const spaceEngines = await getDbEngines(activeEnvironment.spaceId, ability);
+      if (spaceEngines.isErr()) return spaceEngines;
+
+      return ok(await getDeployedProcessesFromSavedEngines(spaceEngines.value));
+    })(),
+  ]);
+
+  const results = Result.combine(promises);
+  if (results.isErr()) {
+    return errorResponse(results);
+  }
+
+  let [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] = results.value;
 
   folderContents = folderContents.filter((p) => p.type === 'folder' || p.versions.length);
 

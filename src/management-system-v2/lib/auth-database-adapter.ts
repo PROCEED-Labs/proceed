@@ -44,7 +44,12 @@ const Adapter = {
     try {
       // next-auth checks if the token is expired
       const token = await deleteEmailVerificationToken(params);
-      if (token.type === 'signin_with_email' || token.type === 'register_new_user') return token;
+      if (token.isErr()) {
+        throw token;
+      }
+
+      if (token.value.type === 'signin_with_email' || token.value.type === 'register_new_user')
+        return token;
       else return null;
     } catch (_) {
       return null;
@@ -63,10 +68,13 @@ const Adapter = {
       account.provider,
       account.providerAccountId,
     );
+    if (userAccount.isErr()) {
+      return userAccount;
+    }
 
-    if (!userAccount) return null;
+    if (!userAccount.value) return null;
 
-    return getUserById(userAccount.userId) as unknown as AdapterAccount;
+    return getUserById(userAccount.value.userId) as unknown as AdapterAccount;
   },
 };
 

@@ -16,6 +16,7 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async ({
@@ -23,25 +24,30 @@ const ProcessesPage = async ({
 }: {
   params: { environmentId: string; mode: string; folderId?: string };
 }) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) return errorResponse(currentSpace);
+  const { ability, activeEnvironment } = currentSpace.value;
 
   const favs = await getUsersFavourites();
 
   const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+  if (rootFolder.isErr()) return errorResponse(rootFolder);
 
   const folder = await getFolderById(
-    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
+    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.value.id,
   );
+  if (folder.isErr()) return errorResponse(folder);
 
-  const folderContents = await getFolderContents(folder.id, ability);
+  const folderContents = await getFolderContents(folder.value.id, ability);
+  if (folderContents.isErr()) return errorResponse(folderContents);
 
   const isListView = params.mode === 'list';
 
   const folderContentsFiltered = isListView
-    ? folderContents.filter(
+    ? folderContents.value.filter(
         (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
       )
-    : folderContents;
+    : folderContents.value;
 
   const hasNoReleasedProcesses = isListView
     ? folderContentsFiltered.every((item) => item.type === 'folder')
@@ -49,7 +55,7 @@ const ProcessesPage = async ({
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   const wrappingFolderIds = [] as string[];
-  let currentFolder: Folder | null = folder;
+  let currentFolder: Folder | null = folder.value;
   do {
     pathToFolder.push({
       title: (
@@ -61,7 +67,17 @@ const ProcessesPage = async ({
       ),
     });
     if (currentFolder) wrappingFolderIds.push(currentFolder.id);
-    currentFolder = currentFolder.parentId ? await getFolderById(currentFolder.parentId) : null;
+
+    if (currentFolder.parentId) {
+      const result = await getFolderById(currentFolder.parentId);
+      if (result.isErr()) {
+        return errorResponse(result);
+      }
+
+      currentFolder = result.value;
+    } else {
+      currentFolder = null;
+    }
   } while (currentFolder);
   pathToFolder.reverse();
   wrappingFolderIds.reverse();
@@ -71,11 +87,11 @@ const ProcessesPage = async ({
       <Content
         title={
           <Space>
-            {folder.parentId && (
+            {folder.value.parentId && (
               <Link
                 href={spaceURL(
                   activeEnvironment,
-                  `/processes/${params.mode}/folder/${folder.parentId}`,
+                  `/processes/${params.mode}/folder/${folder.value.parentId}`,
                 )}
               >
                 <Button icon={<LeftOutlined />} type="text">
@@ -90,10 +106,10 @@ const ProcessesPage = async ({
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
           <Processes
             {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
-            rootFolder={rootFolder}
+            rootFolder={rootFolder.value}
             processes={folderContentsFiltered}
             favourites={favs as string[]}
-            folder={folder}
+            folder={folder.value}
             pathToFolder={wrappingFolderIds}
           />
         </Space>

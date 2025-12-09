@@ -5,9 +5,14 @@ import SettingsForm from './settings-form';
 // Card throws a react children error if you don't import Title separately.
 import Title from 'antd/es/typography/Title';
 import { redirect } from 'next/navigation';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
-  const { ability } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { ability } = currentSpace.value;
   if (!ability.can('view', 'Setting')) return redirect('/');
 
   const updateSettings = async (newSettings: Object) => {

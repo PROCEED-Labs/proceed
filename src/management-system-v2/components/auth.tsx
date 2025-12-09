@@ -15,9 +15,10 @@ import * as noIamUser from '@/lib/no-iam-user';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { cookies } from 'next/headers';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { UIError as UserUIError } from '@/lib/ui-error';
 import { packedStaticRules } from '@/lib/authorization/caslRules';
-import { ok } from 'neverthrow';
+import { err, ok } from 'neverthrow';
+import { UserFacingError } from '@/lib/server-error-handling/user-error';
+import { Prettify } from '@/lib/typescript-utils';
 
 export const getCurrentUser = cache(async () => {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
@@ -79,6 +80,7 @@ export const getSystemAdminRules = cache((isOrganization: boolean) => {
   }
 });
 
+type a = Awaited<ReturnType<typeof getCurrentEnvironment>>;
 // TODO: To enable PPR move the session redirect into this function, so it will
 // be called when the session is first accessed and everything above can PPR. For
 // permissions, each server component should check its permissions anyway, for
@@ -95,7 +97,7 @@ export const getCurrentEnvironment = cache(
   ) => {
     const currentUser = await getCurrentUser();
     if (currentUser.isErr()) {
-      return currentUser;
+      return err('pepe');
     }
 
     const { userId, systemAdmin } = currentUser.value;
@@ -116,13 +118,13 @@ export const getCurrentEnvironment = cache(
     if (userId && !isOrganization && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
       // Note: will be undefined for not logged in users
       const userOrgs = await getUserOrganizationEnvironments(userId);
-      if (userOrgs.isErr()) {
-        return userOrgs;
-      }
+      // if (userOrgs.isErr()) {
+      //   return userOrgs;
+      // }
 
       if (userOrgs.value.length === 0) {
         if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
-          throw new UserUIError('You are not part of an organization.');
+          return err(new UserFacingError('You are not part of an organization.'));
         } else {
           return redirect(`/create-organization`);
         }
@@ -146,7 +148,7 @@ export const getCurrentEnvironment = cache(
     if (!userId || !isMember(decodeURIComponent(spaceIdParam), userId)) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
-          throw new Error('User does not have access to this environment');
+          return err(new Error('User does not have access to this environment'));
         case 'redirect':
         default:
           if (opts.permissionErrorHandling.redirectUrl)
@@ -158,9 +160,12 @@ export const getCurrentEnvironment = cache(
     }
 
     const ability = await getAbilityForUser(userId, activeSpace);
+    if (ability.isErr()) {
+      return ability;
+    }
 
     return ok({
-      ability,
+      ability: ability.value,
       activeEnvironment: { spaceId: activeSpace, isOrganization },
     });
   },

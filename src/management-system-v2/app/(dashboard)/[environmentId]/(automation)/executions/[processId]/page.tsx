@@ -4,9 +4,13 @@ import { getDeployment } from '@/lib/engines/server-actions';
 import ProcessDeploymentView from './process-deployment-view';
 import { Suspense } from 'react';
 import { getCurrentEnvironment } from '@/components/auth';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
+import { err } from 'neverthrow';
 
 async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
   const deployment = await getDeployment(spaceId, processId);
+  if (isUserErrorResponse(deployment)) return errorResponse(err());
 
   if (!deployment) {
     return (
@@ -25,7 +29,11 @@ export default async function Page({
   params: { processId: string; environmentId: string };
 }) {
   //TODO: authentication + authorization
-  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { activeEnvironment } = currentSpace.value;
 
   return (
     <Suspense

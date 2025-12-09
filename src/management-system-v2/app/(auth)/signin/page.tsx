@@ -5,12 +5,17 @@ import SignIn from './signin';
 import { generateGuestReferenceToken } from '@/lib/reference-guest-user-token';
 import { env } from '@/lib/ms-config/env-vars';
 import db from '@/lib/data/db';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const dayInMS = 1000 * 60 * 60 * 24;
 
 // take in search query
 const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
-  const { session } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { session } = currentUser.value;
   const isGuest = session?.user.isGuest;
 
   if (session?.user && !isGuest) {

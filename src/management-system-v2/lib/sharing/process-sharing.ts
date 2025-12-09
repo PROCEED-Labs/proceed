@@ -76,16 +76,3 @@ export async function generateSharedViewerUrl(
     return userError('Something went wrong');
   }
 }
-
-export async function getAllUserWorkspaces(userId: string, ability?: Ability) {
-  // if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
-
-  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
-  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironments = (await asyncMap(userOrgEnvs, (environmentId) =>
-    getEnvironmentById(environmentId),
-  )) as Environment[];
-
-  userEnvironments.push(...orgEnvironments);
-  return userEnvironments;
-}

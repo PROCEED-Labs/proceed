@@ -7,9 +7,9 @@ import { UnauthorizedError } from '../ability/abilityHelper';
 import RetryButton from './retry-button';
 
 export function errorResponse<ErrorType extends UserFacingError | UnauthorizedError | unknown>(
-  result: Err<never, ErrorType>,
+  result: Err<never, ErrorType> | unknown,
 ) {
-  const error = result.error;
+  const error = result instanceof Err ? result.error : undefined;
 
   let title = 'Something Went wrong';
   let status: ResultProps['status'] = 'warning';

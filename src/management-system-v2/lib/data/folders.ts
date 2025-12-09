@@ -1,9 +1,8 @@
 'use server';
-import * as util from 'util';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { FolderUserInput, FolderUserInputSchema } from './folder-schema';
-import { UserErrorType, userError } from '../server-error-handling/user-error';
-import { TreeMap, toCaslResource } from '../ability/caslAbility';
+import { UserErrorType, getErrorMessage, userError } from '../server-error-handling/user-error';
+import { toCaslResource } from '../ability/caslAbility';
 
 import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 
@@ -19,18 +18,35 @@ import {
   moveProcess,
 } from '@/lib/data/db/folders';
 import { Process } from './process-schema';
+import { ResultAsync, ok } from 'neverthrow';
 
 export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
 
 export async function createFolder(folderInput: FolderUserInput) {
   try {
     const folder = FolderUserInputSchema.parse(folderInput);
-    const { ability } = await getCurrentEnvironment(folder.environmentId);
-    const { userId } = await getCurrentUser();
 
-    if (!folder.parentId) folder.parentId = (await getRootFolder(folder.environmentId)).id;
+    const currentEnvironment = await getCurrentEnvironment(folder.environmentId);
+    if (currentEnvironment.isErr()) return userError(getErrorMessage(currentEnvironment.error));
+    const { ability } = currentEnvironment.value;
 
-    await _createFolder({ ...folder, createdBy: userId }, ability);
+    const currentUser = await getCurrentUser();
+    if (currentUser.isErr()) return userError(getErrorMessage(currentUser.error));
+    const { userId } = currentUser.value;
+
+    if (!folder.parentId) {
+      const rootFolder = await getRootFolder(folder.environmentId);
+      if (rootFolder.isErr()) {
+        return userError(getErrorMessage(rootFolder.error));
+      }
+
+      folder.parentId = rootFolder.value.id;
+    }
+
+    const result = await _createFolder({ ...folder, createdBy: userId }, ability);
+    if (result.isErr()) {
+      return userError(getErrorMessage(result.error));
+    }
   } catch (e) {
     return userError("Couldn't create folder");
   }
@@ -41,24 +57,24 @@ export type FolderTreeNode = {
   children: FolderTreeNode[];
 };
 
-export async function getSpaceFolderTree(
-  spaceId: string,
-  ability?: Ability,
-): Promise<FolderTreeNode[]> {
+export async function getSpaceFolderTree(spaceId: string, ability?: Ability) {
   //TODO: ability check
 
   const folders = await getFolders(spaceId);
+  if (folders.isErr()) {
+    return userError(getErrorMessage(folders.error));
+  }
 
   const folderMap: Record<string, FolderTreeNode> = {};
 
   // Initialize the folder map with empty children arrays and only id and name
-  for (const folder of folders) {
+  for (const folder of folders.value) {
     folderMap[folder.id] = { id: folder.id, name: folder.name, children: [] };
   }
 
   const rootFolders: FolderTreeNode[] = [];
 
-  for (const folder of folders) {
+  for (const folder of folders.value) {
     if (folder.parentId) {
       const parent = folderMap[folder.parentId];
       if (parent) {
@@ -70,16 +86,23 @@ export async function getSpaceFolderTree(
     }
   }
 
-  return rootFolders;
+  return rootFolders as FolderTreeNode[];
 }
 
 export async function moveIntoFolder(items: FolderChildren[], folderId: string) {
   const folder = await getFolderById(folderId);
+  if (folder.isErr()) {
+    return userError(getErrorMessage(folder.error));
+  }
   if (!folder) return userError('Folder not found');
 
-  const { ability } = await getCurrentEnvironment(folder.environmentId);
+  const currentEnvironment = await getCurrentEnvironment(folder.value.environmentId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability } = currentEnvironment.value;
 
-  if (!ability.can('update', toCaslResource('Folder', folder)))
+  if (!ability.can('update', toCaslResource('Folder', folder.value)))
     return userError('Permission denied');
 
   for (const item of items) {
@@ -92,27 +115,49 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
 }
 
 export async function getFolder(environmentId: string, folderId?: string) {
-  const { ability } = await getCurrentEnvironment(environmentId);
+  const currentEnvironment = await getCurrentEnvironment(environmentId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability } = currentEnvironment.value;
 
   let folder;
   if (!folderId) folder = await getRootFolder(environmentId, ability);
   else folder = await getFolderById(folderId);
 
-  if (folder && !ability.can('view', toCaslResource('Folder', folder)))
+  if (folder.isErr()) {
+    return userError(getErrorMessage(folder.error));
+  }
+
+  if (folder.value && !ability.can('view', toCaslResource('Folder', folder.value)))
     return userError('Permission denied');
 
-  if (!folder) return userError('Folder not found');
+  if (!folder.value) return userError('Folder not found');
 
-  return folder;
+  return folder.value;
 }
 
 export async function getFolderContents(environmentId: string, folderId?: string) {
-  const { ability } = await getCurrentEnvironment(environmentId);
+  const currentEnvironment = await getCurrentEnvironment(environmentId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability } = currentEnvironment.value;
 
-  if (!folderId) folderId = (await getRootFolder(environmentId)).id;
+  const rootFolder = await getRootFolder(environmentId);
+  if (rootFolder.isErr()) {
+    return userError(getErrorMessage(rootFolder.error));
+  }
+
+  if (!folderId) folderId = rootFolder.value.id;
 
   try {
-    return _getFolderContent(folderId, ability);
+    const result = await _getFolderContent(folderId, ability);
+    if (result.isErr()) {
+      return userError(getErrorMessage(result.error));
+    } else {
+      return result.value;
+    }
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
@@ -128,9 +173,16 @@ export async function updateFolder(
 ) {
   try {
     const folder = await getFolderById(folderId);
-    if (!folder) return userError('Folder not found');
+    if (folder.isErr()) {
+      return userError(getErrorMessage(folder.error));
+    }
+    if (!folder.value) return userError('Folder not found');
 
-    const { ability } = await getCurrentEnvironment(folder.environmentId);
+    const currentEnvironment = await getCurrentEnvironment(folder.value.environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
     const folderUpdate = FolderUserInputSchema.partial().parse(folderInput);
     if (folderUpdate.parentId) return userError('Wrong method for moving folders');
@@ -146,7 +198,11 @@ export async function updateFolder(
 
 export async function deleteFolder(folderIds: string[], spaceId: string) {
   try {
-    const { ability } = await getCurrentEnvironment(spaceId);
+    const currentEnvironment = await getCurrentEnvironment(spaceId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
     for (const folderId of folderIds) await _deleteFolder(folderId, ability);
   } catch (e) {

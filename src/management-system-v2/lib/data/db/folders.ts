@@ -104,7 +104,9 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
 
         folderContent.push({ ...folder.value, type: 'folder' });
       }
-    } catch (e) {}
+    } catch (e) {
+      return err(e);
+    }
   }
 
   return ok(folderContent);
@@ -225,8 +227,10 @@ export async function updateFolderMetaData(
   folderId: string,
   newMetaDataInput: Partial<FolderUserInput>,
   ability?: Ability,
+  tx?: Prisma.TransactionClient,
 ) {
-  const folder = await db.folder.findUnique({
+  const mutator = tx || db;
+  const folder = await mutator.folder.findUnique({
     where: { id: folderId },
   });
 
@@ -242,7 +246,7 @@ export async function updateFolderMetaData(
     return err(new Error('environmentId cannot be changed'));
   }
 
-  const updatedFolder = await db.folder.update({
+  const updatedFolder = await mutator.folder.update({
     where: { id: folderId },
     data: { ...newMetaDataInput, lastEditedOn: new Date() },
   });
@@ -281,8 +285,15 @@ async function isInSubtree(rootId: string, nodeId: string): Promise<Result<boole
   return ok(false);
 }
 
-export async function moveFolder(folderId: string, newParentId: string, ability?: Ability) {
-  const folder = await db.folder.findUnique({
+export async function moveFolder(
+  folderId: string,
+  newParentId: string,
+  ability?: Ability,
+  tx?: Prisma.TransactionClient,
+) {
+  const mutator = tx || db;
+
+  const folder = await mutator.folder.findUnique({
     where: { id: folderId },
     include: { childrenFolder: true, parentFolder: true },
   });
@@ -299,7 +310,7 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
     return;
   }
 
-  const newParentFolder = await db.folder.findUnique({
+  const newParentFolder = await mutator.folder.findUnique({
     where: { id: newParentId },
   });
 
@@ -329,7 +340,7 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
   }
 
   // Update folder
-  await db.folder.update({
+  await mutator.folder.update({
     where: { id: folderId },
     data: {
       parentFolder: {

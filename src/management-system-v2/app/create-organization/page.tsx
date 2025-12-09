@@ -7,14 +7,24 @@ import { getErrorMessage, userError } from '@/lib/server-error-handling/user-err
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { notFound } from 'next/navigation';
 import { env } from '@/lib/ms-config/env-vars';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 async function createInactiveEnvironment(data: UserOrganizationEnvironmentInput) {
   'use server';
   try {
     const user = await getCurrentUser();
-    if (user.session?.user && !user.session?.user.isGuest)
+    if (user.isErr()) {
+      return userError(getErrorMessage(user.error));
+    }
+    if (user.value.session?.user && !user.value.session?.user.isGuest)
       return userError('This function is only for guest users and users that are not signed in');
-    return addEnvironment({ ...data, isOrganization: true, isActive: false });
+
+    const result = await addEnvironment({ ...data, isOrganization: true, isActive: false });
+    if (result.isErr()) {
+      return userError(getErrorMessage(result.error));
+    }
+
+    return result.value;
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -33,7 +43,11 @@ const Page = async () => {
     return notFound();
   }
 
-  const { session } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { session } = currentUser.value;
   const needsToAuthenticate = !session?.user || session?.user.isGuest;
 
   let providers = getProviders();

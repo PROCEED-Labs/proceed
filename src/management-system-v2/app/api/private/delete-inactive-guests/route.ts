@@ -18,11 +18,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Invalid Bearer token' }, { status: 403 });
     }
 
-    const { count } = await deleteInactiveGuestUsers(GUESET_INACTIVE_TIME);
+    const result = await deleteInactiveGuestUsers(GUESET_INACTIVE_TIME);
+    if (result.isErr()) throw result.error;
 
     return NextResponse.json(
       {
-        message: `${count} guest users deleted`,
+        message: `${result.value.count} guest users deleted`,
       },
       { status: 200 },
     );

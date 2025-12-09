@@ -22,6 +22,8 @@ import { env } from '../ms-config/env-vars';
 import { AuthenticatedUser, AuthenticatedUserSchema, User } from './user-schema';
 import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
+import { Err, Ok, Result, err, ok } from 'neverthrow';
+import { Role } from './role-schema';
 
 const EmailListSchema = z.array(
   z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),
@@ -38,9 +40,15 @@ export async function inviteUsersToEnvironment(
   try {
     const invitedEmails = EmailListSchema.parse(invitedUsersIdentifiers);
 
-    const { ability } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
-    const organization = (await getEnvironmentById(environmentId)) as OrganizationEnvironment;
+    const _organization = await getEnvironmentById(environmentId);
+    if (_organization.isErr()) return userError(getErrorMessage(_organization.error));
+    const organization = _organization.value as OrganizationEnvironment;
 
     // ability check disallows from adding to personal environments
     if (!ability.can('create', 'User'))
@@ -49,28 +57,53 @@ export async function inviteUsersToEnvironment(
         UserErrorType.PermissionError,
       );
 
-    const filteredRoles = roleIds?.filter(async (roleId) => {
-      return (
-        ability.can('admin', 'All') &&
-        ability.can('manage', toCaslResource('Role', await getRoleById(roleId))) &&
-        ability.can(
-          'create',
-          toCaslResource('RoleMapping', { userId: '', roleId } satisfies Partial<RoleMapping>),
-          { environmentId },
-        )
+    let filteredRoles;
+    if (roleIds) {
+      const allowedRolesResults = await Promise.all(
+        roleIds!.map(async (roleId) => {
+          const role = await getRoleById(roleId);
+          if (role.isErr()) return role;
+          if (!role.value) return err();
+
+          if (
+            ability.can('admin', 'All') &&
+            ability.can('manage', toCaslResource('Role', role.value)) &&
+            ability.can(
+              'create',
+              toCaslResource('RoleMapping', {
+                userId: '',
+                roleId,
+              } satisfies Partial<RoleMapping>),
+              { environmentId },
+            )
+          ) {
+            return ok(role.value.id);
+          } else {
+            return err();
+          }
+        }),
       );
-    });
+
+      filteredRoles = (allowedRolesResults.filter((result) => result.isOk()) as any[]).map(
+        (result) => result.value,
+      ) as string[];
+    }
 
     for (const invitedUserIdentifier of invitedEmails) {
       let invitedUser: User | null = null;
       let invitedUserEmail: string | null | undefined = null;
 
       if ('email' in invitedUserIdentifier) {
-        invitedUser = await getUserByEmail(invitedUserIdentifier.email);
+        const userResult = await getUserByEmail(invitedUserIdentifier.email);
+        if (userResult.isErr()) continue;
+        invitedUser = userResult.value;
       } else if ('username' in invitedUserIdentifier) {
-        invitedUser = await getUserByUsername(invitedUserIdentifier.username);
-        // If there is no user with the given username there is nothing we can do
-        if (!invitedUser) continue;
+        const userResult = await getUserByUsername(invitedUserIdentifier.username);
+
+        // If there is no user there is nothing we can do
+        if (userResult.isErr() || !userResult.value) continue;
+
+        invitedUser = userResult.value;
       }
 
       // NOTE: technically not possible as guests cannot have an email or username
@@ -121,7 +154,11 @@ export async function removeUsersFromEnvironment(environmentId: string, userIdsI
   try {
     const userIds = z.array(z.string()).parse(userIdsInput);
 
-    const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability, activeEnvironment } = currentEnvironment.value;
 
     // TODO refine ability check
 
@@ -156,7 +193,11 @@ export async function createUserAndAddToOrganization(
   }: z.infer<typeof createUserDataSchema> & { password: string; roles: string[] },
 ) {
   try {
-    const { ability } = await getCurrentEnvironment(organizationId);
+    const currentEnvironment = await getCurrentEnvironment(organizationId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
     // Check if the user is an admin
     if (!ability.can('admin', 'All')) {
@@ -169,27 +210,39 @@ export async function createUserAndAddToOrganization(
     const userDataParsed = createUserDataSchema.parse(userDataInput);
 
     let user: AuthenticatedUser;
-    await db.$transaction(async (tx) => {
-      // no need to check the if the user has permissions to create the role mappings since it's
-      // he's an admin
-      user = (await addUser(
-        { ...userDataParsed, isGuest: false, emailVerifiedOn: null },
-        tx,
-      )) as AuthenticatedUser;
-      const passwordHash = await hashPassword(password);
-      await setUserPassword(user.id, passwordHash, tx, true);
+    try {
+      await db.$transaction(async (tx) => {
+        // no need to check the if the user has permissions to create the role mappings since it's
+        // he's an admin
+        const userResult = await addUser(
+          { ...userDataParsed, isGuest: false, emailVerifiedOn: null },
+          tx,
+        );
+        if (userResult.isErr()) throw userResult.error;
 
-      await addMember(organizationId, user.id, ability, tx);
-      await addRoleMappings(
-        roles.map((roleId) => ({
-          roleId,
-          environmentId: organizationId,
-          userId: user.id,
-        })),
-        ability,
-        tx,
-      );
-    });
+        user = userResult.value as AuthenticatedUser;
+
+        const passwordHash = await hashPassword(password);
+        const passwordResult = await setUserPassword(user.id, passwordHash, tx, true);
+        if (passwordResult.isErr()) throw passwordResult.error;
+
+        const memberResult = await addMember(organizationId, user.id, ability, tx);
+        if (memberResult?.isErr()) throw memberResult.error;
+
+        const roleMappingsResult = await addRoleMappings(
+          roles.map((roleId) => ({
+            roleId,
+            environmentId: organizationId,
+            userId: user.id,
+          })),
+          ability,
+          tx,
+        );
+        if (roleMappingsResult?.isErr()) throw roleMappingsResult.error;
+      });
+    } catch (error) {
+      return userError(getErrorMessage(error));
+    }
 
     return user!;
   } catch (error) {

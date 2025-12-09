@@ -18,7 +18,7 @@ import {
   Skeleton,
 } from 'antd';
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
-import { UserError } from '@/lib/server-error-handling/user-error';
+import { UserError, isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { checkIfProcessExistsByName } from '@/lib/data/processes';
 import { useEnvironment } from './auth-can';
@@ -110,6 +110,7 @@ const ProcessModal = <
           spaceId: environment.spaceId,
           userId: session.data?.user.id!,
         });
+        if (isUserErrorResponse(existsResults)) return;
 
         existsResults.forEach((exists, index) => {
           if (exists) {
@@ -417,7 +418,7 @@ const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsPr
       folderId: currentFolderId,
     });
 
-    if (!exists) {
+    if (isUserErrorResponse(exists) || !exists) {
       callback();
       return;
     }

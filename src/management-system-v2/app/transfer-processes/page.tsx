@@ -6,6 +6,7 @@ import { Card, Result } from 'antd';
 import { redirect } from 'next/navigation';
 import ProcessTransferButtons from './transfer-processes-confirmation-buttons';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 export default async function TransferProcessesPage({
   searchParams,
@@ -15,7 +16,11 @@ export default async function TransferProcessesPage({
     referenceToken?: string;
   };
 }) {
-  const { userId, session } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { userId, session } = currentUser.value;
   if (!session) redirect('api/auth/signin');
   if (session.user.isGuest) redirect('/');
 
@@ -44,17 +49,23 @@ export default async function TransferProcessesPage({
   if (!guestId || guestId === userId) redirect(callbackUrl);
 
   const possibleGuest = await getUserById(guestId);
+  if (possibleGuest.isErr()) {
+    return errorResponse(possibleGuest);
+  }
   // possibleGuest might be a normal user, this would happen if the user signed in with an existing
   // accocunt, generating the token above, and before using it, he signed in with a new account.
   // We only go further then this redirect, if the user signed in with an account that was
   // already linked to an existing user
-  if (!possibleGuest || !possibleGuest.isGuest) redirect(callbackUrl);
+  if (!possibleGuest || !possibleGuest.value.isGuest) redirect(callbackUrl);
 
   // NOTE: this ignores folders
   const guestProcesses = await getProcesses(guestId);
+  if (guestProcesses.isErr()) {
+    return errorResponse(guestProcesses);
+  }
 
   // If the guest has no processes -> nothing to do
-  if (guestProcesses.length === 0) redirect(callbackUrl);
+  if (guestProcesses.value.length === 0) redirect(callbackUrl);
 
   return (
     <Content title="Transfer Processes">
@@ -62,7 +73,8 @@ export default async function TransferProcessesPage({
         title="Would you like to transfer your processes?"
         style={{ maxWidth: '70ch', margin: 'auto' }}
       >
-        Your guest account had {guestProcesses.length} process{guestProcesses.length !== 1 && 'es'}.
+        Your guest account had {guestProcesses.value.length} process
+        {guestProcesses.value.length !== 1 && 'es'}.
         <br />
         Would you like to transfer them to your account?
         <ProcessTransferButtons referenceToken={token} callbackUrl={callbackUrl} />

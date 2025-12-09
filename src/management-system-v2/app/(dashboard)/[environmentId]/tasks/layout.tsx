@@ -3,6 +3,7 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { notFound } from 'next/navigation';
 import { getCurrentEnvironment } from '@/components/auth';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 type DocumentationLayoutProps = {
   params: { environmentId: string };
@@ -14,14 +15,24 @@ const DocumentationLayout: React.FC<DocumentationLayoutProps> = async ({ params,
     return notFound();
   }
 
-  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { activeEnvironment } = currentSpace.value;
 
   const automationSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-automation',
   );
+  if (automationSettings.isErr()) {
+    return errorResponse(automationSettings);
+  }
 
-  if (automationSettings.active === false || automationSettings.task_editor?.active === false) {
+  if (
+    automationSettings.value.active === false ||
+    automationSettings.value.task_editor?.active === false
+  ) {
     return notFound();
   }
 

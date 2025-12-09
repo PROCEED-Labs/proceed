@@ -1,4 +1,4 @@
-import { ok, err } from 'neverthrow';
+import { ok, err, Result } from 'neverthrow';
 import { getFolderById } from './folders';
 import eventHandler from '../legacy/eventHandler.js';
 import logger from '../legacy/logging.js';
@@ -9,7 +9,7 @@ import {
   transformBpmnAttributes,
 } from '../../helpers/processHelpers';
 import { getDefinitionsVersionInformation, generateBpmnId } from '@proceed/bpmn-helper';
-import Ability from '@/lib/ability/abilityHelper';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
@@ -107,10 +107,18 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   //       : version.versionBasedOn,
   // }));
 
+  let bpmn;
+  if (includeBPMN) {
+    const result = await getProcessBpmn(processDefinitionsId);
+    if (result.isErr()) return result;
+
+    bpmn = result.value;
+  }
+
   const convertedProcess = {
     ...process,
     //versions: convertedVersions,
-    bpmn: includeBPMN ? await getProcessBpmn(processDefinitionsId) : null,
+    bpmn,
     shareTimestamp:
       typeof process.shareTimestamp === 'bigint'
         ? Number(process.shareTimestamp)
@@ -631,7 +639,7 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
   if (existingProcess.isErr()) {
     return existingProcess;
   }
-  if (!existingProcess) {
+  if (!existingProcess.value) {
     return err(new Error('The process for which you try to get a version does not exist'));
   }
   const existingVersion = existingProcess.value.versions?.find(
@@ -657,7 +665,7 @@ function removeExcessiveInformation(processInfo: Omit<ProcessMetadata, 'bpmn'>) 
 }
 
 /** Returns the process definition for the process with the given id */
-export async function getProcessBpmn(processDefinitionsId: string) {
+export async function getProcessBpmn(processDefinitionsId: string, ability?: Ability) {
   try {
     const process = await db.process.findUnique({
       where: {
@@ -672,11 +680,16 @@ export async function getProcessBpmn(processDefinitionsId: string) {
         id: true,
         name: true,
         originalId: true,
+        environmentId: true,
       },
     });
 
     if (!process) {
       return err(new Error('Process not found'));
+    }
+
+    if (ability && !ability.can('view', toCaslResource('Process', process))) {
+      return err(UnauthorizedError);
     }
 
     const processWithStringDate = {
@@ -743,7 +756,7 @@ export async function getProcessHtmlFormJSON(
       const jsonAsBuffer = (await retrieveFile(artifact.filePath, true)) as Buffer;
       return ok(jsonAsBuffer.toString('utf8'));
     } else {
-      return ok();
+      return ok(undefined);
     }
   } catch (error) {
     logger.debug(`Error getting data of process html form ${fileName}. Reason\n${error}`);
@@ -1176,7 +1189,7 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
     }
   });
 
-  return ok(oldNewFilenameMapping);
+  return Result.combine(oldNewFilenameMapping);
 }
 
 export async function getProcessImage(processDefinitionsId: string, imageFileName: string) {

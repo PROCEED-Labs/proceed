@@ -2,7 +2,7 @@
 
 import { getCurrentEnvironment } from '@/components/auth';
 import { redirect } from 'next/navigation';
-import { UserErrorType, userError } from '../server-error-handling/user-error';
+import { UserErrorType, getErrorMessage, userError } from '../server-error-handling/user-error';
 import { RedirectType } from 'next/dist/client/components/redirect';
 import {
   deleteRole,
@@ -13,7 +13,11 @@ import {
 import { UnauthorizedError } from '../ability/abilityHelper';
 
 export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
-  const { ability } = await getCurrentEnvironment(envitonmentId);
+  const currentEnvironment = await getCurrentEnvironment(envitonmentId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability } = currentEnvironment.value;
 
   try {
     for (const roleId of roleIds) {
@@ -27,14 +31,26 @@ export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
 }
 
 export async function addRole(environmentId: string, role: Parameters<typeof _addRole>[0]) {
-  const { activeEnvironment } = await getCurrentEnvironment(environmentId);
+  const currentEnvironment = await getCurrentEnvironment(environmentId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { activeEnvironment } = currentEnvironment.value;
 
   let newRoleId;
   try {
-    const { ability } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
     const newRole = await _addRole({ ...role, environmentId: activeEnvironment.spaceId }, ability);
-    newRoleId = newRole.id;
+    if (newRole.isErr()) {
+      return userError(getErrorMessage(newRole.error));
+    }
+
+    newRoleId = newRole.value.id;
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
@@ -50,12 +66,18 @@ export async function updateRole(
   updatedRole: Omit<Parameters<typeof _updateRole>[1], 'environmentId'>,
 ) {
   try {
-    const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-    await _updateRole(
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability, activeEnvironment } = currentEnvironment.value;
+
+    const result = await _updateRole(
       roleId,
       { ...updatedRole, environmentId: activeEnvironment.spaceId },
       ability,
     );
+    if (result.isErr()) return userError(getErrorMessage(result.error));
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
@@ -65,9 +87,18 @@ export async function updateRole(
 
 export async function getRoles(environmentId: string) {
   try {
-    const { ability } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
-    return await _getRoles(environmentId, ability);
+    const result = await _getRoles(environmentId, ability);
+    if (result.isErr()) {
+      return userError(getErrorMessage(result.error));
+    }
+
+    return result.value;
   } catch (_) {
     return userError("Something wen't wrong");
   }

@@ -13,7 +13,11 @@ export async function addRoleMappings(
   roleMappings: Omit<RoleMappingInput, 'environmentId'>[],
 ) {
   try {
-    const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability, activeEnvironment } = currentEnvironment.value;
 
     await _addRoleMappings(
       roleMappings.map((roleMapping) => ({
@@ -34,7 +38,11 @@ export async function deleteRoleMappings(
 ) {
   const errors: unknown[] = [];
 
-  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+  const currentEnvironment = await getCurrentEnvironment(environmentId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability, activeEnvironment } = currentEnvironment.value;
 
   for (const { userId, roleId } of roleMappings) {
     try {

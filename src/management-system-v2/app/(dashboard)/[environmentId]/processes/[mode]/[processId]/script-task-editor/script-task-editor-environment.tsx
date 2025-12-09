@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Element } from 'bpmn-js/lib/model/Types';
 import type { ElementLike } from 'diagram-js/lib/model/Types';
-import { Badge, Modal, Button, Space, App, Tabs, TabsProps } from 'antd';
+import { Badge, Modal, Button, Space, App, Tabs, TabsProps, Splitter } from 'antd';
 import ScriptEditor, { ScriptEditorRef } from './script-task-editor';
 import { useCanEdit } from '@/lib/can-edit-context';
 import { Process } from '@/lib/data/process-schema';
@@ -457,13 +457,8 @@ export function ScriptTaskEditorEnvironment({
         </Space>
       }
     >
-      <Tabs
-        items={tabItems}
-        activeKey={activeScriptEditor}
-        tabPosition="left"
-        className={styles.Tabs}
-        onChange={(key) => editorRefs.current.get(key)?.fillContainer()}
-        renderTabBar={() => (
+      <Splitter>
+        <Splitter.Panel defaultSize="20%" min="10%" max="40%">
           <FolderTree<FolderTreeDataType>
             // This makes it so that the folderTree doesn't fetch the root nodes
             rootNodes={[]}
@@ -511,8 +506,18 @@ export function ScriptTaskEditorEnvironment({
             selectedKeys={activeScriptEditor ? [activeScriptEditor] : undefined}
             treeProps={{ style: { width: 300, overflow: 'hidden' } }}
           />
-        )}
-      />
+        </Splitter.Panel>
+        <Splitter.Panel>
+          <Tabs
+            items={tabItems}
+            activeKey={activeScriptEditor}
+            tabPosition="left"
+            className={styles.Tabs}
+            onChange={(key) => editorRefs.current.get(key)?.fillContainer()}
+            renderTabBar={() => <></>}
+          />
+        </Splitter.Panel>
+      </Splitter>
     </Modal>
   );
 }

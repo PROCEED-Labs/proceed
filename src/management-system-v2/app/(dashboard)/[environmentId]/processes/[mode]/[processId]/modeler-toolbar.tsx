@@ -1,32 +1,28 @@
 import { ComponentProps, use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { App, Tooltip, Button, Space, Select, SelectProps, Divider } from 'antd';
+import { Tooltip, Button, Space, Divider } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
   InfoCircleOutlined,
-  PlusOutlined,
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
   FormOutlined,
   ShareAltOutlined,
-  ExperimentOutlined,
 } from '@ant-design/icons';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiDownloadSimple } from 'react-icons/pi';
 import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
-import { useRouter, useSearchParams } from 'next/navigation';
-import VersionCreationButton from '@/components/version-creation-button';
+import { useSearchParams } from 'next/navigation';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
+import { updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
-import { spaceURL } from '@/lib/utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/script-editor';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
@@ -40,12 +36,7 @@ import XmlEditor from './xml-editor';
 import UserTaskEditor, { canHaveForm } from './user-task-editor';
 import { useProcessView } from './process-view-context';
 import { useCanEdit } from '@/lib/can-edit-context';
-import { deployProcess } from '@/lib/engines/server-actions';
-import { Engine } from '@/lib/engines/machines';
-import EngineSelection from '@/components/engine-selection';
-import { startInstanceOnMachine } from '@/lib/engines/instances';
-
-const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
+import VersionAndDeploy, { LATEST_VERSION } from './version-and-deploy-section';
 
 type ModelerToolbarProps = {
   process: Process;
@@ -56,10 +47,7 @@ type ModelerToolbarProps = {
 const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolbarProps) => {
   const processId = process.id;
 
-  const router = useRouter();
   const environment = useEnvironment();
-  const app = App.useApp();
-  const message = app.message;
   const env = use(EnvVarsContext);
 
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
@@ -77,8 +65,6 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const [ganttEnabled, setGanttEnabled] = useState<boolean | null>(null);
 
   const editingEnabled = useCanEdit();
-
-  const isExecutable = useModelerStateStore((state) => state.isExecutable);
 
   // Fetch gantt view settings
   useEffect(() => {
@@ -110,7 +96,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
 
-  const { isListView, processContextPath } = useProcessView();
+  const { isListView } = useProcessView();
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -166,72 +152,6 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
 
   const selectedVersionId = query.get('version');
 
-  const [versionToDeploy, setVersionToDeploy] = useState('');
-
-  const createProcessVersion = async (
-    values?: {
-      versionName: string;
-      versionDescription: string;
-    },
-    deploy?: boolean | string,
-  ) => {
-    try {
-      let toDeploy = deploy;
-
-      if (values) {
-        // Ensure latest BPMN on server.
-        const xml = (await modeler?.getXML()) as string;
-        if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
-          throw new Error();
-
-        const newVersion = await createVersion(
-          values.versionName,
-          values.versionDescription,
-          processId,
-          environment.spaceId,
-        );
-
-        if (isUserErrorResponse(newVersion)) throw new Error();
-
-        toDeploy = newVersion || false;
-
-        // reimport the new version since the backend has added versionBasedOn information that would
-        // be overwritten by following changes
-        const newBpmn = await getProcessBPMN(processId, environment.spaceId);
-        if (newBpmn && typeof newBpmn === 'string') {
-          await modeler?.loadBPMN(newBpmn);
-        }
-
-        router.refresh();
-        message.success('Version Created');
-      }
-
-      if (typeof toDeploy === 'string') {
-        setVersionToDeploy(toDeploy);
-      }
-    } catch (_) {
-      message.error('Something went wrong');
-    }
-  };
-
-  const deployVersion = async (engine: Engine) => {
-    await deployProcess(
-      process.id,
-      versionToDeploy === 'latest' ? '' : versionToDeploy,
-      environment.spaceId,
-      'dynamic',
-      engine,
-    );
-    setVersionToDeploy('');
-    message.success('Process Deployed');
-    let path = `/executions/${process.id}`;
-    if (versionToDeploy === 'latest') {
-      const instanceId = await startInstanceOnMachine(process.id, '_latest', engine);
-      path += `?instance=${instanceId}`;
-    }
-    router.push(spaceURL(environment, path));
-  };
-
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
@@ -280,9 +200,6 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
     }
   };
 
-  const filterOption: SelectProps['filterOption'] = (input, option) =>
-    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
-
   const selectedVersion =
     process.versions.find((version) => version.id === (selectedVersionId ?? '-1')) ??
     LATEST_VERSION;
@@ -312,54 +229,9 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
           }}
         >
           <ToolbarGroup>
-            <Select
-              popupMatchSelectWidth={false}
-              placeholder="Select Version"
-              showSearch
-              filterOption={filterOption}
-              value={selectedVersion.id}
-              onChange={(value) => {
-                // change the version info in the query but keep other info (e.g. the currently open subprocess)
-                const searchParams = new URLSearchParams(query);
-                if (!value || value === '-1') searchParams.delete('version');
-                else searchParams.set(`version`, `${value}`);
-                router.push(
-                  spaceURL(
-                    environment,
-                    `/processes${processContextPath}/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
-                    }`,
-                  ),
-                );
-              }}
-              options={(isListView ? [] : [LATEST_VERSION])
-                .concat(process.versions ?? [])
-                .map(({ id, name }) => ({
-                  value: id,
-                  label: name,
-                }))}
-            />
+            <VersionAndDeploy process={process} />
             {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>
-                <Tooltip title="Create New Version">
-                  <VersionCreationButton
-                    processId={processId}
-                    icon={<PlusOutlined />}
-                    createVersion={createProcessVersion}
-                    disabled={isListView}
-                    isExecutable={isExecutable}
-                  />
-                </Tooltip>
-                <Tooltip title="Test Deploy and Start">
-                  <Button
-                    icon={<ExperimentOutlined />}
-                    onClick={() => setVersionToDeploy('latest')}
-                  />
-                </Tooltip>
-                <EngineSelection
-                  open={!!versionToDeploy}
-                  onClose={() => setVersionToDeploy('')}
-                  onSubmit={deployVersion}
-                />
                 <Tooltip title="Undo">
                   <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
                 </Tooltip>

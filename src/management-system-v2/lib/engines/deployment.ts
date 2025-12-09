@@ -50,8 +50,9 @@ async function deployProcessToMachines(
             engine,
           });
 
+          let startForm = Promise.resolve();
           if (version.startForm) {
-            engineRequest({
+            startForm = engineRequest({
               method: 'put',
               endpoint: '/process/:definitionId/versions/:version/start-form',
               pathParams: {
@@ -102,7 +103,7 @@ async function deployProcessToMachines(
             }),
           );
 
-          await Promise.all([...scripts, ...userTasks, ...images]);
+          await Promise.all([...scripts, ...userTasks, ...images, startForm]);
         }),
       );
     });
@@ -236,7 +237,7 @@ export async function deployProcess(
 
     if ('latest' in process.versions) {
       const versionCreatedOn = toCustomUTCString(new Date());
-      const latest = versions['latest'];
+      const { latest } = versions;
       latest.name = 'Latest';
       const bpmnObj = await toBpmnObject(latest.bpmn);
       await setDefinitionsVersionInformation(bpmnObj, {
@@ -246,15 +247,17 @@ export async function deployProcess(
         versionCreatedOn,
       });
       latest.bpmn = await toBpmnXml(bpmnObj);
+      process.versions._latest = latest;
+      delete process.versions.latest;
     }
 
     return { ...process, versions };
   });
 
   if (method === 'static') {
-    await staticDeployment(definitionId, version || 'latest', processesExportData, machines);
+    await staticDeployment(definitionId, version || '_latest', processesExportData, machines);
   } else {
-    await dynamicDeployment(definitionId, version || 'latest', processesExportData, machines);
+    await dynamicDeployment(definitionId, version || '_latest', processesExportData, machines);
   }
 }
 export type ImportInformation = { definitionId: string; processId: string; version: number };

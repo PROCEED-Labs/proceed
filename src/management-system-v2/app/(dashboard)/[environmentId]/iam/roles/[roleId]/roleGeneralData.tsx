@@ -59,7 +59,7 @@ const FolderInput = ({
           >
             Clear folder
           </Button>
-          <FolderTree
+          <FolderTree<{ id: string; name: string; type: string }>
             newChildrenHook={({ nodes }) => nodes.filter((node) => node.element.type === 'folder')}
             onSelect={(element) => {
               if (element?.type !== 'folder') return;

@@ -92,10 +92,14 @@ export async function _addUser(
     const [usernameRes, emailRes] = await Promise.all(checks);
 
     if (usernameRes) {
-      return err(new NextAuthUsernameTakenError());
+      if (usernameRes.isErr()) return usernameRes;
+
+      if (usernameRes.value) return err(new NextAuthUsernameTakenError());
     }
     if (emailRes) {
-      return err(new NextAuthEmailTakenError());
+      if (emailRes.isErr()) return emailRes;
+
+      if (emailRes.value) return err(new NextAuthEmailTakenError());
     }
   }
 

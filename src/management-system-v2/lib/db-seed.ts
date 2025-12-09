@@ -198,14 +198,16 @@ async function writeSeedToDb(seed: DBSeed) {
       const existingUser = await getUserById(user.id);
       if (existingUser.isErr()) throw existingUser.error;
 
-      if (existingUser) {
+      if (existingUser.value) {
         // Use the username in seed-file instead of username in the db, as it may have changed
         usernameToId.set(user.username, existingUser.value.id);
         continue;
       }
 
+      console.log('1');
       const newUser = await addUser({ ...user, isGuest: false, emailVerifiedOn: null }, tx);
       if (newUser.isErr()) throw newUser.error;
+      console.log('2');
 
       const hashedPassword = await hashPassword(user.initialPassword);
       await setUserPassword(user.id, hashedPassword, tx, true);

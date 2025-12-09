@@ -2,7 +2,10 @@
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
-import { RoleType, UserType } from './use-potentialOwner-store';
+import {
+  RoleType,
+  UserType,
+} from '@/components/competence/potential-owner/use-potentialOwner-store';
 
 export const fetchPotentialOwner = async (environmentId: string) => {
   const user: UserType = {};

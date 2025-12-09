@@ -61,6 +61,11 @@ export type Variable = {
    */
   dataType: string;
   /**
+   * - expected formatting for variables with type text (e.g. url,
+   * email, ...)
+   */
+  textFormat?: string;
+  /**
    * - the value that the variable should have when none is manually set at startup
    */
   defaultValue?: string;
@@ -360,6 +365,8 @@ export function getProcessDocumentationByObject(processObject: object): string;
  * @property {string} name - variable name
  * @property {string} [description] - a description of the variable
  * @property {string} dataType - the type of the value of the variable
+ * @property {string} [textFormat] - expected formatting for variables with type text (e.g. url,
+ * email, ...)
  * @property {string} [defaultValue] - the value that the variable should have when none is manually set at startup
  * @property {boolean} [requiredAtInstanceStartup] - if the variable has to be initialized when an instance is started
  * @property {string} [enum] - enumeration of the values that the variable is allowed to have (a string with values separated by ';')
@@ -377,9 +384,12 @@ export function getVariablesFromElement(element: object): Variable[];
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId the id of the element
- * @returns {Variable[]} array with all variables
+ * @returns {Promise<Variable[]>} array with all variables
  */
-export function getVariablesFromElementById(bpmn: string | object, elementId: string): Variable[];
+export function getVariablesFromElementById(
+  bpmn: string | object,
+  elementId: string,
+): Promise<Variable[]>;
 /**
  * Get the file names for the start forms of all processes,
  * (The attribute 'uiForNontypedStartEventsFileName' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
@@ -747,6 +757,20 @@ export function getPerformersFromElement(element: object): any[];
  * @returns {Array} array with all performers
  */
 export function getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
+/**
+ * Returrns the roles and users that may be owners of a specific element
+ *
+ * @param {string} elementId id of the element to get the potential owners for
+ * @param {(string|object)} bpmn the bpmn containing the element
+ * @returns {{ user: string[], roles: string[] }} the potential owners of the element
+ */
+export function getPotentialOwnersFromElementById(
+  elementId: string,
+  bpmn: string | object,
+): {
+  user: string[];
+  roles: string[];
+};
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration

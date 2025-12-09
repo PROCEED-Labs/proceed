@@ -35,34 +35,37 @@ FROM node:20-alpine AS base
 # Step 2. Production image, copy all the files and run next
 FROM base AS runner
 
-WORKDIR /app
-
-ENV NODE_ENV production
-
+ENV NODE_ENV=production
 ENV DATABASE_URL=$DATABASE_URL
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY public ./public
+# Sets the working directory to /app
+WORKDIR /app
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
+# Create a data directory for the MS under /app/volume and gives it the right permissions
+RUN mkdir volume
+RUN chown -R nextjs:nodejs volume
+
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --chown=nextjs:nodejs public ./public
 COPY --chown=nextjs:nodejs .next/standalone/src/management-system-v2 ./
 COPY --chown=nextjs:nodejs .next/standalone/node_modules ./node_modules
 COPY --chown=nextjs:nodejs .next/static ./.next/static
 
 USER nextjs
 
+# Port and Listening address for Next.js Application (our MS)
+ENV PORT=33081
+ENV HOSTNAME="0.0.0.0"
+# EXPOSE is actually optional for documentation purposes
 EXPOSE 33081
-
-ENV PORT 33081
-# set hostname to localhost
-ENV HOSTNAME "0.0.0.0"
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output

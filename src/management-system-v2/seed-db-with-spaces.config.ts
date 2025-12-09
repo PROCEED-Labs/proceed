@@ -1,4 +1,5 @@
-import { DBSeed } from './lib/db-seed';
+import { DBSeed } from '@/lib/db-seed';
+import { env } from '@/lib/ms-config/env-vars';
 
 export const seedDbConfig: DBSeed = {
   version: '2025-08-01T00:00:00.000Z',
@@ -11,7 +12,7 @@ export const seedDbConfig: DBSeed = {
       username: 'admin',
       firstName: 'Admin',
       lastName: 'Admin',
-      initialPassword: process.env.IAM_MS_ADMIN_INITIAL_PASSWORD || 'proceed',
+      initialPassword: env.IAM_MS_ADMIN_INITIAL_PASSWORD,
     },
   ],
   organizations: [],

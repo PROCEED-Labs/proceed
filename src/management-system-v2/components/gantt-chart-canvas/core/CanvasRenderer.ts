@@ -118,7 +118,7 @@ export class CanvasRenderer {
   private lastSubgridLines?: TimeAxisGridLine[];
   private currentTimeUnit?: TimeUnit;
   private currentTimeLevel?: TimeLevel;
-  private currentPixelsPerDay: number = 0; // Store actual pixels per day for debugging
+  private currentPixelsPerDay: number = 0; // Store current pixels per day
 
   // Current date for "now" line
   private currentDate: Date = new Date();
@@ -276,10 +276,10 @@ export class CanvasRenderer {
     const { unit: timeUnit, level: timeLevel } =
       TimeAxisRenderer.getTimeUnitAndLevelFromScale(msPerPixel);
 
-    // Save the exact pixels per day value for consistent debug display
+    // Save the exact pixels per day value for consistent rendering
     this.currentPixelsPerDay = pixelsPerDay;
 
-    // Store the current time unit and level for debugging
+    // Store the current time unit and level
     this.currentTimeUnit = timeUnit;
     this.currentTimeLevel = timeLevel;
 
@@ -344,6 +344,7 @@ export class CanvasRenderer {
     highlightedDependencies?: GanttDependency[],
     selectedElementId?: string | null,
     curvedDependencies?: boolean,
+    collapsedSubProcesses?: Set<string>,
   ): void {
     const context = this.contexts.get(CanvasLayerType.ChartContent);
     if (!context) return;
@@ -418,7 +419,18 @@ export class CanvasRenderer {
       }
     }
 
-    // Render dependency arrows first (behind elements)
+    // Render collapsed indicators first (as background)
+    if (collapsedSubProcesses && collapsedSubProcesses.size > 0) {
+      this.renderCollapsedIndicators(
+        context,
+        elements,
+        visibleRowStart,
+        visibleRowEnd,
+        collapsedSubProcesses,
+      );
+    }
+
+    // Render dependency arrows second (above collapsed indicators, behind elements)
     if (dependencies && dependencies.length > 0) {
       this.dependencyRenderer.renderDependencies(
         context,
@@ -432,7 +444,18 @@ export class CanvasRenderer {
       );
     }
 
-    // Delegate element rendering to ElementRenderer with modified matrix
+    // FIRST: Render constraint backgrounds BEFORE elements so they appear behind
+    // This ensures slashes don't cover element content or dependencies
+    this.elementRenderer.renderConstraintBackgrounds(
+      context,
+      elements,
+      modifiedMatrix, // Use modified matrix
+      visibleRowStart,
+      visibleRowEnd,
+      collapsedSubProcesses,
+    );
+
+    // THEN: Delegate element rendering to ElementRenderer with modified matrix
     const renderResult = this.elementRenderer.renderElements(
       context,
       elements,
@@ -440,9 +463,10 @@ export class CanvasRenderer {
       visibleRowStart,
       visibleRowEnd,
       undefined, // hoveredElementId
+      collapsedSubProcesses, // Pass collapsed sub-processes
     );
 
-    // Update visible elements for debugging
+    // Update visible elements cache
     this.visibleElements = renderResult.visibleElements;
 
     // Restore the context state
@@ -551,6 +575,68 @@ export class CanvasRenderer {
         delete (config as any)._forceGridLineRedraw;
       }
     }
+  }
+
+  /**
+   * Render collapsed indicators for collapsed sub-processes
+   */
+  private renderCollapsedIndicators(
+    context: CanvasRenderingContext2D,
+    elements: GanttElementType[],
+    visibleRowStart: number,
+    visibleRowEnd: number,
+    collapsedSubProcesses: Set<string>,
+  ): void {
+    context.save();
+
+    elements.forEach((element, rowIndex) => {
+      // Skip elements outside the visible row range
+      if (rowIndex < visibleRowStart || rowIndex > visibleRowEnd) {
+        return;
+      }
+
+      const isCollapsedSubProcess =
+        element.type === 'group' &&
+        (element as any).isSubProcess &&
+        collapsedSubProcesses.has(element.id);
+
+      if (isCollapsedSubProcess) {
+        // Render collapsed indicator bar right after the element row
+        const y = (rowIndex + 1) * ROW_HEIGHT - 2.5; // Position it slightly above the next row
+        const indicatorHeight = 5 * this.pixelRatio;
+
+        // Fill the grey background
+        context.fillStyle = '#e8e8e8';
+        context.fillRect(0, y, context.canvas.width, indicatorHeight);
+
+        // Add subtle borders
+        context.fillStyle = '#d0d0d0';
+        context.fillRect(0, y, context.canvas.width, 1 * this.pixelRatio); // Top border
+        context.fillRect(
+          0,
+          y + indicatorHeight - 1 * this.pixelRatio,
+          context.canvas.width,
+          1 * this.pixelRatio,
+        ); // Bottom border
+
+        // Add v symbols spanning the width with spacing
+        context.fillStyle = '#999';
+        context.font = `${10 * this.pixelRatio}px Arial`;
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+
+        const canvasWidth = context.canvas.width / this.pixelRatio; // Convert back to logical pixels
+        const symbolSpacing = 40; // Space between v symbols
+        const numSymbols = Math.floor(canvasWidth / symbolSpacing);
+
+        for (let i = 0; i < numSymbols; i++) {
+          const x = (i + 0.5) * symbolSpacing;
+          context.fillText('∨', x * this.pixelRatio, y + indicatorHeight / 2);
+        }
+      }
+    });
+
+    context.restore();
   }
 
   /**

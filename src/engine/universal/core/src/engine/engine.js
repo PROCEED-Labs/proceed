@@ -6,13 +6,14 @@ const { setupNeoEngine } = require('./neoEngineSetup.js');
 const { getNewInstanceHandler } = require('./hookCallbacks.js');
 const { getShouldPassToken } = require('./shouldPassToken.js');
 const { getShouldActivateFlowNode } = require('./shouldActivateFlowNode.js');
-const { getProcessIds } = require('@proceed/bpmn-helper');
+const { getProcessIds, getVariablesFromElementById } = require('@proceed/bpmn-helper');
 
 const { enableMessaging } = require('../../../../../../FeatureFlags.js');
 const { publishCurrentInstanceState } = require('./publishStateUtils');
 // const Separator = require('./separator.js').default;
 
 const { teardownEngineStatusInformationPublishing } = require('./publishStateUtils');
+const APIError = require('@proceed/distribution/src/routes/ApiError.js');
 
 setupNeoEngine();
 
@@ -61,6 +62,18 @@ class Engine {
      * @private
      */
     this._versionBpmnMapping = {};
+
+    /**
+     * A mapping from the version of a process to the default values of its defined variables
+     * @private
+     */
+    this._versionDefaultVariableValueMapping = {};
+
+    /**
+     * A mapping from the version of a process to variables that require variables at instance start
+     * @private
+     */
+    this._versionRequiredVariablesMapping = {};
 
     /**
      * A mapping from an instance to the Neo Engine Process it is currently being executed in
@@ -116,6 +129,38 @@ class Engine {
           `Process version ${versionId} for process ${processId} with definitionId ${definitionId} is invalid. It can't be deployed.`,
         );
       }
+
+      const variables = await getVariablesFromElementById(bpmn, processId);
+
+      // get the default values for the variables that are defined for this version
+      const defaultValues = Object.fromEntries(
+        variables
+          .filter((variable) => variable.defaultValue !== undefined)
+          .map((variable) => {
+            // map the default values that are stored as strings to the correct types
+            let { defaultValue } = variable;
+            switch (variable.dataType) {
+              case 'string':
+                defaultValue = variable.defaultValue;
+                break;
+              case 'number':
+                defaultValue = parseFloat(variable.defaultValue);
+                break;
+              case 'boolean':
+                defaultValue = variable.defaultValue === 'true' ? true : false;
+                break;
+            }
+
+            return [variable.name, { value: defaultValue }];
+          }),
+      );
+      this._versionDefaultVariableValueMapping[versionId] = defaultValues;
+
+      // get the variables that have to be set at the start of each instance of this version
+      const requiredVariables = variables
+        .filter((variable) => variable.requiredAtInstanceStartup)
+        .map((variable) => variable.name);
+      this._versionRequiredVariablesMapping[versionId] = requiredVariables;
 
       const log = logging.getLogger({
         moduleName: 'CORE',
@@ -233,14 +278,29 @@ class Engine {
           adaptationLog: instance.adaptationLog,
         });
       } else {
+        const defaultVariableValues = this._versionDefaultVariableValueMapping[version];
+        const requiredVariables = this._versionRequiredVariablesMapping[version];
+
+        const variables = { ...defaultVariableValues, ...processVariables };
+
+        const missingVariables = requiredVariables.filter((req) => !(req in variables));
+
+        if (missingVariables.length) {
+          throw new APIError(
+            400,
+            `Unable to start instance. Some variables that require a value at instance start were not provided values (${missingVariables.join(', ')}).`,
+          );
+        }
+
         // start the process at a its start event
         this._versionProcessMapping[version].start({
-          variables: processVariables,
+          variables,
           token: { machineHops: 0, deciderStorageTime: 0, deciderStorageRounds: 0 },
         });
       }
     } catch (error) {
-      this._log.error(error);
+      this._log.error(error.message);
+      throw error;
     }
 
     return instanceCreatedPromise;
@@ -361,6 +421,7 @@ class Engine {
     // remember the changes made by this user task invocation
     userTask.variableChanges = { ...token.intermediateVariablesState };
     userTask.milestones = { ...token.milestones };
+    userTask.actualOwner = [...token.actualOwner];
 
     userTask.processInstance.completeActivity(userTask.id, userTask.tokenId, variables);
   }
@@ -593,6 +654,7 @@ class Engine {
             progress: token.currentFlowNodeProgress,
             priority: token.priority,
             performers: token.performers,
+            actualOwner: token.actualOwner,
           });
         }
       });
@@ -803,6 +865,7 @@ class Engine {
         priority: token.priority,
         progress: token.currentFlowNodeProgress.value,
         performers: token.performers,
+        actualOwner: token.actualOwner,
       };
     });
     return pendingUserTasksWithTokenInfo;
@@ -825,6 +888,7 @@ class Engine {
         priority: userTaskLogEntry.priority,
         progress: userTaskLogEntry.progress.value,
         performers: userTaskLogEntry.performers,
+        actualOwner: userTaskLogEntry.actualOwner,
       };
     });
     return inactiveUserTasksWithLogInfo;

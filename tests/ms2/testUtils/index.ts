@@ -109,7 +109,7 @@ export async function closeModal(modal: Locator, triggerFunction: () => Promise<
 export async function waitForHydration(page: Page, isGuestUser = true) {
   // this button should be in the header on every page
   // const accountButton = page.getByRole('link', { name: 'user' });
-  const accountButton = await page.locator('#PROCEED-profile-menu-button');
+  const accountButton = page.locator('#PROCEED-profile-menu-button');
   // the menu that open when clicking the accountButton only works after the page has been fully hydrated
   await accountButton.click();
 
@@ -118,9 +118,9 @@ export async function waitForHydration(page: Page, isGuestUser = true) {
     .and(page.locator('.ant-dropdown:not(.ant-slide-up)'));
 
   if (isGuestUser) {
-    profileLocator = await profileLocator.getByRole('menuitem', { name: 'Delete Data' });
+    profileLocator = profileLocator.getByRole('menuitem', { name: 'Delete Data' });
   } else {
-    profileLocator = await profileLocator.getByRole('link', { name: 'Profile Settings' });
+    profileLocator = profileLocator.getByRole('link', { name: 'Profile Settings' });
   }
 
   await profileLocator.waitFor({ state: 'visible' });

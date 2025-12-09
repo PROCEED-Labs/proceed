@@ -66,7 +66,7 @@ export const packedGlobalUserRules = Object.freeze(
   packRules<AbilityRule>([...globalPersonalSpaceRules]),
 );
 
-export const adminRules = Object.freeze(
+export const packedAdminRules = Object.freeze(
   packRules([
     {
       subject: AllowedResourcesForAdmins,

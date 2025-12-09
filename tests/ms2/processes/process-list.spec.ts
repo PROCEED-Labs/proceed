@@ -394,32 +394,29 @@ test('toggle process list columns', async ({ processListPage }) => {
 test('test that selected columns are persisted on reload', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const VisibleColumns = ['ID', 'Description ', 'Last Edited '];
-  const HiddenColumns = ['Created On ', 'Created By '];
+  const HiddenColumns = ['ID', 'Description ', 'Last Edited '];
+  const VisibleColumns = ['Created On ', 'Created By '];
 
-  const toggleMenu = () =>
-    page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
+  // Open column selection
+  page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
 
   for (const column of VisibleColumns) {
     const checkbox = page.getByRole('checkbox', { name: column });
 
-    await toggleMenu(); // open
     expect(checkbox).toBeVisible();
     if (!(await checkbox.isChecked())) await checkbox.check();
     await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
-    await toggleMenu(); // close
   }
 
   for (const column of HiddenColumns) {
     const checkbox = page.getByRole('checkbox', { name: column });
 
-    await toggleMenu(); // open
     expect(checkbox).toBeVisible();
     if (await checkbox.isChecked()) await checkbox.uncheck();
     await expect(page.getByRole('columnheader', { name: column })).not.toBeVisible();
-    await toggleMenu(); // close
   }
 
+  // Reload page to see if columns are persisted
   await page.reload();
 
   for (const column of VisibleColumns) {
@@ -529,7 +526,7 @@ test('create a new folder and process, move process to folder and then delete bo
   // go to folder page
   const nameCell = folderRow.locator(`td:has-text("${folderId}")`);
   await nameCell.click({ clickCount: 1 });
-  await page.waitForURL(/\/processes\/folder\/([a-zA-Z0-9-_]+)/);
+  await page.waitForURL(/\/processes\/editor\/folder\/([a-zA-Z0-9-_]+)/);
 
   // check for process and delete it
   await expect(processLocator).toBeVisible();
@@ -599,14 +596,14 @@ test.describe('shortcuts in process-list', () => {
 
     /* Wait for Modeler to open */
     await page.waitForURL(
-      /\/processes\/([a-zA-Z0-9-_]+)/,
+      /\/processes\/editor\/([a-zA-Z0-9-_]+)/,
     ); /* TODO: should this be an expect / is this part of the test? */
     // await expect(page, 'New-Process-Modal should be submitable via ctrl/meta+enter').toHaveURL(
     //   /\/processes\/([a-zA-Z0-9-_]+)/,
     // );
 
     /* Save Process-ID*/
-    const processID = page.url().split('/').pop();
+    const processID = page.url().split('/processes/editor/').pop();
 
     await waitForHydration(page);
 
@@ -621,7 +618,7 @@ test.describe('shortcuts in process-list', () => {
 
     /* The /processes page should be visibe again */
     // await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);
-    await page.waitForURL('/processes');
+    await page.waitForURL('/processes/editor');
 
     /* New created Process should be in List */
     await expect(

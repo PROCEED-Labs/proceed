@@ -26,7 +26,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
   const { message } = App.useApp();
   const [upToDateGroup, setUpToDateGroup] = useState(group);
   const { spaceId } = useEnvironment();
-  const updateTimeout = useRef<ReturnType<typeof setTimeout> | undefined>();
+  const updateTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const changes = useRef<Record<string, string>>({});
 
   const [errors, parseInput] = useParseZodErrors(UserOrganizationEnvironmentInputSchema.partial());

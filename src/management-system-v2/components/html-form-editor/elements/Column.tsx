@@ -1,6 +1,6 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import { useDraggable } from '@dnd-kit/core';
-import { useContext, useRef } from 'react';
+import { useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
 import { useCanEdit } from '@/lib/can-edit-context';

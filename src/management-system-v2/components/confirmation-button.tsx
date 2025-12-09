@@ -86,7 +86,7 @@ const ConfirmationButton = forwardRef<HTMLAnchorElement, ConfirmationModalProps>
             ((canCloseWhileLoading || !loading) && setModalOpen(false)) || onExternalClose?.()
           }
           cancelButtonProps={{ disabled: !canCloseWhileLoading && loading }}
-          destroyOnClose={true}
+          destroyOnHidden={true}
         >
           {typeof description === 'string' ? (
             <Typography.Text>{description}</Typography.Text>

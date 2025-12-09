@@ -134,11 +134,10 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
     <Modal
       title={originalVariable ? `Edit Variable ${originalVariable.name}` : 'Add a new Variable'}
       open={open}
-      onClose={onCancel}
       onCancel={onCancel}
       okText={originalVariable ? 'Update' : 'Add'}
       onOk={handleSubmit}
-      destroyOnClose
+      destroyOnHidden
       maskClosable={false}
     >
       <Form layout="vertical" form={form} clearOnDestroy>

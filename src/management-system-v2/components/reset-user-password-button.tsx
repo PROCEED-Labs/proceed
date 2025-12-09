@@ -51,7 +51,7 @@ export default function ResetUserPasswordButton({
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         okButtonProps={{ loading }}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

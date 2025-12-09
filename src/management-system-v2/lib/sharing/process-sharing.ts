@@ -54,7 +54,7 @@ export async function generateSharedViewerUrl(
 
     const token = generateProcessShareToken(payload);
 
-    const header = headers();
+    const header = await headers();
     const host = header.get('host');
     const scheme = header.get('referer')?.split('://')[0];
 

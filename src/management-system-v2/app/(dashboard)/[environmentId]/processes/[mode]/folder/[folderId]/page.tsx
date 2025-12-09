@@ -18,11 +18,11 @@ import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
-const ProcessesPage = async ({
-  params,
-}: {
-  params: { environmentId: string; mode: string; folderId?: string };
+const ProcessesPage = async (props: {
+  params: Promise<{ environmentId: string; folderId?: string; mode: string }>;
 }) => {
+  const params = await props.params;
+
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   const favs = await getUsersFavourites();

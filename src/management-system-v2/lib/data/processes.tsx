@@ -57,7 +57,8 @@ import {
   saveProcessScriptTask as _saveProcessScriptTask,
   deleteProcessScriptTask as _deleteProcessScriptTask,
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
-  getEnvironmentScriptTasks as _getEnvironmentScriptTasks,
+  getFolderScriptTasks as _getFolderScriptTasks,
+  getFolderPathScriptTasks as _getFolderScriptTasks2,
 } from '@/lib/data/db/process';
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
@@ -658,12 +659,22 @@ export const saveProcessHtmlForm = async (
     return userError(message);
   }
 };
-
-export const getEnvironmentScriptTasks = async (environmentId: string) => {
+export const getFolderScriptTasks = async (environmentId: string, folderId?: string) => {
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    return await _getEnvironmentScriptTasks(environmentId, ability);
+    return await _getFolderScriptTasks(environmentId, folderId, ability);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+};
+
+export const getFolderPathScriptTasks = async (environmentId: string, folderId: string | null) => {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return await _getFolderScriptTasks2(environmentId, folderId, ability);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

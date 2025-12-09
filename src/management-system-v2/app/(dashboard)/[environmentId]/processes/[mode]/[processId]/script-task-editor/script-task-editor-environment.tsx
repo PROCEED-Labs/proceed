@@ -1,16 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Element } from 'bpmn-js/lib/model/Types';
 import type { ElementLike } from 'diagram-js/lib/model/Types';
-import { Badge, Modal, Button, Space, App, Menu, MenuProps, Tabs, TabsProps } from 'antd';
+import { Badge, Modal, Button, Space, App, Tabs, TabsProps } from 'antd';
 import ScriptEditor, { ScriptEditorRef } from './script-task-editor';
 import { useCanEdit } from '@/lib/can-edit-context';
 import { Process } from '@/lib/data/process-schema';
 import useModelerStateStore from '../use-modeler-state-store';
-import { useQuery } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
-import { getEnvironmentScriptTasks } from '@/lib/data/processes';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { getFolderScriptTasks, getFolderPathScriptTasks } from '@/lib/data/processes';
 import styles from './tab-bar-height.module.scss';
+import { FolderTree, TreeNode as FolderTreeNode, generateTreeNode } from '@/components/FolderTree';
+import { useQuery } from '@tanstack/react-query';
+import { isUserErrorResponse } from '@/lib/user-error';
+import type { FolderContentWithScriptTasks } from '@/lib/data/db/process';
+import nodemailer from 'next-auth/providers/nodemailer';
 
 function getScriptTaskLabel(element?: Element | ElementLike, knownFileName?: string) {
   if (knownFileName) {
@@ -26,6 +29,75 @@ function getScriptTaskLabel(element?: Element | ElementLike, knownFileName?: str
   }
 }
 
+function folderPathContentsToTreeStructure({
+  processId,
+  folderContents,
+}: {
+  folderContents: FolderContentWithScriptTasks[];
+  processId: string;
+}) {
+  const treeStructure: FolderTreeNode<FolderTreeDataType>[] = [];
+
+  let nextParentNode: FolderTreeNode<FolderTreeDataType> | undefined = undefined;
+
+  // The folder content is an array which starts at a folder and goes up to the root (given that
+  // the user has permissions for it)
+  for (let i = folderContents.length - 1; i >= 0; i--) {
+    const folder = folderContents[i];
+
+    let nextFolderId = i > 0 ? folderContents[i - 1].folderId : undefined;
+
+    const parentNodeChildren = nextParentNode?.children ?? treeStructure;
+    for (const child of folder.content) {
+      const node = generateTreeNode(child);
+
+      // Set the parent for the next folder
+      if (child.type === 'folder' && child.id === nextFolderId) {
+        node.children = [];
+        node.isLeaf = false;
+        nextParentNode = node;
+      }
+
+      if (child.type === 'process') {
+        node.children = child.scriptTasks.map((fileName) =>
+          generateTreeNode({
+            name: getScriptTaskLabel(undefined, fileName),
+            id: `${child.id} ${fileName}`,
+            type: 'scriptTask',
+          }),
+        );
+        node.isLeaf = false;
+      }
+
+      parentNodeChildren.push(node);
+    }
+  }
+
+  const pathToProcess = folderContents.map((folderContent) => folderContent.folderId);
+  pathToProcess.push(processId);
+
+  return { treeStructure, pathToProcess };
+}
+
+type FolderTreeDataType =
+  | {
+      type: 'process';
+      id: string;
+      name: string;
+      scriptTasks: string[];
+    }
+  | {
+      type: 'folder';
+      id: string;
+      name: string;
+    }
+  | {
+      type: 'scriptTask';
+      id: string;
+      name: ReactNode;
+      label: string;
+    };
+
 type ScriptTaskEditorProviderProps = {
   process: Process;
   selectedElement?: Element;
@@ -40,34 +112,169 @@ export function ScriptTaskEditorEnvironment({
   const canEdit = useCanEdit();
   const app = App.useApp();
 
-  const allElements = useModelerStateStore((state) => state.modeler?.getAllElements());
-  const scriptTasksInProcess = useMemo(() => {
-    return allElements?.filter((el) => el.type === 'bpmn:ScriptTask') || [];
-  }, [allElements]);
+  /* -------------------------------------------------------------------------------------------------
+   * Folder Structure for folder tree
+   * -----------------------------------------------------------------------------------------------*/
+  const [folderTreeState, setFolderTreeState] = useState<FolderTreeNode<FolderTreeDataType>[]>([]);
+  const nodeMap = useRef(new Map<React.Key, FolderTreeNode<FolderTreeDataType>>());
+  // Keep nodeMap up to date in case the component doesn't control additions to the tree
+  useEffect(() => {
+    if (!folderTreeState) return;
+
+    function updateTreeNode(nodes: FolderTreeNode<FolderTreeDataType>[]) {
+      for (const node of nodes) {
+        nodeMap.current.set(node.element.id, node);
+
+        if (node.children && typeof node.children !== 'function') {
+          updateTreeNode(node.children as FolderTreeNode<FolderTreeDataType>[]);
+        }
+      }
+    }
+    updateTreeNode(folderTreeState);
+
+    // This would be the case if the process starts out not having any script task
+    const processNode = nodeMap.current.get(process.id);
+    const folderNode = nodeMap.current.get(process.folderId);
+
+    if (folderNode && !processNode) {
+      if (!folderNode.children) folderNode.children = [];
+
+      // TODO: this doesn't react to the process changing name
+      const processNode = generateTreeNode({
+        name: process.name,
+        id: process.id,
+        type: 'process' as const,
+        scriptTasks: [],
+      });
+      processNode.isLeaf = false;
+
+      nodeMap.current.set(process.id, processNode);
+      folderNode.children.push(processNode);
+
+      // rerender
+      setFolderTreeState((prev) => [...prev]);
+    }
+  }, [folderTreeState, process.name, process.id, process.folderId]);
+
+  const { data: treeStructureData } = useQuery({
+    queryFn: async () => {
+      const result = await getFolderPathScriptTasks(space.spaceId, process.folderId);
+
+      if (isUserErrorResponse(result)) {
+        throw result.error;
+      }
+
+      return { folderContents: result, processId: process.id };
+    },
+    select: folderPathContentsToTreeStructure,
+    queryKey: ['FolderPathScriptTasks', space.spaceId, process.id, process.folderId],
+  });
+
+  useEffect(() => {
+    if (treeStructureData?.treeStructure) {
+      setFolderTreeState(treeStructureData.treeStructure);
+    }
+  }, [treeStructureData?.treeStructure]);
 
   const editorRefs = useRef<Map<string, ScriptEditorRef | null>>(new Map());
 
-  const { data: allScriptTasks } = useQuery({
-    queryFn: async () => {
-      const res = await getEnvironmentScriptTasks(space.spaceId);
-      if (isUserErrorResponse(res)) throw res.error;
-      return res;
-    },
-    queryKey: ['allSpaceScriptTasks', space.spaceId],
-  });
-
+  /* -------------------------------------------------------------------------------------------------
+   * Script Tasks in process
+   * -----------------------------------------------------------------------------------------------*/
+  const modeler = useModelerStateStore((state) => state.modeler);
+  const modelerEventBus = useModelerStateStore((state) => state.modeler?.getEventBus());
+  const [scriptTasksInProcess, setScriptTasksInProcess] = useState<Record<string, ElementLike>>({});
   const [scriptTasksWithChanges, setScriptTasksWithChanges] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!modelerEventBus || !modeler) return;
+
+    function setScriptTasksObj() {
+      const obj: Record<string, ElementLike> = {};
+      for (const el of modeler!.getAllElements()) {
+        if (el.type === 'bpmn:ScriptTask') {
+          obj[el.id] = el;
+        }
+      }
+      setScriptTasksInProcess(obj);
+    }
+    setScriptTasksObj();
+
+    //
+
+    // Update on changes to the modeler
+    function changeListener(event: any) {
+      const element = event.element as ElementLike;
+
+      if (element.type !== 'bpmn:ScriptTask') return;
+
+      setScriptTasksObj();
+    }
+
+    modelerEventBus.on('shape.added', changeListener);
+    modelerEventBus.on('shape.removed', changeListener);
+    modelerEventBus.on('element.changed', changeListener);
+
+    return () => {
+      modelerEventBus.off('shape.added', changeListener);
+      modelerEventBus.off('shape.removed', changeListener);
+      modelerEventBus.off('element.changed', changeListener);
+    };
+  }, [modelerEventBus, modeler]);
+
+  const processNode = nodeMap.current.get(process.id);
+  if (processNode) {
+    processNode.children = [];
+
+    for (const bpmnElement of Object.values(scriptTasksInProcess)) {
+      const id = `${process.id} ${bpmnElement.id}`;
+      const label = getScriptTaskLabel(bpmnElement);
+
+      let name = label;
+      if (scriptTasksWithChanges[id]) {
+        name = (
+          <span>
+            <Badge style={{ marginLeft: 4 }} status="warning" /> {name}
+          </span>
+        );
+      }
+
+      const node = generateTreeNode({
+        name,
+        label,
+        id,
+        type: 'scriptTask' as const,
+      });
+      processNode.children.push(node);
+      nodeMap.current.set(id, node);
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------
+   * Script Editors
+   * -----------------------------------------------------------------------------------------------*/
 
   const [activeScriptEditor, setActiveScriptEditor] = useState<string | undefined>();
   useEffect(() => {
     if (selectedElement) {
-      setActiveScriptEditor(`${process.id} ${selectedElement.id}`);
+      const key = `${process.id} ${selectedElement.id}`;
+      setTabItems((prev) => {
+        if (prev.find((tab) => tab.key === key)) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          scriptTaskTabEntry({ processId: process.id, scriptTaskBpmnElement: selectedElement }),
+        ];
+      });
+      setActiveScriptEditor(key);
     }
   }, [process.id, selectedElement]);
 
-  const activeEditor = activeScriptEditor ? editorRefs.current.get(activeScriptEditor) : null;
+  const activeEditor = activeScriptEditor ? editorRefs.current.get(activeScriptEditor) : undefined;
 
-  async function saveAll(_refList?: ScriptEditorRef[]) {
+  async function saveRefListOrAll(_refList?: ScriptEditorRef[]) {
     try {
       let refList: ScriptEditorRef[];
       if (!_refList) {
@@ -108,12 +315,12 @@ export function ScriptTaskEditorEnvironment({
     const withUnsavedChangesRefs: ScriptEditorRef[] = [];
     for (const [key, hasChanges] of Object.entries(scriptTasksWithChanges)) {
       const bpmnElementId = key.split(' ')[1];
-      const bpmnElement = scriptTasksInProcess.find(
-        (scriptTask) => scriptTask.id === bpmnElementId,
-      );
+      const bpmnElement = scriptTasksInProcess[bpmnElementId];
 
-      if (!bpmnElement)
-        throw new Error('Bpmn element in scriptTasksWithChanges not found in scriptTasksInProcess');
+      if (!bpmnElement) {
+        // This should only happen when a script task is removed from the bpmn
+        return;
+      }
 
       if (hasChanges) {
         withUnsavedChanges.push(getScriptTaskLabel(bpmnElement));
@@ -139,7 +346,7 @@ export function ScriptTaskEditorEnvironment({
             </ul>
           </div>
         ),
-        onOk: () => saveAll(withUnsavedChangesRefs),
+        onOk: () => saveRefListOrAll(withUnsavedChangesRefs),
         okText: 'Save',
         cancelText: 'Discard',
         onCancel: () => {
@@ -152,109 +359,54 @@ export function ScriptTaskEditorEnvironment({
     }
   }
 
-  const tabItems = useMemo(() => {
-    type TabItems = Required<TabsProps>['items'];
-    const tabItems: TabItems = scriptTasksInProcess.map((scriptTaskBpmnElement) => {
-      // The key has to be with the bpmn element id, as the fileName could be undefined
-      const key = `${process.id} ${scriptTaskBpmnElement.id}`;
-      return {
-        label: '',
-        key,
-        children: (
-          <ScriptEditor
-            key={scriptTaskBpmnElement.id}
-            processId={process.id}
-            filename={getScriptTaskLabel(undefined, scriptTaskBpmnElement.businessObject.fileName)}
-            ref={(r) => {
-              editorRefs.current.set(key, r);
-            }}
-            scriptTaskBpmnElement={scriptTaskBpmnElement}
-            onChange={(unsavedValues) => {
-              if (scriptTasksWithChanges[key] !== unsavedValues) {
-                setScriptTasksWithChanges((prev) => ({ ...prev, [key]: unsavedValues }));
-              }
-            }}
-          />
-        ),
-      };
-    });
+  function scriptTaskTabEntry({
+    processId,
+    fileName,
+    scriptTaskBpmnElement,
+  }: {
+    processId: string;
+    fileName?: string;
+    scriptTaskBpmnElement?: ElementLike;
+  }) {
+    const key = `${processId} ${scriptTaskBpmnElement?.id || fileName}`;
 
-    if (!allScriptTasks) return tabItems;
+    function onChangeFunction(unsavedValues: boolean) {
+      setScriptTasksWithChanges((prevScriptTaskWithCanges) => {
+        // don't trigger rerender if nothing changed
+        if (prevScriptTaskWithCanges[key] === unsavedValues) return prevScriptTaskWithCanges;
 
-    for (const processWithScriptTasks of allScriptTasks) {
-      if (processWithScriptTasks.id === process.id) continue;
+        // This is a bit hacky, but the code above will add a badge to the script name
+        // We trigger a rerender here so that the tree will pick up on this change
+        setFolderTreeState((prev) => [...prev]);
 
-      for (const scriptTaskFileName of processWithScriptTasks.scriptTasks) {
-        const key = `${processWithScriptTasks.id} ${scriptTaskFileName}`;
-        tabItems.push({
-          key,
-          label: scriptTaskFileName,
-          children: (
-            <ScriptEditor
-              key={`${processWithScriptTasks.id} ${scriptTaskFileName}`}
-              processId={processWithScriptTasks.id}
-              filename={scriptTaskFileName}
-              ref={(r) => {
-                editorRefs.current.set(key, r);
-              }}
-            />
-          ),
-        });
-      }
-    }
-
-    return tabItems;
-  }, [allScriptTasks, process.id, scriptTasksInProcess, scriptTasksWithChanges]);
-
-  const menuItems = useMemo(() => {
-    type MenuItems = Required<MenuProps>['items'];
-    const menuItems: MenuItems = [
-      {
-        key: process.id,
-        // TODO: this could change, we should probably get it from some place else
-        label: process.name,
-        type: 'group',
-        children: scriptTasksInProcess.map((scriptTask) => {
-          const key = `${process.id} ${scriptTask.id}`;
-          return {
-            key,
-            label: (
-              <span>
-                {getScriptTaskLabel(scriptTask)}
-                {scriptTasksWithChanges[key] && (
-                  <Badge style={{ marginLeft: 4 }} status="warning" />
-                )}
-              </span>
-            ),
-          };
-        }),
-      },
-    ];
-
-    if (!allScriptTasks) return menuItems;
-
-    for (const processWithScriptTasks of allScriptTasks) {
-      if (processWithScriptTasks.id === process.id) continue;
-
-      menuItems.push({
-        key: processWithScriptTasks.id,
-        label: processWithScriptTasks.name,
-        type: 'group',
-        children: processWithScriptTasks.scriptTasks.map((scriptTaskFileName) => ({
-          key: `${processWithScriptTasks.id} ${scriptTaskFileName}`,
-          label: scriptTaskFileName,
-        })),
+        return { ...prevScriptTaskWithCanges, [key]: unsavedValues };
       });
     }
 
-    return menuItems;
-  }, [allScriptTasks, process.id, process.name, scriptTasksInProcess, scriptTasksWithChanges]);
+    return {
+      label: '',
+      key,
+      children: (
+        <ScriptEditor
+          key={key}
+          processId={processId}
+          filename={scriptTaskBpmnElement?.businessObject.fileName || fileName}
+          ref={(r) => {
+            editorRefs.current.set(key, r);
+          }}
+          scriptTaskBpmnElement={scriptTaskBpmnElement}
+          onChange={scriptTaskBpmnElement ? onChangeFunction : undefined}
+        />
+      ),
+    };
+  }
 
-  // TODO: change with different script tasks
-  const displayFilename = (selectedElement && selectedElement.businessObject.fileName) || undefined;
+  const [tabItems, setTabItems] = useState<Required<TabsProps>['items']>([]);
+
+  const currentTreeNode = activeScriptEditor && nodeMap.current.get(activeScriptEditor);
   let title = canEdit ? 'Edit Script Task' : 'Script Task';
-  if (displayFilename) {
-    title += `: ${displayFilename}`;
+  if (currentTreeNode && currentTreeNode.element.type === 'scriptTask') {
+    title += `: ${currentTreeNode.element.label}`;
   }
 
   return (
@@ -274,7 +426,11 @@ export function ScriptTaskEditorEnvironment({
           <Button onClick={handleClose}>Close</Button>
 
           <Button
-            onClick={() => activeEditor?.save()}
+            onClick={() => {
+              if (activeEditor) {
+                saveRefListOrAll([activeEditor]);
+              }
+            }}
             disabled={
               !canEdit ||
               (activeScriptEditor ? scriptTasksWithChanges[activeScriptEditor] !== true : true)
@@ -308,14 +464,52 @@ export function ScriptTaskEditorEnvironment({
         className={styles.Tabs}
         onChange={(key) => editorRefs.current.get(key)?.fillContainer()}
         renderTabBar={() => (
-          <Menu
-            items={menuItems}
-            selectedKeys={activeScriptEditor ? [activeScriptEditor] : undefined}
-            onSelect={({ key }) => {
-              setActiveScriptEditor(key);
-              // TODO: find a better way to do this
-              setTimeout(() => editorRefs.current.get(key)?.fillContainer(), 0);
+          <FolderTree<FolderTreeDataType>
+            // This makes it so that the folderTree doesn't fetch the root nodes
+            rootNodes={[]}
+            customGetContent={getFolderScriptTasks}
+            treeData={folderTreeState}
+            onTreeDataChange={setFolderTreeState}
+            expandedKeys={treeStructureData?.pathToProcess}
+            newChildrenHook={({ nodes }) => {
+              for (const node of nodes) {
+                if (node.element.type !== 'process' || node.element.id === process.id) continue;
+
+                node.isLeaf = false;
+                node.children = node.element.scriptTasks.map((scriptTaskFileName) =>
+                  generateTreeNode({
+                    name: scriptTaskFileName,
+                    label: scriptTaskFileName,
+                    id: `${node.element.id} ${scriptTaskFileName}`,
+                    type: 'scriptTask',
+                  }),
+                );
+              }
+
+              return nodes;
             }}
+            onSelect={(treeNode) => {
+              if (!treeNode || treeNode.type !== 'scriptTask') return;
+
+              const [processId, fileNameOrElementId] = treeNode.id.split(' ');
+              setTabItems((prev) => {
+                if (prev.find((tab) => tab.key === treeNode.id)) {
+                  return prev;
+                }
+
+                return prev.concat(
+                  scriptTaskTabEntry({
+                    processId,
+                    fileName: fileNameOrElementId,
+                    scriptTaskBpmnElement: scriptTasksInProcess[fileNameOrElementId],
+                  }),
+                );
+              });
+
+              setActiveScriptEditor(treeNode.id);
+            }}
+            selectedKeys={activeScriptEditor ? [activeScriptEditor] : undefined}
+            treeProps={{ style: { width: 300, overflow: 'hidden' } }}
           />
         )}
       />

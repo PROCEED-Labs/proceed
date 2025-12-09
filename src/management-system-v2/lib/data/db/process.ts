@@ -672,20 +672,65 @@ export async function getProcessUserTasks(processDefinitionsId: string) {
 /*
  * Returns the id, name and list of scriptTask filenames of all processes with scriptTasks.
  */
-export async function getEnvironmentScriptTasks(spaceId: string, ability?: Ability) {
-  const processes = await db.process.findMany({
-    where: {
-      environmentId: spaceId,
-    },
-    select: {
-      id: true,
-      name: true,
-      bpmn: true,
-    },
-  });
+export async function getFolderScriptTasks(spaceId: string, folderId?: string, ability?: Ability) {
+  if (!folderId) {
+    const rootFolder = await getRootFolder(spaceId);
+    folderId = rootFolder.id;
+  }
 
-  const processesWithScriptTaskFileNames: { id: string; name: string; scriptTasks: string[] }[] =
-    [];
+  const [processes, folders] = await Promise.all([
+    db.process.findMany({
+      where: {
+        environmentId: spaceId,
+        folderId,
+      },
+      select: {
+        id: true,
+        name: true,
+        bpmn: true,
+      },
+    }),
+    db.folder.findMany({
+      where: {
+        environmentId: spaceId,
+        parentId: folderId,
+      },
+      select: {
+        name: true,
+        id: true,
+        // We need this for the permission check to work
+        parentId: true,
+      },
+    }),
+  ]);
+
+  // TODO: subprocesses
+  const processesWithScriptTaskFileNames: (
+    | {
+        type: 'process';
+        id: string;
+        name: string;
+        scriptTasks: string[];
+      }
+    | {
+        type: 'folder';
+        id: string;
+        name: string;
+      }
+  )[] = [];
+
+  for (const folder of folders) {
+    if (
+      !ability ||
+      ability.can('view', toCaslResource('Folder', folder), { environmentId: spaceId })
+    ) {
+      processesWithScriptTaskFileNames.push({
+        type: 'folder',
+        id: folder.id,
+        name: folder.name,
+      });
+    }
+  }
 
   for (const process of processes) {
     if (!ability?.can('view', toCaslResource('Process', process), { environmentId: spaceId })) {
@@ -703,11 +748,138 @@ export async function getEnvironmentScriptTasks(spaceId: string, ability?: Abili
         id: process.id,
         name: process.name,
         scriptTasks: scriptTaskFileNames,
+        type: 'process',
       });
     }
   }
 
   return processesWithScriptTaskFileNames;
+}
+
+export type FolderContentWithScriptTasks = {
+  folderId: string;
+  content: (
+    | {
+        type: 'process';
+        id: string;
+        name: string;
+        scriptTasks: string[];
+      }
+    | {
+        type: 'folder';
+        id: string;
+        name: string;
+      }
+  )[];
+};
+/**
+ * Returns an array containing the folders and processes with script tasks for every folder
+ * starting at the `folderId` param and ending at the root folder of the environment.
+ */
+export async function getFolderPathScriptTasks(
+  spaceId: string,
+  folderId: string | null,
+  ability?: Ability,
+) {
+  const results: FolderContentWithScriptTasks[] = [];
+
+  // Start at folder and go up in the tree
+  let currentFolderId: string | null = folderId;
+  while (currentFolderId !== null) {
+    const [currentFolder, processes, folders] = await Promise.all([
+      db.folder.findFirst({
+        where: {
+          environmentId: spaceId,
+          id: currentFolderId,
+        },
+        select: {
+          id: true,
+          // We need this for the permission check to work
+          parentId: true,
+        },
+      }),
+      db.process.findMany({
+        where: {
+          environmentId: spaceId,
+          folderId: currentFolderId,
+        },
+        select: {
+          id: true,
+          name: true,
+          bpmn: true,
+        },
+      }),
+      db.folder.findMany({
+        where: {
+          environmentId: spaceId,
+          parentId: currentFolderId,
+        },
+        select: {
+          name: true,
+          id: true,
+          // We need this for the permission check to work
+          parentId: true,
+        },
+      }),
+    ]);
+
+    if (!currentFolder) {
+      throw new Error(`Possible consistency error: folder id ${currentFolderId} was not found`);
+    }
+
+    if (
+      !ability ||
+      ability.can('view', toCaslResource('Folder', currentFolder), { environmentId: spaceId })
+    ) {
+      // TODO: early stop
+    }
+
+    // TODO: subprocesses
+    const processesWithScriptTaskFileNames: FolderContentWithScriptTasks = {
+      folderId: currentFolderId,
+      content: [],
+    };
+
+    for (const folder of folders) {
+      if (
+        !ability ||
+        ability.can('view', toCaslResource('Folder', folder), { environmentId: spaceId })
+      ) {
+        processesWithScriptTaskFileNames.content.push({
+          type: 'folder',
+          id: folder.id,
+          name: folder.name,
+        });
+      }
+    }
+
+    for (const process of processes) {
+      if (!ability?.can('view', toCaslResource('Process', process), { environmentId: spaceId })) {
+        continue;
+      }
+
+      const bpmnObj = await toBpmnObject(process.bpmn);
+      const allElements = getAllElements(bpmnObj);
+      const scriptTaskFileNames = allElements
+        .filter((el) => el.$type === 'bpmn:ScriptTask' && typeof el.fileName === 'string')
+        .map((el) => el.fileName);
+
+      if (scriptTaskFileNames.length > 0) {
+        processesWithScriptTaskFileNames.content.push({
+          id: process.id,
+          name: process.name,
+          scriptTasks: scriptTaskFileNames,
+          type: 'process',
+        });
+      }
+    }
+
+    results.push(processesWithScriptTaskFileNames);
+
+    currentFolderId = currentFolder.parentId;
+  }
+
+  return results;
 }
 
 /** Returns the filenames of the data for all script tasks in the given process */

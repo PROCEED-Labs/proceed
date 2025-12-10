@@ -12,6 +12,10 @@ const { javascriptGenerator } = BlocklyJavaScript;
 import * as Blockly from 'blockly';
 import { debounce } from '@/lib/utils';
 
+/**
+ * Checks that there aren't blocks "floating", that is that every block
+ * that needs to be connected is connected to something.
+ */
 function validateBlockScript(workspace: Blockly.WorkspaceSvg) {
   const topBlocks = workspace.getTopBlocks();
 
@@ -115,6 +119,7 @@ const BlocklyEditor = ({
           'Tried to render xml, but the blockly editor was in headless mode (probably unmounted)',
         );
       }
+      window.here = blocklyWorkspaceRef.current;
 
       const xml = Blockly.utils.xml.textToDom(initialXml);
       Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyWorkspaceRef.current);

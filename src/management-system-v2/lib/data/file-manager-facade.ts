@@ -378,7 +378,7 @@ async function saveProfilePicture(
   // TODO: leaky abstraction
   if (!status) {
     await deleteFile(filePath);
-    throw new Error('Failed to save organization logo');
+    throw new UserFacingError('Failed to save profile picture');
   }
 
   const previousProfileImage = await db.user.findFirst({

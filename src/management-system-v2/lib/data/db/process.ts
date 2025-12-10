@@ -1,6 +1,6 @@
 import { getFolderById } from './folders';
 import eventHandler from '../legacy/eventHandler.js';
-// import logger from '../legacy/logging.js';
+import logger from '../legacy/logging.js';
 import {
   getProcessInfo,
   getDefaultProcessMetaInfo,
@@ -657,7 +657,7 @@ export async function getProcessBpmn(processDefinitionsId: string) {
     );
     return bpmnWithDBValue;
   } catch (err) {
-    // logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
+    logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
     throw new Error('Unable to find process bpmn!');
   }
 }

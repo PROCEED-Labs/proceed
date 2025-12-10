@@ -27,11 +27,10 @@ const IsExecutableSection: React.FC<IsExecutableSectionProps> = ({ modeler, read
       setLoading(true);
       await wrapServerCall({
         fn: async () => updateProcessMetaData(processId as string, spaceId, { executable: value }),
-        onSuccess: false,
+        onSuccess: () => setIsExecutable(value),
         onError: 'Failed to update the executable property.',
       });
       setLoading(false);
-      setIsExecutable(value);
     }
   };
 

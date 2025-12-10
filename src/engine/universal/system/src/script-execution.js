@@ -225,6 +225,8 @@ class ScriptExecutor extends System {
    */
   execute(processId, processInstanceId, tokenId, scriptString, dependencies) {
     try {
+      processId = processId.substring(0, processId.indexOf('_', 1) - 1);
+
       const scriptIdentifier = crypto.randomUUID();
       const processEntry = {
         processId,

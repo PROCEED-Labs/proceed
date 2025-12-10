@@ -427,9 +427,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
 
                       setIsScriptValid(isScriptValid);
                     }}
-                    blocklyOptions={{
-                      readOnly: !canEdit,
-                    }}
+                    readOnly={!canEdit}
                   />
                 )}
               </div>

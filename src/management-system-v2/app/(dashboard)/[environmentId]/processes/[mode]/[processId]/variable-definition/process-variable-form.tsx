@@ -12,7 +12,7 @@ import {
 } from 'antd';
 
 import { FaRegQuestionCircle } from 'react-icons/fa';
-import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
+import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
 type ProcessVariableFormProps = {
   open?: boolean;
@@ -36,6 +36,7 @@ const DefaultValueInput: React.FC<DefaultValueInputProps> = ({ variable, onChang
       return (
         <Input
           value={variable.defaultValue}
+          type={variable.textFormat}
           onChange={(e) => onChange(e.target.value || undefined)}
         />
       );
@@ -88,7 +89,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
       if (originalVariable) {
         setEditVariable({ ...originalVariable });
       } else {
-        setEditVariable({ dataType: 'string' });
+        setEditVariable({ dataType: allowedTypes[0] as ProcessVariable['dataType'] });
       }
     }
     return () => setEditVariable(undefined);
@@ -179,6 +180,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
               setEditVariable({
                 ...editVariable,
                 dataType: value,
+                textFormat: undefined,
                 defaultValue: undefined,
                 enum: undefined,
               });
@@ -186,6 +188,21 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
             }}
           />
         </Form.Item>
+        {editVariable.dataType === 'string' && (
+          <Form.Item name="format" label="Format" initialValue={editVariable.textFormat}>
+            <Select
+              options={[{ value: '', label: 'None' }].concat(
+                Object.entries(textFormatMap).map(([value, label]) => ({ value, label })),
+              )}
+              onChange={(value) => {
+                setEditVariable({
+                  ...editVariable,
+                  textFormat: value ? value : undefined,
+                });
+              }}
+            />
+          </Form.Item>
+        )}
         <Form.Item name="description" label="Description" initialValue={editVariable.description}>
           <Input onChange={getChangeHandler('description')} />
         </Form.Item>

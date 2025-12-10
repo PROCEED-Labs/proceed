@@ -237,8 +237,8 @@ module.exports = function setupNetworkServer({ context }) {
       delete: new Map(),
       get: new Map(),
     };
-    ${_networkServerCall.toString()}; globalThis['_networkServerCall'] = _networkServerCall;
-    ${_processRequest.toString()}; globalThis['_processRequest'] = _processRequest;
+    ${_networkServerCall.toString()};
+    ${_processRequest.toString()};
     ${_registerListener.toString()}
     ${_Response.toString()}
     ${_oneOffListener.toString()}
@@ -247,6 +247,17 @@ module.exports = function setupNetworkServer({ context }) {
     const $removeRoute = $2;
     const $removeIPCListener = $3;
     const $sendResponse = $4;
+
+    const _networkServer = new Proxy(
+      {},
+      {
+        get: function (_, method) {
+          return (...args) => _networkServerCall(method, args);
+        },
+      },
+    );
+
+    globalThis["networkServer"] = _networkServer;
     `,
     [
       new ivm.Reference((method, path) => {

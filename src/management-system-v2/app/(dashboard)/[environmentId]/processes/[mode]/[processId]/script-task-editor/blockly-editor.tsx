@@ -1,20 +1,43 @@
 'use client';
 import React, {
   PropsWithChildren,
-  useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
 } from 'react';
-import { BlocklyWorkspace } from 'react-blockly';
-import {
-  INITIAL_TOOLBOX_JSON,
-  javascriptGenerator,
-  Blockly,
-  connectionCheckerPlugin,
-} from './blockly-editor-config';
+import { INITIAL_TOOLBOX_JSON } from './blockly-editor-config';
+import * as BlocklyJavaScript from 'blockly/javascript';
+const { javascriptGenerator } = BlocklyJavaScript;
+import * as Blockly from 'blockly';
+import { debounce } from '@/lib/utils';
 
-import './blockly-editor.css';
+/**
+ * Checks that there aren't blocks "floating", that is that every block
+ * that needs to be connected is connected to something.
+ */
+function validateBlockScript(workspace: Blockly.WorkspaceSvg) {
+  const topBlocks = workspace.getTopBlocks();
+
+  const topBlocksWithoutPreviousBlock = topBlocks.filter(
+    (block) =>
+      block.type !== 'procedures_defreturn' &&
+      block.type !== 'procedures_defnoreturn' &&
+      block.getPreviousBlock() === null,
+  );
+  const topBlocksWithoutNextBlock = topBlocks.filter(
+    (block) =>
+      block.type !== 'procedures_defreturn' &&
+      block.type !== 'procedures_defnoreturn' &&
+      block.getNextBlock() === null,
+  );
+
+  if (topBlocksWithoutPreviousBlock.length <= 1 && topBlocksWithoutNextBlock.length <= 1) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 export type BlocklyEditorRefType = {
   getCode: () => { js: string; xml: string; ts: false } | undefined;
@@ -27,48 +50,79 @@ type BlocklyEditorProps = PropsWithChildren<{
   onChange: OnChangeFunc;
   initialXml: string;
   editorRef: React.Ref<BlocklyEditorRefType>;
-  blocklyOptions?: Blockly.BlocklyOptions;
+  readOnly?: boolean;
 }>;
 
-const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: BlocklyEditorProps) => {
-  const blocklyEditorRef = useRef<Blockly.WorkspaceSvg | null>(null);
-
-  const validateBlockScript = () => {
-    if (blocklyEditorRef.current) {
-      const topBlocks = blocklyEditorRef.current.getTopBlocks();
-
-      const topBlocksWithoutPreviousBlock = topBlocks.filter(
-        (block) =>
-          block.type !== 'procedures_defreturn' &&
-          block.type !== 'procedures_defnoreturn' &&
-          block.getPreviousBlock() === null,
-      );
-      const topBlocksWithoutNextBlock = topBlocks.filter(
-        (block) =>
-          block.type !== 'procedures_defreturn' &&
-          block.type !== 'procedures_defnoreturn' &&
-          block.getNextBlock() === null,
-      );
-
-      if (topBlocksWithoutPreviousBlock.length <= 1 && topBlocksWithoutNextBlock.length <= 1) {
-        return true;
-      }
-    }
-
-    return false;
-  };
+const BlocklyEditor = ({
+  onChange,
+  initialXml,
+  editorRef,
+  readOnly = false,
+}: BlocklyEditorProps) => {
+  const blocklyDivRef = useRef<HTMLDivElement | null>(null);
+  const blocklyWorkspaceRef = useRef<Blockly.WorkspaceSvg>();
+  const blocklyPrevXml = useRef<Element | undefined>();
+  const onChangeFunc = useRef<OnChangeFunc | undefined>();
 
   useEffect(() => {
-    if (blocklyEditorRef.current && initialXml) {
-      if (!blocklyEditorRef.current.rendered) {
+    onChangeFunc.current = onChange;
+  }, [onChange]);
+
+  // useLayoutEffect to make sure this runs before anything else
+  useLayoutEffect(() => {
+    if (!blocklyDivRef.current) return;
+
+    // Blockly.lib
+    const workspace = Blockly.inject(blocklyDivRef.current, {
+      grid: {
+        spacing: 20,
+        length: 3,
+        colour: '#ccc',
+        snap: true,
+      },
+      readOnly,
+      scrollbars: true,
+      toolbox: INITIAL_TOOLBOX_JSON,
+    });
+
+    // If readOnly changed: restore previous state
+    if (blocklyPrevXml.current) {
+      Blockly.Xml.clearWorkspaceAndLoadFromXml(blocklyPrevXml.current, workspace);
+    }
+
+    blocklyWorkspaceRef.current = workspace;
+
+    function onChangeHandler() {
+      const onChange = onChangeFunc.current;
+      if (!onChange) return;
+
+      const isBlockScriptValid = validateBlockScript(workspace);
+      const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
+      const javascriptCode = javascriptGenerator.workspaceToCode(workspace);
+
+      onChange(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
+    }
+
+    const debouncedChangeListener = debounce(onChangeHandler, 100);
+    workspace.addChangeListener(debouncedChangeListener);
+
+    return () => {
+      blocklyPrevXml.current = Blockly.Xml.workspaceToDom(workspace);
+      workspace.dispose();
+    };
+  }, [readOnly]);
+
+  useEffect(() => {
+    if (blocklyWorkspaceRef.current && initialXml) {
+      if (!blocklyWorkspaceRef.current.rendered) {
         throw new Error(
           'Tried to render xml, but the blockly editor was in headless mode (probably unmounted)',
         );
       }
 
       const xml = Blockly.utils.xml.textToDom(initialXml);
-      Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyEditorRef.current);
-      blocklyEditorRef.current.scrollCenter();
+      Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyWorkspaceRef.current);
+      blocklyWorkspaceRef.current.scrollCenter();
     }
   }, [initialXml]);
 
@@ -77,98 +131,35 @@ const BlocklyEditor = ({ onChange, initialXml, editorRef, blocklyOptions }: Bloc
     () =>
       ({
         getCode: () => {
-          if (blocklyEditorRef.current) {
+          if (blocklyWorkspaceRef.current) {
             const xmlText = Blockly.Xml.domToText(
-              Blockly.Xml.workspaceToDom(blocklyEditorRef.current),
+              Blockly.Xml.workspaceToDom(blocklyWorkspaceRef.current),
             );
-            const javascriptCode = javascriptGenerator.workspaceToCode(blocklyEditorRef.current);
+            const javascriptCode = javascriptGenerator.workspaceToCode(blocklyWorkspaceRef.current);
             return { xml: xmlText, js: javascriptCode, ts: false };
           }
         },
         fillContainer: () => {
-          if (!blocklyEditorRef.current) return;
+          if (!blocklyWorkspaceRef.current) return;
           // firing this event is easier and more robust than copying blockly's resize logic
           window.dispatchEvent(new Event('resize'));
-          blocklyEditorRef.current.scrollCenter();
+          blocklyWorkspaceRef.current.scrollCenter();
         },
         reset: () => {
-          if (!blocklyEditorRef.current || initialXml === '') return;
+          if (!blocklyWorkspaceRef.current || initialXml === '') return;
           const xml = Blockly.utils.xml.textToDom(initialXml);
-          Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyEditorRef.current);
-          blocklyEditorRef.current.scrollCenter();
+          Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyWorkspaceRef.current);
+          blocklyWorkspaceRef.current.scrollCenter();
         },
       }) satisfies BlocklyEditorRefType,
   );
 
-  // This workaround with the ref is necessary to not cause the props of the BlocklyWorkspace to change
-  // as this would call onWorkspaceChange which isn't desired
-  // Example:
-  // 1. onchange func is memoized with respect to the initialXml prop
-  // 2. The initialXml changes
-  // 3. The BlocklyWorkspace detects the change of this function and calls it before it has loaded
-  // in the new initialXml
-  // 4. The onChange function detects differences between the xml in the editor and initialXml and
-  // marks a change
-  //
-  // For this reason we want the function only to be called when there has really been a change in
-  // xml in the blockly editor
-  const onChangeFunc = useRef<OnChangeFunc | undefined>();
-  useEffect(() => {
-    onChangeFunc.current = onChange;
-  }, [onChange]);
-  const onWorkspaceChange = useCallback((workspace: Blockly.WorkspaceSvg) => {
-    const isBlockScriptValid = validateBlockScript();
-    const xmlText = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
-    const javascriptCode = javascriptGenerator.workspaceToCode(workspace);
-
-    onChangeFunc.current?.(isBlockScriptValid, { xml: xmlText, js: javascriptCode });
-  }, []);
-
-  // react blockly doesn't when readOnly changes and it can even lead to issues if the workspace was
-  // readonly and changed to editable
-  // For this reason, when reaOnly changes, we unmount the BlocklyWorkspace and mount a new one
-  return blocklyOptions?.readOnly ? (
-    <BlocklyWorkspace
-      key="readonly-blockly"
-      initialXml={initialXml}
-      className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
-      toolboxConfiguration={INITIAL_TOOLBOX_JSON} // this must be a JSON toolbox definition
-      workspaceConfiguration={{
-        grid: {
-          spacing: 20,
-          length: 3,
-          colour: '#ccc',
-          snap: true,
-        },
-        scrollbars: true,
-        ...blocklyOptions,
-      }}
-      onWorkspaceChange={onWorkspaceChange}
-      onInject={(newWorkspace) => {
-        blocklyEditorRef.current = newWorkspace;
-      }}
-    />
-  ) : (
-    <BlocklyWorkspace
-      key="editable-blockly"
-      initialXml={initialXml}
-      className="width-100 fill-height" // you can use whatever classes are appropriate for your app's CSS
-      toolboxConfiguration={INITIAL_TOOLBOX_JSON} // this must be a JSON toolbox definition
-      workspaceConfiguration={{
-        plugins: {
-          ...connectionCheckerPlugin,
-        },
-        grid: {
-          spacing: 20,
-          length: 3,
-          colour: '#ccc',
-          snap: true,
-        },
-        ...blocklyOptions,
-      }}
-      onWorkspaceChange={onWorkspaceChange}
-      onInject={(newWorkspace) => {
-        blocklyEditorRef.current = newWorkspace;
+  return (
+    <div
+      ref={blocklyDivRef}
+      style={{
+        width: '100%',
+        height: '100%',
       }}
     />
   );

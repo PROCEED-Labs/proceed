@@ -6,6 +6,7 @@ import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
 import { env } from '@/lib/ms-config/env-vars';
+import { UserFacingError } from '@/lib/user-error';
 
 // Constants
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10 MB
@@ -56,7 +57,12 @@ const ensureBucketExists = () => {
   return bucket;
 };
 
-const saveLocalFile = async (filePath: string, fileContent: Buffer) => {
+const saveLocalFile = async (filePath: string, fileContent: Buffer, maxFileSize: number) => {
+  const fileSizeInBytes = Buffer.byteLength(fileContent);
+  if (fileSizeInBytes > maxFileSize) {
+    throw new UserFacingError(`File size exceeds maximum limit of ${maxFileSize} bytes`);
+  }
+
   const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
   await fse.ensureDir(path.dirname(fullPath));
   await fse.writeFile(fullPath, fileContent);
@@ -69,6 +75,7 @@ export const saveFile = async (
   mimeType: string,
   fileContent?: Buffer | Uint8Array | string,
   usePresignedUrl: boolean = true,
+  maxFileSize: number = MAX_CONTENT_LENGTH,
 ): Promise<{ presignedUrl: string | null; status: boolean }> => {
   let presignedUrl: string | null = null;
   let status = false;
@@ -85,7 +92,7 @@ export const saveFile = async (
           action: 'write',
           expires: Date.now() + 15 * 60 * 1000, // 15 minutes
           contentType: mimeType,
-          extensionHeaders: { 'x-goog-content-length-range': `0,${MAX_CONTENT_LENGTH}` },
+          extensionHeaders: { 'x-goog-content-length-range': `0,${maxFileSize}` },
         });
       } else {
         // Directly upload file content to the GCP bucket
@@ -102,7 +109,7 @@ export const saveFile = async (
       // Handle local file saving (local deployment)
       if (!fileContent) throw new Error('File is required to upload');
       const decodedContent = Buffer.from(fileContent as string, 'base64');
-      await saveLocalFile(filePath, decodedContent);
+      await saveLocalFile(filePath, decodedContent, maxFileSize);
     }
 
     status = true;

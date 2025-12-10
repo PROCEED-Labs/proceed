@@ -34,7 +34,7 @@ export function generateDurationString(duration?: number): string {
     return '';
   }
 
-  if (!duration || duration < 0 || duration < 1000) return '';
+  if (!duration || duration < 1000) return '< 1s';
 
   const days = Math.floor(duration / (3600000 * 24));
   duration -= days * (3600000 * 24);

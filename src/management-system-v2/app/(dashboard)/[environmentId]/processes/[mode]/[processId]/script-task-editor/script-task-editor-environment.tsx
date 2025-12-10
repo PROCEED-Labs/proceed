@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Element } from 'bpmn-js/lib/model/Types';
 import type { ElementLike } from 'diagram-js/lib/model/Types';
 import { Badge, Modal, Button, Space, App, Tabs, TabsProps, Splitter } from 'antd';
@@ -13,7 +13,6 @@ import { FolderTree, TreeNode as FolderTreeNode, generateTreeNode } from '@/comp
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import type { FolderContentWithScriptTasks } from '@/lib/data/db/process';
-import nodemailer from 'next-auth/providers/nodemailer';
 
 function getScriptTaskLabel(element?: Element | ElementLike, knownFileName?: string) {
   if (knownFileName) {

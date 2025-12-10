@@ -2,15 +2,7 @@
 
 import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { Tree, TreeProps } from 'antd';
-import React, {
-  Dispatch,
-  ReactNode,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { ReactNode, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
 import { ProcessListItemIcon } from './process-list';
 import ProceedLoadingIndicator from './loading-proceed';

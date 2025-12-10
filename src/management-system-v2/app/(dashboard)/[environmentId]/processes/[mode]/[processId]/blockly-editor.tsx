@@ -119,7 +119,6 @@ const BlocklyEditor = ({
           'Tried to render xml, but the blockly editor was in headless mode (probably unmounted)',
         );
       }
-      window.here = blocklyWorkspaceRef.current;
 
       const xml = Blockly.utils.xml.textToDom(initialXml);
       Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, blocklyWorkspaceRef.current);

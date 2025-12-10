@@ -226,6 +226,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         },
       });
     }
+    // This fixes the issue where an input field is selected and still remains visible after the
+    // editor is hidden
+    if (selectedEditor === 'blockly') blocklyRef.current?.fillContainer();
   };
 
   const getEditorPositionRange = () => {

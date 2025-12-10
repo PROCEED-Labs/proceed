@@ -2,8 +2,8 @@ import { AuthenticatedUser } from './data/user-schema';
 import z from 'zod';
 import parsePhoneNumberFromString, { CountryCode } from 'libphonenumber-js';
 
-export function generateDateString(date?: Date | string, includeTime: boolean = false): string {
-  if (!date) {
+export function generateDateString(_date?: Date | string, includeTime: boolean = false): string {
+  if (!_date) {
     return '';
   }
 
@@ -14,10 +14,14 @@ export function generateDateString(date?: Date | string, includeTime: boolean = 
     hour: includeTime ? 'numeric' : undefined,
     minute: includeTime ? 'numeric' : undefined,
   };
+  const date = typeof _date === 'string' ? new Date(_date) : _date;
 
-  return Intl.DateTimeFormat(undefined, options).format(
-    typeof date === 'string' ? new Date(date) : date,
-  );
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date passed to generateDateString');
+    return 'Invalid Date';
+  }
+
+  return Intl.DateTimeFormat(undefined, options).format();
 }
 
 export function generateNumberString(number?: number, options?: Intl.NumberFormatOptions): string {

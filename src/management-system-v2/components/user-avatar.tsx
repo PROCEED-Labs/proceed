@@ -44,7 +44,7 @@ const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, ...props },
 
   let icon;
   if (avatarUrl) icon = <img src={avatarUrl} alt="avatar" />;
-  else if (user?.profileImage?.startsWith('https') && user.profileImage)
+  else if (user?.profileImage?.startsWith('https'))
     icon = <img src={user.profileImage} alt="avatar" />;
   else
     icon = (

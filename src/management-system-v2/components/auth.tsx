@@ -6,7 +6,7 @@ import { getUserOrganizationEnvironments, isMember } from '@/lib/data/db/iam/mem
 import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import Ability from '@/lib/ability/abilityHelper';
 import {
-  adminRules,
+  packedAdminRules,
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
@@ -16,6 +16,7 @@ import { getUserById } from '@/lib/data/db/iam/users';
 import { cookies } from 'next/headers';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { UIError as UserUIError } from '@/lib/ui-error';
+import { packedStaticRules } from '@/lib/authorization/caslRules';
 
 export const getCurrentUser = cache(async () => {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
@@ -42,10 +43,36 @@ export const getCurrentUser = cache(async () => {
   if (userId !== '' && !user) {
     const cookieStore = cookies();
     const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
-    redirect(`/api/private/signout?csrfToken=${csrfToken}`);
+
+    const searchParams = new URLSearchParams({ csrfToken });
+
+    if (session?.user.isGuest) {
+      searchParams.append(
+        'callbackUrl',
+        `/signin?error=${encodeURIComponent('$info You have previously used PROCEED as a Guest. This account and your data have been deleted due to discontinued use. If you want to avoid this, please log in as a user.')}`,
+      );
+    }
+
+    redirect(`/api/private/signout?${searchParams}`);
   }
 
   return { session, userId, systemAdmin, user };
+});
+
+const systemAdminRulesForOrganizations = packedAdminRules
+  .concat(packedGlobalOrganizationRules)
+  .concat(packedStaticRules);
+
+const systemAdminRulesForPersonalSpaces = packedAdminRules
+  .concat(packedGlobalUserRules)
+  .concat(packedStaticRules);
+
+export const getSystemAdminRules = cache((isOrganization: boolean) => {
+  if (isOrganization) {
+    return systemAdminRulesForOrganizations;
+  } else {
+    return systemAdminRulesForPersonalSpaces;
+  }
 });
 
 // TODO: To enable PPR move the session redirect into this function, so it will
@@ -96,9 +123,7 @@ export const getCurrentEnvironment = cache(
     // TODO: account for bought resources
 
     if (systemAdmin || !msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
-      let rules;
-      if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
-      else rules = adminRules.concat(packedGlobalUserRules);
+      const rules = getSystemAdminRules(isOrganization);
 
       return {
         ability: new Ability(rules, activeSpace),

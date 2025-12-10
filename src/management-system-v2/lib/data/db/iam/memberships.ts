@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import Ability from '@/lib/ability/abilityHelper';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { getEnvironmentById } from './environments';
 import { v4 } from 'uuid';
 import { ActiveOrganizationEnvironment, Environment } from '../../environment-schema.js';
@@ -66,6 +66,45 @@ export async function getMembers(environmentId: string, ability?: Ability) {
   });
   if (!workspace) throw new Error('Environment not found');
   return workspace.members;
+}
+
+export async function getFullMembersWithRoles(environmentId: string, ability?: Ability) {
+  if (ability && !ability.can('admin', 'User')) throw new UnauthorizedError();
+
+  const usersWithRoles = await db.user.findMany({
+    where: {
+      memberIn: {
+        some: {
+          environmentId: environmentId,
+        },
+      },
+    },
+    include: {
+      roleMembers: {
+        where: {
+          role: {
+            environmentId: environmentId,
+          },
+        },
+        include: {
+          role: true,
+        },
+      },
+    },
+  });
+
+  for (const _user of usersWithRoles) {
+    const user = _user as any;
+    user.roles = _user.roleMembers.map((roleMember) => roleMember.role);
+    delete user.roleMembers;
+  }
+
+  type User = (typeof usersWithRoles)[number];
+  type TransformedUserType = Omit<User, 'roleMembers' | 'isGuest'> & {
+    roles: User['roleMembers'][number]['role'][];
+    isGuest: false;
+  };
+  return usersWithRoles as unknown as TransformedUserType[];
 }
 
 /**

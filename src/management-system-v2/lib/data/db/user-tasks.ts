@@ -5,7 +5,10 @@ import { UserTask, UserTaskInput, UserTaskInputSchema } from '@/lib/user-task-sc
 export async function getUserTasks() {
   const userTasks = await db.userTask.findMany();
 
-  return userTasks.map((userTask) => ({ ...userTask, offline: true })) as unknown as UserTask[];
+  return userTasks.map((userTask) => ({
+    ...userTask,
+    offline: userTask.machineId !== 'ms-local',
+  })) as unknown as UserTask[];
 }
 
 export async function getUserTaskById(userTaskId: string) {

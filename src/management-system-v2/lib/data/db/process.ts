@@ -669,6 +669,22 @@ export async function getProcessUserTasks(processDefinitionsId: string) {
   // TODO
 }
 
+export type FolderContentWithScriptTasks = {
+  folderId: string;
+  content: (
+    | {
+        type: 'process';
+        id: string;
+        name: string;
+        scriptTasks: string[];
+      }
+    | {
+        type: 'folder';
+        id: string;
+        name: string;
+      }
+  )[];
+};
 /*
  * Returns the id, name and list of scriptTask filenames of all processes with scriptTasks.
  */
@@ -705,19 +721,7 @@ export async function getFolderScriptTasks(spaceId: string, folderId?: string, a
   ]);
 
   // TODO: subprocesses
-  const processesWithScriptTaskFileNames: (
-    | {
-        type: 'process';
-        id: string;
-        name: string;
-        scriptTasks: string[];
-      }
-    | {
-        type: 'folder';
-        id: string;
-        name: string;
-      }
-  )[] = [];
+  const processesWithScriptTaskFileNames: FolderContentWithScriptTasks['content'] = [];
 
   for (const folder of folders) {
     if (
@@ -759,22 +763,6 @@ export async function getFolderScriptTasks(spaceId: string, folderId?: string, a
   return processesWithScriptTaskFileNames;
 }
 
-export type FolderContentWithScriptTasks = {
-  folderId: string;
-  content: (
-    | {
-        type: 'process';
-        id: string;
-        name: string;
-        scriptTasks: string[];
-      }
-    | {
-        type: 'folder';
-        id: string;
-        name: string;
-      }
-  )[];
-};
 /**
  * Returns an array containing the folders and processes with script tasks for every folder
  * starting at the `folderId` param and ending at the root folder of the environment.

@@ -101,7 +101,6 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
   });
   const setTree = useCallback(
     (arg: SetStateAction<TreeNode<TContentType>[]>) => {
-      console.log('FolderTree, setTree');
       _setTree(arg);
       onTreeDataChange?.(arg);
     },
@@ -131,7 +130,6 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
    * If no node is given, the function fetches the root folder of the environment.
    * */
   const loadData = async (node?: TreeNode<TContentType>) => {
-    console.log('FolderTree: loadData');
     const nodeId = node?.element.id;
 
     let rootNode: TreeNode<TContentType> | undefined;
@@ -200,7 +198,6 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
   useEffect(() => {
     if (rootNodes) return;
 
-    console.log('FolderTree: loading roots');
     async function loadRoot() {
       setLoading(true);
       try {
@@ -218,7 +215,6 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
   useEffect(() => {
     if (!externalExpandedKeys) return;
 
-    console.log('loading expanded');
     async function loadExpandedKeys() {
       try {
         // build the initial tree if there are supposed to be nodes expanded from the start
@@ -228,8 +224,6 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
             const node = nodeMap.current.get(key);
             if (node && node.element.type === 'folder' && !('children' in node)) {
               await loadData(node);
-            } else {
-              console.log('skipped expanded');
             }
           }
         }
@@ -272,7 +266,6 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
         }
       }
 
-      console.log('updating subtrees');
       async function update() {
         try {
           for (const id of toUpdate) {

@@ -34,6 +34,7 @@ const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, ...props },
     }
     getUrl();
 
+    return () => setAvatarURl(undefined);
     // getProfileUrl is a new function on each render
   }, [user]); // eslint-disable-line
 

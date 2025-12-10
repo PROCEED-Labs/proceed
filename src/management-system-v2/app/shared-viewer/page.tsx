@@ -118,10 +118,7 @@ const getProcessInfo = async (
  * @param bpmn the bpmn of the process to get the imports for
  * @param knownInfos the object to put the bpmns into
  */
-const getImportInfos = async (
-  bpmn: string,
-  knownInfos: ImportsInfo,
-): Promise<{ error: UserError } | undefined> => {
+const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo): Promise<void> => {
   // information which tasks reference which processes
   const taskImportMap = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
 
@@ -130,7 +127,7 @@ const getImportInfos = async (
 
     if (!(knownInfos[definitionId] && knownInfos[definitionId][versionId])) {
       const processInfo = await getProcessInfo(definitionId, 0, false, true, versionId);
-      if (isUserErrorResponse(processInfo)) return processInfo;
+      if (isUserErrorResponse(processInfo)) continue;
 
       const { bpmn: importBpmn } = processInfo.processData;
 
@@ -138,7 +135,7 @@ const getImportInfos = async (
       knownInfos[definitionId][versionId] = importBpmn as string;
 
       // recursively get the imports of the imports
-      return await getImportInfos(importBpmn as string, knownInfos);
+      await getImportInfos(importBpmn as string, knownInfos);
     }
   }
 };
@@ -196,8 +193,6 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
       return <ErrorMessage message={processInfo.error.message} />;
     }
 
-    console.log('processData', processData);
-
     ({ isOwner, processData } = processInfo);
 
     if (!processData) {
@@ -211,17 +206,12 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
 
   let availableImports: ImportsInfo = {};
   if (!iframeMode) {
-    let errorMessage: ReactNode;
     try {
-      const error = await getImportInfos(processData.bpmn, availableImports);
-      if (isUserErrorResponse(error)) errorMessage = error.error.message;
+      await getImportInfos(processData.bpmn, availableImports);
     } catch (error) {
-      errorMessage = getErrorMessage(error);
       console.error('Failed to resolve the information for process imports: ', error);
-    }
 
-    if (errorMessage) {
-      return <ErrorMessage message={errorMessage} />;
+      return <ErrorMessage message={'Failed to resolve the information for process imports'} />;
     }
   }
 

@@ -7,7 +7,16 @@ module.exports = function setupSimpleFunctionCalls({ context, callToExecutor, wa
   const structure = {
     log: ['trace', 'debug', 'info', 'warn', 'error'],
     console: ['trace', 'debug', 'info', 'warn', 'error', 'log', 'time', 'timeEnd'],
-    variable: ['get', 'set', 'getAll'],
+    variable: [
+      'get',
+      'set',
+      'getAll',
+      'getWithLogs',
+      'setGlobal',
+      'getGlobal',
+      'getAllGlobal',
+      'getWithLogsGlobal',
+    ],
   };
 
   for (const objName of Object.keys(structure)) {

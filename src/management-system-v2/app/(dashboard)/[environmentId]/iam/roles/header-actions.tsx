@@ -2,14 +2,16 @@
 
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Modal, App } from 'antd';
-import { FC, ReactNode, useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 // import dayjs from 'dayjs';
 // import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { addRole as serverAddRoles } from '@/lib/data/roles';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
+import { RoleInputSchema } from '@/lib/data/role-schema';
 
-type PostRoleKeys = 'name' | 'description'; //| 'expiration';
+const schema = RoleInputSchema.pick({ name: true, description: true });
 
 const CreateRoleModal: FC<{
   modalOpen: boolean;
@@ -18,33 +20,23 @@ const CreateRoleModal: FC<{
   const [form] = Form.useForm();
   const app = App.useApp();
 
-  type ErrorsObject = { [field in PostRoleKeys]?: ReactNode[] };
-  const [formatError, setFormatError] = useState<ErrorsObject>({});
+  const [schemaErrors, parseInput] = useParseZodErrors(schema);
+
   const environment = useEnvironment();
-
-  const [submittable, setSubmittable] = useState(false);
-  const values = Form.useWatch('name', form);
-
-  useEffect(() => {
-    form.validateFields({ validateOnly: true }).then(
-      () => {
-        setSubmittable(true);
-      },
-      () => {
-        setSubmittable(false);
-      },
-    );
-  }, [form, values]);
 
   useEffect(() => {
     form.resetFields();
-    setFormatError({});
   }, [form, modalOpen]);
 
-  const submitData = async (values: Record<'name' | 'description' | 'expirationDayJs', 'post'>) => {
+  const submitData = async (
+    inputValues: Record<'name' | 'description' | 'expirationDayJs', 'post'>,
+  ) => {
     // let expiration;
     // if (typeof values.expirationDayJs === 'object')
     //   expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
+
+    const values = parseInput(inputValues);
+    if (!values) return;
 
     await wrapServerCall({
       fn: () =>
@@ -61,22 +53,14 @@ const CreateRoleModal: FC<{
   return (
     <Modal open={modalOpen} onCancel={close} footer={null} title="Create New Role">
       <Form form={form} layout="vertical" onFinish={submitData}>
-        <Form.Item
-          label="Name"
-          name="name"
-          help={formatError.name}
-          validateStatus={formatError.name && 'error'}
-          rules={[{ required: true, message: 'This field is required' }]}
-          required
-        >
+        <Form.Item label="Name" name="name" required {...antDesignInputProps(schemaErrors, 'name')}>
           <Input />
         </Form.Item>
 
         <Form.Item
           label="Description"
           name="description"
-          help={formatError.description}
-          validateStatus={formatError.description && 'error'}
+          {...antDesignInputProps(schemaErrors, 'description')}
         >
           <Input.TextArea />
         </Form.Item>
@@ -96,7 +80,7 @@ const CreateRoleModal: FC<{
         */}
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" disabled={!submittable}>
+          <Button type="primary" htmlType="submit">
             Create Role
           </Button>
         </Form.Item>

@@ -27,7 +27,7 @@ import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/script-editor';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../../processes-helper';

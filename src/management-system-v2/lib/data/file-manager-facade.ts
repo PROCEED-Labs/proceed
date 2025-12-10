@@ -17,7 +17,7 @@ import { use } from 'react';
 import { checkValidity } from './processes';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';
-import { getErrorMessage, userError } from '../user-error';
+import { getErrorMessage, userError } from '../server-error-handling/user-error';
 
 const DEPLOYMENT_ENV = env.PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV;
 
@@ -412,13 +412,15 @@ export async function updateFileDeletableStatus(
 export async function softDeleteProcessUserTask(processId: string, userTaskFilename: string) {
   try {
     const userTaskJson = await getProcessHtmlFormJSON(processId, userTaskFilename);
-    if (userTaskJson) {
+    if (userTaskJson.isErr()) throw userTaskJson.error;
+
+    if (userTaskJson.value) {
       const artifactsPromises = [];
 
       artifactsPromises.push(getArtifactMetaData(`${userTaskFilename}.json`, false));
       artifactsPromises.push(getArtifactMetaData(`${userTaskFilename}.html`, false));
 
-      const referencedArtifactFilePaths = getUsedImagesFromJson(JSON.parse(userTaskJson));
+      const referencedArtifactFilePaths = getUsedImagesFromJson(JSON.parse(userTaskJson.value));
       for (const referencedArtifactFilePath of referencedArtifactFilePaths) {
         artifactsPromises.push(getArtifactMetaData(referencedArtifactFilePath, true));
       }
@@ -472,13 +474,15 @@ export async function softDeleteProcessScriptTask(processId: string, scriptTaskF
 export async function revertSoftDeleteProcessUserTask(processId: string, userTaskFilename: string) {
   try {
     const userTaskJson = await getProcessHtmlFormJSON(processId, userTaskFilename, true);
-    if (userTaskJson) {
+    if (userTaskJson.isErr()) throw userTaskJson.error;
+
+    if (userTaskJson.value) {
       const artifactsPromises = [];
 
       artifactsPromises.push(getArtifactMetaData(`${userTaskFilename}.json`, false));
       artifactsPromises.push(getArtifactMetaData(`${userTaskFilename}.html`, false));
 
-      const referencedArtifactFilePaths = getUsedImagesFromJson(JSON.parse(userTaskJson));
+      const referencedArtifactFilePaths = getUsedImagesFromJson(JSON.parse(userTaskJson.value));
       for (const referencedArtifactFilePath of referencedArtifactFilePaths) {
         artifactsPromises.push(getArtifactMetaData(referencedArtifactFilePath, true));
       }

@@ -1,3 +1,4 @@
+import { ok, err } from 'neverthrow';
 import { Setting, SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import prisma from '@/lib/data/db';
@@ -10,7 +11,7 @@ export async function getSpaceSettingsValues(
   searchKey: string,
   ability?: Ability,
 ) {
-  if (ability && !ability.can('view', 'Setting')) throw new UnauthorizedError();
+  if (ability && !ability.can('view', 'Setting')) return err(new UnauthorizedError());
 
   const settings = await db.spaceSettings.findUnique({
     where: { environmentId: spaceId },
@@ -35,7 +36,7 @@ export async function getSpaceSettingsValues(
     });
   }
 
-  return res;
+  return ok(res);
 }
 
 export async function populateSpaceSettingsGroup(
@@ -43,7 +44,7 @@ export async function populateSpaceSettingsGroup(
   settingsGroup: SettingGroup,
   ability?: Ability,
 ) {
-  if (ability && ability.can('update', 'Setting')) throw new UnauthorizedError();
+  if (ability && ability.can('update', 'Setting')) return err(new UnauthorizedError());
 
   const settings = await db.spaceSettings.findUnique({
     where: { environmentId: spaceId },
@@ -65,6 +66,8 @@ export async function populateSpaceSettingsGroup(
 
     if (el && 'value' in el) el.value = value;
   });
+
+  return ok();
 }
 
 export async function updateSpaceSettings(
@@ -72,9 +75,9 @@ export async function updateSpaceSettings(
   data: Record<string, any>,
   ability?: Ability,
 ) {
-  if (ability && !ability.can('update', 'Setting')) throw new UnauthorizedError();
+  if (ability && !ability.can('update', 'Setting')) return err(new UnauthorizedError());
 
-  prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     const existingSettings = await tx.spaceSettings.findUnique({
       where: { environmentId: spaceId },
     });
@@ -96,4 +99,6 @@ export async function updateSpaceSettings(
       },
     });
   });
+
+  return ok();
 }

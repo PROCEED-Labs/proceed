@@ -8,7 +8,7 @@ import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import Ability from '../ability/abilityHelper';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, userError } from '../server-error-handling/user-error';
 import { env } from '../ms-config/env-vars';
 
 export interface TokenPayload {
@@ -75,17 +75,4 @@ export async function generateSharedViewerUrl(
   } catch (e) {
     return userError('Something went wrong');
   }
-}
-
-export async function getAllUserWorkspaces(userId: string, ability?: Ability) {
-  // if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
-
-  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
-  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironments = (await asyncMap(userOrgEnvs, (environmentId) =>
-    getEnvironmentById(environmentId),
-  )) as Environment[];
-
-  userEnvironments.push(...orgEnvironments);
-  return userEnvironments;
 }

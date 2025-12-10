@@ -31,7 +31,7 @@ import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { ArrayEntryType, truthyFilter } from '../typescript-utils';
 
 import { SerializedNode } from '@craftjs/core';
-import { UserError } from '../user-error';
+import { UserError } from '../server-error-handling/user-error';
 
 /**
  * The options that can be used to select what should be exported

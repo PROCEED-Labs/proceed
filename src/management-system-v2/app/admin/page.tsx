@@ -5,13 +5,16 @@ import { Card, Space, Statistic } from 'antd';
 import { redirect } from 'next/navigation';
 import { CSSProperties } from 'react';
 import db from '@/lib/data/db';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 export default async function AdminDashboard() {
   const user = await getCurrentUser();
-  if (!user.session) redirect('/');
+  if (user.isErr()) return errorResponse(user);
+  if (!user.value.session) redirect('/');
 
-  const adminData = await getSystemAdminByUserId(user.userId);
-  if (!adminData) redirect('/');
+  const adminData = await getSystemAdminByUserId(user.value.userId);
+  if (adminData.isErr()) return errorResponse(adminData);
+  if (!adminData.value) redirect('/');
 
   // NOTE: this should be replaced to a more efficient count query
   // when the data persistence layer is implemented

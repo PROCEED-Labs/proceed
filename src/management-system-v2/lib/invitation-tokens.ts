@@ -8,6 +8,7 @@ import { addMember, isMember } from './data/db/iam/memberships';
 import { getUserByEmail } from './data/db/iam/users';
 import { getRoleById } from './data/db/iam/roles';
 import { addRoleMappings } from './data/db/iam/role-mappings';
+import { getErrorMessage, userError } from './server-error-handling/user-error';
 
 const baseInvitationSchema = {
   spaceId: z.string(),
@@ -40,34 +41,52 @@ export function getInvitation(token: string) {
 }
 
 export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite?: string) {
-  const organization = await getEnvironmentById(invite.spaceId);
+  const _organization = await getEnvironmentById(invite.spaceId);
+  if (_organization.isErr()) return userError(getErrorMessage(_organization.error));
+  const organization = _organization.value;
+
   if (!organization || !organization.isOrganization || !organization.isActive)
     return { error: 'InvalidOrganization' as const };
 
-  const userId = 'userId' in invite ? invite.userId : (await getUserByEmail(invite.email))?.id;
+  let userId;
+  if ('userId' in invite) {
+    userId = invite.userId;
+  } else {
+    const userByEmail = await getUserByEmail(invite.email);
+    if (userByEmail.isErr()) return userError(getErrorMessage(userByEmail.error));
+    if (!userByEmail.value) return userError('User not found');
+
+    userId = userByEmail.value.id;
+  }
 
   if (!userId) return { error: 'UserNotFound' as const };
 
   if (userIdAcceptingInvite && userIdAcceptingInvite !== userId)
     return { error: 'WrongUser' as const };
 
-  if (!(await isMember(invite.spaceId, userId))) {
-    addMember(invite.spaceId, userId);
+  const userIsMember = await isMember(invite.spaceId, userId);
+  if (userIsMember.isErr()) return userError(getErrorMessage(userIsMember.error));
+
+  if (!userIsMember.value) {
+    const memberAdded = await addMember(invite.spaceId, userId);
+    if (memberAdded?.isErr()) return userError(getErrorMessage(memberAdded.error));
 
     if (invite.roleIds) {
       const validRoles = [];
       for (const roleId of invite.roleIds) {
         // skip roles that have been deleted
-        if (await getRoleById(roleId)) validRoles.push(roleId);
+        const role = await getRoleById(roleId);
+        if (role.isOk() && role.value) validRoles.push(roleId);
       }
 
-      await addRoleMappings(
+      const result = await addRoleMappings(
         validRoles.map((roleId) => ({
           environmentId: invite.spaceId,
           roleId,
           userId,
         })),
       );
+      if (result?.isErr()) return userError(getErrorMessage(result.error));
     }
   }
 }

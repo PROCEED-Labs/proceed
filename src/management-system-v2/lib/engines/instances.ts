@@ -2,7 +2,7 @@
 
 import { Engine } from './machines';
 import { engineRequest } from './endpoints/index';
-import { userError } from '../user-error';
+import { userError } from '@/lib/server-error-handling/user-error';
 
 export async function startInstanceOnMachine(
   definitionId: string,

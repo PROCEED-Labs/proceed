@@ -29,7 +29,7 @@ import { requestEmailChange as serverRequestEmailChange } from '@/lib/email-veri
 import Link from 'next/link';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import ChangeUserPasswordModal from './change-password-modal';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 
 const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
   userData,

@@ -18,6 +18,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
+import { Process } from '@/lib/data/process-schema';
 
 export type VersionInfo = {
   id?: string;
@@ -27,7 +28,7 @@ export type VersionInfo = {
 };
 
 type ProcessDocumentProps = {
-  processData: Awaited<ReturnType<typeof getProcess>>;
+  processData: Process;
   settings: ActiveSettings;
   processHierarchy?: ElementInfo;
   version: VersionInfo;

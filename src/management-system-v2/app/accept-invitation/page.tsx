@@ -8,6 +8,7 @@ import { getUserByEmail } from '@/lib/data/db/iam/users';
 import { acceptInvitation, getInvitation as getInvitationFromToken } from '@/lib/invitation-tokens';
 import { Result, ResultProps } from 'antd';
 import { redirect } from 'next/navigation';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 function Error(props: ResultProps) {
   return (
@@ -18,7 +19,11 @@ function Error(props: ResultProps) {
 }
 
 export default async function IvitationPage({ searchParams }: { searchParams: { token: string } }) {
-  const { session } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { session } = currentUser.value;
   if (!session)
     redirect(
       `/api/auth/signin?callbackUrl=${encodeURIComponent('/accept-invitation?token=' + searchParams.token)}`,

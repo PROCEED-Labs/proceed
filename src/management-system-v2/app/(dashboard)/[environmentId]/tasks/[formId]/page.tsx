@@ -5,15 +5,26 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { Result } from 'antd';
 import { notFound } from 'next/navigation';
 import FormView from './form-view';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const FormPage = async ({ params }: { params: { environmentId: string; formId: string } }) => {
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
   const {
     activeEnvironment: { spaceId },
-  } = await getCurrentEnvironment(params.environmentId);
+  } = currentSpace.value;
 
   const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation');
+  if (automationSettings.isErr()) {
+    return errorResponse(automationSettings);
+  }
 
-  if (automationSettings.active === false || automationSettings.tasklist?.active === false) {
+  if (
+    automationSettings.value.active === false ||
+    automationSettings.value.tasklist?.active === false
+  ) {
     return notFound();
   }
 

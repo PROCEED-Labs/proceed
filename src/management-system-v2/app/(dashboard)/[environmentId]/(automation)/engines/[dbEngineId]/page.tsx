@@ -9,6 +9,7 @@ import { getDbEngineById } from '@/lib/data/db/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
 import SpaceLink from '@/components/space-link';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 export type TableEngine = Engine & { id: string };
 
@@ -25,8 +26,15 @@ export default async function EnginesPage({
   const dbEngineId = decodeURIComponent(params.dbEngineId);
   const engineId = decodeURIComponent(searchParams.engineId || '');
 
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { ability, activeEnvironment } = currentSpace.value;
   const dbEngine = await getDbEngineById(dbEngineId, activeEnvironment.spaceId, ability);
+  if (dbEngine.isErr()) {
+    return errorResponse(dbEngine);
+  }
 
   return (
     <Suspense
@@ -37,7 +45,7 @@ export default async function EnginesPage({
       }
     >
       <EngineDashboard
-        dbEngine={dbEngine}
+        dbEngine={dbEngine.value}
         engineId={engineId}
         backButton={
           <SpaceLink href="/engines">

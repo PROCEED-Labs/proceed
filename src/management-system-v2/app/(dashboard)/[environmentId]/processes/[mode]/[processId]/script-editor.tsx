@@ -37,7 +37,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
 import { type BlocklyEditorRefType } from './blockly-editor';
 import { useQuery } from '@tanstack/react-query';
-import { isUserErrorResponse, userError } from '@/lib/user-error';
+import { isUserErrorResponse, userError } from '@/lib/server-error-handling/user-error';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useProcessVariables from './use-process-variables';
 import ProcessVariableForm from './variable-definition/process-variable-form';

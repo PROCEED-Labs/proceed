@@ -7,6 +7,7 @@ import ChangeEmailCard from './change-email-card';
 import { Card } from 'antd';
 import Link from 'next/link';
 import Content from '@/components/content';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const searchParamsSchema = z.object({ email: z.string().email(), token: z.string() });
 
@@ -15,7 +16,11 @@ export default async function ChangeEmailPage({ searchParams }: { searchParams: 
   if (!parsedSearchParams.success) redirect('/');
   const { email, token } = parsedSearchParams.data;
 
-  const { session } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { session } = currentUser.value;
   const userId = session?.user.id;
   if (!userId)
     return (
@@ -41,12 +46,15 @@ export default async function ChangeEmailPage({ searchParams }: { searchParams: 
     identifier: email,
     token: await getTokenHash(token),
   });
+  if (verificationToken.isErr()) {
+    return errorResponse(verificationToken);
+  }
 
   if (
-    !verificationToken ||
-    verificationToken.type !== 'change_email' ||
-    verificationToken.userId !== userId ||
-    !(await notExpired(verificationToken))
+    !verificationToken.value ||
+    verificationToken.value.type !== 'change_email' ||
+    verificationToken.value.userId !== userId ||
+    !(await notExpired(verificationToken.value))
   )
     redirect('/');
 

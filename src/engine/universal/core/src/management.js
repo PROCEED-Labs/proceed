@@ -451,7 +451,7 @@ const Management = {
     const interruptedTokens = [];
 
     importedInstance.tokens = importedInstance.tokens.map((token) => {
-      // get the element the toke was interrupted on
+      // get the element the token was interrupted on
       const currentFlowElement = getElementById(bpmnObj, token.currentFlowElementId);
 
       const needTokenRestart =

@@ -176,8 +176,8 @@ export async function checkIfProcessAlreadyExistsForAUserInASpaceByName(
     });
 
     return ok(!!existingProcess);
-  } catch (err: any) {
-    return err(new Error('Error checking if process exists by name:', err.message));
+  } catch (error: any) {
+    return err(new Error('Error checking if process exists by name:', error.message));
   }
 }
 
@@ -211,8 +211,8 @@ export async function checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatch
 
     // Return an array of booleans per process
     return ok(processes.map(({ name, folderId }) => existingSet.has(`${name}:::${folderId}`)));
-  } catch (err: any) {
-    return err(new Error(`Error checking process names in batch: ${err.message}`));
+  } catch (error: any) {
+    return err(new Error(`Error checking process names in batch: ${error.message}`));
   }
 }
 
@@ -654,7 +654,8 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
     where: { id: versionId },
   });
 
-  return ok(((await retrieveFile(versn?.bpmnFilePath!, false)) as Buffer).toString('utf8'));
+  const bpmn = ((await retrieveFile(versn?.bpmnFilePath!, false)) as Buffer).toString('utf8');
+  return ok(bpmn);
 }
 
 /** Removes information from the meta data that would not be correct after a restart */

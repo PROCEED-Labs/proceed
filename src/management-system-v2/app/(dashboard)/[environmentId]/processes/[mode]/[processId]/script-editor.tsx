@@ -62,7 +62,8 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const monacoEditorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
 
-  const { modeler, isExecutable } = useModelerStateStore();
+  const modeler = useModelerStateStore((state) => state.modeler);
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
 
   const editingEnabled = useCanEdit();
   const canEdit = editingEnabled && isExecutable;

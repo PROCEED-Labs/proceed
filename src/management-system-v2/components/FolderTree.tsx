@@ -14,7 +14,9 @@ type FolderChildren = {
   type: string;
 };
 
-export type TreeNode<TElement> = NonNullable<TreeProps['treeData']>[number] & { element: TElement };
+export type TreeNode<TElement extends FolderChildren> = NonNullable<
+  TreeProps['treeData']
+>[number] & { element: TElement };
 
 export function generateTreeNode<TElement extends FolderChildren>(
   element: TElement,

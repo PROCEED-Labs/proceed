@@ -199,8 +199,6 @@ export function ScriptTaskEditorEnvironment({
     }
     setScriptTasksObj();
 
-    //
-
     // Update on changes to the modeler
     function changeListener(event: any) {
       const element = event.element as ElementLike;

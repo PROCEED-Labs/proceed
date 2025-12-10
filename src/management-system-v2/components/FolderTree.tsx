@@ -175,7 +175,7 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
 
     if (nodeId) {
       // trigger re-render
-      // The new nodes where already placed in the object
+      // The new nodes were already placed in the object
       setTree((currentTree) => [...currentTree]);
     } else {
       // When there is no parentNode that means that we're loading the children of the rootFolder

@@ -66,6 +66,7 @@ module.exports = function setupServiceCalls({
   ${_parseResult.toString()};
   ${_callToService.toString()};
   ${_getService.toString()}; globalThis["getService"] = _getService;
+  globalThis["networkRequest"] = getService("network-requests");
   `,
     [
       new ivm.Reference(

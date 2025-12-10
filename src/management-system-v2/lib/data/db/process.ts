@@ -733,7 +733,10 @@ export async function getFolderScriptTasks(spaceId: string, folderId?: string, a
   }
 
   for (const process of processes) {
-    if (!ability?.can('view', toCaslResource('Process', process), { environmentId: spaceId })) {
+    if (
+      ability &&
+      !ability.can('view', toCaslResource('Process', process), { environmentId: spaceId })
+    ) {
       continue;
     }
 
@@ -854,7 +857,10 @@ export async function getFolderPathScriptTasks(
     }
 
     for (const process of processes) {
-      if (!ability?.can('view', toCaslResource('Process', process), { environmentId: spaceId })) {
+      if (
+        ability &&
+        !ability.can('view', toCaslResource('Process', process), { environmentId: spaceId })
+      ) {
         continue;
       }
 

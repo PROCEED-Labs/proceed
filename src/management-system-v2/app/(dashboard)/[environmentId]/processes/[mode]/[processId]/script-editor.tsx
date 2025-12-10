@@ -1,7 +1,6 @@
 'use client';
 
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   Button,
@@ -35,14 +34,13 @@ import {
 } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
-import { type BlocklyEditorRefType } from './blockly-editor';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useProcessVariables from './use-process-variables';
 import ProcessVariableForm from './variable-definition/process-variable-form';
 import { useCanEdit } from '@/lib/can-edit-context';
-const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
+import BlocklyEditor, { type BlocklyEditorRefType } from './blockly-editor';
 
 type ScriptEditorProps = {
   processId: string;
@@ -123,22 +121,21 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     monacoEditorRef.current = editor;
     monacoRef.current = monaco;
 
-    const defaultOptions =
-      monacoRef.current.languages.typescript.javascriptDefaults.getCompilerOptions();
-
-    monacoRef.current.languages.typescript.javascriptDefaults.setCompilerOptions({
-      ...defaultOptions,
+    monacoRef.current.languages.typescript.typescriptDefaults.setCompilerOptions({
       target: monacoRef.current.languages.typescript.ScriptTarget.ES2017,
+      // Only include ES library, exclude DOM and browser APIs
       lib: ['es2017'],
+      allowNonTsExtensions: true,
+      moduleResolution: monacoRef.current.languages.typescript.ModuleResolutionKind.NodeJs,
     });
 
     monacoRef.current.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: false,
       noSyntaxValidation: false,
       diagnosticCodesToIgnore: [
-        1108, //return not inside function,
-        1375, //'await' expressions are only allowed at the top level of a file when that file is a module
-        1378, //Top-level 'await' expressions are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher
+        1108, // return not inside function
+        1375, // 'await' expressions are only allowed at the top level of a file
+        1378, // Top-level 'await' expressions
       ],
     });
 
@@ -228,6 +225,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         },
       });
     }
+    // This fixes the issue where an input field is selected and still remains visible after the
+    // editor is hidden
+    if (selectedEditor === 'blockly') blocklyRef.current?.fillContainer();
   };
 
   const getEditorPositionRange = () => {
@@ -500,9 +500,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
                       setIsScriptValid(isScriptValid);
                     }}
-                    blocklyOptions={{
-                      readOnly: !canEdit,
-                    }}
+                    readOnly={!canEdit}
                   />
                 )}
               </Col>

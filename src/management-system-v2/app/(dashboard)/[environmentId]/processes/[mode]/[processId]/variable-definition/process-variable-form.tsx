@@ -89,7 +89,7 @@ const ProcessVariableForm: React.FC<ProcessVariableFormProps> = ({
       if (originalVariable) {
         setEditVariable({ ...originalVariable });
       } else {
-        setEditVariable({ dataType: 'string' });
+        setEditVariable({ dataType: allowedTypes[0] as ProcessVariable['dataType'] });
       }
     }
     return () => setEditVariable(undefined);

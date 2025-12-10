@@ -208,9 +208,10 @@ declare class NetworkServer {
   close(): void;
 }
 
-declare function getService(serviceName: 'network-requests'): NetworkService;
+declare var networkRequest: NetworkService;
+declare var networkServer: NetworkServer;
+
 declare function getService(serviceName: 'capabilities'): CapabilityService;
-declare function getService(serviceName: 'network-server'): NetworkServer;
 
 declare class BpmnError extends Error {
   constructor(reference: string, explanation: string);

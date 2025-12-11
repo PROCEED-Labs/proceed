@@ -106,6 +106,7 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
   useEffect(() => {
     if (!treeData) return;
 
+    nodeMap.current.clear();
     function updateTreeNode(nodes: TreeNode<TContentType>[]) {
       for (const node of nodes) {
         nodeMap.current.set(node.element.id, node);

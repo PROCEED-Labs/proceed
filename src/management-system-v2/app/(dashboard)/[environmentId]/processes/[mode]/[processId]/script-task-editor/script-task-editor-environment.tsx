@@ -120,6 +120,7 @@ export function ScriptTaskEditorEnvironment({
   useEffect(() => {
     if (!folderTreeState) return;
 
+    nodeMap.current.clear();
     function updateTreeNode(nodes: FolderTreeNode<FolderTreeDataType>[]) {
       for (const node of nodes) {
         nodeMap.current.set(node.element.id, node);

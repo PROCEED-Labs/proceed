@@ -340,7 +340,7 @@ export function ScriptTaskEditorEnvironment({
 
       if (!bpmnElement) {
         // This should only happen when a script task is removed from the bpmn
-        return;
+        continue;
       }
 
       if (hasChanges) {
@@ -367,7 +367,10 @@ export function ScriptTaskEditorEnvironment({
             </ul>
           </div>
         ),
-        onOk: () => saveRefListOrAll(withUnsavedChangesRefs),
+        onOk: async () => {
+          await saveRefListOrAll(withUnsavedChangesRefs);
+          close();
+        },
         okText: 'Save',
         cancelText: 'Discard',
         onCancel: () => {

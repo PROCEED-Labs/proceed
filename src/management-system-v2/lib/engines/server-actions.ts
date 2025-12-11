@@ -43,6 +43,7 @@ import {
 import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } from './instances';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
+import Ability from '../ability/abilityHelper';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -592,13 +593,13 @@ export async function submitFile(
   file: Buffer,
 ) {
   try {
-    if (!enableUseDB) throw new Error('submitFile only available with enableUseDB');
+    const { ability } = await getCurrentEnvironment(spaceId);
 
     const [taskId, instanceId] = userTaskId.split('|');
     const [definitionId] = instanceId.split('-_');
 
     // find the engine the user task is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+    let engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
       const deployments = await fetchDeployments([engine]);
 
       const instance = deployments
@@ -610,7 +611,11 @@ export async function submitFile(
       return instance.tokens.some((token) => token.currentFlowElementId === taskId);
     });
 
-    if (!engines.length) throw new Error('Failed to find the engine the user task is running on!');
+    engines = ability ? ability.filter('view', 'Machine', engines) : engines;
+
+    if (!engines.length) {
+      throw new UserFacingError('Failed to find the engine the user task is running on!');
+    }
 
     const res = await submitFileToMachine(
       definitionId,
@@ -634,11 +639,11 @@ export async function getFile(
   instanceId: string,
   fileName: string,
 ) {
-  try {
-    if (!enableUseDB) throw new Error('getFile only available with enableUseDB');
+  const { ability } = await getCurrentEnvironment(spaceId);
 
+  try {
     // find the engine the instance is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+    let engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
       const deployments = await fetchDeployments([engine]);
 
       return deployments.some((deployment) =>
@@ -646,7 +651,11 @@ export async function getFile(
       );
     });
 
-    if (!engines.length) throw new Error('Failed to find the engine the instance is running on!');
+    engines = ability ? ability.filter('view', 'Machine', engines) : engines;
+
+    if (!engines.length) {
+      throw new UserFacingError('Failed to find the engine the instance is running on!');
+    }
 
     return await getFileFromMachine(definitionId, instanceId, fileName, engines[0]);
   } catch (err) {

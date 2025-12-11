@@ -8,10 +8,11 @@ import { UserComponent, useNode } from '@craftjs/core';
 import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
+import useProcessVariables from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-process-variables';
 
 type InputProps = {
   label?: string;
-  type?: 'text' | 'number' | 'email' | 'url';
+  type?: 'text' | 'number' | 'email' | 'url' | 'file';
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
@@ -29,6 +30,16 @@ export const ExportInput: UserComponent<InputProps> = ({
   if (!variable) variable = `__anonymous_variable_${inputId}__`;
 
   const value = defaultValue || `{%${variable}%}`;
+
+  const input = (
+    <input
+      id={inputId}
+      className={variable ? `variable-${variable}` : undefined}
+      type={type}
+      defaultValue={value}
+      name={variable}
+    />
+  );
 
   return (
     <ContextMenu menu={[]}>
@@ -55,14 +66,22 @@ export const ExportInput: UserComponent<InputProps> = ({
           </div>
         )}
 
-        <input
-          id={inputId}
-          className={variable ? `variable-${variable}` : undefined}
-          type={type}
-          defaultValue={value}
-          name={variable}
-        />
-        <div className="validation-error"></div>
+        {/* Workaround for custom style file upload found here: https://stackoverflow.com/a/25825731 */}
+        {type === 'file' ? (
+          <>
+            <label className="file-upload" htmlFor={inputId}>
+              Upload File
+              {input}
+            </label>
+            <div className="selected-files"></div>
+            <div className="validation-error"></div>
+          </>
+        ) : (
+          <>
+            {input}
+            <div className="validation-error"></div>
+          </>
+        )}
       </div>
     </ContextMenu>
   );
@@ -99,6 +118,26 @@ const Input: UserComponent<InputProps> = ({
       };
     }
   }, [inputId, editingDefault]);
+
+  const input = (
+    <input
+      id={inputId}
+      className={variable ? `variable-${variable}` : undefined}
+      disabled={!editingEnabled}
+      type={type}
+      value={defaultValue}
+      name={variable}
+      onClick={() => {
+        if (!editingEnabled) return;
+        setEditingDefault(true);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+      }}
+      onBlur={() => setEditingDefault(false)}
+      onChange={(e) => setProp((props: InputProps) => (props.defaultValue = e.target.value))}
+    />
+  );
 
   return (
     <ContextMenu menu={[]}>
@@ -143,23 +182,17 @@ const Input: UserComponent<InputProps> = ({
           </div>
         )}
 
-        <input
-          id={inputId}
-          className={variable ? `variable-${variable}` : undefined}
-          disabled={!editingEnabled}
-          type={type}
-          value={defaultValue}
-          name={variable}
-          onClick={() => {
-            if (!editingEnabled) return;
-            setEditingDefault(true);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') e.currentTarget.blur();
-          }}
-          onBlur={() => setEditingDefault(false)}
-          onChange={(e) => setProp((props: InputProps) => (props.defaultValue = e.target.value))}
-        />
+        {/* Workaround for custom style file upload found here: https://stackoverflow.com/a/25825731 */}
+        {type === 'file' ? (
+          <>
+            <label className="file-upload" htmlFor={inputId}>
+              Upload File
+              {input}
+            </label>
+          </>
+        ) : (
+          input
+        )}
       </div>
     </ContextMenu>
   );
@@ -174,6 +207,10 @@ export const InputSettings = () => {
     labelPosition: node.data.props.labelPosition,
     variable: node.data.props.variable,
   }));
+
+  const { variables } = useProcessVariables();
+
+  const selectedVariable = variables.find((v) => v.name === variable);
 
   return (
     <>
@@ -199,13 +236,25 @@ export const InputSettings = () => {
 
       <VariableSetting
         variable={variable}
-        allowedTypes={['string', 'number']}
+        allowedTypes={['string', 'number', 'file']}
         onChange={(newVariable, newVariableType, newVariableTextFormat) =>
           setProp((props: InputProps) => {
             props.variable = newVariable;
             if (newVariableTextFormat) props.type = newVariableTextFormat;
             else {
-              props.type = newVariableType && newVariableType === 'string' ? 'text' : 'number';
+              switch (newVariableType) {
+                case 'string':
+                  props.type = 'text';
+                  break;
+                case 'number':
+                  props.type = 'number';
+                  break;
+                case 'file':
+                  props.type = 'file';
+                  break;
+                default:
+                  props.type = 'text';
+              }
             }
           })
         }

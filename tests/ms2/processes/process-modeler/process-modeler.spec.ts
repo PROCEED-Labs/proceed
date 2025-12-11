@@ -34,7 +34,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
     .getByRole('button', { name: 'plus' });
   modal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationDialog = page.getByRole('dialog', {
-    name: 'Create New Version',
+    name: 'Release a new Process Version',
   });
   await expect(versionCreationDialog).toBeVisible();
   await closeModal(modal, () => modal.getByRole('button', { name: 'Cancel' }).click());
@@ -269,7 +269,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
     .getByRole('button', { name: 'plus' });
   let versionModal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationDialog = page.getByRole('dialog', {
-    name: 'Create New Version',
+    name: 'Release a new Process Version',
   });
   await expect(versionCreationDialog).toBeVisible();
 

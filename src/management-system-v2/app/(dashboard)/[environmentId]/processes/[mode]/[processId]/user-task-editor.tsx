@@ -74,7 +74,7 @@ const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
     useEffect(() => {
       // initialize the variables known to the editor when it is opened
       if (json) updateVariables([...processVariables]);
-    }, [json]);
+    }, [json, processVariables]);
 
     useEffect(() => {
       if (variables) {

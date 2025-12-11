@@ -313,7 +313,7 @@ const ModelerToolbar = ({
             />
             {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>
-                <Tooltip title="Create New Version">
+                <Tooltip title="Release a new Version of the Process">
                   <VersionCreationButton
                     icon={<PlusOutlined />}
                     createVersion={createProcessVersion}

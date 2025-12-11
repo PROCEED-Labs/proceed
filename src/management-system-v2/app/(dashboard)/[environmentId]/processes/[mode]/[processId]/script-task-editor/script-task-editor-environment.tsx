@@ -493,7 +493,7 @@ export function ScriptTaskEditorEnvironment({
         </Space>
       }
     >
-      <Splitter>
+      <Splitter onResize={() => activeEditor?.fillContainer()}>
         <Splitter.Panel defaultSize="20%" min="10%" max="40%">
           <FolderTree<FolderTreeDataType>
             // This makes it so that the folderTree doesn't fetch the root nodes

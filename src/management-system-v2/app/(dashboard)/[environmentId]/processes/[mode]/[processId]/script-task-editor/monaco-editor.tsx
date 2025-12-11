@@ -4,6 +4,8 @@ import { forwardRef, useImperativeHandle, useRef } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import languageExtension from '../monaco-typescript-language-extension.js';
+import cn from 'classnames';
+import styles from './monaco-editor.module.scss';
 
 type MonacoEditorProps = {
   initialScript: string;
@@ -119,7 +121,7 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
         }}
         onMount={handleEditorMount}
         onChange={onChange}
-        className="Hide-Scroll-Bar"
+        className={cn('Hide-Scroll-Bar', styles.MonacoEditor)}
       />
     );
   },

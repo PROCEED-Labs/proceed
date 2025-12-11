@@ -12,6 +12,7 @@ import {
   getDefinitionsVersionInformation,
   generateBpmnId,
   toBpmnObject,
+  getScriptTaskFileNameMapping,
 } from '@proceed/bpmn-helper';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
@@ -762,11 +763,10 @@ export async function getFolderScriptTasks(
       continue;
     }
 
-    const bpmnObj = await toBpmnObject(process.bpmn);
-    const allElements = getAllElements(bpmnObj);
-    const scriptTaskFileNames = allElements
-      .filter((el) => el.$type === 'bpmn:ScriptTask' && typeof el.fileName === 'string')
-      .map((el) => el.fileName);
+    const scriptTasksFileNameMapping = await getScriptTaskFileNameMapping(process.bpmn);
+    const scriptTaskFileNames = Object.values(scriptTasksFileNameMapping)
+      .map((mapping) => mapping.fileName)
+      .filter((v) => !!v) as string[];
 
     if (scriptTaskFileNames.length > 0) {
       processesWithScriptTaskFileNames.push({

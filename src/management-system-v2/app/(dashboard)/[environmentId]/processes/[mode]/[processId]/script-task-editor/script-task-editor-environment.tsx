@@ -97,7 +97,7 @@ type FolderTreeDataType =
       label: string;
     };
 
-type ScriptTaskEditorProviderProps = {
+type ScriptTaskEditorEnvironmentProps = {
   process: Process;
   selectedElement?: Element;
   close: () => void;
@@ -106,7 +106,7 @@ export function ScriptTaskEditorEnvironment({
   process,
   selectedElement,
   close,
-}: ScriptTaskEditorProviderProps) {
+}: ScriptTaskEditorEnvironmentProps) {
   const space = useEnvironment();
   const canEdit = useCanEdit();
   const app = App.useApp();

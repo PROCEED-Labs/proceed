@@ -13,6 +13,7 @@ import { RoleType, UserType } from './use-potentialOwner-store';
 import type { Process } from '@/lib/data/process-schema';
 import { redirect } from 'next/navigation';
 import { spaceURL } from '@/lib/utils';
+import { getFolderById } from '@/lib/data/db/folders';
 
 type ProcessPageProps = {
   params: { processId: string; environmentId: string; mode: string };
@@ -49,6 +50,7 @@ const ProcessComponent = async ({
     }
   }
   const processes = await getProcesses(activeEnvironment.spaceId, ability, false);
+  const folder = await getFolderById(process.folderId, ability);
 
   // const rawRoles = activeEnvironment.isOrganization
   //   ? await getRolesWithMembers(activeEnvironment.spaceId, ability)
@@ -92,6 +94,7 @@ const ProcessComponent = async ({
           <Modeler
             className={styles.Modeler}
             process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
+            folder={folder}
             versionName={selectedVersion?.name}
           />
         }

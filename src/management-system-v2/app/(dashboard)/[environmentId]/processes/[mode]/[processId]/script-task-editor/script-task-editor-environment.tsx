@@ -13,6 +13,7 @@ import { FolderTree, TreeNode as FolderTreeNode, generateTreeNode } from '@/comp
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import type { FolderContentWithScriptTasks } from '@/lib/data/db/process';
+import { Folder } from '@/lib/data/folder-schema';
 
 function getScriptTaskLabel(element?: Element | ElementLike, knownFileName?: string) {
   if (knownFileName) {
@@ -99,11 +100,13 @@ type FolderTreeDataType =
 
 type ScriptTaskEditorEnvironmentProps = {
   process: Process;
+  folder?: Folder;
   selectedElement?: Element;
   close: () => void;
 };
 export function ScriptTaskEditorEnvironment({
   process,
+  folder,
   selectedElement,
   close,
 }: ScriptTaskEditorEnvironmentProps) {
@@ -134,11 +137,10 @@ export function ScriptTaskEditorEnvironment({
 
     // This would be the case if the process starts out not having any script task
     const processNode = nodeMap.current.get(process.id);
-    const folderNode = nodeMap.current.get(process.folderId);
+    const folderNode =
+      folder && folder.parentId === null ? true : nodeMap.current.get(process.folderId);
 
     if (folderNode && !processNode) {
-      if (!folderNode.children) folderNode.children = [];
-
       // TODO: this doesn't react to the process changing name
       const processNode = generateTreeNode({
         name: process.name,
@@ -149,12 +151,17 @@ export function ScriptTaskEditorEnvironment({
       processNode.isLeaf = false;
 
       nodeMap.current.set(process.id, processNode);
-      folderNode.children.push(processNode);
 
-      // rerender
-      setFolderTreeState((prev) => [...prev]);
+      if (folderNode === true) {
+        setFolderTreeState((prev) => [...prev, processNode]);
+      } else {
+        if (!folderNode.children) folderNode.children = [];
+        folderNode.children.push(processNode);
+        // rerender
+        setFolderTreeState((prev) => [...prev]);
+      }
     }
-  }, [folderTreeState, process.name, process.id, process.folderId]);
+  }, [folderTreeState, process.name, process.id, process.folderId, folder]);
 
   const { data: treeStructureData } = useQuery({
     queryFn: async () => {

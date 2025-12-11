@@ -40,16 +40,24 @@ import { useProcessView } from './process-view-context';
 import { useCanEdit } from '@/lib/can-edit-context';
 import { Element } from 'bpmn-js/lib/model/Types';
 import { ScriptTaskEditorEnvironment } from './script-task-editor/script-task-editor-environment';
+import { Folder } from '@/lib/data/folder-schema';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   process: Process;
+  folder?: Folder;
   canUndo: boolean;
   canRedo: boolean;
   versionName?: string;
 };
-const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolbarProps) => {
+const ModelerToolbar = ({
+  process,
+  folder,
+  canRedo,
+  canUndo,
+  versionName,
+}: ModelerToolbarProps) => {
   const processId = process.id;
 
   const router = useRouter();
@@ -470,6 +478,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
 
           <ScriptTaskEditorEnvironment
             process={process}
+            folder={folder}
             selectedElement={selectedScriptTask}
             close={() => setSelectedScriptTask(undefined)}
           />

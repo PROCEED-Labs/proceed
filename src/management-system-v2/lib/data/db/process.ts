@@ -13,7 +13,7 @@ import {
   generateBpmnId,
   toBpmnObject,
 } from '@proceed/bpmn-helper';
-import Ability from '@/lib/ability/abilityHelper';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
@@ -688,9 +688,23 @@ export type FolderContentWithScriptTasks = {
 /*
  * Returns the id, name and list of scriptTask filenames of all processes with scriptTasks.
  */
-export async function getFolderScriptTasks(spaceId: string, folderId?: string, ability?: Ability) {
+export async function getFolderScriptTasks(
+  spaceId: string,
+  folderId?: string,
+  ability?: Ability,
+  skipFolderCheck = false,
+) {
+  // If there is a folder id the permissions will be checked by getRootFolder
+  if (!skipFolderCheck && folderId) {
+    // Throws if the user doesn't have permissions
+    await getFolderById(folderId, ability);
+  }
+
   if (!folderId) {
-    const rootFolder = await getRootFolder(spaceId);
+    // Throws if the user doesn't have permissions
+
+    const rootFolder = await getRootFolder(spaceId, skipFolderCheck ? undefined : ability);
+
     folderId = rootFolder.id;
   }
 
@@ -769,7 +783,7 @@ export async function getFolderScriptTasks(spaceId: string, folderId?: string, a
  */
 export async function getFolderPathScriptTasks(
   spaceId: string,
-  folderId: string | null,
+  folderId: string,
   ability?: Ability,
 ) {
   const results: FolderContentWithScriptTasks[] = [];
@@ -777,98 +791,13 @@ export async function getFolderPathScriptTasks(
   // Start at folder and go up in the tree
   let currentFolderId: string | null = folderId;
   while (currentFolderId !== null) {
-    const [currentFolder, processes, folders] = await Promise.all([
-      db.folder.findFirst({
-        where: {
-          environmentId: spaceId,
-          id: currentFolderId,
-        },
-        select: {
-          id: true,
-          // We need this for the permission check to work
-          parentId: true,
-        },
-      }),
-      db.process.findMany({
-        where: {
-          environmentId: spaceId,
-          folderId: currentFolderId,
-        },
-        select: {
-          id: true,
-          name: true,
-          bpmn: true,
-        },
-      }),
-      db.folder.findMany({
-        where: {
-          environmentId: spaceId,
-          parentId: currentFolderId,
-        },
-        select: {
-          name: true,
-          id: true,
-          // We need this for the permission check to work
-          parentId: true,
-        },
-      }),
-    ]);
+    // Throws if the user doesn't have permissions
+    const currentFolder = await getFolderById(currentFolderId, ability);
 
-    if (!currentFolder) {
-      throw new Error(`Possible consistency error: folder id ${currentFolderId} was not found`);
-    }
-
-    if (
-      !ability ||
-      ability.can('view', toCaslResource('Folder', currentFolder), { environmentId: spaceId })
-    ) {
-      // TODO: early stop
-    }
-
-    // TODO: subprocesses
-    const processesWithScriptTaskFileNames: FolderContentWithScriptTasks = {
+    results.push({
       folderId: currentFolderId,
-      content: [],
-    };
-
-    for (const folder of folders) {
-      if (
-        !ability ||
-        ability.can('view', toCaslResource('Folder', folder), { environmentId: spaceId })
-      ) {
-        processesWithScriptTaskFileNames.content.push({
-          type: 'folder',
-          id: folder.id,
-          name: folder.name,
-        });
-      }
-    }
-
-    for (const process of processes) {
-      if (
-        ability &&
-        !ability.can('view', toCaslResource('Process', process), { environmentId: spaceId })
-      ) {
-        continue;
-      }
-
-      const bpmnObj = await toBpmnObject(process.bpmn);
-      const allElements = getAllElements(bpmnObj);
-      const scriptTaskFileNames = allElements
-        .filter((el) => el.$type === 'bpmn:ScriptTask' && typeof el.fileName === 'string')
-        .map((el) => el.fileName);
-
-      if (scriptTaskFileNames.length > 0) {
-        processesWithScriptTaskFileNames.content.push({
-          id: process.id,
-          name: process.name,
-          scriptTasks: scriptTaskFileNames,
-          type: 'process',
-        });
-      }
-    }
-
-    results.push(processesWithScriptTaskFileNames);
+      content: await getFolderScriptTasks(spaceId, currentFolderId, ability, true),
+    });
 
     currentFolderId = currentFolder.parentId;
   }

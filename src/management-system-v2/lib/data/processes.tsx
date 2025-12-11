@@ -670,7 +670,7 @@ export const getFolderScriptTasks = async (environmentId: string, folderId?: str
   }
 };
 
-export const getFolderPathScriptTasks = async (environmentId: string, folderId: string | null) => {
+export const getFolderPathScriptTasks = async (environmentId: string, folderId: string) => {
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
 

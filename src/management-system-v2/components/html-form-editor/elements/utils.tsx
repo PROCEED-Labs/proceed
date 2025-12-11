@@ -14,7 +14,6 @@ import { useDndContext } from '@dnd-kit/core';
 
 import { truthyFilter } from '@/lib/typescript-utils';
 import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/variable-definition/process-variable-form';
-import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
 import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
@@ -27,7 +26,7 @@ export const Setting: React.FC<{
 }> = ({ label, control, style = {}, disabled = false, compact = false }) => {
   const id = useId();
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const clonedControl = React.cloneElement(control, { id, disabled: disabled || !editingEnabled });
 
@@ -54,7 +53,7 @@ type ContextMenuProps = React.PropsWithChildren<{
 export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClose }) => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>();
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const id = useId();
   const blockDragging = useEditorStateStore((state) => state.blockDragging);
@@ -209,7 +208,7 @@ function SidebarButton<T extends string>({
   onClick,
   onHovered,
 }: SidebarButtonProps<T>) {
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   return (
     <Button
@@ -280,7 +279,7 @@ export const VariableSelection: React.FC<
 > = ({ variable, allowedTypes, onChange, style = {} }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const { variables, updateVariables } = useEditorStateStore((state) => state);
 

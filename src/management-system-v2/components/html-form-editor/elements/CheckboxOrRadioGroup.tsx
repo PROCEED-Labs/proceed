@@ -27,7 +27,6 @@ import { WithRequired } from '@/lib/typescript-utils';
 
 import { EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
-import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
 
 const checkboxValueHint =
@@ -98,6 +97,31 @@ export const ExportCheckboxOrRadioGroup: React.FC<CheckBoxOrRadioGroupProps> = (
   variable = '',
   data,
 }) => {
+  const id = useId();
+
+  if (!variable) variable = `__anonymous_variable_${id}__`;
+
+  data = data.map((entry) => {
+    if (!entry.value && (type === 'radio' || data.length > 1)) {
+      // if we have a radio button or multiple checkboxes we require the entry to have a value
+      // => set the value to the content of the label if the user has not provided a value
+      let { value, label } = entry;
+      if (label) {
+        let labelText = label;
+        let newLabelText = label;
+        // unwrap the value of the label from the surrounding html elements
+        do {
+          labelText = newLabelText;
+          newLabelText = newLabelText.replace(/(.*)(<[^<]*>)(.*)/, '$1$3');
+        } while (labelText != newLabelText);
+        value = newLabelText;
+      } else value = id;
+      return { ...entry, value };
+    }
+
+    return entry;
+  });
+
   return (
     <div className={`user-task-form-input-group variable-${variable}`}>
       {data.map((entry) => (
@@ -129,7 +153,8 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
+
   return (
     <>
       <input
@@ -222,7 +247,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     }
   }, [isSelected]);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const handleLabelEdit = (index: number, text: string) => {
     if (!editingEnabled) return;
@@ -310,7 +335,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
 
   const selectedVariable = variables?.find((v) => v.name === variable);
   const showAdditionalOptions =
-    editTarget !== undefined && selectedVariable && selectedVariable.dataType !== 'boolean';
+    editTarget !== undefined && (!selectedVariable || selectedVariable.dataType !== 'boolean');
 
   const contextMenu: MenuProps['items'] = showAdditionalOptions
     ? [

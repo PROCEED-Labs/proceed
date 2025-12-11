@@ -7,7 +7,6 @@ import { UserComponent, useNode } from '@craftjs/core';
 
 import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
-import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
 import useProcessVariables from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-process-variables';
 
@@ -28,7 +27,9 @@ export const ExportInput: UserComponent<InputProps> = ({
 }) => {
   const inputId = useId();
 
-  const value = defaultValue || (variable && `{%${variable}%}`);
+  if (!variable) variable = `__anonymous_variable_${inputId}__`;
+
+  const value = defaultValue || `{%${variable}%}`;
 
   const input = (
     <input
@@ -97,7 +98,8 @@ const Input: UserComponent<InputProps> = ({
     connectors: { connect },
     actions: { setProp },
   } = useNode();
-  const editingEnabled = useCanEdit();
+
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const inputId = useId();
 

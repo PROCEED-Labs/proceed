@@ -845,7 +845,7 @@ export async function getProcessHtmlFormJSON(
       return jsonAsBuffer.toString('utf8');
     }
   } catch (err) {
-    // logger.debug(`Error getting data of process html form ${fileName}. Reason\n${err}`);
+    logger.debug(`Error getting data of process html form ${fileName}. Reason\n${err}`);
     throw new Error(`Unable to get data for process html form ${fileName}!`);
   }
 }
@@ -935,7 +935,7 @@ export async function getHtmlForm(processDefinitionsId: string, fileName: string
     const html = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return html;
   } catch (err) {
-    // logger.debug(`Error getting html for ${fileName} from the database. Reason:\n${err}`);
+    logger.debug(`Error getting html for ${fileName} from the database. Reason:\n${err}`);
     throw new Error('Unable to get html for start form!');
   }
 }
@@ -973,7 +973,7 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
     const script = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return script;
   } catch (err) {
-    // logger.debug(`Error getting script of script task. Reason:\n${err}`);
+    logger.debug(`Error getting script of script task. Reason:\n${err}`);
     throw new Error('Unable to get script for script task!');
   }
 }
@@ -1049,7 +1049,7 @@ export async function saveProcessHtmlForm(
 
     return filePath;
   } catch (err) {
-    // logger.debug(`Error storing html form data for ${fileName}. Reason:\n${err}`);
+    logger.debug(`Error storing html form data for ${fileName}. Reason:\n${err}`);
     throw new Error('Failed to store the html form data.');
   }
 }
@@ -1078,7 +1078,7 @@ export async function saveProcessScriptTask(
     );
     return filenameWithExtension;
   } catch (err) {
-    // logger.debug(`Error storing script task data. Reason:\n${err}`);
+    logger.debug(`Error storing script task data. Reason:\n${err}`);
     throw new Error('Failed to store the script task data');
   }
 }
@@ -1100,7 +1100,7 @@ export async function deleteHtmlForm(processDefinitionsId: string, fileName: str
 
     return isDeleted;
   } catch (err) {
-    // logger.debug(`Error removing html form data. Reason:\n${err}`);
+    logger.debug(`Error removing html form data. Reason:\n${err}`);
   }
 }
 
@@ -1116,7 +1116,7 @@ export async function deleteProcessScriptTask(
       return await deleteProcessArtifact(res.filePath, true);
     }
   } catch (err) {
-    // logger.debug(`Error removing script task file. Reason:\n${err}`);
+    logger.debug(`Error removing script task file. Reason:\n${err}`);
   }
 }
 
@@ -1252,7 +1252,7 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
     const image = (await retrieveFile(res?.filePath, false)) as Buffer;
     return image;
   } catch (err) {
-    // logger.debug(`Error getting image. Reason:\n${err}`);
+    logger.debug(`Error getting image. Reason:\n${err}`);
     throw new Error(`Unable to get image : ${imageFileName}`);
   }
 }

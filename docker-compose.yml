@@ -23,7 +23,7 @@ services:
       - proceed-standalone-network
 
   proceed_standalone_postgres_database:
-    image: postgres:latest
+    image: postgres:17.7
     container_name: proceed_standalone_postgres_database
     restart: unless-stopped
     environment:
@@ -31,7 +31,7 @@ services:
       POSTGRES_USER: proceed
       POSTGRES_PASSWORD: proceed
     volumes:
-      - proceed_standalone_postgres_db:/var/lib/postgresql
+      - proceed_standalone_postgres_db:/var/lib/postgresql/data
     networks:
       - proceed-standalone-network
 
@@ -39,6 +39,8 @@ services:
     image: proceed/engine:edge
     container_name: proceed_standalone_engine
     restart: unless-stopped
+    ports:
+      - '33029:33029'
     networks:
       - proceed-standalone-network
 

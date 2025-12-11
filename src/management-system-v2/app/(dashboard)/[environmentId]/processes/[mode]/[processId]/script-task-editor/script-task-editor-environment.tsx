@@ -219,6 +219,9 @@ export function ScriptTaskEditorEnvironment({
     };
   }, [modelerEventBus, modeler]);
 
+  // When the component re-renders we make sure that the children of the current processes' node in
+  // the folder Tree are up to date.
+  // (The component rerenders when script-tasks change due to scriptTasksInProcess.
   const processNode = nodeMap.current.get(process.id);
   if (processNode) {
     processNode.children = [];
@@ -251,7 +254,17 @@ export function ScriptTaskEditorEnvironment({
    * Script Editors
    * -----------------------------------------------------------------------------------------------*/
 
+  // Active script editor holds a string with the following format "{processId} {scriptIdentifier}"
+  // The identifier is either a fileName, in the case of script tasks outside of this process, or a
+  // bpmn node id in the case of script tasks that are part of this process, we use this id because
+  // the fileName can change.
   const [activeScriptEditor, setActiveScriptEditor] = useState<string | undefined>();
+
+  // We use the tabs component from ant design as it makes it easy to hide components and keep their
+  // state.
+  const [tabItems, setTabItems] = useState<Required<TabsProps>['items']>([]);
+
+  // This effect creates a new tab entry for an edittor in the case that it doesn't exist already.
   useEffect(() => {
     if (selectedElement) {
       const key = `${process.id} ${selectedElement.id}`;
@@ -397,8 +410,6 @@ export function ScriptTaskEditorEnvironment({
       ),
     };
   }
-
-  const [tabItems, setTabItems] = useState<Required<TabsProps>['items']>([]);
 
   const currentTreeNode = activeScriptEditor && nodeMap.current.get(activeScriptEditor);
   let title = canEdit ? 'Edit Script Task' : 'Script Task';

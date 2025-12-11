@@ -9,6 +9,7 @@ module.exports = function setupServiceCalls({
   processId,
   processInstanceId,
   tokenId,
+  waitUntilResumed,
 }) {
   /** @param {string} serviceName */
   function _getService(serviceName) {
@@ -76,6 +77,7 @@ module.exports = function setupServiceCalls({
          * @param {string} args stringified array of args
          */
         async function (serviceName, method, args) {
+          await waitUntilResumed();
           const result = await callToExecutor('call', {
             functionName: `getService.${serviceName}.${method}`,
             args: [processId, processInstanceId, tokenId, ...JSON.parse(args)],

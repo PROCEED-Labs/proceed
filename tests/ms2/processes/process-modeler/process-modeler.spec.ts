@@ -48,7 +48,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
     'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volu';
   modal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationSubmitButton = modal.getByRole('button', {
-    name: 'Create Version',
+    name: 'Release Version',
   });
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal.getByPlaceholder('Version Name').fill('Version 1');
@@ -275,7 +275,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   // Fill version creation dialog and create new version
   const versionCreationSubmitButton = versionModal.getByRole('button', {
-    name: 'Create Version',
+    name: 'Release Version',
   });
   await versionModal.getByPlaceholder('Version Name').fill('Version 1');
   await versionModal.getByPlaceholder('Version Description').fill('description');

@@ -31,7 +31,7 @@ export class ProcessModelerPage {
     await versionModal.getByPlaceholder('Version Name').fill(name);
     await versionModal.getByPlaceholder('Version Description').fill(description);
     await closeModal(versionModal, () =>
-      versionModal.getByRole('button', { name: 'Create Version' }).click(),
+      versionModal.getByRole('button', { name: 'Release Version' }).click(),
     );
     const url = page.url();
     await page.getByText('Latest Version').click();

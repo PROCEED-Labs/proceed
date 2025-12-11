@@ -275,6 +275,8 @@ export function ScriptTaskEditorEnvironment({
   // state.
   const [tabItems, setTabItems] = useState<Required<TabsProps>['items']>([]);
 
+  const editingEnabled = canEdit && isExecutable;
+
   // This effect creates a new tab entry for an edittor in the case that it doesn't exist already.
   useEffect(() => {
     if (selectedElement) {
@@ -328,7 +330,7 @@ export function ScriptTaskEditorEnvironment({
   }
 
   async function handleClose() {
-    if (!canEdit) {
+    if (!editingEnabled) {
       return close();
     }
 
@@ -450,8 +452,6 @@ export function ScriptTaskEditorEnvironment({
       }
     }
   }
-
-  const editingEnabled = canEdit && isExecutable;
 
   return (
     <Modal

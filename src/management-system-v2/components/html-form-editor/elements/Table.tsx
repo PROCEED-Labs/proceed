@@ -21,7 +21,7 @@ import EditableText from '../_utils/EditableText';
 import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from './utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useCanEdit } from '@/lib/can-edit-context';
+import useEditorStateStore from '../use-editor-state-store';
 
 const defaultHeaderContent =
   '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Header Cell</strong></b>';
@@ -56,7 +56,7 @@ const TableCell: React.FC<
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   return React.createElement(
     type,
@@ -169,7 +169,7 @@ const Table: UserComponent<TableProps> = ({
     }
   }, [isSelected]);
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const addRow = (index: number) => {
     if (!editingEnabled) return;

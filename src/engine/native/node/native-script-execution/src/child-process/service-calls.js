@@ -17,12 +17,6 @@ module.exports = function setupServiceCalls({
       {},
       {
         get: function (_, method) {
-          // network-server is a bit more complex so it requires it's own implementation
-          // _networkServerCall is defined in ./http-server.js
-          if (serviceName === 'network-server') {
-            return (...args) => _networkServerCall(method, args);
-          }
-
           return (...args) => _callToService(serviceName, method, args);
         },
       },
@@ -73,6 +67,7 @@ module.exports = function setupServiceCalls({
   ${_parseResult.toString()};
   ${_callToService.toString()};
   ${_getService.toString()}; globalThis["getService"] = _getService;
+  globalThis["networkRequest"] = getService("network-requests");
   `,
     [
       new ivm.Reference(

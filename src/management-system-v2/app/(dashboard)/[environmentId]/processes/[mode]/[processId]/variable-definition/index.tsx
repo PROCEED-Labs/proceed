@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Space, Table } from 'antd';
+import { Button, Divider, Space, Table } from 'antd';
 
 import {
   DeleteOutlined,
@@ -42,6 +42,9 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = ({ readOnly = fals
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
+      <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+        <span style={{ marginRight: '0.3em', marginBottom: '0.1rem' }}>Variables</span>
+      </Divider>
       {variables.length > 0 && (
         <Table
           scroll={{ x: true }}

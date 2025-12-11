@@ -523,7 +523,7 @@ export function ScriptTaskEditorEnvironment({
             treeProps={{ style: { width: 300, overflow: 'hidden' } }}
           />
         </Splitter.Panel>
-        <Splitter.Panel>
+        <Splitter.Panel style={{ overflow: 'visible' }}>
           <Tabs
             items={tabItems}
             activeKey={activeScriptEditor}

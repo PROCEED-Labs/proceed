@@ -71,7 +71,8 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
 
     const modeler = useModelerStateStore((state) => state.modeler);
     const _canEdit = useCanEdit();
-    const canEdit = !!scriptTaskBpmnElement && _canEdit;
+    const isExecutable = useModelerStateStore((state) => state.isExecutable);
+    const canEdit = !!scriptTaskBpmnElement && _canEdit && isExecutable;
 
     const environment = useEnvironment();
     const app = App.useApp();

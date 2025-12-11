@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Element } from 'bpmn-js/lib/model/Types';
 import type { ElementLike } from 'diagram-js/lib/model/Types';
-import { Badge, Modal, Button, Space, App, Tabs, TabsProps, Splitter } from 'antd';
+import { Badge, Modal, Button, Space, App, Tabs, TabsProps, Splitter, Alert } from 'antd';
 import ScriptEditor, { ScriptEditorRef } from './script-task-editor';
 import { useCanEdit } from '@/lib/can-edit-context';
 import { Process } from '@/lib/data/process-schema';
@@ -96,6 +96,7 @@ type FolderTreeDataType =
       id: string;
       name: ReactNode;
       label: string;
+      isInThisProcess: boolean;
     };
 
 type ScriptTaskEditorEnvironmentProps = {
@@ -113,6 +114,7 @@ export function ScriptTaskEditorEnvironment({
   const space = useEnvironment();
   const canEdit = useCanEdit();
   const app = App.useApp();
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
 
   /* -------------------------------------------------------------------------------------------------
    * Folder Structure for folder tree
@@ -252,6 +254,7 @@ export function ScriptTaskEditorEnvironment({
         label,
         id,
         type: 'scriptTask' as const,
+        isInThisProcess: true,
       });
       processNode.children.push(node);
       nodeMap.current.set(id, node);
@@ -420,10 +423,32 @@ export function ScriptTaskEditorEnvironment({
   }
 
   const currentTreeNode = activeScriptEditor && nodeMap.current.get(activeScriptEditor);
-  let title = canEdit ? 'Edit Script Task' : 'Script Task';
+
+  let title: ReactNode = 'Script Task';
+
   if (currentTreeNode && currentTreeNode.element.type === 'scriptTask') {
-    title += `: ${currentTreeNode.element.label}`;
+    // Non-editable case
+    title = `Script Task: ${currentTreeNode.element.label}`;
+
+    if (currentTreeNode.element.isInThisProcess && canEdit) {
+      title = `Edit Script Task: ${currentTreeNode.element.label}`;
+
+      if (!isExecutable) {
+        title = (
+          <div style={{ display: 'flex' }}>
+            {title}{' '}
+            <Alert
+              style={{ margin: '0 5px' }}
+              type="warning"
+              message="You cannot edit the script since the process is not executable."
+            />
+          </div>
+        );
+      }
+    }
   }
+
+  const editingEnabled = canEdit && isExecutable;
 
   return (
     <Modal
@@ -448,7 +473,7 @@ export function ScriptTaskEditorEnvironment({
               }
             }}
             disabled={
-              !canEdit ||
+              !editingEnabled ||
               (activeScriptEditor ? scriptTasksWithChanges[activeScriptEditor] !== true : true)
             }
             type="primary"
@@ -464,7 +489,8 @@ export function ScriptTaskEditorEnvironment({
               }
             }}
             disabled={
-              !canEdit || Object.values(scriptTasksWithChanges).every((value) => value !== true)
+              !editingEnabled ||
+              Object.values(scriptTasksWithChanges).every((value) => value !== true)
             }
             type="primary"
           >
@@ -493,6 +519,7 @@ export function ScriptTaskEditorEnvironment({
                     label: scriptTaskFileName,
                     id: `${node.element.id} ${scriptTaskFileName}`,
                     type: 'scriptTask',
+                    isInThisProcess: false,
                   }),
                 );
               }

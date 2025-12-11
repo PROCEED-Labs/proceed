@@ -55,6 +55,7 @@ export async function getProcesses(environmentId: string, ability?: Ability, inc
       sharedAs: true,
       shareTimestamp: true,
       allowIframeTimestamp: true,
+      executable: true,
       environmentId: true,
       creatorId: true,
       //departments: true,
@@ -89,6 +90,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       sharedAs: true,
       shareTimestamp: true,
       allowIframeTimestamp: true,
+      executable: true,
       environmentId: true,
       creatorId: true,
       //departments: true,
@@ -285,6 +287,7 @@ export async function addProcess(
         //departments: { set: metadata.departments },
         //variables: { set: metadata.variables },
         bpmn: bpmnWithPlaceholders,
+        executable: metadata.executable || false,
       },
     });
   } catch (error) {
@@ -640,6 +643,7 @@ export async function getProcessBpmn(processDefinitionsId: string) {
         id: true,
         name: true,
         originalId: true,
+        executable: true,
       },
     });
 

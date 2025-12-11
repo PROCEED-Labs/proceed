@@ -15,6 +15,8 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import useEditorStateStore from '@/components/html-form-editor/use-editor-state-store';
 
+import { tokenize } from '@proceed/user-task-helper/src/tokenize';
+
 type ImageProps = {
   src?: string;
   reloadParam?: number;
@@ -282,7 +284,13 @@ export const ImageSettings = () => {
     }
   }, [src]);
 
-  const variableName = src && /{%(.*)%}/.test(src) && src.replace(/{%(.*)%}/g, '$1').trim();
+  let variableName: string | undefined;
+  if (src) {
+    const tokens = tokenize(src);
+    if (tokens.length === 1 && tokens[0].type === 'variable') {
+      variableName = tokens[0].variableName;
+    }
+  }
 
   const { customUploadRequest } = useImageUpload({
     onImageUpdate: (imageFileName) => {

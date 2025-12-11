@@ -345,7 +345,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                         target="_blank"
                         rel="noopener"
                       >
-                        Open Script Task AP
+                        Open Script Task API
                       </Button>
                     </Tooltip>
                   </Space>

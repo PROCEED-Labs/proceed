@@ -93,6 +93,7 @@ model Process {
   environmentId        String
   versions             Version[]
   bpmn                 String              @db.Xml
+  executable           Boolean             @default(false)
   creator              User?               @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   creatorId            String
   //TODO: Departments and Variables add here if needed in future

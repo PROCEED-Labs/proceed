@@ -12,11 +12,14 @@ type EditorStateStore = {
   variables?: ProcessVariable[];
   milestones?: Milestone[];
 
+  editingEnabled: boolean;
+
   setIsTextEditing: (editing: boolean) => void;
   blockDragging: (blockerId: string) => void;
   unblockDragging: (blockerId: string) => void;
   updateVariables: (newVariables: ProcessVariable[]) => void;
   updateMilestones: (newMilestones: Milestone[]) => void;
+  setEditingEnabled: (enabled: boolean) => void;
 };
 
 const StoreContext = createContext<StoreApi<EditorStateStore> | null>(null);
@@ -31,6 +34,8 @@ export const EditorStoreProvider = ({ children }: { children: ReactNode }) => {
 
       variables: undefined,
       milestones: undefined,
+
+      editingEnabled: false,
 
       setIsTextEditing: (editing) => {
         set({ isTextEditing: editing });
@@ -50,6 +55,10 @@ export const EditorStoreProvider = ({ children }: { children: ReactNode }) => {
 
       updateMilestones: (newMilestones) => {
         set({ milestones: newMilestones });
+      },
+
+      setEditingEnabled: (enabled) => {
+        set({ editingEnabled: enabled });
       },
     }));
   }

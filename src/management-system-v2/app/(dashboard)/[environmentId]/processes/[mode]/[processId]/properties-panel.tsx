@@ -45,6 +45,7 @@ import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import VariableDefinition from './variable-definition';
+import IsExecutableSection from './is-executable';
 
 // Elements that should not display the planned duration field
 // These are non-executable elements that don't have execution time
@@ -116,6 +117,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const [elementHeight, setElementHeight] = useState(0);
 
   const [userDefinedId, setUserDefinedId] = useState(metaData.userDefinedId);
+
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
 
   const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
   const timePlannedDuration: string | undefined = metaData.timePlannedDuration;
@@ -491,17 +494,17 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             role="group"
             aria-labelledby="general-title"
           >
+            <IsExecutableSection modeler={modeler} readOnly={readOnly} />
             {selectedElement.type === 'bpmn:UserTask' && (
               <>
                 <PotentialOwner
                   selectedElement={selectedElement}
                   modeler={modeler}
-                  readOnly={readOnly}
+                  readOnly={readOnly || !isExecutable}
                 />
-                <Divider />
               </>
             )}
-            <VariableDefinition readOnly={readOnly} />
+            <VariableDefinition readOnly={readOnly || !isExecutable} />
           </Space>
         </>
       ),

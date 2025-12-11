@@ -31,7 +31,7 @@ module.exports = {
    *
    * @param {String} definitionId name of the file the definition of the process is stored in
    * @param {Number} versionId the specific versionId of the process to check
-   * @returns {Boolean} - indicates if the versionId exists or not
+   * @returns {Promise<Boolean>} - indicates if the versionId exists or not
    */
   async isProcessVersionExisting(definitionId, versionId) {
     const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
@@ -186,7 +186,7 @@ module.exports = {
    *
    * @param {string} definitionId
    * @param {number} versionId the versionId we want to get the bpmn of
-   * @returns {string} the bpmn of the specific process versionId
+   * @returns {Promise<string>} the bpmn of the specific process versionId
    */
   async getProcessVersion(definitionId, versionId) {
     if (!(await this.isProcessVersionExisting(definitionId, versionId))) {

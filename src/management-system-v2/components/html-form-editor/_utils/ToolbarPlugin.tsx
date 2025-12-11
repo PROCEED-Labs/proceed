@@ -32,6 +32,8 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { VariableSetting } from '../elements/utils';
 
+import { tokenize } from '@proceed/user-task-helper/src/tokenize';
+
 const LowPriority = 1;
 
 export default function ToolbarPlugin() {
@@ -76,15 +78,12 @@ export default function ToolbarPlugin() {
 
       setLinkType('url');
       if (link) {
-        const test = link as string;
-        // check if the link is a variable definition of the form {{variable-name}}
-        const regex = /^{%(.*)%}$/g;
-        if (test.match(regex)) {
+        const tokens = tokenize(link);
+        // check if the link is a variable definition of the form {%variable-name%}
+        if (tokens.length === 1 && tokens[0].type === 'variable') {
           setLinkType('variable');
-          // unwrap the variable name from the surrounding curly braces
-          const newLink = test.replace(regex, '$1');
-          setLink(newLink);
-        } else setLink(test);
+          setLink(tokens[0].variableName);
+        } else setLink(link as string);
       } else setLink('');
     }
   }, []);

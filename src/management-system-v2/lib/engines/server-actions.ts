@@ -45,6 +45,7 @@ import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } fro
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
 import { getUsersInSpace } from '../data/db/iam/memberships';
+import Ability from '../ability/abilityHelper';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -550,8 +551,6 @@ export async function updateVariables(
 
 export async function submitFile(engine: Engine | null, userTaskId: string, formData: FormData) {
   try {
-    if (!enableUseDB) throw new Error('submitFile only available with enableUseDB');
-
     const file = formData.get('file') as File;
 
     const fileName = file.name;
@@ -586,11 +585,11 @@ export async function getFile(
   instanceId: string,
   fileName: string,
 ) {
-  try {
-    if (!enableUseDB) throw new Error('getFile only available with enableUseDB');
+  const { ability } = await getCurrentEnvironment(spaceId);
 
+  try {
     // find the engine the instance is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+    let engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
       const deployments = await fetchDeployments([engine]);
 
       return deployments.some((deployment) =>
@@ -598,7 +597,11 @@ export async function getFile(
       );
     });
 
-    if (!engines.length) throw new Error('Failed to find the engine the instance is running on!');
+    engines = ability ? ability.filter('view', 'Machine', engines) : engines;
+
+    if (!engines.length) {
+      throw new UserFacingError('Failed to find the engine the instance is running on!');
+    }
 
     return await getFileFromMachine(definitionId, instanceId, fileName, engines[0]);
   } catch (err) {

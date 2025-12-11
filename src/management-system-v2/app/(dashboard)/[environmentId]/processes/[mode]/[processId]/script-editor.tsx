@@ -1,7 +1,6 @@
 'use client';
 
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   Button,
@@ -17,6 +16,7 @@ import {
   App,
   Spin,
   Result,
+  Alert,
 } from 'antd';
 import { FaArrowRight } from 'react-icons/fa';
 import { CheckCircleOutlined, ExclamationCircleOutlined, FormOutlined } from '@ant-design/icons';
@@ -35,14 +35,13 @@ import {
 } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { generateScriptTaskFileName } from '@proceed/bpmn-helper';
-import { type BlocklyEditorRefType } from './blockly-editor';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useProcessVariables from './use-process-variables';
 import ProcessVariableForm from './variable-definition/process-variable-form';
 import { useCanEdit } from '@/lib/can-edit-context';
-const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
+import BlocklyEditor, { type BlocklyEditorRefType } from './blockly-editor';
 
 type ScriptEditorProps = {
   processId: string;
@@ -62,7 +61,10 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
   const monacoRef = useRef<null | Monaco>(null);
 
   const modeler = useModelerStateStore((state) => state.modeler);
-  const canEdit = useCanEdit();
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
+
+  const editingEnabled = useCanEdit();
+  const canEdit = editingEnabled && isExecutable;
 
   const environment = useEnvironment();
   const app = App.useApp();
@@ -123,22 +125,21 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     monacoEditorRef.current = editor;
     monacoRef.current = monaco;
 
-    const defaultOptions =
-      monacoRef.current.languages.typescript.javascriptDefaults.getCompilerOptions();
-
-    monacoRef.current.languages.typescript.javascriptDefaults.setCompilerOptions({
-      ...defaultOptions,
+    monacoRef.current.languages.typescript.typescriptDefaults.setCompilerOptions({
       target: monacoRef.current.languages.typescript.ScriptTarget.ES2017,
+      // Only include ES library, exclude DOM and browser APIs
       lib: ['es2017'],
+      allowNonTsExtensions: true,
+      moduleResolution: monacoRef.current.languages.typescript.ModuleResolutionKind.NodeJs,
     });
 
     monacoRef.current.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: false,
       noSyntaxValidation: false,
       diagnosticCodesToIgnore: [
-        1108, //return not inside function,
-        1375, //'await' expressions are only allowed at the top level of a file when that file is a module
-        1378, //Top-level 'await' expressions are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher
+        1108, // return not inside function
+        1375, // 'await' expressions are only allowed at the top level of a file
+        1378, // Top-level 'await' expressions
       ],
     });
 
@@ -228,6 +229,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
         },
       });
     }
+    // This fixes the issue where an input field is selected and still remains visible after the
+    // editor is hidden
+    if (selectedEditor === 'blockly') blocklyRef.current?.fillContainer();
   };
 
   const getEditorPositionRange = () => {
@@ -253,17 +257,30 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     }
   };
 
+  let title = <span style={{ fontSize: '1.5rem' }}>Script Task: {filename}</span>;
+
+  if (canEdit) title = <span style={{ fontSize: '1.5rem' }}>Edit {title}</span>;
+
+  if (editingEnabled && !isExecutable) {
+    title = (
+      <div style={{ display: 'flex' }}>
+        {title}{' '}
+        <Alert
+          style={{ margin: '0 5px' }}
+          type="warning"
+          message="You cannot edit the script since the process is not executable."
+        />
+      </div>
+    );
+  }
+
   return (
     <Modal
       open={open}
       centered
       width="90vw"
       styles={{ body: { height: '85vh', marginTop: '0.5rem' }, header: { margin: 0 } }}
-      title={
-        <span style={{ fontSize: '1.5rem' }}>
-          {`${canEdit ? 'Edit Script Task' : 'Script Task'}: ${filename}`}
-        </span>
-      }
+      title={title}
       onCancel={handleClose}
       footer={
         <Space>
@@ -460,7 +477,9 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                           </List.Item>
                         )}
                       />
-                      <Button onClick={() => setShowVariableForm(true)}>Add Variable</Button>
+                      <Button onClick={() => setShowVariableForm(true)} disabled={!canEdit}>
+                        Add Variable
+                      </Button>
                     </div>
                   )}
                 </Col>
@@ -500,9 +519,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
 
                       setIsScriptValid(isScriptValid);
                     }}
-                    blocklyOptions={{
-                      readOnly: !canEdit,
-                    }}
+                    readOnly={!canEdit}
                   />
                 )}
               </Col>

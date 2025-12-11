@@ -481,13 +481,7 @@ export function ScriptTaskEditorEnvironment({
             Save
           </Button>
           <Button
-            onClick={() => {
-              for (const [key, ref] of editorRefs.current.entries()) {
-                if (scriptTasksWithChanges[key]) {
-                  ref?.save();
-                }
-              }
-            }}
+            onClick={() => saveRefListOrAll()}
             disabled={
               !editingEnabled ||
               Object.values(scriptTasksWithChanges).every((value) => value !== true)

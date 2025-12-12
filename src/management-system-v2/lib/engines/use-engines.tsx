@@ -14,13 +14,12 @@ import { asyncFilter } from '../helpers/javascriptHelpers';
 import { truthyFilter } from '../typescript-utils';
 
 function useEngines(
+  space: { spaceId: string; isOrganization: boolean },
   filter: { key: any[]; fn: (engine: Engine) => Promise<boolean> } = {
     key: [],
     fn: async () => true,
   },
 ) {
-  const space = useEnvironment();
-
   const queryFn = useCallback(async () => {
     if (space.spaceId) {
       let res = await getCorrectTargetEngines(space.spaceId);
@@ -45,6 +44,7 @@ function useEngines(
         (entry) => Object.values(entry).filter(truthyFilter)[0],
       );
     }
+    return null;
   }, [space.spaceId, filter]);
 
   return useQuery({

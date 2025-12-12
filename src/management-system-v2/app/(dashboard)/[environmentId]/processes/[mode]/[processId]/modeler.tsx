@@ -26,13 +26,15 @@ import {
 import { Process } from '@/lib/data/process-schema';
 import { useProcessView } from './process-view-context';
 import { CanEditContext } from '@/lib/can-edit-context';
+import { Folder } from '@/lib/data/folder-schema';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: Process;
+  folder?: Folder;
 };
 
-const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
+const Modeler = ({ versionName, process, folder, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
   const query = useSearchParams();
@@ -339,6 +341,7 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
             {loaded && (
               <ModelerToolbar
                 process={process}
+                folder={folder}
                 canRedo={canRedo}
                 canUndo={canUndo}
                 versionName={versionName}

@@ -40,7 +40,7 @@ function validateBlockScript(workspace: Blockly.WorkspaceSvg) {
 }
 
 export type BlocklyEditorRefType = {
-  getCode: () => { js: string; xml: string };
+  getCode: () => { js: string; xml: string; ts: false } | undefined;
   fillContainer: () => void;
   reset: () => void;
 };
@@ -136,9 +136,8 @@ const BlocklyEditor = ({
               Blockly.Xml.workspaceToDom(blocklyWorkspaceRef.current),
             );
             const javascriptCode = javascriptGenerator.workspaceToCode(blocklyWorkspaceRef.current);
-            return { xml: xmlText, js: javascriptCode };
+            return { xml: xmlText, js: javascriptCode, ts: false };
           }
-          return { xml: '', js: '' };
         },
         fillContainer: () => {
           if (!blocklyWorkspaceRef.current) return;

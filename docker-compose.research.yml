@@ -14,14 +14,14 @@ services:
       - proceed-network
 
   proceed_research_postgres_database:
-    image: postgres:latest
+    image: postgres:17.7
     container_name: proceed_research_postgres_database
     env_file: .env.research
     restart: always
     ports:
       - '5433:5432'
     volumes:
-      - proceed_research_postgres_db:/var/lib/postgresql
+      - proceed_research_postgres_db:/var/lib/postgresql/data
     networks:
       - proceed-network
 

@@ -11,7 +11,7 @@ import { useEnvironment } from '@/components/auth-can';
 
 import styles from './user-task-view.module.scss';
 
-import { Skeleton } from 'antd';
+import { App, Skeleton } from 'antd';
 import { ExtendedTaskListEntry } from '@/lib/user-task-schema';
 import useUserTasks from '@/lib/use-user-tasks';
 
@@ -95,6 +95,8 @@ type TaskListUserTaskFormProps = {
 
 const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userId }) => {
   const space = useEnvironment();
+
+  const { message } = App.useApp();
 
   const {
     completeEntry,
@@ -180,7 +182,7 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
           const path = await wrapServerCall({
             fn: async () => submitFile(task.id, file),
             onSuccess: false,
-            onError: (error, message) =>
+            onError: () =>
               message.error(
                 `Failed to upload a file (${file.name}). Check that it is not too large.`,
               ),

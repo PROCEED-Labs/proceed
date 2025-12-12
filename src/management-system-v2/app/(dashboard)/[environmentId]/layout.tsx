@@ -42,6 +42,7 @@ import { customLinkIcons } from '@/lib/custom-links/icons';
 import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
+import ActiveTasksBadge from '@/components/active-tasks-badge';
 
 const DashboardLayout = async ({
   children,
@@ -119,7 +120,6 @@ const DashboardLayout = async ({
   if (topCustomNavLinks.length > 0) {
     layoutMenuItems.push(
       ...topCustomNavLinks.map((link, idx) => ({
-        priority: idx * 100,
         key: `top-${idx}`,
         label: <CustomLink link={link} />,
         icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
@@ -127,7 +127,6 @@ const DashboardLayout = async ({
     );
 
     layoutMenuItems.push({
-      priority: 50,
       key: 'top-custom-links-divider',
       type: 'divider',
     });
@@ -143,14 +142,12 @@ const DashboardLayout = async ({
       const processRegex = '/processes($|/)';
       let children: ExtendedMenuItems = [
         documentationSettings.list?.active !== false && {
-          priority: 0,
           key: 'processes-list',
           label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
           icon: <CopyOutlined />,
           selectedRegex: '/processes/list($|/)',
         },
         documentationSettings.editor?.active !== false && {
-          priority: 100,
           key: 'processes-editor',
           label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
           icon: <EditOutlined />,
@@ -160,7 +157,6 @@ const DashboardLayout = async ({
 
       if (children.length)
         layoutMenuItems.push({
-          priority: 100,
           key: 'processes-group',
           label: 'Processes',
           icon: <PartitionOutlined />,
@@ -176,6 +172,41 @@ const DashboardLayout = async ({
     'process-automation',
   );
 
+  if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && automationSettings.active !== false) {
+    let childRegex = '';
+    let children: ExtendedMenuItems = [];
+
+    if (automationSettings.task_editor?.active !== false) {
+      childRegex = '/tasks($|/)';
+      children.push({
+        key: 'task-editor',
+        label: <Link href={spaceURL(activeEnvironment, `/tasks`)}>Editor</Link>,
+        icon: <EditOutlined />,
+        selectedRegex: childRegex,
+      });
+    }
+
+    layoutMenuItems.push({
+      key: 'tasklist',
+      label: (
+        <Link style={{ color: 'inherit' }} href={spaceURL(activeEnvironment, `/tasklist`)}>
+          My Tasks
+          <ActiveTasksBadge activeSpace={activeEnvironment} />
+        </Link>
+      ),
+      icon: (
+        <Link href={spaceURL(activeEnvironment, `/tasklist`)}>
+          <CheckSquareOutlined />
+          <ActiveTasksBadge activeSpace={activeEnvironment} onIcon />
+        </Link>
+      ),
+      extra: 'Test',
+      selectedRegex: '/tasklist($|/)',
+      openRegex: childRegex,
+      children,
+    });
+  }
+
   if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     if (automationSettings.active !== false) {
       let childRegex = '';
@@ -185,7 +216,6 @@ const DashboardLayout = async ({
         const dashboardRegex = '/executions-dashboard($|/)';
         childRegex = !childRegex ? dashboardRegex : `(${childRegex})|(${dashboardRegex})`;
         children.push({
-          priority: 0,
           key: 'dashboard',
           label: <Link href={spaceURL(activeEnvironment, `/executions-dashboard`)}>Dashboard</Link>,
           icon: <BarChartOutlined />,
@@ -196,7 +226,6 @@ const DashboardLayout = async ({
         const executionsRegex = '/executions($|/)';
         childRegex = !childRegex ? executionsRegex : `(${childRegex})|(${executionsRegex})`;
         children.push({
-          priority: 100,
           key: 'executions',
           label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Executions</Link>,
           icon: <NodeExpandOutlined />,
@@ -207,7 +236,6 @@ const DashboardLayout = async ({
         const machinesRegex = '/engines($|/)';
         childRegex = !childRegex ? machinesRegex : `(${childRegex})|(${machinesRegex})`;
         children.push({
-          priority: 200,
           key: 'machines',
           label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Process Engines</Link>,
           icon: <LaptopOutlined />,
@@ -217,7 +245,6 @@ const DashboardLayout = async ({
 
       if (children.length) {
         layoutMenuItems.push({
-          priority: 200,
           key: 'automations-group',
           label: 'Automations',
           icon: <PlaySquareOutlined />,
@@ -244,7 +271,6 @@ const DashboardLayout = async ({
       const settingsRegex = '/settings($|/)';
       childRegex = !childRegex ? settingsRegex : `(${childRegex})|(${settingsRegex})`;
       children.push({
-        priority: 0,
         key: 'organization-settings',
         label: <Link href={spaceURL(activeEnvironment, `/settings`)}>Settings</Link>,
         icon: <SettingOutlined />,
@@ -259,7 +285,6 @@ const DashboardLayout = async ({
       const managementRegex = '/management($|/)';
       childRegex = !childRegex ? managementRegex : `(${childRegex})|(${managementRegex})`;
       children.push({
-        priority: 100,
         key: 'organization-management',
         label: <Link href={spaceURL(activeEnvironment, `/management`)}>Management</Link>,
         icon: <GoOrganization />,
@@ -271,7 +296,6 @@ const DashboardLayout = async ({
       const userRegex = '/iam/users($|/)';
       childRegex = !childRegex ? userRegex : `(${childRegex})|(${userRegex})`;
       children.push({
-        priority: 200,
         key: 'users',
         label: <Link href={spaceURL(activeEnvironment, `/iam/users`)}>Users</Link>,
         icon: <UserOutlined />,
@@ -283,7 +307,6 @@ const DashboardLayout = async ({
       const rolesRegex = '/iam/roles($|/)';
       childRegex = !childRegex ? rolesRegex : `(${childRegex})|(${rolesRegex})`;
       children.push({
-        priority: 300,
         key: 'roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,
         icon: <TeamOutlined />,
@@ -292,7 +315,6 @@ const DashboardLayout = async ({
     }
 
     layoutMenuItems.push({
-      priority: 300,
       key: 'iam-group',
       label: 'Organization',
       icon: <HomeOutlined />,
@@ -307,7 +329,6 @@ const DashboardLayout = async ({
     const spacesRegex = '/spaces($|/)';
     const regex = `(${profileRegex})|(${spacesRegex})`;
     layoutMenuItems.push({
-      priority: 400,
       key: 'iam-personal',
       label: 'Personal',
       icon: <TbUser />,
@@ -315,7 +336,6 @@ const DashboardLayout = async ({
       openRegex: regex,
       children: [
         {
-          priority: 0,
           key: 'personal-profile',
           label: user?.isGuest ? (
             <GuestWarningButton>My Profile</GuestWarningButton>
@@ -326,7 +346,6 @@ const DashboardLayout = async ({
           selectedRegex: profileRegex,
         },
         {
-          priority: 100,
           key: 'personal-spaces',
           label: user?.isGuest ? (
             <GuestWarningButton>My Spaces</GuestWarningButton>
@@ -343,7 +362,6 @@ const DashboardLayout = async ({
   if (!activeEnvironment.isOrganization) {
     const regex = '/settings($|/)';
     layoutMenuItems.push({
-      priority: 400,
       key: 'personal-space-home',
       label: 'Home',
       icon: <HomeOutlined />,
@@ -351,7 +369,6 @@ const DashboardLayout = async ({
       selectedRegex: regex,
       children: [
         {
-          priority: 0,
           key: 'personal-space-settings',
           label: user?.isGuest ? (
             <GuestWarningButton>Settings</GuestWarningButton>
@@ -374,7 +391,6 @@ const DashboardLayout = async ({
     )
   ) {
     layoutMenuItems.push({
-      priority: 500,
       key: 'ms-admin',
       label: <Link href="/admin">MS Administration</Link>,
       icon: <SolutionOutlined />,
@@ -384,17 +400,14 @@ const DashboardLayout = async ({
   if (middleCustomNavLinks.length > 0) {
     layoutMenuItems.push(
       {
-        priority: 600,
         key: 'middle-custom-links-divider',
         type: 'divider',
       },
       {
-        priority: 700,
         key: 'middle-custom-links',
         type: 'group',
         label: externalServicesLabel,
         children: middleCustomNavLinks.map((link, idx) => ({
-          priority: idx * 100,
           key: idx,
           label: <CustomLink link={link} />,
           icon: customLinkIcons.find((icon) => icon.value === link.icon)?.icon || <LinkOutlined />,
@@ -421,18 +434,6 @@ const DashboardLayout = async ({
           customLogo={logo}
           userNeedsToChangePassword={userNeedsToChangePassword}
           bottomMenuItems={bottomNavLinks}
-          showTasklistSidebarEntry={
-            msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
-            automationSettings &&
-            automationSettings.active !== false &&
-            automationSettings.tasklist?.active !== false
-          }
-          showTaskEditorSidebarEntry={
-            msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
-            automationSettings &&
-            automationSettings.active !== false &&
-            automationSettings.task_editor?.active !== false
-          }
         >
           {children}
         </Layout>

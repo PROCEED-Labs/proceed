@@ -1,10 +1,9 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
+import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
 import {
   Alert,
-  Badge,
   Layout as AntLayout,
   Button,
   Drawer,
@@ -15,7 +14,6 @@ import {
   Popover,
   Tooltip,
 } from 'antd';
-import { CheckSquareOutlined, EditOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
@@ -32,7 +30,6 @@ import ChangeUserPasswordModal from './profile/change-password-modal';
 import useMSLogo from '@/lib/use-ms-logo';
 import { usePathname } from 'next/navigation';
 import { MenuItemType } from 'antd/es/menu/interface';
-import useUserTasks from '@/lib/use-user-tasks';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -52,7 +49,6 @@ export const SpaceContext = createContext<{
 }>({ spaceId: '', isOrganization: false });
 
 type ExtendedMenuItem = NonNullable<MenuProps['items']>[number] & {
-  priority: number;
   openRegex?: string;
   selectedRegex?: string;
   children?: ExtendedMenuItem[];
@@ -71,8 +67,6 @@ const Layout: FC<
     disableUserDataModal?: boolean;
     userNeedsToChangePassword?: boolean;
     bottomMenuItems?: NonNullable<MenuProps['items']>;
-    showTasklistSidebarEntry?: boolean;
-    showTaskEditorSidebarEntry?: boolean;
   }>
 > = ({
   loggedIn,
@@ -85,8 +79,6 @@ const Layout: FC<
   disableUserDataModal = false,
   userNeedsToChangePassword: _userNeedsToChangePassword,
   bottomMenuItems,
-  showTasklistSidebarEntry,
-  showTaskEditorSidebarEntry,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -103,68 +95,7 @@ const Layout: FC<
     _userNeedsToChangePassword ?? false,
   );
 
-  let layoutMenuItems: ExtendedMenuItems = [];
-
-  const { userTasks } = useUserTasks(
-    activeSpace,
-    2000,
-    {
-      allowedStates: ['READY', 'ACTIVE'],
-      hideUnassignedTasks: activeSpace.isOrganization,
-      hideNonOwnableTasks: true,
-    },
-    !showTasklistSidebarEntry,
-  );
-
-  if (showTasklistSidebarEntry) {
-    let childRegex = '';
-    let children: ExtendedMenuItems = [];
-
-    if (showTaskEditorSidebarEntry) {
-      childRegex = '/tasks($|/)';
-      children.push({
-        priority: 0,
-        key: 'task-editor',
-        label: <Link href={spaceURL(activeSpace, `/tasks`)}>Editor</Link>,
-        icon: <EditOutlined />,
-        selectedRegex: childRegex,
-      });
-    }
-
-    layoutMenuItems = [
-      ..._layoutMenuItems,
-      {
-        priority: 150,
-        key: 'tasklist',
-        label: (
-          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-            <Link
-              style={{ color: 'inherit', width: '100%' }}
-              href={spaceURL(activeSpace, `/tasklist`)}
-            >
-              My Tasks
-              <Badge count={userTasks?.length} offset={[5, 0]}></Badge>
-            </Link>
-          </div>
-        ),
-        icon: (
-          <Link href={spaceURL(activeSpace, '/tasklist')}>
-            <CheckSquareOutlined />
-            {collapsed ? (
-              <Badge
-                styles={{ root: { opacity: '1' } }}
-                count={userTasks?.length}
-                offset={[-18, -18]}
-              />
-            ) : null}
-          </Link>
-        ),
-        selectedRegex: '/tasklist($|/)',
-        openRegex: childRegex,
-        children,
-      },
-    ];
-  } else layoutMenuItems = _layoutMenuItems;
+  let layoutMenuItems = _layoutMenuItems;
 
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(
@@ -179,8 +110,6 @@ const Layout: FC<
 
   const [selected, setSelected] = useState<string[]>([]);
   const [open, setOpen] = useState<string[]>([]);
-
-  layoutMenuItems.sort((a, b) => a.priority - b.priority);
 
   useEffect(() => {
     const sel: string[] = [];

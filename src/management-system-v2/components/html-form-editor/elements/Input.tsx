@@ -41,16 +41,6 @@ export const ExportInput: UserComponent<InputProps> = ({
     />
   );
 
-  const input = (
-    <input
-      id={inputId}
-      className={variable ? `variable-${variable}` : undefined}
-      type={type}
-      defaultValue={value}
-      name={variable}
-    />
-  );
-
   return (
     <ContextMenu menu={[]}>
       <div

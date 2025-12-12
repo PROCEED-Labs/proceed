@@ -76,7 +76,9 @@ export async function getRoles(environmentId: string) {
 
 export async function getUserRoles(environmentId: string, userId: string) {
   try {
-    return _getUserRoles(userId, environmentId);
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return _getUserRoles(userId, environmentId, ability);
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);

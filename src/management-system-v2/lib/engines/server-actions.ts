@@ -16,6 +16,8 @@ import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
 
+import db from '@/lib/data/db';
+
 import {
   activateUserTask,
   completeTasklistEntryOnMachine,
@@ -46,6 +48,7 @@ import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper
 import { Variable } from '@proceed/bpmn-helper/src/getters';
 import { getUsersInSpace } from '../data/db/iam/memberships';
 import Ability from '../ability/abilityHelper';
+import { getUserById } from '../data/db/iam/users';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -218,36 +221,21 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
     ];
 
     return await asyncMap(userTasks, async (task) => {
-      const users: {
-        id: string;
-        username?: string | null;
-        firstName?: string | null;
-        lastName?: string | null;
-      }[] = await getUsersInSpace(spaceId);
-      const currentUser = await getCurrentUser();
-
-      if (currentUser.user?.isGuest === false && !users.some((u) => u.id === currentUser.userId)) {
-        // ensure that the current user is in the users list (not the case in personal spaces)
-        const {
-          userId,
-          user: { firstName, lastName, username },
-        } = currentUser;
-        users.push({
-          id: userId,
-          firstName: firstName,
-          lastName: lastName,
-          username: username,
+      const actualOwner = await db.$transaction(async (tx) => {
+        let users: {
+          id: string;
+          username?: string | null;
+          firstName?: string | null;
+          lastName?: string | null;
+        }[] = await asyncMap(task.actualOwner, async (owner) => {
+          return getUserById(owner, undefined, tx) || owner;
         });
-      }
 
-      const actualOwner = task.actualOwner.map((ownerId) => {
-        const user = users.find((u) => u.id === ownerId);
-
-        return {
-          id: ownerId,
-          name: user ? user.firstName + ' ' + user.lastName : '',
-          username: user?.username,
-        };
+        return users.map((user) =>
+          typeof user === 'string'
+            ? { id: user, name: '' }
+            : { id: user.id, name: user.firstName + ' ' + user.lastName, username: user?.username },
+        );
       });
 
       return {

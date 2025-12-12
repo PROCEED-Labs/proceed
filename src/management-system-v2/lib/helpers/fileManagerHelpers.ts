@@ -6,6 +6,7 @@ export enum EntityType {
   PROCESS = 'PROCESS',
   ORGANIZATION = 'ORGANISATION',
   MACHINE = 'MACHINE',
+  PROFILE_PICTURE = 'PROFILE_PICTURE',
 }
 
 const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {

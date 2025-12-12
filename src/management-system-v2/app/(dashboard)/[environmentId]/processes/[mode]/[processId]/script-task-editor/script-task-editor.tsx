@@ -137,6 +137,10 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
             fileName: filename,
           });
 
+          if (selectedEditor === 'JS') {
+            monacoEditorRef.current?.format();
+          }
+
           let errorMessage;
 
           await wrapServerCall({

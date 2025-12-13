@@ -138,7 +138,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
           });
 
           if (selectedEditor === 'JS') {
-            monacoEditorRef.current?.format();
+            await monacoEditorRef.current?.format();
           }
 
           let errorMessage;

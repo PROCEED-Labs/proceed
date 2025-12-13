@@ -17,7 +17,7 @@ export type MonacoEditorRef = {
   insertTextOnCursor: (text: string) => void;
   reset: () => void;
   getCode: () => Promise<Record<'ts' | 'js' | 'xml', string | false> | undefined>;
-  format: () => void;
+  format: () => Promise<void>;
 };
 
 const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
@@ -105,7 +105,10 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
             };
           },
           reset: () => monacoEditorRef.current?.setValue(initialScript),
-          format: () => monacoEditorRef.current?.getAction('editor.action.formatDocument')?.run(),
+          format: () =>
+            monacoEditorRef.current
+              ?.getAction('editor.action.formatDocument')
+              ?.run() as Promise<void>,
         };
       },
       [initialScript],

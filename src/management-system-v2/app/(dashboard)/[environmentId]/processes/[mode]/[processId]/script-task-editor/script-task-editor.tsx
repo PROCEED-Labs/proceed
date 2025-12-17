@@ -314,7 +314,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                     style={{ marginRight: 0 }}
                     color="success"
                   >
-                    Script is valid
+                    Script syntax is valid
                   </Tag>
                 ) : (
                   <Tag

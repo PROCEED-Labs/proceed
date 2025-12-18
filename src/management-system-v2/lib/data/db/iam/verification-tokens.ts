@@ -83,3 +83,19 @@ export async function updateEmailVerificationTokenExpiration(
     },
   });
 }
+
+export async function removeExpiredEmailVerificationTokens(
+  tx?: Prisma.TransactionClient,
+): Promise<{ count: number }> {
+  if (!tx) {
+    return db.$transaction((trx) => removeExpiredEmailVerificationTokens(trx));
+  }
+
+  const cutoff = new Date();
+
+  return await tx.emailVerificationToken.deleteMany({
+    where: {
+      expires: { lte: cutoff },
+    },
+  });
+}

@@ -87,9 +87,82 @@ declare class CapabilityService {
 
 // On the engine side the http|https module is being used
 type RequestOptions = Partial<{
-  auth: string | null;
+  /**
+   * An object of strings containing additional request headers.
+   **/
   headers: Record<string, string>;
-  body: any;
+  /**
+   * Specifies whether or not to automatically add the Host header. Defaults to true.
+   **/
+  setHost: boolean;
+  /**
+   * If true, tls.TLSSocket.enableTrace() will be called on new connections. Tracing can be enabled after the secure connection is established, but this option must be used to trace the secure connection setup. Default: false.
+   **/
+  enableTrace: boolean;
+  /**
+   *  Optionally override the trusted CA certificates. If not specified, the CA certificates trusted by default are the same as the ones returned by tls.getCACertificates() using the default type. If specified, the default list would be completely replaced (instead of being concatenated) by the certificates in the ca option. Users need to concatenate manually if they wish to add additional certificates instead of completely overriding the default. The value can be a string or Buffer, or an Array of strings and/or Buffers. Any string or Buffer can contain multiple PEM CAs concatenated together. The peer's certificate must be chainable to a CA trusted by the server for the connection to be authenticated. When using certificates that are not chainable to a well-known CA, the certificate's CA must be explicitly specified as a trusted or the connection will fail to authenticate. If the peer uses a certificate that doesn't match or chain to one of the default CAs, use the ca option to provide a CA certificate that the peer's certificate can match or chain to. For self-signed certificates, the certificate is its own CA, and must be provided. For PEM encoded certificates, supported types are "TRUSTED CERTIFICATE", "X509 CERTIFICATE", and "CERTIFICATE".
+   **/
+  ca: string | Buffer | Array<string | Buffer>;
+  /**
+   * Cert chains in PEM format. One cert chain should be provided per private key. Each cert chain should consist of the PEM formatted certificate for a provided private key, followed by the PEM formatted intermediate certificates (if any), in order, and not including the root CA (the root CA must be pre-known to the peer, see ca). When providing multiple cert chains, they do not have to be in the same order as their private keys in key. If the intermediate certificates are not provided, the peer will not be able to validate the certificate, and the handshake will fail.
+   **/
+  cert: string | Buffer | Array<string | Buffer>;
+  /**
+   *  Cipher suite specification, replacing the default. For more information, see Node.js: https://nodejs.org/api/tls.html#modifying-the-default-tls-cipher-suite. Permitted ciphers can be obtained via tls.getCiphers(). Cipher names must be uppercased in order for OpenSSL to accept them.
+   **/
+  ciphers: string;
+  /**
+   *  PEM formatted CRLs (Certificate Revocation Lists).
+   **/
+  crl: string | Buffer | Array<string | Buffer>;
+  /**
+   *  'auto' or custom Diffie-Hellman parameters, required for non-ECDHE perfect forward secrecy. If omitted or invalid, the parameters are silently discarded and DHE ciphers will not be available. ECDHE-based perfect forward secrecy will still be available.
+   **/
+  dhparam: string | Buffer;
+  /**
+   * A string describing a named curve or a colon separated list of curve NIDs or names, for example P-521:P-384:P-256, to use for ECDH key agreement. Set to auto to select the curve automatically. Use crypto.getCurves() to obtain a list of available curve names. On recent releases, openssl ecparam -list_curves will also display the name and description of each available elliptic curve. Default: tls.DEFAULT_ECDH_CURVE.
+   **/
+  ecdhCurve: string;
+  /**
+   *  Attempt to use the server's cipher suite preferences instead of the client's. When true, causes SSL_OP_CIPHER_SERVER_PREFERENCE to be set in secureOptions, see OpenSSL Options for more information.
+   **/
+  honorCipherOrder: boolean;
+  /**
+   * Private keys in PEM format. PEM allows the option of private keys being encrypted. Encrypted keys will be decrypted with options.passphrase. Multiple keys using different algorithms can be provided either as an array of unencrypted key strings or buffers, or an array of objects in the form {pem: <string|buffer>[, passphrase: <string>]}. The object form can only occur in an array. object.passphrase is optional. Encrypted keys will be decrypted with object.passphrase if provided, or options.passphrase if it is not.
+   **/
+  key: string | Buffer | Array<string | Buffer | object>;
+  /**
+   * Shared passphrase used for a single private key and/or a PFX.
+   **/
+  passphrase: string;
+  /**
+   * PFX or PKCS12 encoded private key and certificate chain. pfx is an alternative to providing key and cert individually. PFX is usually encrypted, if it is, passphrase will be used to decrypt it. Multiple PFX can be provided either as an array of unencrypted PFX buffers, or an array of objects in the form {buf: <string|buffer>[, passphrase: <string>]}. The object form can only occur in an array. object.passphrase is optional. Encrypted PFX will be decrypted with object.passphrase if provided, or options.passphrase if it is not.
+   **/
+  pfx: string | Buffer | Array<string | Buffer | object>;
+  /**
+   * If not false, the server certificate is verified against the list of supplied CAs. An 'error' event is emitted if verification fails; err.code contains the OpenSSL error code. Default: true.
+   **/
+  rejectUnauthorized: boolean;
+  /**
+   *  Optionally affect the OpenSSL protocol behavior, which is not usually necessary. This should be used carefully if at all! Value is a numeric bitmask of the SSL_OP_* options from OpenSSL Options.
+   **/
+  secureOptions: number;
+  /**
+   * Legacy mechanism to select the TLS protocol version to use, it does not support independent control of the minimum and maximum version, and does not support limiting the protocol to TLSv1.3. Use minVersion and maxVersion instead. The possible values are listed as SSL_METHODS, use the function names as strings. For example, use 'TLSv1_1_method' to force TLS version 1.1, or 'TLS_method' to allow any TLS protocol version up to TLSv1.3. It is not recommended to use TLS versions less than 1.2, but it may be required for interoperability. Default: none, see minVersion.
+   **/
+  secureProtocol: string;
+  /**
+   *  Server name for the SNI (Server Name Indication) TLS extension. It is the name of the host being connected to, and must be a host name, and not an IP address. It can be used by a multi-homed server to choose the correct certificate to present to the client, see the SNICallback option to tls.createServer().
+   **/
+  servername: string;
+  /**
+   * Opaque identifier used by servers to ensure session state is not shared between applications. Unused by clients.
+   **/
+  sessionIdContext: string;
+  /**
+   * Consistent with the readable stream highWaterMark parameter. Default: 16 * 1024.
+   **/
+  highWaterMark: number;
 }>;
 
 declare class NetworkService {

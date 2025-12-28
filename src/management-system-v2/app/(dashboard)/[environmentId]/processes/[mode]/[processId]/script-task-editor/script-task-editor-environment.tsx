@@ -445,7 +445,7 @@ export function ScriptTaskEditorEnvironment({
             <Alert
               style={{ margin: '0 5px' }}
               type="warning"
-              message="You cannot edit the script since the process is not executable."
+              message="This editor is read-only because the process is not marked as executable (Property Panel -> Automation Tab)."
             />
           </div>
         );

@@ -30,9 +30,9 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
       monacoRef.current = monaco;
 
       monacoRef.current.languages.typescript.typescriptDefaults.setCompilerOptions({
-        target: monacoRef.current.languages.typescript.ScriptTarget.ES2017,
+        target: monacoRef.current.languages.typescript.ScriptTarget.ES2020,
         // Only include ES library, exclude DOM and browser APIs
-        lib: ['es2017'],
+        lib: ['es2020'],
         allowNonTsExtensions: true,
         moduleResolution: monacoRef.current.languages.typescript.ModuleResolutionKind.NodeJs,
       });

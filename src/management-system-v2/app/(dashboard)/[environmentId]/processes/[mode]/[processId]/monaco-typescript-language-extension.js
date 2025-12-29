@@ -54,15 +54,6 @@ declare var console: Console;
  **/
 // declare function setProgress(progress: number): void;
 
-/**
- * Set timeout for callback function with given timeout in milliseconds
- **/
-declare function setTimeout(callback: () => any, timeout: number): number;
-
-/**
- * Cancel a timeout
- **/
-declare function clearTimeout(timeoutId: number): boolean;
 
 /**
  * Set interval for callback function with given timeout in milliseconds
@@ -74,16 +65,16 @@ declare function setInterval(callback: () => any, timeout: number): number;
  **/
 declare function clearInterval(intervalId): boolean;
 
-declare class CapabilityService {
-  /**
-   * Calls the capability function
-   **/
-  startCapability(capabilityName: string, parameters: object): Promise<any>;
-  /**
-   * Calls the capability function
-   **/
-  startCapability(capabilityName: string, parameters: object, callback: () => any): void;
-}
+// declare class CapabilityService {
+//   /**
+//    * Calls the capability function
+//    **/
+//   startCapability(capabilityName: string, parameters: object): Promise<any>;
+//   /**
+//    * Calls the capability function
+//    **/
+//   startCapability(capabilityName: string, parameters: object, callback: () => any): void;
+// }
 
 // On the engine side the http|https module is being used
 type RequestOptions = Partial<{
@@ -284,7 +275,7 @@ declare class NetworkServer {
 declare var networkRequest: NetworkService;
 declare var networkServer: NetworkServer;
 
-declare function getService(serviceName: 'capabilities'): CapabilityService;
+// declare function getService(serviceName: 'capabilities'): CapabilityService;
 
 declare class BpmnError extends Error {
   constructor(reference: string, explanation: string);

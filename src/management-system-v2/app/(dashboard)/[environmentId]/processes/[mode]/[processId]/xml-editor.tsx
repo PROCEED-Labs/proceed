@@ -99,14 +99,7 @@ async function checkBpmn(bpmn: string) {
   }
 }
 
-const XmlEditor: FC<XmlEditorProps> = ({
-  bpmn,
-  canSave,
-  onClose,
-  onSaveXml,
-  process,
-  versionName,
-}) => {
+const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, process }) => {
   const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
   const [saveState, setSaveState] = useState<SaveStateType>({
@@ -117,10 +110,17 @@ const XmlEditor: FC<XmlEditorProps> = ({
   const [isReadOnly, setIsReadOnly] = useState(true);
   const [editWarningVisible, setEditWarningVisible] = useState(false);
   const [saveConfirmVisible, setSaveConfirmVisible] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+  };
+
+  const handleClose = async () => {
+    setHasChanges(false);
+    setIsReadOnly(true);
+    onClose();
   };
 
   const handleSave = async () => {
@@ -128,7 +128,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
       const newBpmn = editorRef.current.getValue();
 
       await onSaveXml(newBpmn);
-      onClose();
+      handleClose();
     }
   };
 
@@ -141,15 +141,17 @@ const XmlEditor: FC<XmlEditorProps> = ({
         errorMessages: [],
         errorLocations: [],
       });
-      const bpmn = editorRef.current.getValue();
+      const newBpmn = editorRef.current.getValue();
+
+      setHasChanges(newBpmn !== bpmn);
 
       const errors: EditorError[] = [];
       const errorMessages: string[] = [];
       const errorLocations: string[] = [];
 
-      const { error: bpmnError, warnings } = await checkBpmn(bpmn);
-      const { error: definitionIdChangeError } = await checkDefinitionIdChange(bpmn, process.id);
-      const { error: processNameError } = await checkProcessNameDefinitionAttribute(bpmn);
+      const { error: bpmnError, warnings } = await checkBpmn(newBpmn);
+      const { error: definitionIdChangeError } = await checkDefinitionIdChange(newBpmn, process.id);
+      const { error: processNameError } = await checkProcessNameDefinitionAttribute(newBpmn);
 
       if (bpmnError) {
         errors.push(bpmnError);
@@ -268,7 +270,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
       const newBpmn = editorRef.current.getValue();
 
       if (!newBpmn) {
-        onClose();
+        handleClose();
         return;
       }
 
@@ -337,51 +339,59 @@ const XmlEditor: FC<XmlEditorProps> = ({
   };
 
   // display different information for the save button and handle its click differently based on the current state of the editor (error / warnings / no issues)
-  const saveButton = {
-    disabled: (
-      <Tooltip
-        key="tooltip-save-button"
-        placement="top"
-        title={
-          !canSave
-            ? 'Already versioned bpmn cannot be changed!'
-            : 'Fix the syntax errors in the bpmn before saving!'
-        }
-      >
-        <Button key="disabled-save-button" type="primary" disabled>
+  let saveButton = (
+    <Tooltip key="tooltip-ok-button" placement="top" title="Nothing to save.">
+      <Button key="ok-button" type="primary" onClick={handleClose}>
+        Ok
+      </Button>
+    </Tooltip>
+  );
+
+  if (hasChanges) {
+    if (saveState.state === 'error') {
+      saveButton = (
+        <Tooltip
+          key="tooltip-save-button"
+          placement="top"
+          title="Fix the syntax errors in the bpmn before saving!"
+        >
+          <Button key="disabled-save-button" type="primary" disabled>
+            Save
+          </Button>
+        </Tooltip>
+      );
+    } else if (saveState.state === 'warning') {
+      saveButton = (
+        <Popconfirm
+          key="warning-save-button"
+          title="Warning"
+          description={
+            <span>
+              There are unrecognized attributes or <br /> elements in the BPMN. Save anyway?
+            </span>
+          }
+          onConfirm={handleValidationAndSave}
+          okText="Save"
+          cancelText="Cancel"
+        >
+          <Button type="primary">Save</Button>
+        </Popconfirm>
+      );
+    } else if (canSave) {
+      saveButton = (
+        <Button key="save-button" type="primary" onClick={handleValidationAndSave}>
           Save
         </Button>
-      </Tooltip>
-    ),
-    warning: (
-      <Popconfirm
-        key="warning-save-button"
-        title="Warning"
-        description={
-          <span>
-            There are unrecognized attributes or <br /> elements in the BPMN. Save anyway?
-          </span>
-        }
-        onConfirm={handleValidationAndSave}
-        okText="Save"
-        cancelText="Cancel"
-      >
-        <Button type="primary">Save</Button>
-      </Popconfirm>
-    ),
-    normal: (
-      <Button key="save-button" type="primary" onClick={handleValidationAndSave}>
-        Save
-      </Button>
-    ),
-  };
+      );
+    }
+  }
 
   return (
     <>
       <Modal
         open={!!bpmn}
         onOk={handleValidationAndSave}
-        onCancel={onClose}
+        onCancel={handleClose}
         centered
         styles={{ body: { position: 'relative' } }}
         width="85vw"
@@ -443,18 +453,16 @@ const XmlEditor: FC<XmlEditorProps> = ({
               type="text"
               style={{ color: 'rgba(0,0,0,0.45)', position: 'relative', right: '-8px' }}
               icon={<CloseOutlined />}
-              onClick={onClose}
+              onClick={handleClose}
             />
           </Flex>
         }
         closeIcon={false}
         footer={[
-          <Button key="close-button" onClick={onClose}>
+          <Button key="close-button" onClick={handleClose}>
             Cancel
           </Button>,
-          ((!canSave || saveState.state === 'error') && saveButton['disabled']) ||
-            (saveState.state === 'warning' && saveButton['warning']) ||
-            saveButton['normal'],
+          saveButton,
         ]}
       >
         {saveState.state !== 'none' && (

@@ -2,8 +2,13 @@
 
 import React, { FC, useRef, useState } from 'react';
 
-import { Modal, Button, Tooltip, Flex, Popconfirm, Space, message, Alert } from 'antd';
-import { SearchOutlined, CopyOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Modal, Button, Tooltip, Flex, Popconfirm, Space, message, Alert, ModalProps } from 'antd';
+import {
+  SearchOutlined,
+  CopyOutlined,
+  ExclamationCircleOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import { Typography } from 'antd';
 const { Title } = Typography;
 
@@ -381,11 +386,15 @@ const XmlEditor: FC<XmlEditorProps> = ({
         styles={{ body: { position: 'relative' } }}
         width="85vw"
         title={
-          <Flex justify="space-between">
-            <Title level={3}>BPMN XML</Title>
+          <Flex align="center" style={{ marginBottom: '15px' }}>
+            <Title level={3} style={{ marginBottom: 0 }}>
+              BPMN XML
+            </Title>
+            <div style={{ flexGrow: 1 }} />
             <Typography.Text type="secondary">
               Mode: {isReadOnly ? 'Read only' : 'Edit'}
             </Typography.Text>
+            <div style={{ flexGrow: 1 }} />
             <Space.Compact>
               {isReadOnly && canSave && (
                 <Tooltip title="Enter Edit Mode">
@@ -429,6 +438,13 @@ const XmlEditor: FC<XmlEditorProps> = ({
                 />
               </Tooltip>
             </Space.Compact>
+            <Button
+              className="ant-modal-close-x"
+              type="text"
+              style={{ color: 'rgba(0,0,0,0.45)', position: 'relative', right: '-8px' }}
+              icon={<CloseOutlined />}
+              onClick={onClose}
+            />
           </Flex>
         }
         closeIcon={false}

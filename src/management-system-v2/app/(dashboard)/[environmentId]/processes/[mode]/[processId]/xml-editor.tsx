@@ -349,14 +349,12 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
 
   // display different information for the save button and handle its click differently based on the current state of the editor (error / warnings / no issues)
   let saveButton = (
-    <Tooltip key="tooltip-ok-button" placement="top" title="Nothing to save.">
-      <Button key="ok-button" type="primary" onClick={handleClose}>
-        Ok
-      </Button>
-    </Tooltip>
+    <Button key="ok-button" type="primary" onClick={handleClose}>
+      Ok
+    </Button>
   );
 
-  if (hasChanges) {
+  if (!isReadOnly) {
     if (saveState.state === 'error') {
       saveButton = (
         <Tooltip
@@ -386,7 +384,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
           <Button type="primary">Save</Button>
         </Popconfirm>
       );
-    } else if (canSave) {
+    } else if (hasChanges) {
       saveButton = (
         <Button key="save-button" type="primary" onClick={handleValidationAndSave}>
           Save

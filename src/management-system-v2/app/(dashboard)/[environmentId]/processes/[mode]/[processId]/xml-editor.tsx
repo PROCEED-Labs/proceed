@@ -117,12 +117,19 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
     monacoRef.current = monaco;
   };
 
-  const handleClose = async () => {
+  const handleClose = () => {
     setHasChanges(false);
     setIsReadOnly(true);
     setEditWarningVisible(false);
     setSaveConfirmVisible(false);
     onClose();
+  };
+
+  const handleCancel = () => {
+    if (editorRef.current && bpmn) {
+      editorRef.current.setValue(bpmn);
+      handleClose();
+    }
   };
 
   const handleSave = async () => {
@@ -393,7 +400,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
       <Modal
         open={!!bpmn}
         onOk={handleValidationAndSave}
-        onCancel={handleClose}
+        onCancel={handleCancel}
         centered
         styles={{ body: { position: 'relative' } }}
         width="85vw"
@@ -414,8 +421,18 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
                 </Tooltip>
               )}
               {!isReadOnly && (
-                <Tooltip title="Exit Edit Mode">
-                  <Button icon={<MdOutlineEditOff />} onClick={toggleEditMode} />
+                <Tooltip
+                  title={
+                    hasChanges
+                      ? 'Cannot exit Edit Mode. There are unsaved changes.'
+                      : 'Exit Edit Mode'
+                  }
+                >
+                  <Button
+                    icon={<MdOutlineEditOff />}
+                    onClick={toggleEditMode}
+                    disabled={hasChanges}
+                  />
                 </Tooltip>
               )}
 
@@ -455,13 +472,13 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
               type="text"
               style={{ color: 'rgba(0,0,0,0.45)', position: 'relative', right: '-8px' }}
               icon={<CloseOutlined />}
-              onClick={handleClose}
+              onClick={handleCancel}
             />
           </Flex>
         }
         closeIcon={false}
         footer={[
-          <Button key="close-button" onClick={handleClose}>
+          <Button key="close-button" onClick={handleCancel}>
             Cancel
           </Button>,
           saveButton,

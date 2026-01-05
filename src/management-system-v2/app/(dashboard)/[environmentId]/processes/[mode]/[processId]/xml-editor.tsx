@@ -120,6 +120,8 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
   const handleClose = async () => {
     setHasChanges(false);
     setIsReadOnly(true);
+    setEditWarningVisible(false);
+    setSaveConfirmVisible(false);
     onClose();
   };
 

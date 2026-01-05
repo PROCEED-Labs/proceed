@@ -128,8 +128,8 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
   const handleCancel = () => {
     if (editorRef.current && bpmn) {
       editorRef.current.setValue(bpmn);
-      handleClose();
     }
+    handleClose();
   };
 
   const handleSave = async () => {

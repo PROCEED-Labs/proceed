@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FC, useRef, useState } from 'react';
+import React, { FC, useEffect, useRef, useState } from 'react';
 
 import { Modal, Button, Tooltip, Flex, Popconfirm, Space, Alert } from 'antd';
 import {
@@ -203,6 +203,13 @@ const XmlEditorSaveButton: FC<{
 const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, process }) => {
   const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
+
+  const currentBpmnRef = useRef<string>(bpmn || '');
+
+  useEffect(() => {
+    if (bpmn) currentBpmnRef.current = bpmn;
+  }, [bpmn]);
+
   const [saveState, setSaveState] = useState<SaveStateType>({
     state: 'none',
     errorMessages: [],
@@ -228,10 +235,10 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
   };
 
   function discardChanges() {
-    if (editorRef.current && bpmn) {
+    if (editorRef.current && currentBpmnRef.current) {
       // TODO: bpmn is the value when the modal was opened, the user might have already made
       // changes and saved them which would not be handled correctly by the following code
-      editorRef.current.setValue(bpmn);
+      editorRef.current.setValue(currentBpmnRef.current);
     }
   }
 
@@ -240,13 +247,33 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
     handleClose();
   };
 
+  const isBpmnValid = async () => {
+    if (editorRef.current && monacoRef.current) {
+      const newBpmn = editorRef.current.getValue();
+
+      if (!newBpmn) return false;
+
+      const { error } = await checkBpmn(newBpmn);
+
+      if (error) return false;
+    }
+
+    return true;
+  };
+
   const handleSave = async () => {
     if (editorRef.current) {
       const newBpmn = editorRef.current.getValue();
 
       await onSaveXml(newBpmn);
-      handleClose();
+      currentBpmnRef.current = newBpmn;
+      setHasChanges(false);
     }
+  };
+
+  const saveAndClose = async () => {
+    await handleSave();
+    handleClose();
   };
 
   async function validateProcess() {
@@ -260,7 +287,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
       });
       const newBpmn = editorRef.current.getValue();
 
-      setHasChanges(newBpmn !== bpmn);
+      setHasChanges(newBpmn !== currentBpmnRef.current);
 
       const errors: EditorError[] = [];
       const errorMessages: string[] = [];
@@ -331,21 +358,8 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
   const handleChange = debounce(() => validateProcess(), 100);
 
   const handleValidationAndSave = async () => {
-    if (editorRef.current && monacoRef.current) {
-      const newBpmn = editorRef.current.getValue();
-
-      if (!newBpmn) {
-        handleClose();
-        return;
-      }
-
-      const { error } = await checkBpmn(newBpmn);
-
-      if (!error) {
-        const [oldHash, newHash] = await Promise.all([hashString(bpmn!), hashString(newBpmn)]);
-
-        oldHash !== newHash ? setSaveConfirmVisible(true) : handleSave();
-      }
+    if (await isBpmnValid()) {
+      hasChanges ? setSaveConfirmVisible(true) : saveAndClose();
     }
   };
 
@@ -516,9 +530,6 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
               top: 0,
               width: '100%',
               height: '100%',
-              // left: 0,
-              // width: '85vw',
-              // height: '85vh',
               backgroundColor: 'rgba(200, 200, 200, 0.3)',
               pointerEvents: 'none',
               zIndex: 10,
@@ -575,17 +586,11 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
                   hasChanges={hasChanges}
                   saveState={saveState}
                   handleSave={async () => {
-                    if (editorRef.current && monacoRef.current) {
-                      const newBpmn = editorRef.current.getValue();
-
-                      const { error } = await checkBpmn(newBpmn);
-
-                      if (!error) {
-                        await onSaveXml(newBpmn);
-                        setIsReadOnly(true);
-                      }
-                      setUnsavedChangesWarningVisible(false);
+                    if (await isBpmnValid()) {
+                      await handleSave();
+                      setIsReadOnly(true);
                     }
+                    setUnsavedChangesWarningVisible(false);
                   }}
                   handleClose={() => {}}
                 />
@@ -608,7 +613,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
               <Button key="cancel" onClick={() => setSaveConfirmVisible(false)}>
                 Cancel
               </Button>,
-              <Button key="save" type="primary" onClick={handleSave}>
+              <Button key="save" type="primary" onClick={saveAndClose}>
                 Save
               </Button>,
             ]}

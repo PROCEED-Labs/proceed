@@ -14,7 +14,7 @@ import {
 import { generateDateString } from '@/lib/utils';
 import { transformMilisecondsToDurationValues } from '@/lib/helpers/timeHelper';
 import styles from './userTaskCard.module.scss';
-import { ExtendedTaskListEntry } from './user-task-view';
+import { ExtendedTaskListEntry } from '@/lib/user-task-schema';
 
 type CardLineEntry = { icon: ReactNode; text: ReactNode };
 const CardInfoLine: React.FC<{ entries: CardLineEntry[] }> = ({ entries }) => {

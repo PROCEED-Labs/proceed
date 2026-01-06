@@ -2,7 +2,7 @@
 
 import React, { FC, useRef, useState } from 'react';
 
-import { Modal, Button, Tooltip, Flex, Popconfirm, Space, message, Alert, ModalProps } from 'antd';
+import { Modal, Button, Tooltip, Flex, Popconfirm, Space, Alert } from 'antd';
 import {
   SearchOutlined,
   CopyOutlined,
@@ -99,6 +99,107 @@ async function checkBpmn(bpmn: string) {
   }
 }
 
+const checkDefinitionIdChange = async (bpmn: string, expectedId: string) => {
+  try {
+    const currentId = await getDefinitionsId(bpmn);
+    if (currentId && currentId !== expectedId) {
+      return {
+        error: {
+          message: 'Modification of definitionId is not allowed!',
+        },
+      };
+    }
+    return { error: null };
+  } catch (error: any) {
+    // handle unparsable content error thrown by getDefinitionsId if xml is malformed (eg. missing closing tag)
+    // errors like missing closing tags is already accounted by checkBpmn function (see above)
+    if (error.message.includes('unparsable content')) {
+      return { error: null };
+    }
+    return { error: { message: 'Unexpected error occured: ' + error.message } };
+  }
+};
+
+const checkProcessNameDefinitionAttribute = async (bpmn: string) => {
+  try {
+    const definitionsMatch = bpmn.match(/<definitions\s([^>]*)>/i);
+    if (!definitionsMatch) {
+      return {
+        error: {
+          message: 'BPMN must contain a definitions tag',
+        },
+      };
+    }
+
+    const nameMatch = await getDefinitionsName(bpmn);
+    if (!nameMatch) {
+      return {
+        error: {
+          message: 'Process name attribute is missing in definitions tag',
+        },
+      };
+    }
+
+    return { error: null };
+  } catch (error: any) {
+    // handle unparsable content error thrown by getDefinitionsName if xml is malformed(eg. missing closing tag).
+    // errors like missing closing tags is already accounted by checkBpmn function (see above)
+    if (error.message.includes('unparsable content')) {
+      return { error: null };
+    }
+    return { error: { message: 'Unexpected error occured: ' + error.message } };
+  }
+};
+
+// display different information for the save button and handle its click differently based on the current state of the editor (error / warnings / no issues)
+const XmlEditorSaveButton: FC<{
+  isReadOnly: boolean;
+  hasChanges: boolean;
+  saveState: SaveStateType;
+  handleSave: () => void;
+  handleClose: () => void;
+}> = ({ isReadOnly, saveState, hasChanges, handleSave, handleClose }) => {
+  if (!isReadOnly) {
+    if (saveState.state === 'error') {
+      return (
+        <Tooltip placement="top" title="Fix the syntax errors in the bpmn before saving!">
+          <Button key="disabled-save-button" type="primary" disabled>
+            Save
+          </Button>
+        </Tooltip>
+      );
+    } else if (saveState.state === 'warning') {
+      return (
+        <Popconfirm
+          title="Warning"
+          description={
+            <span>
+              There are unrecognized attributes or <br /> elements in the BPMN. Save anyway?
+            </span>
+          }
+          onConfirm={handleSave}
+          okText="Save"
+          cancelText="Cancel"
+        >
+          <Button type="primary">Save</Button>
+        </Popconfirm>
+      );
+    } else if (hasChanges) {
+      return (
+        <Button type="primary" onClick={handleSave}>
+          Save
+        </Button>
+      );
+    }
+  }
+
+  return (
+    <Button type="primary" onClick={handleClose}>
+      Ok
+    </Button>
+  );
+};
+
 const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, process }) => {
   const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
@@ -112,23 +213,30 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
   const [saveConfirmVisible, setSaveConfirmVisible] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
+  const [unsavedChangesWarningVisible, setUnsavedChangesWarningVisible] = useState(false);
+
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
   };
 
   const handleClose = () => {
-    setHasChanges(false);
     setIsReadOnly(true);
     setEditWarningVisible(false);
     setSaveConfirmVisible(false);
     onClose();
   };
 
-  const handleCancel = () => {
+  function discardChanges() {
     if (editorRef.current && bpmn) {
+      // TODO: bpmn is the value when the modal was opened, the user might have already made
+      // changes and saved them which would not be handled correctly by the following code
       editorRef.current.setValue(bpmn);
     }
+  }
+
+  const handleCancel = () => {
+    discardChanges();
     handleClose();
   };
 
@@ -219,58 +327,6 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
     return true;
   }
 
-  const checkDefinitionIdChange = async (bpmn: string, expectedId: string) => {
-    try {
-      const currentId = await getDefinitionsId(bpmn);
-      if (currentId && currentId !== expectedId) {
-        return {
-          error: {
-            message: 'Modification of definitionId is not allowed!',
-          },
-        };
-      }
-      return { error: null };
-    } catch (error: any) {
-      // handle unparsable content error thrown by getDefinitionsId if xml is malformed (eg. missing closing tag)
-      // errors like missing closing tags is already accounted by checkBpmn function (see above)
-      if (error.message.includes('unparsable content')) {
-        return { error: null };
-      }
-      return { error: { message: 'Unexpected error occured: ' + error.message } };
-    }
-  };
-
-  const checkProcessNameDefinitionAttribute = async (bpmn: string) => {
-    try {
-      const definitionsMatch = bpmn.match(/<definitions\s([^>]*)>/i);
-      if (!definitionsMatch) {
-        return {
-          error: {
-            message: 'BPMN must contain a definitions tag',
-          },
-        };
-      }
-
-      const nameMatch = await getDefinitionsName(bpmn);
-      if (!nameMatch) {
-        return {
-          error: {
-            message: 'Process name attribute is missing in definitions tag',
-          },
-        };
-      }
-
-      return { error: null };
-    } catch (error: any) {
-      // handle unparsable content error thrown by getDefinitionsName if xml is malformed(eg. missing closing tag).
-      // errors like missing closing tags is already accounted by checkBpmn function (see above)
-      if (error.message.includes('unparsable content')) {
-        return { error: null };
-      }
-      return { error: { message: 'Unexpected error occured: ' + error.message } };
-    }
-  };
-
   // run the validation when something changes and add code highlighting (with debounce)
   const handleChange = debounce(() => validateProcess(), 100);
 
@@ -302,8 +358,9 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
   const toggleEditMode = () => {
     if (isReadOnly) {
       setEditWarningVisible(true);
-    }
-    if (!isReadOnly) {
+    } else if (hasChanges) {
+      setUnsavedChangesWarningVisible(true);
+    } else {
       setIsReadOnly(true);
     }
   };
@@ -347,52 +404,6 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
     return '';
   };
 
-  // display different information for the save button and handle its click differently based on the current state of the editor (error / warnings / no issues)
-  let saveButton = (
-    <Button key="ok-button" type="primary" onClick={handleClose}>
-      Ok
-    </Button>
-  );
-
-  if (!isReadOnly) {
-    if (saveState.state === 'error') {
-      saveButton = (
-        <Tooltip
-          key="tooltip-save-button"
-          placement="top"
-          title="Fix the syntax errors in the bpmn before saving!"
-        >
-          <Button key="disabled-save-button" type="primary" disabled>
-            Save
-          </Button>
-        </Tooltip>
-      );
-    } else if (saveState.state === 'warning') {
-      saveButton = (
-        <Popconfirm
-          key="warning-save-button"
-          title="Warning"
-          description={
-            <span>
-              There are unrecognized attributes or <br /> elements in the BPMN. Save anyway?
-            </span>
-          }
-          onConfirm={handleValidationAndSave}
-          okText="Save"
-          cancelText="Cancel"
-        >
-          <Button type="primary">Save</Button>
-        </Popconfirm>
-      );
-    } else if (hasChanges) {
-      saveButton = (
-        <Button key="save-button" type="primary" onClick={handleValidationAndSave}>
-          Save
-        </Button>
-      );
-    }
-  }
-
   return (
     <>
       <Modal
@@ -419,18 +430,8 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
                 </Tooltip>
               )}
               {!isReadOnly && (
-                <Tooltip
-                  title={
-                    hasChanges
-                      ? 'Cannot exit Edit Mode. There are unsaved changes.'
-                      : 'Exit Edit Mode'
-                  }
-                >
-                  <Button
-                    icon={<MdOutlineEditOff />}
-                    onClick={toggleEditMode}
-                    disabled={hasChanges}
-                  />
+                <Tooltip title="Exit Edit Mode">
+                  <Button icon={<MdOutlineEditOff />} onClick={toggleEditMode} />
                 </Tooltip>
               )}
 
@@ -479,7 +480,14 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
           <Button key="close-button" onClick={handleCancel}>
             Cancel
           </Button>,
-          saveButton,
+          <XmlEditorSaveButton
+            key="save-button"
+            isReadOnly={isReadOnly}
+            hasChanges={hasChanges}
+            saveState={saveState}
+            handleSave={handleValidationAndSave}
+            handleClose={handleClose}
+          />,
         ]}
       >
         {saveState.state !== 'none' && (
@@ -543,30 +551,74 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
         </p>
       </Modal>
 
-      {/* Save Confirmation Modal */}
       {canSave && (
-        <Modal
-          title={
-            <>
-              <ExclamationCircleOutlined style={{ color: 'red' }} /> Save Changes
-            </>
-          }
-          open={saveConfirmVisible}
-          onCancel={() => setSaveConfirmVisible(false)}
-          footer={[
-            <Button key="cancel" onClick={() => setSaveConfirmVisible(false)}>
-              Cancel
-            </Button>,
-            <Button key="save" type="primary" onClick={handleSave}>
-              Save
-            </Button>,
-          ]}
-        >
-          <p>
-            Note: Saving changes done directly in the XML will completely overwrite and re-import
-            the current process.
-          </p>
-        </Modal>
+        <>
+          {/* Modal that handles the return to read-only if there are unsaved changes */}
+          <Modal
+            title="Unsaved changes"
+            open={unsavedChangesWarningVisible}
+            closable
+            onCancel={() => setUnsavedChangesWarningVisible(false)}
+            footer={
+              <Space style={{ display: 'flex', justifyContent: 'end', marginTop: '12px' }}>
+                <Button
+                  onClick={() => {
+                    discardChanges();
+                    setIsReadOnly(true);
+                    setUnsavedChangesWarningVisible(false);
+                  }}
+                >
+                  Discard
+                </Button>
+                <XmlEditorSaveButton
+                  isReadOnly={isReadOnly}
+                  hasChanges={hasChanges}
+                  saveState={saveState}
+                  handleSave={async () => {
+                    if (editorRef.current && monacoRef.current) {
+                      const newBpmn = editorRef.current.getValue();
+
+                      const { error } = await checkBpmn(newBpmn);
+
+                      if (!error) {
+                        await onSaveXml(newBpmn);
+                        setIsReadOnly(true);
+                      }
+                      setUnsavedChangesWarningVisible(false);
+                    }
+                  }}
+                  handleClose={() => {}}
+                />
+              </Space>
+            }
+          >
+            You have made changes to the xml. Save them or discard them to return to read-only mode.
+          </Modal>
+
+          {/* Save Confirmation Modal */}
+          <Modal
+            title={
+              <>
+                <ExclamationCircleOutlined style={{ color: 'red' }} /> Save Changes
+              </>
+            }
+            open={saveConfirmVisible}
+            onCancel={() => setSaveConfirmVisible(false)}
+            footer={[
+              <Button key="cancel" onClick={() => setSaveConfirmVisible(false)}>
+                Cancel
+              </Button>,
+              <Button key="save" type="primary" onClick={handleSave}>
+                Save
+              </Button>,
+            ]}
+          >
+            <p>
+              Note: Saving changes done directly in the XML will completely overwrite and re-import
+              the current process.
+            </p>
+          </Modal>
+        </>
       )}
     </>
   );

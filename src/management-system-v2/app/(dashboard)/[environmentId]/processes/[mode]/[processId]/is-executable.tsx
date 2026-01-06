@@ -36,9 +36,6 @@ const IsExecutableSection: React.FC<IsExecutableSectionProps> = ({ modeler, read
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-        <span style={{ marginRight: '0.3em', marginBottom: '0.1rem' }}>Executable</span>
-      </Divider>
       <Space>
         {loading ? (
           <Spin style={{ width: '16px' }} size="small" />

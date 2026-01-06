@@ -137,6 +137,10 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
             fileName: filename,
           });
 
+          if (selectedEditor === 'JS') {
+            await monacoEditorRef.current?.format();
+          }
+
           let errorMessage;
 
           await wrapServerCall({
@@ -310,7 +314,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                     style={{ marginRight: 0 }}
                     color="success"
                   >
-                    Script is valid
+                    Script syntax is valid
                   </Tag>
                 ) : (
                   <Tag
@@ -342,7 +346,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                   >
                     <Tooltip title="Open Script Task Documentation and API">
                       <Button
-                        href="https://docs.proceed-labs.org/developer/bpmn/bpmn-script-task#api"
+                        href="https://docs.proceed-labs.org/developer/script-task-api"
                         target="_blank"
                         rel="noopener"
                       >

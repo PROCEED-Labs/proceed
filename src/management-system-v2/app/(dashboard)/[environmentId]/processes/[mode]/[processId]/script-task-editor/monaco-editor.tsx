@@ -17,6 +17,7 @@ export type MonacoEditorRef = {
   insertTextOnCursor: (text: string) => void;
   reset: () => void;
   getCode: () => Promise<Record<'ts' | 'js' | 'xml', string | false> | undefined>;
+  format: () => Promise<void>;
 };
 
 const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
@@ -29,9 +30,9 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
       monacoRef.current = monaco;
 
       monacoRef.current.languages.typescript.typescriptDefaults.setCompilerOptions({
-        target: monacoRef.current.languages.typescript.ScriptTarget.ES2017,
+        target: monacoRef.current.languages.typescript.ScriptTarget.ES2020,
         // Only include ES library, exclude DOM and browser APIs
-        lib: ['es2017'],
+        lib: ['es2020'],
         allowNonTsExtensions: true,
         moduleResolution: monacoRef.current.languages.typescript.ModuleResolutionKind.NodeJs,
       });
@@ -104,6 +105,10 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
             };
           },
           reset: () => monacoEditorRef.current?.setValue(initialScript),
+          format: () =>
+            monacoEditorRef.current
+              ?.getAction('editor.action.formatDocument')
+              ?.run() as Promise<void>,
         };
       },
       [initialScript],

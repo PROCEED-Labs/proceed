@@ -346,7 +346,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                   >
                     <Tooltip title="Open Script Task Documentation and API">
                       <Button
-                        href="https://docs.proceed-labs.org/developer/bpmn/bpmn-script-task#api"
+                        href="https://docs.proceed-labs.org/developer/script-task-api"
                         target="_blank"
                         rel="noopener"
                       >

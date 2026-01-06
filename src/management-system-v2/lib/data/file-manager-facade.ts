@@ -606,6 +606,32 @@ export async function revertSoftDeleteProcessScriptTask(
   }
 }
 
+export async function removeDeletedArtifactsFromDb(
+  expirationInMs: number,
+  tx?: Prisma.TransactionClient,
+): Promise<{ count: number }> {
+  if (!tx) {
+    return db.$transaction((trx) => removeDeletedArtifactsFromDb(expirationInMs, trx));
+  }
+
+  const cutoff = new Date(Date.now() - expirationInMs);
+
+  const deletableFiles = await tx.artifact.findMany({
+    where: {
+      deletable: true,
+      deletedOn: { lte: cutoff },
+    },
+    select: { filePath: true },
+  });
+
+  if (deletableFiles.length > 0) {
+    await Promise.all(
+      deletableFiles.map((file) => deleteProcessArtifact(file.filePath, true, undefined, tx)),
+    );
+  }
+  return { count: deletableFiles.length };
+}
+
 // Update artifact references for a versioned user task
 // export async function updateArtifactRefVersionedUserTask(userTask: string, newFileName: string) {
 //   if (!userTask) {

@@ -100,23 +100,33 @@ const ProcessCard = ({
             <OverflowTooltipTitle>{process.name}</OverflowTooltipTitle>
           </div>
         }
-        onDoubleClick={() => {
+        onClick={() => {
           const url = `/processes/editor/${process.id}`;
           router.push(spaceURL(space, url));
         }}
       >
-        {isVisible ? (
-          <Suspense fallback={loader}>
-            <LazyBPMNViewer
-              definitionId={process.id}
-              reduceLogo={true}
-              fitOnResize={true}
-              fallback={loader}
-            />
-          </Suspense>
-        ) : (
-          loader
-        )}
+        <div className="favorite-process-bpmn-preview">
+          {isVisible ? (
+            <Suspense fallback={loader}>
+              <LazyBPMNViewer
+                definitionId={process.id}
+                reduceLogo={true}
+                fitOnResize={true}
+                fallback={loader}
+              />
+            </Suspense>
+          ) : (
+            loader
+          )}
+          <style jsx>{`
+            .favorite-process-bpmn-preview {
+              height: 100%;
+            }
+            .favorite-process-bpmn-preview :global(*) {
+              cursor: pointer !important;
+            }
+          `}</style>
+        </div>
       </Card>
     </div>
   );
@@ -151,7 +161,7 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
     const containerWidth = containerRef.current.clientWidth;
     const availableWidth = containerWidth - PADDING_LEFT - RIGHT_BUTTON_SPACE;
     const cardWithGap = CARD_WIDTH + CARD_GAP;
-    const count = Math.max(1, Math.floor((availableWidth + CARD_GAP) / cardWithGap));
+    const count = Math.max(2, Math.floor((availableWidth + CARD_GAP) / cardWithGap));
     setVisibleCardCount(count);
   }, []);
 
@@ -201,7 +211,8 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
     return null;
   }
 
-  const listWidth = visibleCardCount * CARD_WIDTH + (visibleCardCount - 1) * CARD_GAP;
+  const actualCardCount = Math.min(visibleCardCount, displayedProcesses.length);
+  const listWidth = actualCardCount * CARD_WIDTH + (actualCardCount - 1) * CARD_GAP;
 
   return (
     <div
@@ -229,22 +240,24 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
             <StarOutlined style={{ marginRight: '8px' }} />
             My Favorite Processes
           </h2>
-          <Space size="small" style={{ flexShrink: 0 }}>
-            <Button
-              type={sortType === 'lastEdited' ? 'primary' : 'default'}
-              onClick={() => setSortType('lastEdited')}
-              size="small"
-            >
-              Last Edited
-            </Button>
-            <Button
-              type={sortType === 'alphabetical' ? 'primary' : 'default'}
-              onClick={() => setSortType('alphabetical')}
-              size="small"
-            >
-              Alphabetical
-            </Button>
-          </Space>
+          {displayedProcesses.length >= 2 && (
+            <Space size="small" style={{ flexShrink: 0 }}>
+              <Button
+                type={sortType === 'lastEdited' ? 'primary' : 'default'}
+                onClick={() => setSortType('lastEdited')}
+                size="small"
+              >
+                Last Edited
+              </Button>
+              <Button
+                type={sortType === 'alphabetical' ? 'primary' : 'default'}
+                onClick={() => setSortType('alphabetical')}
+                size="small"
+              >
+                Alphabetical
+              </Button>
+            </Space>
+          )}
         </div>
         <div style={{ position: 'relative' }}>
           {showLeftArrow && (

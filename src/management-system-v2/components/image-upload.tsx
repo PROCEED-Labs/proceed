@@ -12,7 +12,7 @@ import {
 } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
-import { useFileManager } from '@/lib/useFileManager';
+import { MAX_CONTENT_LENGTH, useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
 
@@ -78,8 +78,15 @@ export const useImageUpload = ({
       });
 
       const xhr = new XMLHttpRequest();
+      const urlObj = new URL(uploadUrl);
+      const pathname = urlObj.pathname.split('/');
+      pathname.shift();
+      pathname.shift();
+      const realUploadFileName = decodeURIComponent(pathname.join('/'));
+      console.log('Uploading image to ', realUploadFileName);
       xhr.open('PUT', uploadUrl, true);
       xhr.responseType = 'text';
+      xhr.setRequestHeader('x-goog-content-length-range', `0,${MAX_CONTENT_LENGTH}`);
 
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
@@ -92,7 +99,7 @@ export const useImageUpload = ({
         setUploadProgress(undefined);
 
         if (xhr.status === 200) {
-          onImageUpdate?.(xhr.response);
+          onImageUpdate?.(xhr.response || realUploadFileName);
         } else {
           message.error(xhr.statusText || 'Image upload failed.');
         }
@@ -174,6 +181,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     async function downloadFile() {
       // "loading" state
       setFileUrl(undefined);
+
+      console.log('Downloading image for fileName:', fileName);
 
       if (fileName === undefined) {
         return;

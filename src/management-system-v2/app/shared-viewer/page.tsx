@@ -168,7 +168,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     ({ isOwner, processData } = processInfo);
 
     if (!processData) {
-      return <ErrorMessage message="Process no longer exists" />;
+      return <ErrorMessage message="Process no longer exists!" />;
     }
 
     iframeMode = embeddedMode;

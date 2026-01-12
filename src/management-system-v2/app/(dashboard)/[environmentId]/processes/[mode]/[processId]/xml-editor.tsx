@@ -491,9 +491,11 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
         }
         closeIcon={false}
         footer={[
-          <Button key="close-button" onClick={handleCancel}>
-            Cancel
-          </Button>,
+          hasChanges ? (
+            <Button key="close-button" onClick={handleCancel}>
+              Cancel
+            </Button>
+          ) : undefined,
           <XmlEditorSaveButton
             key="save-button"
             isReadOnly={isReadOnly}

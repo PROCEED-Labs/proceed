@@ -89,12 +89,15 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       entityId: processData.id,
       filePath: image,
       shareToken,
+    }).catch(() => {
+      console.log('Failed to get image');
+      return { fileUrl: undefined };
     });
 
     let imageURL =
       image &&
       (newImageUrl ??
-        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${
+        `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${
           processData.id
         }/images/${image}?shareToken=${shareToken}`);
 

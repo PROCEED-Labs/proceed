@@ -84,6 +84,7 @@ export const useImageUpload = ({
       pathname.shift();
       pathname.shift();
       const realUploadFileName = decodeURIComponent(pathname.join('/'));
+      console.log('Uploading image to ', realUploadFileName);
       xhr.open('PUT', uploadUrl, true);
       xhr.responseType = 'text';
       xhr.setRequestHeader('x-goog-content-length-range', `0,${MAX_CONTENT_LENGTH}`);

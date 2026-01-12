@@ -93,7 +93,7 @@ export const useImageUpload = ({
         setUploadProgress(undefined);
 
         if (xhr.status === 200) {
-          onImageUpdate?.(xhr.response);
+          onImageUpdate?.(xhr.response || uploadFileName);
         } else {
           message.error(xhr.statusText || 'Image upload failed.');
         }

@@ -78,6 +78,9 @@ export const useImageUpload = ({
       });
 
       const xhr = new XMLHttpRequest();
+      const urlObj = new URL(uploadUrl);
+      const pathname = urlObj.pathname;
+      const realUploadFileName = decodeURIComponent(pathname.split('/').pop()!);
       xhr.open('PUT', uploadUrl, true);
       xhr.responseType = 'text';
       xhr.setRequestHeader('x-goog-content-length-range', `0,${MAX_CONTENT_LENGTH}`);
@@ -93,7 +96,7 @@ export const useImageUpload = ({
         setUploadProgress(undefined);
 
         if (xhr.status === 200) {
-          onImageUpdate?.(xhr.response || uploadFileName);
+          onImageUpdate?.(xhr.response || realUploadFileName);
         } else {
           message.error(xhr.statusText || 'Image upload failed.');
         }

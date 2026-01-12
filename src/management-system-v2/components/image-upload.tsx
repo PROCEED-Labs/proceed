@@ -12,7 +12,7 @@ import {
 } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
-import { useFileManager } from '@/lib/useFileManager';
+import { MAX_CONTENT_LENGTH, useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
 
@@ -80,6 +80,7 @@ export const useImageUpload = ({
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', uploadUrl, true);
       xhr.responseType = 'text';
+      xhr.setRequestHeader('x-goog-content-length-range', `0,${MAX_CONTENT_LENGTH}`);
 
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {

@@ -12,7 +12,7 @@ import { EntityType, getNewFileName } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
 import { EnvVarsContext } from '@/components/env-vars-context';
 
-const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
+export const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
 
 interface FileManagerHookProps {
   entityType: EntityType;

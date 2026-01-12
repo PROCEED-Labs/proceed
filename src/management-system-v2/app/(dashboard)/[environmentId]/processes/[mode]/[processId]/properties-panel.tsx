@@ -325,7 +325,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
               <ImageSelectionSection
                 imageFilePath={metaData.overviewImage}
                 onImageUpdate={(imageFileName) => {
-                  console.log('Updating overview image to ', imageFileName, selectedElement);
+                  console.log('Updating overview image to', imageFileName, selectedElement);
                   updateMetaData(modeler!, selectedElement, 'overviewImage', imageFileName);
                 }}
                 disabled={readOnly}

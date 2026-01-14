@@ -78,12 +78,6 @@ export const useImageUpload = ({
       });
 
       const xhr = new XMLHttpRequest();
-      const urlObj = new URL(uploadUrl);
-      const pathname = urlObj.pathname.split('/');
-      pathname.shift();
-      pathname.shift();
-      const realUploadFileName = decodeURIComponent(pathname.join('/'));
-      console.log('Uploading image to ', realUploadFileName);
       xhr.open('PUT', uploadUrl, true);
       xhr.responseType = 'text';
       xhr.setRequestHeader('x-goog-content-length-range', `0,${MAX_CONTENT_LENGTH}`);
@@ -99,7 +93,16 @@ export const useImageUpload = ({
         setUploadProgress(undefined);
 
         if (xhr.status === 200) {
-          onImageUpdate?.(xhr.response || realUploadFileName);
+          let realUploadFileName = xhr.response;
+          // Construct the real upload file name from the upload URL if not provided in the response (cloud)
+          if (!xhr.response) {
+            const urlObj = new URL(uploadUrl);
+            const pathname = urlObj.pathname.split('/');
+            pathname.shift();
+            pathname.shift();
+            realUploadFileName = decodeURIComponent(pathname.join('/'));
+          }
+          onImageUpdate?.(realUploadFileName);
         } else {
           message.error(xhr.statusText || 'Image upload failed.');
         }

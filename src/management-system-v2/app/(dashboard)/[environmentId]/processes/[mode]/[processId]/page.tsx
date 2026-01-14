@@ -31,6 +31,7 @@ const ProcessComponent = async ({
 }: ProcessComponentProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
+
   //console.log('processId', processId);
   //console.log('query', searchParams);
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);

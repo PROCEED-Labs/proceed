@@ -459,14 +459,16 @@ const ModelerToolbar = ({
         setOpen={setShareModalOpen}
         defaultOpenTab={shareModalDefaultOpenTab}
       />
-      <XmlEditor
-        bpmn={xmlEditorBpmn}
-        canSave={!selectedVersionId}
-        onClose={() => setXmlEditorBpmn(undefined)}
-        onSaveXml={handleXmlEditorSave}
-        process={process}
-        versionName={versionName}
-      />
+      {!!xmlEditorBpmn && (
+        <XmlEditor
+          bpmn={xmlEditorBpmn}
+          canSave={!selectedVersionId}
+          onClose={() => setXmlEditorBpmn(undefined)}
+          onSaveXml={handleXmlEditorSave}
+          process={process}
+          versionName={versionName}
+        />
+      )}
 
       {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
         <>

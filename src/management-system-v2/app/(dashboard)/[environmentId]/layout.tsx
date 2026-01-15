@@ -175,7 +175,10 @@ const DashboardLayout = async ({
     let childRegex = '';
     let children: ExtendedMenuItems = [];
 
-    if (automationSettings.task_editor?.active !== false) {
+    if (
+      msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE &&
+      automationSettings.task_editor?.active !== false
+    ) {
       childRegex = '/tasks($|/)';
       children.push({
         key: 'task-editor',
@@ -195,7 +198,7 @@ const DashboardLayout = async ({
       icon: <CheckSquareOutlined />,
       selectedRegex: '/tasklist($|/)',
       openRegex: childRegex,
-      children,
+      children: children.length ? children : undefined,
     });
   }
 

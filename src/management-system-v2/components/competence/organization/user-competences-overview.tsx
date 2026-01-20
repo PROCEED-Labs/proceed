@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { debugLog } from '../utils/debug';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useUserCompetences } from '@/lib/competence/useUserCompetences';
 import { Row, Col, Card, Typography, Empty, Space } from 'antd';
 import UserListSelector from './user-list-selector';
 import { User } from '@/lib/data/user-schema';
@@ -26,45 +27,10 @@ const UserCompetencesOverview: React.FC<UserCompetencesOverviewProps> = ({
   organizationMembers,
 }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [userCompetences, setUserCompetences] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (selectedUser) {
-      loadUserCompetences(selectedUser.id, true); // Initial load with loading indicator
-
-      // Poll for updates every 5 seconds while a user is selected (without loading indicator)
-      const interval = setInterval(() => {
-        loadUserCompetences(selectedUser.id, false);
-      }, 5000);
-
-      return () => clearInterval(interval);
-    } else {
-      setUserCompetences([]);
-    }
-  }, [selectedUser]);
-
-  const loadUserCompetences = async (userId: string, showLoading: boolean = false) => {
-    if (showLoading) {
-      setLoading(true);
-    }
-    try {
-      const result = await getUserCompetences(userId);
-      if (result.success && result.data) {
-        setUserCompetences(result.data);
-      } else if (!result.success) {
-        debugLog('Error loading user competences:', result.message);
-        setUserCompetences([]);
-      }
-    } catch (error) {
-      debugLog('Error loading user competences:', error);
-      setUserCompetences([]);
-    } finally {
-      if (showLoading) {
-        setLoading(false);
-      }
-    }
-  };
+  const { data: userCompetences = [], isLoading: isPolling } = useUserCompetences(
+    selectedUser?.id || '',
+  );
 
   return (
     <>
@@ -100,7 +66,7 @@ const UserCompetencesOverview: React.FC<UserCompetencesOverviewProps> = ({
                 description="Select a user from the list to view their competences"
                 style={{ marginTop: 60 }}
               />
-            ) : loading ? (
+            ) : loading || isPolling ? (
               <div
                 style={{
                   display: 'flex',

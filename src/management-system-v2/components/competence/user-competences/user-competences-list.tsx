@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { debugLog } from '../utils/debug';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useUserCompetences } from '@/lib/competence/useUserCompetences';
 import {
   Table,
   Button,
@@ -9,16 +10,14 @@ import {
   Modal,
   Form,
   Input,
-  InputNumber,
   DatePicker,
   message,
   Popconfirm,
   Tag,
-  Tooltip,
   Card,
   Typography,
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, TrophyOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   createUserCompetence,
@@ -59,27 +58,13 @@ const UserCompetencesList: React.FC<UserCompetencesListProps> = ({
   initialUserCompetences,
   userId,
 }) => {
-  const [userCompetences, setUserCompetences] = useState<UserCompetence[]>(initialUserCompetences);
+  const queryClient = useQueryClient();
+  const { data: userCompetences = initialUserCompetences, isLoading: isPolling } =
+    useUserCompetences(userId);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCompetence, setEditingCompetence] = useState<UserCompetence | null>(null);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-
-  useEffect(() => {
-    // Poll for updates every 5 seconds
-    const interval = setInterval(async () => {
-      try {
-        const result = await getUserCompetences(userId);
-        if (result.success && result.data) {
-          setUserCompetences(result.data);
-        }
-      } catch (error) {
-        debugLog('Error polling user competences:', error);
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [userId]);
 
   const showModal = (competence?: UserCompetence) => {
     if (competence) {
@@ -124,11 +109,8 @@ const UserCompetencesList: React.FC<UserCompetencesListProps> = ({
         });
 
         if (result.success) {
-          setUserCompetences((prev) =>
-            prev.map((comp) =>
-              comp.competenceId === editingCompetence.competenceId ? result.data : comp,
-            ),
-          );
+          // Invalidate the cache to trigger a refetch
+          queryClient.invalidateQueries({ queryKey: ['userCompetences', userId] });
           message.success('Competence updated successfully');
         } else {
           message.error(result.message);
@@ -145,7 +127,8 @@ const UserCompetencesList: React.FC<UserCompetencesListProps> = ({
         });
 
         if (result.success) {
-          setUserCompetences((prev) => [...prev, result.data]);
+          // Invalidate the cache to trigger a refetch
+          queryClient.invalidateQueries({ queryKey: ['userCompetences', userId] });
           message.success('Competence added successfully');
         } else {
           message.error(result.message);
@@ -166,7 +149,8 @@ const UserCompetencesList: React.FC<UserCompetencesListProps> = ({
       const result = await deleteUserCompetence({ userId, competenceId });
 
       if (result.success) {
-        setUserCompetences((prev) => prev.filter((comp) => comp.competenceId !== competenceId));
+        // Invalidate the cache to trigger a refetch
+        queryClient.invalidateQueries({ queryKey: ['userCompetences', userId] });
         message.success('Competence deleted successfully');
       } else {
         message.error(result.message);
@@ -184,7 +168,8 @@ const UserCompetencesList: React.FC<UserCompetencesListProps> = ({
       const result = await unclaimSpaceCompetence({ userId, competenceId });
 
       if (result.success) {
-        setUserCompetences((prev) => prev.filter((comp) => comp.competenceId !== competenceId));
+        // Invalidate the cache to trigger a refetch
+        queryClient.invalidateQueries({ queryKey: ['userCompetences', userId] });
         message.success('Competence unclaimed successfully');
       } else {
         message.error(result.message);
@@ -307,7 +292,7 @@ const UserCompetencesList: React.FC<UserCompetencesListProps> = ({
             columns={columns}
             dataSource={userCompetences}
             rowKey={(record) => record.competenceId}
-            loading={loading}
+            loading={loading || isPolling}
             pagination={{ pageSize: 10, position: ['bottomCenter'] }}
           />
         </Space>

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSpaceCompetences } from '@/lib/competence/useSpaceCompetences';
 import {
   Table,
   Button,
@@ -13,7 +15,6 @@ import {
   Tag,
   Card,
   Typography,
-  Spin,
   Popconfirm,
 } from 'antd';
 import { CheckCircleOutlined, TrophyOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -42,44 +43,12 @@ type SpaceCompetencesClaimProps = {
 
 const SpaceCompetencesClaim: React.FC<SpaceCompetencesClaimProps> = ({ userId }) => {
   const environment = useEnvironment();
-  const [spaceCompetences, setSpaceCompetences] = useState<SpaceCompetence[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: spaceCompetences = [], isLoading } = useSpaceCompetences(environment.spaceId);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompetence, setSelectedCompetence] = useState<SpaceCompetence | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [form] = Form.useForm();
-
-  useEffect(() => {
-    loadSpaceCompetences(true); // Initial load with loading indicator
-
-    // Poll for updates every 5 seconds (without loading indicator)
-    const interval = setInterval(() => {
-      loadSpaceCompetences(false);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [environment.spaceId]);
-
-  const loadSpaceCompetences = async (showLoading: boolean = false) => {
-    if (showLoading) {
-      setLoading(true);
-    }
-    try {
-      const response = await fetch(`/api/spaces/${environment.spaceId}/competences`);
-      if (response.ok) {
-        const data = await response.json();
-        setSpaceCompetences(data);
-      } else {
-        message.error('Failed to load space competences');
-      }
-    } catch (error) {
-      message.error('Error loading space competences');
-    } finally {
-      if (showLoading) {
-        setLoading(false);
-      }
-    }
-  };
 
   const showClaimModal = (competence: SpaceCompetence) => {
     setSelectedCompetence(competence);
@@ -110,11 +79,8 @@ const SpaceCompetencesClaim: React.FC<SpaceCompetencesClaimProps> = ({ userId })
       });
 
       if (result.success) {
-        setSpaceCompetences((prev) =>
-          prev.map((comp) =>
-            comp.id === selectedCompetence.id ? { ...comp, isClaimed: true } : comp,
-          ),
-        );
+        // Invalidate the cache to trigger a refetch
+        queryClient.invalidateQueries({ queryKey: ['spaceCompetences', environment.spaceId] });
         message.success('Competence claimed successfully');
         handleCancel();
       } else {
@@ -133,9 +99,8 @@ const SpaceCompetencesClaim: React.FC<SpaceCompetencesClaimProps> = ({ userId })
       const result = await unclaimSpaceCompetence({ userId, competenceId });
 
       if (result.success) {
-        setSpaceCompetences((prev) =>
-          prev.map((comp) => (comp.id === competenceId ? { ...comp, isClaimed: false } : comp)),
-        );
+        // Invalidate the cache to trigger a refetch
+        queryClient.invalidateQueries({ queryKey: ['spaceCompetences', environment.spaceId] });
         message.success('Competence unclaimed successfully');
       } else {
         message.error(result.message);
@@ -240,7 +205,7 @@ const SpaceCompetencesClaim: React.FC<SpaceCompetencesClaimProps> = ({ userId })
             </Paragraph>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div
               style={{
                 display: 'flex',
@@ -252,7 +217,7 @@ const SpaceCompetencesClaim: React.FC<SpaceCompetencesClaimProps> = ({ userId })
                 gap: '16px',
               }}
             >
-              <ProceedLoadingIndicator loading={true} small={true} /* scale="140" */ />
+              <ProceedLoadingIndicator loading={true} small={true} />
             </div>
           ) : (
             <Table

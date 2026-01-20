@@ -49,7 +49,6 @@ import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import VariableDefinition from './variable-definition';
 import SuggestPotentialOwner from '@/components/competence/potential-owner/suggest-potential-owner';
-import { enableCompetenceMatching } from 'FeatureFlags';
 import IsExecutableSection from './is-executable';
 
 // Elements that should not display the planned duration field
@@ -508,7 +507,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                   modeler={modeler}
                   readOnly={readOnly || !isExecutable}
                 />
-                {(enableCompetenceMatching || env.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE) && (
+                {env.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE && (
                   <SuggestPotentialOwner selectedElement={selectedElement} modeler={modeler} />
                 )}
                 <Divider />

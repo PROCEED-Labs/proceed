@@ -2,12 +2,11 @@
 import { FC, useState, useEffect } from 'react';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { Button, Descriptions, DescriptionsProps, Modal, Alert, Typography, Steps } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import { LuInfo } from 'react-icons/lu';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import ProceedLoadingIndicator from '@/components/loading-proceed';
 import {
-  getCompetenceMatches,
   createCompetenceList,
   createMatching,
   transformMatchResults,
@@ -20,8 +19,6 @@ import RankedUserList from './ranked-user-list';
 import { useBPMNResources } from './potential-owner';
 import { Shape } from 'bpmn-js/lib/model/Types';
 import { debugLog } from '../utils/debug';
-
-const { Text } = Typography;
 
 type SuggestPotentialOwnerProps = {
   selectedElement: ElementLike;

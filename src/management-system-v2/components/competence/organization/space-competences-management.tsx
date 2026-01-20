@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { debugLog } from '../utils/debug';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useOrganizationSpaceCompetences } from '@/lib/competence/useOrganizationSpaceCompetences';
 import {
   Table,
   Button,
@@ -19,7 +20,6 @@ import {
   createOrganizationSpaceCompetence,
   updateOrganizationSpaceCompetence,
   deleteOrganizationSpaceCompetence,
-  getOrganizationSpaceCompetences,
 } from '../actions/organization-competence-actions';
 import SpaceCompetenceFormModal from './space-competence-form-modal';
 import { SpaceCompetence } from '@/lib/data/competence-schema';
@@ -36,26 +36,12 @@ const SpaceCompetencesManagement: React.FC<SpaceCompetencesManagementProps> = ({
   initialCompetences,
   currentUserId,
 }) => {
-  const [competences, setCompetences] = useState<SpaceCompetence[]>(initialCompetences);
+  const queryClient = useQueryClient();
+  const { data: competences = initialCompetences, isLoading: isPolling } =
+    useOrganizationSpaceCompetences(spaceId);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCompetence, setEditingCompetence] = useState<SpaceCompetence | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    // Poll for updates every 5 seconds
-    const interval = setInterval(async () => {
-      try {
-        const result = await getOrganizationSpaceCompetences(spaceId);
-        if (result.success && result.data) {
-          setCompetences(result.data);
-        }
-      } catch (error) {
-        debugLog('Error polling space competences:', error);
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [spaceId]);
 
   const showModal = (competence?: SpaceCompetence) => {
     setEditingCompetence(competence || null);
@@ -89,21 +75,8 @@ const SpaceCompetencesManagement: React.FC<SpaceCompetencesManagementProps> = ({
         });
 
         if (result.success) {
-          // Update local state
-          setCompetences((prev) =>
-            prev.map((comp) =>
-              comp.id === editingCompetence.id
-                ? {
-                    ...comp,
-                    name: values.name,
-                    description: values.description,
-                    externalQualificationNeeded: values.externalQualificationNeeded,
-                    renewalTimeInterval: values.renewalTimeInterval,
-                    claimedBy: values.unclaimForAllUsers ? [] : comp.claimedBy,
-                  }
-                : comp,
-            ),
-          );
+          // Invalidate the cache to trigger a refetch
+          queryClient.invalidateQueries({ queryKey: ['organizationSpaceCompetences', spaceId] });
           message.success('Space competence updated successfully');
           handleCancel();
         } else {
@@ -121,8 +94,8 @@ const SpaceCompetencesManagement: React.FC<SpaceCompetencesManagementProps> = ({
         });
 
         if (result.success && result.data) {
-          // Add the newly created competence to local state
-          setCompetences((prev) => [...prev, result.data!]);
+          // Invalidate the cache to trigger a refetch
+          queryClient.invalidateQueries({ queryKey: ['organizationSpaceCompetences', spaceId] });
           message.success('Space competence created successfully');
           handleCancel();
         } else if (!result.success) {
@@ -145,7 +118,8 @@ const SpaceCompetencesManagement: React.FC<SpaceCompetencesManagementProps> = ({
       });
 
       if (result.success) {
-        setCompetences((prev) => prev.filter((comp) => comp.id !== competenceId));
+        // Invalidate the cache to trigger a refetch
+        queryClient.invalidateQueries({ queryKey: ['organizationSpaceCompetences', spaceId] });
         message.success('Space competence deleted successfully');
       } else {
         message.error(result.message);
@@ -300,6 +274,7 @@ const SpaceCompetencesManagement: React.FC<SpaceCompetencesManagementProps> = ({
           dataSource={competences}
           rowKey="id"
           pagination={{ pageSize: 10, position: ['bottomCenter'] }}
+          loading={isPolling}
         />
 
         <SpaceCompetenceFormModal

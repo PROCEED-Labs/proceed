@@ -43,7 +43,6 @@ import { customLinkIcons } from '@/lib/custom-links/icons';
 import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
-import { enableCompetenceMatching } from 'FeatureFlags';
 
 const DashboardLayout = async ({
   children,
@@ -309,10 +308,7 @@ const DashboardLayout = async ({
     }
 
     // TODO: Add proper authorization check for competences
-    if (
-      can('manage', 'User') &&
-      (enableCompetenceMatching || msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE)
-    ) {
+    if (can('manage', 'User') && msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE) {
       children.push({
         key: 'competences',
         label: <Link href={spaceURL(activeEnvironment, `/iam/competences`)}>Competences</Link>,
@@ -351,7 +347,7 @@ const DashboardLayout = async ({
           icon: <TbUserEdit />,
           selectedRegex: profileRegex,
         },
-        ...(enableCompetenceMatching || msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE
+        ...(msConfig.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE
           ? [
               {
                 key: 'personal-competence',

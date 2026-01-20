@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Card, Tabs, Typography, Space } from 'antd';
-import { TrophyOutlined, AppstoreOutlined, CheckSquareOutlined } from '@ant-design/icons';
+import { TrophyOutlined, CheckSquareOutlined } from '@ant-design/icons';
 import UserCompetencesList from './user-competences-list';
 import SpaceCompetencesClaim from './space-competences-claim';
 

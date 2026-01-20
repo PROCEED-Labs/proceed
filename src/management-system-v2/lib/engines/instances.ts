@@ -93,3 +93,35 @@ export async function updateVariablesOnMachine(
     body: variables,
   });
 }
+
+export async function submitFileToMachine(
+  definitionId: string,
+  instanceId: string,
+  machine: Engine,
+  fileName: string,
+  fileType: string,
+  file: any,
+) {
+  return await engineRequest({
+    method: 'put',
+    endpoint: '/resources/process/:definitionId/instance/:instanceId/file/:fileName',
+    engine: machine,
+    pathParams: { definitionId, instanceId, fileName },
+    body: file,
+    queryParams: { mimeType: fileType },
+  });
+}
+
+export async function getFileFromMachine(
+  definitionId: string,
+  instanceId: string,
+  fileName: string,
+  machine: Engine,
+) {
+  return await engineRequest({
+    method: 'get',
+    endpoint: '/resources/process/:definitionId/instance/:instanceId/file/:fileName',
+    engine: machine,
+    pathParams: { definitionId, instanceId, fileName },
+  });
+}

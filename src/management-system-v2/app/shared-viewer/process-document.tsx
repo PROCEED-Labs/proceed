@@ -18,6 +18,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
+import { generateDateString } from '@/lib/utils';
 
 export type VersionInfo = {
   id?: string;
@@ -88,12 +89,15 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       entityId: processData.id,
       filePath: image,
       shareToken,
+    }).catch(() => {
+      console.log('Failed to get image');
+      return { fileUrl: undefined };
     });
 
     let imageURL =
       image &&
       (newImageUrl ??
-        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${
+        `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${
           processData.id
         }/images/${image}?shareToken=${shareToken}`);
 
@@ -132,7 +136,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               </p>
             )}
             <p>
-              <b>Creation Time:</b> {new Date(importedProcess.versionId).toUTCString()}
+              <b>Creation Time:</b> {generateDateString(new Date(importedProcess.versionId), true)}
             </p>
           </div>
         )}
@@ -277,11 +281,11 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                     <div>
                       Creation Time: {''}
                       {version.versionCreatedOn
-                        ? fromCustomUTCString(version.versionCreatedOn).toUTCString()
+                        ? generateDateString(fromCustomUTCString(version.versionCreatedOn), true)
                         : 'Unknown'}
                     </div>
                   ) : (
-                    <div>Last Edit: {processData.lastEditedOn.toUTCString()}</div>
+                    <div>Last Edit: {generateDateString(processData.lastEditedOn, true)}</div>
                   )}
                 </div>
               </div>

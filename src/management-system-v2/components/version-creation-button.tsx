@@ -16,7 +16,7 @@ export const VersionModal: React.FC<VersionModalProps> = ({ show, close, loading
 
   return (
     <Modal
-      title="Create New Version"
+      title="Release a new Process Version"
       open={show}
       onCancel={() => {
         if (!loading) close();
@@ -35,7 +35,7 @@ export const VersionModal: React.FC<VersionModalProps> = ({ show, close, loading
           key="submit"
           form={form}
           onSubmit={close}
-          submitText="Create Version"
+          submitText="Release Version"
           buttonProps={{
             loading,
           }}

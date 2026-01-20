@@ -5,7 +5,7 @@ import { Checkbox, Form, Input, Modal } from 'antd';
 import useModelerStateStore from './use-modeler-state-store';
 import { Editor, Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import languageExtension from './languageExtension.js';
+import languageExtension from './monaco-typescript-language-extension.js';
 import styles from './flow-condition-modal.module.scss';
 import cn from 'classnames';
 

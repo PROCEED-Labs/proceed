@@ -42,6 +42,10 @@ declare const _exports: {
     },
   ): Promise<string | object>;
   setProcessId(bpmn: string, id: string): Promise<string | object>;
+  setExecutableProperties(
+    bpmn: string | object,
+    executable: string | boolean,
+  ): Promise<string | object>;
   setStartFormFileName(
     bpmn: string | object,
     processId: string,

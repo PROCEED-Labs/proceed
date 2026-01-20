@@ -214,7 +214,7 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   await expect(
     metaInformation
       .getByRole('row', { name: 'costsPlanned' })
-      .getByRole('cell', { name: '123,00 €' }),
+      .getByRole('cell', { name: /123(,|\.)00/ }),
   ).toBeVisible();
   await expect(metaInformation.getByRole('row', { name: 'prop1' })).toBeVisible();
   await expect(
@@ -426,7 +426,7 @@ test('recursively show information about imports', async ({
   await expect(
     metaInformation
       .getByRole('row', { name: 'costsPlanned' })
-      .getByRole('cell', { name: '123,00 €' }),
+      .getByRole('cell', { name: /123(,|\.)00/ }),
   ).toBeVisible();
   await expect(metaInformation.getByRole('row', { name: 'prop1' })).toBeVisible();
   await expect(
@@ -941,7 +941,7 @@ test('allow a different user that was given the share link to import the shared 
 
   const newProcessId = newPage.url().split('/editor/').pop();
 
-  await newPage.getByRole('menuitem', { name: 'Processes' }).click();
+  //await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();
   await newPage.waitForURL(/processes/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();

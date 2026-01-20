@@ -1,33 +1,60 @@
 import { Avatar as AntDesignAvatar, Typography } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
-import { ComponentProps, forwardRef } from 'react';
+import { ComponentProps, forwardRef, useEffect, useState } from 'react';
 import Avatar from 'boring-avatars';
+import { useFileManager } from '@/lib/useFileManager';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
 type UserAvatarProps = {
   user?: {
     id: string;
-    image?: string | null;
     isGuest?: boolean | null;
     firstName?: string | null;
     lastName?: string | null;
+    profileImage?: string | null;
   };
 } & ComponentProps<typeof AntDesignAvatar>;
 
 const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, ...props }, ref) => {
-  if (!user) return <AntDesignAvatar />;
+  const { download: getProfileUrl } = useFileManager({ entityType: EntityType.PROFILE_PICTURE });
+  const [avatarUrl, setAvatarURl] = useState<string | undefined>();
 
-  if (user.isGuest) return <AntDesignAvatar icon={<UserOutlined />} />;
+  useEffect(() => {
+    async function getUrl() {
+      if (!user?.profileImage || user.profileImage.startsWith('https')) return;
 
-  const icon = user.image ? (
-    <img src={user.image} alt="avatar" />
-  ) : (
-    <Avatar
-      size={64}
-      name={user.id}
-      variant="marble"
-      colors={['#51843A', '#599140', '#62A046', '#780116', '#982D28', '#B85939', '#F7B05B']}
-    />
-  );
+      try {
+        // Technically user.profileImage is not needed, but it generates a new URl and causes the
+        // image to update
+        const response = await getProfileUrl({ entityId: user.id, filePath: user.profileImage });
+        if (response.fileUrl) {
+          setAvatarURl(response.fileUrl);
+        }
+      } catch (e) {}
+    }
+    getUrl();
+
+    return () => setAvatarURl(undefined);
+    // getProfileUrl is a new function on each render
+  }, [user]); // eslint-disable-line
+
+  if (!user) return <AntDesignAvatar {...props} />;
+
+  if (user.isGuest) return <AntDesignAvatar icon={<UserOutlined />} {...props} />;
+
+  let icon;
+  if (avatarUrl) icon = <img src={avatarUrl} alt="avatar" />;
+  else if (user?.profileImage?.startsWith('https'))
+    icon = <img src={user.profileImage} alt="avatar" />;
+  else
+    icon = (
+      <Avatar
+        size={64}
+        name={user.id}
+        variant="marble"
+        colors={['#51843A', '#599140', '#62A046', '#780116', '#982D28', '#B85939', '#F7B05B']}
+      />
+    );
 
   return (
     <AntDesignAvatar
@@ -43,7 +70,7 @@ const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, ...props },
               transform: 'translate(-50%, -50%)',
             }}
           >
-            {!user.image
+            {!(avatarUrl || user?.profileImage?.startsWith('https'))
               ? (user.firstName || '').slice(0, 1) + (user.lastName || '').slice(0, 1)
               : null}
           </Typography.Text>
@@ -51,7 +78,7 @@ const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, ...props },
       }
       {...props}
       ref={ref}
-    ></AntDesignAvatar>
+    />
   );
 });
 

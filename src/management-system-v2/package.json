@@ -12,7 +12,7 @@
     "predev": "ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
     "prebuild": "cross-env NODE_ENV=production ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
     "test:unit": "jest",
-    "postinstall": "prisma generate --no-engine"
+    "postinstall": "prisma generate"
   },
   "prettier": {
     "singleQuote": true

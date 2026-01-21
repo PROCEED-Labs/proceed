@@ -116,6 +116,7 @@ const ModelerToolbar = ({
   const { isListView, processContextPath } = useProcessView();
 
   const modeler = useModelerStateStore((state) => state.modeler);
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
   const selectedElement = modeler
     ? selectedElementId
@@ -489,6 +490,7 @@ const ModelerToolbar = ({
             open={showFlowNodeConditionModal}
             onClose={() => setShowFlowNodeConditionModal(false)}
             element={selectedElement}
+            readOnly={isListView || !editingEnabled || !isExecutable}
           />
         </>
       )}

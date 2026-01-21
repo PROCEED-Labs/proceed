@@ -5,7 +5,7 @@ const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
-    '/': ['node_modules/.prisma/**/*', 'node_modules/@prisma/**/*'],
+    '/': ['../../node_modules/.prisma/**/*', '../../node_modules/@prisma/**/*'],
   },
   experimental: {
     serverActions: {

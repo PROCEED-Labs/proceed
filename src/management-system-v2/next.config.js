@@ -9,6 +9,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  serverExternalPackages: ['@prisma/client'],
   redirects: async () => {
     return [
       {

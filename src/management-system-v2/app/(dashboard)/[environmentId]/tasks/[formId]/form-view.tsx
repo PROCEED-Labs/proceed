@@ -31,11 +31,12 @@ const FormEditor: React.FC<FormViewProps> = ({ data }) => {
     }
   };
 
-  const { variables, updateVariables } = useEditorStateStore((state) => state);
+  const { variables, updateVariables, setEditingEnabled } = useEditorStateStore((state) => state);
 
   useEffect(() => {
     // initialize the variables in the editor
     updateVariables(data.variables);
+    setEditingEnabled(true);
   }, []);
 
   useEffect(() => {

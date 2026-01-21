@@ -4,13 +4,15 @@ const path = require('path');
 const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  outputFileTracingIncludes: {
+    '/': ['node_modules/.prisma/**/*', 'node_modules/@prisma/**/*'],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
     },
     nodeMiddleware: true,
   },
-  serverExternalPackages: ['@prisma/client'],
   redirects: async () => {
     return [
       {

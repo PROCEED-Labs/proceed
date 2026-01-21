@@ -8,6 +8,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    nodeMiddleware: true,
   },
   serverExternalPackages: ['@prisma/client'],
   redirects: async () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import {
   Button,
   Image,
@@ -12,7 +12,7 @@ import {
 } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
-import { useFileManager } from '@/lib/useFileManager';
+import { MAX_CONTENT_LENGTH, useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
 
@@ -80,6 +80,7 @@ export const useImageUpload = ({
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', uploadUrl, true);
       xhr.responseType = 'text';
+      xhr.setRequestHeader('x-goog-content-length-range', `0,${MAX_CONTENT_LENGTH}`);
 
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
@@ -92,7 +93,16 @@ export const useImageUpload = ({
         setUploadProgress(undefined);
 
         if (xhr.status === 200) {
-          onImageUpdate?.(xhr.response);
+          let realUploadFileName = xhr.response;
+          // Construct the real upload file name from the upload URL if not provided in the response (cloud)
+          if (!xhr.response) {
+            const urlObj = new URL(uploadUrl);
+            const pathname = urlObj.pathname.split('/');
+            pathname.shift();
+            pathname.shift();
+            realUploadFileName = decodeURIComponent(pathname.join('/'));
+          }
+          onImageUpdate?.(realUploadFileName);
         } else {
           message.error(xhr.statusText || 'Image upload failed.');
         }
@@ -126,6 +136,7 @@ type ImageUploadProps = ImageUploadData & {
   imageProps?: ImageProps;
   uploadProps?: UploadProps;
   basicLoadingFeedback?: boolean;
+  imagePreview?: ReactNode | ((fileUrl: string | undefined) => ReactNode);
   // Unmanaged
   initialFileName?: string;
 };
@@ -141,6 +152,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   deletable = true,
   fileManagerErrorToasts = true,
   basicLoadingFeedback = false,
+  imagePreview,
   ...props
 }) => {
   // The component has a `fileName` (which can be either managed from within the component, or
@@ -164,7 +176,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       fileManagerErrorToasts,
       onImageUpdate: (imageFileName) => {
         setComponentManagedFileName(imageFileName);
-        setFileUrl(imageFileName);
         onImageUpdate?.(imageFileName);
       },
     });
@@ -174,7 +185,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       // "loading" state
       setFileUrl(undefined);
 
-      if (!fileName) {
+      console.log('Downloading image for fileName:', fileName);
+
+      if (fileName === undefined) {
         return;
       }
 
@@ -251,27 +264,35 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         customRequest={customUploadRequest}
         {...uploadProps}
       >
-        <Image
-          src={fileUrl || fallbackImage}
-          fallback={fallbackImage}
-          // TODO
-          // alt={organization.name}
-          preview={{
-            visible: false,
-            mask: false,
-          }}
-          role="group"
-          alt="Image"
-          {...imageProps}
-          style={{
-            width: '100%',
-            maxHeight: '7.5rem',
-            borderRadius: '6px',
-            display: 'block',
-            border: '1px solid #d9d9d9',
-            ...imageProps?.style,
-          }}
-        />
+        {imagePreview ? (
+          typeof imagePreview === 'function' ? (
+            imagePreview(fileUrl)
+          ) : (
+            imagePreview
+          )
+        ) : (
+          <Image
+            src={fileUrl || fallbackImage}
+            fallback={fallbackImage}
+            // TODO
+            // alt={organization.name}
+            preview={{
+              visible: false,
+              mask: false,
+            }}
+            role="group"
+            alt="Image"
+            {...imageProps}
+            style={{
+              width: '100%',
+              maxHeight: '7.5rem',
+              borderRadius: '6px',
+              display: 'block',
+              border: '1px solid #d9d9d9',
+              ...imageProps?.style,
+            }}
+          />
+        )}
 
         <div
           style={{

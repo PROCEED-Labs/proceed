@@ -1,0 +1,6 @@
+.MonacoEditor {
+  :global(.monaco-editor) {
+    // Needed for the editor to be able to resize
+    position: absolute;
+  }
+}

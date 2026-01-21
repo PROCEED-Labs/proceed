@@ -27,6 +27,7 @@ import {
   getStartFormFileNameMapping,
   setStartFormFileName,
   getAllElements,
+  setExecutableProperties,
 } from '@proceed/bpmn-helper';
 import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
@@ -270,6 +271,7 @@ type ProcessWithCreatorAndSpace = {
   createdOn: string;
   name: string;
   originalId: string;
+  executable: boolean;
 } & {
   creator: {
     id: string;
@@ -307,6 +309,7 @@ export async function transformBpmnAttributes(
     });
 
     updateBpmnCreatorAttributes(definitions, placeholders);
+    await setExecutableProperties(definitions, 'PROCEED_DB_VALUE_executable');
   } else {
     const processMeta = input as ProcessWithCreatorAndSpace;
     const actualValues: Record<string, string> = {};
@@ -321,6 +324,7 @@ export async function transformBpmnAttributes(
       }
     });
     updateBpmnCreatorAttributes(definitions, actualValues);
+    await setExecutableProperties(definitions, processMeta.executable);
   }
   const transformedXml = await toBpmnXml(definitions);
   return transformedXml;

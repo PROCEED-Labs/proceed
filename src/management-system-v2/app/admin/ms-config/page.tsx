@@ -7,11 +7,17 @@ import { getMSConfig, updateMSConfig, writeDefaultMSConfig } from '@/lib/ms-conf
 import MSConfigForm from './ms-config-form';
 import { userError } from '@/lib/user-error';
 import { SettingGroup } from '@/app/(dashboard)/[environmentId]/settings/type-util';
+import { ConfigurableMSConfig } from '@/lib/ms-config/config-schema';
+import { restartInternalSchedulerWithCurrentConfigs } from '@/lib/scheduler';
 
-async function saveConfig(newConfig: Record<string, string>) {
+async function saveConfig(changedValues: Record<keyof ConfigurableMSConfig, string>) {
   'use server';
   try {
-    await updateMSConfig(newConfig);
+    await updateMSConfig(changedValues);
+
+    if ('SCHEDULER_INTERNAL_ACTIVE' in changedValues || 'SCHEDULER_INTERVAL' in changedValues) {
+      await restartInternalSchedulerWithCurrentConfigs();
+    }
   } catch (e) {
     return userError('Error saving config');
   }
@@ -289,15 +295,47 @@ async function ConfigPage() {
         },
         {
           type: 'boolean',
-          name: 'SCHEDULER_JOB_DELETE_INACTIVE_GUESTS',
-          key: 'SCHEDULER_JOB_DELETE_INACTIVE_GUESTS',
-          value: msConfig.SCHEDULER_JOB_DELETE_INACTIVE_GUESTS,
+          name: 'SCHEDULER_INTERNAL_ACTIVE',
+          key: 'SCHEDULER_INTERNAL_ACTIVE',
+          value: msConfig.SCHEDULER_INTERNAL_ACTIVE,
         },
         {
-          type: 'boolean',
-          name: 'SCHEDULER_JOB_DELETE_OLD_ARTIFACTS',
-          key: 'SCHEDULER_JOB_DELETE_OLD_ARTIFACTS',
-          value: msConfig.SCHEDULER_JOB_DELETE_OLD_ARTIFACTS,
+          type: 'number',
+          name: 'SCHEDULER_TASK_DELETE_INACTIVE_GUESTS',
+          key: 'SCHEDULER_TASK_DELETE_INACTIVE_GUESTS',
+          value: msConfig.SCHEDULER_TASK_DELETE_INACTIVE_GUESTS,
+        },
+        {
+          type: 'number',
+          name: 'SCHEDULER_TASK_DELETE_OLD_ARTIFACTS',
+          key: 'SCHEDULER_TASK_DELETE_OLD_ARTIFACTS',
+          value: msConfig.SCHEDULER_TASK_DELETE_OLD_ARTIFACTS,
+        },
+        {
+          type: 'number',
+          name: 'SCHEDULER_TASK_DELETE_INACTIVE_SPACES',
+          key: 'SCHEDULER_TASK_DELETE_INACTIVE_SPACES',
+          value: msConfig.SCHEDULER_TASK_DELETE_INACTIVE_SPACES,
+        },
+        {
+          type: 'number',
+          name: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_REGISTRATION_TOKENS',
+          key: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_REGISTRATION_TOKENS',
+          value: msConfig.SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_REGISTRATION_TOKENS,
+        },
+        {
+          type: 'number',
+          name: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_CHANGE_TOKENS',
+          key: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_CHANGE_TOKENS',
+          value: msConfig.SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_CHANGE_TOKENS,
+        },
+        {
+          type: 'number',
+          name: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_VERIFICATION_TOKENS',
+          key: 'SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_VERIFICATION_TOKENS',
+          value: msConfig.SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_VERIFICATION_TOKENS,
+          // NOTE: eventually remove this description
+          description: 'This value will only take effect after restarting the system',
         },
       ],
     },

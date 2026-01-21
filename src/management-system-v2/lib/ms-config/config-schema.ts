@@ -150,10 +150,24 @@ export const msConfigSchema = {
     IAM_LOGIN_OAUTH_DISCORD_CLIENT_ID: z.string().default(''),
     IAM_LOGIN_OAUTH_DISCORD_CLIENT_SECRET: z.string().default(''),
 
+    SCHEDULER_INTERNAL_ACTIVE: z.string().optional().transform(boolParser),
     SCHEDULER_INTERVAL: z.string().default('0 3 * * *'),
     SCHEDULER_TOKEN: z.string().optional(),
-    SCHEDULER_JOB_DELETE_INACTIVE_GUESTS: z.coerce.number().default(0),
-    SCHEDULER_JOB_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
+
+    SCHEDULER_TASK_DELETE_INACTIVE_GUESTS: z.coerce.number().default(30),
+    SCHEDULER_TASK_DELETE_OLD_ARTIFACTS: z.coerce.number().default(7),
+    SCHEDULER_TASK_DELETE_INACTIVE_SPACES: z.coerce.number().default(7),
+
+    PROCEED_PUBLIC_TIMELINE_VIEW: z.string().optional().transform(boolParser),
+
+    MQTT_SERVER_ADDRESS: z.string().url().optional(),
+    MQTT_USERNAME: z.string().optional(),
+    MQTT_PASSWORD: z.string().optional(),
+    MQTT_BASETOPIC: z.string().optional(),
+
+    SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_REGISTRATION_TOKENS: z.coerce.number().default(7),
+    SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_CHANGE_TOKENS: z.coerce.number().default(7),
+    SCHEDULING_TASK_EXPIRATION_TIME_EMAIL_VERIFICATION_TOKENS: z.coerce.number().default(24),
   },
   production: {
     DATABASE_URL: z.string(),

@@ -60,7 +60,7 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
       if (!environment?.isOrganization)
         return userError(`Environment ${environmentId} is not an organization environment`);
 
-      deleteEnvironment(environmentId, ability);
+      await deleteEnvironment(environmentId, ability);
     }
   } catch (e) {
     if (e instanceof UnauthorizedError)

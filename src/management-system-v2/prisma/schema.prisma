@@ -160,6 +160,7 @@ model Space {
   roles              Role[]
   engines            Engine[]
   settings           SpaceSettings? @relation("spaceSettings")
+  createdOn          DateTime @default(now())
 
   @@map("space")
 }

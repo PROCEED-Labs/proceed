@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build --no-turbopack",
+    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build --webpack",
     "docker:build": "docker build -t proceed .",
     "docker:run": "docker run -p 33081:33081 -v ${PWD}/volume:/app/volume --env-file .env.development proceed",
     "start": "next start",

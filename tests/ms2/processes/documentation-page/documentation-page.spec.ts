@@ -18,7 +18,7 @@ test('show process information', async ({ page, processListPage }) => {
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Process 1' })).toBeVisible();
-  const infoSection = documentationPage.locator('css=[class$=TitleInfos]');
+  const infoSection = documentationPage.locator('css=[class*=TitleInfos]');
   await expect(infoSection).toBeVisible();
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();
@@ -116,7 +116,7 @@ test('show version information', async ({ page, processListPage, processModelerP
 
   // check if the process information includes version information
   await expect(documentationPage.getByRole('heading', { name: 'Import 1' })).toBeVisible();
-  const infoSection = documentationPage.locator('css=[class$=TitleInfos]');
+  const infoSection = documentationPage.locator('css=[class*=TitleInfos]');
   await expect(infoSection).toBeVisible();
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Version 1')).toBeVisible();
@@ -150,7 +150,7 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   expect(subprocessOverview.getByText('Subprocess: A')).toBeVisible();
 
   // check that there is no meta data for the subprocess
-  await expect(subprocessOverview.locator('css=[class$=MetaInformation]')).toBeHidden();
+  await expect(subprocessOverview.locator('css=[class*=MetaInformation]')).toBeHidden();
 
   // check that the user task that has meta data is shown
   const subprocessMilestoneTask = elementSections[2];
@@ -194,7 +194,7 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   ).resolves.not.toMatch(/display: none/);
 
   // check if the meta data is shown
-  const metaInformation = subprocessMilestoneTask.locator('css=[class$=MetaInformation]');
+  const metaInformation = subprocessMilestoneTask.locator('css=[class*=MetaInformation]');
 
   await expect(metaInformation.getByText('Meta Data')).toBeVisible();
   await expect(metaInformation.getByRole('row', { name: 'costsPlanned' })).toBeVisible();
@@ -267,7 +267,7 @@ test('recursively show information about imports', async ({
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Importer' })).toBeVisible();
-  const infoSection = documentationPage.locator('css=[class$=TitleInfos]');
+  const infoSection = documentationPage.locator('css=[class*=TitleInfos]');
   await expect(infoSection).toBeVisible();
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();
@@ -305,7 +305,7 @@ test('recursively show information about imports', async ({
   ).toBeVisible();
 
   // check if the meta data of the process is shown
-  let metaInformation = processOverview.locator('css=[class$=MetaInformation]');
+  let metaInformation = processOverview.locator('css=[class*=MetaInformation]');
   expect(metaInformation.getByText('General Description')).toBeVisible();
   expect(metaInformation.getByText('A process importing two other processes')).toBeVisible();
 
@@ -401,7 +401,7 @@ test('recursively show information about imports', async ({
   ).resolves.not.toMatch(/display: none/);
 
   // check if the meta data is shown
-  metaInformation = subprocessMilestoneTask.locator('css=[class$=MetaInformation]');
+  metaInformation = subprocessMilestoneTask.locator('css=[class*=MetaInformation]');
 
   await expect(metaInformation.getByText('Meta Data')).toBeVisible();
   await expect(metaInformation.getByRole('row', { name: 'costsPlanned' })).toBeVisible();
@@ -458,7 +458,7 @@ test('recursively show information about imports', async ({
   ).toBeVisible();
 
   // check if the meta data of the import 1 process is shown
-  metaInformation = import2Overview.locator('css=[class$=MetaInformation]');
+  metaInformation = import2Overview.locator('css=[class*=MetaInformation]');
   await expect(metaInformation.getByText('General Description')).toBeHidden();
   await expect(metaInformation.getByText('Version Information')).toBeVisible();
   await expect(metaInformation.getByText('Version: Version 2')).toBeVisible();
@@ -495,7 +495,7 @@ test('a setting allows to show the subprocess element instead of its content', a
   expect(subprocessOverview.getByText('Subprocess: A')).toBeVisible();
 
   // check that there is no meta data for the subprocess
-  await expect(subprocessOverview.locator('css=[class$=MetaInformation]')).toBeHidden();
+  await expect(subprocessOverview.locator('css=[class*=MetaInformation]')).toBeHidden();
 
   // check that the user task that has meta data is shown
   const subprocessMilestoneTask = elementSections[2];
@@ -608,7 +608,7 @@ test('a setting allows to show a call activity instead of the imported process',
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Importer' })).toBeVisible();
-  const infoSection = documentationPage.locator('css=[class$=TitleInfos]');
+  const infoSection = documentationPage.locator('css=[class*=TitleInfos]');
   await expect(infoSection).toBeVisible();
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();

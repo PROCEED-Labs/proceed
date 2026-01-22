@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 function useDeployments(entries?: string) {
   const space = useEnvironment();
 
-  const { data: engines } = useEngines();
+  const { data: engines } = useEngines(space);
 
   const queryFn = useCallback(async () => {
     if (engines) {

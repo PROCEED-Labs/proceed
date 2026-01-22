@@ -42,6 +42,7 @@ import { customLinkIcons } from '@/lib/custom-links/icons';
 import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
+import ActiveTasksBadge from '@/components/active-tasks-badge';
 
 const DashboardLayout = async (
   props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
@@ -193,9 +194,16 @@ const DashboardLayout = async (
       label: (
         <Link style={{ color: 'inherit' }} href={spaceURL(activeEnvironment, `/tasklist`)}>
           My Tasks
+          <ActiveTasksBadge activeSpace={activeEnvironment} />
         </Link>
       ),
-      icon: <CheckSquareOutlined />,
+      icon: (
+        <Link href={spaceURL(activeEnvironment, `/tasklist`)}>
+          <CheckSquareOutlined />
+          <ActiveTasksBadge activeSpace={activeEnvironment} onIcon />
+        </Link>
+      ),
+      extra: 'Test',
       selectedRegex: '/tasklist($|/)',
       openRegex: childRegex,
       children,

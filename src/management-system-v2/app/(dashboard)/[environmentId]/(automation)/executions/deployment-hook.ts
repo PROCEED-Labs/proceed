@@ -90,7 +90,7 @@ const mergeDeployment = (
 function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) {
   const space = useEnvironment();
 
-  const { data: engines } = useEngines({
+  const { data: engines } = useEngines(space, {
     key: [definitionId],
     fn: async (engine) => {
       const deployments = await getDeployments([engine]);

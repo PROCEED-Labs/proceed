@@ -41,7 +41,7 @@ export const getCurrentUser = cache(async () => {
   // that logs him out, this endpoint needs to csrf protected, for this we use
   // the user's csrf token (which was added by next-auth)
   if (userId !== '' && !user) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
 
     const searchParams = new URLSearchParams({ csrfToken });

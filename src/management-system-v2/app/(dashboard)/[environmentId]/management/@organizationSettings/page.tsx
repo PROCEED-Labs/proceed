@@ -7,7 +7,8 @@ import SettingsInjector from '../../settings/settings-injector';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { env } from '@/lib/ms-config/env-vars';
 
-const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
+const GeneralSettingsPage = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
   if (
     !activeEnvironment.isOrganization ||

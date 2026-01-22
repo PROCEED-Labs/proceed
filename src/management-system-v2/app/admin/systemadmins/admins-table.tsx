@@ -53,7 +53,7 @@ export default function SystemAdminsTable({
         onCancel={() => setAddUserModal(false)}
         closeIcon={null}
         title="Add admin"
-        destroyOnClose
+        destroyOnHidden
         okButtonProps={{ style: { display: 'none' } }}
       >
         <Suspense fallback={<Spin />}>

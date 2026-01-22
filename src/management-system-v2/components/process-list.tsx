@@ -21,6 +21,7 @@ import React, {
   useEffect,
   useState,
   useMemo,
+  ReactNode,
 } from 'react';
 import {
   StarOutlined,
@@ -104,7 +105,7 @@ type BaseProcessListProps = PropsWithChildren<{
   tableProps?: TableProps<ProcessListProcess>;
   processActions?: RowActions;
   columnCustomRenderer?: {
-    [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => JSX.Element;
+    [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => ReactNode;
   };
   isReadOnly: boolean;
 }>;

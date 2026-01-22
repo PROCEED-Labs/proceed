@@ -6,7 +6,8 @@ import { Result } from 'antd';
 import { notFound } from 'next/navigation';
 import FormView from './form-view';
 
-const FormPage = async ({ params }: { params: { environmentId: string; formId: string } }) => {
+const FormPage = async (props: { params: Promise<{ environmentId: string; formId: string }> }) => {
+  const params = await props.params;
   const {
     activeEnvironment: { spaceId },
   } = await getCurrentEnvironment(params.environmentId);

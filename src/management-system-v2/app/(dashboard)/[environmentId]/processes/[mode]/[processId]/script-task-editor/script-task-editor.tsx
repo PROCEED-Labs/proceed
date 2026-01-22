@@ -116,7 +116,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
       queryKey: ['processScriptTaskData', environment.spaceId, processId, filename],
     });
 
-    const onChangeRef = useRef<(value: boolean) => void>();
+    const onChangeRef = useRef<(value: boolean) => void>(undefined);
     onChangeRef.current = _onChange;
 
     useEffect(() => {

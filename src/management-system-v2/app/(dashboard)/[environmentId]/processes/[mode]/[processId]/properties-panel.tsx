@@ -373,6 +373,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 }}
                 timePlannedDuration={timePlannedDuration || ''}
                 readOnly={readOnly}
+                title="Edit Planned Execution Duration"
               ></PlannedDurationInput>
             )}
           </Space>

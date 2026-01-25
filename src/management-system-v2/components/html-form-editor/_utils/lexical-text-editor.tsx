@@ -8,15 +8,88 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
-import { $getRoot, $isElementNode, ElementNode, $createParagraphNode } from 'lexical';
-import { HeadingNode } from '@lexical/rich-text';
+import {
+  $getRoot,
+  $isElementNode,
+  ElementNode,
+  $createParagraphNode,
+  $getSelection,
+  $isRangeSelection,
+  $isTextNode,
+  COMMAND_PRIORITY_LOW,
+  KEY_ENTER_COMMAND,
+  KEY_SPACE_COMMAND,
+} from 'lexical';
+import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import { LinkNode } from '@lexical/link';
 import ToolbarPlugin from './ToolbarPlugin';
-
+import { CodeNode, CodeHighlightNode } from '@lexical/code';
 import CustomContentEditable, { CustomContentEditableProps } from './ContentEditable';
 import CustomLinkPlugin from './CustomLinkPlugin';
 import useEditorStateStore from '../use-editor-state-store';
+import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
+import { TRANSFORMERS } from '@lexical/markdown';
+
+import { ListNode, ListItemNode } from '@lexical/list';
+import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+
+// Plugin to clean up markdown delimiters after transformation
+const CleanupMarkdownPlugin: React.FC = () => {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    const cleanupDelimiters = () => {
+      editor.update(() => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection)) return;
+
+        const anchorNode = selection.anchor.getNode();
+        const parent = anchorNode.getParent();
+
+        // Try to remove any text nodes that are only a markdown characters (with optional space)
+        if (parent) {
+          const children = parent.getChildren();
+          children.forEach((child) => {
+            if ($isTextNode(child)) {
+              const text = child.getTextContent();
+              // Match markdown characters followed by optional space
+              if (/^[\*`_]+ ?$/.test(text)) {
+                console.log('Removing node with text:', text);
+                child.remove();
+              }
+            }
+          });
+        }
+      });
+    };
+
+    const removeSpace = editor.registerCommand(
+      KEY_SPACE_COMMAND,
+      () => {
+        setTimeout(cleanupDelimiters, 100);
+        return false;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+    const removeEnter = editor.registerCommand(
+      KEY_ENTER_COMMAND,
+      () => {
+        setTimeout(cleanupDelimiters, 100);
+        return false;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+    return () => {
+      removeSpace();
+      removeEnter();
+    };
+  }, [editor]);
+
+  return null;
+};
 
 const ToggleEditablePlugin: React.FC<{
   disabled: boolean;
@@ -83,7 +156,7 @@ const ImperativeHandlePlugin = forwardRef<TextEditorRef, {}>((_, ref) => {
 ImperativeHandlePlugin.displayName = 'ImperativeHandlePlugin';
 
 const theme = {
-  // disabling some default stylings for elements; otherwise it would not be possible to change these styles (e.g bold header and underlined links)
+  // disabling some default stylings for elements
   paragraph: 'text-style-paragraph',
   heading: {
     h1: 'text-style-heading',
@@ -94,11 +167,19 @@ const theme = {
     h6: 'text-style-heading',
   },
   link: 'text-style-link',
+  list: {
+    ul: 'text-style-list-ul',
+    ol: 'text-style-list-ol',
+    listitem: 'text-style-listitem',
+  },
+  quote: 'text-style-quote',
+  code: 'text-style-code',
   // adding our styling
   text: {
     bold: 'text-style-bold',
     italic: 'text-style-italic',
     underline: 'text-style-underline',
+    code: 'text-style-inline-code',
   },
 };
 
@@ -134,7 +215,15 @@ const LexicalTextEditor = forwardRef<TextEditorRef, EditorProps>(
           throw err;
         },
         editable: !disabled,
-        nodes: [HeadingNode, LinkNode],
+        nodes: [
+          HeadingNode,
+          LinkNode,
+          ListNode,
+          ListItemNode,
+          QuoteNode,
+          CodeNode,
+          CodeHighlightNode,
+        ],
         theme,
       };
     }, []);
@@ -151,7 +240,10 @@ const LexicalTextEditor = forwardRef<TextEditorRef, EditorProps>(
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
+          <ListPlugin />
           <CustomLinkPlugin />
+          <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+          <CleanupMarkdownPlugin />
           <ImportIntoEditorPlugin value={value} />
           <ToggleEditablePlugin disabled={disabled} />
           <ImperativeHandlePlugin ref={ref} />

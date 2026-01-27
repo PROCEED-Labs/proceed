@@ -92,9 +92,9 @@ export async function getUserRules(userId: string, environmentId: string) {
 
     // TODO: get bough features from db
 
-    const getPurhasedFeatures = (_: string) => [];
+    const getPurchasedFeatures = (_: string) => [];
 
-    const purchasedResources = getPurhasedFeatures(environmentId).filter((resource) =>
+    const purchasedResources = getPurchasedFeatures(environmentId).filter((resource) =>
       MSEnabledResources.includes(resource as any),
     );
 

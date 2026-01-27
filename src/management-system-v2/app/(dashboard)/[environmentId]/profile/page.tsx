@@ -19,7 +19,7 @@ const ProfilePage = async () => {
   if (userData.isErr()) return errorResponse(userData);
 
   const userHasPassword = await getUserPassword(userId);
-  if (userHasPassword && userHasPassword.isErr()) {
+  if (userHasPassword.isErr()) {
     return errorResponse(userHasPassword);
   }
 

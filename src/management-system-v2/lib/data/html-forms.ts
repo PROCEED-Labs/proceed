@@ -90,7 +90,7 @@ export const updateHtmlForm = async (formId: string, newData: Partial<HtmlForm>)
 export const removeHtmlForms = async (formIds: string[]) => {
   try {
     const result = await _removeHtmlForms(formIds);
-    if (result && result.isErr()) {
+    if (result.isErr()) {
       return userError(getErrorMessage(result.error));
     }
   } catch (err) {

@@ -56,7 +56,7 @@ export default async function TransferProcessesPage({
   // accocunt, generating the token above, and before using it, he signed in with a new account.
   // We only go further then this redirect, if the user signed in with an account that was
   // already linked to an existing user
-  if (!possibleGuest || !possibleGuest.value.isGuest) redirect(callbackUrl);
+  if (!possibleGuest.value?.isGuest) redirect(callbackUrl);
 
   // NOTE: this ignores folders
   const guestProcesses = await getProcesses(guestId);

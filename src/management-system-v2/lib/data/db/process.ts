@@ -250,7 +250,7 @@ export async function _addProcess(
 
   const folderData = await getFolderById(metadata.folderId);
   if (folderData.isErr()) return folderData;
-  if (!folderData) return err(new Error('Folder not found'));
+  if (!folderData.value) return err(new Error('Folder not found'));
   // TODO check folder permissions here, they're checked in movefolder,
   // but by then the folder was already created
 
@@ -351,12 +351,12 @@ export async function _updateProcess(
       processDefinitionsId,
       newFolderId: metaChanges.folderId,
     });
-    if (moveResult?.isErr()) return moveResult;
+    if (moveResult.isErr()) return moveResult;
     //delete metaChanges.folderId;
   }
 
   const newMetaData = await updateProcessMetaData(processDefinitionsId, metaChanges);
-  if (newMetaData?.isErr()) return newMetaData;
+  if (newMetaData.isErr()) return newMetaData;
   if (newBpmn) {
     try {
       await db.process.update({
@@ -395,7 +395,7 @@ export async function moveProcess({
     if (process.isErr()) {
       return process;
     }
-    if (!process) {
+    if (!process.value) {
       return err(new Error('Process not found'));
     }
 
@@ -503,6 +503,8 @@ export async function _removeProcess(processDefinitionsId: string, _tx?: Prisma.
     await tx.process.delete({ where: { id: processDefinitionsId } });
 
     eventHandler.dispatch('processRemoved', { processDefinitionsId });
+
+    return ok();
   } catch (error) {
     console.error(error);
     return err(error);
@@ -528,7 +530,7 @@ export async function addProcessVersion(
   if (existingProcess.isErr()) {
     return existingProcess;
   }
-  if (!existingProcess) {
+  if (!existingProcess.value) {
     return err(new Error('The process for which you try to create a version does not exist'));
   }
 
@@ -617,7 +619,7 @@ export async function addProcessVersion(
     }
 
     const versionResult = await versionProcessArtifactRefs(processDefinitionsId, version.id);
-    if (versionResult?.isErr()) {
+    if (versionResult.isErr()) {
       return versionResult;
     }
   } catch (error) {
@@ -1060,8 +1062,7 @@ export async function deleteProcessScriptTask(
     return processExists;
   }
 
-  // Not sure what should be returned here
-  if (!processExists.value) return;
+  if (!processExists.value) return ok(true);
 
   try {
     const res = await checkIfScriptTaskFileExists(processDefinitionsId, taskFileNameWithExtension);
@@ -1071,6 +1072,8 @@ export async function deleteProcessScriptTask(
     if (res.value) {
       return ok(await deleteProcessArtifact(res.value?.filePath, true));
     }
+
+    return ok(true);
   } catch (error) {
     logger.debug(`Error removing script task file. Reason:\n${error}`);
     return err(error);
@@ -1096,6 +1099,8 @@ export async function copyProcessArtifactReferences(
         },
       }),
     );
+
+    return ok();
   } catch (error) {
     return err(new Error('error copying process artifact references'));
   }
@@ -1117,6 +1122,8 @@ export async function versionProcessArtifactRefs(processId: string, versionId: s
         },
       }),
     );
+
+    return ok();
   } catch (error) {
     return err(new Error('error copying process artifact references'));
   }

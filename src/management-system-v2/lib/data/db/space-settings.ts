@@ -50,7 +50,7 @@ export async function populateSpaceSettingsGroup(
     where: { environmentId: spaceId },
   });
 
-  if (!settings) return;
+  if (!settings) return ok();
 
   Object.entries(settings.settings as Record<string, any>).forEach(([key, value]) => {
     const path = key.split('.');

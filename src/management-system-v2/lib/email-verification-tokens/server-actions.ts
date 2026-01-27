@@ -73,9 +73,9 @@ export async function changeEmail(token: string, identifier: string, cancel: boo
   }
 
   if (
-    !verificationToken ||
-    verificationToken.value?.type !== 'change_email' ||
-    verificationToken.value?.userId !== userId ||
+    !verificationToken.value ||
+    verificationToken.value.type !== 'change_email' ||
+    verificationToken.value.userId !== userId ||
     !(await notExpired(verificationToken.value))
   )
     return userError('Invalid token');

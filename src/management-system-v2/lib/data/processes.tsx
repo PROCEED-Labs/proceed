@@ -69,7 +69,6 @@ import { saveProcessArtifact } from './file-manager-facade';
 import { getRootFolder } from './db/folders';
 import { truthyFilter } from '../typescript-utils';
 import { Result, ok } from 'neverthrow';
-import { isSupportedCountry } from 'libphonenumber-js';
 
 // FIXME: Check abilities
 
@@ -198,7 +197,7 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
     if (error) return error;
 
     const result = await removeProcess(definitionId);
-    if (result && result.isErr()) return userError(getErrorMessage(result.error));
+    if (result.isErr()) return userError(getErrorMessage(result.error));
   }
 };
 
@@ -620,7 +619,7 @@ export const createVersion = async (
 
   const bpmn = await _getProcessBpmn(processId);
   if (bpmn.isErr()) return userError(getErrorMessage(bpmn.error));
-  if (!bpmn) return null;
+  if (!bpmn.value) return null;
 
   const bpmnObj = await toBpmnObject(bpmn.value);
 

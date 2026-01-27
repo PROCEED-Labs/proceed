@@ -35,16 +35,10 @@ export async function addRole(environmentId: string, role: Parameters<typeof _ad
   if (currentEnvironment.isErr()) {
     return userError(getErrorMessage(currentEnvironment.error));
   }
-  const { activeEnvironment } = currentEnvironment.value;
+  const { activeEnvironment, ability } = currentEnvironment.value;
 
   let newRoleId;
   try {
-    const currentEnvironment = await getCurrentEnvironment(environmentId);
-    if (currentEnvironment.isErr()) {
-      return userError(getErrorMessage(currentEnvironment.error));
-    }
-    const { ability } = currentEnvironment.value;
-
     const newRole = await _addRole({ ...role, environmentId: activeEnvironment.spaceId }, ability);
     if (newRole.isErr()) {
       return userError(getErrorMessage(newRole.error));
@@ -100,6 +94,6 @@ export async function getRoles(environmentId: string) {
 
     return result.value;
   } catch (_) {
-    return userError("Something wen't wrong");
+    return userError('Something went wrong');
   }
 }

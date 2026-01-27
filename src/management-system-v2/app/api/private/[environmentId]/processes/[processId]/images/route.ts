@@ -4,7 +4,6 @@ import { getProcess, getProcessImageFileNames, saveProcessImage } from '@/lib/da
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 } from 'uuid';
 import { invalidRequest, readImage } from '../../../image-helpers';
-import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 import { getErrorMessage } from '@/lib/server-error-handling/user-error';
 
 export async function GET(
@@ -16,6 +15,7 @@ export async function GET(
   try {
     const currentSpace = await getCurrentEnvironment(environmentId);
     if (currentSpace.isErr()) throw currentSpace.error;
+    const { ability } = currentSpace.value;
 
     const process = await getProcess(processId, false);
     if (process.isErr()) throw process.error;
@@ -27,7 +27,7 @@ export async function GET(
       });
     }
 
-    if (!currentSpace.value.ability.can('view', toCaslResource('Process', process.value))) {
+    if (!ability.can('view', toCaslResource('Process', process.value))) {
       return new NextResponse(null, {
         status: 403,
         statusText: 'Not allowed to view image filenames in this process',
@@ -57,7 +57,7 @@ export async function POST(
 
     const currentEnvironment = await getCurrentEnvironment(environmentId);
     if (currentEnvironment.isErr()) throw currentEnvironment.error;
-    const ability = currentEnvironment.value.ability;
+    const { ability } = currentEnvironment.value;
 
     const process = await getProcess(processId, false);
     if (process.isErr()) throw process.error;

@@ -7,13 +7,11 @@ import {
   ArtifactType,
   generateProcessFilePath,
 } from '../helpers/fileManagerHelpers';
-import { contentTypeNotAllowed } from './content-upload-error';
-import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
+import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
 import { getProcessHtmlFormJSON } from './db/process';
-import { asyncMap, findKey } from '../helpers/javascriptHelpers';
+import { asyncMap } from '../helpers/javascriptHelpers';
 import { Prisma } from '@prisma/client';
-import { use } from 'react';
 import { checkValidity } from './processes';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';

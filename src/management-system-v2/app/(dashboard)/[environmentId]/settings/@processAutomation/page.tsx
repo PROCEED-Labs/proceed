@@ -15,7 +15,6 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
     return errorResponse(currentSpace);
   }
   const {
-    ability,
     activeEnvironment: { spaceId },
   } = currentSpace.value;
 

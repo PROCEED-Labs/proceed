@@ -121,7 +121,6 @@ export default async function ManageAdminsPage() {
   if (!adminData.value) redirect('/');
   if (adminData.value.role !== 'admin') return <UnauthorizedFallback />;
 
-  type aa = Promise<(AuthenticatedUser & { role: 'admin' })[]>;
   const getFullSystemAdmins = async () => {
     const admins = await getSystemAdmins();
     if (admins.isErr()) return admins;
@@ -133,6 +132,8 @@ export default async function ManageAdminsPage() {
           if (user.isErr()) {
             return user;
           }
+
+          // TODO: handle that the user might not be found (can that happen?)
 
           return ok({ ...(user.value as AuthenticatedUser), role: admin.role });
         }),

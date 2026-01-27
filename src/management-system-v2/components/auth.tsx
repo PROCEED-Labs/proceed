@@ -18,7 +18,6 @@ import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { packedStaticRules } from '@/lib/authorization/caslRules';
 import { err, ok } from 'neverthrow';
 import { UserFacingError } from '@/lib/server-error-handling/user-error';
-import { Prettify } from '@/lib/typescript-utils';
 
 export const getCurrentUser = cache(async () => {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
@@ -80,7 +79,6 @@ export const getSystemAdminRules = cache((isOrganization: boolean) => {
   }
 });
 
-type a = Awaited<ReturnType<typeof getCurrentEnvironment>>;
 // TODO: To enable PPR move the session redirect into this function, so it will
 // be called when the session is first accessed and everything above can PPR. For
 // permissions, each server component should check its permissions anyway, for
@@ -97,7 +95,7 @@ export const getCurrentEnvironment = cache(
   ) => {
     const currentUser = await getCurrentUser();
     if (currentUser.isErr()) {
-      return err('pepe');
+      return err('Could not get the current user');
     }
 
     const { userId, systemAdmin } = currentUser.value;

@@ -23,13 +23,11 @@ import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
 import {
-  UserError,
   getErrorMessage,
   isUserErrorResponse,
   userError,
 } from '@/lib/server-error-handling/user-error';
 import { Result } from 'neverthrow';
-import { ReactNode } from 'react';
 
 interface PageProps {
   searchParams: {

@@ -35,7 +35,7 @@ import usePotentialOwnerStore, {
   UserType,
   RoleType,
   useInitialisePotentialOwnerStore,
-} from './use-potentialOwner-store';
+} from '@/components/competence/potential-owner/use-potentialOwner-store';
 import { useProcessView } from './process-view-context';
 
 type SubprocessInfo = {

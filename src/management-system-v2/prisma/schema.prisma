@@ -49,6 +49,8 @@ model User {
   emailVerificationTokens EmailVerificationToken[]   @relation("verificationToken")
 
   @@map("user")
+  UserCompetence UserCompetence[]
+  Competence Competence[]
 }
 
 model OauthAccount {
@@ -162,6 +164,7 @@ model Space {
   settings           SpaceSettings? @relation("spaceSettings")
 
   @@map("space")
+  Competence Competence[]
 }
 
 model Membership {
@@ -336,4 +339,53 @@ model MSConfig {
 model SeedVersion { 
   id      Int   @id @default(0) 
   version DateTime
+}
+
+
+enum CompetenceOwnerType {
+  SPACE
+  USER
+}
+
+model Competence {
+  id           String                  @id @default(uuid())
+  type    CompetenceOwnerType           // SPACE or USER
+
+  spaceId      String?                  // Nullable, if the competence is a user-competence
+  space      Space?       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  creatorUserId String?                 // Nullable, if the user is deleted, i.e. the user no longer exists
+  user        User?        @relation(fields: [creatorUserId], references: [id], onDelete: SetNull)   // Check: only either is nullable: spaceId or creatorUserId
+
+  name         String       @default("")  // Should this be nullable?
+  description  String       @default("")  // Should this be nullable?
+  externalQualificationNeeded Boolean @default(false)
+  renewalTimeInterval Int? // in s (?)      // Nullable, if competence is valid indefinitely
+
+  userCompetences UserCompetence[] 
+
+  @@map("competence")
+  
+  // Querying will be primarily via the spaceId and userId
+  @@index([spaceId])
+  @@index([creatorUserId])
+}
+
+model UserCompetence {
+  competenceId String
+  competence   Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade) // Not sure if cascade is the right option here (if a spaceCompetene is deleted, it disapears for all users that had claimed it)
+
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  proficiency String?
+  qualificationDate DateTime?
+  lastUsage DateTime?
+
+  @@id([competenceId, userId])
+  @@map("user_competence")
+
+  // Querying will be primarily via the competenceId and userId
+  @@index([competenceId])
+  @@index([userId])
 }

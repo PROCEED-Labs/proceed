@@ -6,5 +6,9 @@ import { useRouter } from 'next/navigation';
 export default function RetryButton(props: ButtonProps) {
   const router = useRouter();
 
-  return <Button type="primary" {...props} onClick={() => router.refresh()} />;
+  return (
+    <Button type="primary" {...props} onClick={() => router.refresh()}>
+      Retry
+    </Button>
+  );
 }

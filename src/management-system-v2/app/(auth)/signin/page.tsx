@@ -1,6 +1,6 @@
 import { getProviders } from '@/lib/auth';
 import { getCurrentUser } from '@/components/auth';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import SignIn from './signin';
 import { generateGuestReferenceToken } from '@/lib/reference-guest-user-token';
 import { env } from '@/lib/ms-config/env-vars';
@@ -13,7 +13,8 @@ const dayInMS = 1000 * 60 * 60 * 24;
 const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
   const currentUser = await getCurrentUser();
   if (currentUser.isErr()) {
-    return errorResponse(currentUser);
+    // this should be handled in the layout in the parent folder already
+    return notFound();
   }
   const { session } = currentUser.value;
   const isGuest = session?.user.isGuest;

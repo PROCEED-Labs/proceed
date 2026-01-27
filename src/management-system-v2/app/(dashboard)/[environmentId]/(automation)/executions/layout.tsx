@@ -20,15 +20,15 @@ const ExecutionsLayout: React.FC<ExecutionLayoutProps> = async ({ params, childr
   }
   const { activeEnvironment } = currentSpace.value;
 
-  const exeuctionsSettings = await getSpaceSettingsValues(
+  const executionsSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-automation.executions',
   );
-  if (exeuctionsSettings.isErr()) {
-    return errorResponse(exeuctionsSettings);
+  if (executionsSettings.isErr()) {
+    return errorResponse(executionsSettings);
   }
 
-  if (exeuctionsSettings.value.active === false) {
+  if (executionsSettings.value.active === false) {
     return notFound();
   }
 

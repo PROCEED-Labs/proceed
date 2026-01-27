@@ -18,6 +18,7 @@ import { UserFacingError } from '@/lib/server-error-handling/user-error';
 import { env } from '@/lib/ms-config/env-vars';
 import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from '@/lib/authjs-error-message';
 import { ensureTransactionWrapper } from '../util';
+import { NotFoundError } from '@/lib/server-error-handling/errors';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -52,13 +53,13 @@ export async function getUserById(
 
   if (!user && opts && opts.throwIfNotFound) return err(new Error('User not found'));
 
-  return ok(user as User);
+  return ok(user as User | null);
 }
 
 export async function getUserByEmail(email: string) {
   const user = await db.user.findUnique({ where: { email: email } });
 
-  if (!user) return err(new Error('User not found'));
+  if (!user) return err(new NotFoundError(`User could not be found (email: ${email}).`));
 
   return ok(user as User);
 }
@@ -66,9 +67,10 @@ export async function getUserByEmail(email: string) {
 export async function getUserByUsername(username: string, opts?: { throwIfNotFound?: boolean }) {
   const user = await db.user.findUnique({ where: { username } });
 
-  if (!user && opts?.throwIfNotFound) return err(new Error('User not found'));
+  if (!user && opts?.throwIfNotFound)
+    return err(new NotFoundError(`User could not be found (username: ${username}).`));
 
-  return ok(user as User);
+  return ok(user as User | null);
 }
 
 export const addUser = ensureTransactionWrapper(_addUser, 1);
@@ -92,14 +94,14 @@ export async function _addUser(
     const [usernameRes, emailRes] = await Promise.all(checks);
 
     if (usernameRes) {
-      if (usernameRes.isErr()) return usernameRes;
+      if (usernameRes.isErr() && !(usernameRes.error instanceof NotFoundError)) return usernameRes;
 
-      if (usernameRes.value) return err(new NextAuthUsernameTakenError());
+      if (!usernameRes.isErr() && usernameRes.value) return err(new NextAuthUsernameTakenError());
     }
     if (emailRes) {
-      if (emailRes.isErr()) return emailRes;
+      if (emailRes.isErr() && !(emailRes.error instanceof NotFoundError)) return emailRes;
 
-      if (emailRes.value) return err(new NextAuthEmailTakenError());
+      if (!emailRes.isErr() && emailRes.value) return err(new NextAuthEmailTakenError());
     }
   }
 
@@ -239,7 +241,7 @@ export async function updateUser(
       return err(new UserFacingError('The username is already taken'));
     }
 
-    if (!user.value.isGuest && user.value.username === 'admin' && 'username' in newUserData) {
+    if (!user.value?.isGuest && user.value?.username === 'admin' && 'username' in newUserData) {
       return err(new UserFacingError('The username "admin" cannot be changed'));
     }
 

@@ -29,6 +29,7 @@ import db from './data/db';
 import { createUserRegistrationToken } from './email-verification-tokens/utils';
 import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
 import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
+import { NotFoundError } from './server-error-handling/errors';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -56,7 +57,7 @@ const nextAuthOptions: NextAuthConfig = {
         return token;
       }
 
-      let user = _user as User | undefined;
+      let user = (_user as User | undefined) || null;
 
       if (trigger === 'update') {
         const newUserData = await getUserById(token.user.id);
@@ -64,7 +65,7 @@ const nextAuthOptions: NextAuthConfig = {
           throw newUserData.error;
         }
 
-        user = newUserData.value as User;
+        user = newUserData.value;
       }
 
       if (user) token.user = user;
@@ -96,12 +97,13 @@ const nextAuthOptions: NextAuthConfig = {
         if (sessionUserInDb.isErr()) {
           throw sessionUserInDb.error;
         }
-        if (!sessionUserInDb || !sessionUserInDb.value.isGuest)
-          throw new Error('Something went wrong');
+        if (!sessionUserInDb.value?.isGuest) throw new Error('Something went wrong');
 
         const userSigningIn = _user.id ? await getUserById(_user.id) : null;
 
-        if (!userSigningIn) {
+        if (userSigningIn && userSigningIn.isErr()) throw new Error('Something went wrong');
+
+        if (!userSigningIn || !userSigningIn.value) {
           const user = _user as Partial<ProviderUser>;
           await updateUser(sessionUser.id, {
             firstName: user.firstName ?? undefined,
@@ -128,7 +130,7 @@ const nextAuthOptions: NextAuthConfig = {
       if (user.isErr()) {
         throw user.error;
       }
-      if (user) {
+      if (user.value) {
         if (!user.value.isGuest) {
           console.warn('User with invalid session');
           return;
@@ -278,8 +280,9 @@ if (env.NODE_ENV === 'development') {
         let user;
 
         if (credentials.username === 'johndoe') {
-          let user = await getUserByUsername('johndoe');
-          if (!user) user = await addUser(johnDoeTemplate);
+          let u = await getUserByUsername('johndoe');
+          if (u.isOk() && !u.value) user = await addUser(johnDoeTemplate);
+          else user = u;
         } else if (credentials.username === 'admin') {
           user = await getUserByUsername('admin');
         }

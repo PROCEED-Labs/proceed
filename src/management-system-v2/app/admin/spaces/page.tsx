@@ -34,7 +34,7 @@ async function deleteSpace(spaceIds: string[]) {
 }
 export type deleteSpace = typeof deleteSpace;
 
-export default async function SysteAdminDashboard({ params }: { params?: { userId: string } }) {
+export default async function SystemAdminDashboard({ params }: { params?: { userId: string } }) {
   const user = await getCurrentUser();
   if (user.isErr()) return errorResponse(user);
   if (!user.value.session) redirect('/');

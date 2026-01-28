@@ -1,5 +1,5 @@
 import { useIntervalLock } from '@/lib/useIntervalLock';
-import React, { FC, useEffect, useState, useRef, useCallback, use, MouseEventHandler } from 'react';
+import React, { FC, useEffect, useState, useRef, useCallback, MouseEventHandler } from 'react';
 import styles from './scrollbar.module.scss';
 import classNames from 'classnames';
 

@@ -18,20 +18,13 @@ import {
   getIdentifyingInfos,
   addDocumentation,
   setDefinitionsVersionInformation,
-  getUserTaskFileNameMapping,
-  setUserTaskData,
-  getScriptTaskFileNameMapping,
-  setScriptTaskData,
   updateBpmnCreatorAttributes,
   updateBpmnOriginalAttributes,
-  getStartFormFileNameMapping,
-  setStartFormFileName,
   getAllElements,
   setExecutableProperties,
 } from '@proceed/bpmn-helper';
 import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
 import { WithRequired } from '../typescript-utils';
-import { asyncForEach } from './javascriptHelpers';
 import { XMLAttrDBProcessTableColsMap } from './xmlAttr-db-process-cols-map';
 
 interface ProcessInfo {

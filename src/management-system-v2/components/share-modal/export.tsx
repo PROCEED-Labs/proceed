@@ -14,7 +14,11 @@ import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[m
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import useProcessVersion from './use-process-version';
-import { UserError, UserErrorType, isUserErrorResponse } from '@/lib/user-error';
+import {
+  UserError,
+  UserErrorType,
+  isUserErrorResponse,
+} from '@/lib/server-error-handling/user-error';
 import { FaRegQuestionCircle } from 'react-icons/fa';
 
 export type ProcessExportTypes = ProcessExportOptions['type'] | 'pdf';

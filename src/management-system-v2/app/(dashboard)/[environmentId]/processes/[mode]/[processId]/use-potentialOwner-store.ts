@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 import { useEffect } from 'react';
 import { fetchPotentialOwner } from './potentialOwner-server-action';
 import { useEnvironment } from '@/components/auth-can';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 
 export type UserType = {
   [key: string]: {
@@ -50,7 +51,10 @@ export const useInitialisePotentialOwnerStore = () => {
   const environment = useEnvironment();
   useEffect(() => {
     const initialiseStore = async () => {
-      const { user, roles } = await fetchPotentialOwner(environment.spaceId);
+      const response = await fetchPotentialOwner(environment.spaceId);
+      if (isUserErrorResponse(response)) return;
+
+      const { user, roles } = response;
       const store = usePotentialOwnerStore.getState();
       store.setUser(user);
       store.setRoles(roles);

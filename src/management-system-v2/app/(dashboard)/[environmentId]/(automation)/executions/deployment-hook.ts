@@ -15,7 +15,7 @@ import { Engine } from '@/lib/engines/machines';
 import { getStartFormFromMachine } from '@/lib/engines/tasklist';
 import useEngines from '@/lib/engines/use-engines';
 import { asyncFilter, asyncForEach, deepEquals } from '@/lib/helpers/javascriptHelpers';
-import { getErrorMessage, userError } from '@/lib/user-error';
+import { getErrorMessage, userError } from '@/lib/server-error-handling/user-error';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 

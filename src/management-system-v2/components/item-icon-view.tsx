@@ -1,4 +1,4 @@
-import React, { CSSProperties, Fragment, ReactNode, SetStateAction, useRef } from 'react';
+import React, { CSSProperties, ReactNode, SetStateAction, useRef } from 'react';
 import { Card, Grid, CardProps, Table } from 'antd';
 
 export type TabCardProps<T extends { id: string }> = {

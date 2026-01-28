@@ -1,3 +1,4 @@
+import { ok, err } from 'neverthrow';
 import { z } from 'zod';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
@@ -34,12 +35,14 @@ export async function getEmailVerificationToken({
   token: string;
   identifier: string;
 }) {
-  return (await db.emailVerificationToken.findFirst({
-    where: {
-      token,
-      identifier,
-    },
-  })) as EmailVerificationToken | null;
+  return ok(
+    (await db.emailVerificationToken.findFirst({
+      where: {
+        token,
+        identifier,
+      },
+    })) as EmailVerificationToken | null,
+  );
 }
 
 export async function deleteEmailVerificationToken({
@@ -53,17 +56,23 @@ export async function deleteEmailVerificationToken({
     where: { token, identifier },
   });
 
-  if (!result) throw new Error('Token not found');
+  if (!result) return err(new Error('Token not found'));
 
-  return result;
+  return ok(result);
 }
 
 export async function saveEmailVerificationToken(tokenInput: EmailVerificationToken) {
-  const token = emailVerificationTokenSchemam.parse(tokenInput);
+  const parseResult = emailVerificationTokenSchemam.safeParse(tokenInput);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
+  const token = parseResult.data;
 
-  return await db.emailVerificationToken.create({
-    data: token,
-  });
+  return ok(
+    await db.emailVerificationToken.create({
+      data: token,
+    }),
+  );
 }
 
 export async function updateEmailVerificationTokenExpiration(
@@ -76,10 +85,12 @@ export async function updateEmailVerificationTokenExpiration(
 ) {
   const mutator = tx || db;
 
-  return await mutator.emailVerificationToken.update({
-    where: tokenIdentifier,
-    data: {
-      expires: newExpiration,
-    },
-  });
+  return ok(
+    await mutator.emailVerificationToken.update({
+      where: tokenIdentifier,
+      data: {
+        expires: newExpiration,
+      },
+    }),
+  );
 }

@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import { useRef, useImperativeHandle, forwardRef } from 'react';
 import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { ProcessListProcess } from './processes/types';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import MetaDataContent from './process-info-card-content';
-import dynamic from 'next/dynamic';
-const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 
 type MetaDataType = {
   selectedElement?: ProcessListProcess;

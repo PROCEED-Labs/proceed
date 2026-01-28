@@ -8,7 +8,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole as serverUpdateRole } from '@/lib/data/roles';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
-import { UserErrorType } from '@/lib/user-error';
+import { UserErrorType } from '@/lib/server-error-handling/user-error';
 import { EnvVarsContext } from '@/components/env-vars-context';
 
 type PermissionCategory = {

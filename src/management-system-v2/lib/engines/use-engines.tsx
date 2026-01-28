@@ -1,17 +1,11 @@
 import { useEnvironment } from '@/components/auth-can';
-import {
-  Engine,
-  HttpEngine,
-  MqttEngine,
-  SpaceEngine,
-  isHttpEngine,
-  isMqttEngine,
-} from './machines';
+import { Engine, HttpEngine, MqttEngine, isHttpEngine, isMqttEngine } from './machines';
 import { useCallback } from 'react';
 import { getCorrectTargetEngines } from './server-actions';
 import { useQuery } from '@tanstack/react-query';
 import { asyncFilter } from '../helpers/javascriptHelpers';
 import { truthyFilter } from '../typescript-utils';
+import { isUserErrorResponse } from '../server-error-handling/user-error';
 
 function useEngines(
   filter: { key: any[]; fn: (engine: Engine) => Promise<boolean> } = {
@@ -24,6 +18,8 @@ function useEngines(
   const queryFn = useCallback(async () => {
     if (space.spaceId) {
       let res = await getCorrectTargetEngines(space.spaceId);
+      if (isUserErrorResponse(res)) throw res.error;
+
       const knownEngines: Record<string, { http?: HttpEngine; mqtt?: MqttEngine }> = {};
 
       res = await asyncFilter(res, filter.fn);

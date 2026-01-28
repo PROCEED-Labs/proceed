@@ -6,10 +6,15 @@ import { Setting, SettingGroup } from '../../settings/type-util';
 import SettingsInjector from '../../settings/settings-injector';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { env } from '@/lib/ms-config/env-vars';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const GeneralSettingsPage = async (props: { params: Promise<{ environmentId: string }> }) => {
   const params = await props.params;
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { ability, activeEnvironment } = currentSpace.value;
   if (
     !activeEnvironment.isOrganization ||
     (!ability.can('update', 'Environment') && !ability.can('delete', 'Environment'))
@@ -17,9 +22,12 @@ const GeneralSettingsPage = async (props: { params: Promise<{ environmentId: str
     throw new UnauthorizedError();
   }
 
-  const organization = (await getEnvironmentById(
-    activeEnvironment.spaceId,
-  )) as OrganizationEnvironment;
+  const _organization = await getEnvironmentById(activeEnvironment.spaceId);
+  if (_organization.isErr()) {
+    return errorResponse(_organization);
+  }
+
+  const organization = _organization.value as OrganizationEnvironment;
 
   const children: (Setting | SettingGroup)[] = [];
   if (ability.can('update', 'Environment')) {

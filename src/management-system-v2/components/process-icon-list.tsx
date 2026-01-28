@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, FC, SetStateAction, Suspense } from 'react';
+import { Dispatch, FC, SetStateAction } from 'react';
 import { InfoCircleOutlined, FolderOutlined } from '@ant-design/icons';
 import { LazyBPMNViewer } from './bpmn-viewer';
 

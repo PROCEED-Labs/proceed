@@ -5,7 +5,6 @@ import { PackRule, packRules } from '@casl/ability/extra';
 import Ability from './ability/abilityHelper';
 import { AbilityRule, TreeMap } from './ability/caslAbility';
 import { useEffect } from 'react';
-import { AllowedResourcesForAdmins } from './authorization/globalRules';
 
 type AbilityStoreType = {
   ability: Ability;

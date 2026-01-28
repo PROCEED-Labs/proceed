@@ -1,3 +1,4 @@
+import { ok, err } from 'neverthrow';
 import { v4 } from 'uuid';
 import { getRoleById } from './roles';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
@@ -7,7 +8,8 @@ import { getUserById } from './users';
 import { getEnvironmentById } from './environments';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
-import { UserFacingError } from '@/lib/user-error';
+import { UserFacingError } from '@/lib/server-error-handling/user-error';
+import { ensureTransactionWrapper } from '../util';
 
 const RoleMappingInputSchema = z.object({
   roleId: z.string(),
@@ -44,7 +46,7 @@ export async function getRoleMappings(ability?: Ability, environmentId?: string)
     })),
   );
 
-  return ability ? ability.filter('view', 'RoleMapping', roleMappings) : roleMappings;
+  return ok(ability ? ability.filter('view', 'RoleMapping', roleMappings) : roleMappings);
 }
 
 /** Returns a role mapping by user id */
@@ -96,30 +98,39 @@ export async function getRoleMappingByUserId(
     memberCreatedOn: role.members[0].createdOn,
   }));
 
-  return ability ? ability.filter('view', 'RoleMapping', userRoleMappings) : userRoleMappings;
+  const roleMappings = ability
+    ? ability.filter('view', 'RoleMapping', userRoleMappings)
+    : userRoleMappings;
+  return ok(roleMappings);
 }
 
 // TODO: also check if user exists?
 /** Adds a user role mapping */
-export async function addRoleMappings(
+export const addRoleMappings = ensureTransactionWrapper(_addRoleMappings, 2);
+export async function _addRoleMappings(
   roleMappingsInput: RoleMappingInput[],
   ability?: Ability,
   _tx?: Prisma.TransactionClient,
-): Promise<void> {
+) {
   if (ability && !ability.can('admin', 'All')) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
-  if (!_tx) {
-    return db.$transaction(async (tx) => {
-      return await addRoleMappings(roleMappingsInput, ability, tx);
-    });
-  }
   const tx = _tx!;
 
-  const roleMappings = roleMappingsInput.map((roleMappingInput) =>
-    RoleMappingInputSchema.parse(roleMappingInput),
+  const roleMappingsParseResults = roleMappingsInput.map((roleMappingInput) =>
+    RoleMappingInputSchema.safeParse(roleMappingInput),
   );
+
+  type ParsedRoleMapping = z.infer<typeof RoleMappingInputSchema>;
+  const parseError = roleMappingsParseResults.find((result) => !result.success && result) as
+    | z.SafeParseError<ParsedRoleMapping>
+    | undefined;
+  if (parseError) return err(parseError.error);
+
+  const roleMappings = (
+    roleMappingsParseResults as unknown as z.SafeParseSuccess<ParsedRoleMapping>[]
+  ).map((mapping) => mapping.data);
 
   const allowedRoleMappings = ability
     ? ability.filter('create', 'RoleMapping', roleMappings)
@@ -129,26 +140,33 @@ export async function addRoleMappings(
     const { roleId, userId, environmentId } = roleMapping;
 
     const environment = await getEnvironmentById(environmentId, undefined, undefined, tx);
-    if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
-    if (!environment.isOrganization) {
-      throw new UserFacingError('Cannot add role mapping to personal environment');
+    if (environment.isErr()) {
+      return environment;
+    }
+    if (!environment.value) return err(new Error(`Environment ${environmentId} doesn't exist`));
+    if (!environment.value.isOrganization) {
+      return err(new UserFacingError('Cannot add role mapping to personal environment'));
     }
 
     const role = await getRoleById(roleId, undefined, tx);
-    if (!role) throw new UserFacingError('Role not found');
+    if (role.isErr()) {
+      return role;
+    }
+    if (!role.value) return err(new UserFacingError('Role not found'));
 
-    if (role.name === '@everyone' || role.name === '@guest') {
-      throw new UserFacingError(`Cannot add role mappings to ${role.name} role`);
+    if (role.value.name === '@everyone' || role.value.name === '@guest') {
+      return err(new UserFacingError(`Cannot add role mappings to ${role.value.name} role`));
     }
 
     const user = await getUserById(userId, undefined, tx);
-    if (!user) throw new Error('User not found');
-    if (user.isGuest) throw new UserFacingError('Guests cannot have role mappings');
+    if (user.isErr()) return user;
+    if (!user.value) return err(new Error('User not found'));
+    if (user.value.isGuest) return err(new UserFacingError('Guests cannot have role mappings'));
 
     const existingRoleMapping = await tx.roleMember.findFirst({
       where: { roleId, userId },
     });
-    if (existingRoleMapping) throw new UserFacingError('Role mapping already exists');
+    if (existingRoleMapping) return err(new UserFacingError('Role mapping already exists'));
 
     const id = v4();
     const createdOn = new Date().toISOString();
@@ -183,7 +201,7 @@ export async function deleteRoleMapping(
   ability?: Ability,
 ) {
   if (ability && !ability.can('admin', 'All')) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
   const [environment, user, roleMapping, role] = await Promise.all([
@@ -192,34 +210,43 @@ export async function deleteRoleMapping(
     getRoleMappingByUserId(userId, environmentId, ability, roleId),
     getRoleById(roleId),
   ]);
-  if (!environment) throw new Error("Environment doesn't exist");
+  if (environment.isErr()) return environment;
+  if (!environment.value) return err(new Error("Environment doesn't exist"));
 
-  if (!user) throw new Error("User doesn't exist");
+  if (user.isErr()) return user;
+  if (!user.value) return err(new Error("User doesn't exist"));
 
-  if (!roleMapping[0]) throw new Error("Role mapping doesn't exist");
+  if (role.isErr()) return role;
+
+  if (roleMapping.isErr()) return roleMapping;
+  if (!roleMapping.value[0]) return err(new Error("Role mapping doesn't exist"));
 
   // Check ability
   if (
     ability &&
     !ability.can('delete', toCaslResource('RoleMapping', roleMapping), { environmentId })
   ) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
-  if (role!.name === '@admin') {
+  if (role.value!.name === '@admin') {
     const memberIds = await db.roleMember.findMany({
       where: { roleId },
       select: { userId: true },
     });
 
     if (memberIds.length === 1) {
-      throw new UserFacingError(
-        'Cannot remove user from @admin role, at least one user must be in the role.',
+      return err(
+        new UserFacingError(
+          'Cannot remove user from @admin role, at least one user must be in the role.',
+        ),
       );
     }
   }
 
   await db.roleMember.delete({
-    where: { id: roleMapping[0].id },
+    where: { id: roleMapping.value[0].id },
   });
+
+  return ok();
 }

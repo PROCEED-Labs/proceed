@@ -1,5 +1,5 @@
 import { Viewer, ViewerProps } from '@toast-ui/react-editor';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 // IMPORTANT: This component is a wrapper around the Viewer component from
 // @toast-ui/react-editor, which cannot be used directly since it uses

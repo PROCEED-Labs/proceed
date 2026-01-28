@@ -4,7 +4,7 @@ import {
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 
 export function updateShare(
   {

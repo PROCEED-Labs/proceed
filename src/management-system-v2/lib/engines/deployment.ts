@@ -15,7 +15,7 @@ import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints/index';
 import { asyncForEach } from '../helpers/javascriptHelpers';
-import { UserFacingError } from '../user-error';
+import { UserFacingError } from '../server-error-handling/user-error';
 
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
 

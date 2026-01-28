@@ -7,7 +7,6 @@ import { LaptopOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { copyProcesses } from '@/lib/data/processes';
 
 import { Environment } from '@/lib/data/environment-schema';
-import { getProcess } from '@/lib/data/db/process';
 import { VersionInfo } from './process-document';
 
 import styles from './workspace-selection.module.scss';
@@ -18,9 +17,11 @@ import { FolderTreeNode, getSpaceFolderTree } from '@/lib/data/folders';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useSession } from '@/components/auth-can';
+import { Process } from '@/lib/data/process-schema';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 
 type WorkspaceSelectionProps = {
-  processData: Awaited<ReturnType<typeof getProcess>>;
+  processData: Process;
   versionInfo: VersionInfo;
   workspaces: Environment[];
 };
@@ -65,7 +66,10 @@ const WorkspaceSelection: React.FC<
   const handleWorkspaceClick = async (workspace: Environment) => {
     setSelectedWorkspace(workspace);
     onWorkspaceSelect(workspace);
+
     const spaceFolderTree = await getSpaceFolderTree(workspace.id);
+    if (isUserErrorResponse(spaceFolderTree)) return;
+
     setSelectedSpaceFolderTree(spaceFolderTree);
     onFolderSelect(null);
   };

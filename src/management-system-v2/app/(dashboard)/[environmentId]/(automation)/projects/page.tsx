@@ -4,10 +4,15 @@ import Content from '@/components/content';
 import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { redirect } from 'next/navigation';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const Projects = async (props: { params: Promise<{ environmentId: string }> }) => {
   const params = await props.params;
-  const { ability } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { ability } = currentSpace.value;
   if (!ability.can('view', 'Setting')) return redirect('/');
 
   return (

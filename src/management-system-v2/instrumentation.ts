@@ -8,7 +8,8 @@ export async function register() {
     // Register default admin user if IAM is not activated
     const { userId, createUserArgs } = await import('./lib/no-iam-user');
     const { addUser, getUserById } = await import('./lib/data/db/iam/users');
-    if (!env.PROCEED_PUBLIC_IAM_ACTIVE && !(await getUserById(userId)))
+    const user = await getUserById(userId);
+    if (!env.PROCEED_PUBLIC_IAM_ACTIVE && (user.isErr() || !user.value))
       await addUser(createUserArgs);
 
     // Create personal spaces for users that don't have one

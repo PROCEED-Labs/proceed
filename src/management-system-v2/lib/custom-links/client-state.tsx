@@ -5,6 +5,7 @@ import { createContext, use } from 'react';
 import { getCustomLinksStatus } from './server-actions';
 import { Badge } from 'antd';
 import { CustomNavigationLink } from './custom-link';
+import { isUserErrorResponse } from '../server-error-handling/user-error';
 
 type LinkState = (CustomNavigationLink & { status?: boolean })[];
 
@@ -19,7 +20,11 @@ export function CustomLinkStateProvider({
 }) {
   const { data } = useQuery({
     queryKey: [spaceId, 'custom-links-state'],
-    queryFn: () => getCustomLinksStatus(spaceId),
+    queryFn: async () => {
+      const response = await getCustomLinksStatus(spaceId);
+      if (isUserErrorResponse(response)) throw response.error;
+      return response;
+    },
     refetchInterval: 15_000,
   });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FC } from 'react';
+import { FC } from 'react';
 import { FolderTree } from './FolderTree';
 import { Button, Modal } from 'antd';
 import { FolderChildren } from '@/lib/data/folders';

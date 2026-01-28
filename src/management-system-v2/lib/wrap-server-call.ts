@@ -1,6 +1,11 @@
 import { notification, message } from 'antd';
 import { ReactNode } from 'react';
-import { userError, UserError, isUserErrorResponse, isUserError } from './user-error';
+import {
+  userError,
+  UserError,
+  isUserErrorResponse,
+  isUserError,
+} from './server-error-handling/user-error';
 import { useAppProps } from 'antd/es/app/context';
 
 /**

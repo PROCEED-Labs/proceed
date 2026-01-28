@@ -170,7 +170,10 @@ const SavedEnginesList = ({
                 if (!status.online) return;
 
                 return status.engines.map((engine) => (
-                  <Link href={`${engineDashboardLinkPrefix}/${record.id}?engineId=${engine.id}`}>
+                  <Link
+                    key={engine.id}
+                    href={`${engineDashboardLinkPrefix}/${record.id}?engineId=${engine.id}`}
+                  >
                     {engine.id}
                   </Link>
                 ));

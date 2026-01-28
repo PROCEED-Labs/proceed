@@ -22,7 +22,6 @@ import {
   Card,
   Badge,
   Divider,
-  MenuProps,
   Typography,
 } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -34,7 +33,6 @@ import {
   AppstoreOutlined,
   FolderOutlined,
   FileOutlined,
-  FolderFilled,
   ShareAltOutlined,
 } from '@ant-design/icons';
 import IconView from '@/components/process-icon-list';
@@ -57,7 +55,7 @@ import {
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
-import { Process, ProcessMetadata } from '@/lib/data/process-schema';
+import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
@@ -89,6 +87,7 @@ import { ContextActions, RowActions } from './types';
 import { canDoActionOnResource } from './helpers';
 import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
 import { useSession } from 'next-auth/react';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 
 // TODO: improve ordering
 export type ProcessActions = {
@@ -401,6 +400,13 @@ const Processes = ({
             spaceId: space.spaceId,
             userId: user?.id!,
           });
+          if (isUserErrorResponse(existsResults)) {
+            const errorMessage = existsResults.error.message;
+            throw new Error(
+              typeof errorMessage === 'string' ? errorMessage : 'Something went wrong',
+            );
+          }
+
           existsResults.forEach((exists, idx) => {
             if (exists) {
               throw new Error(

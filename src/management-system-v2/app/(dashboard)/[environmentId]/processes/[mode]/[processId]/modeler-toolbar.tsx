@@ -26,7 +26,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';

@@ -1,4 +1,4 @@
-import { ComponentProps, FC, PropsWithChildren, ReactNode, forwardRef, useState } from 'react';
+import { ComponentProps, PropsWithChildren, ReactNode, forwardRef, useState } from 'react';
 import { Button, Modal, Tooltip, Typography } from 'antd';
 import { useAddControlCallback } from '@/lib/controls-store';
 
@@ -36,6 +36,22 @@ const ConfirmationButton = forwardRef<HTMLAnchorElement, ConfirmationModalProps>
     const [modalOpen, setModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    const clearModal = () => {
+      setModalOpen(false);
+      onExternalClose?.();
+      setLoading(false);
+    };
+
+    const onConfirmWrapper = async () => {
+      setLoading(true);
+
+      try {
+        await onConfirm();
+      } catch (err) {}
+
+      clearModal();
+    };
+
     useAddControlCallback(
       'process-list',
       ['selectall', 'esc', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shift+enter'],
@@ -56,22 +72,6 @@ const ConfirmationButton = forwardRef<HTMLAnchorElement, ConfirmationModalProps>
       },
       { level: 2, blocking: externalOpen || modalOpen },
     );
-
-    const clearModal = () => {
-      setModalOpen(false);
-      onExternalClose?.();
-      setLoading(false);
-    };
-
-    const onConfirmWrapper = async () => {
-      setLoading(true);
-
-      try {
-        await onConfirm();
-      } catch (err) {}
-
-      clearModal();
-    };
 
     return (
       <>

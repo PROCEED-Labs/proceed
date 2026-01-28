@@ -56,12 +56,13 @@ export async function getUserById(
   return ok(user as User | null);
 }
 
-export async function getUserByEmail(email: string) {
+export async function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
   const user = await db.user.findUnique({ where: { email: email } });
 
-  if (!user) return err(new NotFoundError(`User could not be found (email: ${email}).`));
+  if (!user && opts?.throwIfNotFound)
+    return err(new NotFoundError(`User could not be found (email: ${email}).`));
 
-  return ok(user as User);
+  return ok(user as User | null);
 }
 
 export async function getUserByUsername(username: string, opts?: { throwIfNotFound?: boolean }) {
@@ -94,14 +95,14 @@ export async function _addUser(
     const [usernameRes, emailRes] = await Promise.all(checks);
 
     if (usernameRes) {
-      if (usernameRes.isErr() && !(usernameRes.error instanceof NotFoundError)) return usernameRes;
+      if (usernameRes.isErr()) return usernameRes;
 
-      if (!usernameRes.isErr() && usernameRes.value) return err(new NextAuthUsernameTakenError());
+      if (usernameRes.value) return err(new NextAuthUsernameTakenError());
     }
     if (emailRes) {
-      if (emailRes.isErr() && !(emailRes.error instanceof NotFoundError)) return emailRes;
+      if (emailRes.isErr()) return emailRes;
 
-      if (!emailRes.isErr() && emailRes.value) return err(new NextAuthEmailTakenError());
+      if (emailRes.value) return err(new NextAuthEmailTakenError());
     }
   }
 

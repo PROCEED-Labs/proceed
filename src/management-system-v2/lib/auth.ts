@@ -405,14 +405,17 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
         // Whenever the email is active, we create the user after he verifies his email
         if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
           const [existingUserUsername, existingUserMail] = await Promise.all([
-            getUserByUsername(credentials.username as string, { throwIfNotFound: true }),
+            getUserByUsername(credentials.username as string),
             getUserByEmail(credentials.email as string),
           ]);
 
-          if (existingUserUsername.isOk()) {
+          if (existingUserUsername.isErr()) throw existingUserUsername.error;
+          if (existingUserMail.isErr()) throw existingUserMail.error;
+
+          if (existingUserUsername.value) {
             throw new NextAuthUsernameTakenError();
           }
-          if (existingUserMail.isOk()) {
+          if (existingUserMail.value) {
             throw new NextAuthEmailTakenError();
           }
 

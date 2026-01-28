@@ -5,7 +5,8 @@ import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
+const Page = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const currentSpace = await getCurrentEnvironment(params.environmentId);
   if (currentSpace.isErr()) {
     return errorResponse(currentSpace);

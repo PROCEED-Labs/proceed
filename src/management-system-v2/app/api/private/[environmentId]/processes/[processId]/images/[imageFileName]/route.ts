@@ -17,11 +17,13 @@ import { getErrorMessage } from '@/lib/server-error-handling/user-error';
 
 export async function GET(
   request: NextRequest,
-  {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
   try {
+    const params = await props.params;
+
+    const { environmentId, processId, imageFileName } = params;
+
     const processMeta = await getProcess(processId, false);
     if (processMeta.isErr()) throw processMeta.error;
 
@@ -92,11 +94,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
   try {
+    const params = await props.params;
+
+    const { environmentId, processId, imageFileName } = params;
+
     const currentEnvironment = await getCurrentEnvironment(environmentId);
     if (currentEnvironment.isErr()) throw currentEnvironment.error;
     const { ability } = currentEnvironment.value;
@@ -139,11 +143,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
   try {
+    const params = await props.params;
+
+    const { environmentId, processId, imageFileName } = params;
+
     const currentEnvironment = await getCurrentEnvironment(environmentId);
     if (currentEnvironment.isErr()) throw currentEnvironment.error;
 

@@ -6,9 +6,7 @@ import { Button, Modal, Upload } from 'antd';
 import type { ButtonProps } from 'antd';
 
 import {
-  getDefinitionsId,
   getDefinitionsInfos,
-  getDefinitionsName,
   getElementsByTagName,
   getProcessDocumentation,
   toBpmnObject,
@@ -29,6 +27,7 @@ export type ProcessData = {
   creatorUsername?: string;
   createdOn?: string;
   userDefinedId?: string;
+  executable: boolean;
   folderId?: string;
   bpmn: string;
   artefacts?: {
@@ -132,6 +131,8 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
       const { id, name, userDefinedId, creatorName, creationDate, creatorUsername } =
         await getDefinitionsInfos(bpmnObj);
 
+      const [process] = getElementsByTagName(bpmnObj, 'bpmn:Process');
+
       const processData: ProcessData = {
         id: id || '',
         name: name || '',
@@ -142,6 +143,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
         createdOn: generateDateString(creationDate, true),
         folderId: currentFolderId,
         bpmn,
+        executable: !!process.isExecutable,
         artefacts: {
           startForm: [],
           images: [],

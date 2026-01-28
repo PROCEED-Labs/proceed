@@ -5,7 +5,8 @@ import Wrapper from './wrapper';
 import { getSettings } from './settings';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
+const Page = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const currentSpace = await getCurrentEnvironment(params.environmentId);
   if (currentSpace.isErr()) {
     return errorResponse(currentSpace);
@@ -15,7 +16,8 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
   } = currentSpace.value;
 
   const settings = await getSettings();
-  await populateSpaceSettingsGroup(spaceId, settings);
+  const res = await populateSpaceSettingsGroup(spaceId, settings);
+  if (res.isErr()) return errorResponse(res);
 
   return (
     <>

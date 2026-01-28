@@ -7,7 +7,6 @@ import { LaptopOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { copyProcesses } from '@/lib/data/processes';
 
 import { Environment } from '@/lib/data/environment-schema';
-import { getProcess } from '@/lib/data/db/process';
 import { VersionInfo } from './process-document';
 
 import styles from './workspace-selection.module.scss';

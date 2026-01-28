@@ -8,14 +8,13 @@ import ProcessTransferButtons from './transfer-processes-confirmation-buttons';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
-export default async function TransferProcessesPage({
-  searchParams,
-}: {
-  searchParams: {
+export default async function TransferProcessesPage(props: {
+  searchParams: Promise<{
     callbackUrl?: string;
     referenceToken?: string;
-  };
+  }>;
 }) {
+  const searchParams = await props.searchParams;
   const currentUser = await getCurrentUser();
   if (currentUser.isErr()) {
     return errorResponse(currentUser);

@@ -23,11 +23,10 @@ async function Deployment({ processId, spaceId }: { processId: string; spaceId: 
   return <ProcessDeploymentView processId={processId} initialDeploymentInfo={deployment} />;
 }
 
-export default async function Page({
-  params,
-}: {
-  params: { processId: string; environmentId: string };
+export default async function Page(props: {
+  params: Promise<{ processId: string; environmentId: string }>;
 }) {
+  const params = await props.params;
   //TODO: authentication + authorization
   const currentSpace = await getCurrentEnvironment(params.environmentId);
   if (currentSpace.isErr()) {

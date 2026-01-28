@@ -2,7 +2,7 @@ import HtmlFormEditor, { HtmlFormEditorRef } from '@/components/html-form-editor
 import useEditorStateStore, {
   EditorStoreProvider,
 } from '@/components/html-form-editor/use-editor-state-store';
-import { App, Grid, Modal } from 'antd';
+import { Alert, App, Grid, Modal } from 'antd';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LuImage, LuMilestone } from 'react-icons/lu';
@@ -60,12 +60,21 @@ const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
       updateVariable: updateProcessVariable,
     } = useProcessVariables();
 
-    const { variables, updateVariables, updateMilestones } = useEditorStateStore((state) => state);
+    const editingEnabled = useCanEdit();
+    const isExecutable = useModelerStateStore((state) => state.isExecutable);
+
+    const { variables, updateVariables, updateMilestones, setEditingEnabled } = useEditorStateStore(
+      (state) => state,
+    );
+
+    useEffect(() => {
+      setEditingEnabled(editingEnabled && isExecutable);
+    }, [editingEnabled, isExecutable]);
 
     useEffect(() => {
       // initialize the variables known to the editor when it is opened
       if (json) updateVariables([...processVariables]);
-    }, [json]);
+    }, [json, processVariables]);
 
     useEffect(() => {
       if (variables) {
@@ -139,8 +148,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
 
   const isMobile = breakpoint.xs;
 
-  const modeler = useModelerStateStore((state) => state.modeler);
-  const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+  const { modeler, selectedElementId, isExecutable } = useModelerStateStore();
 
   const selectedElement = modeler && selectedElementId && modeler.getElement(selectedElementId);
 
@@ -262,12 +270,29 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
     enabled: open,
   });
 
-  let title = 'Edit Form';
+  const canEdit = editingEnabled && isExecutable;
+
+  let title = <div>Html Form</div>;
 
   if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
-    title = 'Edit User Task Form';
+    title = <span>User Task Form</span>;
   } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
-    title = 'Edit Process Start Form';
+    title = <span>Process Start Form</span>;
+  }
+
+  if (canEdit) title = <div>Edit {title}</div>;
+
+  if (editingEnabled && !isExecutable) {
+    title = (
+      <div style={{ display: 'flex' }}>
+        {title}{' '}
+        <Alert
+          style={{ margin: '0 5px' }}
+          type="warning"
+          message="This view is read-only because the process is not marked as executable (Property Panel -> Automation Tab)."
+        />
+      </div>
+    );
   }
 
   return (
@@ -281,9 +306,9 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       okText="Save"
       cancelText={hasUnsavedChanges ? 'Cancel' : 'Close'}
       onCancel={handleClose}
-      okButtonProps={{ disabled: !editingEnabled }}
+      okButtonProps={{ disabled: !canEdit }}
       onOk={handleSave}
-      destroyOnClose
+      destroyOnHidden
     >
       <EditorStoreProvider>
         <UserTaskEditor json={json} onChange={() => setHasUnsavedChanges(true)} ref={builder} />
@@ -292,5 +317,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
     </Modal>
   );
 };
+
+UserTaskEditor.displayName = 'UserTaskEditor';
 
 export default UserTaskEditorModal;

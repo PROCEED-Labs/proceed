@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Grid,
-  Row,
-  TableColumnType,
-  TableColumnsType,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Grid, Row, TableColumnType, TableColumnsType, TableProps, Tooltip } from 'antd';
 import React, {
   useCallback,
   FC,
@@ -21,6 +12,7 @@ import React, {
   useEffect,
   useState,
   useMemo,
+  ReactNode,
 } from 'react';
 import {
   StarOutlined,
@@ -29,14 +21,13 @@ import {
   ShareAltOutlined,
 } from '@ant-design/icons';
 import styles from './item-list-view.module.scss';
-import { generateDateString, generateTableDateString, spaceURL } from '@/lib/utils';
+import { generateDateString, generateTableDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan, useEnvironment } from '@/components/auth-can';
+import { AuthCan } from '@/components/auth-can';
 import { ProcessListProcess, RowActions } from './processes/types';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList, { ListEntryLink } from './item-list-view';
 import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
-import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import FavouriteStar from './favouriteStar';
 import { contextMenuStore } from './processes/context-menu';
@@ -47,9 +38,6 @@ import { PiNotePencil } from 'react-icons/pi';
 import { LuNotebookPen } from 'react-icons/lu';
 import { BsFileEarmarkCheck } from 'react-icons/bs';
 import usePotentialOwnerStore from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
-import { usePathname } from 'next/navigation';
-import { useRouter } from 'next/navigation';
-import { isReadable } from 'stream';
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -73,7 +61,7 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
   return sorter;
 }
 
-export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess['type'] } }) {
+export function ProcessListItemIcon({ item }: { item: { type: string } }) {
   return item.type === 'folder' ? <FolderFilled /> : '';
 }
 
@@ -108,7 +96,7 @@ type BaseProcessListProps = PropsWithChildren<{
   tableProps?: TableProps<ProcessListProcess>;
   processActions?: RowActions;
   columnCustomRenderer?: {
-    [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => JSX.Element;
+    [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => ReactNode;
   };
   isReadOnly: boolean;
 }>;

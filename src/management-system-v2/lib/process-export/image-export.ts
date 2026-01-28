@@ -1,12 +1,7 @@
 import jsZip from 'jszip';
 
 import { ProcessesExportData, ProcessExportData, ProcessExportOptions } from './export-preparation';
-import {
-  getProcessFilePathName,
-  getSVGFromBPMN,
-  getImageDimensions,
-  handleExportMethod,
-} from './util';
+import { getProcessFilePathName, getSVGFromBPMN, getImageDimensions } from './util';
 
 /**
  * Executes the logic that adds the file for a specific process version/collapsed subprocess

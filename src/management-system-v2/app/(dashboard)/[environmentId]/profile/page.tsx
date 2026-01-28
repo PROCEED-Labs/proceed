@@ -18,6 +18,8 @@ const ProfilePage = async () => {
   const userData = await getUserById(userId);
   if (userData.isErr()) return errorResponse(userData);
 
+  if (!userData.value) return notFound();
+
   const userHasPassword = await getUserPassword(userId);
   if (userHasPassword.isErr()) {
     return errorResponse(userHasPassword);

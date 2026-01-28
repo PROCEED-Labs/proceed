@@ -7,7 +7,8 @@ import Title from 'antd/es/typography/Title';
 import { redirect } from 'next/navigation';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
-const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
+const GeneralSettingsPage = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const currentSpace = await getCurrentEnvironment(params.environmentId);
   if (currentSpace.isErr()) {
     return errorResponse(currentSpace);

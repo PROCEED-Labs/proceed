@@ -22,8 +22,7 @@ import { env } from '../ms-config/env-vars';
 import { AuthenticatedUser, AuthenticatedUserSchema, User } from './user-schema';
 import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
-import { Err, Ok, Result, err, ok } from 'neverthrow';
-import { Role } from './role-schema';
+import { err, ok } from 'neverthrow';
 
 const EmailListSchema = z.array(
   z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),
@@ -158,7 +157,7 @@ export async function removeUsersFromEnvironment(environmentId: string, userIdsI
     if (currentEnvironment.isErr()) {
       return userError(getErrorMessage(currentEnvironment.error));
     }
-    const { ability, activeEnvironment } = currentEnvironment.value;
+    const { ability } = currentEnvironment.value;
 
     // TODO refine ability check
 

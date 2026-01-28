@@ -13,13 +13,12 @@ import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 export type TableEngine = Engine & { id: string };
 
-export default async function EnginesPage({
-  params,
-  searchParams,
-}: {
-  params: { dbEngineId: string; environmentId: string };
-  searchParams: { engineId: string };
+export default async function EnginesPage(props: {
+  params: Promise<{ dbEngineId: string; environmentId: string }>;
+  searchParams: Promise<{ engineId: string }>;
 }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 

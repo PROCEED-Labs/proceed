@@ -30,9 +30,9 @@ import {
 import { Result } from 'neverthrow';
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     [key: string]: string[] | string | undefined;
-  };
+  }>;
 }
 
 /**
@@ -138,7 +138,8 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo): Promise<vo
   }
 };
 
-const SharedViewer = async ({ searchParams }: PageProps) => {
+const SharedViewer = async (props: PageProps) => {
+  const searchParams = await props.searchParams;
   const { token, version, settings } = searchParams;
   const currentUser = await getCurrentUser();
   if (currentUser.isErr()) {
@@ -194,7 +195,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     ({ isOwner, processData } = processInfo);
 
     if (!processData) {
-      return <ErrorMessage message="Process no longer exists" />;
+      return <ErrorMessage message="Process no longer exists!" />;
     }
 
     iframeMode = embeddedMode;

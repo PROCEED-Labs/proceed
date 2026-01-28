@@ -8,8 +8,8 @@ import {
   generateScriptTaskFileName,
   generateStartFormFileName,
   generateUserTaskFileName,
-  getDefinitionsId,
   getDefinitionsVersionInformation,
+  getElementsByTagName,
   setDefinitionsName,
   setDefinitionsVersionInformation,
   toBpmnObject,
@@ -63,6 +63,8 @@ import {
   saveProcessScriptTask as _saveProcessScriptTask,
   deleteProcessScriptTask as _deleteProcessScriptTask,
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
+  getFolderScriptTasks as _getFolderScriptTasks,
+  getFolderPathScriptTasks as _getFolderPathScriptTasks,
 } from '@/lib/data/db/process';
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
@@ -209,6 +211,7 @@ export const addProcesses = async (
     folderId?: string;
     userDefinedId?: string;
     id?: string;
+    executable?: boolean;
   }[],
   spaceId: string,
   generateNewId: boolean = false,
@@ -263,6 +266,7 @@ export const addProcesses = async (
       creatorId: userId,
       environmentId: activeEnvironment.spaceId,
       folderId: value.folderId,
+      executable: value.executable,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -538,6 +542,9 @@ export const copyProcesses = async (
     // TODO: Does createProcess() do the same as this function?
     let newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn.value! });
 
+    const bpmnObj = await toBpmnObject(newBpmn);
+    const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
+
     // TODO: include variables in copy?
     const newProcess = {
       creatorId: userId,
@@ -545,6 +552,7 @@ export const copyProcesses = async (
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,
       folderId: destinationfolderId,
+      executable: !!processObj.isExecutable,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -753,6 +761,39 @@ export const saveProcessHtmlForm = async (
       );
 
     await _saveProcessHtmlForm(definitionId, fileName, json, html, undefined, true);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+};
+export const getFolderScriptTasks = async (environmentId: string, folderId?: string) => {
+  try {
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
+
+    const result = await _getFolderScriptTasks(environmentId, folderId, ability);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+    return result.value;
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+};
+
+export const getFolderPathScriptTasks = async (environmentId: string, folderId: string) => {
+  try {
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
+
+    const result = await _getFolderPathScriptTasks(environmentId, folderId, ability);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+    return result.value;
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

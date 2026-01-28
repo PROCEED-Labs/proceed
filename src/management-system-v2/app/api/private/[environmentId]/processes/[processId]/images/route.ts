@@ -8,11 +8,13 @@ import { getErrorMessage } from '@/lib/server-error-handling/user-error';
 
 export async function GET(
   request: NextRequest,
-  {
-    params: { environmentId, processId },
-  }: { params: { environmentId: string; processId: string } },
+  props: { params: Promise<{ environmentId: string; processId: string }> },
 ) {
   try {
+    const params = await props.params;
+
+    const { environmentId, processId } = params;
+
     const currentSpace = await getCurrentEnvironment(environmentId);
     if (currentSpace.isErr()) throw currentSpace.error;
     const { ability } = currentSpace.value;
@@ -47,11 +49,13 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  {
-    params: { environmentId, processId },
-  }: { params: { environmentId: string; processId: string } },
+  props: { params: Promise<{ environmentId: string; processId: string }> },
 ) {
   try {
+    const params = await props.params;
+
+    const { environmentId, processId } = params;
+
     const isInvalidRequest = invalidRequest(request);
     if (isInvalidRequest) return isInvalidRequest;
 

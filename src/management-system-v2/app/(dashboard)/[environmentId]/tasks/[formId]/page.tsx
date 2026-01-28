@@ -7,7 +7,8 @@ import { notFound } from 'next/navigation';
 import FormView from './form-view';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
-const FormPage = async ({ params }: { params: { environmentId: string; formId: string } }) => {
+const FormPage = async (props: { params: Promise<{ environmentId: string; formId: string }> }) => {
+  const params = await props.params;
   const currentSpace = await getCurrentEnvironment(params.environmentId);
   if (currentSpace.isErr()) {
     return errorResponse(currentSpace);

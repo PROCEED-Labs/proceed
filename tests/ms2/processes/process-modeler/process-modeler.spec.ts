@@ -1,6 +1,6 @@
 import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from '../processes.fixtures';
-import { openModal, closeModal } from '../../testUtils';
+import { openModal, closeModal, waitForHydration } from '../../testUtils';
 
 test('process modeler', async ({ processModelerPage, processListPage }) => {
   test.slow();
@@ -13,7 +13,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   /* While the xml editor is there, the xml is still loading, wait for it to load, before closing the modal */
   await expect(page.getByText('<?xml version="1.0" encoding')).toBeVisible();
   //todo: check xml for startevent
-  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Save' }).click());
+  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Ok' }).click());
 
   // Open/collapse/close properties panel
   const propertiesPanel = page.getByRole('region', { name: 'Properties' });
@@ -34,7 +34,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
     .getByRole('button', { name: 'plus' });
   modal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationDialog = page.getByRole('dialog', {
-    name: 'Create New Version',
+    name: 'Release a new Process Version',
   });
   await expect(versionCreationDialog).toBeVisible();
   await closeModal(modal, () => modal.getByRole('button', { name: 'Cancel' }).click());
@@ -48,7 +48,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
     'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volu';
   modal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationSubmitButton = modal.getByRole('button', {
-    name: 'Create Version',
+    name: 'Release Version',
   });
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal.getByPlaceholder('Version Name').fill('Version 1');
@@ -269,13 +269,13 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
     .getByRole('button', { name: 'plus' });
   let versionModal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationDialog = page.getByRole('dialog', {
-    name: 'Create New Version',
+    name: 'Release a new Process Version',
   });
   await expect(versionCreationDialog).toBeVisible();
 
   // Fill version creation dialog and create new version
   const versionCreationSubmitButton = versionModal.getByRole('button', {
-    name: 'Create Version',
+    name: 'Release Version',
   });
   await versionModal.getByPlaceholder('Version Name').fill('Version 1');
   await versionModal.getByPlaceholder('Version Description').fill('description');
@@ -283,7 +283,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   //Open share modal
   const modal = await openModal(page, () =>
-    page.getByRole('button', { name: 'share-alt' }).click(),
+    page.getByRole('button', { name: 'share-alt', exact: true }).click(),
   );
 
   //await expect(page.getByText('Share', { exact: true })).toBeVisible();
@@ -322,6 +322,9 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
+  // Wait for hydration
+  await newPage.getByText('Loading process data').waitFor({ state: 'hidden' });
+
   // Add the shared process to the workspace
   await openModal(newPage, async () => {
     await newPage.getByRole('button', { name: 'edit' }).click();
@@ -339,7 +342,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   const newProcessId = newPage.url().split('/editor/').pop();
 
-  await newPage.getByRole('menuitem', { name: 'Processes' }).click();
+  //await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();
   await newPage.waitForURL(/processes/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();

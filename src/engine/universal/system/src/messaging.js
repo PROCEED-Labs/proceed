@@ -398,6 +398,7 @@ class Messaging extends System {
     // options are optional (we don't use them here but we provide the same signature as the http _serve method)
     if (typeof options === 'function') {
       callback = options;
+      options = {};
     }
 
     // map the REST path to a topic

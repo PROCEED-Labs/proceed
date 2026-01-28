@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useRef, PropsWithChildren } from 'react';
+import { FC, useCallback, useRef, PropsWithChildren } from 'react';
 import style from './loading-proceed.module.scss';
 import { useLazyRendering } from './scrollbar';
 import cn from 'classnames';

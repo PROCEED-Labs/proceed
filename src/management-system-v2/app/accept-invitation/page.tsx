@@ -1,10 +1,5 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEnvironmentById } from '@/lib/data/db/iam/environments';
-import { addMember, isMember } from '@/lib/data/db/iam/memberships';
-import { addRoleMappings } from '@/lib/data/db/iam/role-mappings';
-import { getRoleById } from '@/lib/data/db/iam/roles';
-import { getUserByEmail } from '@/lib/data/db/iam/users';
 import { acceptInvitation, getInvitation as getInvitationFromToken } from '@/lib/invitation-tokens';
 import { Result, ResultProps } from 'antd';
 import { redirect } from 'next/navigation';
@@ -18,7 +13,8 @@ function Error(props: ResultProps) {
   );
 }
 
-export default async function IvitationPage({ searchParams }: { searchParams: { token: string } }) {
+export default async function IvitationPage(props: { searchParams: Promise<{ token: string }> }) {
+  const searchParams = await props.searchParams;
   const currentUser = await getCurrentUser();
   if (currentUser.isErr()) {
     return errorResponse(currentUser);

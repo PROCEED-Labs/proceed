@@ -5,10 +5,13 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 type DocumentationLayoutProps = {
-  params: { environmentId: string };
+  params: Promise<{ environmentId: string }>;
 } & React.PropsWithChildren;
 
-const DocumentationLayout: React.FC<DocumentationLayoutProps> = async ({ params, children }) => {
+const DocumentationLayout: React.FC<DocumentationLayoutProps> = async (props) => {
+  const params = await props.params;
+
+  const { children } = props;
   const currentSpace = await getCurrentEnvironment(params.environmentId);
   if (currentSpace.isErr()) {
     return errorResponse(currentSpace);

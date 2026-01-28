@@ -29,7 +29,6 @@ import db from './data/db';
 import { createUserRegistrationToken } from './email-verification-tokens/utils';
 import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
 import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
-import { NotFoundError } from './server-error-handling/errors';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,

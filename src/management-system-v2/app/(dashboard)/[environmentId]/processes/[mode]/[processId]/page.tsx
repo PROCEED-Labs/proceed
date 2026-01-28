@@ -14,23 +14,26 @@ import { spaceURL } from '@/lib/utils';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import { err } from 'neverthrow';
+import { getFolderById } from '@/lib/data/db/folders';
 
 type ProcessPageProps = {
-  params: { processId: string; environmentId: string; mode: string };
-  searchParams: { version?: string };
+  params: Promise<{ processId: string; environmentId: string; mode: string }>;
+  searchParams: Promise<{ version?: string }>;
 };
 
 type ProcessComponentProps = ProcessPageProps & {
   isListView?: boolean;
 };
 
-const ProcessComponent = async ({
-  params: { processId, environmentId },
-  searchParams,
-  isListView,
-}: ProcessComponentProps) => {
+const ProcessComponent = async (props: ProcessComponentProps) => {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const { processId, environmentId } = params;
+
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
+
   //console.log('processId', processId);
   //console.log('query', searchParams);
   const currentSpace = await getCurrentEnvironment(environmentId);
@@ -47,7 +50,7 @@ const ProcessComponent = async ({
   }
 
   // For list view: check for redirect
-  if (isListView) {
+  if (props.isListView) {
     // If no version specified but released versions exist, redirect to last released version
     if (!searchParams.version && process.value.versions.length > 0) {
       const lastVersionId = process.value.versions[process.value.versions.length - 1].id;
@@ -57,6 +60,8 @@ const ProcessComponent = async ({
     }
   }
   const processes = await getProcesses(activeEnvironment.spaceId, ability, false);
+  const folder = await getFolderById(process.value.folderId, ability);
+  if (folder.isErr()) return errorResponse(folder);
 
   // const rawRoles = activeEnvironment.isOrganization
   //   ? await getRolesWithMembers(activeEnvironment.spaceId, ability)
@@ -110,6 +115,7 @@ const ProcessComponent = async ({
           <Modeler
             className={styles.Modeler}
             process={{ ...process.value, bpmn: selectedVersionBpmn as string } as Process}
+            folder={folder.value}
             versionName={selectedVersion?.name}
           />
         }
@@ -126,7 +132,8 @@ const ProcessComponent = async ({
 };
 
 const Process = async (props: ProcessPageProps) => {
-  const isListView = props.params.mode === 'list';
+  const params = await props.params;
+  const isListView = params.mode === 'list';
   return <ProcessComponent {...props} isListView={isListView} />;
 };
 

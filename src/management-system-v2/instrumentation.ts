@@ -56,3 +56,5 @@ export async function register() {
     }
   }
 }
+
+export const config = { runtime: 'nodejs' };

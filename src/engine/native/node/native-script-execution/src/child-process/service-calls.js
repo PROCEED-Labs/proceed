@@ -9,6 +9,7 @@ module.exports = function setupServiceCalls({
   processId,
   processInstanceId,
   tokenId,
+  waitUntilResumed,
 }) {
   /** @param {string} serviceName */
   function _getService(serviceName) {
@@ -16,12 +17,6 @@ module.exports = function setupServiceCalls({
       {},
       {
         get: function (_, method) {
-          // network-server is a bit more complex so it requires it's own implementation
-          // _networkServerCall is defined in ./http-server.js
-          if (serviceName === 'network-server') {
-            return (...args) => _networkServerCall(method, args);
-          }
-
           return (...args) => _callToService(serviceName, method, args);
         },
       },
@@ -72,6 +67,7 @@ module.exports = function setupServiceCalls({
   ${_parseResult.toString()};
   ${_callToService.toString()};
   ${_getService.toString()}; globalThis["getService"] = _getService;
+  globalThis["networkRequest"] = getService("network-requests");
   `,
     [
       new ivm.Reference(
@@ -81,6 +77,7 @@ module.exports = function setupServiceCalls({
          * @param {string} args stringified array of args
          */
         async function (serviceName, method, args) {
+          await waitUntilResumed();
           const result = await callToExecutor('call', {
             functionName: `getService.${serviceName}.${method}`,
             args: [processId, processInstanceId, tokenId, ...JSON.parse(args)],

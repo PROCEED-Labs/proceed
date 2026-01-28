@@ -19,11 +19,10 @@ import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/f
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
-const ProcessesPage = async ({
-  params,
-}: {
-  params: { environmentId: string; mode: string; folderId?: string };
+const ProcessesPage = async (props: {
+  params: Promise<{ environmentId: string; folderId?: string; mode: string }>;
 }) => {
+  const params = await props.params;
   const currentSpace = await getCurrentEnvironment(params.environmentId);
   if (currentSpace.isErr()) return errorResponse(currentSpace);
   const { ability, activeEnvironment } = currentSpace.value;
@@ -60,15 +59,18 @@ const ProcessesPage = async ({
     pathToFolder.push({
       title: (
         <Link
-          href={spaceURL(activeEnvironment, `/processes/${params.mode}/folder/${currentFolder.id}`)}
+          href={spaceURL(
+            activeEnvironment,
+            `/processes/${params.mode}/folder/${currentFolder?.id}`,
+          )}
         >
-          {currentFolder.parentId ? currentFolder.name : isListView ? 'List' : 'Editor'}
+          {currentFolder?.parentId ? currentFolder?.name : isListView ? 'List' : 'Editor'}
         </Link>
       ),
     });
     if (currentFolder) wrappingFolderIds.push(currentFolder.id);
 
-    if (currentFolder.parentId) {
+    if (currentFolder?.parentId) {
       const result = await getFolderById(currentFolder.parentId);
       if (result.isErr()) {
         return errorResponse(result);

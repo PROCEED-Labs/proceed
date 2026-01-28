@@ -45,10 +45,13 @@ import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
 import { Result } from 'neverthrow';
 
-const DashboardLayout = async ({
-  children,
-  params,
-}: PropsWithChildren<{ params: { environmentId: string } }>) => {
+const DashboardLayout = async (
+  props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
+) => {
+  const params = await props.params;
+
+  const { children } = props;
+
   const currentUser = await getCurrentUser();
   if (currentUser.isErr()) {
     return errorResponse(currentUser);

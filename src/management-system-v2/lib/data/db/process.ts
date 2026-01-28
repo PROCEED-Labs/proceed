@@ -8,7 +8,11 @@ import {
   BpmnAttributeType,
   transformBpmnAttributes,
 } from '../../helpers/processHelpers';
-import { getDefinitionsVersionInformation, generateBpmnId } from '@proceed/bpmn-helper';
+import {
+  getDefinitionsVersionInformation,
+  generateBpmnId,
+  getScriptTaskFileNameMapping,
+} from '@proceed/bpmn-helper';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
@@ -52,6 +56,7 @@ export async function getProcesses(environmentId: string, ability?: Ability, inc
       sharedAs: true,
       shareTimestamp: true,
       allowIframeTimestamp: true,
+      executable: true,
       environmentId: true,
       creatorId: true,
       //departments: true,
@@ -86,6 +91,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       sharedAs: true,
       shareTimestamp: true,
       allowIframeTimestamp: true,
+      executable: true,
       environmentId: true,
       creatorId: true,
       //departments: true,
@@ -292,6 +298,7 @@ export async function _addProcess(
       //departments: { set: metadata.departments },
       //variables: { set: metadata.variables },
       bpmn: bpmnWithPlaceholders,
+      executable: metadata.executable || false,
     },
   });
 
@@ -684,6 +691,7 @@ export async function getProcessBpmn(processDefinitionsId: string, ability?: Abi
         name: true,
         originalId: true,
         environmentId: true,
+        executable: true,
       },
     });
 
@@ -715,6 +723,148 @@ export async function getProcessBpmn(processDefinitionsId: string, ability?: Abi
 /** Returns the filenames of the data for all user tasks in the given process */
 export async function getProcessUserTasks(processDefinitionsId: string) {
   // TODO
+}
+
+export type FolderContentWithScriptTasks = {
+  folderId: string;
+  content: (
+    | {
+        type: 'process';
+        id: string;
+        name: string;
+        scriptTasks: string[];
+      }
+    | {
+        type: 'folder';
+        id: string;
+        name: string;
+      }
+  )[];
+};
+/*
+ * Returns the id, name and list of scriptTask filenames of all processes with scriptTasks.
+ */
+export async function getFolderScriptTasks(
+  spaceId: string,
+  folderId?: string,
+  ability?: Ability,
+  skipFolderCheck = false,
+) {
+  // If there is a folder id the permissions will be checked by getRootFolder
+  if (!skipFolderCheck && folderId) {
+    // returns an error if the user doesn't have permissions
+    const res = await getFolderById(folderId, ability);
+    if (res.isErr()) return res;
+  }
+
+  if (!folderId) {
+    // returns an error if the user doesn't have permissions
+    const rootFolder = await getRootFolder(spaceId, skipFolderCheck ? undefined : ability);
+
+    if (rootFolder.isErr()) return rootFolder;
+
+    folderId = rootFolder.value.id;
+  }
+
+  const [processes, folders] = await Promise.all([
+    db.process.findMany({
+      where: {
+        environmentId: spaceId,
+        folderId,
+      },
+      select: {
+        id: true,
+        name: true,
+        bpmn: true,
+      },
+    }),
+    db.folder.findMany({
+      where: {
+        environmentId: spaceId,
+        parentId: folderId,
+      },
+      select: {
+        name: true,
+        id: true,
+        // We need this for the permission check to work
+        parentId: true,
+      },
+    }),
+  ]);
+
+  // TODO: subprocesses
+  const processesWithScriptTaskFileNames: FolderContentWithScriptTasks['content'] = [];
+
+  for (const folder of folders) {
+    if (
+      !ability ||
+      ability.can('view', toCaslResource('Folder', folder), { environmentId: spaceId })
+    ) {
+      processesWithScriptTaskFileNames.push({
+        type: 'folder',
+        id: folder.id,
+        name: folder.name,
+      });
+    }
+  }
+
+  for (const process of processes) {
+    if (
+      ability &&
+      !ability.can('view', toCaslResource('Process', process), { environmentId: spaceId })
+    ) {
+      continue;
+    }
+
+    const scriptTasksFileNameMapping = await getScriptTaskFileNameMapping(process.bpmn);
+    const scriptTaskFileNames = Object.values(scriptTasksFileNameMapping)
+      .map((mapping) => mapping.fileName)
+      .filter((v) => !!v) as string[];
+
+    if (scriptTaskFileNames.length > 0) {
+      processesWithScriptTaskFileNames.push({
+        id: process.id,
+        name: process.name,
+        scriptTasks: scriptTaskFileNames,
+        type: 'process',
+      });
+    }
+  }
+
+  return ok(processesWithScriptTaskFileNames);
+}
+
+/**
+ * Returns an array containing the folders and processes with script tasks for every folder
+ * starting at the `folderId` param and ending at the root folder of the environment.
+ */
+export async function getFolderPathScriptTasks(
+  spaceId: string,
+  folderId: string,
+  ability?: Ability,
+) {
+  const results: FolderContentWithScriptTasks[] = [];
+
+  // Start at folder and go up in the tree
+  let currentFolderId: string | null = folderId;
+  while (currentFolderId !== null) {
+    // returns an error if the user doesn't have permissions
+    const currentFolder = await getFolderById(currentFolderId, ability);
+    if (currentFolder.isErr()) return currentFolder;
+
+    const scriptTasks = await getFolderScriptTasks(spaceId, currentFolderId, ability, true);
+
+    if (scriptTasks.isErr()) return scriptTasks;
+
+    results.push({
+      folderId: currentFolderId,
+      content: scriptTasks.value,
+    });
+
+    currentFolderId = currentFolder.value.parentId;
+  }
+
+  return ok(results);
 }
 
 /** Returns the filenames of the data for all script tasks in the given process */

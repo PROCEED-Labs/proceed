@@ -6,7 +6,8 @@ import Wrapper from './wrapper';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
+const Page = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return null;
 
@@ -18,7 +19,8 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
     activeEnvironment: { spaceId },
   } = currentSpace.value;
 
-  await populateSpaceSettingsGroup(spaceId, settings);
+  const res = await populateSpaceSettingsGroup(spaceId, settings);
+  if (res.isErr()) return errorResponse(res);
 
   return (
     <>

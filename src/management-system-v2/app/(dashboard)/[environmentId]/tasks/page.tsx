@@ -7,7 +7,8 @@ import FormList from './form-list';
 import { getHtmlForms } from '@/lib/data/html-forms';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
-const FormsPage = async ({ params }: { params: { environmentId: string } }) => {
+const FormsPage = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const currentSpace = await getCurrentEnvironment(params.environmentId);
   if (currentSpace.isErr()) {
     return errorResponse(currentSpace);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Form, Input, Modal } from 'antd';
 import type { ModalProps } from 'antd';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
@@ -75,7 +75,7 @@ const FolderModal = ({
     <Modal
       title="Folder"
       closeIcon={null}
-      destroyOnClose
+      destroyOnHidden
       {...modalProps}
       open={open}
       onCancel={() => close()}

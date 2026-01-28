@@ -9,7 +9,6 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import React, {
-  ReactHTML,
   ClassAttributes,
   HTMLAttributes,
   FC,
@@ -23,7 +22,7 @@ import cn from 'classnames';
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 
 export function DraggableElementGenerator<TPropId extends string>(
-  element: keyof ReactHTML,
+  element: string,
   propId: TPropId,
 ) {
   type Props = ClassAttributes<HTMLElement> &

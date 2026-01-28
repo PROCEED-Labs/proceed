@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const allowedTypes = ['string', 'number', 'boolean', 'object', 'array'] as const;
+export const allowedTypes = ['string', 'number', 'boolean', 'object', 'array', 'file'] as const;
 type AllowedType = (typeof allowedTypes)[number];
 
 // maps from the data types to what we want to display to the user
@@ -10,6 +10,7 @@ export const typeLabelMap: Record<AllowedType, string> = {
   boolean: 'On/Off - True/False',
   object: 'Combined Structure',
   array: 'List',
+  file: 'File',
 } as const;
 
 const allowedFormats = ['email', 'url'] as const;

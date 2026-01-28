@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { updateUser } from './data/users';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { wrapServerCall } from './wrap-server-call';
 import { isUserErrorResponse } from './server-error-handling/user-error';
 
 type FavouritesStore = {

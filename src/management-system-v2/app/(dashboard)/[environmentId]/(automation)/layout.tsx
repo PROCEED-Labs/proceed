@@ -6,10 +6,14 @@ import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 type AutomationLayoutProps = {
-  params: { environmentId: string };
+  params: Promise<{ environmentId: string }>;
 } & React.PropsWithChildren;
 
-const AutomationsLayout: React.FC<AutomationLayoutProps> = async ({ params, children }) => {
+const AutomationsLayout: React.FC<AutomationLayoutProps> = async (props) => {
+  const params = await props.params;
+
+  const { children } = props;
+
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     return notFound();

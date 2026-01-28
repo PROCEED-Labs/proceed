@@ -1,9 +1,8 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import { useDraggable } from '@dnd-kit/core';
-import { useContext, useRef } from 'react';
+import { useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
-import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
 
 import { createContext } from 'react';
@@ -30,7 +29,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   }));
 
   const dragBlockers = useEditorStateStore((state) => state.dragBlockers);
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const frame = useFrame();
 

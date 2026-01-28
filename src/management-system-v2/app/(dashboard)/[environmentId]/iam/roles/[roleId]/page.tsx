@@ -15,11 +15,11 @@ import { getFolderById } from '@/lib/data/db/folders';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 import { Result } from 'neverthrow';
 
-const Page = async ({
-  params: { roleId, environmentId },
-}: {
-  params: { roleId: string; environmentId: string };
-}) => {
+const Page = async (props: { params: Promise<{ roleId: string; environmentId: string }> }) => {
+  const params = await props.params;
+
+  const { roleId, environmentId } = params;
+
   const currentSpace = await getCurrentEnvironment(environmentId);
   if (currentSpace.isErr()) {
     return errorResponse(currentSpace);

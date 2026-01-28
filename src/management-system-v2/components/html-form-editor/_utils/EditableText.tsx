@@ -50,7 +50,8 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
       if (!selectingText.current && !externalEditingStart.current) {
         // when not selecting text disable this element when the mouse is released outside of it
         if (editorRef.current) {
-          onChange(await editorRef.current.getCurrentValue());
+          const currentValue = await editorRef.current.getCurrentValue();
+          await Promise.resolve(onChange(currentValue));
         }
         onStopEditing?.();
       } else {
@@ -79,18 +80,16 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
                 e.stopPropagation();
                 selectingText.current = true;
               },
-              onKeyDown: (e: KeyboardEvent) => {
+              onKeyDown: async (e: KeyboardEvent) => {
                 if (e.key === 'Escape') {
                   e.stopPropagation();
 
-                  async function submit() {
-                    if (editorRef.current) {
-                      onChange((await editorRef.current.getCurrentValue()) || '');
-                    }
-                    onStopEditing?.();
+                  if (editorRef.current) {
+                    const currentValue = await editorRef.current.getCurrentValue();
+                    await Promise.resolve(onChange(currentValue || ''));
                   }
 
-                  submit();
+                  onStopEditing?.();
                 }
               },
               ...props,

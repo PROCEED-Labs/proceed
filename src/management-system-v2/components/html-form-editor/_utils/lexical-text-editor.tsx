@@ -55,7 +55,7 @@ const CleanupMarkdownPlugin: React.FC = () => {
               const text = child.getTextContent();
               // Match markdown characters followed by optional space
               if (/^[\*`_]+ ?$/.test(text)) {
-                console.log('Removing node with text:', text);
+                // console.log('Removing node with text:', text);
                 child.remove();
               }
             }

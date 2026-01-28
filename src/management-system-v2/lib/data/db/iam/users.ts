@@ -259,7 +259,7 @@ export async function updateUser(
         return err(new UserFacingError('The username is already taken'));
     }
 
-    updatedUser = { ...user, ...newUserData };
+    updatedUser = { ...user.value, ...newUserData };
   }
 
   const updatedUserFromDB = await dbMutator.user.update({

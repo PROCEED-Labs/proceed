@@ -29,6 +29,7 @@ import db from './data/db';
 import { createUserRegistrationToken } from './email-verification-tokens/utils';
 import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
 import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
+import { NotFoundError } from './server-error-handling/errors';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -404,13 +405,14 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
         // Whenever the email is active, we create the user after he verifies his email
         if (env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
           const [existingUserUsername, existingUserMail] = await Promise.all([
-            getUserByUsername(credentials.username as string),
+            getUserByUsername(credentials.username as string, { throwIfNotFound: true }),
             getUserByEmail(credentials.email as string),
           ]);
-          if (existingUserUsername) {
+
+          if (existingUserUsername.isOk()) {
             throw new NextAuthUsernameTakenError();
           }
-          if (existingUserMail) {
+          if (existingUserMail.isOk()) {
             throw new NextAuthEmailTakenError();
           }
 

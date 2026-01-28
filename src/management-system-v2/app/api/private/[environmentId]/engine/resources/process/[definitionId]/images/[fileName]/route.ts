@@ -3,9 +3,12 @@ import { auth } from '@/lib/auth';
 import { getProcessImage } from '@/lib/engines/server-actions';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(props: {
-  params: Promise<{ environmentId: string; definitionId: string; fileName: string }>;
-}) {
+export async function GET(
+  request: NextRequest,
+  props: {
+    params: Promise<{ environmentId: string; definitionId: string; fileName: string }>;
+  },
+) {
   const params = await props.params;
 
   const { environmentId, definitionId, fileName } = params;

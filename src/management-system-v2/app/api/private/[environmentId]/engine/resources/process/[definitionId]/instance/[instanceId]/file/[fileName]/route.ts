@@ -1,16 +1,19 @@
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { auth } from '@/lib/auth';
 import { getFile } from '@/lib/engines/server-actions';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(context: {
-  params: Promise<{
-    environmentId: string;
-    definitionId: string;
-    instanceId: string;
-    fileName: string;
-  }>;
-}) {
+export async function GET(
+  request: NextRequest,
+  context: {
+    params: Promise<{
+      environmentId: string;
+      definitionId: string;
+      instanceId: string;
+      fileName: string;
+    }>;
+  },
+) {
   const { environmentId, definitionId, instanceId, fileName } = await context.params;
   const session = await auth();
   if (!session) throw new UnauthorizedError();

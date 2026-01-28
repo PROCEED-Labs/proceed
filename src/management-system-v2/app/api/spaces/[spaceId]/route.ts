@@ -1,8 +1,8 @@
 import db from '@/lib/data/db';
 import { env } from '@/lib/ms-config/env-vars';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(props: { params: Promise<{ spaceId: string }> }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ spaceId: string }> }) {
   const params = await props.params;
 
   const { spaceId } = params;

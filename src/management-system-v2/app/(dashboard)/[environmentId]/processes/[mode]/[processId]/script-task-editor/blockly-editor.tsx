@@ -60,9 +60,9 @@ const BlocklyEditor = ({
   readOnly = false,
 }: BlocklyEditorProps) => {
   const blocklyDivRef = useRef<HTMLDivElement | null>(null);
-  const blocklyWorkspaceRef = useRef<Blockly.WorkspaceSvg>();
-  const blocklyPrevXml = useRef<Element | undefined>();
-  const onChangeFunc = useRef<OnChangeFunc | undefined>();
+  const blocklyWorkspaceRef = useRef<Blockly.WorkspaceSvg>(undefined);
+  const blocklyPrevXml = useRef<Element | undefined>(undefined);
+  const onChangeFunc = useRef<OnChangeFunc | undefined>(undefined);
 
   useEffect(() => {
     onChangeFunc.current = onChange;

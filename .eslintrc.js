@@ -1,7 +1,7 @@
 module.exports = {
   //this is the project root dir, eslint will not include parent config files
   root: true,
-  parser: 'babel-eslint',
+  parser: '@babel/eslint-parser',
   parserOptions: {
     ecmaVersion: 8,
   },

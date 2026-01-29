@@ -126,7 +126,7 @@ export async function isMember(
   userId: string,
   tx?: Prisma.TransactionClient,
 ) {
-  const dbMutator = tx!;
+  const dbMutator = tx ? tx : db;
 
   const environment = await getEnvironmentById(environmentId, undefined, undefined, tx);
   if (environment.isErr()) {

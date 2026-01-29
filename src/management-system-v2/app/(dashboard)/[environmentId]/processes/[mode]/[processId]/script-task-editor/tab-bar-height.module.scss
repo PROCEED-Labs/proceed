@@ -1,0 +1,16 @@
+.Tabs {
+  height: 100%;
+
+  :global(.ant-tabs-content-holder) {
+    flex: 1;
+    overflow: visible;
+  }
+
+  :global(.ant-tabs-content) {
+    height: 100%;
+  }
+
+  :global(.ant-tabs-tabpane) {
+    height: 100%;
+  }
+}

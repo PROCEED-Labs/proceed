@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.4",
+  "openapi": "3.0.5",
   "info": {
     "title": "PROCEED Management System API",
     "description": "This is the API of the  PROCEED Management System. (Visible on [Swagger Editor](https://editor-next.swagger.io/) or [https://criteria.sh/play](https://criteria.sh/play).)",
@@ -166,7 +166,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfigurationContainerMetaWithoutIdShort"
+                "$ref": "#/components/schemas/ConfigurationContainerMetaWithoutId-ShortVersionForPOST"
               }
             }
           }
@@ -243,7 +243,7 @@
         "summary": "Import an existing Configuration.",
         "description": "Import an existing Configuration, if the Configuration `id` is not yet existing. Else it will return an error, because existing configurations must first be deleted.",
         "requestBody": {
-          "description": "",
+          "description": "- if the Configuration `id` is not yet existing. Else it will return an error, because existing configurations must first be deleted.\n- all included Parameters can contain an `id`. This must not exist on the Server. If one parameter `id` exits, it will return an Error.\n- if a Parameter does not contain an `id`, a new one will be generated.",
           "required": true,
           "content": {
             "application/json": {
@@ -335,7 +335,6 @@
         "tags": ["Configurations"],
         "summary": "Read one specific Version of a Configuration Container",
         "description": "Read one specific Version of a _Configuration Container_ by its `id` and `version-id`",
-
         "responses": {
           "200": {
             "description": "one version of one configuration, same as export",
@@ -457,12 +456,10 @@
         {
           "name": "parameter-id",
           "in": "path",
-          "description": "`id` or `name` of Parameter",
+          "description": "`id` of Parameter",
           "required": true,
           "schema": {
-            "type": "string",
-            "format": "uuid",
-            "example": "6784df87-e74c-4282-9f09-6d9ee499b807"
+            "$ref": "#/components/schemas/ParameterId"
           }
         },
         {
@@ -533,7 +530,50 @@
         }
       }
     },
-    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/{version-id}/machine/{machine-id}/feedback": {
+
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/machines": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        },
+        {
+          "name": "config-container-id-or-shortName",
+          "in": "path",
+          "description": "`id` or `shortName` of _Configuration Container_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ConfigurationContainerId"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Configurations"],
+        "summary": "List each Machine Dataset of a Configuration Container with all its versions",
+        "description": "List each Machine Dataset of a Configuration Container with all its full versions.",
+        "responses": {
+          "200": {
+            "description": "List each Machine Datasets with all its versions of a specific version of a Configuration Container.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineDatasetList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Specified _Space, Configuration Container_ not found"
+          }
+        }
+      }
+    },
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/machines/{machine-dataset-id-or-name}/{full-version-number}": {
       "parameters": [
         {
           "name": "space-id",
@@ -554,21 +594,183 @@
           }
         },
         {
-          "name": "version-id",
+          "name": "machine-dataset-id-or-name",
           "in": "path",
-          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
+          "description": "The `id` or `name` of a specific _Machine Data Set_ of a Configuration Container",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/ConfigurationVersionId"
+            "$ref": "#/components/schemas/MachineConfigurationIdentifier"
           }
         },
         {
-          "name": "machine-id",
+          "name": "full-version-number",
           "in": "path",
-          "description": "The `id` of a specific _Machine Data Set_ of a Configuration Container",
+          "description": "The _full version number_ (Header-Version.M-Structure-Version.M-Version, e.g. 2.3.5) or `latest` or `latest-versioned` or `latest-acknowledged-versioned` of a specific _Machine Data Set_ of a Configuration Container",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/MachineConfigurationId"
+            "$ref": "#/components/schemas/FullVersionIdentifier"
+          }
+        },
+        {
+          "name": "aas-format",
+          "in": "query",
+          "description": "For for retrieving or setting as AAS serialization",
+          "required": false,
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Configurations"],
+        "summary": "Get one specific version of a Machine Dataset",
+        "description": "Get one specific version of a Machine Dataset",
+        "responses": {
+          "200": {
+            "description": "One specific version of a Machine Dataset with all parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parameter"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Specified _Space, Configuration Container, Machine Dataset, or Version_ not found"
+          }
+        }
+      }
+    },
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/machines/{machine-dataset-id-or-name}/{full-version-number}/acknowledged": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        },
+        {
+          "name": "config-container-id-or-shortName",
+          "in": "path",
+          "description": "`id` or `shortName` of _Configuration Container_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ConfigurationContainerId"
+          }
+        },
+        {
+          "name": "machine-dataset-id-or-name",
+          "in": "path",
+          "description": "The `id` or `name` of a specific _Machine Data Set_ of a Configuration Container",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/MachineConfigurationIdentifier"
+          }
+        },
+        {
+          "name": "full-version-number",
+          "in": "path",
+          "description": "The _full version number_ (Header-Version.M-Structure-Version.M-Version, e.g. 2.3.5) or `latest` or `latest-versioned` or `latest-acknowledged-versioned` of a specific _Machine Data Set_ of a Configuration Container",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/FullVersionIdentifier"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Configurations"],
+        "summary": "Get the Acknowledge status (de: Freifahr-Status) of a Machine Dataset",
+        "description": "Get the Acknowledge status (de: Freifahr-Status) of a Machine Dataset",
+        "responses": {
+          "200": {
+            "description": "Get the Acknowledge status (de: Freifahr-Status) of a Machine Dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean",
+                  "default": "false"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Specified _Space, Configuration Container, Machine Dataset, or Version_ not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Configurations"],
+        "summary": "Set the Acknowledge status (de: Freifahr-Status) of a Machine Dataset",
+        "description": "Set the Acknowledge status (de: Freifahr-Status) of a Machine Dataset.",
+        "parameters": [],
+        "requestBody": {
+          "description": "Set the Acknowledge status (de: Freifahr-Status) of a Machine Dataset",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Return the set acknowledge status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invalid input. Body contains the reason. For example, `feedback-time` was given, syntax invalid, etc."
+          }
+        }
+      }
+    },
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/machines/{machine-dataset-id-or-name}/{full-version-number}/feedback": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        },
+        {
+          "name": "config-container-id-or-shortName",
+          "in": "path",
+          "description": "`id` or `shortName` of _Configuration Container_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ConfigurationContainerId"
+          }
+        },
+        {
+          "name": "machine-dataset-id-or-name",
+          "in": "path",
+          "description": "The `id` or `name` of a specific _Machine Data Set_ of a Configuration Container",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/MachineConfigurationIdentifier"
+          }
+        },
+        {
+          "name": "full-version-number",
+          "in": "path",
+          "description": "The _full version number_ (Header-Version.M-Structure-Version.M-Version, e.g. 2.3.5) or `latest` or `latest-versioned` or `latest-acknowledged-versioned` of a specific _Machine Data Set_ of a Configuration Container",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/FullVersionIdentifier"
           }
         }
       ],
@@ -593,7 +795,7 @@
         }
       }
     },
-    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/{version-id}/machine/{machine-id}/feedback/{feedback-time}": {
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/machines/{machine-dataset-id-or-name}/{full-version-number}/feedback/{feedback-time}": {
       "parameters": [
         {
           "name": "space-id",
@@ -614,21 +816,21 @@
           }
         },
         {
-          "name": "version-id",
+          "name": "machine-dataset-id-or-name",
           "in": "path",
-          "description": "Either `latest` or the `id` of a specific _Version_ of a Configuration Container",
+          "description": "The `id` or `name` of a specific _Machine Data Set_ of a Configuration Container",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/ConfigurationVersionId"
+            "$ref": "#/components/schemas/MachineConfigurationIdentifier"
           }
         },
         {
-          "name": "machine-id",
+          "name": "full-version-number",
           "in": "path",
-          "description": "The `id` of a specific _Machine Data Set_ of a Configuration Container",
+          "description": "The _full version number_ (Header-Version.M-Structure-Version.M-Version, e.g. 2.3.5) or `latest` or `latest-versioned` or `latest-acknowledged-versioned` of a specific _Machine Data Set_ of a Configuration Container",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/MachineConfigurationId"
+            "$ref": "#/components/schemas/FullVersionIdentifier"
           }
         },
         {
@@ -658,17 +860,7 @@
         "tags": ["Configurations"],
         "summary": "Add Feedback for a specific Version of a Machine Data Set",
         "description": "Add Feedback for a specific Version of a Machine Data Set of a Configuration Container.",
-        "parameters": [
-          {
-            "name": "version-id",
-            "in": "path",
-            "description": "`id` of a specific _Version_. `latest` is not allowed.",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ConfigurationVersionId"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "Feedback for a Machine Data Set. `feedback-time` is generated by the server.",
           "required": true,
@@ -745,7 +937,7 @@
         "format": "uuid",
         "example": "27efb505-4485-41fe-9b3d-5289853f5493"
       },
-      "ConfigurationContainerMetaWithoutIdShort": {
+      "ConfigurationContainerMetaWithoutId-ShortVersionForPOST": {
         "type": "object",
         "properties": {
           "shortName": {
@@ -778,9 +970,21 @@
                 "example": "Rob001"
               },
               "linkValueToParameterValue": {
-                "type": "string",
-                "format": "uuid",
-                "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+                  },
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": ["Header", "Identifier"]
+                  }
+                }
               }
             }
           },
@@ -793,9 +997,21 @@
                 "example": "Robot Config Set for Grinding"
               },
               "linkValueToParameterValue": {
-                "type": "string",
-                "format": "uuid",
-                "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+                  },
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": ["Header", "Name"]
+                  }
+                }
               }
             }
           },
@@ -808,9 +1024,21 @@
                 "example": "This is the Robot Config Set for Grinding"
               },
               "linkValueToParameterValue": {
-                "type": "string",
-                "format": "uuid",
-                "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+                  },
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": ["Header", "Description"]
+                  }
+                }
               }
             }
           },
@@ -823,9 +1051,21 @@
                 "example": "Robot;Kuka"
               },
               "linkValueToParameterValue": {
-                "type": "string",
-                "format": "uuid",
-                "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "e434e6cc-2c45-442c-bdf7-d265ed5a1ffa"
+                  },
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": ["Header", "Categories"]
+                  }
+                }
               }
             }
           }
@@ -892,7 +1132,7 @@
       },
       "ConfigurationVersionId": {
         "type": "string",
-        "example": "latest"
+        "example": "Integer: 1, 2, 3, ... OR 'latest'"
       },
       "ParameterId": {
         "type": "string",
@@ -952,7 +1192,7 @@
           },
           "value": {
             "type": "string",
-            "example": "3.12"
+            "example": "number: 3.12, or string: test value"
           },
           "valueType": {
             "type": "string",
@@ -1042,33 +1282,56 @@
           }
         ]
       },
-      "MachineConfigurationList": {
+      "MachineDatasetList": {
         "type": "array",
         "items": {
           "type": "object",
-          "required": ["id"],
           "properties": {
-            "id": {
-              "$ref": "#/components/schemas/MachineConfigurationId"
+            "machine-dataset-id": {
+              "$ref": "#/components/schemas/MachineConfigurationIdentifier"
+            },
+            "machine-dataset-name": {
+              "type": "string",
+              "example": "MachineDataset-1"
+            },
+            "latest-versioned-full-version-number": {
+              "type": "string",
+              "example": "2.3.0"
+            },
+            "latest-versioned-acknowledged-full-version-number": {
+              "type": "string",
+              "example": "1.2.1"
+            },
+            "versions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "example": "1.2.1"
+              },
+              "example": ["1.1.0", "1.1.1", "1.2.0", "1.2.1", "2.3.0"]
             }
           }
         }
       },
-      "MachineConfigurationId": {
+      "MachineConfigurationIdentifier": {
         "type": "string",
-        "format": "uuid",
-        "example": "a1d86731-d3a4-43f9-98e5-d23a27987f3a"
+        "example": "_name_ or id: a1d86731-d3a4-43f9-98e5-d23a27987f3a"
+      },
+      "FullVersionIdentifier": {
+        "type": "string",
+        "example": "2.3.5 OR `latest` OR `latest-versioned` OR `latest-acknowledged-versioned`"
       },
       "FeedbackList": {
         "type": "array",
         "items": {
           "$ref": "#/components/schemas/FeedbackTime"
-        }
+        },
+        "example": ["2025-04-12T23:20:50.52Z", "2025-04-29T08:03:10.00Z", "2025-05-23T11:50:02.34Z"]
       },
       "FeedbackTime": {
         "type": "string",
         "format": "date-time",
-        "example": "2025-04-12T23:20:50.52Z, 2025-04-29T08:03:10.00Z, 2025-05-23T11:50:02.34Z"
+        "example": "2025-04-12T23:20:50.52Z"
       }
     },
     "responses": {},

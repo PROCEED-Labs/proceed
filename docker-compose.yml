@@ -2,7 +2,7 @@ services:
   proceed_standalone_management_system:
     image: proceed/ms-server:standalone
     container_name: proceed_standalone_management_system
-    restart: always
+    restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql://proceed:proceed@proceed_standalone_postgres_database:5432/proceed_db?schema=public
       - NEXTAUTH_URL=http://localhost:3002
@@ -23,9 +23,9 @@ services:
       - proceed-standalone-network
 
   proceed_standalone_postgres_database:
-    image: postgres:latest
+    image: postgres:17.7
     container_name: proceed_standalone_postgres_database
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_DB: proceed_db
       POSTGRES_USER: proceed
@@ -38,7 +38,9 @@ services:
   proceed_standalone_engine:
     image: proceed/engine:edge
     container_name: proceed_standalone_engine
-    restart: always
+    restart: unless-stopped
+    ports:
+      - '33029:33029'
     networks:
       - proceed-standalone-network
 

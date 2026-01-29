@@ -1,0 +1,6 @@
+.DisabledConditionInput {
+  :global(.view-lines) {
+    cursor: not-allowed;
+    background-color: rgb(245, 245, 245);
+  }
+}

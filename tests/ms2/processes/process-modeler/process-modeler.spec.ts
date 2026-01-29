@@ -1,6 +1,6 @@
 import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from '../processes.fixtures';
-import { openModal, closeModal } from '../../testUtils';
+import { openModal, closeModal, waitForHydration } from '../../testUtils';
 
 test('process modeler', async ({ processModelerPage, processListPage }) => {
   test.slow();
@@ -13,7 +13,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   /* While the xml editor is there, the xml is still loading, wait for it to load, before closing the modal */
   await expect(page.getByText('<?xml version="1.0" encoding')).toBeVisible();
   //todo: check xml for startevent
-  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Save' }).click());
+  await closeModal(modal, async () => await modal.getByRole('button', { name: 'Ok' }).click());
 
   // Open/collapse/close properties panel
   const propertiesPanel = page.getByRole('region', { name: 'Properties' });
@@ -34,7 +34,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
     .getByRole('button', { name: 'plus' });
   modal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationDialog = page.getByRole('dialog', {
-    name: 'Create New Version',
+    name: 'Release a new Process Version',
   });
   await expect(versionCreationDialog).toBeVisible();
   await closeModal(modal, () => modal.getByRole('button', { name: 'Cancel' }).click());
@@ -48,7 +48,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
     'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volu';
   modal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationSubmitButton = modal.getByRole('button', {
-    name: 'Create Version',
+    name: 'Release Version',
   });
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal.getByPlaceholder('Version Name').fill('Version 1');
@@ -68,7 +68,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(page.getByRole('option', { name: 'Version 1' })).toBeVisible();
   await page.getByRole('option', { name: 'Version 1' }).click();
   const expectedURLWithVersion = new RegExp(
-    `\\/processes\\/${definitionId}\\?version=[a-zA-Z0-9-_]+$`,
+    `\\/processes\\/editor\\/${definitionId}\\?version=[a-zA-Z0-9-_]+$`,
   );
   await page.waitForURL(expectedURLWithVersion);
   expect(expectedURLWithVersion.test(page.url())).toBeTruthy();
@@ -113,12 +113,12 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await closeModal(processCreationDialog, () =>
     processCreationDialog.getByRole('button', { name: 'Create' }).click(),
   );
-  const expectedURLNewProcess = new RegExp(`\\/processes\\/[a-zA-Z0-9-_]+`);
+  const expectedURLNewProcess = new RegExp(`\\/processes\\/editor\\/[a-zA-Z0-9-_]+`);
   await page.waitForURL((url) => {
     return url.pathname.match(expectedURLNewProcess) && !url.pathname.includes(definitionId);
   });
   expect(expectedURLNewProcess.test(page.url())).toBeTruthy();
-  const newDefinitionID = page.url().split('/processes/').pop();
+  const newDefinitionID = page.url().split('/processes/editor/').pop();
   expect(newDefinitionID).not.toEqual(definitionId);
 
   // Not only wait for URL change, but also new content to be loaded.
@@ -130,11 +130,11 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(openSubprocessButton).toBeVisible();
   await openSubprocessButton.click();
   const expectedURLSubprocess = new RegExp(
-    `\\/processes\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
+    `\\/processes\\/editor\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
   );
   await page.waitForURL(expectedURLSubprocess);
   expect(expectedURLSubprocess.test(page.url())).toBeTruthy();
-  const newSubprocessDefinitionID = page.url().split('/processes/').pop();
+  const newSubprocessDefinitionID = page.url().split('/processes/editor/').pop();
   expect(newSubprocessDefinitionID).not.toEqual(definitionId);
 });
 
@@ -151,7 +151,7 @@ test.describe('Shortcuts in Modeler', () => {
     await page.getByRole('main').press('Escape');
 
     /* Wait for navigation change */
-    await page.waitForURL(/\/processes$/);
+    await page.waitForURL(/\/processes\/editor$/);
 
     // await processModelerPage.waitForHydration();
 
@@ -261,7 +261,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${process1Id}"]>td:nth-child(3)`).click();
 
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await page.waitForURL(/processes\/editor\/[a-z0-9-_]+/);
 
   // create new process version - Needed for embed
   const openVersionCreationDialog = page
@@ -269,13 +269,13 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
     .getByRole('button', { name: 'plus' });
   let versionModal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationDialog = page.getByRole('dialog', {
-    name: 'Create New Version',
+    name: 'Release a new Process Version',
   });
   await expect(versionCreationDialog).toBeVisible();
 
   // Fill version creation dialog and create new version
   const versionCreationSubmitButton = versionModal.getByRole('button', {
-    name: 'Create Version',
+    name: 'Release Version',
   });
   await versionModal.getByPlaceholder('Version Name').fill('Version 1');
   await versionModal.getByPlaceholder('Version Description').fill('description');
@@ -283,7 +283,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   //Open share modal
   const modal = await openModal(page, () =>
-    page.getByRole('button', { name: 'share-alt' }).click(),
+    page.getByRole('button', { name: 'share-alt', exact: true }).click(),
   );
 
   //await expect(page.getByText('Share', { exact: true })).toBeVisible();
@@ -322,6 +322,9 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
+  // Wait for hydration
+  await newPage.getByText('Loading process data').waitFor({ state: 'hidden' });
+
   // Add the shared process to the workspace
   await openModal(newPage, async () => {
     await newPage.getByRole('button', { name: 'edit' }).click();
@@ -337,9 +340,9 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
-  const newProcessId = newPage.url().split('/processes/').pop();
+  const newProcessId = newPage.url().split('/editor/').pop();
 
-  await newPage.getByRole('menuitem', { name: 'Processes' }).click();
+  //await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();
   await newPage.waitForURL(/processes/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();

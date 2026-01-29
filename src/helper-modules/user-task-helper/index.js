@@ -137,10 +137,10 @@ async function getCorrectMilestoneState(bpmn, userTask, instance) {
 }
 
 const script = `
-    const instanceID = '{{instanceId}}';
-    const userTaskID = '{{userTaskId}}';
+    const instanceID = '{%instanceId%}';
+    const userTaskID = '{%userTaskId%}';
 
-    const variableDefinitions = {{variableDefinitions}};
+    const variableDefinitions = {%variableDefinitions%};
 
     function getValueFromCheckbox(checkbox) {
       if (!checkbox.defaultValue) {
@@ -150,12 +150,14 @@ const script = `
       }
     }
 
-    function getValueFromVariableElement(element) {
+    function getValueFromVariableElement(variableName, element) {
       let value;
       if (element.tagName === 'INPUT') {
         if (element.type === 'number') {
           value = element.value && parseFloat(element.value);
           if (Number.isNaN(value)) throw new Error('The given value is not a valid number.');
+        } else if (element.type === 'file') {
+          value = element.files.length ? element.files[0] : undefined;
         } else {
           value = element.value;
         }
@@ -174,6 +176,11 @@ const script = `
           } else if (radios.length) {
             const checked = radios.find(r => r.checked === true);
             value = checked.value;
+
+            const definition = variableDefinitions[variableName];
+            if (definition && definition.dataType === 'number') {
+              value = value && parseFloat(value);
+            }
           }
         }
       }
@@ -211,44 +218,90 @@ const script = `
     window.addEventListener('submit', (event) => {
       event.preventDefault();
 
-      const variableElements = Array.from(document.querySelectorAll('[class*=\"variable-\"]'));
+      async function submitData() {
+        const variableElements = Array.from(document.querySelectorAll('[class*=\"variable-\"]'));
 
-      const variables = {};
-      let validationErrors = 0;
-      variableElements.forEach(el => {
-        const key = Array.from(el.classList.values()).find(c => c.startsWith('variable-')).split('variable-')[1];
-        try {
-          const value = getValueFromVariableElement(el);
-          validateValue(key, value);
-          updateValidationErrorMessage(key);
-          variables[key] = value;
-        } catch (err) {
-          ++validationErrors;
-          updateValidationErrorMessage(key, err.message);
+        const variables = {};
+        let validationErrors = 0;
+        variableElements.forEach(el => {
+          const key = Array.from(el.classList.values()).find(c => c.startsWith('variable-')).split('variable-')[1];
+          try {
+            const value = getValueFromVariableElement(key, el);
+            validateValue(key, value);
+            updateValidationErrorMessage(key);
+            variables[key] = value;
+          } catch (err) {
+            ++validationErrors;
+            updateValidationErrorMessage(key, err.message);
+          }
+        });
+
+        if (validationErrors) return;
+
+        const data = new FormData(event.target);
+        const entries = data.entries();
+        let entry = entries.next();
+        while (!entry.done) {
+          const [key, value] = entry.value;
+          if (!variables[key]) variables[key] = value;
+          entry = entries.next();
         }
-      });
 
-      if (validationErrors) return;
+        for (const [key, value] of Object.entries(variables)) {
+          // if the value set for a variable is a file => upload the file and replace the variable
+          // with a reference to the stored file
+          if (value instanceof File) {
+            const buffer = await value.arrayBuffer();
+            const { path } = await window.PROCEED_DATA.post(
+              '/tasklist/api/variable-file',
+              Array.from(new Uint8Array(buffer)),
+              {
+                instanceID,
+                userTaskID,
+                type: value.type,
+                name: value.name
+              },
+            );
+            variables[key] = path;
+          }
+        }
 
-      const data = new FormData(event.target);
-      const entries = data.entries();
-      let entry = entries.next();
-      while (!entry.done) {
-        const [key, value] = entry.value;
-        if (!variables[key]) variables[key] = value;
-        entry = entries.next();
+        window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
+            instanceID,
+            userTaskID,
+        }).then(() => {
+          window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
+            instanceID,
+            userTaskID,
+          });
+        });
       }
 
-      window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
-          instanceID,
-          userTaskID,
-      }).then(() => {
-        window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
-          instanceID,
-          userTaskID,
-        });
-      });
+      submitData();
     })
+
+    function updateUploadInfo(input) {
+      const parent = input.parentElement.parentElement;
+      const selectedFileElements = parent.getElementsByClassName("selected-files");
+      if (selectedFileElements.length) {
+        const [selectedFileElement] = selectedFileElements;
+        for (const child of selectedFileElement.childNodes) {
+          selectedFileElement.removeChild(child);
+        }
+        for (const file of input.files) {
+          const div = document.createElement('div');
+          if (file.type.startsWith('image')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.alt = file.name;
+            div.appendChild(img);
+          } else {
+            div.textContent = file.name;
+          }
+          selectedFileElement.appendChild(div);
+        }
+      }
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
       const milestoneInputs = document.querySelectorAll(
@@ -277,40 +330,60 @@ const script = `
         });
       });
 
+      // get all input(-group)s that can be used to set the value of an input
       const variableInputs = document.querySelectorAll(
-        'input[class^="variable-"]'
+        '[class*="variable-"]'
       );
-      Array.from(variableInputs).filter(input => input.tagName === 'INPUT').forEach((variableInput) => {
+      Array.from(variableInputs).forEach((variableInput) => {
         let variableInputTimer;
 
-        variableInput.addEventListener('input', (event) => {
-          const variableName = Array.from(event.target.classList)
+        // a single input or all inputs in the group
+        let inputs;
+        if (variableInput.tagName === 'INPUT') inputs = [variableInput];
+        else {
+          inputs = Array.from(variableInput.getElementsByTagName('input'));
+        }
+
+        // the name of the variable assigned to the input/group
+        const variableName = Array.from(variableInput.classList)
           .find((className) => className.includes('variable-'))
           .split('variable-')
           .slice(1)
           .join('');
 
-          clearTimeout(variableInputTimer);
+        // add a handler that will save intermediate changes when a user interacts with the
+        // input/group (with a debounce)
+        inputs.forEach((input) => {
+          input.addEventListener('input', (event) => {
+            // cancel pending updates
+            clearTimeout(variableInputTimer);
 
-          variableInputTimer = setTimeout(() => {
-            try {
-              const value = getValueFromVariableElement(event.target);
-
-              validateValue(variableName, value);
-              updateValidationErrorMessage(variableName);
-
-              window.PROCEED_DATA.put(
-                '/tasklist/api/variable',
-                { [variableName]: value },
-                {
-                  instanceID,
-                  userTaskID,
-                }
-              );
-            } catch (err) {
-              updateValidationErrorMessage(variableName, err.message);
+            if (event.target.type === 'file') {
+              updateUploadInfo(event.target);
+              return;
             }
-          }, 2000)
+
+            // trigger a timeout for an update to commit
+            variableInputTimer = setTimeout(() => {
+              try {
+                const value = getValueFromVariableElement(variableName, variableInput);
+
+                validateValue(variableName, value);
+                updateValidationErrorMessage(variableName);
+
+                window.PROCEED_DATA.put(
+                  '/tasklist/api/variable',
+                  { [variableName]: value },
+                  {
+                    instanceID,
+                    userTaskID,
+                  }
+                );
+              } catch (err) {
+                updateValidationErrorMessage(variableName, err.message);
+              }
+            }, 2000)
+          });
         });
       });
     })

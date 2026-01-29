@@ -10,6 +10,7 @@ import {
   generateUserTaskFileName,
   getDefinitionsId,
   getDefinitionsVersionInformation,
+  getElementsByTagName,
   setDefinitionsName,
   setDefinitionsVersionInformation,
   toBpmnObject,
@@ -17,7 +18,7 @@ import {
   updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
@@ -57,6 +58,8 @@ import {
   saveProcessScriptTask as _saveProcessScriptTask,
   deleteProcessScriptTask as _deleteProcessScriptTask,
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
+  getFolderScriptTasks as _getFolderScriptTasks,
+  getFolderPathScriptTasks as _getFolderPathScriptTasks,
 } from '@/lib/data/db/process';
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
@@ -177,6 +180,7 @@ export const addProcesses = async (
     folderId?: string;
     userDefinedId?: string;
     id?: string;
+    executable?: boolean;
   }[],
   spaceId: string,
   generateNewId: boolean = false,
@@ -215,6 +219,7 @@ export const addProcesses = async (
       creatorId: userId,
       environmentId: activeEnvironment.spaceId,
       folderId: value.folderId,
+      executable: value.executable,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -284,7 +289,7 @@ export const updateProcess = async (
   // cache here so that the old BPMN isn't reused within 30s. See:
   // https://nextjs.org/docs/app/building-your-application/caching#invalidation-1
   if (invalidate) {
-    revalidatePath(`/processes/${definitionsId}`);
+    revalidatePath(`/processes/editor/${definitionsId}`);
   }
 
   await _updateProcess(definitionsId, { bpmn: newBpmn });
@@ -303,7 +308,7 @@ export const updateProcessMetaData = async (
   await _updateProcessMetaData(definitionsId, metaChanges);
 
   if (invalidate) {
-    revalidatePath(`/processes/${definitionsId}`);
+    revalidatePath(`/processes/editor/${definitionsId}`);
   }
 };
 
@@ -463,6 +468,9 @@ export const copyProcesses = async (
     // TODO: Does createProcess() do the same as this function?
     let newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
 
+    const bpmnObj = await toBpmnObject(newBpmn);
+    const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
+
     // TODO: include variables in copy?
     const newProcess = {
       creatorId: userId,
@@ -470,6 +478,7 @@ export const copyProcesses = async (
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,
       folderId: destinationfolderId,
+      executable: !!processObj.isExecutable,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -640,17 +649,43 @@ export const saveProcessHtmlForm = async (
   html: string,
   spaceId: string,
 ) => {
-  const error = await checkValidity(definitionId, 'update', spaceId);
+  try {
+    const error = await checkValidity(definitionId, 'update', spaceId);
 
-  if (error) return error;
+    if (error) return error;
 
-  if (/-\d+$/.test(fileName))
-    return userError(
-      'Illegal attempt to overwrite a html form version!',
-      UserErrorType.ConstraintError,
-    );
+    if (/-\d+$/.test(fileName))
+      return userError(
+        'Illegal attempt to overwrite a html form version!',
+        UserErrorType.ConstraintError,
+      );
 
-  _saveProcessHtmlForm(definitionId, fileName, json, html, undefined, true);
+    await _saveProcessHtmlForm(definitionId, fileName, json, html, undefined, true);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+};
+export const getFolderScriptTasks = async (environmentId: string, folderId?: string) => {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return await _getFolderScriptTasks(environmentId, folderId, ability);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+};
+
+export const getFolderPathScriptTasks = async (environmentId: string, folderId: string) => {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return await _getFolderPathScriptTasks(environmentId, folderId, ability);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 };
 
 export const getProcessScriptTaskData = async (

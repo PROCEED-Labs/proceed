@@ -14,7 +14,7 @@ services:
       - proceed-network
 
   proceed_research_postgres_database:
-    image: postgres:latest
+    image: postgres:17.7
     container_name: proceed_research_postgres_database
     env_file: .env.research
     restart: always

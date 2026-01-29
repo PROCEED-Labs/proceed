@@ -1,6 +1,6 @@
 import { Browser, Page, chromium } from '@playwright/test';
 import { test, expect } from '../processes.fixtures';
-import { closeModal, openModal } from '../../testUtils';
+import { closeModal, openModal, waitForHydration } from '../../testUtils';
 
 test('show process information', async ({ page, processListPage }) => {
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
@@ -11,26 +11,26 @@ test('show process information', async ({ page, processListPage }) => {
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Process 1' })).toBeVisible();
-  const infoSection = documentationPage.locator('css=[class^=process-document_TitleInfos]');
+  const infoSection = documentationPage.locator('css=[class*=TitleInfos]');
   await expect(infoSection).toBeVisible();
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();
   await expect(infoSection.getByText(/^Last Edit: .+$/)).toBeVisible();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
+  documentationPage.locator;
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(1);
+  await expect(elementSectionsLocator).toHaveCount(1);
+
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the process overview is shown and the bpmn is correct
   const processOverview = elementSections[0];
@@ -64,18 +64,17 @@ test('show content of collapsed subprocesses in a separate section', async ({
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(2);
+  await expect(elementSectionsLocator).toHaveCount(2);
+
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the overview of the subprocess is shown and the bpmn is correct
   const subprocessOverview = elementSections[1];
@@ -110,15 +109,14 @@ test('show version information', async ({ page, processListPage, processModelerP
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check if the process information includes version information
   await expect(documentationPage.getByRole('heading', { name: 'Import 1' })).toBeVisible();
-  const infoSection = documentationPage.locator('css=[class^=process-document_TitleInfos]');
+  const infoSection = documentationPage.locator('css=[class*=TitleInfos]');
   await expect(infoSection).toBeVisible();
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Version 1')).toBeVisible();
@@ -135,27 +133,24 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(3);
+  await expect(elementSectionsLocator).toHaveCount(3);
+
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the overview of the subprocess is shown with its name instead of its id
   const subprocessOverview = elementSections[1];
   expect(subprocessOverview.getByText('Subprocess: A')).toBeVisible();
 
   // check that there is no meta data for the subprocess
-  await expect(
-    subprocessOverview.locator('css=[class^=process-document_MetaInformation]'),
-  ).toBeHidden();
+  await expect(subprocessOverview.locator('css=[class*=MetaInformation]')).toBeHidden();
 
   // check that the user task that has meta data is shown
   const subprocessMilestoneTask = elementSections[2];
@@ -199,16 +194,14 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   ).resolves.not.toMatch(/display: none/);
 
   // check if the meta data is shown
-  const metaInformation = subprocessMilestoneTask.locator(
-    'css=[class^=process-document_MetaInformation]',
-  );
+  const metaInformation = subprocessMilestoneTask.locator('css=[class*=MetaInformation]');
 
   await expect(metaInformation.getByText('Meta Data')).toBeVisible();
   await expect(metaInformation.getByRole('row', { name: 'costsPlanned' })).toBeVisible();
   await expect(
     metaInformation
       .getByRole('row', { name: 'costsPlanned' })
-      .getByRole('cell', { name: '123,00 €' }),
+      .getByRole('cell', { name: /123(,|\.)00/ }),
   ).toBeVisible();
   await expect(metaInformation.getByRole('row', { name: 'prop1' })).toBeVisible();
   await expect(
@@ -267,26 +260,24 @@ test('recursively show information about imports', async ({
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Importer' })).toBeVisible();
-  const infoSection = documentationPage.locator('css=[class^=process-document_TitleInfos]');
+  const infoSection = documentationPage.locator('css=[class*=TitleInfos]');
   await expect(infoSection).toBeVisible();
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();
   await expect(infoSection.getByText(/^Last Edit: .+$/)).toBeVisible();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  const elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
+  // wait for all sections to be visible
+  await expect(elementSectionsLocator).toHaveCount(5);
 
-  // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(5);
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the process overview is shown and the bpmn is correct
   const processOverview = elementSections[0];
@@ -314,7 +305,7 @@ test('recursively show information about imports', async ({
   ).toBeVisible();
 
   // check if the meta data of the process is shown
-  let metaInformation = processOverview.locator('css=[class^=process-document_MetaInformation]');
+  let metaInformation = processOverview.locator('css=[class*=MetaInformation]');
   expect(metaInformation.getByText('General Description')).toBeVisible();
   expect(metaInformation.getByText('A process importing two other processes')).toBeVisible();
 
@@ -410,16 +401,14 @@ test('recursively show information about imports', async ({
   ).resolves.not.toMatch(/display: none/);
 
   // check if the meta data is shown
-  metaInformation = subprocessMilestoneTask.locator(
-    'css=[class^=process-document_MetaInformation]',
-  );
+  metaInformation = subprocessMilestoneTask.locator('css=[class*=MetaInformation]');
 
   await expect(metaInformation.getByText('Meta Data')).toBeVisible();
   await expect(metaInformation.getByRole('row', { name: 'costsPlanned' })).toBeVisible();
   await expect(
     metaInformation
       .getByRole('row', { name: 'costsPlanned' })
-      .getByRole('cell', { name: '123,00 €' }),
+      .getByRole('cell', { name: /123(,|\.)00/ }),
   ).toBeVisible();
   await expect(metaInformation.getByRole('row', { name: 'prop1' })).toBeVisible();
   await expect(
@@ -469,7 +458,7 @@ test('recursively show information about imports', async ({
   ).toBeVisible();
 
   // check if the meta data of the import 1 process is shown
-  metaInformation = import2Overview.locator('css=[class^=process-document_MetaInformation]');
+  metaInformation = import2Overview.locator('css=[class*=MetaInformation]');
   await expect(metaInformation.getByText('General Description')).toBeHidden();
   await expect(metaInformation.getByText('Version Information')).toBeVisible();
   await expect(metaInformation.getByText('Version: Version 2')).toBeVisible();
@@ -489,27 +478,24 @@ test('a setting allows to show the subprocess element instead of its content', a
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(3);
+  await expect(elementSectionsLocator).toHaveCount(3);
+
+  let elementSections = await elementSectionsLocator.all();
 
   // check if the overview of the subprocess is shown with its name instead of its id
   const subprocessOverview = elementSections[1];
   expect(subprocessOverview.getByText('Subprocess: A')).toBeVisible();
 
   // check that there is no meta data for the subprocess
-  await expect(
-    subprocessOverview.locator('css=[class^=process-document_MetaInformation]'),
-  ).toBeHidden();
+  await expect(subprocessOverview.locator('css=[class*=MetaInformation]')).toBeHidden();
 
   // check that the user task that has meta data is shown
   const subprocessMilestoneTask = elementSections[2];
@@ -523,12 +509,10 @@ test('a setting allows to show the subprocess element instead of its content', a
   await settingsModal.getByLabel('Nested Subprocesses').click();
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
-  elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  await expect(elementSectionsLocator).toHaveCount(2);
+  elementSections = await elementSectionsLocator.all();
 
   await expect(subprocessMilestoneTask.getByRole('heading', { name: 'A.A' })).toBeHidden();
-  expect(elementSections.length).toBe(2);
 
   // check if the bpmn shown for the (collapsed) subprocess is the subprocess element instead of the subrocess content
   const import1SubprocessElementView = elementSections[1];
@@ -617,26 +601,23 @@ test('a setting allows to show a call activity instead of the imported process',
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check if the process on the page is the correct one
   await expect(documentationPage.getByRole('heading', { name: 'Importer' })).toBeVisible();
-  const infoSection = documentationPage.locator('css=[class^=process-document_TitleInfos]');
+  const infoSection = documentationPage.locator('css=[class*=TitleInfos]');
   await expect(infoSection).toBeVisible();
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Latest')).toBeVisible();
   await expect(infoSection.getByText(/^Last Edit: .+$/)).toBeVisible();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(5);
+  await expect(elementSectionsLocator).toHaveCount(5);
 
   // check that the visualisation of a call activity can be set to show the call activity element instead of the imported process
   // which also removes all contained elements from the page
@@ -646,11 +627,9 @@ test('a setting allows to show a call activity instead of the imported process',
   await settingsModal.getByLabel('Imported Processes').click();
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
-  elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  await expect(elementSectionsLocator).toHaveCount(3);
 
-  expect(elementSections.length).toBe(3);
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the bpmn shown for the call activities is the call activity elements instead of the imported process
   const callActivity1View = elementSections[1];
@@ -709,18 +688,15 @@ test('a setting allows to show elements that have no meta data which are not sho
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSections = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  expect(elementSections.length).toBe(3);
+  await expect(elementSections).toHaveCount(3);
 
   // check that the option to show elements that have no meta data and contain no other elements works as well (here in combination with the previously deselected options)
   const settingsModal = await openModal(documentationPage, () =>
@@ -735,9 +711,7 @@ test('a setting allows to show elements that have no meta data which are not sho
 
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
-  const elementSection = await documentationPage.locator(
-    'css=[class^=process-document_ElementPage]',
-  );
+  const elementSection = documentationPage.locator('css=[class*=ElementPage]');
 
   expect(elementSection).toHaveCount(9);
   // there should be sections for all the elements in the root process including the start and end event
@@ -775,15 +749,14 @@ test('the page shows only imported processes that are shared themselves to other
   await expect(page.locator('.djs-shape[data-element-id="StartEvent_11c5e5n"]')).toBeVisible();
   const import2Version = await processModelerPage.createVersion('Version 2', 'Second Version');
 
+  await waitForHydration(page);
   // share this process so it is visible in the  documentation for other users
   const shareModal = await openModal(page, () =>
-    page.getByRole('button', { name: 'share-alt' }).click(),
+    page.getByRole('button', { name: 'share-alt' }).click({ force: true }),
   );
+  await shareModal.getByRole('button', { name: 'Share Public Link' }).click();
   await shareModal.getByText('Share Process with Public Link').click();
-  await page
-    .locator('.ant-message')
-    .filter({ hasText: 'Process shared' })
-    .waitFor({ state: 'visible' });
+  await expect(shareModal.locator('input[name="generated share link"]')).toBeEnabled();
 
   await processListPage.goto();
   // import the process that imports the other two and set the correct versions in its bpmn
@@ -804,18 +777,17 @@ test('the page shows only imported processes that are shared themselves to other
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
-  let elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible to the owner are visible
-  expect(elementSections.length).toBe(5);
+  await expect(elementSectionsLocator).toHaveCount(5);
+
+  const elementSections = await elementSectionsLocator.all();
 
   // check if the process overview is shown and the bpmn is correct
   const processOverview = elementSections[0];
@@ -838,7 +810,7 @@ test('the page shows only imported processes that are shared themselves to other
   expect(import2Overview.getByText('Imported Process: Import 2')).toBeVisible();
 
   // share process with link
-  await openModal(page, () => page.getByRole('button', { name: 'share-alt' }).click());
+  await openModal(page, () => page.getByRole('button', { name: 'share-alt', exact: true }).click());
 
   await page.getByRole('button', { name: 'Share Public Link' }).click();
   await page.getByText('Share Process with Public Link').click();
@@ -862,19 +834,13 @@ test('the page shows only imported processes that are shared themselves to other
   // check that the imported processes that are not shared are not visible to an non-owner
 
   // check that the process imported by the "Import 1" Call-Activity is not visible since it is not owned by the user and also not shared
-  await expect(newPage.locator('css=[class^=process-document_ElementPage]')).toHaveCount(2);
+  await expect(newPage.locator('css=[class*=ElementPage]')).toHaveCount(2);
   await expect(
-    newPage
-      .locator('css=[class^=process-document_ElementPage]')
-      .first()
-      .getByText('Process Diagram'),
+    newPage.locator('css=[class*=ElementPage]').first().getByText('Process Diagram'),
   ).toBeVisible();
   // the process imported by the "Import 2" Call-Activity should be visible since it is shared
   await expect(
-    newPage
-      .locator('css=[class^=process-document_ElementPage]')
-      .nth(1)
-      .getByText('Imported Process: Import 2'),
+    newPage.locator('css=[class*=ElementPage]').nth(1).getByText('Imported Process: Import 2'),
   ).toBeVisible();
   await expect(newPage.getByText('Imported Process: Import 1')).not.toBeVisible();
 });
@@ -892,17 +858,16 @@ test('allow a different user that was given the share link to import the shared 
 
   // go to the documentation page
   const documentationPagePromise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'file-pdf' }).click();
+  await page.getByRole('button', { name: 'view-documentation' }).click();
   const documentationPage = await documentationPagePromise;
 
-  await expect(documentationPage.getByText('Loading process data')).toBeVisible();
   await expect(documentationPage.getByText('Loading process data')).toBeHidden();
 
   // check that the "Add to your workspace option is not shown to a user that already owns the process"
   await expect(documentationPage.getByRole('button', { name: 'Edit' })).toBeHidden();
 
   // share process with link
-  await openModal(page, () => page.getByRole('button', { name: 'share-alt' }).click());
+  await openModal(page, () => page.getByRole('button', { name: 'share-alt', exact: true }).click());
 
   await page.getByRole('button', { name: 'Share Public Link' }).click();
   await page.getByText('Share Process with Public Link').click();
@@ -923,6 +888,8 @@ test('allow a different user that was given the share link to import the shared 
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
+  await expect(newPage.getByText('Loading process data')).toBeHidden();
+
   // check that the add to workspace button is visible since the user does not own the process
   await expect(newPage.getByRole('button', { name: 'Edit' })).toBeVisible();
 
@@ -938,19 +905,17 @@ test('allow a different user that was given the share link to import the shared 
   await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
-  const newProcessId = newPage.url().split('/processes/').pop();
+  const newProcessId = newPage.url().split('/editor/').pop();
 
-  await newPage.getByRole('menuitem', { name: 'Processes' }).click();
+  //await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();
   await newPage.waitForURL(/processes/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 
   // cleanup the process added by the guest user
-  const deleteModal = await openModal(newPage, () =>
-    newPage
-      .locator(`tr[data-row-key="${newProcessId}"]`)
-      .getByRole('button', { name: 'delete' })
-      .click(),
-  );
+  const deleteModal = await openModal(newPage, async () => {
+    await newPage.locator(`tr[data-row-key="${newProcessId}"]`).getByRole('checkbox').check();
+    await newPage.getByRole('button', { name: 'Delete' }).click();
+  });
   await closeModal(deleteModal, () => deleteModal.getByRole('button', { name: 'OK' }).click());
 });

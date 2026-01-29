@@ -11,7 +11,7 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import {
   deleteEntityFile,
   retrieveEntityFile,
-  saveEntityFile,
+  saveEntityFileOrGetPresignedUrl,
 } from '@/lib/data/file-manager-facade';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -22,16 +22,16 @@ export async function GET(request: NextRequest) {
   const entityId = searchParams.get('entityId');
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId') || 'unauthenticated';
-  const fileName = searchParams.get('fileName') || undefined;
+  const filePath = searchParams.get('filePath') || undefined;
   if (
     !entityId ||
     !entityType ||
     !environmentId ||
-    (entityType === EntityType.PROCESS && !fileName)
+    (entityType === EntityType.PROCESS && !filePath)
   ) {
     return new NextResponse(null, {
       status: 400,
-      statusText: 'entityId, entityType, environmentId and fileName required as URL search params',
+      statusText: 'entityId, entityType, environmentId and filePath required as URL search params',
     });
   }
 
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const data = await retrieveEntityFile(entityType as EntityType, entityId, fileName);
+    const data = await retrieveEntityFile(entityType as EntityType, entityId, filePath);
 
     const fileType = await fileTypeFromBuffer(data as Buffer);
     if (!fileType) {
@@ -83,9 +83,13 @@ export async function GET(request: NextRequest) {
         statusText: 'Cannot read file type of requested file',
       });
     }
+    let mimeType: string = fileType.mime;
+
+    if (fileType.mime === 'application/xml' && filePath?.endsWith('.svg'))
+      mimeType = 'image/svg+xml';
 
     const headers = new Headers();
-    headers.set('Content-Type', fileType.mime);
+    headers.set('Content-Type', mimeType);
     return new NextResponse(data, { status: 200, statusText: 'OK', headers });
   } catch (error: any) {
     console.error('Error retrieving file:', error);
@@ -108,13 +112,22 @@ export async function PUT(request: NextRequest) {
   const entityId = searchParams.get('entityId');
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId');
-  const fileName = searchParams.get('fileName');
-  if (!entityId || !environmentId || !entityType || !fileName) {
+  const filePath = searchParams.get('filePath');
+  const saveWithoutSavingReference = !!searchParams.get('saveWithoutSavingReference');
+
+  if (!entityId || !environmentId || !entityType || !filePath) {
     return new NextResponse(null, {
       status: 400,
-      statusText: 'entityId, entityType, environmentId and fileName required as URL search params',
+      statusText: 'entityId, entityType, environmentId and filePath required as URL search params',
     });
   }
+
+  const body = request.body;
+  if (!body)
+    return new NextResponse(null, {
+      status: 400,
+      statusText: 'No file data provided in request body',
+    });
 
   const { ability } = await getCurrentEnvironment(environmentId);
   if (entityType === EntityType.PROCESS) {
@@ -133,7 +146,10 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  const reader = Readable.fromWeb(request.body as ReadableStream<Uint8Array>);
+  // NOTE: This may need changing
+  // @ts-expect-error ReadableStream in next.js' request isn't quite compatible with Readable.fromWeb (node:stream)
+  const reader = Readable.fromWeb(body);
+
   const chunks: Uint8Array[] = [];
   let totalLength = 0;
 
@@ -142,16 +158,18 @@ export async function PUT(request: NextRequest) {
       chunks.push(chunk);
       totalLength += chunk.length;
       if (totalLength > MAX_FILE_SIZE) {
-        reader.destroy(
-          new Error(`Allowed file size of ${MAX_FILE_SIZE / (1024 * 1024)} MB exceeded`),
-        );
-        return new NextResponse(null, {
-          status: 413,
-          statusText: `Allowed file size of ${MAX_FILE_SIZE / (1024 * 1024)} MB exceeded`,
-        });
+        // For some reason, after calling destroy the http response is not sent, causing the request to hang
+        reader.pause();
       }
     }
   }
+
+  // The return doesn't work inside of the iterator for loop
+  if (totalLength > MAX_FILE_SIZE)
+    return new NextResponse(null, {
+      status: 413,
+      statusText: `Allowed file size of ${MAX_FILE_SIZE / (1024 * 1024)} MB exceeded`,
+    });
 
   // Proceed with processing if the size limit is not exceeded
   const buffer = Buffer.concat(
@@ -167,30 +185,23 @@ export async function PUT(request: NextRequest) {
     });
   }
 
-  // Additional check for image size
-  if (fileType.mime.startsWith('image/') && totalLength > MAX_IMAGE_SIZE) {
-    return new NextResponse(null, {
-      status: 413,
-      statusText: `Allowed image size of ${MAX_IMAGE_SIZE / (1024 * 1024)}MB exceeded`,
-    });
-  }
-
   try {
-    const res = await saveEntityFile(
+    const res = await saveEntityFileOrGetPresignedUrl(
       entityType as EntityType,
       entityId,
       fileType.mime,
-      fileName,
+      filePath,
       buffer,
+      { saveWithoutSavingReference },
     );
 
     if ('error' in res) throw new Error((res.error as any).message);
 
-    if (!res.fileName) {
+    if (!res.filePath) {
       throw new Error('No file name returned');
     }
 
-    const { fileName: newFileName } = res;
+    const { filePath: newFileName } = res;
 
     return new NextResponse(newFileName, {
       status: 200,
@@ -207,12 +218,12 @@ export async function DELETE(request: NextRequest) {
   const entityId = searchParams.get('entityId');
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId');
-  const fileName = searchParams.get('fileName');
+  const filePath = searchParams.get('filePath ');
 
-  if (!entityId || !entityType || !environmentId || !fileName) {
+  if (!entityId || !entityType || !environmentId || !filePath) {
     return new NextResponse(null, {
       status: 400,
-      statusText: 'entityId, entityType, environmentId and fileName required as URL search params',
+      statusText: 'entityId, entityType, environmentId and filePath required as URL search params',
     });
   }
 
@@ -236,7 +247,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    await deleteEntityFile(entityType as EntityType, entityId, fileName);
+    await deleteEntityFile(entityType as EntityType, entityId, filePath);
     return new NextResponse(null, { status: 200, statusText: 'OK' });
   } catch (error) {
     console.error('Error deleting file:', error);

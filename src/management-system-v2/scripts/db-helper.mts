@@ -15,7 +15,7 @@ interface CommandOptions {
 }
 
 const config = {
-  containerName: 'postgres_database_proceed',
+  containerName: 'postgres_database_proceed_development',
   postgresUser: 'proceed',
   postgresPassword: 'proceed',
   defaultDb: 'proceed_db',
@@ -39,7 +39,7 @@ async function getCurrentBranch(): Promise<string> {
 }
 
 function sanitizeBranchName(branchName: string): string {
-  return branchName.replace(/[-/]/g, '_');
+  return branchName.replace(/[-/]/g, '_').toLowerCase();
 }
 
 async function updateEnvFile(dbName: string, envFile: string): Promise<void> {
@@ -116,11 +116,27 @@ async function dropDatabase(dbName: string): Promise<void> {
 }
 
 async function ensureDockerContainerRunning(): Promise<void> {
+  // Docker container should have been started via docker compose. But maybe the container was just started and still needs some time for startup. If it is not up for longer than 10s, we wait for some seconds.
   try {
-    const { stdout } = execaSync('docker', ['ps']);
-    if (!stdout.includes(config.containerName)) {
-      console.log(`Starting Docker container: ${config.containerName}`);
-      execaSync('docker', ['start', config.containerName]);
+    // execaSync throws error if container not found
+    const { stdout } = execaSync('docker', [
+      'container',
+      'inspect',
+      '--format',
+      '{{.State.StartedAt}}',
+      config.containerName,
+    ]);
+    const timeDiffSinceContainerStarted = Date.now() - Date.parse(stdout);
+
+    console.info(
+      'Development Postgres Docker Container is running since ' +
+        timeDiffSinceContainerStarted / 1000 +
+        ' seconds.',
+    );
+
+    if (timeDiffSinceContainerStarted < 10000) {
+      console.info('Waiting for some seconds for the container to be ready...');
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   } catch (error) {
     console.error('Failed to start Docker container:', error);
@@ -130,7 +146,7 @@ async function ensureDockerContainerRunning(): Promise<void> {
 
 async function applyPrismaSchema(): Promise<void> {
   try {
-    execaSync('yarn', ['prisma', 'migrate', 'deploy']);
+    execaSync('yarn', ['prisma', 'migrate', 'dev']);
     console.log('Schema applied successfully.');
   } catch (error) {
     console.error('Failed to apply Prisma schema:', error);
@@ -234,8 +250,22 @@ async function main() {
 
   await updateEnvFile(dbName, config.envFile);
 
-  if (options.new || options.init) {
-    await applyPrismaSchema();
+  if (options.init) {
+    const isMainBranch = (await getCurrentBranch()) === 'main';
+    if (isMainBranch) {
+      await applyPrismaSchema();
+    } else {
+      console.log(
+        '\x1b[33m You are not in main branch! Skipping Prisma schema update for default db from non-main branch.\x1b[0m',
+      );
+      console.log(
+        '\x1b[32m If you want to apply schema changes to default db, please checkout the main branch and run the command `yarn dev-ms-db`.\x1b[0m',
+      );
+      console.log(
+        '\x1b[35m Alternatively,\x1b[0m \x1b[41m Please run `yarn dev-ms-db-new-structure` to create/switch db for your current branch.\x1b[0m',
+      );
+      console.log('');
+    }
   }
 }
 

@@ -5,35 +5,26 @@ import {
   UserOrganizationEnvironmentInput,
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
 import { UnauthorizedError } from '../ability/abilityHelper';
-import { enableUseDB } from 'FeatureFlags';
-import { TEnvironmentsModule } from './module-import-types-temp';
-
-let addEnvironment: TEnvironmentsModule['addEnvironment'];
-let deleteEnvironment: TEnvironmentsModule['deleteEnvironment'];
-let getEnvironmentById: TEnvironmentsModule['getEnvironmentById'];
-let _updateOrganization: TEnvironmentsModule['updateOrganization'];
-
-const loadModules = async () => {
-  const moduleImport = await (enableUseDB
-    ? import('./db/iam/environments')
-    : import('./legacy/iam/environments'));
-
-  ({
-    addEnvironment,
-    deleteEnvironment,
-    getEnvironmentById,
-    updateOrganization: _updateOrganization,
-  } = moduleImport);
-};
-
-loadModules().catch(console.error);
+import {
+  addEnvironment,
+  deleteEnvironment,
+  getEnvironmentById,
+  updateOrganization as _updateOrganization,
+} from '@/lib/data/db/iam/environments';
+import { env } from '../ms-config/env-vars';
+import { isMember, removeMember } from './db/iam/memberships';
+import { UserHasToDeleteOrganizationsError } from './db/iam/users';
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
 ) {
-  await loadModules();
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE)
+    return userError(
+      'Not allowed under the current configuration of the MS',
+      UserErrorType.PermissionError,
+    );
 
   const { userId } = await getCurrentUser();
 
@@ -53,7 +44,12 @@ export async function addOrganizationEnvironment(
 }
 
 export async function deleteOrganizationEnvironments(environmentIds: string[]) {
-  await loadModules();
+  // NOTE: maybe this should be removed
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE)
+    return userError(
+      'Not allowed under the current configuration of the MS',
+      UserErrorType.PermissionError,
+    );
 
   try {
     for (const environmentId of environmentIds) {
@@ -82,8 +78,6 @@ export async function updateOrganization(
   environmentId: string,
   data: Partial<UserOrganizationEnvironmentInput>,
 ) {
-  await loadModules();
-
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
 
@@ -93,5 +87,36 @@ export async function updateOrganization(
       return userError("You're not allowed to update this organization");
 
     return userError('Error updating organization');
+  }
+}
+
+export async function leaveOrganization(spaceId: string) {
+  try {
+    const { user } = await getCurrentUser();
+
+    if (!user || user.isGuest) {
+      return userError('You need to be signed in');
+    }
+
+    if (user.id === spaceId) {
+      return userError('You cannot leave your personal spcae');
+    }
+
+    if (!(await isMember(spaceId, user.id))) {
+      // I don't think we should return a specific error, as it allows to check environment ID's
+      throw new Error();
+    }
+
+    await removeMember(spaceId, user.id);
+  } catch (e) {
+    console.error(e);
+    let message;
+    if (e instanceof UserHasToDeleteOrganizationsError) {
+      message =
+        "You're the only admin of this organization, you have to either add a new admin or delete it.";
+    } else {
+      message = getErrorMessage(e);
+    }
+    return userError(message);
   }
 }

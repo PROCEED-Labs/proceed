@@ -3,8 +3,8 @@
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { Alert, App, Button, DatePicker, Form, Input, Modal, Space } from 'antd';
 import { FC, useState } from 'react';
-import dayjs from 'dayjs';
-import germanLocale from 'antd/es/date-picker/locale/de_DE';
+// import dayjs from 'dayjs';
+// import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole } from '@/lib/data/roles';
 import { useRouter } from 'next/navigation';
@@ -28,11 +28,14 @@ const FolderInput = ({
   defaultFolder?: Folder;
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedFolder, setSelectedFolder] = useState<{ type: string; name: string } | undefined>(
+  const [selectedFolder, setSelectedFolder] = useState<
+    { type: string; name: string; id: string } | undefined
+  >(
     () =>
       defaultFolder && {
         type: 'folder',
         name: defaultFolder.parentId ? defaultFolder.name : '< root >',
+        id: defaultFolder.id,
       },
   );
 
@@ -56,17 +59,17 @@ const FolderInput = ({
           >
             Clear folder
           </Button>
-          <FolderTree
-            newChildrenHook={(nodes) => nodes.filter((node) => node.element.type === 'folder')}
-            treeProps={{
-              onSelect(_, info) {
-                const element = info.node.element;
-                if (element.type !== 'folder') return;
+          <FolderTree<{ id: string; name: string; type: string }>
+            newChildrenHook={({ nodes }) => nodes.filter((node) => node.element.type === 'folder')}
+            onSelect={(element) => {
+              if (element?.type !== 'folder') return;
 
-                onChange?.(element.id);
-                setSelectedFolder(element);
-                setModalOpen(false);
-              },
+              onChange?.(element.id);
+              setSelectedFolder(element);
+              setModalOpen(false);
+            }}
+            treeProps={{
+              selectedKeys: selectedFolder ? [selectedFolder.id] : [],
             }}
             showRootAsFolder
           />
@@ -100,10 +103,10 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
   const role = toCaslResource('Role', _role);
 
   async function submitChanges(values: Record<string, any>) {
-    if (typeof values?.expirationDayJs === 'object') {
-      values.expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
-      delete values.expirationDayJs;
-    }
+    // if (typeof values?.expirationDayJs === 'object') {
+    //   values.expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
+    //   delete values.expirationDayJs;
+    // }
 
     await wrapServerCall({
       fn: () => updateRole(environment.spaceId, role.id, values),
@@ -115,20 +118,26 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
     });
   }
 
+  let note;
+  if (role.note) {
+    note = role.note;
+  } else if (role.name === '@guest') {
+    note = 'This role applies to users that are not part of the organization.';
+  } else if (role.name === '@everyone') {
+    note = 'This role applies to every user that is part of the organization.';
+  }
+
   return (
     <Form form={form} layout="vertical" onFinish={submitChanges} initialValues={role}>
-      {role.note && (
+      {note && (
         <>
-          <Alert type="warning" message={role.note} />
+          <Alert type="info" message={note} />
           <br />
         </>
       )}
 
       <Form.Item label="Name" name="name" {...antDesignInputProps(errors, 'name')} required>
-        <Input
-          placeholder="input placeholder"
-          disabled={!ability.can('update', role, { field: 'name' })}
-        />
+        <Input disabled={!ability.can('update', role, { field: 'name' })} />
       </Form.Item>
 
       <Form.Item
@@ -136,13 +145,10 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
         name="description"
         {...antDesignInputProps(errors, 'description')}
       >
-        <Input.TextArea
-          placeholder="input placeholder"
-          disabled={!ability.can('update', role, { field: 'description' })}
-        />
+        <Input.TextArea disabled={!ability.can('update', role, { field: 'description' })} />
       </Form.Item>
 
-      <Form.Item label="Expiration" name="expirationDayJs">
+      {/** <Form.Item label="Expiration" name="expirationDayJs">
         <DatePicker
           // Note german locale hard coded
           locale={germanLocale}
@@ -150,7 +156,7 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
           disabled={!ability.can('update', role, { field: 'expiration' })}
           defaultValue={role.expiration ? dayjs(new Date(role.expiration)) : undefined}
         />
-      </Form.Item>
+      </Form.Item>*/}
 
       <Form.Item label="Folder" name="parentId">
         <FolderInput defaultFolder={roleParentFolder} />

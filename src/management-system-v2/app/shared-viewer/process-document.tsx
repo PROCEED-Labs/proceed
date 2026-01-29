@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { getProcess } from '@/lib/data/legacy/process';
+import { getProcess } from '@/lib/data/db/process';
 
 import { Typography, Table, Grid, Image, Spin } from 'antd';
 
@@ -17,8 +17,8 @@ import TableOfContents, { ElementInfo } from './table-of-content';
 import { useEnvironment } from '@/components/auth-can';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
-import { enableUseFileManager } from 'FeatureFlags';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
+import { generateDateString } from '@/lib/utils';
 
 export type VersionInfo = {
   id?: string;
@@ -85,21 +85,19 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       elementLabel = importedProcess.name!;
       ({ milestones, meta, description } = importedProcess);
     }
-    const newImageUrl = enableUseFileManager
-      ? image &&
-        (await new Promise<string>((resolve) => {
-          getImage(processData.id, image, shareToken, {
-            onSuccess(data) {
-              resolve(data.fileUrl!);
-            },
-          });
-        }))
-      : null;
+    const { fileUrl: newImageUrl } = await getImage({
+      entityId: processData.id,
+      filePath: image,
+      shareToken,
+    }).catch(() => {
+      console.log('Failed to get image');
+      return { fileUrl: undefined };
+    });
 
     let imageURL =
       image &&
       (newImageUrl ??
-        `/apimageUrli/private/${environment.spaceId || 'unauthenticated'}/processes/${
+        `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${
           processData.id
         }/images/${image}?shareToken=${shareToken}`);
 
@@ -138,7 +136,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               </p>
             )}
             <p>
-              <b>Creation Time:</b> {new Date(importedProcess.versionId).toUTCString()}
+              <b>Creation Time:</b> {generateDateString(new Date(importedProcess.versionId), true)}
             </p>
           </div>
         )}
@@ -281,13 +279,13 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                   )}
                   {version.id ? (
                     <div>
-                      Creation Time:{' '}
+                      Creation Time: {''}
                       {version.versionCreatedOn
-                        ? fromCustomUTCString(version.versionCreatedOn).toUTCString()
+                        ? generateDateString(fromCustomUTCString(version.versionCreatedOn), true)
                         : 'Unknown'}
                     </div>
                   ) : (
-                    <div>Last Edit: {processData.lastEditedOn.toUTCString()}</div>
+                    <div>Last Edit: {generateDateString(processData.lastEditedOn, true)}</div>
                   )}
                 </div>
               </div>

@@ -5,18 +5,15 @@ import { Space, Button, Table, Grid } from 'antd';
 import { UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
 import styles from './user-list.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 import ElementList from './item-list-view';
 import UserAvatar from './user-avatar';
 import SelectionActions from './selection-actions';
+import { RoleWithMembers } from '@/lib/data/role-schema';
 
-type _ListUser = Partial<
-  Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
-> &
-  Pick<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
+type _ListUser = RoleWithMembers['members'][number];
 export type ListUser = ReplaceKeysWithHighlighted<
   _ListUser,
   'firstName' | 'lastName' | 'username' | 'email'
@@ -124,26 +121,25 @@ const UserList: FC<UserListProps> = ({
               ) : null}
             </span>
 
-            <span>
+            {/** TODO: implement icon view and uncomment this toggle
               <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
-                <Button
-                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                  onClick={() => {
-                    addPreferences({ 'icon-view-in-process-list': false });
-                  }}
-                >
-                  <UnorderedListOutlined />
-                </Button>
-                <Button
-                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                  onClick={() => {
-                    addPreferences({ 'icon-view-in-process-list': true });
-                  }}
-                >
-                  <AppstoreOutlined />
-                </Button>
-              </Space.Compact>
-            </span>
+              <Button
+                style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                onClick={() => {
+                  addPreferences({ 'icon-view-in-process-list': false });
+                }}
+              >
+                <UnorderedListOutlined />
+              </Button>
+              <Button
+                style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                onClick={() => {
+                  addPreferences({ 'icon-view-in-process-list': true });
+                }}
+              >
+                <AppstoreOutlined />
+              </Button>
+            </Space.Compact>*/}
           </span>
         }
         searchProps={{
@@ -167,15 +163,10 @@ const UserList: FC<UserListProps> = ({
             onRow: (element) => ({
               onMouseEnter: () => setHoveredRowId(element.id),
               onMouseLeave: () => setHoveredRowId(null),
-              onClick: () => {
-                setSelectedRows([element]);
-                if (onSelectedRows) onSelectedRows([element]);
-              },
-
-              pagination: { position: ['bottomCenter'] },
-              rowKey: 'id',
-              loading,
             }),
+            pagination: { position: ['bottomCenter'] },
+            rowKey: 'id',
+            loading,
           }}
         />
       )}

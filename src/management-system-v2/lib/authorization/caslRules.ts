@@ -1,4 +1,3 @@
-import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
 import { packRules } from '@casl/ability/extra';
 import {
   AbilityRule,
@@ -17,21 +16,21 @@ import {
 } from './globalRules';
 import { Environment } from '../data/environment-schema';
 import { Role } from '../data/role-schema';
-import { env } from '../env-vars';
 
-const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
+export type PackedRulesForUser = ReturnType<typeof computeRulesForUser>;
 
-const globalRoles = {
-  everybodyRole: '',
-  guestRole: '',
-};
+/* -------------------------------------------------------------------------------------------------
+ * Rules for Users (= members of an organization)
+ * -----------------------------------------------------------------------------------------------*/
+const staticUserRules: AbilityRule[] = [
+  {
+    subject: 'User',
+    action: 'view',
+  },
+];
 
 function rulesForAuthenticatedUsers(userId: string): AbilityRule[] {
   return [
-    {
-      subject: 'User',
-      action: 'view',
-    },
     {
       subject: 'User',
       action: ['delete'],
@@ -45,15 +44,15 @@ function rulesForAuthenticatedUsers(userId: string): AbilityRule[] {
   ];
 }
 
-function rulesForRoles(ability: CaslAbility, userId: string) {
-  const rules: AbilityRule[] = [];
-
-  rules.push({
+/* -------------------------------------------------------------------------------------------------
+ * Rules for Roles
+ * -----------------------------------------------------------------------------------------------*/
+const staticRoleRules: AbilityRule[] = [
+  {
     subject: 'Role',
     action: 'view',
-  });
-
-  rules.push({
+  },
+  {
     inverted: true,
     subject: 'Role',
     action: 'delete',
@@ -62,7 +61,22 @@ function rulesForRoles(ability: CaslAbility, userId: string) {
         default: { $eq: true },
       },
     },
-  });
+  },
+  {
+    inverted: true,
+    subject: 'Role',
+    action: 'update',
+    conditions: {
+      conditions: {
+        default: { $eq: true },
+      },
+    },
+    fields: ['default', 'name', 'expiration'],
+  },
+];
+
+function rulesForRoles(ability: CaslAbility, userId: string) {
+  const rules: AbilityRule[] = [];
 
   rules.push({
     subject: 'RoleMapping',
@@ -75,29 +89,19 @@ function rulesForRoles(ability: CaslAbility, userId: string) {
     reason: 'Users can view their own role mappings',
   });
 
-  rules.push({
-    inverted: true,
-    subject: 'Role',
-    action: 'update',
-    conditions: {
-      conditions: {
-        default: { $eq: true },
-      },
-    },
-    fields: ['default', 'name', 'expiration'],
-  });
-  rules.push({
-    inverted: true,
-    subject: 'RoleMapping',
-    action: 'create',
-    conditions: {
-      conditions: {
-        roleId: {
-          $in: [globalRoles.everybodyRole, globalRoles.guestRole],
-        },
-      },
-    },
-  });
+  // For now we don't know the everyone and guest role ids
+  // rules.push({
+  //   inverted: true,
+  //   subject: 'RoleMapping',
+  //   action: 'create',
+  //   conditions: {
+  //     conditions: {
+  //       roleId: {
+  //         $in: [globalRoles.everybodyRole, globalRoles.guestRole],
+  //       },
+  //     },
+  //   },
+  // });
 
   if (AllowedResourcesForAdmins.some((resource) => !ability.can('admin', resource))) {
     rules.push({
@@ -134,114 +138,9 @@ function rulesForRoles(ability: CaslAbility, userId: string) {
   return rules;
 }
 
-async function rulesForSharedResources(ability: CaslAbility, userId: string) {
-  const rules: AbilityRule[] = [];
-
-  // we have to check permissions before allowing access through shares
-  // since shares also depend on permissions granted by roles
-  for (const share of await sharedWitOrByhUser(userId)) {
-    const sharePermissions = permissionNumberToIdentifiers(share.permissions);
-
-    rules.push({
-      subject: 'Share',
-      action: 'view',
-      conditions: {
-        conditions: {
-          resourceId: { $eq: share.resourceId },
-          type: { $eq: SHARE_TYPE['USER_TO_USER'] },
-          expiredAt: { $not_expired_property: null },
-        },
-      },
-    });
-
-    rules.push({
-      subject: 'Share',
-      action: 'view',
-      conditions: {
-        conditions: {
-          resourceId: { $eq: share.resourceId },
-          type: { $eq: SHARE_TYPE['LINK_SHARING'] },
-          sharedBy: { $eq: userId },
-          expiredAt: { $not_expired_property: null },
-        },
-      },
-    });
-
-    // address each permission of the share sepparetly
-    for (const permission of sharePermissions) {
-      if (ability.can(permission, share.resourceType)) {
-        rules.push({
-          subject: share.resourceType,
-          action: sharePermissions,
-          conditions: {
-            conditions: {
-              id: { $eq: share.resourceId },
-              $: { $not_expired_value: share.expiredAt ?? null },
-            },
-          },
-        });
-      }
-    }
-  }
-
-  return rules;
-}
-
-function rulesForShares(resource: ResourceType, userId: string, expiration: string | null) {
-  const rules: AbilityRule[] = [];
-
-  // owner of the share
-  rules.push({
-    subject: 'Share',
-    action: ['view', 'update', 'delete', 'create'],
-    conditions: {
-      conditions: {
-        resourceOwner: { $eq: userId },
-        resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration ?? null },
-      },
-      conditionsOperator: 'and',
-    },
-  });
-
-  rules.push({
-    subject: 'Share',
-    action: ['view', 'update', 'delete', 'create'],
-    conditions: {
-      conditions: {
-        sharedBy: { $eq: userId },
-        resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration ?? null },
-      },
-      conditionsOperator: 'and',
-    },
-  });
-
-  return rules;
-}
-
-function rulesForAlteringShares(ability: CaslAbility) {
-  const rules: AbilityRule[] = [];
-
-  for (const resource of sharedResources.values()) {
-    if (ability.can('admin', resource)) continue;
-
-    rules.push({
-      inverted: true,
-      subject: resource,
-      action: ['create', 'delete', 'update'],
-      conditions: {
-        conditions: {
-          resourceType: { $eq_string_case_insensitive: resource },
-          permissions: { $gte: adminPermissions },
-        },
-      },
-    });
-  }
-
-  return rules;
-}
-
+/* -------------------------------------------------------------------------------------------------
+ * Disallow access to resources outside of the environment
+ * -----------------------------------------------------------------------------------------------*/
 const disallowOutsideOfEnvRule = (environmentId: string) =>
   ({
     inverted: true,
@@ -254,7 +153,18 @@ const disallowOutsideOfEnvRule = (environmentId: string) =>
     },
   }) as AbilityRule;
 
-export type PackedRulesForUser = ReturnType<typeof computeRulesForUser>;
+/* -------------------------------------------------------------------------------------------------
+ * Static Rules (there are always the same for all users)
+ * -----------------------------------------------------------------------------------------------*/
+export const staticRules: AbilityRule[] = Object.freeze([
+  ...staticUserRules,
+  ...staticRoleRules,
+]) as any;
+export const packedStaticRules = Object.freeze(packRules(staticRules));
+
+/* -------------------------------------------------------------------------------------------------
+ * Computes the rules for a user, this puts all the previous parts together
+ * -----------------------------------------------------------------------------------------------*/
 
 /** If possible don't use this function directly, use rulesForUser which caches the rules */
 export function computeRulesForUser({
@@ -269,7 +179,9 @@ export function computeRulesForUser({
   purchasedResources?: ResourceType[];
 }) {
   if (!space.isOrganization) {
-    if (userId !== space.id) throw new Error("Personal environment doesn't belong to user");
+    if (userId !== space.id) {
+      throw new Error(`Personal environment ${space.id} doesn't belong to user ${userId}`);
+    }
 
     const personalEnvironmentRules = [
       {
@@ -347,6 +259,8 @@ export function computeRulesForUser({
   translatedRules.push(...rulesForAuthenticatedUsers(userId));
 
   translatedRules.push(...rulesForRoles(ability, userId));
+
+  translatedRules.push(...staticRules);
 
   // Disallow every action on other environments
   translatedRules.push(disallowOutsideOfEnvRule(space.id));

@@ -1,26 +1,26 @@
 'use client';
 
-import { FC, useEffect, useState } from 'react';
+import { FC, use } from 'react';
 import {
   Typography,
   Alert,
   Form,
-  Input,
   Button as AntDesignButton,
   Divider,
-  Modal,
-  Space,
-  Tooltip,
   ButtonProps,
   ConfigProvider,
 } from 'antd';
 
-import styles from './login.module.scss';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
-import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
+import { type ExtractedProvider } from '@/lib/auth';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import AuthModal from '../auth-modal';
+import useMSLogo from '@/lib/use-ms-logo';
+import { SigninOptions } from '@/components/signin-options';
+import { getAuthJsErrorMessageFromType } from '@/lib/authjs-error-message';
 
 const verticalGap = '1rem';
 
@@ -59,26 +59,23 @@ const SignIn: FC<{
   providers: ExtractedProvider[];
   userType: 'guest' | 'user' | 'none';
   guestReferenceToken?: string;
-}> = ({ providers, userType, guestReferenceToken }) => {
+  logoUrl?: string;
+}> = ({ providers, userType, guestReferenceToken, logoUrl }) => {
+  const env = use(EnvVarsContext);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? undefined;
   const callbackUrlWithGuestRef = guestReferenceToken
     ? `/transfer-processes?referenceToken=${guestReferenceToken}&callbackUrl=${callbackUrl}`
     : callbackUrl;
-  const authError = searchParams.get('error');
 
-  const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
-  const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
-  const credentials = providers.filter(
-    (provider) => provider.type !== 'oauth' && provider.id !== 'guest-signin',
+  const authError = getAuthJsErrorMessageFromType(
+    searchParams.get('error'),
+    searchParams.get('code'),
   );
 
-  // We need to wait until the component is mounted on the client
-  // to open the modal, otherwise it will cause a hydration mismatch
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    setOpen(true);
-  }, [setOpen]);
+  const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
+
+  const { imageSource } = useMSLogo(logoUrl, { disableResponsive: false });
 
   return (
     <ConfigProvider
@@ -90,10 +87,11 @@ const SignIn: FC<{
         },
       }}
     >
-      <Modal
+      <AuthModal
         title={
+          // TODO: imageSource could be not hosted by use
           <Image
-            src="/proceed.svg"
+            src={imageSource}
             alt="PROCEED Logo"
             width={160}
             height={63}
@@ -101,34 +99,23 @@ const SignIn: FC<{
             style={{ marginBottom: '1rem', display: 'block', margin: 'auto' }}
           />
         }
-        open={open}
-        closeIcon={null}
-        footer={null}
-        style={{
-          maxWidth: '60ch',
-          width: '90%',
-          top: 0,
-        }}
         styles={{
-          mask: { backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },
           header: { paddingBottom: verticalGap },
         }}
-        className={styles.Card}
       >
         {authError && (
-          <Alert description={authError} type="error" style={{ marginBottom: verticalGap }} />
+          <Alert
+            description={authError.message}
+            type={authError.type}
+            style={{ marginBottom: verticalGap }}
+          />
         )}
 
-        {userType === 'none' ? (
-          <Typography.Title level={4} style={{ textAlign: 'center' }}>
-            TRY PROCEED
-          </Typography.Title>
-        ) : (
-          signInTitle
-        )}
-
-        {userType === 'none' && guestProvider && (
+        {userType === 'none' && guestProvider && env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE && (
           <>
+            <Typography.Title level={4} style={{ textAlign: 'center' }}>
+              TRY PROCEED
+            </Typography.Title>
             <Form
               onFinish={(values) =>
                 signIn(guestProvider.id, {
@@ -147,84 +134,10 @@ const SignIn: FC<{
           </>
         )}
 
-        {userType === 'none' && signInTitle}
+        {/* If the user isn't none, we already show the signIn title at the top of the modal */}
+        {signInTitle}
 
-        <Space direction="vertical" style={{ gap: verticalGap }}>
-          {credentials.map((provider) => {
-            if (provider.type === 'credentials') {
-              return (
-                <Form
-                  onFinish={(values) =>
-                    signIn(provider.id, { ...values, callbackUrl: callbackUrlWithGuestRef })
-                  }
-                  key={provider.id}
-                  layout="vertical"
-                >
-                  {Object.keys(provider.credentials).map((key) => (
-                    <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
-                      <Input placeholder={provider.credentials[key].label} />
-                    </Form.Item>
-                  ))}
-                  <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
-                    {provider.name}
-                  </Button>
-                </Form>
-              );
-            } else if (provider.type === 'email') {
-              return (
-                <>
-                  <Form
-                    onFinish={(values) =>
-                      signIn(provider.id, { ...values, callbackUrl: callbackUrlWithGuestRef })
-                    }
-                    key={provider.id}
-                    layout="vertical"
-                  >
-                    <Form.Item
-                      name="email"
-                      rules={[{ type: 'email', required: true }]}
-                      style={{ marginBottom: '.5rem' }}
-                    >
-                      <Input placeholder="E-Mail" />
-                    </Form.Item>
-                    <Button htmlType="submit">Continue with E-Mail</Button>
-                  </Form>
-
-                  <Alert
-                    message="Note: Simply sign in with your e-mail address and we will send you an access link."
-                    type="info"
-                  />
-                </>
-              );
-            }
-          })}
-        </Space>
-
-        {divider}
-
-        <Space wrap style={{ justifyContent: 'center', width: '100%' }}>
-          {oauthProviders.map((provider, idx) => {
-            if (provider.type !== 'oauth') return null;
-            return (
-              <Tooltip title={`Sign in with ${provider.name}`} key={provider.id}>
-                <AntDesignButton
-                  key={idx}
-                  style={{
-                    padding: '1.6rem',
-                  }}
-                  icon={
-                    <img
-                      src={`https://authjs.dev/img/providers${provider.style?.logo}`}
-                      alt={provider.name}
-                      style={{ width: '1.5rem', height: 'auto' }}
-                    />
-                  }
-                  onClick={() => signIn(provider.id, { callbackUrl: callbackUrlWithGuestRef })}
-                />
-              </Tooltip>
-            );
-          })}
-        </Space>
+        <SigninOptions providers={providers} callbackUrl={callbackUrlWithGuestRef} />
 
         {userType === 'guest' && guestProvider && (
           <>
@@ -234,7 +147,7 @@ const SignIn: FC<{
             </Button>
 
             <Alert
-              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              message='Note: if you select "Continue as Guest", the this Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
               type="info"
             />
           </>
@@ -250,11 +163,10 @@ const SignIn: FC<{
             color: '#434343',
           }}
         >
-          By using the PROCEED Platform, you agree to the{' '}
-          <Link href="/terms">Terms of Service</Link> and the storage of functionally essential
-          cookies on your device.
+          By using the this Platform, you agree to the <Link href="/terms">Terms of Service</Link>{' '}
+          and the storage of functionally essential cookies on your device.
         </Typography.Paragraph>
-      </Modal>
+      </AuthModal>
     </ConfigProvider>
   );
 };

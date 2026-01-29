@@ -5,82 +5,66 @@ import { toCaslResource } from '../ability/caslAbility';
 import {
   addDocumentation,
   generateDefinitionsId,
+  generateScriptTaskFileName,
+  generateStartFormFileName,
+  generateUserTaskFileName,
+  getDefinitionsId,
   getDefinitionsVersionInformation,
-  getUserTaskFileNameMapping,
+  getElementsByTagName,
   setDefinitionsName,
   setDefinitionsVersionInformation,
-  setUserTaskData,
   toBpmnObject,
   toBpmnXml,
+  updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
-import {
-  createProcess,
-  getFinalBpmn,
-  updateScriptTaskFileName,
-  updateUserTaskFileName,
-} from '../helpers/processHelpers';
-import { UserErrorType, userError } from '../user-error';
+import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
   selectAsLatestVersion,
   updateProcessVersionBasedOn,
   versionScriptTasks,
+  versionStartForm,
   versionUserTasks,
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
-import { Process } from './process-schema';
+import { Process, ProcessMetadata } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
-import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
-import { TProcessModule } from './module-import-types-temp';
-import { copyProcessArtifactReferences, copyProcessFiles } from './db/process';
+import {
+  checkIfProcessAlreadyExistsForAUserInASpaceByName,
+  checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching,
+  checkIfProcessExists,
+  copyProcessArtifactReferences,
+  copyProcessFiles,
+} from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
-
-// Declare variables to hold the process module functions
-let removeProcess: TProcessModule['removeProcess'];
-let _addProcess: TProcessModule['addProcess'];
-let _getProcess: TProcessModule['getProcess'];
-let _updateProcess: TProcessModule['updateProcess'];
-let getProcessVersionBpmn: TProcessModule['getProcessVersionBpmn'];
-let addProcessVersion: TProcessModule['addProcessVersion'];
-
-let updateProcessMetaData: TProcessModule['updateProcessMetaData'];
-
-let _getProcessImage: TProcessModule['getProcessImage'];
-let _getProcessBpmn: TProcessModule['getProcessBpmn'];
-let _saveProcessUserTask: TProcessModule['saveProcessUserTask'];
-let _getProcessUserTaskJSON: TProcessModule['getProcessUserTaskJSON'];
-let _getProcessUserTaskHtml: TProcessModule['getProcessUserTaskHtml'];
-let _saveProcessScriptTask: TProcessModule['saveProcessScriptTask'];
-let _deleteProcessScriptTask: TProcessModule['deleteProcessScriptTask'];
-let _getProcessScriptTaskScript: TProcessModule['getProcessScriptTaskScript'];
-
-const loadModules = async () => {
-  const moduleImport = await (enableUseDB ? import('./db/process') : import('./legacy/_process'));
-
-  ({
-    removeProcess,
-    addProcess: _addProcess,
-    getProcess: _getProcess,
-    updateProcess: _updateProcess,
-    getProcessVersionBpmn,
-    addProcessVersion,
-    updateProcessMetaData,
-    getProcessBpmn: _getProcessBpmn,
-    saveProcessUserTask: _saveProcessUserTask,
-    getProcessUserTaskJSON: _getProcessUserTaskJSON,
-    getProcessImage: _getProcessImage,
-    getProcessUserTaskHtml: _getProcessUserTaskHtml,
-    saveProcessScriptTask: _saveProcessScriptTask,
-    deleteProcessScriptTask: _deleteProcessScriptTask,
-    getProcessScriptTaskScript: _getProcessScriptTaskScript,
-  } = moduleImport);
-};
-
-loadModules().catch(console.error);
+import {
+  removeProcess,
+  addProcess as _addProcess,
+  getProcess as _getProcess,
+  updateProcess as _updateProcess,
+  getProcessVersionBpmn,
+  addProcessVersion,
+  updateProcessMetaData as _updateProcessMetaData,
+  getProcessBpmn as _getProcessBpmn,
+  saveProcessHtmlForm as _saveProcessHtmlForm,
+  getProcessHtmlFormJSON as _getProcessHtmlFormJSON,
+  getProcessImage as _getProcessImage,
+  getHtmlForm as _getHtmlForm,
+  saveProcessScriptTask as _saveProcessScriptTask,
+  deleteProcessScriptTask as _deleteProcessScriptTask,
+  getProcessScriptTaskScript as _getProcessScriptTaskScript,
+  getFolderScriptTasks as _getFolderScriptTasks,
+  getFolderPathScriptTasks as _getFolderPathScriptTasks,
+} from '@/lib/data/db/process';
+import { ProcessData } from '@/components/process-import';
+import { saveProcessArtifact } from './file-manager-facade';
+import { getRootFolder } from './db/folders';
+import { truthyFilter } from '../typescript-utils';
 
 // Import necessary functions from processModule
 
@@ -89,8 +73,6 @@ export const checkValidity = async (
   operation: 'view' | 'update' | 'delete',
   spaceId: string,
 ) => {
-  await loadModules();
-
   const { ability } = await getCurrentEnvironment(spaceId);
 
   const process = await _getProcess(definitionId);
@@ -118,8 +100,6 @@ export const checkValidity = async (
 };
 
 const getBpmnVersion = async (definitionId: string, versionId?: string) => {
-  await loadModules();
-
   const process = await _getProcess(definitionId);
 
   if (versionId) {
@@ -139,8 +119,6 @@ const getBpmnVersion = async (definitionId: string, versionId?: string) => {
 };
 
 export const getSharedProcessWithBpmn = async (definitionId: string, versionCreatedOn?: string) => {
-  await loadModules();
-
   const processMetaObj = await _getProcess(definitionId);
 
   if (!processMetaObj) {
@@ -167,7 +145,6 @@ export const getProcess = async (
   spaceId: string,
   skipValidityCheck = false,
 ) => {
-  await loadModules();
   if (!skipValidityCheck) {
     const error = await checkValidity(definitionId, 'view', spaceId);
 
@@ -178,8 +155,6 @@ export const getProcess = async (
 };
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: string) => {
-  await loadModules();
-
   const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
@@ -188,8 +163,6 @@ export const getProcessBPMN = async (definitionId: string, spaceId: string, vers
 };
 
 export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {
-  await loadModules();
-
   for (const definitionId of definitionIds) {
     const error = await checkValidity(definitionId, 'delete', spaceId);
 
@@ -200,27 +173,53 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
+  values: {
+    name: string;
+    description: string;
+    bpmn?: string;
+    folderId?: string;
+    userDefinedId?: string;
+    id?: string;
+    executable?: boolean;
+  }[],
   spaceId: string,
+  generateNewId: boolean = false,
 ) => {
-  await loadModules();
-
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
 
   const newProcesses: Process[] = [];
 
   for (const value of values) {
-    const { bpmn } = await createProcess({
+    let { bpmn } = await createProcess({
       name: value.name,
       description: value.description,
       bpmn: value.bpmn,
+      userDefinedId: value.userDefinedId,
     });
+
+    // if imported process has a id that is not present in system, we can use that
+    if (value.id && (await checkIfProcessExists(value.id, false))) {
+      generateNewId = true;
+    }
+
+    if (generateNewId) {
+      // new ID is required for imported/copied processes
+      const newId = generateDefinitionsId();
+      bpmn = await getFinalBpmn({
+        id: newId,
+        name: value.name,
+        description: value.description,
+        bpmn: bpmn,
+      });
+    }
 
     const newProcess = {
       bpmn,
       creatorId: userId,
       environmentId: activeEnvironment.spaceId,
+      folderId: value.folderId,
+      executable: value.executable,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -247,13 +246,11 @@ export const updateProcessShareInfo = async (
   allowIframeTimestamp: number | undefined,
   spaceId: string,
 ) => {
-  await loadModules();
-
   const error = await checkValidity(definitionsId, 'update', spaceId);
 
   if (error) return error;
 
-  await updateProcessMetaData(definitionsId, {
+  await _updateProcessMetaData(definitionsId, {
     sharedAs: sharedAs,
     shareTimestamp: shareTimestamp,
     allowIframeTimestamp: allowIframeTimestamp,
@@ -266,10 +263,9 @@ export const updateProcess = async (
   bpmn?: string,
   description?: string,
   name?: string,
+  userDefinedId?: string,
   invalidate = false,
 ) => {
-  await loadModules();
-
   const error = await checkValidity(definitionsId, 'update', spaceId);
 
   if (error) return error;
@@ -282,16 +278,38 @@ export const updateProcess = async (
   if (name !== undefined) {
     newBpmn = (await setDefinitionsName(newBpmn!, name)) as string;
   }
+  if (userDefinedId !== undefined) {
+    newBpmn = (await updateBpmnCreatorAttributes(newBpmn!, {
+      userDefinedId: userDefinedId,
+    })) as string;
+  }
 
   // This invalidates the client-side router cache. Since we don't call
   // router.refresh() in the modeler for every change, we need to invalidate the
   // cache here so that the old BPMN isn't reused within 30s. See:
   // https://nextjs.org/docs/app/building-your-application/caching#invalidation-1
   if (invalidate) {
-    revalidatePath(`/processes/${definitionsId}`);
+    revalidatePath(`/processes/editor/${definitionsId}`);
   }
 
   await _updateProcess(definitionsId, { bpmn: newBpmn });
+};
+
+export const updateProcessMetaData = async (
+  definitionsId: string,
+  spaceId: string,
+  metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
+  invalidate = false,
+) => {
+  const error = await checkValidity(definitionsId, 'update', spaceId);
+
+  if (error) return error;
+
+  await _updateProcessMetaData(definitionsId, metaChanges);
+
+  if (invalidate) {
+    revalidatePath(`/processes/editor/${definitionsId}`);
+  }
 };
 
 export const updateProcesses = async (
@@ -300,11 +318,10 @@ export const updateProcesses = async (
     description?: string;
     bpmn?: string;
     id: string;
+    userDefinedId?: string;
   }[],
   spaceId: string,
 ) => {
-  await loadModules();
-
   const res = await Promise.all(
     processes.map(async (process) => {
       return await updateProcess(
@@ -313,6 +330,7 @@ export const updateProcesses = async (
         process.bpmn,
         process.description,
         process.name,
+        process.userDefinedId,
       );
     }),
   );
@@ -320,6 +338,107 @@ export const updateProcesses = async (
   const firstError = res.find((r) => r && 'error' in r);
 
   return firstError ?? res;
+};
+
+export const importProcesses = async (processData: ProcessData[], spaceId: string) => {
+  const importedProcesses = await addProcesses(processData, spaceId);
+  if ('error' in importedProcesses) {
+    return importedProcesses;
+  }
+
+  for (let idx = 0; idx < importedProcesses.length; idx++) {
+    const process = importedProcesses[idx];
+    const artefacts = processData[idx].artefacts;
+    const fileNameMapping = {
+      'start-form': new Map<string, string>(),
+      'user-tasks': new Map<string, string>(),
+      'script-tasks': new Map<string, string>(),
+    };
+    // Handle script tasks
+    if (artefacts?.scriptTasks) {
+      for (const script of artefacts.scriptTasks) {
+        const [baseName, ext] = script.name.split('.');
+        const newScriptFileName =
+          fileNameMapping['script-tasks'].get(baseName) || generateScriptTaskFileName();
+        fileNameMapping['script-tasks'].set(baseName, newScriptFileName);
+        await _saveProcessScriptTask(process.id, `${newScriptFileName}.${ext}`, script.content);
+      }
+    }
+
+    const groupFormData = (data: { name: string; content: string }[]) => {
+      return data.reduce((groups, file) => {
+        const [baseName, ext] = file.name.split(/\.(?=[^.]+$)/);
+        const group = groups.get(baseName) || { json: null, html: null };
+
+        if (ext === 'json') group.json = file.content;
+        if (ext === 'html') group.html = file.content;
+
+        groups.set(baseName, group);
+        return groups;
+      }, new Map<string, { json: string | null; html: string | null }>());
+    };
+
+    // handle start form
+    if (artefacts?.startForm && artefacts.startForm.length === 2) {
+      const [[filename, { json, html }]] = groupFormData(artefacts?.startForm);
+
+      if (!json || !html) {
+        console.error(`Incomplete start form pair for ${filename}`);
+      } else {
+        const newFileName = generateStartFormFileName();
+        fileNameMapping['start-form'].set(filename, newFileName);
+        try {
+          await _saveProcessHtmlForm(process.id, newFileName, json, html);
+        } catch (error) {
+          console.log(`Error processing start form ${newFileName}:`, error);
+        }
+      }
+    }
+
+    // Handle user tasks
+    if (artefacts?.userTasks) {
+      // Group user tasks by base name
+      const userTaskGroups = groupFormData(artefacts?.userTasks);
+      // Process grouped user tasks
+      for (const [baseName, { json, html }] of userTaskGroups) {
+        if (!json || !html) {
+          console.warn(`Incomplete user task pair for ${baseName}`);
+          continue;
+        }
+        const newUserTaskFileName =
+          fileNameMapping['user-tasks'].get(baseName) || generateUserTaskFileName();
+        fileNameMapping['user-tasks'].set(baseName, newUserTaskFileName);
+        try {
+          await _saveProcessHtmlForm(process.id, newUserTaskFileName, json, html);
+        } catch (error) {
+          console.error(`Error processing user task ${newUserTaskFileName}:`, error);
+        }
+      }
+    }
+
+    // update mapped filenames in bpmn
+    let fileNameChanges = [...fileNameMapping['user-tasks'].entries()];
+    fileNameChanges = fileNameChanges.concat([...fileNameMapping['start-form']]);
+    fileNameChanges = fileNameChanges.concat([...fileNameMapping['script-tasks']]);
+    const newBpmn = await updateFileNames(process.bpmn, fileNameChanges);
+
+    await _updateProcess(process.id, { bpmn: newBpmn });
+
+    // Handle images
+    if (artefacts?.images) {
+      for (const image of artefacts.images) {
+        await saveProcessArtifact(
+          process.id,
+          image.name,
+          `image/${image.name.split('.').pop()}`,
+          Buffer.from(image.content, 'base64'),
+          { generateNewFileName: false },
+        );
+      }
+    }
+  }
+
+  return importedProcesses;
 };
 
 export const copyProcesses = async (
@@ -334,8 +453,6 @@ export const copyProcesses = async (
   destinationfolderId?: string,
   referencedProcessId?: string,
 ) => {
-  await loadModules();
-
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
   const copiedProcesses: Process[] = [];
@@ -351,6 +468,9 @@ export const copyProcesses = async (
     // TODO: Does createProcess() do the same as this function?
     let newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
 
+    const bpmnObj = await toBpmnObject(newBpmn);
+    const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
+
     // TODO: include variables in copy?
     const newProcess = {
       creatorId: userId,
@@ -358,6 +478,7 @@ export const copyProcesses = async (
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,
       folderId: destinationfolderId,
+      executable: !!processObj.isExecutable,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -369,35 +490,19 @@ export const copyProcesses = async (
       return userError('A process with this id does already exist');
     }
 
-    if (enableUseDB && enableUseFileManager) {
-      await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
+    await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
 
-      const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
-      if (copiedFiles) {
-        // TODO: check if this works
-        // TODO: possibly optimize this by parsing and serializing the bpmn once instead of on every invocation of the updateXTaskFileName functions
-        for (const file of copiedFiles) {
-          switch (file?.artifactType) {
-            case 'user-tasks': {
-              ({ bpmn: newBpmn } = await updateUserTaskFileName(
-                newBpmn,
-                file.mapping.oldFilename,
-                file.mapping.newFilename,
-              ));
-            }
-            case 'script-tasks': {
-              ({ bpmn: newBpmn } = await updateScriptTaskFileName(
-                newBpmn,
-                file.mapping.oldFilename,
-                file.mapping.newFilename,
-              ));
-            }
-          }
-        }
+    const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
+    const changesFileNames = copiedFiles
+      .filter(truthyFilter)
+      .filter((file) => file.artifactType === 'html-forms' || file.artifactType === 'script-tasks')
+      .map(
+        ({ mapping: { oldFilename, newFilename } }) =>
+          [oldFilename, newFilename] as [string, string],
+      );
+    newBpmn = await updateFileNames(newBpmn, changesFileNames);
+    await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
 
-        await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
-      }
-    }
     copiedProcesses.push({ ...process, bpmn: newBpmn });
   }
 
@@ -457,6 +562,7 @@ export const createVersion = async (
 
   const process = (await _getProcess(processId)) as Process;
 
+  const versionedProcessStartFormFilenames = await versionStartForm(process, versionId, bpmnObj);
   const versionedUserTaskFilenames = await versionUserTasks(process, versionId, bpmnObj);
   const versionedScriptTaskFilenames = await versionScriptTasks(process, versionId, bpmnObj);
 
@@ -474,6 +580,7 @@ export const createVersion = async (
   addProcessVersion(
     processId,
     versionedBpmn,
+    versionedProcessStartFormFilenames,
     versionedUserTaskFilenames,
     versionedScriptTaskFilenames,
   );
@@ -497,9 +604,9 @@ export const getFavouritesProcessIds = async () => {
   return favs ?? [];
 };
 
-export const getProcessUserTaskData = async (
+export const getProcessHtmlFormData = async (
   definitionId: string,
-  taskFileName: string,
+  fileName: string,
   spaceId: string,
 ) => {
   const error = await checkValidity(definitionId, 'view', spaceId);
@@ -507,15 +614,18 @@ export const getProcessUserTaskData = async (
   if (error) return error;
 
   try {
-    return await _getProcessUserTaskJSON(definitionId, taskFileName);
+    return await _getProcessHtmlFormJSON(definitionId, fileName);
   } catch (err) {
-    return userError('Unable to get the requested User Task data.', UserErrorType.NotFoundError);
+    return userError(
+      `Unable to get the requested process html form data for ${fileName}`,
+      UserErrorType.NotFoundError,
+    );
   }
 };
 
-export const getProcessUserTaskHTML = async (
+export const getProcessHtmlFormHTML = async (
   definitionId: string,
-  taskFileName: string,
+  fileName: string,
   spaceId: string,
 ) => {
   const error = await checkValidity(definitionId, 'view', spaceId);
@@ -523,29 +633,59 @@ export const getProcessUserTaskHTML = async (
   if (error) return error;
 
   try {
-    return await _getProcessUserTaskHtml(definitionId, taskFileName);
+    return await _getHtmlForm(definitionId, fileName);
   } catch (err) {
-    return userError('Unable to get the requested User Task html.', UserErrorType.NotFoundError);
+    return userError(
+      `Unable to get the requested html form html ${fileName}.`,
+      UserErrorType.NotFoundError,
+    );
   }
 };
 
-export const saveProcessUserTask = async (
+export const saveProcessHtmlForm = async (
   definitionId: string,
-  taskFileName: string,
+  fileName: string,
   json: string,
   html: string,
   spaceId: string,
 ) => {
-  const error = await checkValidity(definitionId, 'update', spaceId);
+  try {
+    const error = await checkValidity(definitionId, 'update', spaceId);
 
-  if (error) return error;
+    if (error) return error;
 
-  if (/-\d+$/.test(taskFileName))
-    return userError(
-      'Illegal attempt to overwrite a user task version!',
-      UserErrorType.ConstraintError,
-    );
-  await _saveProcessUserTask!(definitionId, taskFileName, json, html);
+    if (/-\d+$/.test(fileName))
+      return userError(
+        'Illegal attempt to overwrite a html form version!',
+        UserErrorType.ConstraintError,
+      );
+
+    await _saveProcessHtmlForm(definitionId, fileName, json, html, undefined, true);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+};
+export const getFolderScriptTasks = async (environmentId: string, folderId?: string) => {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return await _getFolderScriptTasks(environmentId, folderId, ability);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+};
+
+export const getFolderPathScriptTasks = async (environmentId: string, folderId: string) => {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return await _getFolderPathScriptTasks(environmentId, folderId, ability);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 };
 
 export const getProcessScriptTaskData = async (
@@ -609,3 +749,57 @@ export const getProcessImage = async (
 
   return _getProcessImage!(definitionId, imageFileName);
 };
+
+interface BaseProcessCheckData {
+  spaceId: string;
+  userId: string;
+}
+
+interface SingleProcessCheckData extends BaseProcessCheckData {
+  batch?: false;
+  processName: string;
+  folderId?: string;
+}
+
+interface BatchProcessCheckData extends BaseProcessCheckData {
+  batch: true;
+  processes: { name: string; folderId?: string }[];
+}
+
+type ProcessCheckData = SingleProcessCheckData | BatchProcessCheckData;
+
+export async function checkIfProcessExistsByName(data: SingleProcessCheckData): Promise<boolean>;
+export async function checkIfProcessExistsByName(data: BatchProcessCheckData): Promise<boolean[]>;
+export async function checkIfProcessExistsByName(
+  data: ProcessCheckData,
+): Promise<boolean | boolean[]> {
+  try {
+    const { ability } = await getCurrentEnvironment(data.spaceId);
+
+    if (data.batch === true) {
+      const processesWithFolderIds = await Promise.all(
+        data.processes.map(async (process) => ({
+          name: process.name,
+          folderId: process.folderId ?? (await getRootFolder(data.spaceId, ability)).id,
+        })),
+      );
+
+      return await checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
+        processesWithFolderIds,
+        data.spaceId,
+        data.userId,
+      );
+    } else {
+      const folderId = data.folderId ?? (await getRootFolder(data.spaceId, ability)).id;
+      return await checkIfProcessAlreadyExistsForAUserInASpaceByName(
+        data.processName,
+        data.spaceId,
+        data.userId,
+        folderId,
+      );
+    }
+  } catch (error) {
+    console.log(error);
+    return data.batch === true ? [] : false;
+  }
+}

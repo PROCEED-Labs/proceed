@@ -12,8 +12,8 @@ export class PropertiesPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.generalSection = page.getByRole('group', { name: 'General' });
-    this.imageSection = page.getByRole('group', { name: 'image-section' });
+    this.generalSection = page.getByRole('group', { name: 'General Properties' });
+    this.imageSection = page.getByRole('group', { name: 'image-upload' });
     this.descriptionSection = page.getByRole('group', { name: 'Description' });
     this.milestonesSection = page.getByRole('group', { name: 'Milestones' });
     this.customPropertiesSection = page.getByRole('group', { name: 'Custom Properties' });
@@ -24,10 +24,13 @@ export class PropertiesPanelPage {
     const imageSection = this.imageSection;
 
     const fileChooserPromise = page.waitForEvent('filechooser');
+    await imageSection.hover();
     await imageSection.getByText('Add Image').click();
     const fileChooser = await fileChooserPromise;
     const imagePath = path.join(__dirname, imageFileName);
     await fileChooser.setFiles(imagePath);
+    // TODO: wait for request response to finish instead of a timeout.
+    await page.waitForTimeout(2000);
   }
 
   async editPlannedDuration(durationValues: {

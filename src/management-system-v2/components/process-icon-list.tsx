@@ -5,7 +5,7 @@ import { InfoCircleOutlined, FolderOutlined } from '@ant-design/icons';
 import { LazyBPMNViewer } from './bpmn-viewer';
 
 import ScrollBar from './scrollbar';
-import { ProcessListProcess } from './processes';
+import { ProcessListProcess } from './processes/types';
 import { Card, Grid } from 'antd';
 import ElementIconView, { ItemIconViewProps } from './item-icon-view';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ import { spaceURL } from '@/lib/utils';
 import { useEnvironment } from './auth-can';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
+import { OverflowTooltipTitle } from './overflow-tooltip';
 
 const DraggableDiv = DraggableElementGenerator('div', 'itemId');
 
@@ -23,9 +24,15 @@ type IconViewProps = {
     setSelectionElements: (action: SetStateAction<ProcessListProcess[]>) => void;
   };
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
+  isReadOnly?: boolean;
 };
 
-const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMetaData }) => {
+const IconView: FC<IconViewProps> = ({
+  data,
+  elementSelection,
+  setShowMobileMetaData,
+  isReadOnly = false,
+}) => {
   const breakpoint = Grid.useBreakpoint();
   const router = useRouter();
   const space = useEnvironment();
@@ -45,7 +52,7 @@ const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMeta
     const cardTitle = (
       <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
         {item.type === 'folder' && <FolderOutlined style={{ marginRight: '.5rem' }} />}
-        {item?.name.highlighted}
+        <OverflowTooltipTitle>{item?.name.highlighted}</OverflowTooltipTitle>
         <span style={{ flex: 1 }}></span>
         {breakpoint.xl ? null : <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />}
       </div>
@@ -55,8 +62,13 @@ const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMeta
       Wrapper: DraggableDiv,
       cardProps: {
         onDoubleClick: () => {
-          const url =
-            item.type === 'folder' ? `/processes/folder/${item.id}` : `/processes/${item.id}`;
+          const folderPath = isReadOnly
+            ? `/processes/list/folder/${item.id}`
+            : `/processes/editor/folder/${item.id}`;
+          const processPath = isReadOnly
+            ? `/processes/list/${item.id}`
+            : `/processes/editor/${item.id}`;
+          const url = item.type === 'folder' ? folderPath : processPath;
           router.push(spaceURL(space, url));
         },
         onContextMenu: () => {

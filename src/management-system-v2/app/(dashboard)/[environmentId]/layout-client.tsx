@@ -1,24 +1,35 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
-import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
-import { AppstoreOutlined } from '@ant-design/icons';
+import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
+import {
+  Alert,
+  Layout as AntLayout,
+  Button,
+  Drawer,
+  Grid,
+  Menu,
+  MenuProps,
+  Modal,
+  Popover,
+  Tooltip,
+} from 'antd';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { create } from 'zustand';
 import { Environment } from '@/lib/data/environment-schema';
 import UserAvatar from '@/components/user-avatar';
 import { spaceURL } from '@/lib/utils';
-import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
+import useModelerStateStore from './processes/[mode]/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
 import SpaceLink from '@/components/space-link';
-import { FaUserEdit } from 'react-icons/fa';
-import { useFileManager } from '@/lib/useFileManager';
-import { EntityType } from '@/lib/helpers/fileManagerHelpers';
-import { enableUseFileManager } from 'FeatureFlags';
+import { useSession } from '@/components/auth-can';
+import ChangeUserPasswordModal from './profile/change-password-modal';
+import useMSLogo from '@/lib/use-ms-logo';
+import { usePathname } from 'next/navigation';
+import { MenuItemType } from 'antd/es/menu/interface';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -37,14 +48,25 @@ export const SpaceContext = createContext<{
   customLogo?: string;
 }>({ spaceId: '', isOrganization: false });
 
+type ExtendedMenuItem = NonNullable<MenuProps['items']>[number] & {
+  openRegex?: string;
+  selectedRegex?: string;
+  children?: ExtendedMenuItem[];
+};
+
+export type ExtendedMenuItems = ExtendedMenuItem[];
+
 const Layout: FC<
   PropsWithChildren<{
     loggedIn: boolean;
     userEnvironments?: Environment[];
-    layoutMenuItems: NonNullable<MenuProps['items']>;
+    layoutMenuItems: ExtendedMenuItems;
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;
     customLogo?: string;
+    disableUserDataModal?: boolean;
+    userNeedsToChangePassword?: boolean;
+    bottomMenuItems?: NonNullable<MenuProps['items']>;
   }>
 > = ({
   loggedIn,
@@ -54,71 +76,107 @@ const Layout: FC<
   children,
   hideSider,
   customLogo,
+  disableUserDataModal = false,
+  userNeedsToChangePassword: _userNeedsToChangePassword,
+  bottomMenuItems,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
-  const { download: getLogo, fileUrl: logoUrl } = useFileManager({
-    entityType: EntityType.ORGANIZATION,
-  });
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
 
   const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
+  const [showLoginRequest, setShowLoginRequest] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
+  const [userNeedsToChangePassword, setUserNeedsToChangePassword] = useState(
+    _userNeedsToChangePassword ?? false,
+  );
+
   let layoutMenuItems = _layoutMenuItems;
+
   if (breakpoint.xs) {
     layoutMenuItems = layoutMenuItems.filter(
       (item) => !(item && 'type' in item && item.type === 'divider'),
     );
-
-    if (userData && !userData.isGuest) {
-      layoutMenuItems = [
-        {
-          label: 'Profile',
-          key: 'profile-settings',
-          children: [
-            {
-              key: 'profile',
-              title: 'Profile Settings',
-              label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-              icon: <FaUserEdit />,
-            },
-            {
-              key: 'spaces',
-              title: 'My Spaces',
-              label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
-              icon: <AppstoreOutlined />,
-            },
-          ],
-        },
-        ...layoutMenuItems,
-      ];
-    }
   }
 
-  useEffect(() => {
-    if (enableUseFileManager && customLogo) getLogo(activeSpace.spaceId, '');
-  }, [activeSpace, customLogo]);
+  // The space id needs to be set here, because the hook is outside of the SpaceContext.Provider
+  const { imageSource } = useMSLogo(customLogo, { spaceId: activeSpace.spaceId });
 
-  let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
-  if (customLogo) imageSource = logoUrl ?? customLogo;
+  const pathname = usePathname();
+
+  const [selected, setSelected] = useState<string[]>([]);
+  const [open, setOpen] = useState<string[]>([]);
+
+  useEffect(() => {
+    const sel: string[] = [];
+    const op: string[] = [];
+
+    function check(items: ExtendedMenuItems) {
+      for (const item of items) {
+        if (item.selectedRegex && pathname.match(item.selectedRegex)) {
+          sel.push(item.key as string);
+        }
+        if (item.openRegex && pathname.match(item.openRegex)) {
+          op.push(item.key as string);
+        }
+
+        if (item.children) check(item.children);
+      }
+    }
+
+    check(layoutMenuItems);
+
+    setSelected(sel);
+    setOpen(op);
+  }, [pathname]);
+
+  // remove the error message about the unknown item entries that is logged by ant-design
+  function toMenuItem(item: ExtendedMenuItem): MenuItemType {
+    const test = {
+      ...item,
+      children: item.children?.map(toMenuItem),
+    };
+
+    delete test.selectedRegex;
+    delete test.openRegex;
+
+    return test as MenuItemType;
+  }
+
+  const menuItems = layoutMenuItems.map(toMenuItem);
 
   const menu = (
     <Menu
       style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
       mode="inline"
-      items={layoutMenuItems}
+      selectedKeys={selected}
+      openKeys={open}
+      items={menuItems}
       onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
+      onOpenChange={(changed) => setOpen(changed)}
     />
   );
+
+  let bottomMenu;
+  if (bottomMenuItems && bottomMenuItems.length > 0) {
+    bottomMenu = (
+      <Menu
+        style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
+        mode="inline"
+        items={bottomMenuItems}
+        onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
+      />
+    );
+  }
 
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
       <SpaceContext.Provider value={activeSpace}>
-        {userData && !userData.isGuest ? (
+        {!disableUserDataModal && userData && !userData.isGuest ? (
           <AuthenticatedUserDataModal
             modalOpen={!userData.username || !userData.lastName || !userData.firstName}
             userData={userData}
@@ -144,9 +202,25 @@ const Layout: FC<
                 },
               ],
             }}
-            modalProps={{ closeIcon: null, destroyOnClose: true }}
+            modalProps={{ closeIcon: null, destroyOnHidden: true }}
           />
         ) : null}
+
+        {userNeedsToChangePassword && (
+          <ChangeUserPasswordModal
+            open={true}
+            close={(passwordChanged) => {
+              if (passwordChanged) {
+                setUserNeedsToChangePassword(false);
+              }
+            }}
+            title="You need to set your password"
+            hint={
+              <Alert message="Your account still has a temporary password, in order to use PROCEED you need to set a new password" />
+            }
+            modalProps={{ closable: false }}
+          />
+        )}
 
         <AntLayout style={{ height: '100vh' }}>
           <AntLayout hasSider>
@@ -202,12 +276,32 @@ const Layout: FC<
                     </div>
                     {loggedIn ? menu : null}
                   </div>
-                  <AntLayout.Footer
-                    style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
-                    className={cn(styles.Footer)}
-                  >
-                    PROCEED Labs GmbH
-                  </AntLayout.Footer>
+                  <div>
+                    {bottomMenu}
+                    <AntLayout.Footer
+                      style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+                      className={cn(styles.Footer)}
+                    >
+                      <Popover
+                        title="PROCEED Labs GmbH"
+                        content={
+                          <div>
+                            <a href="https://proceed-labs.org" target="_blank">
+                              https://www.proceed-labs.org
+                            </a>
+                            <div>Tel.: +49 151 57425665</div>
+                            <div>
+                              Email:{' '}
+                              <a href="mailto:info@proceed-labs.org">info@proceed-labs.org</a>
+                            </div>
+                          </div>
+                        }
+                        placement="bottomLeft"
+                      >
+                        PROCEED Labs GmbH
+                      </Popover>
+                    </AntLayout.Footer>
+                  </div>
                 </div>
               </AntLayout.Sider>
             )}
@@ -232,8 +326,38 @@ const Layout: FC<
           onClose={() => setMobileDrawerOpen(false)}
           open={mobileDrawerOpen}
         >
-          {menu}
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            {menu}
+            {bottomMenu}
+          </div>
         </Drawer>
+
+        <Modal
+          title={null}
+          footer={null}
+          closable={false}
+          open={showLoginRequest}
+          onCancel={() => setShowLoginRequest(false)}
+          styles={{ mask: { backdropFilter: 'blur(10px)' }, content: { padding: 0 } }}
+        >
+          <Alert
+            type="warning"
+            style={{ zIndex: '1000' }}
+            message={
+              <>
+                To store and change settings,{' '}
+                <SpaceLink href={'/signin'}>please log in as user.</SpaceLink>
+              </>
+            }
+          />
+        </Modal>
       </SpaceContext.Provider>
     </UserSpacesContext.Provider>
   );

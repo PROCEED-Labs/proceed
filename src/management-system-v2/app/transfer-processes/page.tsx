@@ -1,19 +1,19 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getProcesses, getUserById } from '@/lib/data/DTOs';
+import { getProcesses } from '@/lib/data/db/process';
+import { getUserById } from '@/lib/data/db/iam/users';
 import { Card, Result } from 'antd';
 import { redirect } from 'next/navigation';
 import ProcessTransferButtons from './transfer-processes-confirmation-buttons';
 import { getGuestReference } from '@/lib/reference-guest-user-token';
 
-export default async function TransferProcessesPage({
-  searchParams,
-}: {
-  searchParams: {
+export default async function TransferProcessesPage(props: {
+  searchParams: Promise<{
     callbackUrl?: string;
     referenceToken?: string;
-  };
+  }>;
 }) {
+  const searchParams = await props.searchParams;
   const { userId, session } = await getCurrentUser();
   if (!session) redirect('api/auth/signin');
   if (session.user.isGuest) redirect('/');

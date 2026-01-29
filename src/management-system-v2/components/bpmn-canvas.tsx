@@ -4,6 +4,7 @@ import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from '
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type NavigatedViewerType from 'bpmn-js/lib/NavigatedViewer';
 import type ViewerType from 'bpmn-js/lib/Viewer';
+import type EventBus from 'diagram-js/lib/core/EventBus';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
@@ -17,17 +18,13 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
+import type Overlays from 'diagram-js/lib/features/overlays/Overlays';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
 import {
-  PerformerRulesModule,
-  PerformerReplaceModule,
-  PerformerRendererModule,
-  PerformerLabelEditingModule,
-  PerformerPaletteProviderModule,
-  PerformerContextPadProviderModule,
-  PerformerLabelBehaviorModule,
-} from '@/lib/modeler-extensions/Performers';
+  ResourceViewModule,
+  ResourceModelingModule,
+} from '@/lib/modeler-extensions/GenericResources';
 import {
   CustomAnnotationViewModule,
   CustomAnnotationModelingModule,
@@ -101,10 +98,12 @@ export interface BPMNCanvasRef {
   getElement: (id: string) => Element | undefined;
   getAllElements: () => ElementLike[];
   getCurrentRoot: () => Element | undefined;
+  getEventBus: () => EventBus;
   getCanvas: () => Canvas;
   getZoomScroll: () => ZoomScroll;
   getSelection: () => Selection;
   getModeling: () => Modeling;
+  getOverlays: () => Overlays;
   getFactory: () => BpmnFactory;
   loadBPMN: (bpmn: string) => Promise<void>;
   activateKeyboard: () => void;
@@ -131,7 +130,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
   ) => {
     const canvas = useRef<HTMLDivElement>(null);
     const modeler = useRef<ModelerType | NavigatedViewerType | null>(null);
-    const unloadPromise = useRef<Promise<void> | undefined>();
+    const unloadPromise = useRef<Promise<void> | undefined>(undefined);
 
     const loadingXML = useRef(false);
 
@@ -163,15 +162,17 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         return modeler.current!.get<ElementRegistry>('elementRegistry').getAll();
       },
       getCurrentRoot: () => {
-        if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
+        const rootElement = modeler.current!.get<Canvas>('canvas').getRootElement();
+        if (!rootElement?.businessObject) {
           return;
         }
 
         return modeler
           .current!.get<ElementRegistry>('elementRegistry')
-          .get(
-            modeler.current!.get<Canvas>('canvas').getRootElement().businessObject.id,
-          ) as Element;
+          .get(rootElement.businessObject.id) as Element;
+      },
+      getEventBus: () => {
+        return modeler.current!.get<EventBus>('eventBus');
       },
       getCanvas: () => {
         return modeler.current!.get<Canvas>('canvas');
@@ -184,6 +185,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       },
       getModeling: () => {
         return modeler.current!.get<Modeling>('modeling');
+      },
+      getOverlays: () => {
+        return modeler.current!.get<Overlays>('overlays');
       },
       getFactory: () => {
         return modeler.current!.get<BpmnFactory>('bpmnFactory');
@@ -202,7 +206,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       deactivateKeyboard: () => {
         modeler.current!.get<Keyboard>('keyboard').unbind();
       },
-      removeColors: () => {},
     }));
 
     const [Modeler, NavigatedViewer, Viewer] = use(BPMNJs);
@@ -212,18 +215,13 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
       // this will allow any type of viewer or editor we create to render our performer elements
-      const additionalModules: any[] = [PerformerRendererModule, CustomAnnotationViewModule];
+      const additionalModules: any[] = [ResourceViewModule, CustomAnnotationViewModule];
 
       // the modules related to editing can only be registered in modelers since they depend on
       // other modeler modules
       if (type === 'modeler') {
         additionalModules.push(
-          PerformerContextPadProviderModule,
-          PerformerPaletteProviderModule,
-          PerformerLabelEditingModule,
-          PerformerReplaceModule,
-          PerformerRulesModule,
-          PerformerLabelBehaviorModule,
+          ResourceModelingModule,
           CustomAnnotationModelingModule,
           ModelingOverrideModule,
         );
@@ -271,7 +269,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
     useEffect(() => {
       // Store handlers so we can remove them later.
       const _onLoaded = () => onLoaded?.();
-      const commandStackChanged = () => onChange?.();
+      const commandStackChanged = () => {
+        if (!loadingXML.current) onChange?.();
+      };
       const selectionChanged = (event: {
         oldSelection: ElementLike[];
         newSelection: ElementLike[];
@@ -301,7 +301,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current!.on(
           'commandStack.shape.create.executed',
           (event: { context: { shape: Shape } }) => {
-            onShapeRemoveUndo?.(event.context.shape.businessObject);
+            if (event.context.shape.businessObject)
+              onShapeRemoveUndo?.(event.context.shape.businessObject);
           },
         );
       }
@@ -343,7 +344,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
-
         loadingXML.current = false;
 
         if (m !== modeler.current) {
@@ -354,7 +354,10 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         // This handler is added here because it would fire before the onLoaded
         // callback. Since we set the root for subprocesses in the onLoaded, the
         // URL check in onRootChange would fire too early.
-        rootSet({ element: m.get<Canvas>('canvas').getRootElement() as Root });
+        const rootElement = m.get<Canvas>('canvas').getRootElement();
+        if (rootElement) {
+          rootSet({ element: rootElement as Root });
+        }
         modeler.current!.on<{ element: Root }>('root.set', rootSet);
       }
 

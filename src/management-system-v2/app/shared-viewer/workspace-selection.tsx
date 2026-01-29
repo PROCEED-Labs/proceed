@@ -1,14 +1,13 @@
 import React, { useEffect, useState, Suspense } from 'react';
-import { useSession } from 'next-auth/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { Avatar, message, Space, Button, Typography, Modal, Spin, Tooltip, Flex } from 'antd';
+import { Avatar, message, Space, Button, Typography, Modal, Spin, Tooltip } from 'antd';
 import { LaptopOutlined, InfoCircleOutlined } from '@ant-design/icons';
 
 import { copyProcesses } from '@/lib/data/processes';
 
 import { Environment } from '@/lib/data/environment-schema';
-import { getProcess } from '@/lib/data/legacy/process';
+import { getProcess } from '@/lib/data/db/process';
 import { VersionInfo } from './process-document';
 
 import styles from './workspace-selection.module.scss';
@@ -18,6 +17,7 @@ import { MdEdit } from 'react-icons/md';
 import { FolderTreeNode, getSpaceFolderTree } from '@/lib/data/folders';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useSession } from '@/components/auth-can';
 
 type WorkspaceSelectionProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
@@ -41,20 +41,19 @@ const WorkspaceSelection: React.FC<
     null,
   );
 
-  const [workspaceLogos, setWorkspaceLogos] = useState<Record<string, string | null>>({});
+  const [workspaceLogos, setWorkspaceLogos] = useState<Record<string, string | undefined>>({});
 
   useEffect(() => {
     const fetchLogos = async () => {
-      const logos: Record<string, string | null> = {};
+      const logos: Record<string, string | undefined> = {};
       for (const workspace of workspaces) {
         if (workspace.isOrganization) {
-          getLogoUrl(workspace.id, '', undefined, {
-            onSuccess(data) {
-              logos[workspace.id] = data.fileUrl!;
-            },
+          getLogoUrl({
+            entityId: workspace.id,
+            filePath: '',
+          }).then((data) => {
+            if (data?.fileUrl) logos[workspace.id] = data.fileUrl + `?${Date.now()}`;
           });
-        } else {
-          logos[workspace.id] = null;
         }
       }
       setWorkspaceLogos(logos);
@@ -155,7 +154,7 @@ const WorkspaceSelection: React.FC<
     label: workspace.isOrganization ? workspace.name : 'My Space',
     key: `${workspace.id}`,
     logo:
-      workspace.isOrganization && workspace.logo ? (
+      workspace.isOrganization && workspace.spaceLogo ? (
         <Tooltip title={workspace.name}>
           <Avatar
             size={64}
@@ -282,7 +281,7 @@ const WorkspaceSelectionModalButton: React.FC<WorkspaceSelectionProps> = ({
       message.success('Diagram has been successfully copied to your workspace');
       if (copiedProcesses.length === 1) {
         router.push(
-          `${selectedWorkspace.isOrganization ? selectedWorkspace.id : ''}/processes/${copiedProcesses[0].id}`,
+          `${selectedWorkspace.isOrganization ? selectedWorkspace.id : ''}/processes/editor/${copiedProcesses[0].id}`,
         );
       }
     }

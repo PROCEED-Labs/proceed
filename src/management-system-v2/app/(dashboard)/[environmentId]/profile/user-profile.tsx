@@ -1,10 +1,23 @@
 'use client';
 
-import { FC, ReactNode, useState } from 'react';
-import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input } from 'antd';
+import { DetailedHTMLProps, FC, HTMLAttributes, ReactNode, use, useEffect, useState } from 'react';
+import {
+  Space,
+  Card,
+  Typography,
+  App,
+  Table,
+  Alert,
+  Modal,
+  Form,
+  Input,
+  theme,
+  Button,
+  Image,
+} from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';
@@ -13,10 +26,44 @@ import UserAvatar from '@/components/user-avatar';
 import { CloseOutlined } from '@ant-design/icons';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { z } from 'zod';
-import { requestEmailChange as serverRequestEmailChange } from '@/lib/change-email/server-actions';
+import { requestEmailChange as serverRequestEmailChange } from '@/lib/email-verification-tokens/server-actions';
 import Link from 'next/link';
+import { EnvVarsContext } from '@/components/env-vars-context';
+import ImageUpload, { fallbackImage } from '@/components/image-upload';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
+import ChangeUserPasswordModal from './change-password-modal';
+import { isUserErrorResponse } from '@/lib/user-error';
 
-const UserProfile: FC<{ userData: User }> = ({ userData }) => {
+const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
+  userData,
+  userHasPassword: _userHasPassword,
+}) => {
+  const env = use(EnvVarsContext);
+
+  const { message: messageApi, notification } = App.useApp();
+  const {
+    token: { colorTextDisabled, colorBgContainerDisabled },
+  } = theme.useToken();
+  const { download: getProfileUrl } = useFileManager({ entityType: EntityType.PROFILE_PICTURE });
+  const [avatarUrl, setAvatarURl] = useState<string | undefined>();
+  const session = useSession();
+
+  useEffect(() => {
+    async function getAvatar() {
+      if (!userData.isGuest && userData.profileImage) {
+        const response = await getProfileUrl({
+          entityId: userData.id,
+          filePath: userData.profileImage,
+        });
+        if (response.fileUrl) {
+          setAvatarURl(response.fileUrl);
+        }
+      }
+    }
+    getAvatar();
+  }, [userData]);
+
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
 
@@ -24,18 +71,21 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [errors, parseEmail] = useParseZodErrors(z.object({ email: z.string().email() }));
   const [changeEmailForm] = Form.useForm();
 
-  const { message: messageApi, notification } = App.useApp();
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [userHasPassword, setUserHasPassword] = useState(_userHasPassword);
+
+  const isAdmin = !userData.isGuest && userData.username === 'admin';
 
   async function deleteUser() {
     try {
       const response = await deleteUserServerAction();
-      if (response && 'error' in response) throw response;
+      if (isUserErrorResponse(response)) throw response;
 
       messageApi.success({ content: 'Your account was deleted' });
       signOut();
     } catch (e: unknown) {
       //@ts-ignore
-      if (e?.error?.message as ReactNode) setErrorMessage(e.error.message);
+      if (isUserErrorResponse(e)) setErrorMessage(e.error.message);
       else messageApi.error({ content: 'An error ocurred' });
     }
   }
@@ -65,6 +115,18 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
 
   return (
     <>
+      <ChangeUserPasswordModal
+        open={changePasswordModalOpen}
+        close={(passwordChanged) => {
+          if (passwordChanged) {
+            setUserHasPassword(true);
+          }
+
+          setChangePasswordModalOpen(false);
+        }}
+        title={userHasPassword ? 'Change Password' : 'Set Password'}
+      />
+
       <UserDataModal
         userData={userData}
         modalOpen={changeNameModalOpen}
@@ -87,6 +149,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               label: 'Username',
               submitField: 'username',
               userDataField: 'username',
+              disabled: isAdmin,
             },
           ],
         }}
@@ -98,7 +161,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
         closeIcon={null}
         onCancel={() => setChangeEmailModalOpen(false)}
         onOk={changeEmailForm.submit}
-        destroyOnClose
+        destroyOnHidden
       >
         <Alert
           type="info"
@@ -132,15 +195,42 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               afterClose={() => setErrorMessage(null)}
             />
           )}
-          <Typography.Title level={3}>Profile data</Typography.Title>
+          <Typography.Title level={3}>Profile Settings</Typography.Title>
 
-          <UserAvatar
-            user={userData}
-            avatarProps={{
-              size: 90,
-              style: { marginBottom: '1rem' },
+          <div
+            style={{
+              height: '120px',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
             }}
-          />
+          >
+            <ImageUpload
+              config={{
+                entityType: EntityType.PROFILE_PICTURE,
+                entityId: userData.id,
+              }}
+              initialFileName={(!userData.isGuest && userData.profileImage) || undefined}
+              onImageUpdate={async (newFilePath) => {
+                session.update(null);
+                if (newFilePath) {
+                  messageApi.success({ content: 'Profile picture updated' });
+                  getProfileUrl({ entityId: userData.id, filePath: newFilePath });
+                } else {
+                  // Image was removed
+                  messageApi.success({ content: 'Profile picture was deleted' });
+                  setAvatarURl(undefined);
+                }
+              }}
+              imagePreview={(fileUrl) => (
+                <UserAvatar user={{ ...userData, profileImage: fileUrl }} size={90} />
+              )}
+              onUploadFail={() => messageApi.error('Error uploading image')}
+              imageProps={{
+                alt: 'Profile Picture',
+              }}
+            />
+          </div>
 
           <div
             style={{
@@ -165,13 +255,14 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 <Alert
                   message={
                     <>
-                      To change your profile data <Link href="/signin">Sign in</Link>
+                      To change your profile settings <Link href="/signin">Sign in</Link>
                     </>
                   }
                   type="info"
                 />
               </div>
             )}
+
             <Table
               dataSource={[
                 {
@@ -184,13 +275,14 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                   key: 'username',
                   title: 'Username',
                   value: !userData.isGuest ? userData.username : 'Guest',
-                  action: () => setChangeNameModalOpen(true),
+                  action: () => !isAdmin && setChangeNameModalOpen(true),
                 },
                 {
                   key: 'email',
                   title: 'Email',
                   value: !userData.isGuest ? userData.email : 'Guest',
-                  action: () => setChangeEmailModalOpen(true),
+                  action: () =>
+                    env.PROCEED_PUBLIC_MAILSERVER_ACTIVE && setChangeEmailModalOpen(true),
                 },
               ]}
               columns={[
@@ -198,7 +290,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 { dataIndex: 'value' },
                 {
                   key: 'action',
-                  render: () => <RightOutlined />,
+                  render: (_, row) => <RightOutlined />,
                 },
               ]}
               onRow={(row) =>
@@ -211,6 +303,39 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               showHeader={false}
               pagination={false}
               className={styles.Table}
+              components={{
+                body: {
+                  row(props: any) {
+                    let buttonProps: DetailedHTMLProps<
+                      HTMLAttributes<HTMLTableRowElement>,
+                      HTMLTableRowElement
+                    >;
+
+                    if (
+                      (props['data-row-key'] === 'email' &&
+                        !env.PROCEED_PUBLIC_MAILSERVER_ACTIVE) ||
+                      (props['data-row-key'] === 'username' && isAdmin)
+                    ) {
+                      buttonProps = {
+                        style: {
+                          color: colorTextDisabled,
+                          backgroundColor: colorBgContainerDisabled,
+                          cursor: 'not-allowed',
+                        },
+                      };
+                    } else {
+                      buttonProps = {
+                        style: {
+                          cursor: 'pointer',
+                        },
+                        role: 'button',
+                      };
+                    }
+
+                    return <tr {...props} {...buttonProps} />;
+                  },
+                },
+              }}
               style={{
                 marginBottom: 16,
                 ...(userData.isGuest && { filter: 'blur(7px)', pointerEvents: 'none' }),
@@ -219,6 +344,9 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           </div>
 
           <Space direction="vertical">
+            <Button onClick={() => setChangePasswordModalOpen(true)}>
+              {userHasPassword ? 'Change Password' : 'Set Password'}
+            </Button>
             <ConfirmationButton
               title="Delete Account"
               description="Are you sure you want to delete your account?"

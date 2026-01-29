@@ -1,6 +1,11 @@
 'use client';
 
-import { UserOutlined, WarningOutlined, AppstoreOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  WarningOutlined,
+  AppstoreOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import {
   Alert,
   Avatar,
@@ -14,17 +19,20 @@ import {
   Typography,
   theme,
 } from 'antd';
-import { signIn, signOut, useSession } from 'next-auth/react';
-import { FC, useContext, useState } from 'react';
+import { signIn, signOut } from 'next-auth/react';
+import { FC, use, useContext, useState } from 'react';
 import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
 import { enableChatbot } from 'FeatureFlags';
-import { useEnvironment } from './auth-can';
+import { useEnvironment, useSession } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
-import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
+import { FaSignOutAlt } from 'react-icons/fa';
+import { EnvVarsContext } from './env-vars-context';
+import { TbUserEdit } from 'react-icons/tb';
+import { useRouter } from 'next/navigation';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -34,6 +42,8 @@ const HeaderActions: FC = () => {
   const [guestWarningOpen, setGuestWarningOpen] = useState(false);
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
+  const envVars = use(EnvVarsContext);
+  const router = useRouter();
 
   if (!loggedIn) {
     return (
@@ -50,14 +60,7 @@ const HeaderActions: FC = () => {
   }
 
   let actionButton;
-  const avatarDropdownItems: MenuProps['items'] = [
-    {
-      key: 'profile',
-      title: 'Profile Settings',
-      label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
-      icon: <FaUserEdit />,
-    },
-  ];
+  const avatarDropdownItems: MenuProps['items'] = [];
 
   if (isGuest) {
     actionButton = (
@@ -89,34 +92,70 @@ const HeaderActions: FC = () => {
         }),
       icon: <FaSignOutAlt />,
     });
-  } else {
-    // userSpaces is null when the component is outside of the UserSpaces provider
-    if (userSpaces) {
+  } else if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
+    avatarDropdownItems.push(
+      {
+        key: 'profile',
+        title: 'Profile Settings',
+        label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
+        icon: <TbUserEdit />,
+      },
+      {
+        key: 'personal-space-settings',
+        title: 'Personal Space Settings',
+        label: <Link href="/settings">Personal Space Settings</Link>,
+        icon: <SettingOutlined />,
+      },
+    );
+
+    if (
+      userSpaces &&
+      !(
+        envVars.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE &&
+        !envVars.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE
+      )
+    ) {
       actionButton = (
         <div style={{ padding: '1rem' }}>
           <Select
             options={userSpaces.map((space) => {
-              const name = space.isOrganization ? space.name : 'My Space';
+              const name = space.isOrganization ? space.name : 'My Personal Space';
+              const label = <Typography.Text>{name}</Typography.Text>;
               return {
                 label: (
                   <Tooltip title={name} placement="left">
-                    <Link
-                      style={{ display: 'block' }}
-                      href={spaceURL(
-                        {
-                          spaceId: space?.id ?? '',
-                          isOrganization: space?.isOrganization ?? false,
-                        },
-                        `/processes`,
-                      )}
-                    >
-                      <Typography.Text>{name}</Typography.Text>
-                    </Link>
+                    {/** The active space cannot be a link, otherwise clicking the select will direct
+                      the user to the process page of the active space. */}
+                    {activeSpace.spaceId === space.id ? (
+                      label
+                    ) : (
+                      <Link
+                        style={{ display: 'block' }}
+                        href={spaceURL(
+                          {
+                            spaceId: space?.id ?? '',
+                            isOrganization: space?.isOrganization ?? false,
+                          },
+                          `/processes`,
+                        )}
+                      >
+                        {label}
+                      </Link>
+                    )}
                   </Tooltip>
                 ),
                 value: space.id,
+                _space: space,
               };
             })}
+            // Sometimes the click can select the option, but not click the anchor tag.
+            // Next dedupes the duplicate, in case the anchor tag was clicked route so the browser history is not polluted.
+            onChange={(spaceId) => {
+              const space = userSpaces.find((s) => s.id === spaceId)!;
+              router.push(
+                spaceURL({ spaceId: space.id, isOrganization: space.isOrganization }, '/processes'),
+              );
+            }}
             defaultValue={activeSpace.spaceId}
             style={{ width: '23ch' }}
           />
@@ -124,21 +163,22 @@ const HeaderActions: FC = () => {
       );
     }
 
-    avatarDropdownItems.push(
-      {
-        key: 'spaces',
-        title: 'My Spaces',
-        label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
-        icon: <AppstoreOutlined />,
-      },
-      {
+    avatarDropdownItems.push({
+      key: 'spaces',
+      title: 'My Spaces',
+      label: <SpaceLink href={`/spaces`}>My Spaces</SpaceLink>,
+      icon: <AppstoreOutlined />,
+    });
+
+    if (envVars.PROCEED_PUBLIC_IAM_ACTIVE) {
+      avatarDropdownItems.push({
         key: 'signout',
         title: 'Sign Out',
         label: 'Sign Out',
         onClick: () => signOut(),
         icon: <FaSignOutAlt />,
-      },
-    );
+      });
+    }
   }
 
   return (
@@ -163,15 +203,22 @@ const HeaderActions: FC = () => {
       <Space style={{ float: 'right', padding: '16px' }}>
         {enableChatbot && <Assistant />}
         {actionButton}
-        <Dropdown
-          menu={{
-            items: avatarDropdownItems,
-          }}
-        >
-          <SpaceLink href={`/profile`}>
-            <UserAvatar user={session.data.user} />
-          </SpaceLink>
-        </Dropdown>
+        <div id="PROCEED-profile-menu-button">
+          <Dropdown
+            menu={{
+              items: avatarDropdownItems,
+            }}
+            trigger={['click']}
+          >
+            {envVars.PROCEED_PUBLIC_IAM_ACTIVE ? (
+              <span>
+                {/* <SpaceLink href={`/profile`}> */}
+                <UserAvatar user={session.data.user} style={{ cursor: 'pointer' }} />
+                {/* </SpaceLink> */}
+              </span>
+            ) : null}
+          </Dropdown>
+        </div>
       </Space>
     </>
   );

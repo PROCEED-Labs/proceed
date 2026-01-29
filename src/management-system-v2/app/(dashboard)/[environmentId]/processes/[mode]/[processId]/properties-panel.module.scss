@@ -1,0 +1,51 @@
+.PropertiesPanel {
+  :global(.ant-input-number-input),
+  :global(.ant-input),
+  :global(.ant-input-group-addon),
+  :global(.ant-input-number-group-addon),
+  :global(.ant-select-selection-item),
+  :global(.ant-table.ant-table-middle) {
+    font-size: 0.75rem !important;
+  }
+
+  :global(.ant-input-number-group-addon) {
+    padding-inline: 0px !important;
+
+    .ant-select {
+      width: 100%;
+    }
+  }
+
+  /* Needed to allow setting width of child (.ant-input-number-group-addon) with display: table-cell */
+  :global(.ant-input-number-wrapper) {
+    table-layout: fixed;
+  }
+
+  :global(.ant-input-group-addon),
+  :global(.ant-input-number-group-addon) {
+    width: 4rem !important;
+  }
+
+  :global(.ant-input-affix-wrapper) {
+    font-size: 0.75rem !important;
+  }
+
+  :global(.ant-btn-text):not(:disabled):not(.ant-btn-disabled):hover {
+    background-color: white;
+  }
+}
+
+.PropertiesPanel {
+  .SizeSectionTitle {
+    font-size: 0.85rem;
+  }
+}
+
+.PropertiesPanelCollapsibleCard {
+  border: none !important;
+  box-shadow:
+    0px 0px 0.9310142993927002px 0px rgba(0, 0, 0, 0.17),
+    0px 0px 3.1270833015441895px 0px rgba(0, 0, 0, 0.08),
+    0px 7px 14px 0px rgba(0, 0, 0, 0.05);
+  border-radius: 0.5rem;
+}

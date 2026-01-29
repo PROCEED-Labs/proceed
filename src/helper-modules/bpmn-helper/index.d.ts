@@ -16,6 +16,7 @@ declare const _exports: {
   generateBpmnId(prefix?: string): string;
   generateDefinitionsId(): string;
   generateProcessId(): string;
+  generateStartFormFileName(): string;
   generateUserTaskFileName(): string;
   generateScriptTaskFileName(): string;
   getUserTaskImplementationString(): string;
@@ -41,6 +42,15 @@ declare const _exports: {
     },
   ): Promise<string | object>;
   setProcessId(bpmn: string, id: string): Promise<string | object>;
+  setExecutableProperties(
+    bpmn: string | object,
+    executable: string | boolean,
+  ): Promise<string | object>;
+  setStartFormFileName(
+    bpmn: string | object,
+    processId: string,
+    newFileName: string,
+  ): Promise<string | object>;
   setTemplateId(bpmn: string, id: string): Promise<string | object>;
   setTargetNamespace(bpmn: string | object, id: string): Promise<string | object>;
   setStandardDefinitions(
@@ -94,6 +104,64 @@ declare const _exports: {
     elementId: string,
     performers: any[],
   ): Promise<string | object>;
+  updateBpmnCreatorAttributes(
+    bpmn: string | object,
+    {
+      id,
+      name,
+      creatorId,
+      creatorName,
+      creatorUsername,
+      creatorSpaceName,
+      creatorSpaceId,
+      userDefinedId,
+      creationDate,
+    }: {
+      id?: string;
+      name?: string;
+      creatorId?: string;
+      creatorName?: string;
+      creatorUsername?: string;
+      creatorSpaceId?: string;
+      creatorSpaceName?: string;
+      userDefinedId?: string;
+      creationDate?: string;
+    },
+  ): Promise<string | object>;
+  updateBpmnOriginalAttributes(
+    bpmn: string | object,
+    {
+      originalId,
+      originalName,
+      originalUserDefinedId,
+      originalCreationDate,
+      originalProcessVersionId,
+      originalProcessVersionName,
+      originalExporter,
+      originalExporterVersion,
+      originalTargetNamespace,
+      originalCreatorSpaceId,
+      originalCreatorSpaceName,
+      originalCreatorId,
+      originalCreatorName,
+      originalCreatorUsername,
+    }: {
+      originalId?: string;
+      originalName?: string;
+      originalUserDefinedId?: string;
+      originalCreationDate?: string;
+      originalProcessVersionId?: string;
+      originalProcessVersionName?: string;
+      originalExporter?: string;
+      originalExporterVersion?: string;
+      originalTargetNamespace?: string;
+      originalCreatorSpaceId?: string;
+      originalCreatorSpaceName?: string;
+      originalCreatorId?: string;
+      originalCreatorName?: string;
+      originalCreatorUsername?: string;
+    },
+  ): Promise<string | object>;
   getDefinitionsId(bpmn: string | object): Promise<string>;
   getOriginalDefinitionsId(bpmn: string | object): Promise<string>;
   getDefinitionsName(bpmn: string | object): Promise<string>;
@@ -114,6 +182,14 @@ declare const _exports: {
   }>;
   getProcessDocumentation(bpmn: string | object): Promise<string>;
   getProcessDocumentationByObject(processObject: object): string;
+  getVariablesFromElement(element: object): getters.Variable[];
+  getVariablesFromElementById(
+    bpmn: string | object,
+    elementId: string,
+  ): Promise<getters.Variable[]>;
+  getStartFormFileNameMapping(bpmn: string | object): Promise<{
+    [processId: string]: string;
+  }>;
   getUserTaskFileNameMapping(bpmn: string | object): Promise<{
     [userTaskId: string]: {
       fileName?: string;
@@ -171,6 +247,7 @@ declare const _exports: {
     processIds: string[];
     name: string;
     description: string;
+    userDefinedId: string;
   }>;
   getRootFromElement(businessObject: object): object;
   getMetaDataFromElement(element: object): {
@@ -209,6 +286,13 @@ declare const _exports: {
   };
   getPerformersFromElement(element: object): any[];
   getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
+  getPotentialOwnersFromElementById(
+    elementId: string,
+    bpmn: string | object,
+  ): {
+    user: string[];
+    roles: string[];
+  };
   parseISODuration(isoDuration: string): {
     years: number;
     months: number;

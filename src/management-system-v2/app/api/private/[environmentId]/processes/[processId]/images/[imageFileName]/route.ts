@@ -4,9 +4,9 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import {
   deleteProcessImage,
   getProcessImage,
-  getProcessMetaObjects,
   saveProcessImage,
-} from '@/lib/data/legacy/_process';
+  getProcess,
+} from '@/lib/data/db/process';
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
@@ -16,12 +16,13 @@ import { v4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
-  {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
-  const processMetaObjects = getProcessMetaObjects();
-  const processMeta = processMetaObjects[processId];
+  const params = await props.params;
+
+  const { environmentId, processId, imageFileName } = params;
+
+  const processMeta = await getProcess(processId, false);
 
   if (!processMeta) {
     return new NextResponse(null, {
@@ -79,14 +80,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
+  const params = await props.params;
+
+  const { environmentId, processId, imageFileName } = params;
+
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const process = await getProcess(processId, false);
 
   if (!process) {
     return new NextResponse(null, {
@@ -117,14 +119,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  {
-    params: { environmentId, processId, imageFileName },
-  }: { params: { environmentId: string; processId: string; imageFileName: string } },
+  props: { params: Promise<{ environmentId: string; processId: string; imageFileName: string }> },
 ) {
+  const params = await props.params;
+
+  const { environmentId, processId, imageFileName } = params;
+
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  const processMetaObjects = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const process = await getProcess(processId, false);
 
   if (!process) {
     return new NextResponse(null, {

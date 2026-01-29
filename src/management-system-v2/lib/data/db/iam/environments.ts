@@ -16,6 +16,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
+import { env } from '@/lib/ms-config/env-vars';
 
 export async function getEnvironments() {
   //TODO : Ability check
@@ -27,19 +28,23 @@ export async function getEnvironmentById(
   id: string,
   ability?: Ability,
   opts?: { throwOnNotFound?: boolean },
+  tx?: Prisma.TransactionClient,
 ) {
+  const dbMutator = tx || db;
+
   // TODO: check ability
-  if (enableUseDB) {
-    const environment = await db.space.findUnique({
-      where: {
-        id: id,
-      },
-    });
+  let environment = await dbMutator.space.findUnique({
+    where: {
+      id: id,
+    },
+  });
 
-    if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
+  if (!env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE && !environment?.isOrganization)
+    environment = null;
 
-    return environment as Environment;
-  }
+  if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
+
+  return environment as Environment;
 }
 
 /** Sets an environment to active, and adds the given user as an admin */
@@ -52,15 +57,26 @@ export async function activateEnvrionment(environmentId: string, userId: string)
   const adminRole = await getRoleByName(environmentId, '@admin');
   if (!adminRole) throw new Error(`Consistency error: admin role of ${environmentId} not found`);
 
-  await addMember(environmentId, userId);
+  await db.$transaction(async (tx) => {
+    await tx.space.update({
+      where: { id: environmentId },
+      data: { isActive: true },
+    });
 
-  await addRoleMappings([
-    {
-      environmentId,
-      roleId: adminRole.id,
-      userId,
-    },
-  ]);
+    await addMember(environmentId, userId, undefined, tx);
+
+    await addRoleMappings(
+      [
+        {
+          environmentId,
+          roleId: adminRole.id,
+          userId,
+        },
+      ],
+      undefined,
+      tx,
+    );
+  });
 }
 
 export async function addEnvironment(
@@ -78,7 +94,7 @@ export async function addEnvironment(
   const dbMutator = tx;
 
   const newEnvironment = environmentSchema.parse(environmentInput);
-  const id = newEnvironment.isOrganization ? v4() : newEnvironment.ownerId;
+  const id = newEnvironment.isOrganization ? newEnvironment.id ?? v4() : newEnvironment.ownerId;
 
   if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
 
@@ -153,6 +169,12 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
   const environment = await getEnvironmentById(environmentId);
   if (!environment) throw new Error('Environment not found');
 
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE && environment.isOrganization) {
+    throw new Error(
+      'Organizations cannot be deleted when PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is true',
+    );
+  }
+
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
   await db.space.delete({
     where: { id: environmentId },
@@ -190,11 +212,7 @@ export async function updateOrganization(
 
 // TODO below: implement db logic
 
-export async function saveOrganizationLogo(
-  organizationId: string,
-  image: Buffer,
-  ability?: Ability,
-) {
+export async function saveSpaceLogo(organizationId: string, image: Buffer, ability?: Ability) {
   const organization = await getEnvironmentById(organizationId, undefined, {
     throwOnNotFound: true,
   });
@@ -211,35 +229,32 @@ export async function saveOrganizationLogo(
   }
 }
 
-export async function getOrganizationLogo(organizationId: string) {
-  const organization = await getEnvironmentById(organizationId, undefined, {
-    throwOnNotFound: true,
-  });
-  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
-
+export async function getSpaceLogo(organizationId: string) {
   try {
-    return await db.space.findUnique({ where: { id: organizationId }, select: { logo: true } });
+    return await db.space.findUnique({
+      where: { id: organizationId },
+      select: { spaceLogo: true },
+    });
   } catch (err) {
     return undefined;
   }
 }
 
-export async function organizationHasLogo(organizationId: string) {
+export async function spaceHasLogo(organizationId: string) {
   const res = await db.space.findUnique({
     where: { id: organizationId },
-    select: { logo: true },
+    select: { spaceLogo: true },
   });
-  if (res?.logo) {
+  if (res?.spaceLogo) {
     return true;
   }
   return false;
 }
 
-export async function deleteOrganizationLogo(organizationId: string) {
-  const organization = await getEnvironmentById(organizationId, undefined, {
+export async function deleteSpaceLogo(organizationId: string) {
+  await getEnvironmentById(organizationId, undefined, {
     throwOnNotFound: true,
   });
-  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
 
   //if (!hasLogo(organizationId)) throw new Error("Organization doesn't have a logo");
 

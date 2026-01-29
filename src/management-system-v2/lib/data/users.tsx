@@ -1,41 +1,31 @@
 'use server';
 
-import { getCurrentUser } from '@/components/auth';
-import { userError } from '../user-error';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
 import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
-import { enableUseDB } from 'FeatureFlags';
-import { UserHasToDeleteOrganizationsError } from './legacy/iam/users';
-import { TEnvironmentsModule, TUsersModule } from './module-import-types-temp';
-import { usersMetaObject } from './legacy/iam/users';
-
-let _deleteUser: TUsersModule['deleteUser'];
-let _updateUser: TUsersModule['updateUser'];
-let getUserById: TUsersModule['getUserById'];
-let getEnvironmentById: TEnvironmentsModule['getEnvironmentById'];
-
-const loadModules = async () => {
-  const [userModule, environmentModule] = await Promise.all([
-    enableUseDB ? import('./db/iam/users') : import('./legacy/iam/users'),
-    enableUseDB ? import('./db/iam/environments') : import('./legacy/iam/environments'),
-  ]);
-  ({ deleteUser: _deleteUser, updateUser: _updateUser, getUserById } = userModule),
-    ({ getEnvironmentById } = environmentModule);
-};
-
-loadModules().catch(console.error);
+import {
+  UserHasToDeleteOrganizationsError,
+  deleteUser as _deleteUser,
+  updateUser as _updateUser,
+  setUserPassword as _setUserPassword,
+  getUserById,
+} from '@/lib/data/db/iam/users';
+import { getEnvironmentById } from './db/iam/environments';
+import { hashPassword } from '../password-hashes';
+import { getAppliedRolesForUser } from '../authorization/organizationEnvironmentRolesHelper';
+import db from '@/lib/data/db/index';
+import { env } from '../ms-config/env-vars';
 
 export async function deleteUser() {
-  await loadModules();
-
   const { userId } = await getCurrentUser();
 
   try {
-    _deleteUser(userId);
+    await _deleteUser(userId);
   } catch (e) {
-    let message: ReactNode = 'Error deleting user';
+    let message: ReactNode;
 
     if (e instanceof UserHasToDeleteOrganizationsError) {
       const conflictingOrgsNames = e.conflictingOrgs.map(
@@ -52,7 +42,7 @@ export async function deleteUser() {
           <p>The affected organizations are:</p>
           <ul>
             {conflictingOrgsNames.map((name, idx) => (
-              <li>
+              <li key={idx}>
                 {name}:{' '}
                 <Link
                   href={`/${(e as UserHasToDeleteOrganizationsError).conflictingOrgs[idx]}/iam/roles`}
@@ -67,6 +57,8 @@ export async function deleteUser() {
           </p>
         </>
       );
+    } else {
+      message = getErrorMessage(e, 'Error deleting user');
     }
 
     return userError(message);
@@ -74,8 +66,6 @@ export async function deleteUser() {
 }
 
 export async function updateUser(newUserDataInput: AuthenticatedUserData) {
-  await loadModules();
-
   try {
     const { userId } = await getCurrentUser();
     const user = await getUserById(userId);
@@ -86,18 +76,17 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 
     const newUserData = AuthenticatedUserDataSchema.parse(newUserDataInput);
 
-    _updateUser(userId, { ...newUserData });
-  } catch (_) {
-    return userError('Error updating user');
+    await _updateUser(userId, { ...newUserData });
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
 export async function getUsersFavourites(): Promise<String[]> {
-  await loadModules();
-
   const { userId } = await getCurrentUser();
 
-  const user = enableUseDB ? await getUserById(userId) : usersMetaObject[userId];
+  const user = await getUserById(userId);
 
   if (user?.isGuest) {
     return []; // Guest users have no favourites
@@ -105,11 +94,125 @@ export async function getUsersFavourites(): Promise<String[]> {
   return user?.favourites ?? [];
 }
 
-export async function isUserGuest() {
-  await loadModules();
+export async function setUserPassword(newPassword: string) {
+  try {
+    const { userId } = await getCurrentUser();
+    const user = await getUserById(userId);
+
+    if (!user) {
+      return userError('Invalid session, please sign in again');
+    }
+
+    if (user?.isGuest) {
+      return userError('Guest users cannot change their password');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await _setUserPassword(userId, passwordHash);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+// To avoid this endpoint from being abused there's not much we can do, but we do the following:
+// - Encoforce the user to be an admin of an org
+// - Search query has to be at least 4 characters long
+// - We only return 10 users
+export async function queryUsers(organizationId: string, searchQuery: string) {
+  if (searchQuery.length < 4) {
+    return userError('Unauthorized', UserErrorType.PermissionError);
+  }
 
   const { userId } = await getCurrentUser();
-  const user = enableUseDB ? await getUserById(userId) : usersMetaObject[userId];
+  const { activeEnvironment } = await getCurrentEnvironment(organizationId);
 
-  return user?.isGuest;
+  if (!activeEnvironment.isOrganization) {
+    return userError('Unauthorized', UserErrorType.PermissionError);
+  }
+
+  const userRoles = await getAppliedRolesForUser(userId, organizationId);
+  const isAdmin = userRoles.some((role) => role.name === '@admin');
+  if (!isAdmin) {
+    return userError('Unauthorized', UserErrorType.PermissionError);
+  }
+
+  let mailQuery = [{ email: { contains: searchQuery, mode: 'insensitive' } } as const];
+  if (!env.PROCEED_PUBLIC_MAILSERVER_ACTIVE) {
+    mailQuery = [];
+  }
+
+  try {
+    const users = await db.user.findMany({
+      where: {
+        AND: [
+          { isGuest: false },
+          {
+            OR: [{ username: { contains: searchQuery, mode: 'insensitive' } }, ...mailQuery],
+          },
+        ],
+      },
+      take: 10,
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      profileImage: user.profileImage,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    }));
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function setUserTemporaryPassword(
+  affectedUserId: string,
+  temporaryPassword: string,
+  spaceId?: string,
+) {
+  try {
+    const { user, systemAdmin } = await getCurrentUser();
+
+    let allowed = false;
+    if (systemAdmin) {
+      allowed = true;
+    }
+    if (!allowed && spaceId && user) {
+      const role = await db.role.findFirst({
+        where: {
+          name: '@admin',
+          environmentId: spaceId,
+        },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (role?.members.some((member) => member.id === user.id)) {
+        allowed = true;
+      }
+    }
+
+    if (!allowed) {
+      return userError('Not authorized', UserErrorType.PermissionError);
+    }
+
+    const passwordHash = await hashPassword(temporaryPassword);
+    await _setUserPassword(affectedUserId, passwordHash, undefined, true);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 }

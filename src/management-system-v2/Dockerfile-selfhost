@@ -1,0 +1,79 @@
+FROM node:20-alpine AS base
+
+# 1. Step skipped because we are in a monorepo and use local packages that would be missing in a local install.
+# Also removed COPY --from=builder for all steps below.
+
+# Step 1. Rebuild the source code only when needed
+FROM base AS builder
+
+WORKDIR /app
+
+# Copy root-level files (but not directories)
+COPY FeatureFlags.js jsconfig.json package.json yarn.lock tsconfig.json ./
+
+# Copy only the MS source directory and needed packages
+COPY src/management-system-v2 ./src/management-system-v2
+
+COPY src/helper-modules ./src/helper-modules
+
+# Install dependencies
+RUN yarn install --frozen-lockfile
+
+RUN cd src/management-system-v2 && yarn prisma generate
+
+# Next.js collects completely anonymous telemetry data about general usage. Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line to disable telemetry at build time
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build Next.js
+RUN yarn build-ms
+
+# Note: It is not necessary to add an intermediate step that does a full copy of `node_modules` here
+
+# Step 2. Production image, copy all the files and run next
+FROM base AS runner
+
+ENV NODE_ENV=production
+ENV PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE=true
+ENV PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV=local
+ENV PROCEED_PUBLIC_IAM_ACTIVE=true
+ENV PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE=true
+ENV DATABASE_URL=postgresql://proceed:proceed@postgres:5432/proceed_db?schema=public
+
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Sets the working directory to /app
+WORKDIR /app
+
+# Set the correct permission for prerender cache
+RUN mkdir .next 
+RUN chown nextjs:nodejs .next
+
+# Create a data directory for the MS under /app/volume  and gives the right permissions
+RUN mkdir volume
+RUN chown -R nextjs:nodejs volume
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder app/src/management-system-v2/public ./public 
+COPY --from=builder app/src/management-system-v2/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs app/src/management-system-v2/.next/standalone/src/management-system-v2 ./
+COPY --from=builder --chown=nextjs:nodejs app/src/management-system-v2/.next/standalone/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs app/src/management-system-v2/.next/static ./.next/static
+
+# Install prisma CLI globally
+RUN npm install -g prisma@6
+
+USER nextjs
+
+# Port and Listening address for Next.js Application (our MS)
+ENV PORT=33081
+ENV HOSTNAME="0.0.0.0"
+# EXPOSE is actually optional for documentation purposes
+EXPOSE 33081
+
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+CMD sleep 1 && npx prisma migrate deploy && node server.js

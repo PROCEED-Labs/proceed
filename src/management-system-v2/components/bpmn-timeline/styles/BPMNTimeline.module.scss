@@ -1,0 +1,241 @@
+/* BPMN Timeline Component Styles */
+
+.timelineContainer {
+  --timeline-primary-color: #1976d2;
+  --timeline-warning-color: #f57c00;
+  --timeline-text-muted: #666;
+  --timeline-spacing-xs: 4px;
+  --timeline-spacing-sm: 8px;
+  --timeline-spacing-md: 12px;
+  --timeline-spacing-lg: 16px;
+  --timeline-border-radius: 6px;
+
+  padding: 10px;
+  height: 100%;
+  min-height: 400px;
+  max-height: calc(100vh - 100px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.timelineCard {
+  height: 100%;
+  box-shadow:
+    0px 0px 1px 0px rgba(0, 0, 0, 0.17),
+    0px 0px 3px 0px rgba(0, 0, 0, 0.08),
+    0px 7px 14px 0px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  border: none;
+}
+
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.titleSection {
+  .title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: var(--timeline-spacing-xs);
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--timeline-text-muted);
+    font-weight: 400;
+  }
+}
+
+.actionSection {
+  display: flex;
+  gap: var(--timeline-spacing-sm);
+  align-items: center;
+}
+
+.errorSection {
+  margin: var(--timeline-spacing-lg) var(--timeline-spacing-lg) 0;
+  flex-shrink: 0;
+}
+
+.errorPanel {
+  padding: var(--timeline-spacing-md);
+  border: 1px solid var(--timeline-warning-color);
+  border-radius: var(--timeline-border-radius);
+  background-color: #fff3e0;
+  margin-top: var(--timeline-spacing-sm);
+}
+
+.errorHeader {
+  color: var(--timeline-warning-color);
+  font-weight: 600;
+
+  .warningIcon {
+    margin-right: var(--timeline-spacing-sm);
+  }
+}
+
+.errorDescription {
+  font-size: 13px;
+  margin-bottom: var(--timeline-spacing-sm);
+  color: var(--timeline-text-muted);
+}
+
+.errorList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+
+  li {
+    margin-bottom: var(--timeline-spacing-xs);
+  }
+}
+
+/* Combined Issues Section */
+.issuesSection {
+  margin: var(--timeline-spacing-lg) var(--timeline-spacing-lg) 0;
+  flex-shrink: 0;
+}
+
+.issuesPanel {
+  padding: var(--timeline-spacing-md);
+  border: 1px solid var(--timeline-warning-color);
+  border-radius: var(--timeline-border-radius);
+  background-color: #fff3e0;
+}
+
+.issuesHeader {
+  color: var(--timeline-warning-color);
+  font-weight: 600;
+
+  .warningIcon {
+    margin-right: var(--timeline-spacing-sm);
+  }
+}
+
+.issueCategory {
+  &:not(:first-child) {
+    margin-top: var(--timeline-spacing-lg);
+  }
+}
+
+.categorySpacing {
+  margin-top: var(--timeline-spacing-lg);
+  padding-top: var(--timeline-spacing-lg);
+  border-top: 1px solid #e0e0e0;
+}
+
+.issueCategoryHeader {
+  font-weight: 600;
+  margin-bottom: var(--timeline-spacing-sm);
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.issueCategoryDescription {
+  font-size: 13px;
+  margin-bottom: var(--timeline-spacing-sm);
+  color: var(--timeline-text-muted);
+}
+
+.issueList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+
+  li {
+    margin-bottom: var(--timeline-spacing-xs);
+  }
+}
+
+.defaultDurationSection {
+  margin: var(--timeline-spacing-lg);
+  flex-shrink: 0;
+
+  &.afterErrors {
+    margin-top: 0;
+  }
+}
+
+.defaultDurationPanel {
+  padding: var(--timeline-spacing-md);
+  border: 1px solid var(--timeline-primary-color);
+  border-radius: var(--timeline-border-radius);
+  background-color: #e3f2fd;
+  margin-top: var(--timeline-spacing-sm);
+}
+
+.defaultDurationHeader {
+  color: var(--timeline-primary-color);
+  font-weight: 600;
+
+  .infoIcon {
+    margin-right: var(--timeline-spacing-sm);
+  }
+}
+
+.ganttSection {
+  flex: 1;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.loadingSection {
+  padding: 40px;
+  text-align: center;
+  color: var(--timeline-text-muted);
+  flex: 1;
+}
+
+.noDataSection {
+  padding: 40px;
+  text-align: center;
+  color: var(--timeline-text-muted);
+  flex: 1;
+}
+
+/* Override Ant Design collapse styling */
+.collapseContainer {
+  background-color: transparent;
+  border: none;
+}
+
+.defaultDurationCollapse {
+  background-color: transparent;
+  border: none;
+}
+
+.defaultDurationContent {
+  padding: var(--timeline-spacing-md);
+  border: 1px solid var(--timeline-primary-color);
+  border-radius: var(--timeline-border-radius);
+  background-color: #e3f2fd;
+}
+
+.defaultDurationDescription {
+  font-size: 13px;
+  margin-bottom: var(--timeline-spacing-sm);
+  color: var(--timeline-text-muted);
+}
+
+.defaultDurationList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+
+  li {
+    margin-bottom: var(--timeline-spacing-xs);
+  }
+}
+
+.defaultDurationLabel {
+  color: var(--timeline-primary-color);
+  font-weight: 600;
+
+  .infoIconInline {
+    margin-right: var(--timeline-spacing-sm);
+  }
+}

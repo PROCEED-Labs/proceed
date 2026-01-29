@@ -12,14 +12,20 @@ export const ProcessCreationModal: React.FC<
   Partial<ComponentProps<typeof ProcessModal>> & {
     open: boolean;
     setOpen: (open: boolean) => void;
-    customAction?: (values: { name: string; description: string }) => Promise<any>;
+    customAction?: (values: {
+      name: string;
+      description: string;
+      userDefinedId?: string;
+    }) => Promise<any>;
   }
 > = ({ open, setOpen, customAction, ...props }) => {
   const router = useRouter();
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
 
-  const createNewProcess = async (values: { name: string; description: string }[]) => {
+  const createNewProcess = async (
+    values: { name: string; description: string; userDefinedId?: string }[],
+  ) => {
     // Invoke the custom handler otherwise use the default server action.
     const process = await (customAction?.(values[0]) ??
       addProcesses(
@@ -34,7 +40,7 @@ export const ProcessCreationModal: React.FC<
     setOpen(false);
 
     if (process && 'id' in process) {
-      router.push(spaceURL(environment, `/processes/${process.id}`));
+      router.push(spaceURL(environment, `/processes/editor/${process.id}`));
     } else {
       router.refresh();
     }
@@ -60,6 +66,7 @@ export const ProcessCreationModal: React.FC<
       open={open}
       title="Create Process"
       okText="Create"
+      mode="create"
       onCancel={() => setOpen(false)}
       onSubmit={createNewProcess}
     />
@@ -67,7 +74,11 @@ export const ProcessCreationModal: React.FC<
 };
 
 type ProcessCreationButtonProps = ButtonProps & {
-  customAction?: (values: { name: string; description: string }) => Promise<any>;
+  customAction?: (values: {
+    name: string;
+    description: string;
+    userDefinedId?: string;
+  }) => Promise<any>;
   wrapperElement?: ReactNode;
   defaultOpen?: boolean;
   modalProps?: ModalProps;

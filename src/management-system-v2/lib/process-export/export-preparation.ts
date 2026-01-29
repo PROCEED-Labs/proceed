@@ -1,10 +1,10 @@
 import {
   getProcess,
   getProcessBPMN,
-  getProcessUserTaskHTML,
-  getProcessUserTaskData,
   getProcessImage,
   getProcessScriptTaskData,
+  getProcessHtmlFormData,
+  getProcessHtmlFormHTML,
 } from '@/lib/data/processes';
 
 import {
@@ -18,6 +18,9 @@ import {
   getDefinitionsVersionInformation,
   getDefinitionsAndProcessIdForEveryCallActivity,
   getScriptTaskFileNameMapping,
+  toBpmnXml,
+  getAllElements,
+  getStartFormFileNameMapping,
 } from '@proceed/bpmn-helper';
 
 import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
@@ -40,7 +43,7 @@ export type ProcessExportOptions = {
   imports: boolean; // if processes referenced by this process should be exported as well
   scaling: number; // the scaling factor that should be used for png export
   exportSelectionOnly: boolean; // if only selected elements (and their children) should be in the final export
-  useWebshareApi: boolean; // if true, the process is shared using web share api
+  exportMethod?: 'download' | 'clipboard' | 'webshare';
 };
 
 /**
@@ -65,6 +68,7 @@ export type ProcessExportData = {
       name?: string;
       bpmn: string;
       isImport: boolean;
+      startForm?: { filename: string; json: string; html: string };
       layers: { id?: string; name?: string }[];
       imports: { definitionId: string; processVersion: string }[];
       selectedElements?: string[];
@@ -123,16 +127,13 @@ function getImagesReferencedByJSON(json: string) {
         const nodeType = typeof node.type === 'object' ? node.type.resolvedName : node.type;
         return nodeType === 'Image' && node.props.src;
       })
-      .map((node) => node.props.src as string);
-
-    // get the referenced images that are stored locally
-    const seperatelyStored = images
-      .filter((src) => src.startsWith('/api/'))
-      .map((src) => src.split('/').pop())
-      .filter((imageName): imageName is string => !!imageName);
+      .map((node) => node.props.src as string)
+      // Images that start with "processes-artifacts/images" reference a local file that has to be
+      // sent. All other do not
+      .filter((src) => src.startsWith('processes-artifacts/images'));
 
     // remove duplicates
-    return [...new Set(seperatelyStored)];
+    return [...new Set(images)];
   } catch (err) {
     throw new Error('Unable to parse the image information from the given json');
   }
@@ -166,6 +167,7 @@ type ExportMap = {
         name?: string;
         bpmn: string;
         isImport: boolean;
+        startForm?: { filename: string; json: string; html: string };
         layers: { id?: string; name?: string }[];
         imports: { definitionId: string; processVersion: string }[];
         selectedElements?: string[];
@@ -401,8 +403,9 @@ export async function prepareExport(
       const allRequiredUserTaskFiles: Set<string> = new Set();
       const allRequiredImageFiles: Set<string> = new Set();
 
-      // determine the script task and user task files that are needed per version and across all versions
-      for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
+      // determine the start form, script task and user task files that are needed per version and across all versions
+      for (const [version, info] of Object.entries(exportData[definitionId].versions)) {
+        const { bpmn } = info;
         const versionUserTasks = Object.keys(
           await getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn),
         );
@@ -414,6 +417,24 @@ export async function prepareExport(
           .filter(truthyFilter);
 
         for (const filename of versionScripts) allRequiredScriptTaskFiles.add(filename);
+
+        const startFormMapping = await getStartFormFileNameMapping(bpmn);
+        const filenames = Object.values(startFormMapping).filter(truthyFilter);
+        // we currently expect only a single process in a file
+        if (filenames.length) {
+          const [filename] = filenames;
+
+          const json = await getProcessHtmlFormData(definitionId, filename, spaceId);
+          const html = await getProcessHtmlFormHTML(definitionId, filename, spaceId);
+
+          if (typeof json !== 'string') {
+            throw json!.error;
+          } else if (typeof html !== 'string') {
+            throw html.error;
+          }
+
+          info.startForm = { filename, json, html };
+        }
       }
 
       for (const filename of allRequiredScriptTaskFiles) {
@@ -423,12 +444,14 @@ export async function prepareExport(
           'js',
           spaceId,
         );
+
         let ts: string | { error: UserError } | undefined = await getProcessScriptTaskData(
           definitionId,
           filename,
           'ts',
           spaceId,
         );
+
         let xml: string | { error: UserError } | undefined = await getProcessScriptTaskData(
           definitionId,
           filename,
@@ -445,8 +468,8 @@ export async function prepareExport(
 
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
-        const json = await getProcessUserTaskData(definitionId, filename, spaceId);
-        const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
+        const json = await getProcessHtmlFormData(definitionId, filename, spaceId);
+        const html = await getProcessHtmlFormHTML(definitionId, filename, spaceId);
 
         if (typeof json !== 'string') {
           throw json!.error;
@@ -459,7 +482,15 @@ export async function prepareExport(
 
       // determine the images that are needed per version and across all versions
       for (const { bpmn } of Object.values(exportData[definitionId].versions)) {
+        const rootProcessElement = getElementsByTagName(
+          await toBpmnObject(bpmn),
+          'bpmn:Process',
+        )[0];
+
         const flowElements = await getAllBpmnFlowElements(bpmn);
+
+        // add process overview image associated with the root <Process> element as well
+        flowElements.push(rootProcessElement);
 
         flowElements.forEach((flowElement) => {
           const metaData = getMetaDataFromElement(flowElement);
@@ -478,7 +509,8 @@ export async function prepareExport(
       }
 
       // fetch the required image files from the backend
-      for (const filename of allRequiredImageFiles) {
+      for (let filename of allRequiredImageFiles) {
+        if (filename.includes('/')) filename = filename.split('/').pop() as string;
         const image = await getProcessImage(definitionId, filename, spaceId);
 
         if ('error' in image) throw image.error;
@@ -487,6 +519,29 @@ export async function prepareExport(
           filename,
           data: image,
         });
+      }
+    } else {
+      //If artefacts option is not selected, remove all the references in xml
+      /*
+      1. overviewImage
+      2. usertask's filename
+      3. scripttask's filename
+      */
+      for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
+        const bpmnObj = await toBpmnObject(bpmn);
+
+        const elements = getAllElements(bpmnObj);
+        elements.forEach((el) => {
+          if (el['$type'] === 'bpmn:ScriptTask' || el['$type'] === 'bpmn:UserTask') {
+            delete el.fileName;
+          }
+          if (el['$type'] === 'proceed:Meta') {
+            el.overviewImage ? delete el.overviewImage : null;
+          }
+        });
+
+        const bpmnObjWithNoArtefactRefsXml = await toBpmnXml(bpmnObj);
+        exportData[definitionId].versions[version].bpmn = bpmnObjWithNoArtefactRefsXml;
       }
     }
   }

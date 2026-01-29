@@ -11,13 +11,14 @@ const {
 const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('./processFragmentCheck');
 
 const { publishDeployedVersionInfo } = require('./publishDeploymentUtils');
+const { getStartFormFileNameMapping } = require('@proceed/bpmn-helper/src/getters');
 
 module.exports = {
   /**
    * Checks if the file with process information exists
    *
    * @param {String} definitionId name of the file the definition of the process is stored in
-   * @returns {Boolean} - indicates if the file exists or not
+   * @returns {Promise<Boolean>} - indicates if the file exists or not
    */
   async isProcessExisting(definitionId) {
     const processInfo = await data.read(`processes.json/${definitionId}`);
@@ -30,7 +31,7 @@ module.exports = {
    *
    * @param {String} definitionId name of the file the definition of the process is stored in
    * @param {Number} versionId the specific versionId of the process to check
-   * @returns {Boolean} - indicates if the versionId exists or not
+   * @returns {Promise<Boolean>} - indicates if the versionId exists or not
    */
   async isProcessVersionExisting(definitionId, versionId) {
     const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
@@ -185,7 +186,7 @@ module.exports = {
    *
    * @param {string} definitionId
    * @param {number} versionId the versionId we want to get the bpmn of
-   * @returns {string} the bpmn of the specific process versionId
+   * @returns {Promise<string>} the bpmn of the specific process versionId
    */
   async getProcessVersion(definitionId, versionId) {
     if (!(await this.isProcessVersionExisting(definitionId, versionId))) {
@@ -370,6 +371,89 @@ module.exports = {
   },
 
   /**
+   * Saves a file related to an instance
+   * e.g. a file is uploaded in a user task and assigned to a variable
+   *
+   * @param {string} definitionId the id of the process for which the instance was created
+   * @param {string} instanceId the id of the instance the file is assigned to
+   * @param {string} fileName the name of the file to store
+   * @param {string} fileType the mime type of the file
+   * @param {Buffer} file the file to store
+   *
+   * @returns {Promise<string>} the path which can be used to request the file through the api
+   */
+  async saveInstanceFile(definitionId, instanceId, fileName, fileType, file) {
+    if (!(await this.isProcessExisting(definitionId))) {
+      throw new Error('Process with given ID does not exist');
+    }
+
+    return await data.writeInstanceFile(definitionId, instanceId, fileName, fileType, file);
+  },
+
+  /**
+   * Returns the content and type of a file that was stored for an instance
+   *
+   * @param {string} definitionId the id of the process for which the instance was created
+   * @param {string} instanceId the id of the instance the file is assigned to
+   * @param {string} fileName the name of the file
+   *
+   * @returns {Promise<{ mimeType: string, data: Buffer }>} the type and data of the file
+   */
+  async getInstanceFile(definitionId, instanceId, fileName) {
+    const { mimeType, data: fileData } = await data.readInstanceFile(
+      definitionId,
+      instanceId,
+      fileName,
+    );
+
+    return { mimeType, data: fileData };
+  },
+
+  /**
+   * Saves the HTML of a start form for a version of a specific process stored in the file with the given definitionId
+   *
+   * @param {String} definitionId
+   * @param {String} versionId the version for which to store the task form html
+   * @param {String} html
+   */
+  async saveStartFormString(definitionId, versionId, html) {
+    let processInfo = await this.getProcessInfo(definitionId);
+
+    const versionInfo = processInfo.versions.find((v) => v.versionId === versionId);
+
+    const startFormMapping = await getStartFormFileNameMapping(versionInfo.bpmn);
+
+    let startForm;
+    if (Object.values(startFormMapping).length) [startForm] = Object.values(startFormMapping);
+
+    if (!startForm) {
+      throw new Error('The process version does not define a start form in its bpmn!');
+    }
+
+    // check if there are images in the html that are stored seperately
+    const imageDependencies = getHTMLImagesToKnow(html);
+
+    if (imageDependencies.length) {
+      // add the dependency to the version
+      if (versionInfo.needs.html.includes(startForm)) {
+        // add all the image dependencies that are not already referenced in the needs array of the version
+        imageDependencies.forEach((imageFileName) => {
+          if (!versionInfo.needs.images.includes(imageFileName)) {
+            versionInfo.needs.images.push(imageFileName);
+          }
+        });
+      }
+      await data.write(`processes.json/${definitionId}`, JSON.stringify(processInfo));
+    }
+
+    if (!html) {
+      throw new Error('HTML content must not be empty!');
+    }
+
+    await data.writeUserTaskHTML(definitionId, startForm, html);
+  },
+
+  /**
    * Saves the HTML for a specific user task in a specific process stored in the file with the given definitionId
    *
    * @param {String} definitionId
@@ -406,6 +490,30 @@ module.exports = {
     }
 
     await data.writeUserTaskHTML(definitionId, fileName, html);
+  },
+
+  /**
+   * Gets the html for the start form of the process stored under the given definitionId
+   *
+   * @param {String} definitionId
+   * @param {String} versionId the id of the version of the process to get the start form for
+   */
+  async getStartForm(definitionId, versionId) {
+    const versionInfo = await this.getProcessVersionInfo(definitionId, versionId);
+
+    const startFormMapping = await getStartFormFileNameMapping(versionInfo.bpmn);
+
+    let startForm;
+    if (Object.values(startFormMapping).length) [startForm] = Object.values(startFormMapping);
+
+    if (!startForm) return '';
+
+    const html = await data.readUserTaskHTML(definitionId, startForm);
+    if (!html) {
+      throw new Error('No HTML found for the start form of the given version!');
+    }
+
+    return html;
   },
 
   /**

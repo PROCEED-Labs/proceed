@@ -12,13 +12,31 @@ jobs:
         # Run a job each for the engine and MS server images
         include:
           # - serviceName: engine
-          - serviceName: management_system
+          - serviceName: proceed_research_management_system
     env:
       ENV: Research
       ENGINE_TAG: ${{ vars.IMAGE_TAG }}
       MS_TAG: ${{ vars.IMAGE_TAG }}
       SERVICE_NAME: ${{ matrix.serviceName }}
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile
+
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: cache-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/
@@ -44,10 +62,17 @@ jobs:
 
       # Remove the container
       - run: ssh $ENV "sudo docker rm $SERVICE_NAME || true"
-      # Replicate main branch db for research
-      - run: ssh $ENV "./scripts/replicate_db.sh"
+
       # Restart the container with the new image
-      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.research -v /opt/proceed-ms-server:/app/volume proceed/ms-server:$MS_TAG"
+      - run: ssh $ENV "docker compose up -d";
+      #- run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.research -v /opt/proceed-ms-server:/app/volume proceed/ms-server:$MS_TAG"
+
+      #Apply schema changes
+      - name: Apply Prisma Migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          yarn dev-ms-db-deploy
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"

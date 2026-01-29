@@ -7,6 +7,6 @@
   "license": "MIT",
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
-    "async-mqtt": "^2.6.3"
+    "mqtt": "^5.13.1"
   }
 }

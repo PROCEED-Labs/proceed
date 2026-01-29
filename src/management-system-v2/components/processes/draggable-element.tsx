@@ -9,7 +9,6 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import React, {
-  ReactHTML,
   ClassAttributes,
   HTMLAttributes,
   FC,
@@ -23,11 +22,13 @@ import cn from 'classnames';
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 
 export function DraggableElementGenerator<TPropId extends string>(
-  element: keyof ReactHTML,
+  element: string,
   propId: TPropId,
 ) {
   type Props = ClassAttributes<HTMLElement> &
-    HTMLAttributes<HTMLElement> & { [key in TPropId]: string };
+    HTMLAttributes<HTMLElement> & {
+      [key in TPropId]: string;
+    };
 
   const DraggableElement = (props: Props) => {
     const elementId = props[propId] ?? '';
@@ -36,7 +37,20 @@ export function DraggableElementGenerator<TPropId extends string>(
       listeners,
       setNodeRef: setDraggableNodeRef,
       isDragging,
-    } = useDraggable({ id: elementId });
+    } = useDraggable({
+      id: elementId,
+    });
+
+    const handleDragStart = React.useCallback(
+      (eventname: string) => (event: React.PointerEvent | React.MouseEvent) => {
+        if (event.altKey) {
+          return; // Disables dragging when alt is pressed
+        } else {
+          listeners?.[eventname]?.(event);
+        }
+      },
+      [listeners],
+    );
 
     const { setNodeRef: setNodeRefDroppable, over } = useDroppable({
       id: props[propId],
@@ -54,6 +68,8 @@ export function DraggableElementGenerator<TPropId extends string>(
       ...props,
       ...attributes,
       ...listeners,
+      onPointerDown: handleDragStart('onPointerDown'),
+      onMouseDown: handleDragStart('onMouseDown'),
       ref(elementRef) {
         setDraggableNodeRef(elementRef);
         setNodeRefDroppable(elementRef);
@@ -66,6 +82,8 @@ export function DraggableElementGenerator<TPropId extends string>(
 
   return DraggableElement;
 }
+
+// ----------------------------------------------
 
 export type DragInfo =
   | { dragging: false }

@@ -1,13 +1,20 @@
 import { getFolderById } from './folders';
 import eventHandler from '../legacy/eventHandler.js';
 import logger from '../legacy/logging.js';
-import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
 import {
-  getDefinitionsVersionInformation,
-  getMetaDataFromElement,
+  getProcessInfo,
+  getDefaultProcessMetaInfo,
+  BpmnAttributeType,
+  transformBpmnAttributes,
+} from '../../helpers/processHelpers';
+import {
   getAllElements,
+  getDefinitionsVersionInformation,
+  generateBpmnId,
+  toBpmnObject,
+  getScriptTaskFileNameMapping,
 } from '@proceed/bpmn-helper';
-import Ability from '@/lib/ability/abilityHelper';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
@@ -16,14 +23,15 @@ import db from '@/lib/data/db';
 import {
   deleteProcessArtifact,
   getArtifactMetaData,
-  retrieveProcessArtifact,
   saveProcessArtifact,
+  updateFileDeletableStatus,
 } from '../file-manager-facade';
 import { toCustomUTCString } from '@/lib/helpers/timeHelper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { copyFile } from '../file-manager/file-manager';
+import { copyFile, retrieveFile } from '../file-manager/file-manager';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
+import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';
 
 /**
  * Returns all processes in an environment
@@ -48,6 +56,7 @@ export async function getProcesses(environmentId: string, ability?: Ability, inc
       sharedAs: true,
       shareTimestamp: true,
       allowIframeTimestamp: true,
+      executable: true,
       environmentId: true,
       creatorId: true,
       //departments: true,
@@ -76,17 +85,18 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       lastEditedOn: true,
       inEditingBy: true,
       processIds: true,
+      userDefinedId: true,
       type: true,
       folderId: true,
       sharedAs: true,
       shareTimestamp: true,
       allowIframeTimestamp: true,
+      executable: true,
       environmentId: true,
       creatorId: true,
       //departments: true,
       //variables: true,
       versions: true,
-      bpmn: includeBPMN,
     },
   });
   if (!process) {
@@ -106,7 +116,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   const convertedProcess = {
     ...process,
     //versions: convertedVersions,
-    bpmn: `<?xml version="1.0" encoding="UTF-8"?>${process.bpmn}`,
+    bpmn: includeBPMN ? await getProcessBpmn(processDefinitionsId) : null,
     shareTimestamp:
       typeof process.shareTimestamp === 'bigint'
         ? Number(process.shareTimestamp)
@@ -115,9 +125,12 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       typeof process.allowIframeTimestamp === 'bigint'
         ? Number(process.allowIframeTimestamp)
         : process.allowIframeTimestamp,
+    // TODO: implement inEditingBy
   };
 
-  return convertedProcess;
+  return convertedProcess as typeof convertedProcess & {
+    inEditingBy?: { id: string; task?: string }[];
+  };
 }
 
 /**
@@ -125,14 +138,79 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
  *
  * @param {String} processDefinitionsId
  */
-export async function checkIfProcessExists(processDefinitionsId: string) {
+export async function checkIfProcessExists(
+  processDefinitionsId: string,
+  throwError: boolean = true,
+) {
   const existingProcess = await db.process.findUnique({
     where: {
       id: processDefinitionsId,
     },
   });
-  if (!existingProcess) {
+  if (!existingProcess && throwError) {
     throw new Error(`Process with id ${processDefinitionsId} does not exist!`);
+  }
+  return existingProcess;
+}
+
+export async function checkIfProcessAlreadyExistsForAUserInASpaceByName(
+  processName: string,
+  spaceId: string,
+  userId: string,
+  folderId: string,
+) {
+  try {
+    const existingProcess = await db.process.findUnique({
+      where: {
+        name_environmentId_creatorId_folderId: {
+          name: processName,
+          environmentId: spaceId,
+          creatorId: userId,
+          folderId: folderId,
+        },
+      },
+    });
+
+    return !!existingProcess;
+  } catch (err: any) {
+    throw new Error('Error checking if process exists by name:', err.message);
+  }
+}
+
+export async function checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
+  processes: { name: string; folderId: string }[],
+  spaceId: string,
+  userId: string,
+) {
+  try {
+    const existingProcesses = await db.process.findMany({
+      where: {
+        AND: [
+          { environmentId: spaceId },
+          { creatorId: userId },
+          {
+            OR: processes.map(({ name, folderId }) => ({
+              name,
+              folderId,
+            })),
+          },
+        ],
+      },
+      select: {
+        name: true,
+        folderId: true,
+      },
+    });
+
+    // Turn into a Set or Map for fast lookup
+    const existingSet = new Set(existingProcesses.map((p) => `${p.name}:::${p.folderId}`));
+
+    // Return an array of booleans per process
+    return processes.map(({ name, folderId }) => {
+      return existingSet.has(`${name}:::${folderId}`);
+    });
+  } catch (err: any) {
+    throw new Error(`Error checking process names in batch: ${err.message}`);
   }
 }
 
@@ -183,6 +261,11 @@ export async function addProcess(
     throw new Error(`Process with id ${processDefinitionsId} already exists!`);
   }
 
+  const bpmnWithPlaceholders = await transformBpmnAttributes(
+    bpmn,
+    BpmnAttributeType.DB_PLACEHOLDER,
+  );
+
   // save process info
   try {
     await tx.process.create({
@@ -201,21 +284,16 @@ export async function addProcess(
         allowIframeTimestamp: metadata.allowIframeTimestamp,
         environmentId: metadata.environmentId,
         creatorId: metadata.creatorId,
+        userDefinedId: metadata.userDefinedId,
         //departments: { set: metadata.departments },
         //variables: { set: metadata.variables },
-        bpmn: bpmn,
+        bpmn: bpmnWithPlaceholders,
+        executable: metadata.executable || false,
       },
     });
   } catch (error) {
     console.error('Error adding new process: ', error);
   }
-
-  await moveProcess({
-    processDefinitionsId,
-    newFolderId: metadata.folderId,
-    dontUpdateOldFolder: true,
-    tx,
-  });
 
   //if referencedProcessId is present, the process was copied from a shared process
   if (referencedProcessId) {
@@ -257,6 +335,7 @@ export async function updateProcess(
       ...(await getProcessInfo(newBpmn)),
     };
   }
+
   // Update folders
   if (metaChanges.folderId && metaChanges.folderId !== currentParent) {
     moveProcess({ processDefinitionsId, newFolderId: metaChanges.folderId });
@@ -264,12 +343,11 @@ export async function updateProcess(
   }
 
   const newMetaData = await updateProcessMetaData(processDefinitionsId, metaChanges);
-
   if (newBpmn) {
     try {
       await db.process.update({
         where: { id: processDefinitionsId },
-        data: { bpmn: newBpmn },
+        data: { bpmn: await transformBpmnAttributes(newBpmn, BpmnAttributeType.DB_PLACEHOLDER) },
       });
     } catch (error) {
       console.error('Error updating bpmn: ', error);
@@ -354,12 +432,15 @@ export async function updateProcessMetaData(
   processDefinitionsId: string,
   metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
-  checkIfProcessExists(processDefinitionsId);
   try {
+    const existingProcess = await checkIfProcessExists(processDefinitionsId);
+
     const updatedProcess = await db.process.update({
       where: { id: processDefinitionsId },
       data: {
         ...(metaChanges as any),
+        id: processDefinitionsId, // make sure the id is not changed
+        originalId: existingProcess?.originalId || metaChanges.originalId, // originalId is only changed is not set yet
       },
     });
 
@@ -382,7 +463,7 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
     });
   }
 
-  const process = await db.process.findUnique({
+  const process = await tx.process.findUnique({
     where: { id: processDefinitionsId },
     include: { artifactProcessReferences: { include: { artifact: true } } },
   });
@@ -390,13 +471,13 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
   if (!process) {
     throw new Error(`Process with id: ${processDefinitionsId} not found`);
   }
+
   await Promise.all(
     process.artifactProcessReferences.map((artifactRef) => {
-      deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
+      return deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
     }),
   );
 
-  // Remove from database
   await tx.process.delete({ where: { id: processDefinitionsId } });
 
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
@@ -406,6 +487,7 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
 export async function addProcessVersion(
   processDefinitionsId: string,
   bpmn: string,
+  versionedProcessStartFormFilenames?: string[],
   versionedUserTaskFilenames?: string[],
   versionedScriptTaskFilenames?: string[],
 ) {
@@ -449,7 +531,7 @@ export async function addProcessVersion(
     { useDefaultArtifactsTable: false, generateNewFileName: false },
   );
 
-  if (!res.fileName) {
+  if (!res.filePath) {
     throw new Error('Error saving version bpmn');
   }
 
@@ -461,11 +543,23 @@ export async function addProcessVersion(
         description: versionInformation.description ?? '',
         versionBasedOn: versionInformation.versionBasedOn!,
         process: { connect: { id: processDefinitionsId } },
-        bpmnFilePath: res.fileName,
+        bpmnFilePath: res.filePath,
       },
     });
 
     if (version) {
+      if (versionedProcessStartFormFilenames) {
+        await asyncMap(versionedProcessStartFormFilenames, async (fileName) => {
+          for (const extension of ['.json', '.html']) {
+            const res = await getArtifactMetaData(`${fileName}${extension}`, false);
+            if (res) {
+              await db.artifactVersionReference.create({
+                data: { artifactId: res.id, versionId: version.id },
+              });
+            }
+          }
+        });
+      }
       if (versionedUserTaskFilenames) {
         await asyncMap(versionedUserTaskFilenames, async (fileName) => {
           for (const extension of ['.json', '.html']) {
@@ -498,7 +592,7 @@ export async function addProcessVersion(
     throw new Error('Error creating the version');
   }
 
-  // add information about the new version to the meta information and inform others about its existance
+  // add information about the new version to the meta information and inform others about its existence
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
   //@ts-ignore
@@ -524,14 +618,7 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
     where: { id: versionId },
   });
 
-  return (
-    (await retrieveProcessArtifact(
-      processDefinitionsId,
-      versn?.bpmnFilePath!,
-      false,
-      false,
-    )) as Buffer
-  ).toString('utf8');
+  return ((await retrieveFile(versn?.bpmnFilePath!, false)) as Buffer).toString('utf8');
 }
 
 /** Removes information from the meta data that would not be correct after a restart */
@@ -543,18 +630,37 @@ function removeExcessiveInformation(processInfo: Omit<ProcessMetadata, 'bpmn'>) 
 
 /** Returns the process definition for the process with the given id */
 export async function getProcessBpmn(processDefinitionsId: string) {
-  checkIfProcessExists(processDefinitionsId);
-
   try {
     const process = await db.process.findUnique({
       where: {
         id: processDefinitionsId,
       },
       select: {
+        creator: { select: { id: true, firstName: true, lastName: true, username: true } },
+        space: { select: { id: true, name: true } },
         bpmn: true,
+        userDefinedId: true,
+        createdOn: true,
+        id: true,
+        name: true,
+        originalId: true,
+        executable: true,
       },
     });
-    return `<?xml version="1.0" encoding="UTF-8"?>\n${process?.bpmn}`;
+
+    if (!process) {
+      throw new Error('Process not found');
+    }
+
+    const processWithStringDate = {
+      ...process,
+      createdOn: process.createdOn.toISOString(),
+    };
+    let bpmnWithDBValue = await transformBpmnAttributes(
+      processWithStringDate!,
+      BpmnAttributeType.ACTUAL_VALUE,
+    );
+    return bpmnWithDBValue;
   } catch (err) {
     logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
     throw new Error('Unable to find process bpmn!');
@@ -568,66 +674,198 @@ export async function getProcessUserTasks(processDefinitionsId: string) {
   // TODO
 }
 
+export type FolderContentWithScriptTasks = {
+  folderId: string;
+  content: (
+    | {
+        type: 'process';
+        id: string;
+        name: string;
+        scriptTasks: string[];
+      }
+    | {
+        type: 'folder';
+        id: string;
+        name: string;
+      }
+  )[];
+};
+/*
+ * Returns the id, name and list of scriptTask filenames of all processes with scriptTasks.
+ */
+export async function getFolderScriptTasks(
+  spaceId: string,
+  folderId?: string,
+  ability?: Ability,
+  skipFolderCheck = false,
+) {
+  // If there is a folder id the permissions will be checked by getRootFolder
+  if (!skipFolderCheck && folderId) {
+    // Throws if the user doesn't have permissions
+    await getFolderById(folderId, ability);
+  }
+
+  if (!folderId) {
+    // Throws if the user doesn't have permissions
+
+    const rootFolder = await getRootFolder(spaceId, skipFolderCheck ? undefined : ability);
+
+    folderId = rootFolder.id;
+  }
+
+  const [processes, folders] = await Promise.all([
+    db.process.findMany({
+      where: {
+        environmentId: spaceId,
+        folderId,
+      },
+      select: {
+        id: true,
+        name: true,
+        bpmn: true,
+      },
+    }),
+    db.folder.findMany({
+      where: {
+        environmentId: spaceId,
+        parentId: folderId,
+      },
+      select: {
+        name: true,
+        id: true,
+        // We need this for the permission check to work
+        parentId: true,
+      },
+    }),
+  ]);
+
+  // TODO: subprocesses
+  const processesWithScriptTaskFileNames: FolderContentWithScriptTasks['content'] = [];
+
+  for (const folder of folders) {
+    if (
+      !ability ||
+      ability.can('view', toCaslResource('Folder', folder), { environmentId: spaceId })
+    ) {
+      processesWithScriptTaskFileNames.push({
+        type: 'folder',
+        id: folder.id,
+        name: folder.name,
+      });
+    }
+  }
+
+  for (const process of processes) {
+    if (
+      ability &&
+      !ability.can('view', toCaslResource('Process', process), { environmentId: spaceId })
+    ) {
+      continue;
+    }
+
+    const scriptTasksFileNameMapping = await getScriptTaskFileNameMapping(process.bpmn);
+    const scriptTaskFileNames = Object.values(scriptTasksFileNameMapping)
+      .map((mapping) => mapping.fileName)
+      .filter((v) => !!v) as string[];
+
+    if (scriptTaskFileNames.length > 0) {
+      processesWithScriptTaskFileNames.push({
+        id: process.id,
+        name: process.name,
+        scriptTasks: scriptTaskFileNames,
+        type: 'process',
+      });
+    }
+  }
+
+  return processesWithScriptTaskFileNames;
+}
+
+/**
+ * Returns an array containing the folders and processes with script tasks for every folder
+ * starting at the `folderId` param and ending at the root folder of the environment.
+ */
+export async function getFolderPathScriptTasks(
+  spaceId: string,
+  folderId: string,
+  ability?: Ability,
+) {
+  const results: FolderContentWithScriptTasks[] = [];
+
+  // Start at folder and go up in the tree
+  let currentFolderId: string | null = folderId;
+  while (currentFolderId !== null) {
+    // Throws if the user doesn't have permissions
+    const currentFolder = await getFolderById(currentFolderId, ability);
+
+    results.push({
+      folderId: currentFolderId,
+      content: await getFolderScriptTasks(spaceId, currentFolderId, ability, true),
+    });
+
+    currentFolderId = currentFolder.parentId;
+  }
+
+  return results;
+}
+
 /** Returns the filenames of the data for all script tasks in the given process */
 export async function getProcessScriptTasks(processDefinitionsId: string) {
   // TODO
 }
 
-/** Returns the form data for a specific user task in a process */
-export async function getProcessUserTaskJSON(processDefinitionsId: string, userTaskName: string) {
+export async function getProcessHtmlFormJSON(
+  processDefinitionsId: string,
+  fileName: string,
+  ignoreDeletedStatus = false,
+) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    const res = await db.artifact.findUnique({ where: { fileName: `${userTaskName}.json` } });
-    if (res) {
-      const jsonAsBuffer = (await retrieveProcessArtifact(
-        processDefinitionsId,
-        res.filePath,
-        true,
-        true,
-      )) as Buffer;
+    let artifact;
+
+    if (ignoreDeletedStatus) {
+      artifact = await db.artifact.findFirst({ where: { fileName: `${fileName}.json` } });
+    } else {
+      let res = await db.artifactProcessReference.findFirst({
+        where: { processId: processDefinitionsId, artifact: { fileName: `${fileName}.json` } },
+        select: { artifact: true },
+      });
+
+      if (!res) {
+        res = await db.artifactVersionReference.findFirst({
+          where: {
+            version: { processId: processDefinitionsId },
+            artifact: { fileName: `${fileName}.json` },
+          },
+          select: { artifact: true },
+        });
+      }
+
+      artifact = res?.artifact;
+    }
+    if (artifact) {
+      const jsonAsBuffer = (await retrieveFile(artifact.filePath, true)) as Buffer;
       return jsonAsBuffer.toString('utf8');
     }
   } catch (err) {
-    logger.debug(`Error getting data of user task. Reason:\n${err}`);
-    throw new Error('Unable to get data for user task!');
+    logger.debug(`Error getting data of process html form ${fileName}. Reason\n${err}`);
+    throw new Error(`Unable to get data for process html form ${fileName}!`);
   }
 }
 
-export async function checkIfUserTaskExists(processDefinitionsId: string, userTaskId: string) {
+export async function checkIfHtmlFormExists(processDefinitionsId: string, fileName: string) {
   try {
-    // const artifact = await db.artifact.findFirst({
-    //   where: {
-    //     artifactType: 'user-tasks',
-    //     fileName: `${userTaskId}.json`,
-    //     references: {
-    //       some: {
-    //         processId: processDefinitionsId,
-    //       },
-    //     },
-    //   },
-    //   include: {
-    //     references: {
-    //       where: {
-    //         processId: processDefinitionsId,
-    //       },
-    //       select: {
-    //         id: true,
-    //         processId: true,
-    //       },
-    //     },
-    //   },
-    // });
     const jsonArtifact = await db.artifact.findUnique({
-      where: { fileName: `${userTaskId}.json` },
+      where: { fileName: `${fileName}.json` },
     });
     const htmlArtifact = await db.artifact.findUnique({
-      where: { fileName: `${userTaskId}.html` },
+      where: { fileName: `${fileName}.html` },
     });
     return jsonArtifact || htmlArtifact ? { json: jsonArtifact, html: htmlArtifact } : null;
   } catch (error) {
-    console.error('Error checking if user task exists:', error);
-    throw new Error('Failed to check if user task exists.');
+    console.error(`Error checking if html form ${fileName} exists:`, error);
+    throw new Error(`Failed to check if html form ${fileName} exists.`);
   }
 }
 
@@ -668,12 +906,12 @@ export async function checkIfScriptTaskFileExists(
   }
 }
 
-export async function getProcessUserTaskHtml(processDefinitionsId: string, taskFileName: string) {
+export async function getHtmlForm(processDefinitionsId: string, fileName: string) {
   checkIfProcessExists(processDefinitionsId);
   try {
     const res = await db.artifact.findFirst({
       where: {
-        fileName: `${taskFileName}.html`,
+        fileName: `${fileName}.html`,
         OR: [
           {
             processReferences: {
@@ -695,16 +933,14 @@ export async function getProcessUserTaskHtml(processDefinitionsId: string, taskF
     });
 
     if (!res) {
-      throw new Error('Unable to get html for user task!');
+      throw new Error(`Unable to get html for ${fileName} from the database!`);
     }
 
-    const html = (
-      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
-    ).toString('utf-8');
+    const html = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return html;
   } catch (err) {
-    logger.debug(`Error getting html of user task. Reason:\n${err}`);
-    throw new Error('Unable to get html for user task!');
+    logger.debug(`Error getting html for ${fileName} from the database. Reason:\n${err}`);
+    throw new Error('Unable to get html for start form!');
   }
 }
 
@@ -738,9 +974,7 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
       throw new Error('Unable to get script for script task!');
     }
 
-    const script = (
-      await retrieveProcessArtifact(processDefinitionsId, res.filePath, true, false)
-    ).toString('utf-8');
+    const script = (await retrieveFile(res.filePath, false)).toString('utf-8');
     return script;
   } catch (err) {
     logger.debug(`Error getting script of script task. Reason:\n${err}`);
@@ -748,46 +982,79 @@ export async function getProcessScriptTaskScript(processDefinitionsId: string, f
   }
 }
 
-export async function saveProcessUserTask(
+export async function saveProcessHtmlForm(
   processDefinitionsId: string,
-  userTaskId: string,
+  fileName: string,
   json: string,
   html: string,
   versionCreatedOn?: string,
+  updateImageReferences = false,
 ) {
+  // TODO: Use a transaction to avoid storing inconsistent states in case of errors
   checkIfProcessExists(processDefinitionsId);
   try {
-    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskId);
+    const res = await checkIfHtmlFormExists(processDefinitionsId, fileName);
     const content = new TextEncoder().encode(json);
-    const { fileName } = await saveProcessArtifact(
+
+    // The code that creates versions, already handles creating new references
+    if (updateImageReferences && !versionCreatedOn) {
+      let newUsedImages = getUsedImagesFromJson(JSON.parse(json));
+      let removedImages = new Set<string>();
+
+      if (res?.json) {
+        const oldJson = await getProcessHtmlFormJSON(processDefinitionsId, fileName);
+        if (!oldJson) throw new Error(`Couldn't get JSON for user task ${fileName}`);
+
+        const oldUsedImages = getUsedImagesFromJson(JSON.parse(oldJson));
+
+        for (const oldImage of oldUsedImages) {
+          if (!newUsedImages.has(oldImage)) removedImages.add(oldImage);
+        }
+
+        for (const oldImage of oldUsedImages) {
+          if (newUsedImages.has(oldImage)) newUsedImages.delete(oldImage);
+        }
+      }
+
+      for (const newArtifact of newUsedImages) {
+        updateFileDeletableStatus(newArtifact, false, processDefinitionsId);
+      }
+
+      for (const deletedArtifact of removedImages) {
+        updateFileDeletableStatus(deletedArtifact, true, processDefinitionsId);
+      }
+    }
+
+    const { filePath } = await saveProcessArtifact(
       processDefinitionsId,
-      `${userTaskId}.json`,
+      `${fileName}.json`,
       'application/json',
       content,
       {
         generateNewFileName: false,
-        versionCreatedOn: versionCreatedOn,
+        versionCreatedOn,
         replaceFileContentOnly: res?.json?.filePath ? true : false,
-        context: 'user-tasks',
+        context: 'html-forms',
       },
     );
 
     await saveProcessArtifact(
       processDefinitionsId,
-      `${userTaskId}.html`,
+      `${fileName}.html`,
       'text/html',
       new TextEncoder().encode(html),
       {
         generateNewFileName: false,
         versionCreatedOn: versionCreatedOn,
         replaceFileContentOnly: res?.html?.filePath ? true : false,
-        context: 'user-tasks',
+        context: 'html-forms',
       },
     );
-    return fileName;
+
+    return filePath;
   } catch (err) {
-    logger.debug(`Error storing user task data. Reason:\n${err}`);
-    throw new Error('Failed to store the user task data');
+    logger.debug(`Error storing html form data for ${fileName}. Reason:\n${err}`);
+    throw new Error('Failed to store the html form data.');
   }
 }
 
@@ -821,13 +1088,10 @@ export async function saveProcessScriptTask(
 }
 
 /** Removes a stored user task from disk */
-export async function deleteProcessUserTask(
-  processDefinitionsId: string,
-  userTaskFileName: string,
-) {
+export async function deleteHtmlForm(processDefinitionsId: string, fileName: string) {
   checkIfProcessExists(processDefinitionsId);
   try {
-    const res = await checkIfUserTaskExists(processDefinitionsId, userTaskFileName);
+    const res = await checkIfHtmlFormExists(processDefinitionsId, fileName);
 
     let isDeleted = false;
 
@@ -840,7 +1104,7 @@ export async function deleteProcessUserTask(
 
     return isDeleted;
   } catch (err) {
-    logger.debug(`Error removing user task data. Reason:\n${err}`);
+    logger.debug(`Error removing html form data. Reason:\n${err}`);
   }
 }
 
@@ -905,7 +1169,7 @@ export async function versionProcessArtifactRefs(processId: string, versionId: s
   }
 }
 
-// copy usertasks & script tasks....
+// copy html-forms & script tasks....
 export async function copyProcessFiles(sourceProcessId: string, destinationProcessId: string) {
   const refs = await db.artifactProcessReference.findMany({
     where: {
@@ -918,18 +1182,29 @@ export async function copyProcessFiles(sourceProcessId: string, destinationProce
     },
   });
 
+  const filenameMapping: Map<string, string> = new Map<string, string>();
+
   const oldNewFilenameMapping = await asyncMap(refs, async (ref) => {
     const { artifactId, artifact } = ref;
     const sourceFilePath = artifact.filePath;
+    const fileNameParts = artifact.fileName.split('.');
+    const ext = fileNameParts.pop();
+
+    const baseName = fileNameParts.join('.');
+    const typePrefix = baseName.split('_').slice(0, 2).join('_');
     const destinationFilePath = generateProcessFilePath(artifact.fileName, destinationProcessId);
+
+    let newFileName;
+    if (artifact.artifactType === 'html-forms' || artifact.artifactType === 'script-tasks') {
+      newFileName = filenameMapping.get(baseName) || generateBpmnId(typePrefix + '_');
+      filenameMapping.set(baseName, newFileName);
+    }
+
     const { status, newFilename, newFilepath } = await copyFile(
       sourceFilePath,
       destinationFilePath,
-      {
-        newFilename: `${destinationProcessId}-${artifact.fileName}`,
-      },
+      { newFilename: `${newFileName}.${ext}` },
     );
-
     if (status) {
       try {
         const { id: newArtifactId } = await db.artifact.create({
@@ -976,18 +1251,13 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
       select: { filePath: true },
     });
     if (!res) {
-      throw new Error('Unable to get image!');
+      throw new Error(`Unable to get image : ${imageFileName}`);
     }
-    const image = (await retrieveProcessArtifact(
-      processDefinitionsId,
-      res?.filePath,
-      true,
-      false,
-    )) as Buffer;
+    const image = (await retrieveFile(res?.filePath, false)) as Buffer;
     return image;
   } catch (err) {
     logger.debug(`Error getting image. Reason:\n${err}`);
-    throw new Error('Unable to get image!');
+    throw new Error(`Unable to get image : ${imageFileName}`);
   }
 }
 

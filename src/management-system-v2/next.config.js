@@ -3,35 +3,15 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+  outputFileTracingIncludes: {
+    '/': ['../../node_modules/.prisma/**/*', '../../node_modules/@prisma/**/*'],
+  },
   experimental: {
-    outputFileTracingRoot: path.join(__dirname, '../../'),
-  },
-  /**
-   *
-   * @param {import('webpack').Configuration} config
-   * @param {import('next/dist/server/config-shared').WebpackConfigContext} context
-   * @returns {import('webpack').Configuration}
-   */
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
-    // This is due to needing to init our in-memory db before accessing the getters.
-    // Can probably be removed once we switch to a real db.
-    config.experiments.topLevelAwait = true;
-    // Important: return the modified config
-    return config;
-  },
-  env: {
-    NEXT_PUBLIC_USE_AUTH: 'true',
-    // Provide default values for development if no .env file is present. In
-    // production, the environment variables are set in the deployment
-    // configuration during runtime.
-    ...(process.env.NODE_ENV === 'development'
-      ? {
-          NEXTAUTH_SECRET:
-            process.env.NEXTAUTH_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
-          SHARING_ENCRYPTION_SECRET:
-            process.env.SHARING_ENCRYPTION_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
-        }
-      : {}),
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+    nodeMiddleware: true,
   },
   redirects: async () => {
     return [
@@ -47,22 +27,38 @@ const nextConfig = {
   },
   rewrites: async () => {
     return [
-      'processes',
-      'spaces',
-      'executions',
-      'engines',
-      'tasklist',
-      'general-settings',
-      'iam',
-      'profile',
-      'projects',
-      'machine-config',
-    ].map((folder) => ({
-      // TODO: when building techserver separately, this can be set to rewrite
-      // all unused paths to /404.
-      source: `/${folder}/:path*`,
-      destination: `/my/${folder}/:path*`,
-    }));
+      {
+        source: '/processes',
+        destination: '/my/processes/editor',
+      },
+      {
+        source: '/processes/:mode/:path*',
+        destination: '/my/processes/:mode/:path*',
+      },
+      {
+        source: '/:environmentId/processes',
+        destination: '/:environmentId/processes/editor/',
+      },
+      // Catch-all rewrite for remaining paths (must be last)
+      ...[
+        'spaces',
+        'executions',
+        'executions-dashboard',
+        'engines',
+        'tasklist',
+        'tasks',
+        'general-settings',
+        'iam',
+        'profile',
+        'projects',
+        'settings',
+      ].map((folder) => ({
+        // TODO: when building techserver separately, this can be set to rewrite
+        // all unused paths to /404.
+        source: `/${folder}/:path*`,
+        destination: `/my/${folder}/:path*`,
+      })),
+    ];
   },
 };
 

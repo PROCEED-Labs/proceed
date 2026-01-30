@@ -92,12 +92,14 @@ async function Executions({ environmentId }: { environmentId: string }) {
   const deployedProcesses = getDeploymentNames(deployedWithRemappedIds);
 
   return (
-    <DeploymentsView
-      processes={folderContents}
-      folder={folder}
-      favourites={favs as string[]}
-      deployedProcesses={deployedProcesses}
-    />
+    <Content title="Executions">
+      <DeploymentsView
+        processes={folderContents}
+        folder={folder}
+        favourites={favs as string[]}
+        deployedProcesses={deployedProcesses}
+      />
+    </Content>
   );
 }
 
@@ -105,9 +107,5 @@ export default async function ExecutionsPage(props: {
   params: Promise<{ environmentId: string }>;
 }) {
   const params = await props.params;
-  return (
-    <Content title="Executions">
-      <Executions environmentId={params.environmentId} />
-    </Content>
-  );
+  return <Executions environmentId={params.environmentId} />;
 }
